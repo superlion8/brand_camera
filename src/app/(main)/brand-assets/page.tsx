@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react"
 import Image from "next/image"
-import { Plus, Trash2, Users, Image as ImageIcon, Package, Sparkles, Upload, MoreVertical } from "lucide-react"
+import { Plus, Trash2, Users, Image as ImageIcon, Package, Sparkles, Upload } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { Asset, AssetType } from "@/types"
 import { fileToBase64, generateId } from "@/lib/utils"
@@ -27,16 +27,19 @@ const systemPresets: Record<AssetType, Asset[]> = {
   ],
 }
 
-const tabs = [
+const typeTabs = [
   { value: "product" as AssetType, label: "商品", icon: Package },
   { value: "model" as AssetType, label: "模特", icon: Users },
   { value: "background" as AssetType, label: "背景", icon: ImageIcon },
   { value: "vibe" as AssetType, label: "氛围", icon: Sparkles },
 ]
 
+type SourceTab = "user" | "preset"
+
 export default function BrandAssetsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [activeTab, setActiveTab] = useState<AssetType>("product")
+  const [activeType, setActiveType] = useState<AssetType>("product")
+  const [activeSource, setActiveSource] = useState<SourceTab>("user")
   const [uploadType, setUploadType] = useState<AssetType>("product")
   
   const {
@@ -77,15 +80,18 @@ export default function BrandAssetsPage() {
     
     switch (uploadType) {
       case "model":
-        setUserModels([...userModels, newAsset])
+        setUserModels([newAsset, ...userModels])
         break
       case "background":
-        setUserBackgrounds([...userBackgrounds, newAsset])
+        setUserBackgrounds([newAsset, ...userBackgrounds])
         break
       case "product":
-        setUserProducts([...userProducts, newAsset])
+        setUserProducts([newAsset, ...userProducts])
         break
     }
+    
+    // Switch to user tab after upload
+    setActiveSource("user")
     
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
@@ -106,9 +112,13 @@ export default function BrandAssetsPage() {
     }
   }
   
+  const userAssets = getUserAssets(activeType)
+  const presetAssets = systemPresets[activeType] || []
+  const displayAssets = activeSource === "user" ? userAssets : presetAssets
+  
   if (!_hasHydrated) {
     return (
-      <div className="h-screen w-full bg-zinc-50 bg-white flex items-center justify-center">
+      <div className="h-screen w-full bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-zinc-500">加载中...</p>
@@ -118,7 +128,7 @@ export default function BrandAssetsPage() {
   }
   
   return (
-    <div className="h-full flex flex-col bg-zinc-50 bg-white">
+    <div className="h-full flex flex-col bg-zinc-50">
       <input
         ref={fileInputRef}
         type="file"
@@ -128,88 +138,123 @@ export default function BrandAssetsPage() {
       />
       
       {/* Header */}
-      <div className="h-14 border-b bg-white bg-white flex items-center justify-between px-4 shrink-0">
-        <div className="flex items-center gap-2">
-          <Image src="/logo.png" alt="Brand Camera" width={28} height={28} className="rounded" />
-          <span className="font-semibold text-lg text-zinc-900 text-zinc-900">品牌资产</span>
-        </div>
-        <button
-          onClick={() => handleUploadClick(activeTab)}
-          className="flex items-center gap-1 px-3 py-1.5 bg-zinc-900 dark:bg-white text-white text-zinc-500 text-sm font-medium rounded-lg hover:bg-zinc-800 hover:bg-zinc-100 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          上传
-        </button>
-      </div>
-      
-      {/* Tabs */}
-      <div className="flex-1 overflow-hidden flex flex-col">
-        <div className="px-4 pt-4">
-          <div className="w-full grid grid-cols-4 bg-zinc-100 bg-zinc-100 rounded-lg p-1">
-            {tabs.map((tab) => {
-              const Icon = tab.icon
-              return (
-                <button
-                  key={tab.value}
-                  onClick={() => setActiveTab(tab.value)}
-                  className={`py-2 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === tab.value
-                      ? "bg-white bg-white text-zinc-900 text-zinc-900 shadow-sm"
-                      : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              )
-            })}
+      <div className="border-b bg-white shrink-0">
+        <div className="h-14 flex items-center justify-between px-4">
+          <div className="flex items-center gap-2">
+            <Image src="/logo.png" alt="Brand Camera" width={28} height={28} className="rounded" />
+            <span className="font-semibold text-lg text-zinc-900">品牌资产</span>
           </div>
+          <button
+            onClick={() => handleUploadClick(activeType)}
+            className="flex items-center gap-1 px-3 py-1.5 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            上传
+          </button>
         </div>
         
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto">
-          {/* System presets for model, background, vibe */}
-          {systemPresets[activeTab]?.length > 0 && (
-            <div className="p-4">
-              <h3 className="text-xs font-semibold text-zinc-500 mb-3 uppercase">官方预设</h3>
-              <div className="grid grid-cols-3 gap-3">
-                {systemPresets[activeTab].map((asset) => (
-                  <AssetCard key={asset.id} asset={asset} isPreset />
-                ))}
-              </div>
+        {/* Type Tabs */}
+        <div className="px-4 pb-3 flex gap-2 overflow-x-auto hide-scrollbar">
+          {typeTabs.map((tab) => {
+            const Icon = tab.icon
+            const userCount = getUserAssets(tab.value).length
+            return (
+              <button
+                key={tab.value}
+                onClick={() => setActiveType(tab.value)}
+                className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full transition-colors whitespace-nowrap ${
+                  activeType === tab.value
+                    ? "bg-zinc-900 text-white"
+                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {tab.label}
+                {userCount > 0 && (
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                    activeType === tab.value 
+                      ? "bg-white/20 text-white" 
+                      : "bg-zinc-200 text-zinc-500"
+                  }`}>
+                    {userCount}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+      
+      {/* Source Tabs: 我的资产 | 官方预设 */}
+      <div className="bg-white border-b px-4 py-2">
+        <div className="flex bg-zinc-100 rounded-lg p-1">
+          <button
+            onClick={() => setActiveSource("user")}
+            className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
+              activeSource === "user"
+                ? "bg-white text-zinc-900 shadow-sm"
+                : "text-zinc-500 hover:text-zinc-700"
+            }`}
+          >
+            我的资产
+            {userAssets.length > 0 && (
+              <span className="ml-1.5 text-xs text-zinc-400">({userAssets.length})</span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveSource("preset")}
+            className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
+              activeSource === "preset"
+                ? "bg-white text-zinc-900 shadow-sm"
+                : "text-zinc-500 hover:text-zinc-700"
+            }`}
+          >
+            官方预设
+            {presetAssets.length > 0 && (
+              <span className="ml-1.5 text-xs text-zinc-400">({presetAssets.length})</span>
+            )}
+          </button>
+        </div>
+      </div>
+      
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-4">
+        {displayAssets.length > 0 ? (
+          <div className="grid grid-cols-2 gap-3">
+            {displayAssets.map((asset) => (
+              <AssetCard
+                key={asset.id}
+                asset={asset}
+                isPreset={activeSource === "preset"}
+                onDelete={activeSource === "user" ? () => handleDelete(activeType, asset.id) : undefined}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-20 text-zinc-400">
+            <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mb-4">
+              {activeSource === "user" ? (
+                <Upload className="w-8 h-8 text-zinc-300" />
+              ) : (
+                <Sparkles className="w-8 h-8 text-zinc-300" />
+              )}
             </div>
-          )}
-          
-          {/* User assets */}
-          <div className="p-4 pt-0">
-            <h3 className="text-xs font-semibold text-zinc-500 mb-3 uppercase">我的资产</h3>
-            {getUserAssets(activeTab).length > 0 ? (
-              <div className="grid grid-cols-2 gap-4">
-                {getUserAssets(activeTab).map((asset) => (
-                  <AssetCard
-                    key={asset.id}
-                    asset={asset}
-                    onDelete={() => handleDelete(activeTab, asset.id)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-20 text-zinc-400">
-                <div className="w-16 h-16 bg-zinc-100 bg-zinc-100 rounded-full flex items-center justify-center mb-4">
-                  <Upload className="w-8 h-8 text-zinc-300 text-zinc-500" />
-                </div>
-                <p className="text-zinc-600 text-zinc-500 mb-2">
-                  暂无{activeTab === "model" ? "模特" : activeTab === "background" ? "背景" : activeTab === "vibe" ? "氛围" : "商品"}资产
-                </p>
-                <button
-                  onClick={() => handleUploadClick(activeTab)}
-                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                >
-                  点击上传
-                </button>
-              </div>
+            <p className="text-zinc-600 mb-2 text-center">
+              {activeSource === "user" 
+                ? `暂无${activeType === "model" ? "模特" : activeType === "background" ? "背景" : activeType === "vibe" ? "氛围" : "商品"}资产`
+                : "该分类暂无官方预设"
+              }
+            </p>
+            {activeSource === "user" && (
+              <button
+                onClick={() => handleUploadClick(activeType)}
+                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+              >
+                点击上传
+              </button>
             )}
           </div>
-        </div>
+        )}
       </div>
     </div>
   )
@@ -225,8 +270,8 @@ function AssetCard({
   isPreset?: boolean
 }) {
   return (
-    <div className="group relative bg-white bg-white rounded-xl overflow-hidden shadow-sm border border-zinc-100 border-zinc-200">
-      <div className="aspect-square bg-zinc-100 bg-zinc-100 relative">
+    <div className="group relative bg-white rounded-xl overflow-hidden shadow-sm border border-zinc-100">
+      <div className="aspect-square bg-zinc-100 relative">
         <Image
           src={asset.imageUrl}
           alt={asset.name || "Asset"}
@@ -234,15 +279,17 @@ function AssetCard({
           className="object-cover"
         />
         {isPreset && (
-          <span className="absolute top-2 left-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">
+          <span className="absolute top-2 left-2 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded font-medium">
             官方
           </span>
         )}
       </div>
       <div className="p-3 flex items-center justify-between">
         <div className="truncate flex-1 mr-2">
-          <h4 className="text-sm font-medium text-zinc-900 text-zinc-900 truncate">{asset.name}</h4>
-          <p className="text-xs text-zinc-500">{isPreset ? "预设" : "用户上传"}</p>
+          <h4 className="text-sm font-medium text-zinc-900 truncate">{asset.name}</h4>
+          {asset.styleCategory && (
+            <p className="text-xs text-zinc-400 capitalize">{asset.styleCategory}</p>
+          )}
         </div>
         
         {onDelete && (
@@ -251,7 +298,7 @@ function AssetCard({
               e.stopPropagation()
               onDelete()
             }}
-            className="w-8 h-8 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center justify-center text-zinc-400 hover:text-red-600 transition-colors"
+            className="w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-zinc-400 hover:text-red-600 transition-colors"
           >
             <Trash2 className="w-4 h-4" />
           </button>
