@@ -2,18 +2,18 @@
 
 import { useState, useRef } from "react"
 import Image from "next/image"
-import { Upload, Sparkles, X, ChevronLeft, Check } from "lucide-react"
+import { Upload, Wand2, X, Check, Loader2, User, Layout, Sparkles, Image as ImageIcon } from "lucide-react"
 import { AssetSelector } from "@/components/camera/AssetSelector"
 import { Asset, ModelStyle } from "@/types"
 import { fileToBase64 } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 
 const styleOptions: { value: ModelStyle; label: string }[] = [
-  { value: "auto", label: "智能" },
-  { value: "japanese", label: "日系" },
-  { value: "korean", label: "韩系" },
-  { value: "chinese", label: "中式" },
-  { value: "western", label: "欧美" },
+  { value: "auto", label: "智能 (Auto)" },
+  { value: "japanese", label: "日系 (Asian)" },
+  { value: "korean", label: "韩系 (Korean)" },
+  { value: "chinese", label: "中式 (Chinese)" },
+  { value: "western", label: "欧美 (Western)" },
 ]
 
 export default function EditPage() {
@@ -27,6 +27,7 @@ export default function EditPage() {
   const [customPrompt, setCustomPrompt] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [resultImage, setResultImage] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<"model" | "bg" | "vibe">("model")
   
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -82,52 +83,47 @@ export default function EditPage() {
   }
   
   return (
-    <div className="min-h-screen bg-black">
-      {/* Top Bar */}
-      <div className="sticky top-0 z-30 glass-dark border-b border-white/10">
-        <div className="flex items-center justify-between h-14 px-4">
-          <h1 className="text-white text-lg font-bold">图像编辑</h1>
-          {inputImage && (
-            <button 
-              onClick={handleReset}
-              className="text-accent text-sm font-medium"
-            >
-              重置
-            </button>
-          )}
-        </div>
+    <div className="h-full flex flex-col bg-zinc-50 dark:bg-zinc-950">
+      {/* Header */}
+      <div className="h-14 border-b bg-white dark:bg-zinc-900 flex items-center justify-center shrink-0 font-semibold text-zinc-900 dark:text-white">
+        图像编辑
       </div>
       
-      <div className="px-4 py-4 space-y-6 pb-32">
-        {/* Input image area */}
-        <div className="space-y-3">
-          <h3 className="text-white/60 text-xs font-semibold uppercase">原始图片</h3>
-          
-          {inputImage ? (
-            <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-white/5">
-              <Image
-                src={inputImage}
-                alt="Input image"
-                fill
-                className="object-cover"
-              />
-              <button
-                onClick={handleReset}
-                className="absolute top-3 right-3 w-8 h-8 rounded-full glass flex items-center justify-center"
-              >
-                <X className="w-4 h-4 text-white" />
-              </button>
+      <div className="flex-1 overflow-y-auto">
+        {/* Image Area */}
+        <div className="bg-zinc-100 dark:bg-zinc-900 min-h-[300px] flex items-center justify-center relative p-4">
+          {!inputImage ? (
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="w-64 h-64 border-2 border-dashed border-zinc-300 dark:border-zinc-600 rounded-xl flex flex-col items-center justify-center text-zinc-400 cursor-pointer hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 transition-colors"
+            >
+              <ImageIcon className="w-10 h-10 mb-2" />
+              <span>点击上传图片</span>
             </div>
           ) : (
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full aspect-[3/4] rounded-2xl border-2 border-dashed border-white/20 flex flex-col items-center justify-center gap-3 text-white/40 active:border-accent active:text-accent transition-colors"
-            >
-              <Upload className="w-10 h-10" />
-              <span className="text-sm font-medium">点击上传图片</span>
-            </button>
+            <div className="relative w-full max-w-sm">
+              <Image 
+                src={resultImage || inputImage} 
+                alt="Preview"
+                width={400}
+                height={500}
+                className="w-full rounded-lg shadow-lg"
+              />
+              {resultImage && (
+                <span className="absolute top-2 right-2 badge badge-generated">已生成</span>
+              )}
+              {!resultImage && (
+                <span className="absolute top-2 right-2 badge badge-original">原图</span>
+              )}
+              
+              <button
+                onClick={handleReset}
+                className="absolute bottom-2 right-2 px-3 py-1.5 bg-white/90 hover:bg-white text-zinc-700 text-sm font-medium rounded-lg shadow transition-colors"
+              >
+                重选
+              </button>
+            </div>
           )}
-          
           <input
             ref={fileInputRef}
             type="file"
@@ -137,114 +133,137 @@ export default function EditPage() {
           />
         </div>
         
-        {inputImage && (
-          <>
-            {/* Style selector */}
-            <div className="space-y-3">
-              <h3 className="text-white/60 text-xs font-semibold uppercase">模特风格</h3>
-              <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
-                {styleOptions.map((style) => (
-                  <button
-                    key={style.value}
-                    onClick={() => setModelStyle(style.value)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all flex items-center gap-2 ${
-                      modelStyle === style.value
-                        ? "bg-accent text-black"
-                        : "glass text-white"
-                    }`}
-                  >
-                    {modelStyle === style.value && <Check className="w-4 h-4" />}
-                    {style.label}
-                  </button>
-                ))}
-              </div>
+        {/* Controls */}
+        <div className="p-4 space-y-6 bg-white dark:bg-zinc-950 rounded-t-xl -mt-4 shadow-up relative z-10 min-h-[400px]">
+          {/* Prompt Input */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">编辑指令 (Prompt)</label>
+            <textarea
+              placeholder="例如：把背景换成海边，让光线更柔和..."
+              value={customPrompt}
+              onChange={(e) => setCustomPrompt(e.target.value)}
+              className="w-full min-h-[100px] px-3 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-900 dark:text-white placeholder-zinc-400 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+            />
+          </div>
+          
+          {/* Assets Selection Tabs */}
+          <div className="w-full">
+            <div className="w-full grid grid-cols-3 border-b">
+              <button
+                onClick={() => setActiveTab("model")}
+                className={`py-2 text-sm font-medium transition-colors border-b-2 ${
+                  activeTab === "model"
+                    ? "border-purple-600 text-purple-600"
+                    : "border-transparent text-zinc-500"
+                }`}
+              >
+                模特
+              </button>
+              <button
+                onClick={() => setActiveTab("bg")}
+                className={`py-2 text-sm font-medium transition-colors border-b-2 ${
+                  activeTab === "bg"
+                    ? "border-purple-600 text-purple-600"
+                    : "border-transparent text-zinc-500"
+                }`}
+              >
+                背景
+              </button>
+              <button
+                onClick={() => setActiveTab("vibe")}
+                className={`py-2 text-sm font-medium transition-colors border-b-2 ${
+                  activeTab === "vibe"
+                    ? "border-purple-600 text-purple-600"
+                    : "border-transparent text-zinc-500"
+                }`}
+              >
+                氛围
+              </button>
             </div>
             
-            {/* Asset selectors */}
-            <AssetSelector
-              title="选择模特"
-              type="model"
-              selected={selectedModel}
-              onSelect={setSelectedModel}
-              modelStyle={modelStyle}
-            />
-            
-            <AssetSelector
-              title="选择背景"
-              type="background"
-              selected={selectedBackground}
-              onSelect={setSelectedBackground}
-            />
-            
-            <AssetSelector
-              title="选择 Vibe"
-              type="vibe"
-              selected={selectedVibe}
-              onSelect={setSelectedVibe}
-            />
-            
-            {/* Custom prompt */}
-            <div className="space-y-3">
-              <h3 className="text-white/60 text-xs font-semibold uppercase">自定义提示词 (可选)</h3>
-              <textarea
-                value={customPrompt}
-                onChange={(e) => setCustomPrompt(e.target.value)}
-                placeholder="描述你想要的效果..."
-                className="w-full h-24 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 resize-none focus:outline-none focus:border-accent transition-colors"
-              />
-            </div>
-            
-            {/* Result image */}
-            {resultImage && (
-              <div className="space-y-3">
-                <h3 className="text-white/60 text-xs font-semibold uppercase">生成结果</h3>
-                <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-white/5">
-                  <Image
-                    src={resultImage}
-                    alt="Result image"
-                    fill
-                    className="object-cover"
+            <div className="mt-4 bg-zinc-50 dark:bg-zinc-900 p-4 rounded-lg border border-zinc-200 dark:border-zinc-700">
+              {activeTab === "model" && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-2">
+                    {styleOptions.map(style => (
+                      <button
+                        key={style.value}
+                        onClick={() => setModelStyle(style.value)}
+                        className={`h-9 px-3 rounded-md text-sm font-medium border transition-colors text-left flex items-center justify-between ${
+                          modelStyle === style.value
+                            ? "bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300"
+                            : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700"
+                        }`}
+                      >
+                        <span className="text-xs">{style.label}</span>
+                        {modelStyle === style.value && <Check className="w-3.5 h-3.5" />}
+                      </button>
+                    ))}
+                  </div>
+                  <AssetSelector
+                    type="model"
+                    selected={selectedModel}
+                    onSelect={setSelectedModel}
+                    modelStyle={modelStyle}
+                    compact
                   />
                 </div>
-              </div>
-            )}
-          </>
-        )}
+              )}
+              {activeTab === "bg" && (
+                <AssetSelector
+                  type="background"
+                  selected={selectedBackground}
+                  onSelect={setSelectedBackground}
+                  compact
+                />
+              )}
+              {activeTab === "vibe" && (
+                <AssetSelector
+                  type="vibe"
+                  selected={selectedVibe}
+                  onSelect={setSelectedVibe}
+                  compact
+                />
+              )}
+            </div>
+          </div>
+        </div>
       </div>
       
-      {/* Generate button */}
-      {inputImage && (
-        <div className="fixed bottom-20 left-0 right-0 p-4 glass-dark">
-          <button
-            onClick={handleGenerate}
-            disabled={isGenerating}
-            className={`w-full h-14 rounded-full font-bold text-base flex items-center justify-center gap-2 transition-all ${
-              isGenerating 
-                ? "bg-white/20 text-white/60" 
-                : "bg-accent text-black active:scale-[0.98]"
-            }`}
-          >
-            {isGenerating ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>生成中...</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-5 h-5" />
-                <span>{resultImage ? "重新生成" : "开始编辑"}</span>
-              </>
-            )}
-          </button>
-        </div>
-      )}
+      {/* Footer */}
+      <div className="p-4 border-t bg-white dark:bg-zinc-900 shrink-0">
+        <button
+          onClick={handleGenerate}
+          disabled={!inputImage || isGenerating}
+          className={`w-full h-12 rounded-lg text-lg font-semibold gap-2 flex items-center justify-center transition-all ${
+            !inputImage || isGenerating
+              ? "bg-zinc-300 dark:bg-zinc-700 text-zinc-500 cursor-not-allowed"
+              : "bg-purple-600 hover:bg-purple-700 text-white"
+          }`}
+        >
+          {isGenerating ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span>生成中...</span>
+            </>
+          ) : (
+            <>
+              <Wand2 className="w-5 h-5" />
+              <span>Generate (生成)</span>
+            </>
+          )}
+        </button>
+      </div>
       
       {/* Loading overlay */}
       {isGenerating && (
-        <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center">
-          <div className="w-16 h-16 border-4 border-accent border-t-transparent rounded-full animate-spin mb-6" />
-          <p className="text-white text-lg font-medium">AI 正在创作中...</p>
-          <p className="text-white/60 text-sm mt-2">预计需要 30-60 秒</p>
+        <div className="fixed inset-0 z-50 bg-zinc-950 flex flex-col items-center justify-center p-8 text-center">
+          <div className="relative mb-6">
+            <div className="absolute inset-0 bg-purple-500/20 blur-xl rounded-full animate-pulse" />
+            <Loader2 className="w-16 h-16 text-purple-500 animate-spin relative z-10" />
+          </div>
+          <h3 className="text-white text-xl font-bold mb-2">AI 正在重绘...</h3>
+          <p className="text-zinc-400 text-sm">应用您的 Prompt 与 风格选择</p>
         </div>
       )}
     </div>

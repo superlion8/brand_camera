@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
-import { Download, Heart, RotateCcw, Check, X, Camera, Sparkles } from "lucide-react"
+import { Download, Heart, ArrowLeft, Check, Camera, Sparkles, Save } from "lucide-react"
 import { useCameraStore } from "@/stores/cameraStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { generateId } from "@/lib/utils"
@@ -83,8 +83,9 @@ export default function ResultPage() {
     router.push("/gallery")
   }
   
-  const handleAgain = () => {
-    router.push("/camera/preview")
+  const handleNextShoot = () => {
+    reset()
+    router.push("/camera")
   }
   
   if (!capturedImage || generatedImages.length === 0) return null
@@ -94,48 +95,41 @@ export default function ResultPage() {
   const modelImages = generatedImages.slice(2, 4)
   
   return (
-    <div className="min-h-screen bg-black flex flex-col">
-      {/* Top Bar */}
-      <div className="sticky top-0 z-30 glass-dark border-b border-white/10">
-        <div className="flex items-center justify-between h-14 px-4 pt-safe">
-          <button
-            onClick={() => router.back()}
-            className="w-10 h-10 rounded-full glass flex items-center justify-center active:scale-90 transition-transform"
-          >
-            <X className="w-5 h-5 text-white" />
-          </button>
-          <h1 className="text-white font-semibold">生成完成</h1>
-          <button 
-            onClick={handleDone}
-            className="text-accent text-sm font-medium"
-          >
-            完成
-          </button>
-        </div>
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col">
+      {/* Header */}
+      <div className="h-14 flex items-center px-4 border-b bg-white dark:bg-zinc-900 z-10">
+        <button 
+          onClick={() => router.back()} 
+          className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5 text-zinc-900 dark:text-white" />
+        </button>
+        <span className="font-semibold ml-2 text-zinc-900 dark:text-white">本次成片</span>
       </div>
       
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 space-y-8 pb-10">
         {/* Saved indicator */}
         {isSaved && (
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full glass text-sm">
-            <Check className="w-4 h-4 text-green-400" />
-            <span className="text-white/80">已自动保存到图片资产</span>
+          <div className="flex items-center gap-2 text-sm text-green-600">
+            <Check className="w-4 h-4" />
+            <span>已自动保存到图片资产</span>
           </div>
         )}
         
         {/* Product images */}
         {productImages.length > 0 && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Camera className="w-4 h-4 text-white/60" />
-              <h3 className="text-white/60 text-xs font-semibold uppercase">商品图</h3>
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <span className="w-1 h-4 bg-blue-600 rounded-full" />
+                商品静物图
+              </h3>
             </div>
             <div className="grid grid-cols-2 gap-3">
               {productImages.map((image, index) => (
                 <ResultImageCard
                   key={`product-${index}`}
                   imageUrl={image}
-                  originalUrl={capturedImage}
                   imageIndex={index}
                   generationId={generationId}
                   onDownload={() => handleDownload(image, index)}
@@ -149,17 +143,18 @@ export default function ResultPage() {
         
         {/* Model images */}
         {modelImages.length > 0 && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-accent" />
-              <h3 className="text-white/60 text-xs font-semibold uppercase">模特展示图</h3>
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <span className="w-1 h-4 bg-purple-600 rounded-full" />
+                模特展示图
+              </h3>
             </div>
             <div className="grid grid-cols-2 gap-3">
               {modelImages.map((image, index) => (
                 <ResultImageCard
                   key={`model-${index}`}
                   imageUrl={image}
-                  originalUrl={capturedImage}
                   imageIndex={index + 2}
                   generationId={generationId}
                   onDownload={() => handleDownload(image, index + 2)}
@@ -170,96 +165,80 @@ export default function ResultPage() {
             </div>
           </div>
         )}
-        
-        {/* If we only have generic images (less than 4) */}
-        {productImages.length === 0 && modelImages.length === 0 && (
-          <div className="grid grid-cols-2 gap-3">
-            {generatedImages.map((image, index) => (
-              <ResultImageCard
-                key={index}
-                imageUrl={image}
-                originalUrl={capturedImage}
-                imageIndex={index}
-                generationId={generationId}
-                onDownload={() => handleDownload(image, index)}
-                onFavorite={() => handleFavorite(index)}
-                onClick={() => setSelectedIndex(index)}
-              />
-            ))}
-          </div>
-        )}
       </div>
       
-      {/* Bottom actions */}
-      <div className="sticky bottom-0 p-4 pb-safe glass-dark">
+      {/* Bottom action */}
+      <div className="p-4 bg-white dark:bg-zinc-900 border-t shadow-up">
         <button
-          onClick={handleAgain}
-          className="w-full h-12 rounded-full glass font-medium text-white flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+          onClick={handleNextShoot}
+          className="w-full h-12 text-lg rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-semibold hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors"
         >
-          <RotateCcw className="w-4 h-4" />
-          再来一次
+          拍摄下一组
         </button>
       </div>
       
-      {/* Detail Modal */}
+      {/* Detail Dialog */}
       {selectedIndex !== null && (
-        <div className="fixed inset-0 z-50 bg-black overflow-y-auto" onClick={() => setSelectedIndex(null)}>
-          <div className="sticky top-0 z-10 glass-dark px-4 py-3 flex items-center justify-between border-b border-white/10">
-            <button
-              onClick={() => setSelectedIndex(null)}
-              className="w-10 h-10 rounded-full glass flex items-center justify-center active:scale-90 transition-transform"
-            >
-              <X className="w-5 h-5 text-white" />
-            </button>
-            <h3 className="text-white font-bold">详情</h3>
-            <div className="w-10" />
-          </div>
-          
-          <div className="px-4 py-6" onClick={(e) => e.stopPropagation()}>
-            {/* Generated Image */}
-            <div className="mb-6">
-              <p className="text-white/60 text-xs font-semibold mb-2 uppercase">AI生成</p>
-              <div className="rounded-2xl overflow-hidden">
-                <img
+        <div className="fixed inset-0 z-50 bg-black overflow-hidden">
+          <div className="h-full flex flex-col">
+            {/* Dialog Header */}
+            <div className="h-14 flex items-center justify-between px-4 bg-zinc-900 border-b border-zinc-800 shrink-0">
+              <button
+                onClick={() => setSelectedIndex(null)}
+                className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-800 flex items-center justify-center transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5 text-white" />
+              </button>
+              <span className="font-semibold text-white">详情</span>
+              <div className="w-10" />
+            </div>
+            
+            {/* Dialog Content */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="relative aspect-[4/5] bg-zinc-900">
+                <Image
                   src={generatedImages[selectedIndex]}
-                  alt="Generated"
-                  className="w-full"
+                  alt="Detail"
+                  fill
+                  className="object-contain"
                 />
               </div>
-            </div>
-            
-            {/* Original Image */}
-            <div className="mb-6">
-              <p className="text-white/60 text-xs font-semibold mb-2 uppercase">原始照片</p>
-              <div className="rounded-2xl overflow-hidden">
-                <img
-                  src={capturedImage}
-                  alt="Original"
-                  className="w-full"
-                />
+              
+              <div className="p-4 bg-white dark:bg-zinc-900">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="font-semibold text-sm uppercase tracking-wider text-zinc-500">
+                      {selectedIndex < 2 ? "商品展示" : "模特展示"}
+                    </h3>
+                    <p className="text-xs text-zinc-400">
+                      {new Date().toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleFavorite(selectedIndex)}
+                      className={`w-10 h-10 rounded-lg border flex items-center justify-center transition-colors ${
+                        isFavorited(generationId, selectedIndex)
+                          ? "bg-red-50 border-red-200 text-red-500"
+                          : "border-zinc-200 text-zinc-600 hover:bg-zinc-50"
+                      }`}
+                    >
+                      <Heart className={`w-4 h-4 ${isFavorited(generationId, selectedIndex) ? "fill-current" : ""}`} />
+                    </button>
+                    <button
+                      onClick={() => handleDownload(generatedImages[selectedIndex], selectedIndex)}
+                      className="w-10 h-10 rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-50 flex items-center justify-center transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                
+                <button className="w-full h-12 rounded-lg bg-zinc-900 text-white font-medium flex items-center justify-center gap-2 hover:bg-zinc-800 transition-colors">
+                  <Save className="w-4 h-4" />
+                  存为素材
+                </button>
               </div>
-            </div>
-            
-            {/* Actions */}
-            <div className="flex gap-3">
-              <button
-                onClick={() => handleDownload(generatedImages[selectedIndex], selectedIndex)}
-                className="flex-1 h-12 rounded-full glass font-medium text-white flex items-center justify-center gap-2"
-              >
-                <Download className="w-5 h-5" />
-                下载
-              </button>
-              <button
-                onClick={() => handleFavorite(selectedIndex)}
-                className={`flex-1 h-12 rounded-full font-medium flex items-center justify-center gap-2 ${
-                  isFavorited(generationId, selectedIndex)
-                    ? "bg-red-500 text-white"
-                    : "glass text-white"
-                }`}
-              >
-                <Heart className={`w-5 h-5 ${isFavorited(generationId, selectedIndex) ? "fill-current" : ""}`} />
-                {isFavorited(generationId, selectedIndex) ? "已收藏" : "收藏"}
-              </button>
             </div>
           </div>
         </div>
@@ -270,7 +249,6 @@ export default function ResultPage() {
 
 function ResultImageCard({
   imageUrl,
-  originalUrl,
   imageIndex,
   generationId,
   onDownload,
@@ -278,7 +256,6 @@ function ResultImageCard({
   onClick,
 }: {
   imageUrl: string
-  originalUrl: string
   imageIndex: number
   generationId: string
   onDownload: () => void
@@ -290,50 +267,25 @@ function ResultImageCard({
   
   return (
     <div 
-      className="relative rounded-2xl overflow-hidden bg-white/5 group cursor-pointer active:scale-[0.98] transition-transform"
+      className="group relative aspect-[4/5] bg-zinc-100 dark:bg-zinc-800 rounded-lg overflow-hidden shadow-sm border border-zinc-200 dark:border-zinc-700 cursor-pointer"
       onClick={onClick}
     >
-      <div className="aspect-[3/4]">
-        <Image
-          src={imageUrl}
-          alt="Generated image"
-          fill
-          className="object-cover"
-        />
-      </div>
+      <Image
+        src={imageUrl}
+        alt="Generated image"
+        fill
+        className="object-cover"
+      />
       
-      {/* Original thumbnail */}
-      <div className="photo-thumbnail">
-        <Image
-          src={originalUrl}
-          alt="Original"
-          fill
-          className="object-cover"
-        />
-      </div>
-      
-      {/* Actions overlay */}
-      <div className="image-overlay">
-        <div className="absolute bottom-0 left-0 right-0 p-3 flex justify-center gap-3">
-          <button
-            onClick={(e) => { e.stopPropagation(); onDownload(); }}
-            className="w-10 h-10 rounded-full glass flex items-center justify-center text-white"
-          >
-            <Download className="w-5 h-5" />
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); onFavorite(); }}
-            className="w-10 h-10 rounded-full glass flex items-center justify-center text-white"
-          >
-            <Heart className={`w-5 h-5 ${currentlyFavorited ? "fill-red-500 text-red-500" : ""}`} />
-          </button>
-        </div>
+      {/* Hover overlay */}
+      <div className="absolute top-2 right-2 bg-white/90 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
+        <Check className="w-3 h-3 text-green-600" />
       </div>
       
       {/* Favorite indicator */}
       {currentlyFavorited && (
-        <div className="absolute top-3 right-3">
-          <Heart className="w-5 h-5 fill-red-500 text-red-500" />
+        <div className="absolute top-2 left-2">
+          <Heart className="w-4 h-4 fill-red-500 text-red-500" />
         </div>
       )}
     </div>

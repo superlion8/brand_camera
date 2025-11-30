@@ -10,38 +10,58 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // 新配色方案 - 黑+黄
-        primary: '#000000',
-        accent: {
-          DEFAULT: '#FFFC00',
-          light: '#FFFD66',
-          dark: '#E6E300',
+        // 蓝色主题配色 - 基于 Brandcamfigma
+        primary: {
+          DEFAULT: '#2563eb', // blue-600
+          light: '#3b82f6',   // blue-500
+          dark: '#1d4ed8',    // blue-700
+          50: '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
         },
+        // 紫色用于修图模块
+        purple: {
+          DEFAULT: '#9333ea',
+          500: '#a855f7',
+          600: '#9333ea',
+          700: '#7e22ce',
+        },
+        background: '#f4f4f5', // zinc-100
         surface: {
-          DEFAULT: 'rgba(255, 255, 255, 0.1)',
-          elevated: 'rgba(255, 255, 255, 0.15)',
-          solid: '#101828',
+          DEFAULT: '#ffffff',
+          secondary: '#f4f4f5',
+        },
+        text: {
+          primary: '#18181b', // zinc-900
+          secondary: '#52525b', // zinc-600
+          tertiary: '#a1a1aa', // zinc-400
         },
         border: {
-          DEFAULT: 'rgba(255, 255, 255, 0.1)',
-          light: 'rgba(255, 255, 255, 0.2)',
+          DEFAULT: '#e4e4e7', // zinc-200
+          light: '#f4f4f5', // zinc-100
         },
       },
       fontFamily: {
         sans: ['PingFang SC', 'Noto Sans SC', 'system-ui', 'sans-serif'],
-        display: ['SF Pro Display', 'Inter', 'sans-serif'],
       },
       borderRadius: {
         'card': '16px',
-        'button': '9999px',
-        'input': '12px',
-        'sheet': '24px',
+        'button': '12px',
+        'full': '9999px',
+      },
+      boxShadow: {
+        'card': '0 2px 8px rgba(0, 0, 0, 0.08)',
+        'button': '0 4px 12px rgba(37, 99, 235, 0.3)',
+        'up': '0 -4px 10px rgba(0, 0, 0, 0.05)',
       },
       animation: {
         'fade-in': 'fadeIn 0.25s ease-out',
         'slide-up': 'slideUp 0.35s ease-out',
         'scale-in': 'scaleIn 0.2s ease-out',
-        'pulse-yellow': 'pulseYellow 2s ease-in-out infinite',
+        'pulse-blue': 'pulseBlue 2s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -56,9 +76,9 @@ const config: Config = {
           from: { opacity: '0', transform: 'scale(0.95)' },
           to: { opacity: '1', transform: 'scale(1)' },
         },
-        pulseYellow: {
-          '0%, 100%': { boxShadow: '0 0 0 0 rgba(255, 252, 0, 0.4)' },
-          '50%': { boxShadow: '0 0 0 12px rgba(255, 252, 0, 0)' },
+        pulseBlue: {
+          '0%, 100%': { boxShadow: '0 0 0 0 rgba(37, 99, 235, 0.4)' },
+          '50%': { boxShadow: '0 0 0 12px rgba(37, 99, 235, 0)' },
         },
       },
       backdropBlur: {
