@@ -4,6 +4,21 @@
 
 @layer base {
   :root {
+    /* 浅色主题配色 - 参考 Brandcamfigma */
+    --background: #ffffff;
+    --foreground: #030213;
+    --primary: #030213;
+    --primary-foreground: #ffffff;
+    --secondary: #f4f4f5;
+    --secondary-foreground: #030213;
+    --muted: #ececf0;
+    --muted-foreground: #717182;
+    --accent: #e9ebef;
+    --accent-foreground: #030213;
+    --border: rgba(0, 0, 0, 0.1);
+    --input-background: #f3f3f5;
+    --ring: #2563eb;
+    
     --safe-area-inset-top: env(safe-area-inset-top);
     --safe-area-inset-bottom: env(safe-area-inset-bottom);
   }
@@ -13,14 +28,14 @@
   }
   
   body {
-    @apply bg-zinc-50 text-zinc-900 antialiased;
+    @apply bg-white text-zinc-900 antialiased;
     font-family: 'PingFang SC', 'Noto Sans SC', system-ui, sans-serif;
     padding-top: env(safe-area-inset-top);
     overscroll-behavior: none;
   }
   
   * {
-    border-color: theme('colors.zinc.200');
+    border-color: rgba(0, 0, 0, 0.1);
   }
 }
 
@@ -45,6 +60,11 @@
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
+  
+  /* 主题色背景 */
+  .bg-primary {
+    background-color: var(--background);
+  }
 }
 
 /* 相机快门闪光效果 */
@@ -60,7 +80,7 @@
 
 /* 卡片样式 */
 .card {
-  @apply bg-white rounded-xl overflow-hidden shadow-card;
+  @apply bg-white rounded-xl overflow-hidden shadow-sm border border-zinc-100;
 }
 
 /* 圆形按钮 */
@@ -69,7 +89,7 @@
   @apply active:scale-90 transition-transform;
 }
 
-/* 拍摄按钮 - 蓝色主题 */
+/* 拍摄按钮 */
 .capture-button {
   @apply relative w-[72px] h-[72px] rounded-full;
   @apply active:scale-95 transition-transform;
@@ -101,7 +121,7 @@
 }
 
 .badge-preset {
-  @apply bg-black/60 text-white;
+  @apply bg-zinc-900 text-white;
 }
 
 .badge-generated {
@@ -112,15 +132,15 @@
   @apply bg-zinc-500 text-white;
 }
 
-/* 暗色模式 */
-.dark body {
-  @apply bg-zinc-950 text-zinc-50;
+/* 分类标签样式 */
+.category-tab {
+  @apply px-4 py-2 text-sm font-medium rounded-full transition-colors;
 }
 
-.dark * {
-  border-color: theme('colors.zinc.800');
+.category-tab-active {
+  @apply bg-zinc-900 text-white;
 }
 
-.dark .card {
-  @apply bg-zinc-900;
+.category-tab-inactive {
+  @apply bg-zinc-100 text-zinc-600 hover:bg-zinc-200;
 }

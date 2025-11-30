@@ -108,7 +108,7 @@ export default function BrandAssetsPage() {
   
   if (!_hasHydrated) {
     return (
-      <div className="h-screen w-full bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center">
+      <div className="h-screen w-full bg-zinc-50 bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-zinc-500">加载中...</p>
@@ -118,7 +118,7 @@ export default function BrandAssetsPage() {
   }
   
   return (
-    <div className="h-full flex flex-col bg-zinc-50 dark:bg-zinc-950">
+    <div className="h-full flex flex-col bg-zinc-50 bg-white">
       <input
         ref={fileInputRef}
         type="file"
@@ -128,14 +128,14 @@ export default function BrandAssetsPage() {
       />
       
       {/* Header */}
-      <div className="h-14 border-b bg-white dark:bg-zinc-900 flex items-center justify-between px-4 shrink-0">
+      <div className="h-14 border-b bg-white bg-white flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-2">
           <Image src="/logo.png" alt="Brand Camera" width={28} height={28} className="rounded" />
-          <span className="font-semibold text-lg text-zinc-900 dark:text-white">品牌资产</span>
+          <span className="font-semibold text-lg text-zinc-900 text-zinc-900">品牌资产</span>
         </div>
         <button
           onClick={() => handleUploadClick(activeTab)}
-          className="flex items-center gap-1 px-3 py-1.5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors"
+          className="flex items-center gap-1 px-3 py-1.5 bg-zinc-900 dark:bg-white text-white text-zinc-500 text-sm font-medium rounded-lg hover:bg-zinc-800 hover:bg-zinc-100 transition-colors"
         >
           <Plus className="w-4 h-4" />
           上传
@@ -145,7 +145,7 @@ export default function BrandAssetsPage() {
       {/* Tabs */}
       <div className="flex-1 overflow-hidden flex flex-col">
         <div className="px-4 pt-4">
-          <div className="w-full grid grid-cols-4 bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1">
+          <div className="w-full grid grid-cols-4 bg-zinc-100 bg-zinc-100 rounded-lg p-1">
             {tabs.map((tab) => {
               const Icon = tab.icon
               return (
@@ -154,7 +154,7 @@ export default function BrandAssetsPage() {
                   onClick={() => setActiveTab(tab.value)}
                   className={`py-2 rounded-md text-sm font-medium transition-colors ${
                     activeTab === tab.value
-                      ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm"
+                      ? "bg-white bg-white text-zinc-900 text-zinc-900 shadow-sm"
                       : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
                   }`}
                 >
@@ -194,10 +194,10 @@ export default function BrandAssetsPage() {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-20 text-zinc-400">
-                <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4">
-                  <Upload className="w-8 h-8 text-zinc-300 dark:text-zinc-600" />
+                <div className="w-16 h-16 bg-zinc-100 bg-zinc-100 rounded-full flex items-center justify-center mb-4">
+                  <Upload className="w-8 h-8 text-zinc-300 text-zinc-500" />
                 </div>
-                <p className="text-zinc-600 dark:text-zinc-400 mb-2">
+                <p className="text-zinc-600 text-zinc-500 mb-2">
                   暂无{activeTab === "model" ? "模特" : activeTab === "background" ? "背景" : activeTab === "vibe" ? "氛围" : "商品"}资产
                 </p>
                 <button
@@ -225,8 +225,8 @@ function AssetCard({
   isPreset?: boolean
 }) {
   return (
-    <div className="group relative bg-white dark:bg-zinc-900 rounded-xl overflow-hidden shadow-sm border border-zinc-100 dark:border-zinc-800">
-      <div className="aspect-square bg-zinc-100 dark:bg-zinc-800 relative">
+    <div className="group relative bg-white bg-white rounded-xl overflow-hidden shadow-sm border border-zinc-100 border-zinc-200">
+      <div className="aspect-square bg-zinc-100 bg-zinc-100 relative">
         <Image
           src={asset.imageUrl}
           alt={asset.name || "Asset"}
@@ -241,7 +241,7 @@ function AssetCard({
       </div>
       <div className="p-3 flex items-center justify-between">
         <div className="truncate flex-1 mr-2">
-          <h4 className="text-sm font-medium text-zinc-900 dark:text-white truncate">{asset.name}</h4>
+          <h4 className="text-sm font-medium text-zinc-900 text-zinc-900 truncate">{asset.name}</h4>
           <p className="text-xs text-zinc-500">{isPreset ? "预设" : "用户上传"}</p>
         </div>
         
