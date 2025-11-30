@@ -67,26 +67,32 @@ export default function BrandAssetsPage() {
   }
   
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const files = e.target.files
+    if (!files || files.length === 0) return
     
-    const base64 = await fileToBase64(file)
-    const newAsset: Asset = {
-      id: generateId(),
-      type: uploadType,
-      name: file.name.replace(/\.[^/.]+$/, ""),
-      imageUrl: base64,
+    // Process all files
+    const newAssets: Asset[] = []
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      const base64 = await fileToBase64(file)
+      newAssets.push({
+        id: generateId(),
+        type: uploadType,
+        name: file.name.replace(/\.[^/.]+$/, ""),
+        imageUrl: base64,
+      })
     }
     
+    // Add all new assets at once
     switch (uploadType) {
       case "model":
-        setUserModels([newAsset, ...userModels])
+        setUserModels([...newAssets, ...userModels])
         break
       case "background":
-        setUserBackgrounds([newAsset, ...userBackgrounds])
+        setUserBackgrounds([...newAssets, ...userBackgrounds])
         break
       case "product":
-        setUserProducts([newAsset, ...userProducts])
+        setUserProducts([...newAssets, ...userProducts])
         break
     }
     
@@ -133,6 +139,7 @@ export default function BrandAssetsPage() {
         ref={fileInputRef}
         type="file"
         accept="image/*"
+        multiple
         onChange={handleFileUpload}
         className="hidden"
       />
