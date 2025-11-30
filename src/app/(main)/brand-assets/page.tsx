@@ -2,10 +2,11 @@
 
 import { useState, useRef } from "react"
 import Image from "next/image"
-import { Plus, Trash2, Users, Image as ImageIcon, Package, Sparkles, Upload } from "lucide-react"
+import { Plus, Trash2, Users, Image as ImageIcon, Package, Sparkles, Upload, Home } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { Asset, AssetType } from "@/types"
 import { fileToBase64, generateId } from "@/lib/utils"
+import { useRouter } from "next/navigation"
 
 // Demo system presets
 const systemPresets: Record<AssetType, Asset[]> = {
@@ -37,6 +38,7 @@ const typeTabs = [
 type SourceTab = "user" | "preset"
 
 export default function BrandAssetsPage() {
+  const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [activeType, setActiveType] = useState<AssetType>("product")
   const [activeSource, setActiveSource] = useState<SourceTab>("user")
@@ -147,9 +149,17 @@ export default function BrandAssetsPage() {
       {/* Header */}
       <div className="border-b bg-white shrink-0">
         <div className="h-14 flex items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <Image src="/logo.png" alt="Brand Camera" width={28} height={28} className="rounded" />
-            <span className="font-semibold text-lg text-zinc-900">品牌资产</span>
+          <div className="flex items-center">
+            <button
+              onClick={() => router.push("/")}
+              className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center transition-colors"
+            >
+              <Home className="w-5 h-5 text-zinc-600" />
+            </button>
+            <div className="flex items-center gap-2 ml-2">
+              <Image src="/logo.png" alt="Brand Camera" width={28} height={28} className="rounded" />
+              <span className="font-semibold text-lg text-zinc-900">品牌资产</span>
+            </div>
           </div>
           <button
             onClick={() => handleUploadClick(activeType)}

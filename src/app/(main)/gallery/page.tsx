@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { Download, Heart, X, Save, Wand2, Camera, Users } from "lucide-react"
+import { Download, Heart, X, Save, Wand2, Camera, Users, Home } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { Generation, Favorite } from "@/types"
 import { useRouter } from "next/navigation"
@@ -100,8 +100,14 @@ export default function GalleryPage() {
     <div className="h-full flex flex-col bg-zinc-50">
       {/* Header */}
       <div className="border-b bg-white shrink-0">
-        <div className="h-14 flex items-center justify-between px-4">
-          <div className="flex items-center gap-2">
+        <div className="h-14 flex items-center px-4">
+          <button
+            onClick={() => router.push("/")}
+            className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center transition-colors"
+          >
+            <Home className="w-5 h-5 text-zinc-600" />
+          </button>
+          <div className="flex items-center gap-2 ml-2">
             <Image src="/logo.png" alt="Brand Camera" width={28} height={28} className="rounded" />
             <span className="font-semibold text-lg text-zinc-900">图库</span>
           </div>

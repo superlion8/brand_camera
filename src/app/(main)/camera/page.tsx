@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import Webcam from "react-webcam"
 import { 
   ArrowLeft, Check, Loader2, Image as ImageIcon, 
-  SlidersHorizontal, X, Sparkles, Wand2, Camera 
+  SlidersHorizontal, X, Sparkles, Wand2, Camera, Home 
 } from "lucide-react"
 import { useCameraStore } from "@/stores/cameraStore"
 import { useAssetStore } from "@/stores/assetStore"
@@ -174,7 +174,7 @@ export default function CameraPage() {
   }
   
   const handleReturn = () => {
-    router.push("/gallery")
+    router.push("/")
   }
   
   // Asset grid component
@@ -237,7 +237,7 @@ export default function CameraPage() {
                 onClick={mode === "review" ? handleRetake : handleReturn}
                 className="w-10 h-10 rounded-full bg-black/20 text-white hover:bg-black/40 backdrop-blur-md flex items-center justify-center transition-colors"
               >
-                {mode === "review" ? <X className="w-6 h-6" /> : <ArrowLeft className="w-6 h-6" />}
+                {mode === "review" ? <X className="w-6 h-6" /> : <Home className="w-5 h-5" />}
               </button>
             </div>
 
@@ -404,13 +404,13 @@ export default function CameraPage() {
                     animate={{ y: 0 }} 
                     exit={{ y: "100%" }}
                     transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className="absolute bottom-0 left-0 right-0 h-[60%] bg-white bg-white rounded-t-2xl z-50 flex flex-col overflow-hidden"
+                    className="absolute bottom-0 left-0 right-0 h-[60%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
                   >
                     <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
                       <span className="font-semibold">自定义配置</span>
                       <button 
                         onClick={() => setShowCustomPanel(false)} 
-                        className="h-8 w-8 rounded-full hover:bg-zinc-100 hover:bg-zinc-100 flex items-center justify-center"
+                        className="h-8 w-8 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -434,7 +434,7 @@ export default function CameraPage() {
                         </button>
                       ))}
                     </div>
-                    <div className="flex-1 overflow-y-auto bg-zinc-50 bg-zinc-50 p-4">
+                    <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4">
                       {activeCustomTab === "style" && (
                         <div className="space-y-6">
                           {/* Gender Selection */}
@@ -527,18 +527,18 @@ export default function CameraPage() {
                     animate={{ y: 0 }} 
                     exit={{ y: "100%" }}
                     transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className="absolute bottom-0 left-0 right-0 h-[50%] bg-white bg-white rounded-t-2xl z-50 flex flex-col overflow-hidden"
+                    className="absolute bottom-0 left-0 right-0 h-[50%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
                   >
                     <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
                       <span className="font-semibold">选择氛围</span>
                       <button 
                         onClick={() => setShowVibePanel(false)} 
-                        className="h-8 w-8 rounded-full hover:bg-zinc-100 hover:bg-zinc-100 flex items-center justify-center"
+                        className="h-8 w-8 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center"
                       >
                         <X className="w-4 h-4" />
                       </button>
                     </div>
-                    <div className="flex-1 overflow-y-auto bg-zinc-50 bg-zinc-50 p-4">
+                    <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4">
                       <AssetGrid 
                         items={presetVibes} 
                         selectedId={selectedVibe} 
@@ -583,12 +583,12 @@ export default function CameraPage() {
             initial={{ opacity: 0, y: 20 }} 
             animate={{ opacity: 1, y: 0 }} 
             exit={{ opacity: 0, y: 20 }}
-            className="flex-1 flex flex-col bg-zinc-50 bg-zinc-50 overflow-hidden"
+            className="flex-1 flex flex-col bg-zinc-50 dark:bg-zinc-950 overflow-hidden"
           >
-            <div className="h-14 flex items-center px-4 border-b bg-white bg-white z-10">
+            <div className="h-14 flex items-center px-4 border-b bg-white dark:bg-zinc-900 z-10">
               <button 
                 onClick={handleRetake} 
-                className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 hover:bg-zinc-100 flex items-center justify-center"
+                className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
@@ -637,10 +637,10 @@ export default function CameraPage() {
               </div>
             </div>
 
-            <div className="p-4 bg-white bg-white border-t shadow-up">
+            <div className="p-4 bg-white dark:bg-zinc-900 border-t shadow-up">
               <button 
                 onClick={handleRetake}
-                className="w-full h-12 text-lg rounded-lg bg-zinc-900 dark:bg-white text-white text-zinc-500 font-semibold hover:bg-zinc-800 hover:bg-zinc-100 transition-colors"
+                className="w-full h-12 text-lg rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-semibold hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors"
               >
                 拍摄下一组
               </button>
