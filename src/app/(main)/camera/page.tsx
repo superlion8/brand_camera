@@ -138,7 +138,7 @@ export default function CameraPage() {
           outputImageUrls: data.images,
           createdAt: new Date().toISOString(),
           params: { 
-            modelStyle: selectedModelStyle,
+            modelStyle: selectedModelStyle || undefined,
             model: activeModel?.name,
             background: activeBg?.name,
             vibe: activeVibe?.name,
