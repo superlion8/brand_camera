@@ -11,7 +11,7 @@ import { useCameraStore } from "@/stores/cameraStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { useRouter } from "next/navigation"
 import { fileToBase64, generateId } from "@/lib/utils"
-import { Asset, ModelStyle } from "@/types"
+import { Asset, ModelStyle, ModelGender } from "@/types"
 import Image from "next/image"
 
 const MODEL_STYLES: { id: ModelStyle; label: string }[] = [
@@ -19,6 +19,11 @@ const MODEL_STYLES: { id: ModelStyle; label: string }[] = [
   { id: "korean", label: "韩系" },
   { id: "chinese", label: "中式" },
   { id: "western", label: "欧美" },
+]
+
+const MODEL_GENDERS: { id: ModelGender; label: string }[] = [
+  { id: "female", label: "女" },
+  { id: "male", label: "男" },
 ]
 
 // Demo preset assets
@@ -63,6 +68,7 @@ export default function CameraPage() {
   const [selectedModel, setSelectedModel] = useState<string | null>(null)
   const [selectedVibe, setSelectedVibe] = useState<string | null>(null)
   const [selectedModelStyle, setSelectedModelStyle] = useState<ModelStyle | null>(null)
+  const [selectedModelGender, setSelectedModelGender] = useState<ModelGender | null>(null)
   
   const { addGeneration } = useAssetStore()
   
@@ -119,6 +125,7 @@ export default function CameraPage() {
           productImage: capturedImage,
           modelImage: activeModel?.imageUrl,
           modelStyle: selectedModelStyle,
+          modelGender: selectedModelGender,
           backgroundImage: activeBg?.imageUrl,
           vibeImage: activeVibe?.imageUrl,
         }),
@@ -139,6 +146,7 @@ export default function CameraPage() {
           createdAt: new Date().toISOString(),
           params: { 
             modelStyle: selectedModelStyle || undefined,
+            modelGender: selectedModelGender || undefined,
             model: activeModel?.name,
             background: activeBg?.name,
             vibe: activeVibe?.name,
@@ -254,6 +262,11 @@ export default function CameraPage() {
               
               {/* Selection Badges Overlay */}
               <div className="absolute top-16 left-0 right-0 flex justify-center gap-2 z-10 px-4 flex-wrap pointer-events-none">
+                {selectedModelGender && (
+                  <span className="px-2 py-1 bg-black/50 text-white text-xs rounded-full backdrop-blur-md">
+                    性别: {MODEL_GENDERS.find(g => g.id === selectedModelGender)?.label}
+                  </span>
+                )}
                 {selectedModelStyle && (
                   <span className="px-2 py-1 bg-black/50 text-white text-xs rounded-full backdrop-blur-md">
                     风格: {MODEL_STYLES.find(s => s.id === selectedModelStyle)?.label}
@@ -414,27 +427,55 @@ export default function CameraPage() {
                     </div>
                     <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4">
                       {activeCustomTab === "style" && (
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-2 gap-3">
-                            {MODEL_STYLES.map(style => (
-                              <button
-                                key={style.id}
-                                onClick={() => {
-                                  setSelectedModelStyle(selectedModelStyle === style.id ? null : style.id)
-                                  if (selectedModelStyle !== style.id) setSelectedModel(null)
-                                }}
-                                className={`h-12 px-4 rounded-lg text-sm font-medium border transition-all flex items-center justify-between ${
-                                  selectedModelStyle === style.id 
-                                    ? "bg-blue-50 border-blue-500 text-blue-700 shadow-sm" 
-                                    : "bg-white border-zinc-200 text-zinc-700 hover:border-zinc-300"
-                                }`}
-                              >
-                                {style.label}
-                                {selectedModelStyle === style.id && <Check className="w-4 h-4" />}
-                              </button>
-                            ))}
+                        <div className="space-y-6">
+                          {/* Gender Selection */}
+                          <div>
+                            <h4 className="text-xs font-semibold text-zinc-500 mb-3 uppercase">模特性别</h4>
+                            <div className="grid grid-cols-2 gap-3">
+                              {MODEL_GENDERS.map(gender => (
+                                <button
+                                  key={gender.id}
+                                  onClick={() => {
+                                    setSelectedModelGender(selectedModelGender === gender.id ? null : gender.id)
+                                  }}
+                                  className={`h-12 px-4 rounded-lg text-sm font-medium border transition-all flex items-center justify-between ${
+                                    selectedModelGender === gender.id 
+                                      ? "bg-blue-50 border-blue-500 text-blue-700 shadow-sm" 
+                                      : "bg-white border-zinc-200 text-zinc-700 hover:border-zinc-300"
+                                  }`}
+                                >
+                                  {gender.label}
+                                  {selectedModelGender === gender.id && <Check className="w-4 h-4" />}
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                          <p className="text-xs text-zinc-400 text-center mt-4">选择一种风格，AI 将自动匹配模特特征</p>
+                          
+                          {/* Style Selection */}
+                          <div>
+                            <h4 className="text-xs font-semibold text-zinc-500 mb-3 uppercase">模特风格</h4>
+                            <div className="grid grid-cols-2 gap-3">
+                              {MODEL_STYLES.map(style => (
+                                <button
+                                  key={style.id}
+                                  onClick={() => {
+                                    setSelectedModelStyle(selectedModelStyle === style.id ? null : style.id)
+                                    if (selectedModelStyle !== style.id) setSelectedModel(null)
+                                  }}
+                                  className={`h-12 px-4 rounded-lg text-sm font-medium border transition-all flex items-center justify-between ${
+                                    selectedModelStyle === style.id 
+                                      ? "bg-blue-50 border-blue-500 text-blue-700 shadow-sm" 
+                                      : "bg-white border-zinc-200 text-zinc-700 hover:border-zinc-300"
+                                  }`}
+                                >
+                                  {style.label}
+                                  {selectedModelStyle === style.id && <Check className="w-4 h-4" />}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          
+                          <p className="text-xs text-zinc-400 text-center">选择性别和风格，AI 将自动匹配模特特征</p>
                         </div>
                       )}
                       {activeCustomTab === "model" && (

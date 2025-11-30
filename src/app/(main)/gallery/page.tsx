@@ -4,7 +4,7 @@ import { useState } from "react"
 import Image from "next/image"
 import { Download, Heart, X, Save, Wand2 } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
-import { Generation } from "@/types"
+import { Generation, Favorite } from "@/types"
 import { useRouter } from "next/navigation"
 
 export default function GalleryPage() {
@@ -27,7 +27,7 @@ export default function GalleryPage() {
   
   const displayedHistory: { gen: Generation; url: string; idx: number }[] = activeTab === "all" 
     ? generations.flatMap((gen: Generation) => gen.outputImageUrls.map((url: string, idx: number) => ({ gen, url, idx })))
-    : favorites.map((fav) => {
+    : favorites.map((fav: Favorite) => {
         const gen = generations.find((g: Generation) => g.id === fav.generationId)
         if (!gen) return null
         const url = gen.outputImageUrls[fav.imageIndex]
@@ -40,7 +40,7 @@ export default function GalleryPage() {
     
     if (currentlyFavorited) {
       const fav = favorites.find(
-        (f) => f.generationId === generationId && f.imageIndex === imageIndex
+        (f: Favorite) => f.generationId === generationId && f.imageIndex === imageIndex
       )
       if (fav) {
         await removeFavorite(fav.id)

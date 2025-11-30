@@ -1,5 +1,7 @@
 export type ModelStyle = 'japanese' | 'korean' | 'chinese' | 'western' | 'auto'
 
+export type ModelGender = 'male' | 'female'
+
 export type AssetType = 'model' | 'background' | 'product' | 'vibe'
 
 export type GenerationType = 'camera_product' | 'camera_model' | 'edit'
@@ -30,6 +32,7 @@ export interface Generation {
 
 export interface GenerationParams {
   modelStyle?: ModelStyle
+  modelGender?: ModelGender
   modelImage?: string
   backgroundImage?: string
   vibeImage?: string

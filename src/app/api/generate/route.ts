@@ -8,7 +8,7 @@ export const maxDuration = 120
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { productImage, modelImage, modelStyle, backgroundImage, vibeImage } = body
+    const { productImage, modelImage, modelStyle, modelGender, backgroundImage, vibeImage } = body
     
     if (!productImage) {
       return NextResponse.json({ success: false, error: '缺少商品图片' }, { status: 400 })
@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
     const modelPrompt = buildModelPrompt({
       hasModel: !!modelImage,
       modelStyle,
+      modelGender,
       hasBackground: !!backgroundImage,
       hasVibe: !!vibeImage,
     })

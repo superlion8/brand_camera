@@ -4,7 +4,7 @@ import { useState, useRef } from "react"
 import Image from "next/image"
 import { Upload, Wand2, X, Check, Loader2, User, Layout, Sparkles, Image as ImageIcon } from "lucide-react"
 import { AssetSelector } from "@/components/camera/AssetSelector"
-import { Asset, ModelStyle } from "@/types"
+import { Asset, ModelStyle, ModelGender } from "@/types"
 import { fileToBase64 } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 
@@ -16,6 +16,11 @@ const styleOptions: { value: ModelStyle; label: string }[] = [
   { value: "western", label: "欧美 (Western)" },
 ]
 
+const genderOptions: { value: ModelGender; label: string }[] = [
+  { value: "female", label: "女" },
+  { value: "male", label: "男" },
+]
+
 export default function EditPage() {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -24,6 +29,7 @@ export default function EditPage() {
   const [selectedBackground, setSelectedBackground] = useState<Asset | null>(null)
   const [selectedVibe, setSelectedVibe] = useState<Asset | null>(null)
   const [modelStyle, setModelStyle] = useState<ModelStyle>("auto")
+  const [modelGender, setModelGender] = useState<ModelGender | null>(null)
   const [customPrompt, setCustomPrompt] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [resultImage, setResultImage] = useState<string | null>(null)
@@ -51,6 +57,7 @@ export default function EditPage() {
           inputImage,
           modelImage: selectedModel?.imageUrl,
           modelStyle,
+          modelGender,
           backgroundImage: selectedBackground?.imageUrl,
           vibeImage: selectedVibe?.imageUrl,
           customPrompt,
@@ -79,6 +86,7 @@ export default function EditPage() {
     setSelectedBackground(null)
     setSelectedVibe(null)
     setModelStyle("auto")
+    setModelGender(null)
     setCustomPrompt("")
   }
   
@@ -184,22 +192,48 @@ export default function EditPage() {
             <div className="mt-4 bg-zinc-50 dark:bg-zinc-900 p-4 rounded-lg border border-zinc-200 dark:border-zinc-700">
               {activeTab === "model" && (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-2">
-                    {styleOptions.map(style => (
-                      <button
-                        key={style.value}
-                        onClick={() => setModelStyle(style.value)}
-                        className={`h-9 px-3 rounded-md text-sm font-medium border transition-colors text-left flex items-center justify-between ${
-                          modelStyle === style.value
-                            ? "bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300"
-                            : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700"
-                        }`}
-                      >
-                        <span className="text-xs">{style.label}</span>
-                        {modelStyle === style.value && <Check className="w-3.5 h-3.5" />}
-                      </button>
-                    ))}
+                  {/* Gender Selection */}
+                  <div>
+                    <h4 className="text-xs font-semibold text-zinc-500 mb-2 uppercase">模特性别</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {genderOptions.map(gender => (
+                        <button
+                          key={gender.value}
+                          onClick={() => setModelGender(modelGender === gender.value ? null : gender.value)}
+                          className={`h-9 px-3 rounded-md text-sm font-medium border transition-colors text-left flex items-center justify-between ${
+                            modelGender === gender.value
+                              ? "bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300"
+                              : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700"
+                          }`}
+                        >
+                          <span className="text-xs">{gender.label}</span>
+                          {modelGender === gender.value && <Check className="w-3.5 h-3.5" />}
+                        </button>
+                      ))}
+                    </div>
                   </div>
+                  
+                  {/* Style Selection */}
+                  <div>
+                    <h4 className="text-xs font-semibold text-zinc-500 mb-2 uppercase">模特风格</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {styleOptions.map(style => (
+                        <button
+                          key={style.value}
+                          onClick={() => setModelStyle(style.value)}
+                          className={`h-9 px-3 rounded-md text-sm font-medium border transition-colors text-left flex items-center justify-between ${
+                            modelStyle === style.value
+                              ? "bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300"
+                              : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700"
+                          }`}
+                        >
+                          <span className="text-xs">{style.label}</span>
+                          {modelStyle === style.value && <Check className="w-3.5 h-3.5" />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
                   <AssetSelector
                     type="model"
                     selected={selectedModel}

@@ -9,12 +9,22 @@ export const PRODUCT_PROMPT = `请把这个商品改成一个专业电商摄影�
 export const buildModelPrompt = (params: {
   hasModel: boolean
   modelStyle?: string
+  modelGender?: string
   hasBackground: boolean
   hasVibe: boolean
 }) => {
   let prompt = `You are a professional brand photographer, good at shooting social media ready photos for a specific product.
 
 Design a stunning model photo featuring the product shown in the input image.`
+
+  // Add gender specification
+  if (params.modelGender) {
+    const genderMap: Record<string, string> = {
+      male: 'male model',
+      female: 'female model'
+    }
+    prompt += `\n\nThe model should be a ${genderMap[params.modelGender]}.`
+  }
 
   if (params.hasModel) {
     prompt += `\n\nUse the model shown in the reference model image. Keep the model's appearance consistent.`

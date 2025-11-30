@@ -8,7 +8,7 @@ export const maxDuration = 120
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { inputImage, modelImage, modelStyle, backgroundImage, vibeImage, customPrompt } = body
+    const { inputImage, modelImage, modelStyle, modelGender, backgroundImage, vibeImage, customPrompt } = body
     
     if (!inputImage) {
       return NextResponse.json({ success: false, error: '缺少输入图片' }, { status: 400 })
@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
       prompt = buildModelPrompt({
         hasModel: !!modelImage,
         modelStyle,
+        modelGender,
         hasBackground: !!backgroundImage,
         hasVibe: !!vibeImage,
       })
