@@ -11,7 +11,7 @@ export default function GalleryPage() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<"all" | "favorites">("all")
   const [selectedItem, setSelectedItem] = useState<{ gen: Generation; index: number } | null>(null)
-  const { generations, favorites, _hasHydrated, addFavorite, removeFavorite, isFavorited, toggleFavorite } = useAssetStore()
+  const { generations, favorites, _hasHydrated, addFavorite, removeFavorite, isFavorited } = useAssetStore()
   
   // Show loading state until hydrated
   if (!_hasHydrated) {
@@ -25,22 +25,22 @@ export default function GalleryPage() {
     )
   }
   
-  const displayedHistory = activeTab === "all" 
-    ? generations.flatMap(gen => gen.outputImageUrls.map((url, idx) => ({ gen, url, idx })))
-    : favorites.map(fav => {
-        const gen = generations.find(g => g.id === fav.generationId)
+  const displayedHistory: { gen: Generation; url: string; idx: number }[] = activeTab === "all" 
+    ? generations.flatMap((gen: Generation) => gen.outputImageUrls.map((url: string, idx: number) => ({ gen, url, idx })))
+    : favorites.map((fav) => {
+        const gen = generations.find((g: Generation) => g.id === fav.generationId)
         if (!gen) return null
         const url = gen.outputImageUrls[fav.imageIndex]
         if (!url) return null
         return { gen, url, idx: fav.imageIndex }
-      }).filter(Boolean) as { gen: Generation; url: string; idx: number }[]
+      }).filter((item): item is { gen: Generation; url: string; idx: number } => item !== null)
   
   const handleFavoriteToggle = async (generationId: string, imageIndex: number) => {
     const currentlyFavorited = isFavorited(generationId, imageIndex)
     
     if (currentlyFavorited) {
       const fav = favorites.find(
-        f => f.generationId === generationId && f.imageIndex === imageIndex
+        (f) => f.generationId === generationId && f.imageIndex === imageIndex
       )
       if (fav) {
         await removeFavorite(fav.id)

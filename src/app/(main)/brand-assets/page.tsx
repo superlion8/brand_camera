@@ -95,13 +95,13 @@ export default function BrandAssetsPage() {
   const handleDelete = (type: AssetType, id: string) => {
     switch (type) {
       case "model":
-        setUserModels(userModels.filter(a => a.id !== id))
+        setUserModels(userModels.filter((a: Asset) => a.id !== id))
         break
       case "background":
-        setUserBackgrounds(userBackgrounds.filter(a => a.id !== id))
+        setUserBackgrounds(userBackgrounds.filter((a: Asset) => a.id !== id))
         break
       case "product":
-        setUserProducts(userProducts.filter(a => a.id !== id))
+        setUserProducts(userProducts.filter((a: Asset) => a.id !== id))
         break
     }
   }
