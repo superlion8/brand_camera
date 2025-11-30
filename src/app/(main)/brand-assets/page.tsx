@@ -48,9 +48,11 @@ export default function BrandAssetsPage() {
     userModels,
     userBackgrounds,
     userProducts,
+    userVibes,
     setUserModels,
     setUserBackgrounds,
     setUserProducts,
+    setUserVibes,
     _hasHydrated,
   } = useAssetStore()
   
@@ -59,6 +61,7 @@ export default function BrandAssetsPage() {
       case "model": return userModels
       case "background": return userBackgrounds
       case "product": return userProducts
+      case "vibe": return userVibes
       default: return []
     }
   }
@@ -96,6 +99,9 @@ export default function BrandAssetsPage() {
       case "product":
         setUserProducts([...newAssets, ...userProducts])
         break
+      case "vibe":
+        setUserVibes([...newAssets, ...userVibes])
+        break
     }
     
     // Switch to user tab after upload
@@ -116,6 +122,9 @@ export default function BrandAssetsPage() {
         break
       case "product":
         setUserProducts(userProducts.filter((a: Asset) => a.id !== id))
+        break
+      case "vibe":
+        setUserVibes(userVibes.filter((a: Asset) => a.id !== id))
         break
     }
   }

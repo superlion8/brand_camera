@@ -70,12 +70,17 @@ export default function CameraPage() {
   const [selectedModelStyle, setSelectedModelStyle] = useState<ModelStyle | null>(null)
   const [selectedModelGender, setSelectedModelGender] = useState<ModelGender | null>(null)
   
-  const { addGeneration } = useAssetStore()
+  const { addGeneration, userModels, userBackgrounds, userVibes } = useAssetStore()
   
-  // Get selected assets
-  const activeModel = presetModels.find(m => m.id === selectedModel)
-  const activeBg = presetBackgrounds.find(b => b.id === selectedBg)
-  const activeVibe = presetVibes.find(v => v.id === selectedVibe)
+  // Merge user assets with presets (user assets first)
+  const allModels = [...userModels, ...presetModels]
+  const allBackgrounds = [...userBackgrounds, ...presetBackgrounds]
+  const allVibes = [...userVibes, ...presetVibes]
+  
+  // Get selected assets from merged arrays
+  const activeModel = allModels.find(m => m.id === selectedModel)
+  const activeBg = allBackgrounds.find(b => b.id === selectedBg)
+  const activeVibe = allVibes.find(v => v.id === selectedVibe)
   
   const videoConstraints = {
     width: { ideal: 1920 },
@@ -511,7 +516,7 @@ export default function CameraPage() {
                       )}
                       {activeCustomTab === "model" && (
                         <AssetGrid 
-                          items={presetModels} 
+                          items={allModels} 
                           selectedId={selectedModel} 
                           onSelect={(id) => {
                             const newId = selectedModel === id ? null : id
@@ -522,7 +527,7 @@ export default function CameraPage() {
                       )}
                       {activeCustomTab === "bg" && (
                         <AssetGrid 
-                          items={presetBackgrounds} 
+                          items={allBackgrounds} 
                           selectedId={selectedBg} 
                           onSelect={(id) => setSelectedBg(selectedBg === id ? null : id)} 
                         />
@@ -562,7 +567,7 @@ export default function CameraPage() {
                     </div>
                     <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4">
                       <AssetGrid 
-                        items={presetVibes} 
+                        items={allVibes} 
                         selectedId={selectedVibe} 
                         onSelect={(id) => setSelectedVibe(selectedVibe === id ? null : id)} 
                       />
