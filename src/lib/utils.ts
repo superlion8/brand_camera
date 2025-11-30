@@ -81,3 +81,57 @@ export async function compressImage(file: File, maxSizeMB: number = 1): Promise<
   })
 }
 
+// Compress base64 image
+export async function compressBase64Image(base64: string, maxDimension: number = 1024): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')!
+      
+      let { width, height } = img
+      
+      // Scale down if needed
+      if (width > maxDimension || height > maxDimension) {
+        if (width > height) {
+          height = (height / width) * maxDimension
+          width = maxDimension
+        } else {
+          width = (width / height) * maxDimension
+          height = maxDimension
+        }
+      }
+      
+      canvas.width = width
+      canvas.height = height
+      ctx.drawImage(img, 0, 0, width, height)
+      
+      // Use lower quality for faster transfer
+      const compressed = canvas.toDataURL('image/jpeg', 0.8)
+      resolve(compressed)
+    }
+    img.onerror = reject
+    img.src = base64
+  })
+}
+
+// Fetch with timeout
+export async function fetchWithTimeout(
+  url: string, 
+  options: RequestInit, 
+  timeout: number = 120000
+): Promise<Response> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeout)
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    })
+    return response
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+

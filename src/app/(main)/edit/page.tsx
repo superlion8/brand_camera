@@ -5,7 +5,7 @@ import Image from "next/image"
 import { Upload, Wand2, X, Check, Loader2, User, Layout, Sparkles, Image as ImageIcon } from "lucide-react"
 import { AssetSelector } from "@/components/camera/AssetSelector"
 import { Asset, ModelStyle, ModelGender } from "@/types"
-import { fileToBase64 } from "@/lib/utils"
+import { fileToBase64, compressBase64Image, fetchWithTimeout } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 
 const styleOptions: { value: ModelStyle; label: string }[] = [
@@ -50,11 +50,15 @@ export default function EditPage() {
     setIsGenerating(true)
     
     try {
-      const response = await fetch("/api/edit", {
+      // Compress image before sending
+      console.log("Compressing image...")
+      const compressedInput = await compressBase64Image(inputImage, 1024)
+      
+      const response = await fetchWithTimeout("/api/edit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          inputImage,
+          inputImage: compressedInput,
           modelImage: selectedModel?.imageUrl,
           modelStyle,
           modelGender,
@@ -62,7 +66,7 @@ export default function EditPage() {
           vibeImage: selectedVibe?.imageUrl,
           customPrompt,
         }),
-      })
+      }, 120000) // 120 second timeout
       
       const data = await response.json()
       
@@ -71,9 +75,13 @@ export default function EditPage() {
       } else {
         throw new Error(data.error || "编辑失败")
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Edit error:", error)
-      alert("编辑失败，请重试")
+      if (error.name === 'AbortError') {
+        alert("编辑超时，请重试。建议使用较小的图片。")
+      } else {
+        alert(error.message || "编辑失败，请重试")
+      }
     } finally {
       setIsGenerating(false)
     }

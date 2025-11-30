@@ -10,7 +10,7 @@ import {
 import { useCameraStore } from "@/stores/cameraStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { useRouter } from "next/navigation"
-import { fileToBase64, generateId } from "@/lib/utils"
+import { fileToBase64, generateId, compressBase64Image, fetchWithTimeout } from "@/lib/utils"
 import { Asset, ModelStyle, ModelGender } from "@/types"
 import Image from "next/image"
 
@@ -118,22 +118,27 @@ export default function CameraPage() {
     setMode("processing")
     
     try {
-      const response = await fetch("/api/generate", {
+      // Compress images before sending to reduce transfer time
+      console.log("Compressing images...")
+      const compressedProduct = await compressBase64Image(capturedImage, 1024)
+      
+      const response = await fetchWithTimeout("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          productImage: capturedImage,
+          productImage: compressedProduct,
           modelImage: activeModel?.imageUrl,
           modelStyle: selectedModelStyle,
           modelGender: selectedModelGender,
           backgroundImage: activeBg?.imageUrl,
           vibeImage: activeVibe?.imageUrl,
         }),
-      })
+      }, 150000) // 150 second timeout
       
       const data = await response.json()
       
       if (data.success && data.images) {
+        console.log(`Generation stats: ${data.stats?.successful}/${data.stats?.total} images in ${data.stats?.duration}ms`)
         setGeneratedImages(data.images)
         
         // Save to history
@@ -157,9 +162,13 @@ export default function CameraPage() {
       } else {
         throw new Error(data.error || "生成失败")
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Generation error:", error)
-      alert("生成失败，请重试")
+      if (error.name === 'AbortError') {
+        alert("生成超时，请重试。建议使用较小的图片。")
+      } else {
+        alert(error.message || "生成失败，请重试")
+      }
       setMode("review")
     }
   }
