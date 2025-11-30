@@ -33,6 +33,10 @@ export interface GenerationParams {
   modelImage?: string
   backgroundImage?: string
   vibeImage?: string
+  // Display names for UI
+  model?: string
+  background?: string
+  vibe?: string
 }
 
 export interface Collection {
