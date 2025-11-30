@@ -129,7 +129,10 @@ export default function BrandAssetsPage() {
       
       {/* Header */}
       <div className="h-14 border-b bg-white dark:bg-zinc-900 flex items-center justify-between px-4 shrink-0">
-        <span className="font-semibold text-lg text-zinc-900 dark:text-white">品牌资产</span>
+        <div className="flex items-center gap-2">
+          <Image src="/logo.png" alt="Brand Camera" width={28} height={28} className="rounded" />
+          <span className="font-semibold text-lg text-zinc-900 dark:text-white">品牌资产</span>
+        </div>
         <button
           onClick={() => handleUploadClick(activeTab)}
           className="flex items-center gap-1 px-3 py-1.5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors"

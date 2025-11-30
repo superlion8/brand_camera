@@ -67,7 +67,10 @@ export default function GalleryPage() {
     <div className="h-full flex flex-col bg-zinc-50 dark:bg-zinc-950">
       {/* Header */}
       <div className="h-14 border-b bg-white dark:bg-zinc-900 flex items-center justify-between px-4 shrink-0">
-        <span className="font-semibold text-lg">图库</span>
+        <div className="flex items-center gap-2">
+          <Image src="/logo.png" alt="Brand Camera" width={28} height={28} className="rounded" />
+          <span className="font-semibold text-lg">图库</span>
+        </div>
         <div className="flex gap-2">
           <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1 h-8">
             <button
