@@ -1,0 +1,92 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --safe-area-inset-top: env(safe-area-inset-top);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom);
+  }
+  
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  body {
+    @apply bg-primary text-white antialiased;
+    font-family: 'PingFang SC', 'Noto Sans SC', system-ui, sans-serif;
+    padding-top: env(safe-area-inset-top);
+    overscroll-behavior: none;
+  }
+  
+  * {
+    @apply border-border;
+  }
+}
+
+@layer utilities {
+  .pb-safe {
+    padding-bottom: max(env(safe-area-inset-bottom), 8px);
+  }
+  
+  .pt-safe {
+    padding-top: max(env(safe-area-inset-top), 0px);
+  }
+  
+  .mb-nav {
+    margin-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+  
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .text-gradient {
+    @apply bg-gradient-to-r from-accent to-accent-light bg-clip-text text-transparent;
+  }
+}
+
+/* Custom animations */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(201, 169, 98, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(201, 169, 98, 0.5);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Shutter flash effect */
+@keyframes shutter-flash {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.shutter-flash {
+  animation: shutter-flash 0.3s ease-out;
+}
+
+/* Image grid hover effect */
+.image-card {
+  @apply relative overflow-hidden rounded-lg bg-surface;
+}
+
+.image-card::after {
+  content: '';
+  @apply absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity;
+}
+
+.image-card:hover::after {
+  @apply opacity-100;
+}
+
