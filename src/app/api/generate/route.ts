@@ -35,10 +35,10 @@ async function generateProductImage(
     })
     
     const result = extractImage(response)
-    console.log(`[Product ${index + 1}] Completed in ${Date.now() - startTime}ms`)
+    console.log(`[Product ${index + 1}] Completed in ${Date.now() - startTime}ms, success: ${!!result}`)
     return result
-  } catch (error) {
-    console.error(`[Product ${index + 1}] Error:`, error)
+  } catch (error: any) {
+    console.error(`[Product ${index + 1}] Error:`, error?.message || error)
     return null
   }
 }
@@ -110,13 +110,16 @@ async function generateModelImage(
     })
     
     const result = extractImage(response)
-    console.log(`[Model ${index + 1}] Completed in ${Date.now() - startTime}ms`)
+    console.log(`[Model ${index + 1}] Completed in ${Date.now() - startTime}ms, success: ${!!result}`)
     return result
-  } catch (error) {
-    console.error(`[Model ${index + 1}] Error:`, error)
+  } catch (error: any) {
+    console.error(`[Model ${index + 1}] Error:`, error?.message || error)
     return null
   }
 }
+
+// Small delay to avoid rate limiting
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
@@ -146,23 +149,37 @@ export async function POST(request: NextRequest) {
       hasVibe: !!vibeImage,
     })
     
-    console.log('Starting parallel image generation...')
+    const results: string[] = []
     
-    // Generate all 4 images in parallel
-    const [product1, product2, model1, model2] = await Promise.all([
+    // Step 1: Generate 2 product images in parallel
+    console.log('Step 1: Generating product images...')
+    const productResults = await Promise.allSettled([
       generateProductImage(client, productImageData, 0),
       generateProductImage(client, productImageData, 1),
+    ])
+    
+    for (const result of productResults) {
+      if (result.status === 'fulfilled' && result.value) {
+        results.push(`data:image/png;base64,${result.value}`)
+      }
+    }
+    console.log(`Product images done: ${results.length}/2`)
+    
+    // Small delay between batches to avoid rate limiting
+    await delay(500)
+    
+    // Step 2: Generate 2 model images in parallel
+    console.log('Step 2: Generating model images...')
+    const modelResults = await Promise.allSettled([
       generateModelImage(client, productImageData, modelPrompt, modelImageData, backgroundImageData, vibeImageData, 0),
       generateModelImage(client, productImageData, modelPrompt, modelImageData, backgroundImageData, vibeImageData, 1),
     ])
     
-    // Collect successful results
-    const results: string[] = []
-    
-    if (product1) results.push(`data:image/png;base64,${product1}`)
-    if (product2) results.push(`data:image/png;base64,${product2}`)
-    if (model1) results.push(`data:image/png;base64,${model1}`)
-    if (model2) results.push(`data:image/png;base64,${model2}`)
+    for (const result of modelResults) {
+      if (result.status === 'fulfilled' && result.value) {
+        results.push(`data:image/png;base64,${result.value}`)
+      }
+    }
     
     console.log(`Generation completed: ${results.length}/4 images in ${Date.now() - startTime}ms`)
     
