@@ -327,21 +327,43 @@ export default function CameraPage() {
             </div>
 
             {/* Bottom Controls Area */}
-            <div className="bg-black flex flex-col justify-end pb-safe pt-8 px-8 relative z-20 shrink-0 min-h-[9rem]">
+            <div className="bg-black flex flex-col justify-end pb-safe pt-6 px-6 relative z-20 shrink-0 min-h-[9rem]">
               {mode === "review" ? (
-                <div className="w-full flex justify-center pb-4">
-                  <motion.button
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    onClick={handleShootIt}
-                    className="w-48 h-14 rounded-full text-lg font-semibold gap-2 bg-white text-black hover:bg-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.3)] flex items-center justify-center transition-colors"
-                  >
-                    <Wand2 className="w-5 h-5" />
-                    Shoot It
-                  </motion.button>
+                <div className="space-y-4 pb-4">
+                  {/* Custom & Vibe buttons in review mode */}
+                  <div className="flex justify-center gap-4">
+                    <button 
+                      onClick={() => setShowCustomPanel(true)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white/90 hover:bg-white/20 transition-colors border border-white/20"
+                    >
+                      <SlidersHorizontal className="w-4 h-4" />
+                      <span className="text-sm">自定义</span>
+                    </button>
+                    
+                    <button 
+                      onClick={() => setShowVibePanel(true)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white/90 hover:bg-white/20 transition-colors border border-white/20"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      <span className="text-sm">氛围</span>
+                    </button>
+                  </div>
+                  
+                  {/* Shoot It button */}
+                  <div className="w-full flex justify-center">
+                    <motion.button
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      onClick={handleShootIt}
+                      className="w-full max-w-xs h-14 rounded-full text-lg font-semibold gap-2 bg-white text-black hover:bg-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.3)] flex items-center justify-center transition-colors"
+                    >
+                      <Wand2 className="w-5 h-5" />
+                      Shoot It
+                    </motion.button>
+                  </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-around">
+                <div className="flex items-center justify-around pb-4">
                   {/* Album */}
                   <button 
                     onClick={() => fileInputRef.current?.click()}
