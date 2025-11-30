@@ -10,7 +10,7 @@ import {
 import { useCameraStore } from "@/stores/cameraStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { useRouter } from "next/navigation"
-import { fileToBase64, generateId, compressBase64Image, fetchWithTimeout } from "@/lib/utils"
+import { fileToBase64, generateId, compressBase64Image, fetchWithTimeout, ensureBase64 } from "@/lib/utils"
 import { Asset, ModelStyle, ModelGender } from "@/types"
 import Image from "next/image"
 
@@ -123,20 +123,28 @@ export default function CameraPage() {
     setMode("processing")
     
     try {
-      // Compress images before sending to reduce transfer time
-      console.log("Compressing images...")
+      // Compress and prepare images before sending
+      console.log("Preparing images...")
       const compressedProduct = await compressBase64Image(capturedImage, 1024)
       
+      // Convert URLs to base64 if needed (for preset assets)
+      const [modelBase64, bgBase64, vibeBase64] = await Promise.all([
+        ensureBase64(activeModel?.imageUrl),
+        ensureBase64(activeBg?.imageUrl),
+        ensureBase64(activeVibe?.imageUrl),
+      ])
+      
+      console.log("Sending generation request...")
       const response = await fetchWithTimeout("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           productImage: compressedProduct,
-          modelImage: activeModel?.imageUrl,
+          modelImage: modelBase64,
           modelStyle: selectedModelStyle,
           modelGender: selectedModelGender,
-          backgroundImage: activeBg?.imageUrl,
-          vibeImage: activeVibe?.imageUrl,
+          backgroundImage: bgBase64,
+          vibeImage: vibeBase64,
         }),
       }, 150000) // 150 second timeout
       

@@ -135,3 +135,40 @@ export async function fetchWithTimeout(
   }
 }
 
+// Check if string is a URL
+export function isUrl(str: string): boolean {
+  return str.startsWith('http://') || str.startsWith('https://')
+}
+
+// Convert URL to base64
+export async function urlToBase64(url: string): Promise<string> {
+  try {
+    const response = await fetch(url)
+    const blob = await response.blob()
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(blob)
+    })
+  } catch (error) {
+    console.error('Failed to convert URL to base64:', error)
+    throw error
+  }
+}
+
+// Ensure image is base64 (convert URL if needed)
+export async function ensureBase64(imageSource: string | undefined | null): Promise<string | null> {
+  if (!imageSource) return null
+  
+  if (isUrl(imageSource)) {
+    try {
+      return await urlToBase64(imageSource)
+    } catch {
+      return null
+    }
+  }
+  
+  return imageSource
+}
+

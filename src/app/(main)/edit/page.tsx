@@ -5,7 +5,7 @@ import Image from "next/image"
 import { Wand2, X, Check, Loader2, Image as ImageIcon, Home, ArrowLeft } from "lucide-react"
 import { AssetSelector } from "@/components/camera/AssetSelector"
 import { Asset, ModelStyle, ModelGender } from "@/types"
-import { fileToBase64, compressBase64Image, fetchWithTimeout, generateId } from "@/lib/utils"
+import { fileToBase64, compressBase64Image, fetchWithTimeout, generateId, ensureBase64 } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { useAssetStore } from "@/stores/assetStore"
 
@@ -53,20 +53,28 @@ export default function EditPage() {
     setIsGenerating(true)
     
     try {
-      // Compress image before sending
-      console.log("Compressing image...")
+      // Compress and prepare images before sending
+      console.log("Preparing images...")
       const compressedInput = await compressBase64Image(inputImage, 1024)
       
+      // Convert URLs to base64 if needed (for preset assets)
+      const [modelBase64, bgBase64, vibeBase64] = await Promise.all([
+        ensureBase64(selectedModel?.imageUrl),
+        ensureBase64(selectedBackground?.imageUrl),
+        ensureBase64(selectedVibe?.imageUrl),
+      ])
+      
+      console.log("Sending edit request...")
       const response = await fetchWithTimeout("/api/edit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           inputImage: compressedInput,
-          modelImage: selectedModel?.imageUrl,
+          modelImage: modelBase64,
           modelStyle,
           modelGender,
-          backgroundImage: selectedBackground?.imageUrl,
-          vibeImage: selectedVibe?.imageUrl,
+          backgroundImage: bgBase64,
+          vibeImage: vibeBase64,
           customPrompt,
         }),
       }, 120000)
