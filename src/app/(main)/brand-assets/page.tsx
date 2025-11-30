@@ -43,6 +43,7 @@ export default function BrandAssetsPage() {
     setUserModels,
     setUserBackgrounds,
     setUserProducts,
+    _hasHydrated,
   } = useAssetStore()
   
   const getUserAssets = (type: AssetType): Asset[] => {
@@ -101,6 +102,15 @@ export default function BrandAssetsPage() {
         setUserProducts(userProducts.filter(a => a.id !== id))
         break
     }
+  }
+  
+  // Show loading state until hydrated
+  if (!_hasHydrated) {
+    return (
+      <div className="min-h-screen bg-primary flex items-center justify-center">
+        <div className="text-gray-400">加载中...</div>
+      </div>
+    )
   }
   
   return (
@@ -227,4 +237,3 @@ function AssetCard({ asset, onDelete }: { asset: Asset; onDelete?: () => void })
     </div>
   )
 }
-

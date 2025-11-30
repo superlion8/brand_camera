@@ -23,6 +23,9 @@ export interface Generation {
   prompt?: string
   params?: GenerationParams
   createdAt: string
+  // IndexedDB references
+  inputImageRef?: string
+  outputImageRefs?: string[]
 }
 
 export interface GenerationParams {
@@ -86,4 +89,3 @@ export interface CameraState {
   setGeneratedImages: (images: string[]) => void
   reset: () => void
 }
-

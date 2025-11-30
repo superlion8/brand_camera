@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Download, Heart, Trash2, Filter, Images, FolderHeart } from "lucide-react"
 import { Header } from "@/components/shared/Header"
@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation"
 export default function GalleryPage() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState("all")
-  const { generations, favorites } = useAssetStore()
+  const { generations, favorites, _hasHydrated } = useAssetStore()
   
   // Group generations by date
   const groupedGenerations = generations.reduce((groups, gen) => {
@@ -25,6 +25,15 @@ export default function GalleryPage() {
     groups[date].push(gen)
     return groups
   }, {} as Record<string, Generation[]>)
+  
+  // Show loading state until hydrated
+  if (!_hasHydrated) {
+    return (
+      <div className="min-h-screen bg-primary flex items-center justify-center">
+        <div className="text-gray-400">加载中...</div>
+      </div>
+    )
+  }
   
   return (
     <div className="min-h-screen bg-primary">
@@ -97,7 +106,6 @@ export default function GalleryPage() {
                       imageUrl={imageUrl}
                       generationId={fav.generationId}
                       imageIndex={fav.imageIndex}
-                      isFavorited
                     />
                   )
                 })}
@@ -122,34 +130,39 @@ function ImageCard({
   imageUrl,
   generationId,
   imageIndex,
-  isFavorited = false,
 }: {
   imageUrl: string
   generationId: string
   imageIndex: number
-  isFavorited?: boolean
 }) {
-  const { addFavorite, removeFavorite, favorites } = useAssetStore()
+  const { addFavorite, removeFavorite, isFavorited, favorites } = useAssetStore()
+  const [isProcessing, setIsProcessing] = useState(false)
   
-  const isCurrentlyFavorited = isFavorited || favorites.some(
-    f => f.generationId === generationId && f.imageIndex === imageIndex
-  )
+  const currentlyFavorited = isFavorited(generationId, imageIndex)
   
-  const handleFavorite = () => {
-    if (isCurrentlyFavorited) {
-      const fav = favorites.find(
-        f => f.generationId === generationId && f.imageIndex === imageIndex
-      )
-      if (fav) {
-        removeFavorite(fav.id)
+  const handleFavorite = async () => {
+    if (isProcessing) return
+    setIsProcessing(true)
+    
+    try {
+      if (currentlyFavorited) {
+        const fav = favorites.find(
+          f => f.generationId === generationId && f.imageIndex === imageIndex
+        )
+        if (fav) {
+          await removeFavorite(fav.id)
+        }
+      } else {
+        await addFavorite({
+          generationId,
+          imageIndex,
+          createdAt: new Date().toISOString(),
+        })
       }
-    } else {
-      addFavorite({
-        id: `${generationId}-${imageIndex}`,
-        generationId,
-        imageIndex,
-        createdAt: new Date().toISOString(),
-      })
+    } catch (error) {
+      console.error("Favorite error:", error)
+    } finally {
+      setIsProcessing(false)
     }
   }
   
@@ -186,15 +199,16 @@ function ImageCard({
           </button>
           <button
             onClick={handleFavorite}
-            className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+            disabled={isProcessing}
+            className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors disabled:opacity-50"
           >
-            <Heart className={`w-4 h-4 ${isCurrentlyFavorited ? "fill-red-500 text-red-500" : ""}`} />
+            <Heart className={`w-4 h-4 ${currentlyFavorited ? "fill-red-500 text-red-500" : ""}`} />
           </button>
         </div>
       </div>
       
       {/* Favorite indicator */}
-      {isCurrentlyFavorited && (
+      {currentlyFavorited && (
         <div className="absolute top-1 right-1">
           <Heart className="w-4 h-4 fill-red-500 text-red-500" />
         </div>
@@ -202,4 +216,3 @@ function ImageCard({
     </div>
   )
 }
-

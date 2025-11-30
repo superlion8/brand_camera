@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
-import { Download, Heart, RotateCcw, Share2 } from "lucide-react"
+import { Download, Heart, RotateCcw, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/shared/Header"
 import { useCameraStore } from "@/stores/cameraStore"
@@ -13,13 +13,36 @@ import { generateId } from "@/lib/utils"
 export default function ResultPage() {
   const router = useRouter()
   const { capturedImage, generatedImages, reset } = useCameraStore()
-  const { addGeneration } = useAssetStore()
+  const { addGeneration, addFavorite, isFavorited, favorites, removeFavorite } = useAssetStore()
+  const [isSaved, setIsSaved] = useState(false)
+  const [generationId, setGenerationId] = useState<string>("")
   
   useEffect(() => {
     if (!capturedImage || generatedImages.length === 0) {
       router.replace("/camera")
+      return
     }
-  }, [capturedImage, generatedImages, router])
+    
+    // Auto save generation on mount
+    const saveGeneration = async () => {
+      if (isSaved) return
+      
+      const id = generateId()
+      setGenerationId(id)
+      
+      await addGeneration({
+        id,
+        type: "camera_model",
+        inputImageUrl: capturedImage,
+        outputImageUrls: generatedImages,
+        createdAt: new Date().toISOString(),
+      })
+      
+      setIsSaved(true)
+    }
+    
+    saveGeneration()
+  }, [capturedImage, generatedImages, router, addGeneration, isSaved])
   
   const handleDownload = async (imageUrl: string, index: number) => {
     try {
@@ -34,22 +57,28 @@ export default function ResultPage() {
     }
   }
   
-  const handleFavorite = (imageUrl: string, index: number) => {
-    // TODO: Save to favorites
-    alert("已收藏到图片资产")
-  }
-  
-  const handleDone = () => {
-    // Save to generation history
-    if (capturedImage && generatedImages.length > 0) {
-      addGeneration({
-        id: generateId(),
-        type: "camera_model",
-        inputImageUrl: capturedImage,
-        outputImageUrls: generatedImages,
+  const handleFavorite = async (imageIndex: number) => {
+    if (!generationId) return
+    
+    const currentlyFavorited = isFavorited(generationId, imageIndex)
+    
+    if (currentlyFavorited) {
+      const fav = favorites.find(
+        f => f.generationId === generationId && f.imageIndex === imageIndex
+      )
+      if (fav) {
+        await removeFavorite(fav.id)
+      }
+    } else {
+      await addFavorite({
+        generationId,
+        imageIndex,
         createdAt: new Date().toISOString(),
       })
     }
+  }
+  
+  const handleDone = () => {
     reset()
     router.push("/camera")
   }
@@ -77,6 +106,14 @@ export default function ResultPage() {
       />
       
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
+        {/* Saved indicator */}
+        {isSaved && (
+          <div className="flex items-center gap-2 text-green-500 text-sm">
+            <Check className="w-4 h-4" />
+            <span>已自动保存到图片资产</span>
+          </div>
+        )}
+        
         {/* Product images */}
         {productImages.length > 0 && (
           <div className="space-y-3">
@@ -86,8 +123,10 @@ export default function ResultPage() {
                 <ImageCard
                   key={`product-${index}`}
                   imageUrl={image}
+                  imageIndex={index}
+                  generationId={generationId}
                   onDownload={() => handleDownload(image, index)}
-                  onFavorite={() => handleFavorite(image, index)}
+                  onFavorite={() => handleFavorite(index)}
                 />
               ))}
             </div>
@@ -103,23 +142,27 @@ export default function ResultPage() {
                 <ImageCard
                   key={`model-${index}`}
                   imageUrl={image}
+                  imageIndex={index + 2}
+                  generationId={generationId}
                   onDownload={() => handleDownload(image, index + 2)}
-                  onFavorite={() => handleFavorite(image, index + 2)}
+                  onFavorite={() => handleFavorite(index + 2)}
                 />
               ))}
             </div>
           </div>
         )}
         
-        {/* If we only have generic images */}
+        {/* If we only have generic images (less than 4) */}
         {productImages.length === 0 && modelImages.length === 0 && (
           <div className="grid grid-cols-2 gap-3">
             {generatedImages.map((image, index) => (
               <ImageCard
                 key={index}
                 imageUrl={image}
+                imageIndex={index}
+                generationId={generationId}
                 onDownload={() => handleDownload(image, index)}
-                onFavorite={() => handleFavorite(image, index)}
+                onFavorite={() => handleFavorite(index)}
               />
             ))}
           </div>
@@ -143,13 +186,20 @@ export default function ResultPage() {
 
 function ImageCard({
   imageUrl,
+  imageIndex,
+  generationId,
   onDownload,
-  onFavorite
+  onFavorite,
 }: {
   imageUrl: string
+  imageIndex: number
+  generationId: string
   onDownload: () => void
   onFavorite: () => void
 }) {
+  const { isFavorited } = useAssetStore()
+  const currentlyFavorited = generationId ? isFavorited(generationId, imageIndex) : false
+  
   return (
     <div className="relative aspect-[3/4] rounded-card overflow-hidden bg-surface group">
       <Image
@@ -172,11 +222,17 @@ function ImageCard({
             onClick={onFavorite}
             className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors"
           >
-            <Heart className="w-5 h-5" />
+            <Heart className={`w-5 h-5 ${currentlyFavorited ? "fill-red-500 text-red-500" : ""}`} />
           </button>
         </div>
       </div>
+      
+      {/* Favorite indicator */}
+      {currentlyFavorited && (
+        <div className="absolute top-2 right-2">
+          <Heart className="w-5 h-5 fill-red-500 text-red-500" />
+        </div>
+      )}
     </div>
   )
 }
-
