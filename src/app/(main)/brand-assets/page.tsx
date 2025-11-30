@@ -2,11 +2,7 @@
 
 import { useState, useRef } from "react"
 import Image from "next/image"
-import { Plus, Upload, Trash2, Users, Image as ImageIcon, Package } from "lucide-react"
-import { Header } from "@/components/shared/Header"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
-import { EmptyState } from "@/components/shared/EmptyState"
+import { Plus, Trash2, Users, Image as ImageIcon, Package, X, Check } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { Asset, AssetType } from "@/types"
 import { fileToBase64, generateId } from "@/lib/utils"
@@ -30,6 +26,12 @@ const systemPresets: Record<AssetType, Asset[]> = {
     { id: "sv2", type: "vibe", name: "休闲风", imageUrl: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400", isSystem: true },
   ],
 }
+
+const tabs = [
+  { value: "model" as AssetType, label: "模特", icon: Users },
+  { value: "background" as AssetType, label: "背景", icon: ImageIcon },
+  { value: "product" as AssetType, label: "商品", icon: Package },
+]
 
 export default function BrandAssetsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -84,7 +86,6 @@ export default function BrandAssetsPage() {
         break
     }
     
-    // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
@@ -104,29 +105,53 @@ export default function BrandAssetsPage() {
     }
   }
   
-  // Show loading state until hydrated
   if (!_hasHydrated) {
     return (
-      <div className="min-h-screen bg-primary flex items-center justify-center">
-        <div className="text-gray-400">加载中...</div>
+      <div className="h-screen w-full bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-white/60">加载中...</p>
+        </div>
       </div>
     )
   }
   
   return (
-    <div className="min-h-screen bg-primary">
-      <Header 
-        title="品牌资产" 
-        rightElement={
+    <div className="min-h-screen bg-black">
+      {/* Top Bar */}
+      <div className="sticky top-0 z-30 glass-dark border-b border-white/10">
+        <div className="flex items-center justify-between h-14 px-4">
+          <h1 className="text-white text-lg font-bold">品牌资产</h1>
           <button
             onClick={() => handleUploadClick(activeTab)}
-            className="flex items-center gap-1 text-accent text-sm font-medium"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-accent text-black text-sm font-medium active:scale-95 transition-transform"
           >
             <Plus className="w-4 h-4" />
             上传
           </button>
-        }
-      />
+        </div>
+        
+        {/* Tabs */}
+        <div className="flex px-4 gap-6">
+          {tabs.map((tab) => {
+            const Icon = tab.icon
+            return (
+              <button
+                key={tab.value}
+                onClick={() => setActiveTab(tab.value)}
+                className={`flex items-center gap-2 pb-3 border-b-2 transition-colors ${
+                  activeTab === tab.value 
+                    ? "border-accent text-white" 
+                    : "border-transparent text-white/60"
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span className="text-sm font-medium">{tab.label}</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
       
       <input
         ref={fileInputRef}
@@ -136,65 +161,54 @@ export default function BrandAssetsPage() {
         className="hidden"
       />
       
-      <div className="px-4 py-4">
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as AssetType)}>
-          <TabsList className="grid grid-cols-3 w-full">
-            <TabsTrigger value="model" className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              模特
-            </TabsTrigger>
-            <TabsTrigger value="background" className="flex items-center gap-2">
-              <ImageIcon className="w-4 h-4" />
-              背景
-            </TabsTrigger>
-            <TabsTrigger value="product" className="flex items-center gap-2">
-              <Package className="w-4 h-4" />
-              商品
-            </TabsTrigger>
-          </TabsList>
-          
-          {(["model", "background", "product"] as AssetType[]).map((type) => (
-            <TabsContent key={type} value={type} className="space-y-6">
-              {/* System presets */}
-              {systemPresets[type].length > 0 && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-medium text-gray-400">系统预设</h3>
-                  </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    {systemPresets[type].map((asset) => (
-                      <AssetCard key={asset.id} asset={asset} />
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* User assets */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-medium text-gray-400">我的资产</h3>
-                {getUserAssets(type).length > 0 ? (
-                  <div className="grid grid-cols-3 gap-3">
-                    {getUserAssets(type).map((asset) => (
-                      <AssetCard
-                        key={asset.id}
-                        asset={asset}
-                        onDelete={() => handleDelete(type, asset.id)}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyState
-                    icon={type === "model" ? Users : type === "background" ? ImageIcon : Package}
-                    title={`还没有${type === "model" ? "模特" : type === "background" ? "背景" : "商品"}素材`}
-                    description={`上传${type === "model" ? "模特" : type === "background" ? "背景" : "商品"}图片，让生成更符合品牌调性`}
-                    actionLabel="立即上传"
-                    onAction={() => handleUploadClick(type)}
-                  />
-                )}
+      <div className="px-4 py-4 space-y-6 pb-24">
+        {/* System presets */}
+        {systemPresets[activeTab].length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-white/60 text-xs font-semibold uppercase">系统预设</h3>
+            <div className="grid grid-cols-3 gap-3">
+              {systemPresets[activeTab].map((asset) => (
+                <AssetCard key={asset.id} asset={asset} />
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* User assets */}
+        <div className="space-y-3">
+          <h3 className="text-white/60 text-xs font-semibold uppercase">我的资产</h3>
+          {getUserAssets(activeTab).length > 0 ? (
+            <div className="grid grid-cols-3 gap-3">
+              {getUserAssets(activeTab).map((asset) => (
+                <AssetCard
+                  key={asset.id}
+                  asset={asset}
+                  onDelete={() => handleDelete(activeTab, asset.id)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-16 h-16 rounded-full glass flex items-center justify-center mb-4">
+                {activeTab === "model" && <Users className="w-8 h-8 text-white/30" />}
+                {activeTab === "background" && <ImageIcon className="w-8 h-8 text-white/30" />}
+                {activeTab === "product" && <Package className="w-8 h-8 text-white/30" />}
               </div>
-            </TabsContent>
-          ))}
-        </Tabs>
+              <p className="text-white font-medium mb-2">
+                还没有{activeTab === "model" ? "模特" : activeTab === "background" ? "背景" : "商品"}素材
+              </p>
+              <p className="text-white/60 text-sm mb-6">
+                上传素材，让生成更符合品牌调性
+              </p>
+              <button
+                onClick={() => handleUploadClick(activeTab)}
+                className="px-6 py-3 rounded-full bg-accent text-black font-medium active:scale-95 transition-transform"
+              >
+                立即上传
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -202,7 +216,7 @@ export default function BrandAssetsPage() {
 
 function AssetCard({ asset, onDelete }: { asset: Asset; onDelete?: () => void }) {
   return (
-    <div className="relative aspect-square rounded-lg overflow-hidden bg-surface group">
+    <div className="relative aspect-square rounded-xl overflow-hidden bg-white/5 group">
       <Image
         src={asset.imageUrl}
         alt={asset.name || "Asset"}
@@ -222,7 +236,7 @@ function AssetCard({ asset, onDelete }: { asset: Asset; onDelete?: () => void })
               e.stopPropagation()
               onDelete()
             }}
-            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-red-500/80 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
+            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-red-500/80 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity active:bg-red-500"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -230,7 +244,7 @@ function AssetCard({ asset, onDelete }: { asset: Asset; onDelete?: () => void })
       </div>
       
       {asset.isSystem && (
-        <div className="absolute top-2 left-2 px-2 py-0.5 bg-accent/80 rounded text-[10px] text-primary font-medium">
+        <div className="absolute top-2 left-2 px-2 py-0.5 bg-accent rounded text-[10px] text-black font-medium">
           预设
         </div>
       )}

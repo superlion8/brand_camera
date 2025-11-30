@@ -13,20 +13,20 @@
   }
   
   body {
-    @apply bg-primary text-white antialiased;
+    @apply bg-black text-white antialiased;
     font-family: 'PingFang SC', 'Noto Sans SC', system-ui, sans-serif;
     padding-top: env(safe-area-inset-top);
     overscroll-behavior: none;
   }
   
   * {
-    @apply border-border;
+    border-color: rgba(255, 255, 255, 0.1);
   }
 }
 
 @layer utilities {
   .pb-safe {
-    padding-bottom: max(env(safe-area-inset-bottom), 8px);
+    padding-bottom: max(env(safe-area-inset-bottom), 16px);
   }
   
   .pt-safe {
@@ -34,7 +34,7 @@
   }
   
   .mb-nav {
-    margin-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    margin-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
   }
   
   .hide-scrollbar {
@@ -46,26 +46,20 @@
     display: none;
   }
   
-  .text-gradient {
-    @apply bg-gradient-to-r from-accent to-accent-light bg-clip-text text-transparent;
+  .text-gradient-yellow {
+    @apply bg-gradient-to-r from-white to-accent bg-clip-text text-transparent;
+  }
+
+  .glass {
+    @apply bg-white/10 backdrop-blur-sm;
+  }
+
+  .glass-dark {
+    @apply bg-black/60 backdrop-blur-sm;
   }
 }
 
-/* Custom animations */
-@keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 0 20px rgba(201, 169, 98, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 40px rgba(201, 169, 98, 0.5);
-  }
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-/* Shutter flash effect */
+/* 相机快门闪光效果 */
 @keyframes shutter-flash {
   0% { opacity: 0; }
   10% { opacity: 1; }
@@ -76,17 +70,80 @@
   animation: shutter-flash 0.3s ease-out;
 }
 
-/* Image grid hover effect */
-.image-card {
-  @apply relative overflow-hidden rounded-lg bg-surface;
+/* BeReal 风格的卡片 */
+.feed-card {
+  @apply bg-white/5 rounded-2xl overflow-hidden;
+  @apply active:bg-white/10 transition-colors;
 }
 
-.image-card::after {
-  content: '';
-  @apply absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity;
+/* 模式选择器按钮 */
+.mode-button {
+  @apply px-4 py-2 rounded-full transition-all;
 }
 
-.image-card:hover::after {
-  @apply opacity-100;
+.mode-button-active {
+  @apply bg-white text-black;
 }
 
+.mode-button-inactive {
+  @apply text-white hover:bg-white/10;
+}
+
+/* 圆形按钮 */
+.circle-button {
+  @apply rounded-full flex items-center justify-center;
+  @apply active:scale-90 transition-transform;
+}
+
+/* 拍摄按钮 */
+.capture-button {
+  @apply relative w-20 h-20 rounded-full;
+  @apply active:scale-95 transition-transform;
+}
+
+.capture-button-ring {
+  @apply absolute inset-0 rounded-full border-[3.8px] border-white;
+}
+
+.capture-button-ring-yellow {
+  @apply absolute inset-0 rounded-full border-[3.8px] border-accent;
+}
+
+.capture-button-inner {
+  @apply relative z-10 w-16 h-16 rounded-full bg-white;
+  @apply flex items-center justify-center;
+}
+
+.capture-button-inner-yellow {
+  @apply relative z-10 w-16 h-16 rounded-full bg-accent;
+  @apply flex items-center justify-center;
+}
+
+/* 图片叠加效果 */
+.image-overlay {
+  @apply absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent;
+  @apply opacity-0 group-hover:opacity-100 transition-opacity;
+}
+
+/* 照片缩略图 */
+.photo-thumbnail {
+  @apply absolute top-3 left-3 w-24 h-24 rounded-xl overflow-hidden;
+  @apply border-2 border-white shadow-lg;
+}
+
+/* 标签/徽章 */
+.badge {
+  @apply px-3 py-1.5 rounded-full text-sm font-medium;
+}
+
+.badge-yellow {
+  @apply bg-accent text-black;
+}
+
+.badge-white {
+  @apply bg-white text-black;
+}
+
+.badge-glass {
+  @apply bg-white/20 text-white backdrop-blur-sm;
+}

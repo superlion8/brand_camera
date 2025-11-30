@@ -10,19 +10,21 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        primary: '#0D0D0D',
+        // 新配色方案 - 黑+黄
+        primary: '#000000',
         accent: {
-          DEFAULT: '#C9A962',
-          light: '#E5D4A1',
-          dark: '#A68B4B',
+          DEFAULT: '#FFFC00',
+          light: '#FFFD66',
+          dark: '#E6E300',
         },
         surface: {
-          DEFAULT: '#2A2A2A',
-          elevated: '#333333',
+          DEFAULT: 'rgba(255, 255, 255, 0.1)',
+          elevated: 'rgba(255, 255, 255, 0.15)',
+          solid: '#101828',
         },
         border: {
-          DEFAULT: '#333333',
-          light: '#404040',
+          DEFAULT: 'rgba(255, 255, 255, 0.1)',
+          light: 'rgba(255, 255, 255, 0.2)',
         },
       },
       fontFamily: {
@@ -31,16 +33,15 @@ const config: Config = {
       },
       borderRadius: {
         'card': '16px',
-        'button': '12px',
-        'input': '10px',
+        'button': '9999px',
+        'input': '12px',
         'sheet': '24px',
       },
       animation: {
         'fade-in': 'fadeIn 0.25s ease-out',
         'slide-up': 'slideUp 0.35s ease-out',
-        'pulse-accent': 'pulseAccent 2s ease-in-out infinite',
-        'shimmer': 'shimmer 2s infinite',
-        'spin-slow': 'spin 3s linear infinite',
+        'scale-in': 'scaleIn 0.2s ease-out',
+        'pulse-yellow': 'pulseYellow 2s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -51,18 +52,20 @@ const config: Config = {
           from: { opacity: '0', transform: 'translateY(20px)' },
           to: { opacity: '1', transform: 'translateY(0)' },
         },
-        pulseAccent: {
-          '0%, 100%': { boxShadow: '0 0 20px rgba(201, 169, 98, 0.3)' },
-          '50%': { boxShadow: '0 0 40px rgba(201, 169, 98, 0.5)' },
+        scaleIn: {
+          from: { opacity: '0', transform: 'scale(0.95)' },
+          to: { opacity: '1', transform: 'scale(1)' },
         },
-        shimmer: {
-          '0%': { backgroundPosition: '-200% 0' },
-          '100%': { backgroundPosition: '200% 0' },
+        pulseYellow: {
+          '0%, 100%': { boxShadow: '0 0 0 0 rgba(255, 252, 0, 0.4)' },
+          '50%': { boxShadow: '0 0 0 12px rgba(255, 252, 0, 0)' },
         },
+      },
+      backdropBlur: {
+        xs: '2px',
       },
     },
   },
   plugins: [],
 }
 export default config
-

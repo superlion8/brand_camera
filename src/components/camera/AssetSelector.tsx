@@ -2,11 +2,9 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { Plus, ChevronRight, Check } from "lucide-react"
+import { Plus, ChevronRight, Check, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Asset, AssetType, ModelStyle } from "@/types"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import { useAssetStore } from "@/stores/assetStore"
 
 // Demo preset assets
 const demoPresets: Record<AssetType, Asset[]> = {
@@ -48,56 +46,24 @@ export function AssetSelector({ title, type, selected, onSelect, modelStyle }: A
     presets = presets.filter(p => p.styleCategory === modelStyle)
   }
   
-  // Display max 5 items in the preview
+  // Display max 4 items in the preview
   const displayPresets = presets.slice(0, 4)
   
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-gray-400">{title}</h3>
-        <Sheet open={isOpen} onOpenChange={setIsOpen}>
-          <SheetTrigger asChild>
-            <button className="text-xs text-accent flex items-center gap-1 hover:text-accent-light transition-colors">
-              查看更多 <ChevronRight className="w-3 h-3" />
-            </button>
-          </SheetTrigger>
-          <SheetContent side="bottom" className="max-h-[70vh]">
-            <SheetHeader>
-              <SheetTitle>{title}</SheetTitle>
-            </SheetHeader>
-            <div className="grid grid-cols-3 gap-3 py-4 overflow-y-auto max-h-[50vh]">
-              {/* Clear selection option */}
-              <button
-                onClick={() => {
-                  onSelect(null)
-                  setIsOpen(false)
-                }}
-                className={cn(
-                  "aspect-square rounded-lg border-2 border-dashed flex items-center justify-center transition-colors",
-                  !selected ? "border-accent text-accent" : "border-border text-gray-500 hover:border-border-light"
-                )}
-              >
-                <span className="text-xs">Auto</span>
-              </button>
-              {presets.map((asset) => (
-                <AssetCard
-                  key={asset.id}
-                  asset={asset}
-                  isSelected={selected?.id === asset.id}
-                  onClick={() => {
-                    onSelect(asset)
-                    setIsOpen(false)
-                  }}
-                />
-              ))}
-            </div>
-          </SheetContent>
-        </Sheet>
+        <h3 className="text-white/60 text-xs font-semibold uppercase">{title}</h3>
+        <button 
+          onClick={() => setIsOpen(true)}
+          className="text-xs text-accent flex items-center gap-1 active:opacity-70"
+        >
+          查看更多 <ChevronRight className="w-3 h-3" />
+        </button>
       </div>
       
       <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-1">
         {/* Add button */}
-        <button className="w-16 h-16 flex-shrink-0 rounded-lg border-2 border-dashed border-border flex items-center justify-center text-gray-500 hover:border-border-light hover:text-gray-400 transition-colors">
+        <button className="w-16 h-16 flex-shrink-0 rounded-xl border-2 border-dashed border-white/20 flex items-center justify-center text-white/40 active:border-white/40 active:text-white/60 transition-colors">
           <Plus className="w-5 h-5" />
         </button>
         
@@ -107,8 +73,8 @@ export function AssetSelector({ title, type, selected, onSelect, modelStyle }: A
             key={asset.id}
             onClick={() => onSelect(selected?.id === asset.id ? null : asset)}
             className={cn(
-              "relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden",
-              selected?.id === asset.id && "ring-2 ring-accent ring-offset-2 ring-offset-primary"
+              "relative w-16 h-16 flex-shrink-0 rounded-xl overflow-hidden transition-all",
+              selected?.id === asset.id && "ring-2 ring-accent ring-offset-2 ring-offset-black"
             )}
           >
             <Image
@@ -125,44 +91,73 @@ export function AssetSelector({ title, type, selected, onSelect, modelStyle }: A
           </button>
         ))}
       </div>
+      
+      {/* Full sheet modal */}
+      {isOpen && (
+        <div className="fixed inset-0 z-50 bg-black" onClick={() => setIsOpen(false)}>
+          {/* Header */}
+          <div className="sticky top-0 z-10 glass-dark px-4 py-3 flex items-center justify-between border-b border-white/10">
+            <button
+              onClick={() => setIsOpen(false)}
+              className="w-10 h-10 rounded-full glass flex items-center justify-center active:scale-90 transition-transform"
+            >
+              <X className="w-5 h-5 text-white" />
+            </button>
+            <h3 className="text-white font-bold">{title}</h3>
+            <div className="w-10" />
+          </div>
+          
+          {/* Content */}
+          <div className="p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="grid grid-cols-3 gap-3">
+              {/* Clear selection option */}
+              <button
+                onClick={() => {
+                  onSelect(null)
+                  setIsOpen(false)
+                }}
+                className={cn(
+                  "aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-colors",
+                  !selected ? "border-accent text-accent" : "border-white/20 text-white/50 active:border-white/40"
+                )}
+              >
+                <span className="text-xs font-medium">Auto</span>
+              </button>
+              
+              {presets.map((asset) => (
+                <button
+                  key={asset.id}
+                  onClick={() => {
+                    onSelect(asset)
+                    setIsOpen(false)
+                  }}
+                  className={cn(
+                    "relative aspect-square rounded-xl overflow-hidden transition-all",
+                    selected?.id === asset.id && "ring-2 ring-accent ring-offset-2 ring-offset-black"
+                  )}
+                >
+                  <Image
+                    src={asset.imageUrl}
+                    alt={asset.name || "Asset"}
+                    fill
+                    className="object-cover"
+                  />
+                  {selected?.id === asset.id && (
+                    <div className="absolute inset-0 bg-accent/20 flex items-center justify-center">
+                      <Check className="w-6 h-6 text-accent" />
+                    </div>
+                  )}
+                  {asset.name && (
+                    <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent">
+                      <p className="text-xs text-white truncate">{asset.name}</p>
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
-
-function AssetCard({
-  asset,
-  isSelected,
-  onClick
-}: {
-  asset: Asset
-  isSelected: boolean
-  onClick: () => void
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "relative aspect-square rounded-lg overflow-hidden transition-all",
-        isSelected && "ring-2 ring-accent ring-offset-2 ring-offset-[#1A1A1A]"
-      )}
-    >
-      <Image
-        src={asset.imageUrl}
-        alt={asset.name || "Asset"}
-        fill
-        className="object-cover"
-      />
-      {isSelected && (
-        <div className="absolute inset-0 bg-accent/20 flex items-center justify-center">
-          <Check className="w-6 h-6 text-accent" />
-        </div>
-      )}
-      {asset.name && (
-        <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent">
-          <p className="text-xs text-white truncate">{asset.name}</p>
-        </div>
-      )}
-    </button>
-  )
-}
-
