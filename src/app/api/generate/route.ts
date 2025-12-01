@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { saveGenerationServer } from '@/lib/supabase/generations-server'
 import { uploadGeneratedImageServer, uploadInputImageServer } from '@/lib/supabase/storage-server'
 
-export const maxDuration = 120
+export const maxDuration = 300 // 5 minutes for Pro plan
 
 // Model names
 const PRIMARY_IMAGE_MODEL = 'gemini-3-pro-image-preview'
