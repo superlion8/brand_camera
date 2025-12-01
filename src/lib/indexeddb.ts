@@ -6,6 +6,9 @@
 const DB_NAME = 'brand_camera_db'
 const DB_VERSION = 1
 
+// Check if we're in browser environment
+const isBrowser = typeof window !== 'undefined' && typeof indexedDB !== 'undefined'
+
 // Store names
 export const STORES = {
   IMAGES: 'images',
@@ -21,7 +24,8 @@ type StoreName = typeof STORES[keyof typeof STORES]
 let db: IDBDatabase | null = null
 
 // Initialize IndexedDB
-export async function initDB(): Promise<IDBDatabase> {
+export async function initDB(): Promise<IDBDatabase | null> {
+  if (!isBrowser) return null
   if (db) return db
   
   return new Promise((resolve, reject) => {
@@ -83,7 +87,10 @@ export async function initDB(): Promise<IDBDatabase> {
 
 // Generic CRUD operations
 export async function dbPut<T>(storeName: StoreName, data: T): Promise<void> {
+  if (!isBrowser) return
   const database = await initDB()
+  if (!database) return
+  
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(storeName, 'readwrite')
     const store = transaction.objectStore(storeName)
@@ -95,7 +102,10 @@ export async function dbPut<T>(storeName: StoreName, data: T): Promise<void> {
 }
 
 export async function dbGet<T>(storeName: StoreName, key: string): Promise<T | undefined> {
+  if (!isBrowser) return undefined
   const database = await initDB()
+  if (!database) return undefined
+  
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(storeName, 'readonly')
     const store = transaction.objectStore(storeName)
@@ -107,7 +117,10 @@ export async function dbGet<T>(storeName: StoreName, key: string): Promise<T | u
 }
 
 export async function dbGetAll<T>(storeName: StoreName): Promise<T[]> {
+  if (!isBrowser) return []
   const database = await initDB()
+  if (!database) return []
+  
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(storeName, 'readonly')
     const store = transaction.objectStore(storeName)
@@ -119,7 +132,10 @@ export async function dbGetAll<T>(storeName: StoreName): Promise<T[]> {
 }
 
 export async function dbDelete(storeName: StoreName, key: string): Promise<void> {
+  if (!isBrowser) return
   const database = await initDB()
+  if (!database) return
+  
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(storeName, 'readwrite')
     const store = transaction.objectStore(storeName)
@@ -131,7 +147,10 @@ export async function dbDelete(storeName: StoreName, key: string): Promise<void>
 }
 
 export async function dbClear(storeName: StoreName): Promise<void> {
+  if (!isBrowser) return
   const database = await initDB()
+  if (!database) return
+  
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(storeName, 'readwrite')
     const store = transaction.objectStore(storeName)
@@ -151,6 +170,8 @@ export interface StoredImage {
 }
 
 export async function saveImage(id: string, base64Data: string): Promise<string> {
+  if (!isBrowser) return id
+  
   const image: StoredImage = {
     id,
     data: base64Data,
@@ -162,17 +183,20 @@ export async function saveImage(id: string, base64Data: string): Promise<string>
 }
 
 export async function getImage(id: string): Promise<string | null> {
+  if (!isBrowser) return null
   const image = await dbGet<StoredImage>(STORES.IMAGES, id)
   return image?.data || null
 }
 
 export async function deleteImage(id: string): Promise<void> {
+  if (!isBrowser) return
   await dbDelete(STORES.IMAGES, id)
 }
 
 // Zustand persist storage adapter for IndexedDB
 export const indexedDBStorage = {
   getItem: async (name: string): Promise<string | null> => {
+    if (!isBrowser) return null
     try {
       const data = await dbGet<{ key: string; value: string }>(STORES.STATE, name)
       return data?.value || null
@@ -182,6 +206,7 @@ export const indexedDBStorage = {
     }
   },
   setItem: async (name: string, value: string): Promise<void> => {
+    if (!isBrowser) return
     try {
       await dbPut(STORES.STATE, { key: name, value })
     } catch (error) {
@@ -189,6 +214,7 @@ export const indexedDBStorage = {
     }
   },
   removeItem: async (name: string): Promise<void> => {
+    if (!isBrowser) return
     try {
       await dbDelete(STORES.STATE, name)
     } catch (error) {
@@ -196,4 +222,3 @@ export const indexedDBStorage = {
     }
   },
 }
-
