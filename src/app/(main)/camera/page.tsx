@@ -161,36 +161,68 @@ export default function CameraPage() {
   const handleShootIt = async () => {
     if (!capturedImage) return
     
+    // Capture current selections BEFORE any async operations
+    const currentModelStyle = selectedModelStyle
+    const currentModelGender = selectedModelGender
+    const currentModel = activeModel
+    const currentBg = activeBg
+    const currentVibe = activeVibe
+    
     // Create task and switch to processing mode
     const params = {
-      modelStyle: selectedModelStyle || undefined,
-      modelGender: selectedModelGender || undefined,
-      model: activeModel?.name,
-      background: activeBg?.name,
-      vibe: activeVibe?.name,
+      modelStyle: currentModelStyle || undefined,
+      modelGender: currentModelGender || undefined,
+      model: currentModel?.name,
+      background: currentBg?.name,
+      vibe: currentVibe?.name,
     }
     
     const taskId = addTask(capturedImage, params)
     updateTaskStatus(taskId, 'generating')
     setMode("processing")
     
-    // Start background generation
-    runBackgroundGeneration(taskId, capturedImage)
+    // Start background generation with captured values
+    runBackgroundGeneration(
+      taskId, 
+      capturedImage,
+      currentModelStyle,
+      currentModelGender,
+      currentModel,
+      currentBg,
+      currentVibe
+    )
   }
   
   // Background generation function (runs async, doesn't block UI)
-  const runBackgroundGeneration = async (taskId: string, inputImage: string) => {
+  // All parameters are passed explicitly to avoid closure issues
+  const runBackgroundGeneration = async (
+    taskId: string, 
+    inputImage: string,
+    modelStyle: ModelStyle | null,
+    modelGender: ModelGender | null,
+    model: Asset | undefined,
+    background: Asset | undefined,
+    vibe: Asset | undefined
+  ) => {
     try {
       // Compress and prepare images before sending
       console.log("Preparing images...")
+      console.log("Model selected:", model?.name, "URL:", model?.imageUrl?.substring(0, 50))
+      console.log("Background selected:", background?.name)
+      console.log("Vibe selected:", vibe?.name)
+      
       const compressedProduct = await compressBase64Image(inputImage, 1024)
       
       // Convert URLs to base64 if needed (for preset assets)
       const [modelBase64, bgBase64, vibeBase64] = await Promise.all([
-        ensureBase64(activeModel?.imageUrl),
-        ensureBase64(activeBg?.imageUrl),
-        ensureBase64(activeVibe?.imageUrl),
+        ensureBase64(model?.imageUrl),
+        ensureBase64(background?.imageUrl),
+        ensureBase64(vibe?.imageUrl),
       ])
+      
+      console.log("Model base64 ready:", !!modelBase64, modelBase64 ? modelBase64.substring(0, 30) + "..." : "null")
+      console.log("Background base64 ready:", !!bgBase64)
+      console.log("Vibe base64 ready:", !!vibeBase64)
       
       console.log("Sending generation request...")
       const response = await fetchWithTimeout("/api/generate", {
@@ -199,8 +231,8 @@ export default function CameraPage() {
         body: JSON.stringify({
           productImage: compressedProduct,
           modelImage: modelBase64,
-          modelStyle: selectedModelStyle,
-          modelGender: selectedModelGender,
+          modelStyle: modelStyle,
+          modelGender: modelGender,
           backgroundImage: bgBase64,
           vibeImage: vibeBase64,
         }),
@@ -223,11 +255,11 @@ export default function CameraPage() {
           outputImageUrls: data.images,
           createdAt: new Date().toISOString(),
           params: { 
-            modelStyle: selectedModelStyle || undefined,
-            modelGender: selectedModelGender || undefined,
-            model: activeModel?.name,
-            background: activeBg?.name,
-            vibe: activeVibe?.name,
+            modelStyle: modelStyle || undefined,
+            modelGender: modelGender || undefined,
+            model: model?.name,
+            background: background?.name,
+            vibe: vibe?.name,
           },
         })
         

@@ -159,16 +159,25 @@ export async function urlToBase64(url: string): Promise<string> {
 
 // Ensure image is base64 (convert URL if needed)
 export async function ensureBase64(imageSource: string | undefined | null): Promise<string | null> {
-  if (!imageSource) return null
+  if (!imageSource) {
+    console.log('ensureBase64: No image source provided')
+    return null
+  }
   
   if (isUrl(imageSource)) {
     try {
-      return await urlToBase64(imageSource)
-    } catch {
+      console.log('ensureBase64: Converting URL to base64:', imageSource.substring(0, 80))
+      const base64 = await urlToBase64(imageSource)
+      console.log('ensureBase64: Successfully converted, length:', base64.length)
+      return base64
+    } catch (error) {
+      console.error('ensureBase64: Failed to convert URL:', error)
       return null
     }
   }
   
+  // Already base64
+  console.log('ensureBase64: Already base64, length:', imageSource.length)
   return imageSource
 }
 
