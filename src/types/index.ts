@@ -1,6 +1,6 @@
 export type ModelStyle = 'korean' | 'western' | 'auto'
 
-export type ModelGender = 'male' | 'female'
+export type ModelGender = 'male' | 'female' | 'boy' | 'girl'
 
 export type AssetType = 'model' | 'background' | 'product' | 'vibe'
 

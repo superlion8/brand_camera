@@ -18,6 +18,8 @@ const styleOptions: { value: ModelStyle; label: string }[] = [
 const genderOptions: { value: ModelGender; label: string }[] = [
   { value: "female", label: "女" },
   { value: "male", label: "男" },
+  { value: "girl", label: "女童" },
+  { value: "boy", label: "男童" },
 ]
 
 export default function EditPage() {

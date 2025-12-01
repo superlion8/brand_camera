@@ -12,13 +12,14 @@ export const maxDuration = 120
 async function generateProductImage(
   client: ReturnType<typeof getGenAIClient>,
   productImageData: string,
+  productImage2Data: string | null,
   index: number
 ): Promise<string | null> {
   try {
     console.log(`[Product ${index + 1}] Starting generation...`)
     const startTime = Date.now()
     
-    const productParts = [
+    const parts: any[] = [
       { text: PRODUCT_PROMPT },
       {
         inlineData: {
@@ -28,9 +29,19 @@ async function generateProductImage(
       },
     ]
     
+    // Add second product image if provided
+    if (productImage2Data) {
+      parts.push({
+        inlineData: {
+          mimeType: 'image/jpeg',
+          data: productImage2Data,
+        },
+      })
+    }
+    
     const response = await client.models.generateContent({
       model: 'gemini-3-pro-image-preview',
-      contents: [{ role: 'user', parts: productParts }],
+      contents: [{ role: 'user', parts }],
       config: {
         responseModalities: ['IMAGE'],
         safetySettings,
@@ -46,15 +57,15 @@ async function generateProductImage(
   }
 }
 
-// Step 1: Generate photography instructions using Gemini
+// Step 1: Generate photography instructions using gemini-3-pro-preview (VLM)
 async function generateInstructions(
   client: ReturnType<typeof getGenAIClient>,
   productImageData: string,
+  productImage2Data: string | null,
   modelImageData: string | null,
   backgroundImageData: string | null,
   vibeImageData: string | null,
-  modelStyle?: string,
-  modelGender?: string
+  modelStyle?: string
 ): Promise<string | null> {
   try {
     console.log('[Instructions] Starting instruction generation...')
@@ -63,9 +74,9 @@ async function generateInstructions(
     const instructPrompt = buildInstructPrompt({
       hasModel: !!modelImageData,
       modelStyle,
-      modelGender,
       hasBackground: !!backgroundImageData,
       hasVibe: !!vibeImageData,
+      hasProduct2: !!productImage2Data,
     })
     
     const parts: any[] = [{ text: instructPrompt }]
@@ -77,6 +88,16 @@ async function generateInstructions(
         data: productImageData,
       },
     })
+    
+    // Add second product image if provided
+    if (productImage2Data) {
+      parts.push({
+        inlineData: {
+          mimeType: 'image/jpeg',
+          data: productImage2Data,
+        },
+      })
+    }
     
     // Add model image if provided
     if (modelImageData) {
@@ -127,10 +148,11 @@ async function generateInstructions(
   }
 }
 
-// Step 2: Generate model image with instructions
+// Step 2: Generate model image with instructions using gemini-3-pro-image-preview
 async function generateModelImage(
   client: ReturnType<typeof getGenAIClient>,
   productImageData: string,
+  productImage2Data: string | null,
   modelImageData: string | null,
   backgroundImageData: string | null,
   vibeImageData: string | null,
@@ -151,6 +173,7 @@ async function generateModelImage(
       hasBackground: !!backgroundImageData,
       hasVibe: !!vibeImageData,
       instructPrompt: instructPrompt || undefined,
+      hasProduct2: !!productImage2Data,
     })
     
     console.log(`[Model ${index + 1}] Prompt preview:`, modelPrompt.substring(0, 300) + '...')
@@ -177,6 +200,16 @@ async function generateModelImage(
         data: productImageData,
       },
     })
+    
+    // Add second product image if provided
+    if (productImage2Data) {
+      parts.push({
+        inlineData: {
+          mimeType: 'image/jpeg',
+          data: productImage2Data,
+        },
+      })
+    }
     
     // Add background reference
     if (backgroundImageData) {
@@ -224,7 +257,7 @@ export async function POST(request: NextRequest) {
   
   try {
     const body = await request.json()
-    const { productImage, modelImage, modelStyle, modelGender, backgroundImage, vibeImage } = body
+    const { productImage, productImage2, modelImage, modelStyle, modelGender, backgroundImage, vibeImage } = body
     
     if (!productImage) {
       return NextResponse.json({ success: false, error: '缺少商品图片' }, { status: 400 })
@@ -245,11 +278,13 @@ export async function POST(request: NextRequest) {
     // Pre-process images once (strip base64 prefix)
     console.log('Processing input images...')
     console.log('- productImage length:', productImage?.length || 0)
+    console.log('- productImage2 length:', productImage2?.length || 0)
     console.log('- modelImage length:', modelImage?.length || 0)
     console.log('- backgroundImage length:', backgroundImage?.length || 0)
     console.log('- vibeImage length:', vibeImage?.length || 0)
     
     const productImageData = stripBase64Prefix(productImage)
+    const productImage2Data = productImage2 ? stripBase64Prefix(productImage2) : null
     const modelImageData = modelImage ? stripBase64Prefix(modelImage) : null
     const backgroundImageData = backgroundImage ? stripBase64Prefix(backgroundImage) : null
     const vibeImageData = vibeImage ? stripBase64Prefix(vibeImage) : null
@@ -275,6 +310,7 @@ export async function POST(request: NextRequest) {
     
     console.log('Processed image data lengths:')
     console.log('- productImageData:', productImageData.length)
+    console.log('- productImage2Data:', productImage2Data?.length || 'null')
     console.log('- modelImageData:', modelImageData?.length || 'null')
     console.log('- backgroundImageData:', backgroundImageData?.length || 'null')
     console.log('- vibeImageData:', vibeImageData?.length || 'null')
@@ -284,8 +320,8 @@ export async function POST(request: NextRequest) {
     // Step 1: Generate 2 product images in parallel
     console.log('Step 1: Generating product images...')
     const productResults = await Promise.allSettled([
-      generateProductImage(client, productImageData, 0),
-      generateProductImage(client, productImageData, 1),
+      generateProductImage(client, productImageData, productImage2Data, 0),
+      generateProductImage(client, productImageData, productImage2Data, 1),
     ])
     
     for (const result of productResults) {
@@ -303,11 +339,11 @@ export async function POST(request: NextRequest) {
     const instructPrompt = await generateInstructions(
       client,
       productImageData,
+      productImage2Data,
       modelImageData,
       backgroundImageData,
       vibeImageData,
-      modelStyle,
-      modelGender
+      modelStyle
     )
     
     await delay(300)
@@ -316,11 +352,11 @@ export async function POST(request: NextRequest) {
     console.log('Step 3: Generating model images with instructions...')
     const modelResults = await Promise.allSettled([
       generateModelImage(
-        client, productImageData, modelImageData, backgroundImageData, vibeImageData,
+        client, productImageData, productImage2Data, modelImageData, backgroundImageData, vibeImageData,
         modelStyle, modelGender, instructPrompt, 0
       ),
       generateModelImage(
-        client, productImageData, modelImageData, backgroundImageData, vibeImageData,
+        client, productImageData, productImage2Data, modelImageData, backgroundImageData, vibeImageData,
         modelStyle, modelGender, instructPrompt, 1
       ),
     ])
@@ -364,8 +400,11 @@ export async function POST(request: NextRequest) {
         uploadGeneratedImageServer(base64Url, generationId, index, userId)
       )
       
-      // Also upload input image
+      // Also upload input image(s)
       uploadInputImageServer(productImage, generationId, userId).catch(console.error)
+      if (productImage2) {
+        uploadInputImageServer(productImage2, generationId + '-2', userId).catch(console.error)
+      }
       
       const uploadedUrls = await Promise.all(uploadPromises)
       
@@ -382,6 +421,7 @@ export async function POST(request: NextRequest) {
         {
           modelStyle,
           modelGender,
+          hasProduct2: !!productImage2,
           modelImageUrl: modelImage ? '[provided]' : undefined,
           backgroundImageUrl: backgroundImage ? '[provided]' : undefined,
           vibeImageUrl: vibeImage ? '[provided]' : undefined,
@@ -402,6 +442,7 @@ export async function POST(request: NextRequest) {
         successful: results.length,
         duration,
         hasInstructions: !!instructPrompt,
+        hasProduct2: !!productImage2,
       }
     })
     

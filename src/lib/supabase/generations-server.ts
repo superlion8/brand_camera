@@ -3,6 +3,7 @@ import { createClient } from './server'
 // Types (same as client)
 export interface GenerationInput {
   productImageUrl?: string
+  hasProduct2?: boolean // Whether a second product image was provided
   modelStyle?: string
   modelGender?: string
   modelImageUrl?: string

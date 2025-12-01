@@ -7,7 +7,7 @@ import Webcam from "react-webcam"
 import { 
   ArrowLeft, Check, Loader2, Image as ImageIcon, 
   SlidersHorizontal, X, Sparkles, Wand2, Camera, Home,
-  Heart, Download, Pin, ZoomIn, FolderHeart
+  Heart, Download, Pin, ZoomIn, FolderHeart, Plus
 } from "lucide-react"
 import { useCameraStore } from "@/stores/cameraStore"
 import { useAssetStore } from "@/stores/assetStore"
@@ -29,6 +29,8 @@ const MODEL_STYLES: { id: ModelStyle; label: string }[] = [
 const MODEL_GENDERS: { id: ModelGender; label: string }[] = [
   { id: "female", label: "女" },
   { id: "male", label: "男" },
+  { id: "girl", label: "女童" },
+  { id: "boy", label: "男童" },
 ]
 
 type CameraMode = "camera" | "review" | "processing" | "results"
@@ -37,11 +39,13 @@ export default function CameraPage() {
   const router = useRouter()
   const webcamRef = useRef<Webcam>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef2 = useRef<HTMLInputElement>(null) // For second product image
   
   // Mode and state
   const [mode, setMode] = useState<CameraMode>("camera")
   const modeRef = useRef<CameraMode>("camera") // Track mode for async callbacks
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
+  const [capturedImage2, setCapturedImage2] = useState<string | null>(null) // Second product image
   const [hasCamera, setHasCamera] = useState(true)
   const [cameraReady, setCameraReady] = useState(false)
   const [permissionChecked, setPermissionChecked] = useState(false)
@@ -150,6 +154,15 @@ export default function CameraPage() {
     }
   }, [])
   
+  // Upload second product image
+  const handleUpload2 = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const base64 = await fileToBase64(file)
+      setCapturedImage2(base64)
+    }
+  }, [])
+  
   const handleCameraError = useCallback(() => {
     setHasCamera(false)
     setCameraReady(false)
@@ -161,6 +174,7 @@ export default function CameraPage() {
   
   const handleRetake = () => {
     setCapturedImage(null)
+    setCapturedImage2(null)
     setGeneratedImages([])
     setMode("camera")
   }
@@ -174,6 +188,7 @@ export default function CameraPage() {
     const currentModel = activeModel
     const currentBg = activeBg
     const currentVibe = activeVibe
+    const currentProduct2 = capturedImage2
     
     // Create task and switch to processing mode
     const params = {
@@ -182,6 +197,7 @@ export default function CameraPage() {
       model: currentModel?.name,
       background: currentBg?.name,
       vibe: currentVibe?.name,
+      hasProduct2: !!currentProduct2,
     }
     
     const taskId = addTask(capturedImage, params)
@@ -193,6 +209,7 @@ export default function CameraPage() {
     runBackgroundGeneration(
       taskId, 
       capturedImage,
+      currentProduct2,
       currentModelStyle,
       currentModelGender,
       currentModel,
@@ -206,6 +223,7 @@ export default function CameraPage() {
   const runBackgroundGeneration = async (
     taskId: string, 
     inputImage: string,
+    inputImage2: string | null,
     modelStyle: ModelStyle | null,
     modelGender: ModelGender | null,
     model: Asset | undefined,
@@ -218,8 +236,10 @@ export default function CameraPage() {
       console.log("Model selected:", model?.name, "URL:", model?.imageUrl?.substring(0, 50))
       console.log("Background selected:", background?.name)
       console.log("Vibe selected:", vibe?.name)
+      console.log("Has second product:", !!inputImage2)
       
       const compressedProduct = await compressBase64Image(inputImage, 1024)
+      const compressedProduct2 = inputImage2 ? await compressBase64Image(inputImage2, 1024) : null
       
       // Convert URLs to base64 if needed (for preset assets)
       const [modelBase64, bgBase64, vibeBase64] = await Promise.all([
@@ -238,6 +258,7 @@ export default function CameraPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           productImage: compressedProduct,
+          productImage2: compressedProduct2,
           modelImage: modelBase64,
           modelStyle: modelStyle,
           modelGender: modelGender,
@@ -427,6 +448,13 @@ export default function CameraPage() {
         accept="image/*" 
         onChange={handleUpload}
       />
+      <input 
+        type="file" 
+        ref={fileInputRef2} 
+        className="hidden" 
+        accept="image/*" 
+        onChange={handleUpload2}
+      />
 
       <AnimatePresence mode="wait">
         {(mode === "camera" || mode === "review") && (
@@ -476,11 +504,47 @@ export default function CameraPage() {
                   </div>
                 </div>
               ) : (
-                <img 
-                  src={capturedImage || ""} 
-                  alt="Captured" 
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
+                <div className="absolute inset-0 flex">
+                  {/* Main product image */}
+                  <div className={`relative ${capturedImage2 ? 'w-1/2' : 'w-full'} h-full`}>
+                    <img 
+                      src={capturedImage || ""} 
+                      alt="商品 1" 
+                      className="w-full h-full object-cover"
+                    />
+                    <span className="absolute top-2 left-2 px-2 py-1 bg-black/50 text-white text-xs rounded backdrop-blur-md">
+                      商品 1
+                    </span>
+                  </div>
+                  
+                  {/* Second product image or add button */}
+                  {capturedImage2 ? (
+                    <div className="relative w-1/2 h-full border-l-2 border-white/30">
+                      <img 
+                        src={capturedImage2} 
+                        alt="商品 2" 
+                        className="w-full h-full object-cover"
+                      />
+                      <span className="absolute top-2 left-2 px-2 py-1 bg-black/50 text-white text-xs rounded backdrop-blur-md">
+                        商品 2
+                      </span>
+                      <button
+                        onClick={() => setCapturedImage2(null)}
+                        className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : mode === "review" && (
+                    <button
+                      onClick={() => fileInputRef2.current?.click()}
+                      className="absolute bottom-4 right-4 px-3 py-2 bg-white/90 text-zinc-800 rounded-lg text-sm font-medium flex items-center gap-2 shadow-lg backdrop-blur-md"
+                    >
+                      <Plus className="w-4 h-4" />
+                      添加商品 2
+                    </button>
+                  )}
+                </div>
               )}
               
               {/* Selection Badges Overlay */}
