@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getGenAIClient, extractImage, safetySettings } from '@/lib/genai'
 import { PRODUCT_PROMPT, buildModelPrompt } from '@/prompts'
-import { stripBase64Prefix } from '@/lib/utils'
+import { stripBase64Prefix, generateId } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/server'
 import { saveGenerationServer } from '@/lib/supabase/generations-server'
+import { uploadGeneratedImageServer, uploadInputImageServer } from '@/lib/supabase/storage-server'
 
 export const maxDuration = 120
 
@@ -216,8 +217,28 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
     
-    // Save successful generation record to database
+    // If user is logged in, upload images to Supabase Storage
+    let finalImages = results
+    const generationId = generateId()
+    
     if (userId) {
+      console.log('Uploading images to Supabase Storage...')
+      const uploadPromises = results.map((base64Url, index) => 
+        uploadGeneratedImageServer(base64Url, generationId, index, userId)
+      )
+      
+      // Also upload input image
+      uploadInputImageServer(productImage, generationId, userId).catch(console.error)
+      
+      const uploadedUrls = await Promise.all(uploadPromises)
+      
+      // Replace base64 with storage URLs where upload succeeded
+      finalImages = uploadedUrls.map((url, index) => url || results[index])
+      
+      const successfulUploads = uploadedUrls.filter(Boolean).length
+      console.log(`Uploaded ${successfulUploads}/${results.length} images to storage`)
+      
+      // Save generation record with storage URLs
       saveGenerationServer(
         userId,
         'camera',
@@ -228,15 +249,16 @@ export async function POST(request: NextRequest) {
           backgroundImageUrl: backgroundImage ? '[provided]' : undefined,
           vibeImageUrl: vibeImage ? '[provided]' : undefined,
         },
-        results,
+        finalImages,
         duration,
         'completed'
-      ).catch(console.error) // Don't block response
+      ).catch(console.error)
     }
     
     return NextResponse.json({
       success: true,
-      images: results,
+      images: finalImages,
+      generationId,
       stats: {
         total: 4,
         successful: results.length,

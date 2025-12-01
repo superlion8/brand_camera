@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getGenAIClient, extractImage, safetySettings } from '@/lib/genai'
 import { buildModelPrompt, EDIT_PROMPT_PREFIX } from '@/prompts'
-import { stripBase64Prefix } from '@/lib/utils'
+import { stripBase64Prefix, generateId } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/server'
 import { saveGenerationServer } from '@/lib/supabase/generations-server'
+import { uploadGeneratedImageServer, uploadInputImageServer } from '@/lib/supabase/storage-server'
 
 export const maxDuration = 120
 
@@ -120,10 +121,24 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
     
-    const outputUrl = `data:image/png;base64,${resultImage}`
+    let outputUrl = `data:image/png;base64,${resultImage}`
+    const generationId = generateId()
     
-    // Save successful edit record
+    // If user is logged in, upload to Supabase Storage
     if (userId) {
+      console.log('Uploading edited image to Supabase Storage...')
+      
+      // Upload output image
+      const storageUrl = await uploadGeneratedImageServer(outputUrl, generationId, 0, userId)
+      if (storageUrl) {
+        outputUrl = storageUrl
+        console.log('Successfully uploaded to storage')
+      }
+      
+      // Also upload input image
+      uploadInputImageServer(inputImage, generationId, userId).catch(console.error)
+      
+      // Save edit record with storage URL
       saveGenerationServer(
         userId,
         'edit',
@@ -144,6 +159,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       image: outputUrl,
+      generationId,
     })
     
   } catch (error: any) {
