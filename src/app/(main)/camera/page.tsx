@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import Webcam from "react-webcam"
 import { 
   ArrowLeft, Check, Loader2, Image as ImageIcon, 
-  SlidersHorizontal, X, Sparkles, Wand2, Camera, Home 
+  SlidersHorizontal, X, Sparkles, Wand2, Camera, Home,
+  Heart, Download
 } from "lucide-react"
 import { useCameraStore } from "@/stores/cameraStore"
 import { useAssetStore } from "@/stores/assetStore"
@@ -57,6 +58,8 @@ export default function CameraPage() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
   const [hasCamera, setHasCamera] = useState(true)
   const [generatedImages, setGeneratedImages] = useState<string[]>([])
+  const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
+  const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
   
   // Panel states
   const [showCustomPanel, setShowCustomPanel] = useState(false)
@@ -70,7 +73,7 @@ export default function CameraPage() {
   const [selectedModelStyle, setSelectedModelStyle] = useState<ModelStyle | null>(null)
   const [selectedModelGender, setSelectedModelGender] = useState<ModelGender | null>(null)
   
-  const { addGeneration, userModels, userBackgrounds, userVibes } = useAssetStore()
+  const { addGeneration, userModels, userBackgrounds, userVibes, addFavorite, removeFavorite, isFavorited, favorites } = useAssetStore()
   
   // Merge user assets with presets (user assets first)
   const allModels = [...userModels, ...presetModels]
@@ -156,6 +159,7 @@ export default function CameraPage() {
         
         // Save to history
         const id = generateId()
+        setCurrentGenerationId(id) // Save the generation ID for favorites
         await addGeneration({
           id,
           type: "camera_model",
@@ -188,6 +192,44 @@ export default function CameraPage() {
   
   const handleReturn = () => {
     router.push("/")
+  }
+  
+  // Handle favorite toggle for result images
+  const handleResultFavorite = async (imageIndex: number) => {
+    if (!currentGenerationId) return
+    
+    const currentlyFavorited = isFavorited(currentGenerationId, imageIndex)
+    
+    if (currentlyFavorited) {
+      const fav = favorites.find(
+        (f) => f.generationId === currentGenerationId && f.imageIndex === imageIndex
+      )
+      if (fav) {
+        await removeFavorite(fav.id)
+      }
+    } else {
+      await addFavorite({
+        generationId: currentGenerationId,
+        imageIndex,
+        createdAt: new Date().toISOString(),
+      })
+    }
+  }
+  
+  // Handle go to edit with image
+  const handleGoToEdit = (imageUrl: string) => {
+    sessionStorage.setItem('editImage', imageUrl)
+    router.push("/edit")
+  }
+  
+  // Handle download
+  const handleDownload = (url: string) => {
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `brand-camera-${Date.now()}.jpg`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
   
   // Asset grid component
@@ -615,12 +657,12 @@ export default function CameraPage() {
             initial={{ opacity: 0, y: 20 }} 
             animate={{ opacity: 1, y: 0 }} 
             exit={{ opacity: 0, y: 20 }}
-            className="flex-1 flex flex-col bg-zinc-50 dark:bg-zinc-950 overflow-hidden"
+            className="flex-1 flex flex-col bg-zinc-50 overflow-hidden"
           >
-            <div className="h-14 flex items-center px-4 border-b bg-white dark:bg-zinc-900 z-10">
+            <div className="h-14 flex items-center px-4 border-b bg-white z-10">
               <button 
                 onClick={handleRetake} 
-                className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center"
+                className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
@@ -638,10 +680,31 @@ export default function CameraPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {generatedImages.slice(0, 2).map((url, i) => (
-                    <div key={i} className="group relative aspect-[4/5] bg-zinc-100 rounded-lg overflow-hidden shadow-sm border border-zinc-200">
+                    <div 
+                      key={i} 
+                      className="group relative aspect-[4/5] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer"
+                      onClick={() => setSelectedResultIndex(i)}
+                    >
                       <Image src={url} alt="Result" fill className="object-cover" />
-                      <div className="absolute top-2 right-2 bg-white/90 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
-                        <Check className="w-3 h-3 text-green-600" />
+                      {/* Favorite button - always visible */}
+                      <button 
+                        className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-colors ${
+                          currentGenerationId && isFavorited(currentGenerationId, i) 
+                            ? "bg-red-500 text-white" 
+                            : "bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500"
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleResultFavorite(i)
+                        }}
+                      >
+                        <Heart className={`w-4 h-4 ${currentGenerationId && isFavorited(currentGenerationId, i) ? "fill-current" : ""}`} />
+                      </button>
+                      {/* Type badge */}
+                      <div className="absolute top-2 left-2">
+                        <span className="px-2 py-1 rounded text-[10px] font-medium bg-blue-500 text-white">
+                          产品
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -657,26 +720,129 @@ export default function CameraPage() {
                   </h3>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  {generatedImages.slice(2, 4).map((url, i) => (
-                    <div key={i} className="group relative aspect-[4/5] bg-zinc-100 rounded-lg overflow-hidden shadow-sm border border-zinc-200">
-                      <Image src={url} alt="Result" fill className="object-cover" />
-                      <div className="absolute top-2 right-2 bg-white/90 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
-                        <Check className="w-3 h-3 text-green-600" />
+                  {generatedImages.slice(2, 4).map((url, i) => {
+                    const actualIndex = i + 2
+                    return (
+                      <div 
+                        key={i} 
+                        className="group relative aspect-[4/5] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer"
+                        onClick={() => setSelectedResultIndex(actualIndex)}
+                      >
+                        <Image src={url} alt="Result" fill className="object-cover" />
+                        {/* Favorite button - always visible */}
+                        <button 
+                          className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-colors ${
+                            currentGenerationId && isFavorited(currentGenerationId, actualIndex) 
+                              ? "bg-red-500 text-white" 
+                              : "bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500"
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleResultFavorite(actualIndex)
+                          }}
+                        >
+                          <Heart className={`w-4 h-4 ${currentGenerationId && isFavorited(currentGenerationId, actualIndex) ? "fill-current" : ""}`} />
+                        </button>
+                        {/* Type badge */}
+                        <div className="absolute top-2 left-2">
+                          <span className="px-2 py-1 rounded text-[10px] font-medium bg-purple-500 text-white">
+                            模特
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             </div>
 
-            <div className="p-4 bg-white dark:bg-zinc-900 border-t shadow-up">
+            <div className="p-4 bg-white border-t shadow-up">
               <button 
                 onClick={handleRetake}
-                className="w-full h-12 text-lg rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-semibold hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors"
+                className="w-full h-12 text-lg rounded-lg bg-zinc-900 text-white font-semibold hover:bg-zinc-800 transition-colors"
               >
                 拍摄下一组
               </button>
             </div>
+            
+            {/* Result Detail Dialog */}
+            {selectedResultIndex !== null && generatedImages[selectedResultIndex] && (
+              <div className="fixed inset-0 z-50 bg-white overflow-hidden">
+                <div className="h-full flex flex-col">
+                  {/* Header */}
+                  <div className="h-14 flex items-center justify-between px-4 bg-white border-b shrink-0">
+                    <button
+                      onClick={() => setSelectedResultIndex(null)}
+                      className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center transition-colors"
+                    >
+                      <X className="w-5 h-5 text-zinc-700" />
+                    </button>
+                    <span className="font-semibold text-zinc-900">详情</span>
+                    <div className="w-10" />
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 overflow-y-auto bg-zinc-100">
+                    <div className="relative aspect-[4/5] bg-zinc-900">
+                      <Image 
+                        src={generatedImages[selectedResultIndex]} 
+                        alt="Detail" 
+                        fill 
+                        className="object-contain" 
+                      />
+                    </div>
+                    
+                    <div className="p-4 bg-white">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                              selectedResultIndex < 2 
+                                ? "bg-blue-100 text-blue-700" 
+                                : "bg-purple-100 text-purple-700"
+                            }`}>
+                              {selectedResultIndex < 2 ? "产品展示" : "模特展示"}
+                            </span>
+                          </div>
+                          <p className="text-xs text-zinc-400">
+                            刚刚生成
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleResultFavorite(selectedResultIndex)}
+                            className={`w-10 h-10 rounded-lg border flex items-center justify-center transition-colors ${
+                              currentGenerationId && isFavorited(currentGenerationId, selectedResultIndex)
+                                ? "bg-red-50 border-red-200 text-red-500"
+                                : "border-zinc-200 text-zinc-600 hover:bg-zinc-50"
+                            }`}
+                          >
+                            <Heart className={`w-4 h-4 ${currentGenerationId && isFavorited(currentGenerationId, selectedResultIndex) ? "fill-current" : ""}`} />
+                          </button>
+                          <button
+                            onClick={() => handleDownload(generatedImages[selectedResultIndex])}
+                            className="w-10 h-10 rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-50 flex items-center justify-center transition-colors"
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <button 
+                        onClick={() => {
+                          setSelectedResultIndex(null)
+                          handleGoToEdit(generatedImages[selectedResultIndex])
+                        }}
+                        className="w-full h-12 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2 transition-colors"
+                      >
+                        <Wand2 className="w-4 h-4" />
+                        去修图
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
