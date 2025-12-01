@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react"
 import Image from "next/image"
-import { Wand2, X, Check, Loader2, Image as ImageIcon, Home, ArrowLeft, Lightbulb, Sun, Sparkles, Zap, Camera, FolderHeart, Upload } from "lucide-react"
+import { Wand2, X, Check, Loader2, Image as ImageIcon, Home, ArrowLeft, Lightbulb, Sun, Sparkles, Zap, Camera, FolderHeart, Upload, Images } from "lucide-react"
 import { AssetSelector } from "@/components/camera/AssetSelector"
 import { Asset, ModelStyle, ModelGender } from "@/types"
 import { fileToBase64, compressBase64Image, fetchWithTimeout, generateId, ensureBase64 } from "@/lib/utils"
@@ -70,6 +70,7 @@ export default function EditPage() {
   // Camera and upload states
   const [showCamera, setShowCamera] = useState(false)
   const [showProductPanel, setShowProductPanel] = useState(false)
+  const [showGalleryPanel, setShowGalleryPanel] = useState(false)
   const [productSourceTab, setProductSourceTab] = useState<'preset' | 'user'>('preset')
   const [hasCamera, setHasCamera] = useState(true)
   const [cameraReady, setCameraReady] = useState(false)
@@ -101,7 +102,7 @@ export default function EditPage() {
   const [lightDirection, setLightDirection] = useState('front')
   const [lightColor, setLightColor] = useState('#FFFFFF')
   
-  const { addGeneration, userProducts } = useAssetStore()
+  const { addGeneration, userProducts, generations } = useAssetStore()
   
   // Camera handlers
   const handleCapture = useCallback(() => {
@@ -134,6 +135,19 @@ export default function EditPage() {
       }
     } catch (e) {
       console.error('Failed to load asset:', e)
+    }
+  }, [])
+  
+  const handleSelectFromGallery = useCallback(async (imageUrl: string) => {
+    try {
+      const base64 = await ensureBase64(imageUrl)
+      if (base64) {
+        setInputImage(base64)
+        setShowGalleryPanel(false)
+        setResultImage(null)
+      }
+    } catch (e) {
+      console.error('Failed to load gallery image:', e)
     }
   }, [])
   
@@ -365,23 +379,32 @@ export default function EditPage() {
                 <span className="font-medium">拍摄</span>
               </button>
               
-              <div className="flex gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {/* Album */}
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex-1 h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-2 transition-colors"
+                  className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <Upload className="w-4 h-4 text-zinc-500" />
-                  <span className="text-sm text-zinc-700">相册</span>
+                  <span className="text-xs text-zinc-700">相册</span>
                 </button>
                 
                 {/* Asset library */}
                 <button
                   onClick={() => setShowProductPanel(true)}
-                  className="flex-1 h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-2 transition-colors"
+                  className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <FolderHeart className="w-4 h-4 text-zinc-500" />
-                  <span className="text-sm text-zinc-700">资产库</span>
+                  <span className="text-xs text-zinc-700">资产库</span>
+                </button>
+                
+                {/* Gallery */}
+                <button
+                  onClick={() => setShowGalleryPanel(true)}
+                  className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-1.5 transition-colors"
+                >
+                  <Images className="w-4 h-4 text-zinc-500" />
+                  <span className="text-xs text-zinc-700">图库</span>
                 </button>
               </div>
             </div>
@@ -871,6 +894,79 @@ export default function EditPage() {
                       className="mt-4 px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600"
                     >
                       去上传
+                    </button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+      
+      {/* Gallery Selection Panel */}
+      <AnimatePresence>
+        {showGalleryPanel && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
+              onClick={() => setShowGalleryPanel(false)}
+            />
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed bottom-0 left-0 right-0 h-[70%] bg-white rounded-t-2xl z-50 flex flex-col overflow-hidden"
+            >
+              <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
+                <span className="font-semibold">从图库选择</span>
+                <button
+                  onClick={() => setShowGalleryPanel(false)}
+                  className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto bg-zinc-50 p-4">
+                {generations.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-3">
+                    {generations
+                      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                      .flatMap(gen => gen.outputImageUrls.map((url, idx) => ({ url, gen, idx })))
+                      .map((item, index) => (
+                        <button
+                          key={`${item.gen.id}-${item.idx}`}
+                          onClick={() => handleSelectFromGallery(item.url)}
+                          className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all bg-white"
+                        >
+                          <Image src={item.url} alt={`生成图 ${index + 1}`} fill className="object-cover" />
+                          <span className={`absolute top-1 left-1 text-white text-[8px] px-1 py-0.5 rounded font-medium ${
+                            item.gen.type === 'studio' ? 'bg-amber-500' :
+                            item.idx < 2 ? 'bg-blue-500' : 'bg-purple-500'
+                          }`}>
+                            {item.gen.type === 'studio' ? '影棚' :
+                             item.idx < 2 ? '产品' : '模特'}
+                          </span>
+                        </button>
+                      ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-zinc-400">
+                    <Images className="w-12 h-12 mb-3 opacity-30" />
+                    <p className="text-sm">暂无生成记录</p>
+                    <p className="text-xs mt-1">先去拍摄生成一些图片吧</p>
+                    <button
+                      onClick={() => {
+                        setShowGalleryPanel(false)
+                        router.push("/camera")
+                      }}
+                      className="mt-4 px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600"
+                    >
+                      去拍摄
                     </button>
                   </div>
                 )}
