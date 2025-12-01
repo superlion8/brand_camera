@@ -148,10 +148,31 @@ export async function POST(request: NextRequest) {
     const client = getGenAIClient()
     
     // Pre-process images once (strip base64 prefix)
+    console.log('Processing input images...')
+    console.log('- productImage length:', productImage?.length || 0)
+    console.log('- modelImage length:', modelImage?.length || 0)
+    console.log('- backgroundImage length:', backgroundImage?.length || 0)
+    console.log('- vibeImage length:', vibeImage?.length || 0)
+    
     const productImageData = stripBase64Prefix(productImage)
     const modelImageData = modelImage ? stripBase64Prefix(modelImage) : null
     const backgroundImageData = backgroundImage ? stripBase64Prefix(backgroundImage) : null
     const vibeImageData = vibeImage ? stripBase64Prefix(vibeImage) : null
+    
+    // Validate product image
+    if (!productImageData || productImageData.length < 100) {
+      console.error('Invalid product image data, length:', productImageData?.length)
+      return NextResponse.json({ 
+        success: false, 
+        error: '商品图片格式无效，请重新拍摄或上传' 
+      }, { status: 400 })
+    }
+    
+    console.log('Processed image data lengths:')
+    console.log('- productImageData:', productImageData.length)
+    console.log('- modelImageData:', modelImageData?.length || 'null')
+    console.log('- backgroundImageData:', backgroundImageData?.length || 'null')
+    console.log('- vibeImageData:', vibeImageData?.length || 'null')
     
     // Build model prompt once
     const modelPrompt = buildModelPrompt({

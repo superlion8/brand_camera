@@ -15,9 +15,29 @@ export function fileToBase64(file: File): Promise<string> {
   })
 }
 
-// Strip base64 prefix
+// Strip base64 prefix - handles various image formats
 export function stripBase64Prefix(base64: string): string {
-  return base64.replace(/^data:image\/\w+;base64,/, '')
+  if (!base64) {
+    console.error('stripBase64Prefix: Received empty or null input')
+    return ''
+  }
+  
+  // Handle various base64 prefixes (jpeg, png, webp, gif, svg+xml, etc.)
+  const prefixMatch = base64.match(/^data:image\/[^;]+;base64,/)
+  if (prefixMatch) {
+    const stripped = base64.substring(prefixMatch[0].length)
+    console.log(`stripBase64Prefix: Stripped prefix "${prefixMatch[0].substring(0, 30)}...", result length: ${stripped.length}`)
+    return stripped
+  }
+  
+  // If no prefix found, check if it looks like raw base64
+  if (/^[A-Za-z0-9+/=]+$/.test(base64.substring(0, 100))) {
+    console.log('stripBase64Prefix: Input appears to be raw base64, length:', base64.length)
+    return base64
+  }
+  
+  console.warn('stripBase64Prefix: Unrecognized format, first 50 chars:', base64.substring(0, 50))
+  return base64
 }
 
 // Generate unique ID
