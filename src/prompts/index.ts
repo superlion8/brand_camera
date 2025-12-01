@@ -18,12 +18,10 @@ export const buildInstructPrompt = (params: {
   
   if (params.modelStyle && params.modelStyle !== 'auto') {
     const styleMap: Record<string, string> = {
-      japanese: '日系',
-      korean: '韩系',
-      chinese: '中式',
-      western: '欧美'
+      korean: '韩模风格',
+      western: '外模风格'
     }
-    prompt += `、模特风格${styleMap[params.modelStyle]}`
+    prompt += `、模特风格${styleMap[params.modelStyle] || params.modelStyle}`
   }
 
   if (params.hasBackground) {
@@ -67,12 +65,10 @@ export const buildModelPrompt = (params: {
     
     if (params.modelStyle && params.modelStyle !== 'auto') {
       const styleMap: Record<string, string> = {
-        japanese: 'Japanese',
-        korean: 'Korean',
-        chinese: 'Chinese',
+        korean: 'Korean idol',
         western: 'Western'
       }
-      prompt += ` In a style of ${styleMap[params.modelStyle]}`
+      prompt += ` In a style of ${styleMap[params.modelStyle] || params.modelStyle}`
     }
     
     if (params.modelGender) {

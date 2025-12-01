@@ -22,10 +22,8 @@ import {
 } from "@/data/presets"
 
 const MODEL_STYLES: { id: ModelStyle; label: string }[] = [
-  { id: "japanese", label: "日系" },
-  { id: "korean", label: "韩系" },
-  { id: "chinese", label: "中式" },
-  { id: "western", label: "欧美" },
+  { id: "korean", label: "韩模" },
+  { id: "western", label: "外模" },
 ]
 
 const MODEL_GENDERS: { id: ModelGender; label: string }[] = [

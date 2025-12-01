@@ -4,19 +4,18 @@ import { Asset, AssetType } from '@/types'
 const STORAGE_URL = 'https://cvdogeigbpussfamctsu.supabase.co/storage/v1/object/public/presets'
 
 // Cache buster version - increment to force refresh
-const CACHE_VERSION = 'v2'
+const CACHE_VERSION = 'v3'
 
-// Model subcategory type
-export type ModelSubcategory = 'chinese' | 'korean' | 'western'
+// Model subcategory type (updated)
+export type ModelSubcategory = 'korean' | 'western'
 
 // Background subcategory type  
 export type BackgroundSubcategory = 'indoor' | 'outdoor' | 'street'
 
 // Model subcategory labels
 export const MODEL_SUBCATEGORIES: { id: ModelSubcategory; label: string }[] = [
-  { id: 'chinese', label: '中式' },
-  { id: 'korean', label: '韩系' },
-  { id: 'western', label: '欧美' },
+  { id: 'korean', label: '韩模' },
+  { id: 'western', label: '外模' },
 ]
 
 // Background subcategory labels
@@ -26,69 +25,59 @@ export const BACKGROUND_SUBCATEGORIES: { id: BackgroundSubcategory; label: strin
   { id: 'street', label: '街头' },
 ]
 
-// Preset Models - Using Supabase Storage URLs
+// Preset Models - 70 total (外模 32 + 韩模 38)
 export const PRESET_MODELS: Asset[] = [
-  // 中式 (3)
-  { id: 'pm-ch-1', type: 'model', name: '中式 1', imageUrl: `${STORAGE_URL}/models/chinese/model-1.png?${CACHE_VERSION}`, isSystem: true, styleCategory: 'chinese', category: 'chinese' },
-  { id: 'pm-ch-2', type: 'model', name: '中式 2', imageUrl: `${STORAGE_URL}/models/chinese/model-2.png?${CACHE_VERSION}`, isSystem: true, styleCategory: 'chinese', category: 'chinese' },
-  { id: 'pm-ch-3', type: 'model', name: '中式 3', imageUrl: `${STORAGE_URL}/models/chinese/model-3.png?${CACHE_VERSION}`, isSystem: true, styleCategory: 'chinese', category: 'chinese' },
-  // 韩系 (4)
-  { id: 'pm-ko-1', type: 'model', name: '韩系 1', imageUrl: `${STORAGE_URL}/models/korean/model-1.png?${CACHE_VERSION}`, isSystem: true, styleCategory: 'korean', category: 'korean' },
-  { id: 'pm-ko-2', type: 'model', name: '韩系 2', imageUrl: `${STORAGE_URL}/models/korean/model-2.png?${CACHE_VERSION}`, isSystem: true, styleCategory: 'korean', category: 'korean' },
-  { id: 'pm-ko-3', type: 'model', name: '韩系 3', imageUrl: `${STORAGE_URL}/models/korean/model-3.png?${CACHE_VERSION}`, isSystem: true, styleCategory: 'korean', category: 'korean' },
-  { id: 'pm-ko-4', type: 'model', name: '韩系 4', imageUrl: `${STORAGE_URL}/models/korean/model-4.png?${CACHE_VERSION}`, isSystem: true, styleCategory: 'korean', category: 'korean' },
-  // 欧美 (3)
-  { id: 'pm-we-1', type: 'model', name: '欧美 1', imageUrl: `${STORAGE_URL}/models/western/model-1.png?${CACHE_VERSION}`, isSystem: true, styleCategory: 'western', category: 'western' },
-  { id: 'pm-we-2', type: 'model', name: '欧美 2', imageUrl: `${STORAGE_URL}/models/western/model-2.png?${CACHE_VERSION}`, isSystem: true, styleCategory: 'western', category: 'western' },
-  { id: 'pm-we-3', type: 'model', name: '欧美 3', imageUrl: `${STORAGE_URL}/models/western/model-3.png?${CACHE_VERSION}`, isSystem: true, styleCategory: 'western', category: 'western' },
+  // 外模 (32)
+  ...Array.from({ length: 32 }, (_, i) => ({
+    id: `pm-we-${i + 1}`,
+    type: 'model' as AssetType,
+    name: `外模 ${i + 1}`,
+    imageUrl: `${STORAGE_URL}/models/western/model-${i + 1}.jpg?${CACHE_VERSION}`,
+    isSystem: true,
+    styleCategory: 'western',
+    category: 'western' as ModelSubcategory,
+  })),
+  // 韩模 (38)
+  ...Array.from({ length: 38 }, (_, i) => ({
+    id: `pm-ko-${i + 1}`,
+    type: 'model' as AssetType,
+    name: `韩模 ${i + 1}`,
+    imageUrl: `${STORAGE_URL}/models/korean/model-${i + 1}.jpg?${CACHE_VERSION}`,
+    isSystem: true,
+    styleCategory: 'korean',
+    category: 'korean' as ModelSubcategory,
+  })),
 ]
 
-// Preset Backgrounds - 232 images total (室内 100, 自然 24, 街头 108)
+// Preset Backgrounds - 117 total (室内 58 + 自然 13 + 街头 46)
 export const PRESET_BACKGROUNDS: Asset[] = [
-  // 室内 (100)
-  ...Array.from({ length: 100 }, (_, i) => {
-    const idx = i + 1
-    // Most are jpg, some are png (96-100)
-    const ext = idx >= 96 ? 'png' : 'jpg'
-    return {
-      id: `pb-in-${idx}`,
-      type: 'background' as AssetType,
-      name: `室内 ${idx}`,
-      imageUrl: `${STORAGE_URL}/backgrounds/indoor/bg-${idx}.${ext}`,
-      isSystem: true,
-      category: 'indoor' as const
-    }
-  }),
-  
-  // 自然 (24)
-  ...Array.from({ length: 24 }, (_, i) => {
-    const idx = i + 1
-    // 1-17 are jpg, 18-24 are png
-    const ext = idx >= 18 ? 'png' : 'jpg'
-    return {
-      id: `pb-ou-${idx}`,
-      type: 'background' as AssetType,
-      name: `自然 ${idx}`,
-      imageUrl: `${STORAGE_URL}/backgrounds/outdoor/bg-${idx}.${ext}`,
-      isSystem: true,
-      category: 'outdoor' as const
-    }
-  }),
-  
-  // 街头 (108)
-  ...Array.from({ length: 108 }, (_, i) => {
-    const idx = i + 1
-    // 2-9, 13-15, 17-18, 21-64, 66-82 are jpg; 83-108 are png; rest are converted from heic to jpg
-    const ext = idx >= 83 ? 'png' : 'jpg'
-    return {
-      id: `pb-st-${idx}`,
-      type: 'background' as AssetType,
-      name: `街头 ${idx}`,
-      imageUrl: `${STORAGE_URL}/backgrounds/street/bg-${idx}.${ext}`,
-      isSystem: true,
-      category: 'street' as const
-    }
-  }),
+  // 室内 (58)
+  ...Array.from({ length: 58 }, (_, i) => ({
+    id: `pb-in-${i + 1}`,
+    type: 'background' as AssetType,
+    name: `室内 ${i + 1}`,
+    imageUrl: `${STORAGE_URL}/backgrounds/indoor/bg-${i + 1}.jpg?${CACHE_VERSION}`,
+    isSystem: true,
+    category: 'indoor' as BackgroundSubcategory,
+  })),
+  // 自然 (13)
+  ...Array.from({ length: 13 }, (_, i) => ({
+    id: `pb-ou-${i + 1}`,
+    type: 'background' as AssetType,
+    name: `自然 ${i + 1}`,
+    imageUrl: `${STORAGE_URL}/backgrounds/outdoor/bg-${i + 1}.jpg?${CACHE_VERSION}`,
+    isSystem: true,
+    category: 'outdoor' as BackgroundSubcategory,
+  })),
+  // 街头 (46)
+  ...Array.from({ length: 46 }, (_, i) => ({
+    id: `pb-st-${i + 1}`,
+    type: 'background' as AssetType,
+    name: `街头 ${i + 1}`,
+    imageUrl: `${STORAGE_URL}/backgrounds/street/bg-${i + 1}.jpg?${CACHE_VERSION}`,
+    isSystem: true,
+    category: 'street' as BackgroundSubcategory,
+  })),
 ]
 
 // Preset Vibes - Using Supabase Storage URLs

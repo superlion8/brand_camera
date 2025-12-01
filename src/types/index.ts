@@ -1,4 +1,4 @@
-export type ModelStyle = 'japanese' | 'korean' | 'chinese' | 'western' | 'auto'
+export type ModelStyle = 'korean' | 'western' | 'auto'
 
 export type ModelGender = 'male' | 'female'
 
@@ -6,7 +6,7 @@ export type AssetType = 'model' | 'background' | 'product' | 'vibe'
 
 export type GenerationType = 'camera_product' | 'camera_model' | 'edit'
 
-export type ModelSubcategory = 'chinese' | 'korean' | 'western' | 'japanese'
+export type ModelSubcategory = 'korean' | 'western'
 export type BackgroundSubcategory = 'indoor' | 'outdoor' | 'street'
 
 export interface Asset {
