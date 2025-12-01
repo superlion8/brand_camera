@@ -323,6 +323,7 @@ export default function CameraPage() {
       // Process results - maintain order: product1, product2, model1, model2
       const allImages: (string | null)[] = [null, null, null, null]
       const allModelTypes: (('pro' | 'flash') | null)[] = [null, null, null, null]
+      const allPrompts: (string | null)[] = [null, null, null, null]
       let maxDuration = 0
       
       for (let i = 0; i < responses.length; i++) {
@@ -335,6 +336,7 @@ export default function CameraPage() {
               const targetIndex = result.type === 'product' ? result.index : result.index + 2
               allImages[targetIndex] = result.image
               allModelTypes[targetIndex] = result.modelType
+              allPrompts[targetIndex] = result.prompt || null
               maxDuration = Math.max(maxDuration, result.duration || 0)
               console.log(`${result.type} ${result.index + 1}: ✓ (${result.modelType}, ${result.duration}ms)`)
             } else {
@@ -352,11 +354,20 @@ export default function CameraPage() {
       const finalImages = allImages.filter((img): img is string => img !== null)
       const finalModelTypes = allModelTypes.filter((t): t is 'pro' | 'flash' => t !== null)
       
+      // Combine prompts (take first non-null for product and model)
+      const productPrompt = allPrompts[0] || allPrompts[1] || ''
+      const modelPrompt = allPrompts[2] || allPrompts[3] || ''
+      const combinedPrompt = [
+        productPrompt ? `[产品图 Prompt]\n${productPrompt}` : '',
+        modelPrompt ? `[模特图 Prompt]\n${modelPrompt}` : ''
+      ].filter(Boolean).join('\n\n')
+      
       // Create combined data object
       const data = {
         success: finalImages.length > 0,
         images: finalImages,
         modelTypes: finalModelTypes,
+        prompt: combinedPrompt,
         stats: {
           total: 4,
           successful: finalImages.length,
@@ -398,6 +409,7 @@ export default function CameraPage() {
           type: "camera_model",
           inputImageUrl: inputImage,
           outputImageUrls: data.images,
+          prompt: data.prompt || undefined,
           createdAt: new Date().toISOString(),
           params: { 
             modelStyle: modelStyle || undefined,

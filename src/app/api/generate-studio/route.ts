@@ -196,6 +196,7 @@ export async function POST(request: NextRequest) {
       index,
       image: `data:image/png;base64,${result.image}`,
       modelType: result.model,
+      prompt: prompt,
       duration,
     })
     

@@ -347,6 +347,18 @@ export default function GalleryPage() {
                 <div className="mt-6 pt-4 border-t border-zinc-100">
                   <h3 className="text-sm font-semibold text-zinc-700 mb-3">生成参数</h3>
                   
+                  {/* Prompt */}
+                  {selectedItem.gen.prompt && (
+                    <div className="mb-4">
+                      <p className="text-xs font-medium text-zinc-500 mb-2">Prompt</p>
+                      <div className="bg-zinc-50 rounded-lg p-3 max-h-40 overflow-y-auto">
+                        <pre className="text-[11px] text-zinc-600 whitespace-pre-wrap font-mono leading-relaxed">
+                          {selectedItem.gen.prompt}
+                        </pre>
+                      </div>
+                    </div>
+                  )}
+                  
                   {/* Reference Images */}
                   <div className="space-y-3">
                     {/* Input Product Image */}

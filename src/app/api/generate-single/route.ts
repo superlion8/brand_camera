@@ -176,10 +176,12 @@ export async function POST(request: NextRequest) {
     }
     
     let result: ImageResult | null = null
+    let usedPrompt: string = ''
     
     if (type === 'product') {
       // Generate product image
       console.log(`[${label}] Generating product image...`)
+      usedPrompt = PRODUCT_PROMPT
       const parts: any[] = [
         { text: PRODUCT_PROMPT },
         { inlineData: { mimeType: 'image/jpeg', data: productImageData } },
@@ -207,6 +209,12 @@ export async function POST(request: NextRequest) {
         instructPrompt: instructPrompt || undefined,
         hasProduct2: !!productImage2Data,
       })
+      
+      // Save the full prompt used
+      usedPrompt = modelPrompt
+      if (instructPrompt) {
+        usedPrompt = `[Photography Instructions]\n${instructPrompt}\n\n[Image Generation Prompt]\n${modelPrompt}`
+      }
       
       const parts: any[] = []
       if (modelImageData) {
@@ -249,6 +257,7 @@ export async function POST(request: NextRequest) {
       index,
       image: `data:image/png;base64,${result.image}`,
       modelType: result.model,
+      prompt: usedPrompt,
       duration,
     })
     

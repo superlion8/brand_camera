@@ -259,6 +259,7 @@ export default function StudioPage() {
       
       const images: (string | null)[] = [null, null]
       const modelTypes: (('pro' | 'flash') | null)[] = [null, null]
+      let usedPrompt: string = ''
       
       for (const response of responses) {
         if (response.status === 'fulfilled') {
@@ -267,6 +268,9 @@ export default function StudioPage() {
             if (result.success && result.image) {
               images[result.index] = result.image
               modelTypes[result.index] = result.modelType
+              if (result.prompt && !usedPrompt) {
+                usedPrompt = result.prompt
+              }
               console.log(`Studio ${result.index + 1}: ✓ (${result.modelType}, ${result.duration}ms)`)
             }
           } catch (e) {
@@ -289,6 +293,7 @@ export default function StudioPage() {
           type: "studio",
           inputImageUrl: productImage,
           outputImageUrls: finalImages,
+          prompt: usedPrompt || undefined,
           createdAt: new Date().toISOString(),
           params: { lightType, lightDirection, lightColor: bgColor, aspectRatio },
         })
