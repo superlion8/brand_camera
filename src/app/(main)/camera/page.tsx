@@ -13,8 +13,12 @@ import { useCameraStore } from "@/stores/cameraStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { useRouter } from "next/navigation"
 import { fileToBase64, generateId, compressBase64Image, fetchWithTimeout, ensureBase64 } from "@/lib/utils"
-import { Asset, ModelStyle, ModelGender } from "@/types"
+import { Asset, ModelStyle, ModelGender, ModelSubcategory, BackgroundSubcategory } from "@/types"
 import Image from "next/image"
+import { 
+  PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_VIBES,
+  MODEL_SUBCATEGORIES, BACKGROUND_SUBCATEGORIES
+} from "@/data/presets"
 
 const MODEL_STYLES: { id: ModelStyle; label: string }[] = [
   { id: "japanese", label: "日系" },
@@ -26,25 +30,6 @@ const MODEL_STYLES: { id: ModelStyle; label: string }[] = [
 const MODEL_GENDERS: { id: ModelGender; label: string }[] = [
   { id: "female", label: "女" },
   { id: "male", label: "男" },
-]
-
-// Demo preset assets
-const presetModels: Asset[] = [
-  { id: "pm1", type: "model", name: "Japanese Style", imageUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400", styleCategory: "japanese" },
-  { id: "pm2", type: "model", name: "Korean Clean", imageUrl: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400", styleCategory: "korean" },
-  { id: "pm3", type: "model", name: "Western Casual", imageUrl: "https://images.unsplash.com/photo-1529139574466-a302d2052505?w=400", styleCategory: "western" },
-  { id: "pm4", type: "model", name: "Chinese Modern", imageUrl: "https://images.unsplash.com/photo-1594751684246-34925515a838?w=400", styleCategory: "chinese" },
-]
-
-const presetBackgrounds: Asset[] = [
-  { id: "bg1", type: "background", name: "Minimal Studio", imageUrl: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400" },
-  { id: "bg2", type: "background", name: "Urban Street", imageUrl: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=400" },
-  { id: "bg3", type: "background", name: "Nature Soft", imageUrl: "https://images.unsplash.com/photo-1518173946687-a4c88928d9fd?w=400" },
-]
-
-const presetVibes: Asset[] = [
-  { id: "v1", type: "vibe", name: "Warm & Cozy", imageUrl: "https://images.unsplash.com/photo-1542204165-65bf26472b9b?w=400" },
-  { id: "v2", type: "vibe", name: "Cool & Edgy", imageUrl: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=400" },
 ]
 
 type CameraMode = "camera" | "review" | "processing" | "results"
@@ -100,6 +85,8 @@ export default function CameraPage() {
   const [selectedVibe, setSelectedVibe] = useState<string | null>(null)
   const [selectedModelStyle, setSelectedModelStyle] = useState<ModelStyle | null>(null)
   const [selectedModelGender, setSelectedModelGender] = useState<ModelGender | null>(null)
+  const [modelSubcategory, setModelSubcategory] = useState<ModelSubcategory | null>(null)
+  const [bgSubcategory, setBgSubcategory] = useState<BackgroundSubcategory | null>(null)
   
   const { addGeneration, userModels, userBackgrounds, userVibes, addFavorite, removeFavorite, isFavorited, favorites } = useAssetStore()
   
@@ -111,10 +98,18 @@ export default function CameraPage() {
       return 0
     })
   
+  // Filter presets by subcategory
+  const filteredPresetModels = modelSubcategory 
+    ? PRESET_MODELS.filter(m => m.subcategory === modelSubcategory)
+    : PRESET_MODELS
+  const filteredPresetBackgrounds = bgSubcategory
+    ? PRESET_BACKGROUNDS.filter(b => b.subcategory === bgSubcategory)
+    : PRESET_BACKGROUNDS
+  
   // Merge user assets with presets (pinned first, then other user assets, then presets)
-  const allModels = [...sortByPinned(userModels), ...presetModels]
-  const allBackgrounds = [...sortByPinned(userBackgrounds), ...presetBackgrounds]
-  const allVibes = [...sortByPinned(userVibes), ...presetVibes]
+  const allModels = [...sortByPinned(userModels), ...filteredPresetModels]
+  const allBackgrounds = [...sortByPinned(userBackgrounds), ...filteredPresetBackgrounds]
+  const allVibes = [...sortByPinned(userVibes), ...PRESET_VIBES]
   
   // Get selected assets from merged arrays
   const activeModel = allModels.find(m => m.id === selectedModel)
@@ -644,20 +639,76 @@ export default function CameraPage() {
                         </div>
                       )}
                       {activeCustomTab === "model" && (
-                        <AssetGrid 
-                          items={allModels} 
-                          selectedId={selectedModel} 
-                          onSelect={(id) => {
-                            setSelectedModel(selectedModel === id ? null : id)
-                          }} 
-                        />
+                        <div className="space-y-4">
+                          {/* Model Subcategory Tabs */}
+                          <div className="flex gap-2 flex-wrap">
+                            <button
+                              onClick={() => setModelSubcategory(null)}
+                              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                                !modelSubcategory
+                                  ? "bg-zinc-900 text-white"
+                                  : "bg-white text-zinc-600 border border-zinc-200"
+                              }`}
+                            >
+                              全部
+                            </button>
+                            {MODEL_SUBCATEGORIES.map(sub => (
+                              <button
+                                key={sub.id}
+                                onClick={() => setModelSubcategory(modelSubcategory === sub.id ? null : sub.id)}
+                                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                                  modelSubcategory === sub.id
+                                    ? "bg-zinc-900 text-white"
+                                    : "bg-white text-zinc-600 border border-zinc-200"
+                                }`}
+                              >
+                                {sub.label}
+                              </button>
+                            ))}
+                          </div>
+                          <AssetGrid 
+                            items={allModels} 
+                            selectedId={selectedModel} 
+                            onSelect={(id) => {
+                              setSelectedModel(selectedModel === id ? null : id)
+                            }} 
+                          />
+                        </div>
                       )}
                       {activeCustomTab === "bg" && (
-                        <AssetGrid 
-                          items={allBackgrounds} 
-                          selectedId={selectedBg} 
-                          onSelect={(id) => setSelectedBg(selectedBg === id ? null : id)} 
-                        />
+                        <div className="space-y-4">
+                          {/* Background Subcategory Tabs */}
+                          <div className="flex gap-2 flex-wrap">
+                            <button
+                              onClick={() => setBgSubcategory(null)}
+                              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                                !bgSubcategory
+                                  ? "bg-zinc-900 text-white"
+                                  : "bg-white text-zinc-600 border border-zinc-200"
+                              }`}
+                            >
+                              全部
+                            </button>
+                            {BACKGROUND_SUBCATEGORIES.map(sub => (
+                              <button
+                                key={sub.id}
+                                onClick={() => setBgSubcategory(bgSubcategory === sub.id ? null : sub.id)}
+                                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                                  bgSubcategory === sub.id
+                                    ? "bg-zinc-900 text-white"
+                                    : "bg-white text-zinc-600 border border-zinc-200"
+                                }`}
+                              >
+                                {sub.label}
+                              </button>
+                            ))}
+                          </div>
+                          <AssetGrid 
+                            items={allBackgrounds} 
+                            selectedId={selectedBg} 
+                            onSelect={(id) => setSelectedBg(selectedBg === id ? null : id)} 
+                          />
+                        </div>
                       )}
                     </div>
                   </motion.div>

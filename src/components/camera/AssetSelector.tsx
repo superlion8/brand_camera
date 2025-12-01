@@ -6,27 +6,13 @@ import { Plus, ChevronRight, Check, X, Pin } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Asset, AssetType, ModelStyle } from "@/types"
 import { useAssetStore } from "@/stores/assetStore"
+import { PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_VIBES } from "@/data/presets"
 
-// Demo preset assets
+// Preset assets from centralized data
 const demoPresets: Record<AssetType, Asset[]> = {
-  model: [
-    { id: "m1", type: "model", name: "Japanese Style", imageUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400", styleCategory: "japanese" },
-    { id: "m2", type: "model", name: "Korean Clean", imageUrl: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400", styleCategory: "korean" },
-    { id: "m3", type: "model", name: "Chinese Modern", imageUrl: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400", styleCategory: "chinese" },
-    { id: "m4", type: "model", name: "Western Casual", imageUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400", styleCategory: "western" },
-  ],
-  background: [
-    { id: "b1", type: "background", name: "Minimal Studio", imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400" },
-    { id: "b2", type: "background", name: "Urban Street", imageUrl: "https://images.unsplash.com/photo-1514924013411-cbf25faa35bb?w=400" },
-    { id: "b3", type: "background", name: "Nature Soft", imageUrl: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400" },
-    { id: "b4", type: "background", name: "Minimalist", imageUrl: "https://images.unsplash.com/photo-1557683316-973673baf926?w=400" },
-  ],
-  vibe: [
-    { id: "v1", type: "vibe", name: "Warm & Cozy", imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400" },
-    { id: "v2", type: "vibe", name: "Cool & Edgy", imageUrl: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400" },
-    { id: "v3", type: "vibe", name: "Sporty", imageUrl: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=400" },
-    { id: "v4", type: "vibe", name: "Vintage", imageUrl: "https://images.unsplash.com/photo-1558171813-4c088753af8f?w=400" },
-  ],
+  model: PRESET_MODELS,
+  background: PRESET_BACKGROUNDS,
+  vibe: PRESET_VIBES,
   product: [],
 }
 

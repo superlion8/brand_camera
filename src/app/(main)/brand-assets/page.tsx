@@ -4,28 +4,20 @@ import { useState, useRef } from "react"
 import Image from "next/image"
 import { Plus, Trash2, Users, Image as ImageIcon, Package, Sparkles, Upload, Home, Pin } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
-import { Asset, AssetType } from "@/types"
+import { Asset, AssetType, ModelSubcategory, BackgroundSubcategory } from "@/types"
 import { fileToBase64, generateId } from "@/lib/utils"
 import { useRouter } from "next/navigation"
+import { 
+  PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_VIBES,
+  MODEL_SUBCATEGORIES, BACKGROUND_SUBCATEGORIES
+} from "@/data/presets"
 
-// Demo system presets
+// System presets from centralized data
 const systemPresets: Record<AssetType, Asset[]> = {
-  model: [
-    { id: "sm1", type: "model", name: "Japanese Style", imageUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400", isSystem: true, styleCategory: "japanese" },
-    { id: "sm2", type: "model", name: "Korean Clean", imageUrl: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400", isSystem: true, styleCategory: "korean" },
-    { id: "sm3", type: "model", name: "Chinese Modern", imageUrl: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400", isSystem: true, styleCategory: "chinese" },
-    { id: "sm4", type: "model", name: "Western Casual", imageUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400", isSystem: true, styleCategory: "western" },
-  ],
-  background: [
-    { id: "sb1", type: "background", name: "Minimal Studio", imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400", isSystem: true },
-    { id: "sb2", type: "background", name: "Urban Street", imageUrl: "https://images.unsplash.com/photo-1514924013411-cbf25faa35bb?w=400", isSystem: true },
-    { id: "sb3", type: "background", name: "Nature Soft", imageUrl: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400", isSystem: true },
-  ],
+  model: PRESET_MODELS,
+  background: PRESET_BACKGROUNDS,
   product: [],
-  vibe: [
-    { id: "sv1", type: "vibe", name: "Warm & Cozy", imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400", isSystem: true },
-    { id: "sv2", type: "vibe", name: "Cool & Edgy", imageUrl: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400", isSystem: true },
-  ],
+  vibe: PRESET_VIBES,
 }
 
 const typeTabs = [
@@ -43,6 +35,8 @@ export default function BrandAssetsPage() {
   const [activeType, setActiveType] = useState<AssetType>("product")
   const [activeSource, setActiveSource] = useState<SourceTab>("user")
   const [uploadType, setUploadType] = useState<AssetType>("product")
+  const [modelSubcategory, setModelSubcategory] = useState<ModelSubcategory | null>(null)
+  const [bgSubcategory, setBgSubcategory] = useState<BackgroundSubcategory | null>(null)
   
   const {
     userModels,
@@ -131,7 +125,15 @@ export default function BrandAssetsPage() {
   }
   
   const userAssets = getUserAssets(activeType)
-  const presetAssets = systemPresets[activeType] || []
+  let presetAssets = systemPresets[activeType] || []
+  
+  // Filter presets by subcategory if applicable
+  if (activeType === "model" && modelSubcategory) {
+    presetAssets = presetAssets.filter(a => a.subcategory === modelSubcategory)
+  } else if (activeType === "background" && bgSubcategory) {
+    presetAssets = presetAssets.filter(a => a.subcategory === bgSubcategory)
+  }
+  
   // Sort user assets: pinned first
   const sortedUserAssets = [...userAssets].sort((a, b) => {
     if (a.isPinned && !b.isPinned) return -1
@@ -249,6 +251,50 @@ export default function BrandAssetsPage() {
           </button>
         </div>
       </div>
+      
+      {/* Subcategory Tabs - only for model and background in preset mode */}
+      {activeSource === "preset" && (activeType === "model" || activeType === "background") && (
+        <div className="bg-white border-b px-4 py-2">
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => activeType === "model" ? setModelSubcategory(null) : setBgSubcategory(null)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                (activeType === "model" ? !modelSubcategory : !bgSubcategory)
+                  ? "bg-zinc-900 text-white"
+                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+              }`}
+            >
+              全部
+            </button>
+            {activeType === "model" && MODEL_SUBCATEGORIES.map(sub => (
+              <button
+                key={sub.id}
+                onClick={() => setModelSubcategory(modelSubcategory === sub.id ? null : sub.id)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  modelSubcategory === sub.id
+                    ? "bg-zinc-900 text-white"
+                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                }`}
+              >
+                {sub.label}
+              </button>
+            ))}
+            {activeType === "background" && BACKGROUND_SUBCATEGORIES.map(sub => (
+              <button
+                key={sub.id}
+                onClick={() => setBgSubcategory(bgSubcategory === sub.id ? null : sub.id)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  bgSubcategory === sub.id
+                    ? "bg-zinc-900 text-white"
+                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                }`}
+              >
+                {sub.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4">

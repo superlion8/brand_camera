@@ -6,6 +6,9 @@ export type AssetType = 'model' | 'background' | 'product' | 'vibe'
 
 export type GenerationType = 'camera_product' | 'camera_model' | 'edit'
 
+export type ModelSubcategory = 'chinese' | 'korean' | 'western' | 'japanese'
+export type BackgroundSubcategory = 'indoor' | 'outdoor' | 'street'
+
 export interface Asset {
   id: string
   type: AssetType
@@ -15,6 +18,7 @@ export interface Asset {
   tags?: string[]
   isSystem?: boolean
   styleCategory?: ModelStyle
+  subcategory?: ModelSubcategory | BackgroundSubcategory
   isPinned?: boolean
 }
 
