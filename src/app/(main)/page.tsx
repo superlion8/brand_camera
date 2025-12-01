@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { Camera, Wand2, FolderHeart, Images, ArrowRight, Sparkles, ChevronRight, Zap, SlidersHorizontal, Palette } from "lucide-react"
+import { Camera, Wand2, FolderHeart, Images, ArrowRight, Sparkles, ChevronRight, Zap, SlidersHorizontal, Palette, Lightbulb } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { UserMenu } from "@/components/shared/UserMenu"
 
@@ -59,6 +59,18 @@ export default function HomePage() {
             </div>
           </Link>
         </div>
+        
+        {/* Studio Card */}
+        <Link href="/studio" className="group block mt-3">
+          <div className="bg-gradient-to-br from-amber-400 to-orange-500 text-white rounded-2xl p-5 h-28 flex items-center justify-between relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-amber-300/30 rounded-full -translate-y-1/2 translate-x-1/3" />
+            <div className="relative z-10">
+              <h3 className="font-bold text-lg mb-1">AI 商品影棚</h3>
+              <p className="text-amber-100 text-xs">专业光影控制，生成影棚级商品图</p>
+            </div>
+            <Lightbulb className="w-12 h-12 relative z-10 text-amber-200" />
+          </div>
+        </Link>
       </div>
       
       {/* Usage Modes */}

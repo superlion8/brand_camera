@@ -4,7 +4,7 @@ export type ModelGender = 'male' | 'female' | 'boy' | 'girl'
 
 export type AssetType = 'model' | 'background' | 'product' | 'vibe'
 
-export type GenerationType = 'camera_product' | 'camera_model' | 'edit'
+export type GenerationType = 'camera_product' | 'camera_model' | 'edit' | 'studio'
 
 export type ModelSubcategory = 'korean' | 'western'
 export type BackgroundSubcategory = 'indoor' | 'outdoor' | 'street'
@@ -46,6 +46,11 @@ export interface GenerationParams {
   model?: string
   background?: string
   vibe?: string
+  // Studio params
+  lightType?: string
+  lightDirection?: string
+  lightColor?: string
+  aspectRatio?: string
 }
 
 export interface Collection {

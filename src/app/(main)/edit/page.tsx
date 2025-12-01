@@ -2,12 +2,14 @@
 
 import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
-import { Wand2, X, Check, Loader2, Image as ImageIcon, Home, ArrowLeft } from "lucide-react"
+import { Wand2, X, Check, Loader2, Image as ImageIcon, Home, ArrowLeft, Lightbulb, Sun, Sparkles, Zap } from "lucide-react"
 import { AssetSelector } from "@/components/camera/AssetSelector"
 import { Asset, ModelStyle, ModelGender } from "@/types"
 import { fileToBase64, compressBase64Image, fetchWithTimeout, generateId, ensureBase64 } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { useAssetStore } from "@/stores/assetStore"
+
+type EditMode = 'edit' | 'studio'
 
 const styleOptions: { value: ModelStyle; label: string }[] = [
   { value: "auto", label: "智能" },
@@ -22,10 +24,44 @@ const genderOptions: { value: ModelGender; label: string }[] = [
   { value: "boy", label: "男童" },
 ]
 
+// Studio light types
+const LIGHT_TYPES = [
+  { id: 'Softbox', label: '柔光箱', icon: Lightbulb },
+  { id: 'Sunlight', label: '自然光', icon: Sun },
+  { id: 'Dramatic', label: '戏剧光', icon: Sparkles },
+  { id: 'Neon', label: '霓虹光', icon: Zap },
+]
+
+const ASPECT_RATIOS = [
+  { id: 'original', label: '原图' },
+  { id: '1:1', label: '1:1' },
+  { id: '3:4', label: '3:4' },
+  { id: '4:3', label: '4:3' },
+  { id: '16:9', label: '16:9' },
+  { id: '9:16', label: '9:16' },
+]
+
+const LIGHT_DIRECTIONS = [
+  { id: 'top-left', x: 0, y: 0 },
+  { id: 'top', x: 1, y: 0 },
+  { id: 'top-right', x: 2, y: 0 },
+  { id: 'left', x: 0, y: 1 },
+  { id: 'front', x: 1, y: 1 },
+  { id: 'right', x: 2, y: 1 },
+  { id: 'bottom-left', x: 0, y: 2 },
+  { id: 'bottom', x: 1, y: 2 },
+  { id: 'bottom-right', x: 2, y: 2 },
+]
+
+const PRESET_COLORS = ['#FFFFFF', '#FFF5E6', '#E6F3FF', '#FFE4E1', '#E6FFE6', '#FFE4B5', '#E6E6FA', '#87CEEB']
+
 export default function EditPage() {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [inputImage, setInputImage] = useState<string | null>(null)
+  
+  // Mode: edit or studio
+  const [editMode, setEditMode] = useState<EditMode>('edit')
   
   // Check for image passed from gallery page
   useEffect(() => {
@@ -35,6 +71,8 @@ export default function EditPage() {
       sessionStorage.removeItem('editImage') // Clean up
     }
   }, [])
+  
+  // Edit mode state
   const [selectedModel, setSelectedModel] = useState<Asset | null>(null)
   const [selectedBackground, setSelectedBackground] = useState<Asset | null>(null)
   const [selectedVibe, setSelectedVibe] = useState<Asset | null>(null)
@@ -43,7 +81,14 @@ export default function EditPage() {
   const [customPrompt, setCustomPrompt] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [resultImage, setResultImage] = useState<string | null>(null)
+  const [resultImages, setResultImages] = useState<string[]>([]) // For studio mode (2 images)
   const [activeTab, setActiveTab] = useState<"model" | "bg" | "vibe">("model")
+  
+  // Studio mode state
+  const [lightType, setLightType] = useState('Softbox')
+  const [aspectRatio, setAspectRatio] = useState('original')
+  const [lightDirection, setLightDirection] = useState('front')
+  const [lightColor, setLightColor] = useState('#FFFFFF')
   
   const { addGeneration } = useAssetStore()
   
@@ -66,51 +111,121 @@ export default function EditPage() {
       console.log("Preparing images...")
       const compressedInput = await compressBase64Image(inputImage, 1024)
       
-      // Convert URLs to base64 if needed (for preset assets)
-      const [modelBase64, bgBase64, vibeBase64] = await Promise.all([
-        ensureBase64(selectedModel?.imageUrl),
-        ensureBase64(selectedBackground?.imageUrl),
-        ensureBase64(selectedVibe?.imageUrl),
-      ])
-      
-      console.log("Sending edit request...")
-      const response = await fetchWithTimeout("/api/edit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          inputImage: compressedInput,
-          modelImage: modelBase64,
-          modelStyle,
-          modelGender,
-          backgroundImage: bgBase64,
-          vibeImage: vibeBase64,
-          customPrompt,
-        }),
-      }, 120000)
-      
-      const data = await response.json()
-      
-      if (data.success && data.image) {
-        setResultImage(data.image)
+      if (editMode === 'studio') {
+        // Studio mode: generate 2 images with staggered requests
+        const basePayload = {
+          productImage: compressedInput,
+          lightType,
+          lightDirection,
+          lightColor,
+          aspectRatio,
+        }
         
-        // Save to generation history
-        const id = generateId()
-        await addGeneration({
-          id,
-          type: "edit",
-          inputImageUrl: inputImage,
-          outputImageUrls: [data.image],
-          createdAt: new Date().toISOString(),
-          params: {
-            modelStyle: modelStyle !== "auto" ? modelStyle : undefined,
-            modelGender: modelGender || undefined,
-            model: selectedModel?.name,
-            background: selectedBackground?.name,
-            vibe: selectedVibe?.name,
-          },
-        })
+        const staggerDelay = 1000
+        
+        const createDelayedRequest = (index: number, delayMs: number) => {
+          return new Promise<Response>((resolve, reject) => {
+            setTimeout(() => {
+              console.log(`Starting Studio ${index + 1}...`)
+              fetch("/api/generate-studio", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ...basePayload, index }),
+              }).then(resolve).catch(reject)
+            }, delayMs)
+          })
+        }
+        
+        const requests = [
+          createDelayedRequest(0, 0),
+          createDelayedRequest(1, staggerDelay),
+        ]
+        
+        const responses = await Promise.allSettled(requests)
+        
+        const images: (string | null)[] = [null, null]
+        
+        for (const response of responses) {
+          if (response.status === 'fulfilled') {
+            try {
+              const result = await response.value.json()
+              if (result.success && result.image) {
+                images[result.index] = result.image
+                console.log(`Studio ${result.index + 1}: ✓`)
+              }
+            } catch (e) {
+              console.log('Parse error')
+            }
+          }
+        }
+        
+        const finalImages = images.filter((img): img is string => img !== null)
+        
+        if (finalImages.length > 0) {
+          setResultImages(finalImages)
+          setResultImage(finalImages[0])
+          
+          // Save to generation history
+          const id = generateId()
+          await addGeneration({
+            id,
+            type: "studio",
+            inputImageUrl: inputImage,
+            outputImageUrls: finalImages,
+            createdAt: new Date().toISOString(),
+            params: { lightType, lightDirection, lightColor, aspectRatio },
+          })
+        } else {
+          throw new Error('生成失败，请重试')
+        }
       } else {
-        throw new Error(data.error || "编辑失败")
+        // Edit mode: original logic
+        const [modelBase64, bgBase64, vibeBase64] = await Promise.all([
+          ensureBase64(selectedModel?.imageUrl),
+          ensureBase64(selectedBackground?.imageUrl),
+          ensureBase64(selectedVibe?.imageUrl),
+        ])
+        
+        console.log("Sending edit request...")
+        const response = await fetchWithTimeout("/api/edit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            inputImage: compressedInput,
+            modelImage: modelBase64,
+            modelStyle,
+            modelGender,
+            backgroundImage: bgBase64,
+            vibeImage: vibeBase64,
+            customPrompt,
+          }),
+        }, 120000)
+        
+        const data = await response.json()
+        
+        if (data.success && data.image) {
+          setResultImage(data.image)
+          setResultImages([data.image])
+          
+          // Save to generation history
+          const id = generateId()
+          await addGeneration({
+            id,
+            type: "edit",
+            inputImageUrl: inputImage,
+            outputImageUrls: [data.image],
+            createdAt: new Date().toISOString(),
+            params: {
+              modelStyle: modelStyle !== "auto" ? modelStyle : undefined,
+              modelGender: modelGender || undefined,
+              model: selectedModel?.name,
+              background: selectedBackground?.name,
+              vibe: selectedVibe?.name,
+            },
+          })
+        } else {
+          throw new Error(data.error || "编辑失败")
+        }
       }
     } catch (error: any) {
       console.error("Edit error:", error)
@@ -127,12 +242,18 @@ export default function EditPage() {
   const handleReset = () => {
     setInputImage(null)
     setResultImage(null)
+    setResultImages([])
     setSelectedModel(null)
     setSelectedBackground(null)
     setSelectedVibe(null)
     setModelStyle("auto")
     setModelGender(null)
     setCustomPrompt("")
+    // Studio state
+    setLightType('Softbox')
+    setAspectRatio('original')
+    setLightDirection('front')
+    setLightColor('#FFFFFF')
   }
   
   return (
@@ -147,7 +268,31 @@ export default function EditPage() {
         </button>
         <div className="flex items-center gap-2 ml-2">
           <Image src="/logo.png" alt="Brand Camera" width={28} height={28} className="rounded" />
-          <span className="font-semibold text-lg text-zinc-900">图像编辑</span>
+        </div>
+        {/* Mode Switcher */}
+        <div className="ml-auto flex bg-zinc-100 rounded-lg p-1">
+          <button
+            onClick={() => setEditMode('edit')}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              editMode === 'edit'
+                ? 'bg-white text-zinc-900 shadow-sm'
+                : 'text-zinc-500 hover:text-zinc-700'
+            }`}
+          >
+            <Wand2 className="w-3.5 h-3.5 inline mr-1" />
+            编辑
+          </button>
+          <button
+            onClick={() => setEditMode('studio')}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              editMode === 'studio'
+                ? 'bg-white text-zinc-900 shadow-sm'
+                : 'text-zinc-500 hover:text-zinc-700'
+            }`}
+          >
+            <Lightbulb className="w-3.5 h-3.5 inline mr-1" />
+            影棚
+          </button>
         </div>
       </div>
       
@@ -197,110 +342,231 @@ export default function EditPage() {
         
         {/* Controls */}
         <div className="p-4 space-y-5 bg-white rounded-t-2xl -mt-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] relative z-10 min-h-[350px]">
-          {/* Prompt Input */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-700">编辑指令</label>
-            <textarea
-              placeholder="例如：把背景换成海边，让光线更柔和..."
-              value={customPrompt}
-              onChange={(e) => setCustomPrompt(e.target.value)}
-              className="w-full min-h-[80px] px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 placeholder-zinc-400 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm"
-            />
-          </div>
-          
-          {/* Assets Selection Tabs */}
-          <div className="w-full">
-            <div className="flex gap-2 mb-3">
-              {[
-                { id: "model", label: "模特" },
-                { id: "bg", label: "背景" },
-                { id: "vibe", label: "氛围" },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as "model" | "bg" | "vibe")}
-                  className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
-                    activeTab === tab.id
-                      ? "bg-zinc-900 text-white"
-                      : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-            
-            <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200">
-              {activeTab === "model" && (
-                <div className="space-y-4">
-                  {/* Gender Selection */}
-                  <div>
-                    <h4 className="text-xs font-semibold text-zinc-500 mb-2 uppercase">模特性别</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      {genderOptions.map(gender => (
-                        <button
-                          key={gender.value}
-                          onClick={() => setModelGender(modelGender === gender.value ? null : gender.value)}
-                          className={`h-10 px-3 rounded-lg text-sm font-medium border transition-colors flex items-center justify-between ${
-                            modelGender === gender.value
-                              ? "bg-blue-50 border-blue-500 text-blue-700"
-                              : "bg-white border-zinc-200 text-zinc-700 hover:border-zinc-300"
-                          }`}
-                        >
-                          {gender.label}
-                          {modelGender === gender.value && <Check className="w-4 h-4" />}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  {/* Style Selection */}
-                  <div>
-                    <h4 className="text-xs font-semibold text-zinc-500 mb-2 uppercase">模特风格</h4>
-                    <div className="grid grid-cols-3 gap-2">
-                      {styleOptions.map(style => (
-                        <button
-                          key={style.value}
-                          onClick={() => setModelStyle(style.value)}
-                          className={`h-10 px-2 rounded-lg text-xs font-medium border transition-colors flex items-center justify-center ${
-                            modelStyle === style.value
-                              ? "bg-blue-50 border-blue-500 text-blue-700"
-                              : "bg-white border-zinc-200 text-zinc-700 hover:border-zinc-300"
-                          }`}
-                        >
-                          {style.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <AssetSelector
-                    type="model"
-                    selected={selectedModel}
-                    onSelect={setSelectedModel}
-                    modelStyle={modelStyle}
-                    compact
-                  />
+          {editMode === 'edit' ? (
+            <>
+              {/* Edit Mode Controls */}
+              {/* Prompt Input */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-zinc-700">编辑指令</label>
+                <textarea
+                  placeholder="例如：把背景换成海边，让光线更柔和..."
+                  value={customPrompt}
+                  onChange={(e) => setCustomPrompt(e.target.value)}
+                  className="w-full min-h-[80px] px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 placeholder-zinc-400 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm"
+                />
+              </div>
+              
+              {/* Assets Selection Tabs */}
+              <div className="w-full">
+                <div className="flex gap-2 mb-3">
+                  {[
+                    { id: "model", label: "模特" },
+                    { id: "bg", label: "背景" },
+                    { id: "vibe", label: "氛围" },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id as "model" | "bg" | "vibe")}
+                      className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
+                        activeTab === tab.id
+                          ? "bg-zinc-900 text-white"
+                          : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
                 </div>
-              )}
-              {activeTab === "bg" && (
-                <AssetSelector
-                  type="background"
-                  selected={selectedBackground}
-                  onSelect={setSelectedBackground}
-                  compact
-                />
-              )}
-              {activeTab === "vibe" && (
-                <AssetSelector
-                  type="vibe"
-                  selected={selectedVibe}
-                  onSelect={setSelectedVibe}
-                  compact
-                />
-              )}
-            </div>
-          </div>
+                
+                <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200">
+                  {activeTab === "model" && (
+                    <div className="space-y-4">
+                      {/* Gender Selection */}
+                      <div>
+                        <h4 className="text-xs font-semibold text-zinc-500 mb-2 uppercase">模特性别</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          {genderOptions.map(gender => (
+                            <button
+                              key={gender.value}
+                              onClick={() => setModelGender(modelGender === gender.value ? null : gender.value)}
+                              className={`h-10 px-3 rounded-lg text-sm font-medium border transition-colors flex items-center justify-between ${
+                                modelGender === gender.value
+                                  ? "bg-blue-50 border-blue-500 text-blue-700"
+                                  : "bg-white border-zinc-200 text-zinc-700 hover:border-zinc-300"
+                              }`}
+                            >
+                              {gender.label}
+                              {modelGender === gender.value && <Check className="w-4 h-4" />}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Style Selection */}
+                      <div>
+                        <h4 className="text-xs font-semibold text-zinc-500 mb-2 uppercase">模特风格</h4>
+                        <div className="grid grid-cols-3 gap-2">
+                          {styleOptions.map(style => (
+                            <button
+                              key={style.value}
+                              onClick={() => setModelStyle(style.value)}
+                              className={`h-10 px-2 rounded-lg text-xs font-medium border transition-colors flex items-center justify-center ${
+                                modelStyle === style.value
+                                  ? "bg-blue-50 border-blue-500 text-blue-700"
+                                  : "bg-white border-zinc-200 text-zinc-700 hover:border-zinc-300"
+                              }`}
+                            >
+                              {style.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <AssetSelector
+                        type="model"
+                        selected={selectedModel}
+                        onSelect={setSelectedModel}
+                        modelStyle={modelStyle}
+                        compact
+                      />
+                    </div>
+                  )}
+                  {activeTab === "bg" && (
+                    <AssetSelector
+                      type="background"
+                      selected={selectedBackground}
+                      onSelect={setSelectedBackground}
+                      compact
+                    />
+                  )}
+                  {activeTab === "vibe" && (
+                    <AssetSelector
+                      type="vibe"
+                      selected={selectedVibe}
+                      onSelect={setSelectedVibe}
+                      compact
+                    />
+                  )}
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Studio Mode Controls */}
+              {/* Light Type */}
+              <div>
+                <h3 className="text-sm font-semibold text-zinc-700 mb-3">光源类型</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {LIGHT_TYPES.map(type => {
+                    const Icon = type.icon
+                    return (
+                      <button
+                        key={type.id}
+                        onClick={() => setLightType(type.id)}
+                        className={`p-3 rounded-xl border-2 transition-all text-left ${
+                          lightType === type.id
+                            ? 'border-amber-500 bg-amber-50'
+                            : 'border-zinc-200 bg-white hover:border-zinc-300'
+                        }`}
+                      >
+                        <Icon className={`w-4 h-4 mb-1 ${lightType === type.id ? 'text-amber-600' : 'text-zinc-400'}`} />
+                        <p className={`text-xs font-medium ${lightType === type.id ? 'text-amber-700' : 'text-zinc-700'}`}>
+                          {type.label}
+                        </p>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+              
+              {/* Aspect Ratio */}
+              <div>
+                <h3 className="text-sm font-semibold text-zinc-700 mb-3">画面比例</h3>
+                <div className="flex flex-wrap gap-2">
+                  {ASPECT_RATIOS.map(ratio => (
+                    <button
+                      key={ratio.id}
+                      onClick={() => setAspectRatio(ratio.id)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                        aspectRatio === ratio.id
+                          ? 'bg-zinc-900 text-white'
+                          : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
+                      }`}
+                    >
+                      {ratio.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Light Direction */}
+              <div>
+                <h3 className="text-sm font-semibold text-zinc-700 mb-3">光源方向</h3>
+                <div className="bg-zinc-50 rounded-xl p-3 border border-zinc-200">
+                  <div className="grid grid-cols-3 gap-1.5 max-w-[140px] mx-auto">
+                    {LIGHT_DIRECTIONS.map(dir => (
+                      <button
+                        key={dir.id}
+                        onClick={() => setLightDirection(dir.id)}
+                        className={`aspect-square rounded-lg flex items-center justify-center transition-all ${
+                          dir.id === 'front'
+                            ? 'bg-zinc-800 text-white'
+                            : lightDirection === dir.id
+                              ? 'bg-amber-400 shadow-md'
+                              : 'bg-zinc-200 hover:bg-zinc-300'
+                        }`}
+                      >
+                        {dir.id === 'front' ? (
+                          <span className="text-xs">📦</span>
+                        ) : lightDirection === dir.id ? (
+                          <Sun className="w-4 h-4 text-amber-800" />
+                        ) : (
+                          <div className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-zinc-500 text-center mt-2">点击选择光源位置</p>
+                </div>
+              </div>
+              
+              {/* Light Color */}
+              <div>
+                <h3 className="text-sm font-semibold text-zinc-700 mb-3">光源颜色</h3>
+                <div className="bg-zinc-50 rounded-xl p-3 border border-zinc-200">
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {PRESET_COLORS.map(color => (
+                      <button
+                        key={color}
+                        onClick={() => setLightColor(color)}
+                        className={`w-8 h-8 rounded-full border-2 transition-all ${
+                          lightColor === color
+                            ? 'border-blue-500 scale-110'
+                            : 'border-zinc-200 hover:border-zinc-300'
+                        }`}
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={lightColor}
+                      onChange={(e) => setLightColor(e.target.value)}
+                      className="w-8 h-8 rounded cursor-pointer border-0"
+                    />
+                    <input
+                      type="text"
+                      value={lightColor}
+                      onChange={(e) => setLightColor(e.target.value)}
+                      className="flex-1 h-8 px-2 border border-zinc-200 rounded-lg text-xs font-mono"
+                      placeholder="#FFFFFF"
+                    />
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
           
           {/* Generate Button - inside scrollable area */}
           <div className="pt-4 pb-24">
@@ -310,7 +576,9 @@ export default function EditPage() {
               className={`w-full h-12 rounded-full text-base font-semibold gap-2 flex items-center justify-center transition-all ${
                 !inputImage || isGenerating
                   ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200"
+                  : editMode === 'studio'
+                    ? "bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-200"
+                    : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200"
               }`}
             >
               {isGenerating ? (
@@ -320,8 +588,8 @@ export default function EditPage() {
                 </>
               ) : (
                 <>
-                  <Wand2 className="w-5 h-5" />
-                  <span>开始生成</span>
+                  {editMode === 'studio' ? <Lightbulb className="w-5 h-5" /> : <Wand2 className="w-5 h-5" />}
+                  <span>{editMode === 'studio' ? '生成影棚照片' : '开始生成'}</span>
                 </>
               )}
             </button>
