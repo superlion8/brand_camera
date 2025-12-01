@@ -6,9 +6,9 @@ export default function MainLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex flex-col h-[100dvh] bg-zinc-50 dark:bg-zinc-900 max-w-md mx-auto shadow-2xl overflow-hidden relative">
-      {/* Main Content Area */}
-      <div className="flex-1 overflow-hidden relative bg-white dark:bg-zinc-950">
+    <div className="flex flex-col h-[100dvh] bg-zinc-50 max-w-md mx-auto shadow-2xl relative">
+      {/* Main Content Area - scrollable */}
+      <div className="flex-1 overflow-y-auto relative bg-white">
         {children}
       </div>
       <BottomNav />
