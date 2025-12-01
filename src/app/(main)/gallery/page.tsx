@@ -342,6 +342,131 @@ export default function GalleryPage() {
                   <Wand2 className="w-4 h-4" />
                   去修图
                 </button>
+                
+                {/* Generation Details */}
+                <div className="mt-6 pt-4 border-t border-zinc-100">
+                  <h3 className="text-sm font-semibold text-zinc-700 mb-3">生成参数</h3>
+                  
+                  {/* Reference Images */}
+                  <div className="space-y-3">
+                    {/* Input Product Image */}
+                    {selectedItem.gen.inputImageUrl && (
+                      <div className="flex items-start gap-3">
+                        <div className="w-16 h-16 rounded-lg overflow-hidden bg-zinc-100 shrink-0">
+                          <Image 
+                            src={selectedItem.gen.inputImageUrl} 
+                            alt="商品原图" 
+                            width={64} 
+                            height={64} 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-zinc-700">商品原图</p>
+                          <p className="text-[10px] text-zinc-400 mt-0.5">输入的商品图片</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Model, Background, Vibe params */}
+                    {selectedItem.gen.params && (
+                      <div className="grid grid-cols-3 gap-2 mt-3">
+                        {selectedItem.gen.params.model && (
+                          <div className="bg-zinc-50 rounded-lg p-2 text-center">
+                            <p className="text-[10px] text-zinc-400">模特</p>
+                            <p className="text-xs font-medium text-zinc-700 truncate">{selectedItem.gen.params.model}</p>
+                          </div>
+                        )}
+                        {selectedItem.gen.params.background && (
+                          <div className="bg-zinc-50 rounded-lg p-2 text-center">
+                            <p className="text-[10px] text-zinc-400">背景</p>
+                            <p className="text-xs font-medium text-zinc-700 truncate">{selectedItem.gen.params.background}</p>
+                          </div>
+                        )}
+                        {selectedItem.gen.params.vibe && (
+                          <div className="bg-zinc-50 rounded-lg p-2 text-center">
+                            <p className="text-[10px] text-zinc-400">氛围</p>
+                            <p className="text-xs font-medium text-zinc-700 truncate">{selectedItem.gen.params.vibe}</p>
+                          </div>
+                        )}
+                        {selectedItem.gen.params.modelStyle && selectedItem.gen.params.modelStyle !== 'auto' && (
+                          <div className="bg-zinc-50 rounded-lg p-2 text-center">
+                            <p className="text-[10px] text-zinc-400">模特风格</p>
+                            <p className="text-xs font-medium text-zinc-700">
+                              {selectedItem.gen.params.modelStyle === 'korean' ? '韩系' : 
+                               selectedItem.gen.params.modelStyle === 'western' ? '欧美' : selectedItem.gen.params.modelStyle}
+                            </p>
+                          </div>
+                        )}
+                        {selectedItem.gen.params.modelGender && (
+                          <div className="bg-zinc-50 rounded-lg p-2 text-center">
+                            <p className="text-[10px] text-zinc-400">模特性别</p>
+                            <p className="text-xs font-medium text-zinc-700">
+                              {selectedItem.gen.params.modelGender === 'male' ? '男' : 
+                               selectedItem.gen.params.modelGender === 'female' ? '女' : 
+                               selectedItem.gen.params.modelGender === 'boy' ? '男童' : 
+                               selectedItem.gen.params.modelGender === 'girl' ? '女童' : selectedItem.gen.params.modelGender}
+                            </p>
+                          </div>
+                        )}
+                        {/* Studio params */}
+                        {selectedItem.gen.params.lightType && (
+                          <div className="bg-zinc-50 rounded-lg p-2 text-center">
+                            <p className="text-[10px] text-zinc-400">光源类型</p>
+                            <p className="text-xs font-medium text-zinc-700">
+                              {selectedItem.gen.params.lightType === 'Softbox' ? '柔光' : 
+                               selectedItem.gen.params.lightType === 'Sunlight' ? '自然光' : 
+                               selectedItem.gen.params.lightType === 'Dramatic' ? '戏剧' : 
+                               selectedItem.gen.params.lightType === 'Neon' ? '霓虹' : selectedItem.gen.params.lightType}
+                            </p>
+                          </div>
+                        )}
+                        {selectedItem.gen.params.lightDirection && (
+                          <div className="bg-zinc-50 rounded-lg p-2 text-center">
+                            <p className="text-[10px] text-zinc-400">光源方向</p>
+                            <p className="text-xs font-medium text-zinc-700">{selectedItem.gen.params.lightDirection}</p>
+                          </div>
+                        )}
+                        {selectedItem.gen.params.lightColor && selectedItem.gen.params.lightColor !== '#FFFFFF' && (
+                          <div className="bg-zinc-50 rounded-lg p-2 text-center flex flex-col items-center">
+                            <p className="text-[10px] text-zinc-400">背景色</p>
+                            <div 
+                              className="w-5 h-5 rounded-full border border-zinc-200 mt-0.5" 
+                              style={{ backgroundColor: selectedItem.gen.params.lightColor }}
+                            />
+                          </div>
+                        )}
+                        {selectedItem.gen.params.aspectRatio && selectedItem.gen.params.aspectRatio !== 'original' && (
+                          <div className="bg-zinc-50 rounded-lg p-2 text-center">
+                            <p className="text-[10px] text-zinc-400">比例</p>
+                            <p className="text-xs font-medium text-zinc-700">{selectedItem.gen.params.aspectRatio}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Show "no params" if nothing */}
+                    {!selectedItem.gen.params && !selectedItem.gen.inputImageUrl && (
+                      <p className="text-xs text-zinc-400 text-center py-2">暂无生成参数记录</p>
+                    )}
+                    
+                    {/* Generation Type Badge */}
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-zinc-100">
+                      <span className="text-[10px] text-zinc-400">生成类型：</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${
+                        selectedItem.gen.type === 'studio' 
+                          ? 'bg-amber-100 text-amber-700' 
+                          : selectedItem.gen.type === 'edit'
+                            ? 'bg-purple-100 text-purple-700'
+                            : 'bg-blue-100 text-blue-700'
+                      }`}>
+                        {selectedItem.gen.type === 'studio' ? 'AI 影棚' : 
+                         selectedItem.gen.type === 'edit' ? '图片编辑' : 
+                         selectedItem.gen.type === 'camera_model' ? '拍摄生成' : selectedItem.gen.type}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
