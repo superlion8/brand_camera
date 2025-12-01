@@ -280,8 +280,19 @@ export default function CameraPage() {
       console.log("Background base64 ready:", !!bgBase64)
       console.log("Vibe base64 ready:", !!vibeBase64)
       
-      console.log("Sending generation request...")
-      const response = await fetchWithTimeout("/api/generate", {
+      // Call both APIs in parallel for faster generation
+      console.log("Sending parallel generation requests...")
+      
+      const productRequest = fetchWithTimeout("/api/generate-product", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productImage: compressedProduct,
+          productImage2: compressedProduct2,
+        }),
+      }, 200000) // 200 second timeout for product images
+      
+      const modelRequest = fetchWithTimeout("/api/generate-model", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -293,12 +304,42 @@ export default function CameraPage() {
           backgroundImage: bgBase64,
           vibeImage: vibeBase64,
         }),
-      }, 330000) // 330 second timeout (slightly longer than backend 300s)
+      }, 280000) // 280 second timeout for model images
       
-      const data = await response.json()
+      // Wait for both to complete
+      const [productResponse, modelResponse] = await Promise.all([productRequest, modelRequest])
+      const [productData, modelData] = await Promise.all([productResponse.json(), modelResponse.json()])
       
-      if (data.success && data.images) {
-        console.log(`Generation stats: ${data.stats?.successful}/${data.stats?.total} images in ${data.stats?.duration}ms`)
+      // Combine results: product images first, then model images
+      const allImages: string[] = []
+      const allModelTypes: ('pro' | 'flash')[] = []
+      
+      if (productData.success && productData.images) {
+        allImages.push(...productData.images)
+        allModelTypes.push(...(productData.modelTypes || []))
+        console.log(`Product images: ${productData.images.length}/2 in ${productData.stats?.duration}ms`)
+      }
+      
+      if (modelData.success && modelData.images) {
+        allImages.push(...modelData.images)
+        allModelTypes.push(...(modelData.modelTypes || []))
+        console.log(`Model images: ${modelData.images.length}/2 in ${modelData.stats?.duration}ms`)
+      }
+      
+      // Create combined data object
+      const data = {
+        success: allImages.length > 0,
+        images: allImages,
+        modelTypes: allModelTypes,
+        stats: {
+          total: 4,
+          successful: allImages.length,
+          duration: Math.max(productData.stats?.duration || 0, modelData.stats?.duration || 0),
+        }
+      }
+      
+      if (data.success && data.images.length > 0) {
+        console.log(`Generation complete: ${data.images.length}/4 images`)
         
         // Update task with results
         updateTaskStatus(taskId, 'completed', data.images)
@@ -349,7 +390,9 @@ export default function CameraPage() {
           setMode("results")
         }
       } else {
-        throw new Error(data.error || "生成失败")
+        // Get error message from either response
+        const errorMsg = productData.error || modelData.error || "生成失败"
+        throw new Error(errorMsg)
       }
     } catch (error: any) {
       console.error("Generation error:", error)
