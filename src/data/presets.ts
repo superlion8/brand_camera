@@ -4,7 +4,7 @@ import { Asset, AssetType } from '@/types'
 const STORAGE_URL = 'https://cvdogeigbpussfamctsu.supabase.co/storage/v1/object/public/presets'
 
 // Cache buster version - increment to force refresh
-const CACHE_VERSION = 'v3'
+const CACHE_VERSION = 'v4'
 
 // Model subcategory type (updated)
 export type ModelSubcategory = 'korean' | 'western'
