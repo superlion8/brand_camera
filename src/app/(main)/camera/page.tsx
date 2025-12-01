@@ -427,6 +427,9 @@ export default function CameraPage() {
             model: model?.name,
             background: background?.name,
             vibe: vibe?.name,
+            modelImage: model?.imageUrl,
+            backgroundImage: background?.imageUrl,
+            vibeImage: vibe?.imageUrl,
           },
         })
         
@@ -1664,66 +1667,88 @@ export default function CameraPage() {
                           </div>
                         )}
                         
-                        {/* Reference images and params */}
+                        {/* Reference images */}
                         <div className="space-y-3">
-                          {/* Input Product Image */}
-                          {capturedImage && (
-                            <div className="flex items-start gap-3">
-                              <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 shrink-0">
-                                <img 
-                                  src={capturedImage} 
-                                  alt="商品原图" 
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium text-zinc-700">商品原图</p>
-                                <p className="text-[10px] text-zinc-400 mt-0.5">输入的商品图片</p>
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* Model, Background, Vibe params */}
-                          <div className="grid grid-cols-3 gap-2">
-                            {activeModel && (
-                              <div className="bg-zinc-50 rounded-lg p-2 text-center">
-                                <p className="text-[10px] text-zinc-400">模特</p>
-                                <p className="text-xs font-medium text-zinc-700 truncate">{activeModel.name}</p>
+                          {/* Reference images grid */}
+                          <div className="grid grid-cols-4 gap-2">
+                            {/* Input Product Image */}
+                            {capturedImage && (
+                              <div className="flex flex-col items-center">
+                                <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
+                                  <img 
+                                    src={capturedImage} 
+                                    alt="商品" 
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                                <p className="text-[10px] text-zinc-500 mt-1">商品</p>
                               </div>
                             )}
-                            {activeBg && (
-                              <div className="bg-zinc-50 rounded-lg p-2 text-center">
-                                <p className="text-[10px] text-zinc-400">背景</p>
-                                <p className="text-xs font-medium text-zinc-700 truncate">{activeBg.name}</p>
+                            
+                            {/* Model Image */}
+                            {activeModel?.imageUrl && (
+                              <div className="flex flex-col items-center">
+                                <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
+                                  <Image 
+                                    src={activeModel.imageUrl} 
+                                    alt="模特" 
+                                    width={56}
+                                    height={56}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                                <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{activeModel.name || '模特'}</p>
                               </div>
                             )}
-                            {activeVibe && (
-                              <div className="bg-zinc-50 rounded-lg p-2 text-center">
-                                <p className="text-[10px] text-zinc-400">氛围</p>
-                                <p className="text-xs font-medium text-zinc-700 truncate">{activeVibe.name}</p>
+                            
+                            {/* Background Image */}
+                            {activeBg?.imageUrl && (
+                              <div className="flex flex-col items-center">
+                                <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
+                                  <Image 
+                                    src={activeBg.imageUrl} 
+                                    alt="背景" 
+                                    width={56}
+                                    height={56}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                                <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{activeBg.name || '背景'}</p>
                               </div>
                             )}
-                            {selectedModelStyle && selectedModelStyle !== 'auto' && (
-                              <div className="bg-zinc-50 rounded-lg p-2 text-center">
-                                <p className="text-[10px] text-zinc-400">模特风格</p>
-                                <p className="text-xs font-medium text-zinc-700">
-                                  {selectedModelStyle === 'korean' ? '韩系' : 
-                                   selectedModelStyle === 'western' ? '欧美' : selectedModelStyle}
-                                </p>
-                              </div>
-                            )}
-                            {selectedModelGender && (
-                              <div className="bg-zinc-50 rounded-lg p-2 text-center">
-                                <p className="text-[10px] text-zinc-400">模特性别</p>
-                                <p className="text-xs font-medium text-zinc-700">
-                                  {selectedModelGender === 'male' ? '男' : 
-                                   selectedModelGender === 'female' ? '女' : 
-                                   selectedModelGender === 'boy' ? '男童' : 
-                                   selectedModelGender === 'girl' ? '女童' : selectedModelGender}
-                                </p>
+                            
+                            {/* Vibe Image */}
+                            {activeVibe?.imageUrl && (
+                              <div className="flex flex-col items-center">
+                                <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
+                                  <Image 
+                                    src={activeVibe.imageUrl} 
+                                    alt="氛围" 
+                                    width={56}
+                                    height={56}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                                <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{activeVibe.name || '氛围'}</p>
                               </div>
                             )}
                           </div>
+                          
+                          {/* Style params */}
+                          {(selectedModelStyle && selectedModelStyle !== 'auto') || selectedModelGender ? (
+                            <div className="flex gap-2 flex-wrap">
+                              {selectedModelStyle && selectedModelStyle !== 'auto' && (
+                                <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
+                                  风格: {selectedModelStyle === 'korean' ? '韩系' : selectedModelStyle === 'western' ? '欧美' : selectedModelStyle}
+                                </span>
+                              )}
+                              {selectedModelGender && (
+                                <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
+                                  性别: {selectedModelGender === 'male' ? '男' : selectedModelGender === 'female' ? '女' : selectedModelGender === 'boy' ? '男童' : '女童'}
+                                </span>
+                              )}
+                            </div>
+                          ) : null}
                         </div>
                       </div>
 
