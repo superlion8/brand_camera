@@ -301,32 +301,32 @@ export default function EditPage() {
               )}
             </div>
           </div>
+          
+          {/* Generate Button - inside scrollable area */}
+          <div className="pt-4 pb-24">
+            <button
+              onClick={handleGenerate}
+              disabled={!inputImage || isGenerating}
+              className={`w-full h-12 rounded-full text-base font-semibold gap-2 flex items-center justify-center transition-all ${
+                !inputImage || isGenerating
+                  ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200"
+              }`}
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>生成中...</span>
+                </>
+              ) : (
+                <>
+                  <Wand2 className="w-5 h-5" />
+                  <span>开始生成</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
-      </div>
-      
-      {/* Footer */}
-      <div className="p-4 border-t bg-white shrink-0 mb-16">
-        <button
-          onClick={handleGenerate}
-          disabled={!inputImage || isGenerating}
-          className={`w-full h-12 rounded-full text-base font-semibold gap-2 flex items-center justify-center transition-all ${
-            !inputImage || isGenerating
-              ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
-              : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200"
-          }`}
-        >
-          {isGenerating ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              <span>生成中...</span>
-            </>
-          ) : (
-            <>
-              <Wand2 className="w-5 h-5" />
-              <span>开始生成</span>
-            </>
-          )}
-        </button>
       </div>
       
       {/* Loading overlay */}
