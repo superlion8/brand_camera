@@ -15,6 +15,7 @@ export interface Asset {
   tags?: string[]
   isSystem?: boolean
   styleCategory?: ModelStyle
+  isPinned?: boolean
 }
 
 export interface Generation {

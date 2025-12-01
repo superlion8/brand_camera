@@ -6,7 +6,7 @@ import Webcam from "react-webcam"
 import { 
   ArrowLeft, Check, Loader2, Image as ImageIcon, 
   SlidersHorizontal, X, Sparkles, Wand2, Camera, Home,
-  Heart, Download
+  Heart, Download, Pin
 } from "lucide-react"
 import { useCameraStore } from "@/stores/cameraStore"
 import { useAssetStore } from "@/stores/assetStore"
@@ -75,10 +75,18 @@ export default function CameraPage() {
   
   const { addGeneration, userModels, userBackgrounds, userVibes, addFavorite, removeFavorite, isFavorited, favorites } = useAssetStore()
   
-  // Merge user assets with presets (user assets first)
-  const allModels = [...userModels, ...presetModels]
-  const allBackgrounds = [...userBackgrounds, ...presetBackgrounds]
-  const allVibes = [...userVibes, ...presetVibes]
+  // Helper to sort by pinned status
+  const sortByPinned = (assets: Asset[]) => 
+    [...assets].sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1
+      if (!a.isPinned && b.isPinned) return 1
+      return 0
+    })
+  
+  // Merge user assets with presets (pinned first, then other user assets, then presets)
+  const allModels = [...sortByPinned(userModels), ...presetModels]
+  const allBackgrounds = [...sortByPinned(userBackgrounds), ...presetBackgrounds]
+  const allVibes = [...sortByPinned(userVibes), ...presetVibes]
   
   // Get selected assets from merged arrays
   const activeModel = allModels.find(m => m.id === selectedModel)
@@ -258,6 +266,11 @@ export default function CameraPage() {
             <div className="absolute inset-0 bg-blue-600/20 flex items-center justify-center">
               <Check className="w-6 h-6 text-white drop-shadow-md" />
             </div>
+          )}
+          {asset.isPinned && (
+            <span className="absolute top-1 right-1 w-5 h-5 bg-amber-500 text-white rounded-full flex items-center justify-center shadow-sm z-10">
+              <Pin className="w-2.5 h-2.5" />
+            </span>
           )}
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-4">
             <p className="text-[10px] text-white truncate text-center">{asset.name}</p>

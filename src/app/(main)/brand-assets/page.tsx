@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react"
 import Image from "next/image"
-import { Plus, Trash2, Users, Image as ImageIcon, Package, Sparkles, Upload, Home } from "lucide-react"
+import { Plus, Trash2, Users, Image as ImageIcon, Package, Sparkles, Upload, Home, Pin } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { Asset, AssetType } from "@/types"
 import { fileToBase64, generateId } from "@/lib/utils"
@@ -53,6 +53,7 @@ export default function BrandAssetsPage() {
     setUserBackgrounds,
     setUserProducts,
     setUserVibes,
+    togglePin,
     _hasHydrated,
   } = useAssetStore()
   
@@ -131,7 +132,13 @@ export default function BrandAssetsPage() {
   
   const userAssets = getUserAssets(activeType)
   const presetAssets = systemPresets[activeType] || []
-  const displayAssets = activeSource === "user" ? userAssets : presetAssets
+  // Sort user assets: pinned first
+  const sortedUserAssets = [...userAssets].sort((a, b) => {
+    if (a.isPinned && !b.isPinned) return -1
+    if (!a.isPinned && b.isPinned) return 1
+    return 0
+  })
+  const displayAssets = activeSource === "user" ? sortedUserAssets : presetAssets
   
   if (!_hasHydrated) {
     return (
@@ -253,6 +260,7 @@ export default function BrandAssetsPage() {
                 asset={asset}
                 isPreset={activeSource === "preset"}
                 onDelete={activeSource === "user" ? () => handleDelete(activeType, asset.id) : undefined}
+                onPin={activeSource === "user" ? () => togglePin(activeType, asset.id) : undefined}
               />
             ))}
           </div>
@@ -289,10 +297,12 @@ export default function BrandAssetsPage() {
 function AssetCard({ 
   asset, 
   onDelete,
+  onPin,
   isPreset = false
 }: { 
   asset: Asset
   onDelete?: () => void
+  onPin?: () => void
   isPreset?: boolean
 }) {
   return (
@@ -309,6 +319,11 @@ function AssetCard({
             官方
           </span>
         )}
+        {asset.isPinned && (
+          <span className="absolute top-2 right-2 w-6 h-6 bg-amber-500 text-white rounded-full flex items-center justify-center shadow-sm">
+            <Pin className="w-3 h-3" />
+          </span>
+        )}
       </div>
       <div className="p-3 flex items-center justify-between">
         <div className="truncate flex-1 mr-2">
@@ -318,17 +333,35 @@ function AssetCard({
           )}
         </div>
         
-        {onDelete && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onDelete()
-            }}
-            className="w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-zinc-400 hover:text-red-600 transition-colors"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        )}
+        <div className="flex items-center gap-1">
+          {onPin && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onPin()
+              }}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+                asset.isPinned 
+                  ? "bg-amber-50 text-amber-600 hover:bg-amber-100" 
+                  : "hover:bg-zinc-100 text-zinc-400 hover:text-amber-600"
+              }`}
+              title={asset.isPinned ? "取消置顶" : "置顶"}
+            >
+              <Pin className="w-4 h-4" />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onDelete()
+              }}
+              className="w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-zinc-400 hover:text-red-600 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )

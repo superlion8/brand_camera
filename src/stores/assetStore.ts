@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import { Asset, Generation, Collection, Favorite } from '@/types'
+import { Asset, AssetType, Generation, Collection, Favorite } from '@/types'
 import { indexedDBStorage, dbPut, dbGet, dbGetAll, dbDelete, STORES, saveImage } from '@/lib/indexeddb'
 import { generateId } from '@/lib/utils'
 
@@ -35,6 +35,9 @@ interface AssetState {
   setUserBackgrounds: (backgrounds: Asset[]) => void
   setUserProducts: (products: Asset[]) => void
   setUserVibes: (vibes: Asset[]) => void
+  
+  // Pin actions
+  togglePin: (type: AssetType, id: string) => void
   
   // Generation actions with IndexedDB persistence
   addGeneration: (generation: Generation) => Promise<void>
@@ -80,6 +83,27 @@ export const useAssetStore = create<AssetState>()(
       setUserBackgrounds: (backgrounds) => set({ userBackgrounds: backgrounds }),
       setUserProducts: (products) => set({ userProducts: products }),
       setUserVibes: (vibes) => set({ userVibes: vibes }),
+      
+      // Toggle pin for assets
+      togglePin: (type, id) => {
+        const updateAssets = (assets: Asset[]) =>
+          assets.map(a => a.id === id ? { ...a, isPinned: !a.isPinned } : a)
+        
+        switch (type) {
+          case "model":
+            set((state) => ({ userModels: updateAssets(state.userModels) }))
+            break
+          case "background":
+            set((state) => ({ userBackgrounds: updateAssets(state.userBackgrounds) }))
+            break
+          case "product":
+            set((state) => ({ userProducts: updateAssets(state.userProducts) }))
+            break
+          case "vibe":
+            set((state) => ({ userVibes: updateAssets(state.userVibes) }))
+            break
+        }
+      },
       
       // Generation with IndexedDB
       addGeneration: async (generation) => {

@@ -2,9 +2,10 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { Plus, ChevronRight, Check, X } from "lucide-react"
+import { Plus, ChevronRight, Check, X, Pin } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Asset, AssetType, ModelStyle } from "@/types"
+import { useAssetStore } from "@/stores/assetStore"
 
 // Demo preset assets
 const demoPresets: Record<AssetType, Asset[]> = {
@@ -29,6 +30,14 @@ const demoPresets: Record<AssetType, Asset[]> = {
   product: [],
 }
 
+// Helper to sort by pinned status
+const sortByPinned = (assets: Asset[]) => 
+  [...assets].sort((a, b) => {
+    if (a.isPinned && !b.isPinned) return -1
+    if (!a.isPinned && b.isPinned) return 1
+    return 0
+  })
+
 interface AssetSelectorProps {
   title?: string
   type: AssetType
@@ -40,6 +49,17 @@ interface AssetSelectorProps {
 
 export function AssetSelector({ title, type, selected, onSelect, modelStyle, compact = false }: AssetSelectorProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const { userModels, userBackgrounds, userVibes } = useAssetStore()
+  
+  // Get user assets based on type
+  const getUserAssets = (): Asset[] => {
+    switch (type) {
+      case "model": return userModels
+      case "background": return userBackgrounds
+      case "vibe": return userVibes
+      default: return []
+    }
+  }
   
   // Get presets based on type and optional model style filter
   let presets = demoPresets[type] || []
@@ -47,8 +67,12 @@ export function AssetSelector({ title, type, selected, onSelect, modelStyle, com
     presets = presets.filter(p => p.styleCategory === modelStyle)
   }
   
+  // Merge user assets (sorted by pinned) with presets
+  const userAssets = sortByPinned(getUserAssets())
+  const allAssets = [...userAssets, ...presets]
+  
   // Display items
-  const displayPresets = compact ? presets.slice(0, 6) : presets.slice(0, 4)
+  const displayPresets = compact ? allAssets.slice(0, 6) : allAssets.slice(0, 4)
   
   if (compact) {
     // Compact grid view for tabs
@@ -80,6 +104,11 @@ export function AssetSelector({ title, type, selected, onSelect, modelStyle, com
                 <div className="absolute inset-0 bg-blue-600/20 flex items-center justify-center">
                   <Check className="w-6 h-6 text-white drop-shadow-md" />
                 </div>
+              )}
+              {asset.isPinned && (
+                <span className="absolute top-1 right-1 w-5 h-5 bg-amber-500 text-white rounded-full flex items-center justify-center shadow-sm">
+                  <Pin className="w-2.5 h-2.5" />
+                </span>
               )}
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-4">
                 <p className="text-[10px] text-white truncate text-center">{asset.name}</p>
@@ -132,6 +161,11 @@ export function AssetSelector({ title, type, selected, onSelect, modelStyle, com
                 <Check className="w-5 h-5 text-white drop-shadow-md" />
               </div>
             )}
+            {asset.isPinned && (
+              <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-amber-500 text-white rounded-full flex items-center justify-center">
+                <Pin className="w-2 h-2" />
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -170,7 +204,7 @@ export function AssetSelector({ title, type, selected, onSelect, modelStyle, com
                 <span className="text-xs font-medium">Auto</span>
               </button>
               
-              {presets.map((asset) => (
+              {allAssets.map((asset) => (
                 <button
                   key={asset.id}
                   onClick={() => {
@@ -194,6 +228,11 @@ export function AssetSelector({ title, type, selected, onSelect, modelStyle, com
                     <div className="absolute inset-0 bg-blue-600/20 flex items-center justify-center">
                       <Check className="w-6 h-6 text-white drop-shadow-md" />
                     </div>
+                  )}
+                  {asset.isPinned && (
+                    <span className="absolute top-1 right-1 w-5 h-5 bg-amber-500 text-white rounded-full flex items-center justify-center shadow-sm">
+                      <Pin className="w-2.5 h-2.5" />
+                    </span>
                   )}
                   {asset.name && (
                     <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent">
