@@ -61,7 +61,7 @@ Make the light natural.
 
 The color/size/design/detail must be exactly same with {{product}}.
 
-Negatives: exaggerated or distorted anatomy, fake portrait-mode blur, CGI/illustration look.`
+Negatives: exaggerated or distorted anatomy, fake portrait-mode blur, CGI/illustration look, unnatural merge of background and character, 贴图感.`
 
   return prompt
 }
@@ -84,7 +84,7 @@ Scene setup: ${vibeCaption}`
 
   prompt += `
 
-Negatives: exaggerated or distorted anatomy, fake portrait-mode blur, CGI/illustration look.`
+Negatives: exaggerated or distorted anatomy, fake portrait-mode blur, CGI/illustration look, unnatural merge of background and character, 贴图感.`
 
   return prompt
 }
