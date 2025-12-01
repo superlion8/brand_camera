@@ -6,7 +6,7 @@ import Webcam from "react-webcam"
 import { 
   ArrowLeft, Check, Loader2, Image as ImageIcon, 
   SlidersHorizontal, X, Sparkles, Wand2, Camera, Home,
-  Heart, Download, Pin
+  Heart, Download, Pin, ZoomIn
 } from "lucide-react"
 import { useCameraStore } from "@/stores/cameraStore"
 import { useAssetStore } from "@/stores/assetStore"
@@ -60,6 +60,7 @@ export default function CameraPage() {
   const [generatedImages, setGeneratedImages] = useState<string[]>([])
   const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
   const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
   
   // Panel states
   const [showCustomPanel, setShowCustomPanel] = useState(false)
@@ -231,13 +232,39 @@ export default function CameraPage() {
   }
   
   // Handle download
-  const handleDownload = (url: string) => {
-    const link = document.createElement("a")
-    link.href = url
-    link.download = `brand-camera-${Date.now()}.jpg`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+  const handleDownload = async (url: string) => {
+    try {
+      let blob: Blob
+      
+      if (url.startsWith('data:')) {
+        // Handle base64 data URL
+        const response = await fetch(url)
+        blob = await response.blob()
+      } else {
+        // Handle regular URL
+        const response = await fetch(url)
+        blob = await response.blob()
+      }
+      
+      const blobUrl = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = blobUrl
+      link.download = `brand-camera-${Date.now()}.jpg`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(blobUrl)
+    } catch (error) {
+      console.error("Download failed:", error)
+      // Fallback to direct link
+      const link = document.createElement("a")
+      link.href = url
+      link.download = `brand-camera-${Date.now()}.jpg`
+      link.target = "_blank"
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    }
   }
   
   // Asset grid component
@@ -796,13 +823,22 @@ export default function CameraPage() {
 
                   {/* Content */}
                   <div className="flex-1 overflow-y-auto bg-zinc-100">
-                    <div className="relative aspect-[4/5] bg-zinc-900">
+                    <div 
+                      className="relative aspect-[4/5] bg-zinc-900 cursor-pointer group"
+                      onClick={() => setFullscreenImage(generatedImages[selectedResultIndex])}
+                    >
                       <Image 
                         src={generatedImages[selectedResultIndex]} 
                         alt="Detail" 
                         fill 
                         className="object-contain" 
                       />
+                      {/* Zoom hint */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
+                        <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                          <ZoomIn className="w-6 h-6 text-zinc-700" />
+                        </div>
+                      </div>
                     </div>
                     
                     <div className="p-4 bg-white">
@@ -856,6 +892,50 @@ export default function CameraPage() {
                 </div>
               </div>
             )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Fullscreen Image Viewer */}
+      <AnimatePresence>
+        {fullscreenImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black flex items-center justify-center"
+            onClick={() => setFullscreenImage(null)}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setFullscreenImage(null)}
+              className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+            >
+              <X className="w-6 h-6 text-white" />
+            </button>
+            
+            {/* Image */}
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="relative w-full h-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Image
+                src={fullscreenImage}
+                alt="Fullscreen"
+                fill
+                className="object-contain"
+                quality={100}
+              />
+            </motion.div>
+            
+            {/* Tap to close hint */}
+            <div className="absolute bottom-8 left-0 right-0 text-center">
+              <span className="text-white/60 text-sm">点击任意位置关闭</span>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
