@@ -70,9 +70,8 @@ function LoginContent() {
 
       if (error) throw error
 
-      setMessage("登录链接已发送到您的邮箱，请点击邮件中的链接完成登录")
-      // Note: Supabase sends magic link by default, not OTP code
-      // User will be redirected back after clicking the link
+      setMessage("验证码已发送到您的邮箱")
+      setMode("verify-otp")
     } catch (err: any) {
       console.error("Send OTP error:", err)
       setError(err.message || "发送验证码失败，请重试")
