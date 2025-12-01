@@ -531,7 +531,7 @@ export default function StudioPage() {
             </div>
             
             {/* Settings */}
-            <div className="px-4 pb-32 space-y-5">
+            <div className="px-4 pb-40 space-y-5">
               {/* Light Type - Single row */}
               <div>
                 <h3 className="text-sm font-semibold text-zinc-700 mb-2">光源类型</h3>
@@ -685,8 +685,8 @@ export default function StudioPage() {
               </div>
             </div>
             
-            {/* Generate Button */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+            {/* Generate Button - positioned above bottom nav */}
+            <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
               <button
                 onClick={handleGenerate}
                 className="w-full h-14 bg-amber-500 text-white rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-amber-600 active:scale-[0.98] transition-all shadow-lg shadow-amber-200"
