@@ -57,10 +57,36 @@ export default function CameraPage() {
   const [mode, setMode] = useState<CameraMode>("camera")
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
   const [hasCamera, setHasCamera] = useState(true)
+  const [cameraReady, setCameraReady] = useState(false)
+  const [permissionChecked, setPermissionChecked] = useState(false)
   const [generatedImages, setGeneratedImages] = useState<string[]>([])
   const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
   const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
+  
+  // Check camera permission on mount
+  useEffect(() => {
+    const checkCameraPermission = async () => {
+      try {
+        // Check if permission API is available
+        if (navigator.permissions && navigator.permissions.query) {
+          const result = await navigator.permissions.query({ name: 'camera' as PermissionName })
+          if (result.state === 'granted') {
+            setCameraReady(true)
+          } else if (result.state === 'denied') {
+            setHasCamera(false)
+          }
+          // If 'prompt', we'll let the Webcam component handle it
+        }
+      } catch (e) {
+        // Permission API not supported, let Webcam handle it
+        console.log('Permission API not supported, using fallback')
+      }
+      setPermissionChecked(true)
+    }
+    
+    checkCameraPermission()
+  }, [])
   
   // Panel states
   const [showCustomPanel, setShowCustomPanel] = useState(false)
@@ -121,6 +147,11 @@ export default function CameraPage() {
   
   const handleCameraError = useCallback(() => {
     setHasCamera(false)
+    setCameraReady(false)
+  }, [])
+  
+  const handleCameraReady = useCallback(() => {
+    setCameraReady(true)
   }, [])
   
   const handleRetake = () => {
@@ -338,16 +369,24 @@ export default function CameraPage() {
 
             {/* Viewfinder / Captured Image */}
             <div className="flex-1 relative">
-              {mode === "camera" && hasCamera ? (
+              {mode === "camera" && hasCamera && permissionChecked ? (
                 <Webcam
                   ref={webcamRef}
                   audio={false}
                   screenshotFormat="image/jpeg"
                   screenshotQuality={0.95}
                   videoConstraints={videoConstraints}
+                  onUserMedia={handleCameraReady}
                   onUserMediaError={handleCameraError}
                   className="absolute inset-0 w-full h-full object-cover opacity-60"
                 />
+              ) : mode === "camera" && !permissionChecked ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
+                  <div className="text-center text-zinc-400">
+                    <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin opacity-50" />
+                    <p className="text-sm">正在初始化相机...</p>
+                  </div>
+                </div>
               ) : mode === "camera" && !hasCamera ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
                   <div className="text-center text-zinc-400">
