@@ -34,7 +34,7 @@ export const PRESET_MODELS: Asset[] = [
     name: `外模 ${i + 1}`,
     imageUrl: `${STORAGE_URL}/models/western/model-${i + 1}.jpg?${CACHE_VERSION}`,
     isSystem: true,
-    styleCategory: 'western',
+    styleCategory: 'western' as const,
     category: 'western' as ModelSubcategory,
   })),
   // 韩模 (38)
@@ -44,7 +44,7 @@ export const PRESET_MODELS: Asset[] = [
     name: `韩模 ${i + 1}`,
     imageUrl: `${STORAGE_URL}/models/korean/model-${i + 1}.jpg?${CACHE_VERSION}`,
     isSystem: true,
-    styleCategory: 'korean',
+    styleCategory: 'korean' as const,
     category: 'korean' as ModelSubcategory,
   })),
 ]
