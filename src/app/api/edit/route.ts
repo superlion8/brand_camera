@@ -2,16 +2,30 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getGenAIClient, extractImage, safetySettings } from '@/lib/genai'
 import { buildModelPrompt, EDIT_PROMPT_PREFIX } from '@/prompts'
 import { stripBase64Prefix } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/server'
+import { saveGenerationServer } from '@/lib/supabase/generations-server'
 
 export const maxDuration = 120
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now()
+  
   try {
     const body = await request.json()
     const { inputImage, modelImage, modelStyle, modelGender, backgroundImage, vibeImage, customPrompt } = body
     
     if (!inputImage) {
       return NextResponse.json({ success: false, error: '缺少输入图片' }, { status: 400 })
+    }
+    
+    // Get user ID for database recording (optional)
+    let userId: string | null = null
+    try {
+      const supabase = await createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      userId = user?.id || null
+    } catch (e) {
+      console.log('Could not get user ID:', e)
     }
     
     const client = getGenAIClient()
@@ -84,17 +98,52 @@ export async function POST(request: NextRequest) {
     })
     
     const resultImage = extractImage(response)
+    const duration = Date.now() - startTime
     
     if (!resultImage) {
+      // Save failed edit record
+      if (userId) {
+        saveGenerationServer(
+          userId,
+          'edit',
+          { modelStyle, modelGender, customPrompt },
+          [],
+          duration,
+          'failed',
+          '图片编辑失败'
+        ).catch(console.error)
+      }
+      
       return NextResponse.json({ 
         success: false, 
         error: '图片编辑失败，请重试' 
       }, { status: 500 })
     }
     
+    const outputUrl = `data:image/png;base64,${resultImage}`
+    
+    // Save successful edit record
+    if (userId) {
+      saveGenerationServer(
+        userId,
+        'edit',
+        {
+          modelStyle,
+          modelGender,
+          customPrompt,
+          modelImageUrl: modelImage ? '[provided]' : undefined,
+          backgroundImageUrl: backgroundImage ? '[provided]' : undefined,
+          vibeImageUrl: vibeImage ? '[provided]' : undefined,
+        },
+        [outputUrl],
+        duration,
+        'completed'
+      ).catch(console.error)
+    }
+    
     return NextResponse.json({
       success: true,
-      image: `data:image/png;base64,${resultImage}`,
+      image: outputUrl,
     })
     
   } catch (error: any) {
@@ -105,4 +154,3 @@ export async function POST(request: NextRequest) {
     }, { status: 500 })
   }
 }
-

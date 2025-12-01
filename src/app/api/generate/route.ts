@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getGenAIClient, extractImage, safetySettings } from '@/lib/genai'
 import { PRODUCT_PROMPT, buildModelPrompt } from '@/prompts'
 import { stripBase64Prefix } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/server'
+import { saveGenerationServer } from '@/lib/supabase/generations-server'
 
 export const maxDuration = 120
 
@@ -132,6 +134,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: '缺少商品图片' }, { status: 400 })
     }
     
+    // Get user ID for database recording (optional, won't block generation)
+    let userId: string | null = null
+    try {
+      const supabase = await createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      userId = user?.id || null
+    } catch (e) {
+      console.log('Could not get user ID:', e)
+    }
+    
     const client = getGenAIClient()
     
     // Pre-process images once (strip base64 prefix)
@@ -181,13 +193,45 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    console.log(`Generation completed: ${results.length}/4 images in ${Date.now() - startTime}ms`)
+    const duration = Date.now() - startTime
+    console.log(`Generation completed: ${results.length}/4 images in ${duration}ms`)
     
     if (results.length === 0) {
+      // Save failed generation record
+      if (userId) {
+        saveGenerationServer(
+          userId,
+          'camera',
+          { modelStyle, modelGender },
+          [],
+          duration,
+          'failed',
+          '图片生成失败'
+        ).catch(console.error)
+      }
+      
       return NextResponse.json({ 
         success: false, 
         error: '图片生成失败，请重试' 
       }, { status: 500 })
+    }
+    
+    // Save successful generation record to database
+    if (userId) {
+      saveGenerationServer(
+        userId,
+        'camera',
+        {
+          modelStyle,
+          modelGender,
+          modelImageUrl: modelImage ? '[provided]' : undefined,
+          backgroundImageUrl: backgroundImage ? '[provided]' : undefined,
+          vibeImageUrl: vibeImage ? '[provided]' : undefined,
+        },
+        results,
+        duration,
+        'completed'
+      ).catch(console.error) // Don't block response
     }
     
     return NextResponse.json({
@@ -196,7 +240,7 @@ export async function POST(request: NextRequest) {
       stats: {
         total: 4,
         successful: results.length,
-        duration: Date.now() - startTime,
+        duration,
       }
     })
     
