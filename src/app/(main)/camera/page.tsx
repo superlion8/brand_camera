@@ -280,8 +280,8 @@ export default function CameraPage() {
       console.log("Background base64 ready:", !!bgBase64)
       console.log("Vibe base64 ready:", !!vibeBase64)
       
-      // Fire 4 independent parallel requests for maximum speed
-      console.log("Sending 4 parallel generation requests...")
+      // Fire 4 independent requests with 1s stagger to avoid rate limits
+      console.log("Sending 4 staggered generation requests (1s apart)...")
       
       const basePayload = {
         productImage: compressedProduct,
@@ -293,32 +293,28 @@ export default function CameraPage() {
         vibeImage: vibeBase64,
       }
       
-      // Create 4 independent requests
+      const staggerDelay = 1000 // 1 second between each request
+      
+      // Helper to create a delayed request
+      const createDelayedRequest = (type: string, index: number, delayMs: number) => {
+        return new Promise<Response>((resolve, reject) => {
+          setTimeout(() => {
+            console.log(`Starting ${type} ${index + 1}...`)
+            fetch("/api/generate-single", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ ...basePayload, type, index }),
+            }).then(resolve).catch(reject)
+          }, delayMs)
+        })
+      }
+      
+      // Create 4 staggered requests
       const requests = [
-        // Product image 1
-        fetch("/api/generate-single", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...basePayload, type: 'product', index: 0 }),
-        }),
-        // Product image 2
-        fetch("/api/generate-single", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...basePayload, type: 'product', index: 1 }),
-        }),
-        // Model image 1
-        fetch("/api/generate-single", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...basePayload, type: 'model', index: 0 }),
-        }),
-        // Model image 2
-        fetch("/api/generate-single", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...basePayload, type: 'model', index: 1 }),
-        }),
+        createDelayedRequest('product', 0, 0),              // Start immediately
+        createDelayedRequest('product', 1, staggerDelay),   // Start at 1s
+        createDelayedRequest('model', 0, staggerDelay * 2), // Start at 2s
+        createDelayedRequest('model', 1, staggerDelay * 3), // Start at 3s
       ]
       
       // Wait for all to complete (don't fail if some fail)
