@@ -29,7 +29,7 @@ async function generateProductImage(
     ]
     
     const response = await client.models.generateContent({
-      model: 'gemini-2.0-flash-preview-image-generation',
+      model: 'gemini-3-pro-image-preview',
       contents: [{ role: 'user', parts: productParts }],
       config: {
         responseModalities: ['IMAGE'],
@@ -109,10 +109,10 @@ async function generateInstructions(
     }
     
     const response = await client.models.generateContent({
-      model: 'gemini-2.0-flash-preview-image-generation',
+      model: 'gemini-3-pro-preview',
       contents: [{ role: 'user', parts }],
       config: {
-        responseModalities: ['TEXT'],
+        // VLM model for text generation based on images
         safetySettings,
       },
     })
@@ -199,7 +199,7 @@ async function generateModelImage(
     }
     
     const response = await client.models.generateContent({
-      model: 'gemini-2.0-flash-preview-image-generation',
+      model: 'gemini-3-pro-image-preview',
       contents: [{ role: 'user', parts }],
       config: {
         responseModalities: ['IMAGE'],
