@@ -254,12 +254,22 @@ export async function POST(request: NextRequest) {
     const backgroundImageData = backgroundImage ? stripBase64Prefix(backgroundImage) : null
     const vibeImageData = vibeImage ? stripBase64Prefix(vibeImage) : null
     
-    // Validate product image
+    // Validate product image - must be valid base64
     if (!productImageData || productImageData.length < 100) {
       console.error('Invalid product image data, length:', productImageData?.length)
       return NextResponse.json({ 
         success: false, 
         error: '商品图片格式无效，请重新拍摄或上传' 
+      }, { status: 400 })
+    }
+    
+    // Additional validation: check if it's valid base64
+    const isValidBase64 = /^[A-Za-z0-9+/]+=*$/.test(productImageData.substring(0, 1000))
+    if (!isValidBase64) {
+      console.error('Product image is not valid base64, first 100 chars:', productImageData.substring(0, 100))
+      return NextResponse.json({ 
+        success: false, 
+        error: '商品图片编码格式错误，请重新拍摄或上传' 
       }, { status: 400 })
     }
     

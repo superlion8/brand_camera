@@ -22,22 +22,34 @@ export function stripBase64Prefix(base64: string): string {
     return ''
   }
   
-  // Handle various base64 prefixes (jpeg, png, webp, gif, svg+xml, etc.)
-  const prefixMatch = base64.match(/^data:image\/[^;]+;base64,/)
+  // Handle various base64 prefixes (jpeg, png, webp, gif, svg+xml, octet-stream, etc.)
+  // More permissive regex to handle various MIME types
+  const prefixMatch = base64.match(/^data:[^;]+;base64,/)
   if (prefixMatch) {
     const stripped = base64.substring(prefixMatch[0].length)
-    console.log(`stripBase64Prefix: Stripped prefix "${prefixMatch[0].substring(0, 30)}...", result length: ${stripped.length}`)
-    return stripped
+    // Remove any whitespace/newlines that might be in the base64 string
+    const cleaned = stripped.replace(/\s/g, '')
+    console.log(`stripBase64Prefix: Stripped prefix "${prefixMatch[0]}", result length: ${cleaned.length}`)
+    return cleaned
   }
   
-  // If no prefix found, check if it looks like raw base64
-  if (/^[A-Za-z0-9+/=]+$/.test(base64.substring(0, 100))) {
-    console.log('stripBase64Prefix: Input appears to be raw base64, length:', base64.length)
-    return base64
+  // If no prefix found, clean and check if it looks like raw base64
+  const cleaned = base64.replace(/\s/g, '')
+  if (/^[A-Za-z0-9+/]+=*$/.test(cleaned.substring(0, 100))) {
+    console.log('stripBase64Prefix: Input appears to be raw base64, length:', cleaned.length)
+    return cleaned
   }
   
-  console.warn('stripBase64Prefix: Unrecognized format, first 50 chars:', base64.substring(0, 50))
-  return base64
+  console.warn('stripBase64Prefix: Unrecognized format, first 100 chars:', base64.substring(0, 100))
+  // Try to extract base64 data anyway - look for base64, marker
+  const base64Marker = base64.indexOf('base64,')
+  if (base64Marker !== -1) {
+    const extracted = base64.substring(base64Marker + 7).replace(/\s/g, '')
+    console.log('stripBase64Prefix: Extracted after base64 marker, length:', extracted.length)
+    return extracted
+  }
+  
+  return cleaned
 }
 
 // Generate unique ID
@@ -164,15 +176,34 @@ export function isUrl(str: string): boolean {
 export async function urlToBase64(url: string): Promise<string> {
   try {
     const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
     const blob = await response.blob()
+    
+    // If blob type is not image, try to force it
+    let finalBlob = blob
+    if (!blob.type.startsWith('image/')) {
+      console.warn('urlToBase64: Blob type is not image:', blob.type, 'forcing to image/jpeg')
+      finalBlob = new Blob([blob], { type: 'image/jpeg' })
+    }
+    
     return new Promise((resolve, reject) => {
       const reader = new FileReader()
-      reader.onloadend = () => resolve(reader.result as string)
+      reader.onloadend = () => {
+        const result = reader.result as string
+        // Verify it's a valid data URL
+        if (result && result.startsWith('data:')) {
+          resolve(result)
+        } else {
+          reject(new Error('Invalid data URL generated'))
+        }
+      }
       reader.onerror = reject
-      reader.readAsDataURL(blob)
+      reader.readAsDataURL(finalBlob)
     })
   } catch (error) {
-    console.error('Failed to convert URL to base64:', error)
+    console.error('Failed to convert URL to base64:', url, error)
     throw error
   }
 }
