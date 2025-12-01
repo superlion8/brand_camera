@@ -137,6 +137,9 @@ async function generateInstructions(
   }
 }
 
+// Simple prompt for model generation (简单版)
+const SIMPLE_MODEL_PROMPT = `请为{{product}}生成一个模特实拍图，环境参考{{background}}，模特参考{{model}}，但不能长得和图一完全一样，效果要生活化一些，随意一些，符合小红书和 INS 的韩系审美风格`
+
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
   
@@ -151,7 +154,8 @@ export async function POST(request: NextRequest) {
       modelStyle, 
       modelGender, 
       backgroundImage, 
-      vibeImage 
+      vibeImage,
+      simpleMode, // New: use simple prompt for model generation
     } = body
     
     if (!productImage) {
@@ -163,7 +167,7 @@ export async function POST(request: NextRequest) {
     }
     
     const client = getGenAIClient()
-    const label = `${type === 'product' ? 'Product' : 'Model'} ${(index || 0) + 1}`
+    const label = `${type === 'product' ? 'Product' : 'Model'} ${(index || 0) + 1}${simpleMode ? ' (Simple)' : ''}`
     
     const productImageData = stripBase64Prefix(productImage)
     const productImage2Data = productImage2 ? stripBase64Prefix(productImage2) : null
@@ -177,6 +181,7 @@ export async function POST(request: NextRequest) {
     
     let result: ImageResult | null = null
     let usedPrompt: string = ''
+    let generationMode: 'extended' | 'simple' = 'extended'
     
     if (type === 'product') {
       // Generate product image
@@ -192,8 +197,23 @@ export async function POST(request: NextRequest) {
       
       result = await generateImageWithFallback(client, parts, label)
       
+    } else if (simpleMode && modelImageData && backgroundImageData) {
+      // Simple mode: Direct prompt with model and background reference (简单版)
+      console.log(`[${label}] Generating with simple prompt...`)
+      generationMode = 'simple'
+      usedPrompt = SIMPLE_MODEL_PROMPT
+      
+      const parts: any[] = [
+        { text: SIMPLE_MODEL_PROMPT },
+        { inlineData: { mimeType: 'image/jpeg', data: productImageData } }, // {{product}}
+        { inlineData: { mimeType: 'image/jpeg', data: backgroundImageData } }, // {{background}}
+        { inlineData: { mimeType: 'image/jpeg', data: modelImageData } }, // {{model}}
+      ]
+      
+      result = await generateImageWithFallback(client, parts, label)
+      
     } else {
-      // Generate model image with its own instructions
+      // Extended mode: Generate model image with instructions (扩展版)
       console.log(`[${label}] Generating instructions...`)
       const instructPrompt = await generateInstructions(
         client, productImageData, productImage2Data, modelImageData,
@@ -257,6 +277,7 @@ export async function POST(request: NextRequest) {
       index,
       image: `data:image/png;base64,${result.image}`,
       modelType: result.model,
+      generationMode, // 'extended' or 'simple'
       prompt: usedPrompt,
       duration,
     })

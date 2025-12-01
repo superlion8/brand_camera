@@ -51,6 +51,7 @@ export default function CameraPage() {
   const [permissionChecked, setPermissionChecked] = useState(false)
   const [generatedImages, setGeneratedImages] = useState<string[]>([])
   const [generatedModelTypes, setGeneratedModelTypes] = useState<('pro' | 'flash')[]>([])
+  const [generatedGenModes, setGeneratedGenModes] = useState<('extended' | 'simple')[]>([])
   const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null) // Track current task
   const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
@@ -198,6 +199,7 @@ export default function CameraPage() {
     setProduct2FromPhone(false)
     setGeneratedImages([])
     setGeneratedModelTypes([])
+    setGeneratedGenModes([])
     setMode("camera")
   }
   
@@ -295,26 +297,32 @@ export default function CameraPage() {
       
       const staggerDelay = 1000 // 1 second between each request
       
+      // Check if both model and background are selected for simple mode
+      const canUseSimpleMode = !!modelBase64 && !!bgBase64
+      
       // Helper to create a delayed request
-      const createDelayedRequest = (type: string, index: number, delayMs: number) => {
+      const createDelayedRequest = (type: string, index: number, delayMs: number, simpleMode: boolean = false) => {
         return new Promise<Response>((resolve, reject) => {
           setTimeout(() => {
-            console.log(`Starting ${type} ${index + 1}...`)
+            const mode = simpleMode ? '简单版' : '扩展版'
+            console.log(`Starting ${type} ${index + 1} (${mode})...`)
             fetch("/api/generate-single", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ ...basePayload, type, index }),
+              body: JSON.stringify({ ...basePayload, type, index, simpleMode }),
             }).then(resolve).catch(reject)
           }, delayMs)
         })
       }
       
       // Create 4 staggered requests
+      // Model 1: always extended (扩展版)
+      // Model 2: simple mode only if both model and background are selected (简单版), otherwise extended
       const requests = [
-        createDelayedRequest('product', 0, 0),              // Start immediately
-        createDelayedRequest('product', 1, staggerDelay),   // Start at 1s
-        createDelayedRequest('model', 0, staggerDelay * 2), // Start at 2s
-        createDelayedRequest('model', 1, staggerDelay * 3), // Start at 3s
+        createDelayedRequest('product', 0, 0),                               // Product 1
+        createDelayedRequest('product', 1, staggerDelay),                    // Product 2
+        createDelayedRequest('model', 0, staggerDelay * 2, false),           // Model 1: 扩展版
+        createDelayedRequest('model', 1, staggerDelay * 3, canUseSimpleMode), // Model 2: 简单版 (if available)
       ]
       
       // Wait for all to complete (don't fail if some fail)
@@ -324,6 +332,7 @@ export default function CameraPage() {
       const allImages: (string | null)[] = [null, null, null, null]
       const allModelTypes: (('pro' | 'flash') | null)[] = [null, null, null, null]
       const allPrompts: (string | null)[] = [null, null, null, null]
+      const allGenModes: (('extended' | 'simple') | null)[] = [null, null, null, null]
       let maxDuration = 0
       
       for (let i = 0; i < responses.length; i++) {
@@ -337,8 +346,10 @@ export default function CameraPage() {
               allImages[targetIndex] = result.image
               allModelTypes[targetIndex] = result.modelType
               allPrompts[targetIndex] = result.prompt || null
+              allGenModes[targetIndex] = result.generationMode || 'extended'
               maxDuration = Math.max(maxDuration, result.duration || 0)
-              console.log(`${result.type} ${result.index + 1}: ✓ (${result.modelType}, ${result.duration}ms)`)
+              const modeLabel = result.generationMode === 'simple' ? '简单版' : '扩展版'
+              console.log(`${result.type} ${result.index + 1}: ✓ (${result.modelType}, ${modeLabel}, ${result.duration}ms)`)
             } else {
               console.log(`Task ${i + 1}: ✗ (${result.error})`)
             }
@@ -353,13 +364,16 @@ export default function CameraPage() {
       // Filter out nulls and create final arrays
       const finalImages = allImages.filter((img): img is string => img !== null)
       const finalModelTypes = allModelTypes.filter((t): t is 'pro' | 'flash' => t !== null)
+      const finalGenModes = allGenModes.filter((m): m is 'extended' | 'simple' => m !== null)
       
       // Combine prompts (take first non-null for product and model)
       const productPrompt = allPrompts[0] || allPrompts[1] || ''
-      const modelPrompt = allPrompts[2] || allPrompts[3] || ''
+      const modelPrompt1 = allPrompts[2] || ''
+      const modelPrompt2 = allPrompts[3] || ''
       const combinedPrompt = [
         productPrompt ? `[产品图 Prompt]\n${productPrompt}` : '',
-        modelPrompt ? `[模特图 Prompt]\n${modelPrompt}` : ''
+        modelPrompt1 ? `[模特图1 ${allGenModes[2] === 'simple' ? '简单版' : '扩展版'} Prompt]\n${modelPrompt1}` : '',
+        modelPrompt2 ? `[模特图2 ${allGenModes[3] === 'simple' ? '简单版' : '扩展版'} Prompt]\n${modelPrompt2}` : ''
       ].filter(Boolean).join('\n\n')
       
       // Create combined data object
@@ -367,6 +381,7 @@ export default function CameraPage() {
         success: finalImages.length > 0,
         images: finalImages,
         modelTypes: finalModelTypes,
+        genModes: finalGenModes, // Track generation modes
         prompt: combinedPrompt,
         stats: {
           total: 4,
@@ -425,6 +440,7 @@ export default function CameraPage() {
         if (modeRef.current === "processing") {
           setGeneratedImages(data.images)
           setGeneratedModelTypes(data.modelTypes || [])
+          setGeneratedGenModes(data.genModes || [])
           setCurrentGenerationId(id)
           setMode("results")
         }
@@ -457,6 +473,8 @@ export default function CameraPage() {
   const handleNewPhotoDuringProcessing = () => {
     setCapturedImage(null)
     setGeneratedImages([])
+    setGeneratedModelTypes([])
+    setGeneratedGenModes([])
     setMode("camera")
   }
   
@@ -1512,9 +1530,17 @@ export default function CameraPage() {
                           <Heart className={`w-4 h-4 ${currentGenerationId && isFavorited(currentGenerationId, actualIndex) ? "fill-current" : ""}`} />
                         </button>
                         {/* Type badge */}
-                        <div className="absolute top-2 left-2 flex gap-1">
+                        <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
                           <span className="px-2 py-1 rounded text-[10px] font-medium bg-purple-500 text-white">
                             模特
+                          </span>
+                          {/* Generation mode badge */}
+                          <span className={`px-1.5 py-1 rounded text-[9px] font-medium ${
+                            generatedGenModes[actualIndex] === 'simple' 
+                              ? 'bg-green-500 text-white' 
+                              : 'bg-blue-500 text-white'
+                          }`}>
+                            {generatedGenModes[actualIndex] === 'simple' ? '简单版' : '扩展版'}
                           </span>
                           {generatedModelTypes[actualIndex] === 'flash' && (
                             <span className="px-1.5 py-1 rounded text-[9px] font-medium bg-amber-500 text-white">
@@ -1577,7 +1603,7 @@ export default function CameraPage() {
                     <div className="p-4 bg-white">
                       <div className="flex items-center justify-between mb-4">
                         <div>
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                               selectedResultIndex < 2 
                                 ? "bg-blue-100 text-blue-700" 
@@ -1585,6 +1611,16 @@ export default function CameraPage() {
                             }`}>
                               {selectedResultIndex < 2 ? "产品展示" : "模特展示"}
                             </span>
+                            {/* Generation mode badge for model images */}
+                            {selectedResultIndex >= 2 && (
+                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                                generatedGenModes[selectedResultIndex] === 'simple'
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-blue-100 text-blue-700"
+                              }`}>
+                                {generatedGenModes[selectedResultIndex] === 'simple' ? '简单版' : '扩展版'}
+                              </span>
+                            )}
                             {generatedModelTypes[selectedResultIndex] === 'flash' && (
                               <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700">
                                 Gemini 2.5
