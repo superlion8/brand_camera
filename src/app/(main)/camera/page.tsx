@@ -88,6 +88,7 @@ export default function CameraPage() {
   const [showCustomPanel, setShowCustomPanel] = useState(false)
   const [showVibePanel, setShowVibePanel] = useState(false)
   const [showProductPanel, setShowProductPanel] = useState(false)
+  const [showProduct2Panel, setShowProduct2Panel] = useState(false)
   const [activeCustomTab, setActiveCustomTab] = useState("style")
   const [productSourceTab, setProductSourceTab] = useState<"user" | "preset">("preset")
   
@@ -537,7 +538,7 @@ export default function CameraPage() {
                     </div>
                   ) : mode === "review" && (
                     <button
-                      onClick={() => fileInputRef2.current?.click()}
+                      onClick={() => setShowProduct2Panel(true)}
                       className="absolute bottom-4 right-4 px-3 py-2 bg-white/90 text-zinc-800 rounded-lg text-sm font-medium flex items-center gap-2 shadow-lg backdrop-blur-md"
                     >
                       <Plus className="w-4 h-4" />
@@ -1033,6 +1034,148 @@ export default function CameraPage() {
                           <button 
                             onClick={() => {
                               setShowProductPanel(false)
+                              router.push("/brand-assets")
+                            }}
+                            className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                          >
+                            去上传
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+            
+            {/* Slide-up Panel: Product 2 Assets */}
+            <AnimatePresence>
+              {showProduct2Panel && (
+                <>
+                  <motion.div 
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }} 
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 bg-black/60 z-40 backdrop-blur-sm"
+                    onClick={() => setShowProduct2Panel(false)}
+                  />
+                  <motion.div 
+                    initial={{ y: "100%" }} 
+                    animate={{ y: 0 }} 
+                    exit={{ y: "100%" }}
+                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                    className="absolute bottom-0 left-0 right-0 h-[60%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
+                  >
+                    <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
+                      <span className="font-semibold">添加商品 2</span>
+                      <button 
+                        onClick={() => setShowProduct2Panel(false)} 
+                        className="h-8 w-8 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    
+                    {/* Upload from album option */}
+                    <div className="px-4 py-3 border-b">
+                      <button
+                        onClick={() => {
+                          setShowProduct2Panel(false)
+                          fileInputRef2.current?.click()
+                        }}
+                        className="w-full h-12 bg-blue-600 text-white rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors"
+                      >
+                        <ImageIcon className="w-5 h-5" />
+                        从相册上传
+                      </button>
+                    </div>
+                    
+                    {/* Source Tabs */}
+                    <div className="px-4 py-2 border-b bg-white dark:bg-zinc-900">
+                      <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1">
+                        <button
+                          onClick={() => setProductSourceTab("preset")}
+                          className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${
+                            productSourceTab === "preset"
+                              ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
+                              : "text-zinc-500 hover:text-zinc-700"
+                          }`}
+                        >
+                          官方示例
+                          <span className="ml-1 text-zinc-400">({PRESET_PRODUCTS.length})</span>
+                        </button>
+                        <button
+                          onClick={() => setProductSourceTab("user")}
+                          className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${
+                            productSourceTab === "user"
+                              ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
+                              : "text-zinc-500 hover:text-zinc-700"
+                          }`}
+                        >
+                          我的商品
+                          {userProducts.length > 0 && (
+                            <span className="ml-1 text-zinc-400">({userProducts.length})</span>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4">
+                      {productSourceTab === "preset" ? (
+                        <div className="grid grid-cols-3 gap-3 pb-20">
+                          {PRESET_PRODUCTS.map(product => (
+                            <button
+                              key={product.id}
+                              onClick={async () => {
+                                // Need to convert URL to base64 for preset products
+                                try {
+                                  const base64 = await ensureBase64(product.imageUrl)
+                                  if (base64) {
+                                    setCapturedImage2(base64)
+                                    setShowProduct2Panel(false)
+                                  }
+                                } catch (e) {
+                                  console.error("Failed to load preset product:", e)
+                                }
+                              }}
+                              className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all"
+                            >
+                              <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
+                              <span className="absolute top-1 left-1 bg-blue-600 text-white text-[8px] px-1 py-0.5 rounded font-medium">
+                                官方
+                              </span>
+                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-4">
+                                <p className="text-[10px] text-white truncate text-center">{product.name}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      ) : userProducts.length > 0 ? (
+                        <div className="grid grid-cols-3 gap-3 pb-20">
+                          {userProducts.map(product => (
+                            <button
+                              key={product.id}
+                              onClick={() => {
+                                setCapturedImage2(product.imageUrl)
+                                setShowProduct2Panel(false)
+                              }}
+                              className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all"
+                            >
+                              <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
+                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-4">
+                                <p className="text-[10px] text-white truncate text-center">{product.name}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-full text-zinc-400">
+                          <FolderHeart className="w-12 h-12 mb-3 opacity-30" />
+                          <p className="text-sm">暂无我的商品</p>
+                          <p className="text-xs mt-1">在品牌资产中上传商品图片</p>
+                          <button 
+                            onClick={() => {
+                              setShowProduct2Panel(false)
                               router.push("/brand-assets")
                             }}
                             className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
