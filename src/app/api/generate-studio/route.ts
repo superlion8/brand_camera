@@ -40,25 +40,25 @@ const LIGHT_TYPE_DESC: Record<string, string> = {
 function buildStudioPrompt(
   lightType: string,
   lightDirection: string,
-  lightColor: string
+  bgColor: string
 ): string {
   const lightDesc = LIGHT_TYPE_DESC[lightType] || 'professional studio lighting'
   
   let prompt = `Transform this product into a professional studio photography shot.
 
-Lighting Setup:
-- Type: ${lightDesc}
-- Direction: Light coming from ${lightDirection}
-- Color Temperature: ${lightColor} tinted lighting
+Setup:
+- Lighting: ${lightDesc}
+- Light Direction: coming from ${lightDirection}
+- Background: clean gradient background with ${bgColor} as the primary color tone
 
 Requirements:
 - Professional e-commerce quality product photography
-- Clean, minimalist background that complements the product
+- Smooth gradient background using the specified color
 - Precise shadows and reflections based on lighting direction
 - Maintain 100% accuracy of product details, colors, and proportions
 - High-end commercial photography aesthetic
 
-Negatives: distorted product, wrong colors, added elements, removed details, amateur lighting, harsh shadows.`
+Negatives: distorted product, wrong colors, added elements, removed details, amateur lighting, harsh shadows, busy background, cluttered scene.`
 
   return prompt
 }

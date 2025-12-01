@@ -24,12 +24,12 @@ const genderOptions: { value: ModelGender; label: string }[] = [
   { value: "boy", label: "男童" },
 ]
 
-// Studio light types
+// Studio light types - compact
 const LIGHT_TYPES = [
-  { id: 'Softbox', label: '柔光箱', icon: Lightbulb },
-  { id: 'Sunlight', label: '自然光', icon: Sun },
-  { id: 'Dramatic', label: '戏剧光', icon: Sparkles },
-  { id: 'Neon', label: '霓虹光', icon: Zap },
+  { id: 'Softbox', label: '柔光', icon: Lightbulb },
+  { id: 'Sunlight', label: '自然', icon: Sun },
+  { id: 'Dramatic', label: '戏剧', icon: Sparkles },
+  { id: 'Neon', label: '霓虹', icon: Zap },
 ]
 
 const ASPECT_RATIOS = [
@@ -453,26 +453,26 @@ export default function EditPage() {
           ) : (
             <>
               {/* Studio Mode Controls */}
-              {/* Light Type */}
+              {/* Light Type - Single row */}
               <div>
-                <h3 className="text-sm font-semibold text-zinc-700 mb-3">光源类型</h3>
-                <div className="grid grid-cols-2 gap-2">
+                <h3 className="text-sm font-semibold text-zinc-700 mb-2">光源类型</h3>
+                <div className="flex gap-2">
                   {LIGHT_TYPES.map(type => {
                     const Icon = type.icon
                     return (
                       <button
                         key={type.id}
                         onClick={() => setLightType(type.id)}
-                        className={`p-3 rounded-xl border-2 transition-all text-left ${
+                        className={`flex-1 py-2.5 px-2 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${
                           lightType === type.id
                             ? 'border-amber-500 bg-amber-50'
                             : 'border-zinc-200 bg-white hover:border-zinc-300'
                         }`}
                       >
-                        <Icon className={`w-4 h-4 mb-1 ${lightType === type.id ? 'text-amber-600' : 'text-zinc-400'}`} />
-                        <p className={`text-xs font-medium ${lightType === type.id ? 'text-amber-700' : 'text-zinc-700'}`}>
+                        <Icon className={`w-4 h-4 ${lightType === type.id ? 'text-amber-600' : 'text-zinc-400'}`} />
+                        <span className={`text-xs font-medium ${lightType === type.id ? 'text-amber-700' : 'text-zinc-600'}`}>
                           {type.label}
-                        </p>
+                        </span>
                       </button>
                     )
                   })}
@@ -481,7 +481,7 @@ export default function EditPage() {
               
               {/* Aspect Ratio */}
               <div>
-                <h3 className="text-sm font-semibold text-zinc-700 mb-3">画面比例</h3>
+                <h3 className="text-sm font-semibold text-zinc-700 mb-2">画面比例</h3>
                 <div className="flex flex-wrap gap-2">
                   {ASPECT_RATIOS.map(ratio => (
                     <button
@@ -501,7 +501,7 @@ export default function EditPage() {
               
               {/* Light Direction */}
               <div>
-                <h3 className="text-sm font-semibold text-zinc-700 mb-3">光源方向</h3>
+                <h3 className="text-sm font-semibold text-zinc-700 mb-2">光源方向</h3>
                 <div className="bg-zinc-50 rounded-xl p-3 border border-zinc-200">
                   <div className="grid grid-cols-3 gap-1.5 max-w-[140px] mx-auto">
                     {LIGHT_DIRECTIONS.map(dir => (
@@ -526,13 +526,12 @@ export default function EditPage() {
                       </button>
                     ))}
                   </div>
-                  <p className="text-[10px] text-zinc-500 text-center mt-2">点击选择光源位置</p>
                 </div>
               </div>
               
-              {/* Light Color */}
+              {/* Background Color */}
               <div>
-                <h3 className="text-sm font-semibold text-zinc-700 mb-3">光源颜色</h3>
+                <h3 className="text-sm font-semibold text-zinc-700 mb-2">背景颜色</h3>
                 <div className="bg-zinc-50 rounded-xl p-3 border border-zinc-200">
                   <div className="flex flex-wrap gap-2 mb-2">
                     {PRESET_COLORS.map(color => (
@@ -541,7 +540,7 @@ export default function EditPage() {
                         onClick={() => setLightColor(color)}
                         className={`w-8 h-8 rounded-full border-2 transition-all ${
                           lightColor === color
-                            ? 'border-blue-500 scale-110'
+                            ? 'border-amber-500 scale-110'
                             : 'border-zinc-200 hover:border-zinc-300'
                         }`}
                         style={{ backgroundColor: color }}
