@@ -13,7 +13,7 @@ export default function HomePage() {
   const recentGenerations = generations.slice(0, 4)
   
   return (
-    <div className="min-h-full bg-zinc-50 pb-24">
+    <div className="min-h-full bg-zinc-50 pb-32">
       {/* Hero Section */}
       <div className="bg-white px-6 pt-8 pb-10">
         <div className="flex items-center justify-between mb-6">
@@ -118,11 +118,11 @@ export default function HomePage() {
         </div>
       </div>
       
-      {/* Recent Generations */}
+      {/* My Gallery */}
       {_hasHydrated && recentGenerations.length > 0 && (
         <div className="px-4 mt-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-zinc-500 uppercase">最近生成</h2>
+            <h2 className="text-sm font-semibold text-zinc-500 uppercase">我的图库</h2>
             <Link href="/gallery" className="text-xs text-blue-600 font-medium">查看全部</Link>
           </div>
           <div className="grid grid-cols-4 gap-2">
