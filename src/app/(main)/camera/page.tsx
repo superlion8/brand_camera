@@ -280,66 +280,97 @@ export default function CameraPage() {
       console.log("Background base64 ready:", !!bgBase64)
       console.log("Vibe base64 ready:", !!vibeBase64)
       
-      // Call both APIs in parallel for faster generation
-      console.log("Sending parallel generation requests...")
+      // Fire 4 independent parallel requests for maximum speed
+      console.log("Sending 4 parallel generation requests...")
       
-      const productRequest = fetchWithTimeout("/api/generate-product", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productImage: compressedProduct,
-          productImage2: compressedProduct2,
-        }),
-      }, 200000) // 200 second timeout for product images
-      
-      const modelRequest = fetchWithTimeout("/api/generate-model", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productImage: compressedProduct,
-          productImage2: compressedProduct2,
-          modelImage: modelBase64,
-          modelStyle: modelStyle,
-          modelGender: modelGender,
-          backgroundImage: bgBase64,
-          vibeImage: vibeBase64,
-        }),
-      }, 280000) // 280 second timeout for model images
-      
-      // Wait for both to complete
-      const [productResponse, modelResponse] = await Promise.all([productRequest, modelRequest])
-      const [productData, modelData] = await Promise.all([productResponse.json(), modelResponse.json()])
-      
-      // Combine results: product images first, then model images
-      const allImages: string[] = []
-      const allModelTypes: ('pro' | 'flash')[] = []
-      
-      if (productData.success && productData.images) {
-        allImages.push(...productData.images)
-        allModelTypes.push(...(productData.modelTypes || []))
-        console.log(`Product images: ${productData.images.length}/2 in ${productData.stats?.duration}ms`)
+      const basePayload = {
+        productImage: compressedProduct,
+        productImage2: compressedProduct2,
+        modelImage: modelBase64,
+        modelStyle: modelStyle,
+        modelGender: modelGender,
+        backgroundImage: bgBase64,
+        vibeImage: vibeBase64,
       }
       
-      if (modelData.success && modelData.images) {
-        allImages.push(...modelData.images)
-        allModelTypes.push(...(modelData.modelTypes || []))
-        console.log(`Model images: ${modelData.images.length}/2 in ${modelData.stats?.duration}ms`)
-      }
+      // Create 4 independent requests
+      const requests = [
+        // Product image 1
+        fetch("/api/generate-single", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...basePayload, type: 'product', index: 0 }),
+        }),
+        // Product image 2
+        fetch("/api/generate-single", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...basePayload, type: 'product', index: 1 }),
+        }),
+        // Model image 1
+        fetch("/api/generate-single", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...basePayload, type: 'model', index: 0 }),
+        }),
+        // Model image 2
+        fetch("/api/generate-single", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...basePayload, type: 'model', index: 1 }),
+        }),
+      ]
       
-      // Create combined data object
-      const data = {
-        success: allImages.length > 0,
-        images: allImages,
-        modelTypes: allModelTypes,
-        stats: {
-          total: 4,
-          successful: allImages.length,
-          duration: Math.max(productData.stats?.duration || 0, modelData.stats?.duration || 0),
+      // Wait for all to complete (don't fail if some fail)
+      const responses = await Promise.allSettled(requests)
+      
+      // Process results - maintain order: product1, product2, model1, model2
+      const allImages: (string | null)[] = [null, null, null, null]
+      const allModelTypes: (('pro' | 'flash') | null)[] = [null, null, null, null]
+      let maxDuration = 0
+      
+      for (let i = 0; i < responses.length; i++) {
+        const response = responses[i]
+        if (response.status === 'fulfilled') {
+          try {
+            const result = await response.value.json()
+            if (result.success && result.image) {
+              // Map: product 0,1 -> 0,1 | model 0,1 -> 2,3
+              const targetIndex = result.type === 'product' ? result.index : result.index + 2
+              allImages[targetIndex] = result.image
+              allModelTypes[targetIndex] = result.modelType
+              maxDuration = Math.max(maxDuration, result.duration || 0)
+              console.log(`${result.type} ${result.index + 1}: ✓ (${result.modelType}, ${result.duration}ms)`)
+            } else {
+              console.log(`Task ${i + 1}: ✗ (${result.error})`)
+            }
+          } catch (e) {
+            console.log(`Task ${i + 1}: ✗ (parse error)`)
+          }
+        } else {
+          console.log(`Task ${i + 1}: ✗ (${response.reason})`)
         }
       }
       
+      // Filter out nulls and create final arrays
+      const finalImages = allImages.filter((img): img is string => img !== null)
+      const finalModelTypes = allModelTypes.filter((t): t is 'pro' | 'flash' => t !== null)
+      
+      // Create combined data object
+      const data = {
+        success: finalImages.length > 0,
+        images: finalImages,
+        modelTypes: finalModelTypes,
+        stats: {
+          total: 4,
+          successful: finalImages.length,
+          duration: maxDuration,
+        }
+      }
+      
+      console.log(`Generation complete: ${finalImages.length}/4 images in ~${maxDuration}ms`)
+      
       if (data.success && data.images.length > 0) {
-        console.log(`Generation complete: ${data.images.length}/4 images`)
         
         // Update task with results
         updateTaskStatus(taskId, 'completed', data.images)
@@ -390,9 +421,7 @@ export default function CameraPage() {
           setMode("results")
         }
       } else {
-        // Get error message from either response
-        const errorMsg = productData.error || modelData.error || "生成失败"
-        throw new Error(errorMsg)
+        throw new Error("所有图片生成失败，请重试")
       }
     } catch (error: any) {
       console.error("Generation error:", error)
