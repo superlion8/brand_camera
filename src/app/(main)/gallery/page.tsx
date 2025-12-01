@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
-import { Download, Heart, X, Wand2, Camera, Users, Home, ZoomIn } from "lucide-react"
+import { Download, Heart, X, Wand2, Camera, Users, Home, ZoomIn, Loader2 } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
+import { useGenerationTaskStore, GenerationTask } from "@/stores/generationTaskStore"
 import { Generation, Favorite } from "@/types"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
@@ -17,6 +18,19 @@ export default function GalleryPage() {
   const [selectedItem, setSelectedItem] = useState<{ gen: Generation; index: number } | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
   const { generations, favorites, _hasHydrated, addFavorite, removeFavorite, isFavorited } = useAssetStore()
+  const { tasks, removeTask } = useGenerationTaskStore()
+  
+  // Get active tasks (generating)
+  const activeTasks = tasks.filter(t => t.status === 'pending' || t.status === 'generating')
+  
+  // Auto-refresh when tasks complete
+  useEffect(() => {
+    // Clean up completed tasks after a delay
+    const completedTasks = tasks.filter(t => t.status === 'completed')
+    completedTasks.forEach(task => {
+      setTimeout(() => removeTask(task.id), 1000)
+    })
+  }, [tasks, removeTask])
   
   // Show loading state until hydrated
   if (!_hasHydrated) {
@@ -164,6 +178,11 @@ export default function GalleryPage() {
       {/* Grid */}
       <div className="flex-1 overflow-y-auto p-4">
         <div className="grid grid-cols-2 gap-3">
+          {/* Active generation tasks - show at top */}
+          {activeTab === "all" && activeTasks.map((task) => (
+            <GeneratingCard key={task.id} task={task} />
+          ))}
+          
           {displayedHistory.map((item, i) => (
             <div 
               key={`${item.gen.id}-${item.idx}-${i}`}
@@ -393,6 +412,40 @@ export default function GalleryPage() {
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  )
+}
+
+// Generating card component
+function GeneratingCard({ task }: { task: GenerationTask }) {
+  return (
+    <div className="relative aspect-[4/5] bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl overflow-hidden shadow-sm border-2 border-dashed border-blue-300">
+      {/* Thumbnail preview */}
+      <div className="absolute inset-0 opacity-30">
+        <Image 
+          src={task.inputImageUrl} 
+          alt="Generating" 
+          fill 
+          className="object-cover blur-sm" 
+        />
+      </div>
+      
+      {/* Loading overlay */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <div className="relative mb-3">
+          <div className="absolute inset-0 bg-blue-500/20 blur-lg rounded-full animate-pulse" />
+          <Loader2 className="w-10 h-10 text-blue-600 animate-spin relative z-10" />
+        </div>
+        <span className="text-blue-700 font-semibold text-sm">拍摄中...</span>
+        <span className="text-blue-500 text-xs mt-1">AI 正在生成 4 张图片</span>
+      </div>
+      
+      {/* Status badge */}
+      <div className="absolute top-2 left-2">
+        <span className="px-2 py-1 rounded text-[10px] font-medium bg-blue-500 text-white animate-pulse">
+          生成中
+        </span>
+      </div>
     </div>
   )
 }

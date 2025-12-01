@@ -11,6 +11,7 @@ import {
 } from "lucide-react"
 import { useCameraStore } from "@/stores/cameraStore"
 import { useAssetStore } from "@/stores/assetStore"
+import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { useRouter } from "next/navigation"
 import { fileToBase64, generateId, compressBase64Image, fetchWithTimeout, ensureBase64 } from "@/lib/utils"
 import { Asset, ModelStyle, ModelGender, ModelSubcategory, BackgroundSubcategory } from "@/types"
@@ -89,6 +90,7 @@ export default function CameraPage() {
   const [bgSubcategory, setBgSubcategory] = useState<BackgroundSubcategory | null>(null)
   
   const { addGeneration, userModels, userBackgrounds, userVibes, addFavorite, removeFavorite, isFavorited, favorites } = useAssetStore()
+  const { addTask, updateTaskStatus, tasks } = useGenerationTaskStore()
   
   // Helper to sort by pinned status
   const sortByPinned = (assets: Asset[]) => 
@@ -159,12 +161,29 @@ export default function CameraPage() {
   const handleShootIt = async () => {
     if (!capturedImage) return
     
+    // Create task and switch to processing mode
+    const params = {
+      modelStyle: selectedModelStyle || undefined,
+      modelGender: selectedModelGender || undefined,
+      model: activeModel?.name,
+      background: activeBg?.name,
+      vibe: activeVibe?.name,
+    }
+    
+    const taskId = addTask(capturedImage, params)
+    updateTaskStatus(taskId, 'generating')
     setMode("processing")
     
+    // Start background generation
+    runBackgroundGeneration(taskId, capturedImage)
+  }
+  
+  // Background generation function (runs async, doesn't block UI)
+  const runBackgroundGeneration = async (taskId: string, inputImage: string) => {
     try {
       // Compress and prepare images before sending
       console.log("Preparing images...")
-      const compressedProduct = await compressBase64Image(capturedImage, 1024)
+      const compressedProduct = await compressBase64Image(inputImage, 1024)
       
       // Convert URLs to base64 if needed (for preset assets)
       const [modelBase64, bgBase64, vibeBase64] = await Promise.all([
@@ -191,15 +210,16 @@ export default function CameraPage() {
       
       if (data.success && data.images) {
         console.log(`Generation stats: ${data.stats?.successful}/${data.stats?.total} images in ${data.stats?.duration}ms`)
-        setGeneratedImages(data.images)
         
-        // Save to history
-        const id = generateId()
-        setCurrentGenerationId(id) // Save the generation ID for favorites
+        // Update task with results
+        updateTaskStatus(taskId, 'completed', data.images)
+        
+        // Save to IndexedDB/history
+        const id = taskId
         await addGeneration({
           id,
           type: "camera_model",
-          inputImageUrl: capturedImage,
+          inputImageUrl: inputImage,
           outputImageUrls: data.images,
           createdAt: new Date().toISOString(),
           params: { 
@@ -211,19 +231,41 @@ export default function CameraPage() {
           },
         })
         
-        setMode("results")
+        // If still on processing mode for this task, show results
+        if (mode === "processing") {
+          setGeneratedImages(data.images)
+          setCurrentGenerationId(id)
+          setMode("results")
+        }
       } else {
         throw new Error(data.error || "生成失败")
       }
     } catch (error: any) {
       console.error("Generation error:", error)
-      if (error.name === 'AbortError') {
-        alert("生成超时，请重试。建议使用较小的图片。")
-      } else {
-        alert(error.message || "生成失败，请重试")
+      updateTaskStatus(taskId, 'failed', undefined, error.message || "生成失败")
+      
+      // Only alert if still on processing screen
+      if (mode === "processing") {
+        if (error.name === 'AbortError') {
+          alert("生成超时，请重试。建议使用较小的图片。")
+        } else {
+          alert(error.message || "生成失败，请重试")
+        }
+        setMode("review")
       }
-      setMode("review")
     }
+  }
+  
+  // Handle return during processing - allow going home
+  const handleReturnDuringProcessing = () => {
+    router.push("/")
+  }
+  
+  // Handle taking new photo during processing
+  const handleNewPhotoDuringProcessing = () => {
+    setCapturedImage(null)
+    setGeneratedImages([])
+    setMode("camera")
   }
   
   const handleReturn = () => {
@@ -771,13 +813,32 @@ export default function CameraPage() {
             </div>
             
             <h3 className="text-white text-2xl font-bold mb-2">AI 正在拍摄...</h3>
-            <div className="text-zinc-400 space-y-1 text-sm">
+            <div className="text-zinc-400 space-y-1 text-sm mb-8">
               <p>分析商品光影...</p>
               {activeModel && <p>生成模特 {activeModel.name} ...</p>}
               {selectedModelStyle && !activeModel && (
                 <p>匹配{MODEL_STYLES.find(s => s.id === selectedModelStyle)?.label}风格...</p>
               )}
               {activeBg && <p>渲染场景背景...</p>}
+            </div>
+            
+            {/* Action buttons during processing */}
+            <div className="space-y-3 w-full max-w-xs">
+              <p className="text-zinc-500 text-xs mb-4">生成将在后台继续，您可以：</p>
+              <button
+                onClick={handleNewPhotoDuringProcessing}
+                className="w-full h-12 rounded-full bg-white text-black font-medium flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors"
+              >
+                <Camera className="w-5 h-5" />
+                拍摄新商品
+              </button>
+              <button
+                onClick={handleReturnDuringProcessing}
+                className="w-full h-12 rounded-full bg-white/10 text-white font-medium flex items-center justify-center gap-2 hover:bg-white/20 transition-colors border border-white/20"
+              >
+                <Home className="w-5 h-5" />
+                返回主页
+              </button>
             </div>
           </motion.div>
         )}
