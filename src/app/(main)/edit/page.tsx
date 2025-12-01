@@ -1,13 +1,16 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import Image from "next/image"
-import { Wand2, X, Check, Loader2, Image as ImageIcon, Home, ArrowLeft, Lightbulb, Sun, Sparkles, Zap } from "lucide-react"
+import { Wand2, X, Check, Loader2, Image as ImageIcon, Home, ArrowLeft, Lightbulb, Sun, Sparkles, Zap, Camera, FolderHeart, Upload } from "lucide-react"
 import { AssetSelector } from "@/components/camera/AssetSelector"
 import { Asset, ModelStyle, ModelGender } from "@/types"
 import { fileToBase64, compressBase64Image, fetchWithTimeout, generateId, ensureBase64 } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { useAssetStore } from "@/stores/assetStore"
+import { PRESET_PRODUCTS } from "@/data/presets"
+import Webcam from "react-webcam"
+import { motion, AnimatePresence } from "framer-motion"
 
 type EditMode = 'edit' | 'studio'
 
@@ -58,10 +61,18 @@ const PRESET_COLORS = ['#FFFFFF', '#FFF5E6', '#E6F3FF', '#FFE4E1', '#E6FFE6', '#
 export default function EditPage() {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const webcamRef = useRef<Webcam>(null)
   const [inputImage, setInputImage] = useState<string | null>(null)
   
   // Mode: edit or studio
   const [editMode, setEditMode] = useState<EditMode>('edit')
+  
+  // Camera and upload states
+  const [showCamera, setShowCamera] = useState(false)
+  const [showProductPanel, setShowProductPanel] = useState(false)
+  const [productSourceTab, setProductSourceTab] = useState<'preset' | 'user'>('preset')
+  const [hasCamera, setHasCamera] = useState(true)
+  const [cameraReady, setCameraReady] = useState(false)
   
   // Check for image passed from gallery page
   useEffect(() => {
@@ -90,7 +101,47 @@ export default function EditPage() {
   const [lightDirection, setLightDirection] = useState('front')
   const [lightColor, setLightColor] = useState('#FFFFFF')
   
-  const { addGeneration } = useAssetStore()
+  const { addGeneration, userProducts } = useAssetStore()
+  
+  // Camera handlers
+  const handleCapture = useCallback(() => {
+    if (webcamRef.current) {
+      const imageSrc = webcamRef.current.getScreenshot()
+      if (imageSrc) {
+        setInputImage(imageSrc)
+        setShowCamera(false)
+        setResultImage(null)
+      }
+    }
+  }, [])
+  
+  const handleCameraError = useCallback(() => {
+    setHasCamera(false)
+    setCameraReady(false)
+  }, [])
+  
+  const handleCameraReady = useCallback(() => {
+    setCameraReady(true)
+  }, [])
+  
+  const handleSelectFromAsset = useCallback(async (imageUrl: string) => {
+    try {
+      const base64 = await ensureBase64(imageUrl)
+      if (base64) {
+        setInputImage(base64)
+        setShowProductPanel(false)
+        setResultImage(null)
+      }
+    } catch (e) {
+      console.error('Failed to load asset:', e)
+    }
+  }, [])
+  
+  const videoConstraints = {
+    width: { ideal: 1920 },
+    height: { ideal: 1080 },
+    facingMode: "environment",
+  }
   
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -298,14 +349,41 @@ export default function EditPage() {
       
       <div className="flex-1 overflow-y-auto">
         {/* Image Area */}
-        <div className="bg-zinc-100 min-h-[280px] flex items-center justify-center relative p-4">
+        <div className="bg-zinc-100 min-h-[240px] flex items-center justify-center relative p-4">
           {!inputImage ? (
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="w-56 h-56 border-2 border-dashed border-zinc-300 rounded-xl flex flex-col items-center justify-center text-zinc-400 cursor-pointer hover:bg-zinc-200/50 transition-colors"
-            >
-              <ImageIcon className="w-10 h-10 mb-2" />
-              <span className="text-sm">点击上传图片</span>
+            <div className="w-full max-w-sm space-y-2">
+              {/* Camera */}
+              <button
+                onClick={() => setShowCamera(true)}
+                className={`w-full h-16 rounded-xl flex items-center justify-center gap-3 transition-colors ${
+                  editMode === 'studio' 
+                    ? 'bg-amber-500 hover:bg-amber-600 text-white' 
+                    : 'bg-blue-500 hover:bg-blue-600 text-white'
+                }`}
+              >
+                <Camera className="w-5 h-5" />
+                <span className="font-medium">拍摄</span>
+              </button>
+              
+              <div className="flex gap-2">
+                {/* Album */}
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex-1 h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-2 transition-colors"
+                >
+                  <Upload className="w-4 h-4 text-zinc-500" />
+                  <span className="text-sm text-zinc-700">相册</span>
+                </button>
+                
+                {/* Asset library */}
+                <button
+                  onClick={() => setShowProductPanel(true)}
+                  className="flex-1 h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-2 transition-colors"
+                >
+                  <FolderHeart className="w-4 h-4 text-zinc-500" />
+                  <span className="text-sm text-zinc-700">资产库</span>
+                </button>
+              </div>
             </div>
           ) : (
             <div className="relative w-full max-w-xs">
@@ -607,6 +685,200 @@ export default function EditPage() {
           <p className="text-zinc-400 text-sm">应用您的指令和风格选择</p>
         </div>
       )}
+      
+      {/* Camera Modal */}
+      <AnimatePresence>
+        {showCamera && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black flex flex-col"
+          >
+            {/* Back button */}
+            <button
+              onClick={() => setShowCamera(false)}
+              className="absolute top-4 left-4 z-20 w-10 h-10 rounded-full bg-black/30 text-white backdrop-blur-md flex items-center justify-center"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            
+            {/* Camera view */}
+            <div className="flex-1 relative">
+              {hasCamera ? (
+                <Webcam
+                  ref={webcamRef}
+                  audio={false}
+                  screenshotFormat="image/jpeg"
+                  screenshotQuality={0.95}
+                  videoConstraints={videoConstraints}
+                  onUserMedia={handleCameraReady}
+                  onUserMediaError={handleCameraError}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
+                  <div className="text-center text-zinc-400">
+                    <Camera className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                    <p className="text-sm">相机不可用</p>
+                    <button
+                      onClick={() => {
+                        setShowCamera(false)
+                        setTimeout(() => fileInputRef.current?.click(), 100)
+                      }}
+                      className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg text-sm"
+                    >
+                      从相册上传
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Grid overlay */}
+              <div className="absolute inset-0 pointer-events-none opacity-30">
+                <div className="w-full h-full grid grid-cols-3 grid-rows-3">
+                  {[...Array(9)].map((_, i) => (
+                    <div key={i} className="border border-white/20" />
+                  ))}
+                </div>
+              </div>
+              
+              {/* Focus frame */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="w-64 h-64 border border-white/50 rounded-lg relative">
+                  <div className={`absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 ${editMode === 'studio' ? 'border-amber-400' : 'border-blue-400'}`} />
+                  <div className={`absolute -top-1 -right-1 w-4 h-4 border-t-4 border-r-4 ${editMode === 'studio' ? 'border-amber-400' : 'border-blue-400'}`} />
+                  <div className={`absolute -bottom-1 -left-1 w-4 h-4 border-b-4 border-l-4 ${editMode === 'studio' ? 'border-amber-400' : 'border-blue-400'}`} />
+                  <div className={`absolute -bottom-1 -right-1 w-4 h-4 border-b-4 border-r-4 ${editMode === 'studio' ? 'border-amber-400' : 'border-blue-400'}`} />
+                </div>
+              </div>
+            </div>
+            
+            {/* Capture button */}
+            <div className="bg-black py-8 flex justify-center">
+              <button
+                onClick={handleCapture}
+                disabled={!cameraReady}
+                className={`w-20 h-20 rounded-full border-4 flex items-center justify-center active:scale-95 transition-transform disabled:opacity-50 ${
+                  editMode === 'studio' ? 'border-amber-400/50' : 'border-blue-400/50'
+                }`}
+              >
+                <div className={`w-16 h-16 rounded-full ${editMode === 'studio' ? 'bg-amber-400' : 'bg-blue-400'}`} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Product Selection Panel */}
+      <AnimatePresence>
+        {showProductPanel && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
+              onClick={() => setShowProductPanel(false)}
+            />
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed bottom-0 left-0 right-0 h-[70%] bg-white rounded-t-2xl z-50 flex flex-col overflow-hidden"
+            >
+              <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
+                <span className="font-semibold">选择图片</span>
+                <button
+                  onClick={() => setShowProductPanel(false)}
+                  className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              
+              {/* Source Tabs */}
+              <div className="px-4 py-2 border-b bg-white">
+                <div className="flex bg-zinc-100 rounded-lg p-1">
+                  <button
+                    onClick={() => setProductSourceTab("preset")}
+                    className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${
+                      productSourceTab === "preset"
+                        ? "bg-white text-zinc-900 shadow-sm"
+                        : "text-zinc-500 hover:text-zinc-700"
+                    }`}
+                  >
+                    官方示例 ({PRESET_PRODUCTS.length})
+                  </button>
+                  <button
+                    onClick={() => setProductSourceTab("user")}
+                    className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${
+                      productSourceTab === "user"
+                        ? "bg-white text-zinc-900 shadow-sm"
+                        : "text-zinc-500 hover:text-zinc-700"
+                    }`}
+                  >
+                    我的商品 ({userProducts.length})
+                  </button>
+                </div>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto bg-zinc-50 p-4">
+                {productSourceTab === 'preset' ? (
+                  <div className="grid grid-cols-3 gap-3">
+                    {PRESET_PRODUCTS.map(product => (
+                      <button
+                        key={product.id}
+                        onClick={() => handleSelectFromAsset(product.imageUrl)}
+                        className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all bg-white"
+                      >
+                        <Image src={product.imageUrl} alt={product.name || ''} fill className="object-cover" />
+                        <span className="absolute top-1 left-1 bg-blue-500 text-white text-[8px] px-1 py-0.5 rounded font-medium">
+                          官方
+                        </span>
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-1.5 pt-4">
+                          <p className="text-[10px] text-white truncate text-center">{product.name}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : userProducts.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-3">
+                    {userProducts.map(product => (
+                      <button
+                        key={product.id}
+                        onClick={() => handleSelectFromAsset(product.imageUrl)}
+                        className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all bg-white"
+                      >
+                        <Image src={product.imageUrl} alt={product.name || ''} fill className="object-cover" />
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-1.5 pt-4">
+                          <p className="text-[10px] text-white truncate text-center">{product.name}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-zinc-400">
+                    <FolderHeart className="w-12 h-12 mb-3 opacity-30" />
+                    <p className="text-sm">暂无我的商品</p>
+                    <p className="text-xs mt-1">在品牌资产中上传商品图片</p>
+                    <button
+                      onClick={() => {
+                        setShowProductPanel(false)
+                        router.push("/brand-assets")
+                      }}
+                      className="mt-4 px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600"
+                    >
+                      去上传
+                    </button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
