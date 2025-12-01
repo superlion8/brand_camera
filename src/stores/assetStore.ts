@@ -39,6 +39,9 @@ interface AssetState {
   setUserProducts: (products: Asset[]) => void
   setUserVibes: (vibes: Asset[]) => void
   
+  // Add single asset
+  addUserAsset: (asset: Asset) => void
+  
   // Pin actions
   togglePin: (type: AssetType, id: string) => void
   togglePresetPin: (id: string) => void
@@ -89,6 +92,24 @@ export const useAssetStore = create<AssetState>()(
       setUserBackgrounds: (backgrounds) => set({ userBackgrounds: backgrounds }),
       setUserProducts: (products) => set({ userProducts: products }),
       setUserVibes: (vibes) => set({ userVibes: vibes }),
+      
+      // Add single asset to appropriate collection
+      addUserAsset: (asset) => {
+        switch (asset.type) {
+          case 'model':
+            set((state) => ({ userModels: [asset, ...state.userModels] }))
+            break
+          case 'background':
+            set((state) => ({ userBackgrounds: [asset, ...state.userBackgrounds] }))
+            break
+          case 'product':
+            set((state) => ({ userProducts: [asset, ...state.userProducts] }))
+            break
+          case 'vibe':
+            set((state) => ({ userVibes: [asset, ...state.userVibes] }))
+            break
+        }
+      },
       
       // Toggle pin for user assets
       togglePin: (type, id) => {

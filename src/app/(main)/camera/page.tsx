@@ -98,10 +98,15 @@ export default function CameraPage() {
   const [selectedVibe, setSelectedVibe] = useState<string | null>(null)
   const [selectedModelStyle, setSelectedModelStyle] = useState<ModelStyle | null>(null)
   const [selectedModelGender, setSelectedModelGender] = useState<ModelGender | null>(null)
-  const [modelSubcategory, setModelSubcategory] = useState<ModelSubcategory | null>(null)
-  const [bgSubcategory, setBgSubcategory] = useState<BackgroundSubcategory | null>(null)
+  const [modelSubcategory, setModelSubcategory] = useState<ModelSubcategory | 'mine' | null>(null)
+  const [bgSubcategory, setBgSubcategory] = useState<BackgroundSubcategory | 'mine' | null>(null)
+  const [vibeSubcategory, setVibeSubcategory] = useState<'mine' | null>(null)
   
-  const { addGeneration, userModels, userBackgrounds, userVibes, userProducts, addFavorite, removeFavorite, isFavorited, favorites } = useAssetStore()
+  // Track if product images came from phone upload (not asset library)
+  const [productFromPhone, setProductFromPhone] = useState(false)
+  const [product2FromPhone, setProduct2FromPhone] = useState(false)
+  
+  const { addGeneration, addUserAsset, userModels, userBackgrounds, userVibes, userProducts, addFavorite, removeFavorite, isFavorited, favorites } = useAssetStore()
   const { addTask, updateTaskStatus, tasks } = useGenerationTaskStore()
   
   // Helper to sort by pinned status
@@ -112,18 +117,27 @@ export default function CameraPage() {
       return 0
     })
   
-  // Filter presets by category
-  const filteredPresetModels = modelSubcategory 
-    ? PRESET_MODELS.filter(m => m.category === modelSubcategory)
-    : PRESET_MODELS
-  const filteredPresetBackgrounds = bgSubcategory
-    ? PRESET_BACKGROUNDS.filter(b => b.category === bgSubcategory)
-    : PRESET_BACKGROUNDS
+  // Filter assets by category - 'mine' shows only user assets
+  const filteredModels = modelSubcategory === 'mine'
+    ? sortByPinned(userModels)
+    : modelSubcategory
+      ? [...sortByPinned(userModels), ...PRESET_MODELS.filter(m => m.category === modelSubcategory)]
+      : [...sortByPinned(userModels), ...PRESET_MODELS]
   
-  // Merge user assets with presets (pinned first, then other user assets, then presets)
-  const allModels = [...sortByPinned(userModels), ...filteredPresetModels]
-  const allBackgrounds = [...sortByPinned(userBackgrounds), ...filteredPresetBackgrounds]
-  const allVibes = [...sortByPinned(userVibes), ...PRESET_VIBES]
+  const filteredBackgrounds = bgSubcategory === 'mine'
+    ? sortByPinned(userBackgrounds)
+    : bgSubcategory
+      ? [...sortByPinned(userBackgrounds), ...PRESET_BACKGROUNDS.filter(b => b.category === bgSubcategory)]
+      : [...sortByPinned(userBackgrounds), ...PRESET_BACKGROUNDS]
+  
+  const filteredVibes = vibeSubcategory === 'mine'
+    ? sortByPinned(userVibes)
+    : [...sortByPinned(userVibes), ...PRESET_VIBES]
+  
+  // Aliases for compatibility
+  const allModels = filteredModels
+  const allBackgrounds = filteredBackgrounds
+  const allVibes = filteredVibes
   
   // Get selected assets from merged arrays
   const activeModel = allModels.find(m => m.id === selectedModel)
@@ -141,6 +155,7 @@ export default function CameraPage() {
       const imageSrc = webcamRef.current.getScreenshot()
       if (imageSrc) {
         setCapturedImage(imageSrc)
+        setProductFromPhone(true) // Mark as captured from camera (phone)
         setMode("review")
       }
     }
@@ -151,6 +166,7 @@ export default function CameraPage() {
     if (file) {
       const base64 = await fileToBase64(file)
       setCapturedImage(base64)
+      setProductFromPhone(true) // Mark as uploaded from phone
       setMode("review")
     }
   }, [])
@@ -161,6 +177,7 @@ export default function CameraPage() {
     if (file) {
       const base64 = await fileToBase64(file)
       setCapturedImage2(base64)
+      setProduct2FromPhone(true) // Mark as uploaded from phone
     }
   }, [])
   
@@ -176,6 +193,8 @@ export default function CameraPage() {
   const handleRetake = () => {
     setCapturedImage(null)
     setCapturedImage2(null)
+    setProductFromPhone(false)
+    setProduct2FromPhone(false)
     setGeneratedImages([])
     setMode("camera")
   }
@@ -190,6 +209,8 @@ export default function CameraPage() {
     const currentBg = activeBg
     const currentVibe = activeVibe
     const currentProduct2 = capturedImage2
+    const currentProductFromPhone = productFromPhone
+    const currentProduct2FromPhone = product2FromPhone
     
     // Create task and switch to processing mode
     const params = {
@@ -215,7 +236,9 @@ export default function CameraPage() {
       currentModelGender,
       currentModel,
       currentBg,
-      currentVibe
+      currentVibe,
+      currentProductFromPhone,
+      currentProduct2FromPhone
     )
   }
   
@@ -229,7 +252,9 @@ export default function CameraPage() {
     modelGender: ModelGender | null,
     model: Asset | undefined,
     background: Asset | undefined,
-    vibe: Asset | undefined
+    vibe: Asset | undefined,
+    fromPhone: boolean,
+    fromPhone2: boolean
   ) => {
     try {
       // Compress and prepare images before sending
@@ -275,6 +300,26 @@ export default function CameraPage() {
         
         // Update task with results
         updateTaskStatus(taskId, 'completed', data.images)
+        
+        // Save phone-uploaded product images to asset library
+        if (fromPhone && inputImage) {
+          console.log('Saving phone-uploaded product to asset library...')
+          addUserAsset({
+            id: generateId(),
+            type: 'product',
+            name: `商品 ${new Date().toLocaleDateString('zh-CN')}`,
+            imageUrl: inputImage,
+          })
+        }
+        if (fromPhone2 && inputImage2) {
+          console.log('Saving phone-uploaded product 2 to asset library...')
+          addUserAsset({
+            id: generateId(),
+            type: 'product',
+            name: `商品 ${new Date().toLocaleDateString('zh-CN')}`,
+            imageUrl: inputImage2,
+          })
+        }
         
         // Save to IndexedDB/history
         const id = taskId
@@ -815,6 +860,17 @@ export default function CameraPage() {
                             >
                               全部
                             </button>
+                            <button
+                              onClick={() => setModelSubcategory(modelSubcategory === 'mine' ? null : 'mine')}
+                              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                                modelSubcategory === 'mine'
+                                  ? "bg-zinc-900 text-white"
+                                  : "bg-white text-zinc-600 border border-zinc-200"
+                              }`}
+                            >
+                              我的
+                              {userModels.length > 0 && <span className="ml-1 text-zinc-400">({userModels.length})</span>}
+                            </button>
                             {MODEL_SUBCATEGORIES.map(sub => (
                               <button
                                 key={sub.id}
@@ -851,6 +907,17 @@ export default function CameraPage() {
                               }`}
                             >
                               全部
+                            </button>
+                            <button
+                              onClick={() => setBgSubcategory(bgSubcategory === 'mine' ? null : 'mine')}
+                              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                                bgSubcategory === 'mine'
+                                  ? "bg-zinc-900 text-white"
+                                  : "bg-white text-zinc-600 border border-zinc-200"
+                              }`}
+                            >
+                              我的
+                              {userBackgrounds.length > 0 && <span className="ml-1 text-zinc-400">({userBackgrounds.length})</span>}
                             </button>
                             {BACKGROUND_SUBCATEGORIES.map(sub => (
                               <button
@@ -907,6 +974,30 @@ export default function CameraPage() {
                       </button>
                     </div>
                     <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4">
+                      {/* Vibe Subcategory Tabs */}
+                      <div className="flex gap-2 flex-wrap mb-4">
+                        <button
+                          onClick={() => setVibeSubcategory(null)}
+                          className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                            !vibeSubcategory
+                              ? "bg-zinc-900 text-white"
+                              : "bg-white text-zinc-600 border border-zinc-200"
+                          }`}
+                        >
+                          全部
+                        </button>
+                        <button
+                          onClick={() => setVibeSubcategory(vibeSubcategory === 'mine' ? null : 'mine')}
+                          className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                            vibeSubcategory === 'mine'
+                              ? "bg-zinc-900 text-white"
+                              : "bg-white text-zinc-600 border border-zinc-200"
+                          }`}
+                        >
+                          我的
+                          {userVibes.length > 0 && <span className="ml-1 text-zinc-400">({userVibes.length})</span>}
+                        </button>
+                      </div>
                       <AssetGrid 
                         items={allVibes} 
                         selectedId={selectedVibe} 
@@ -988,6 +1079,7 @@ export default function CameraPage() {
                                   const base64 = await ensureBase64(product.imageUrl)
                                   if (base64) {
                                     setCapturedImage(base64)
+                                    setProductFromPhone(false) // From asset library, not phone
                                     setMode("review")
                                     setShowProductPanel(false)
                                   }
@@ -1014,6 +1106,7 @@ export default function CameraPage() {
                               key={product.id}
                               onClick={() => {
                                 setCapturedImage(product.imageUrl)
+                                setProductFromPhone(false) // From asset library, not phone
                                 setMode("review")
                                 setShowProductPanel(false)
                               }}
@@ -1132,6 +1225,7 @@ export default function CameraPage() {
                                   const base64 = await ensureBase64(product.imageUrl)
                                   if (base64) {
                                     setCapturedImage2(base64)
+                                    setProduct2FromPhone(false) // From asset library, not phone
                                     setShowProduct2Panel(false)
                                   }
                                 } catch (e) {
@@ -1157,6 +1251,7 @@ export default function CameraPage() {
                               key={product.id}
                               onClick={() => {
                                 setCapturedImage2(product.imageUrl)
+                                setProduct2FromPhone(false) // From asset library, not phone
                                 setShowProduct2Panel(false)
                               }}
                               className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all"
