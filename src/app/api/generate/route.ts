@@ -8,39 +8,29 @@ import { uploadGeneratedImageServer, uploadInputImageServer } from '@/lib/supaba
 
 export const maxDuration = 120
 
-// Helper function to generate a single product image
-async function generateProductImage(
+// Model names
+const PRIMARY_IMAGE_MODEL = 'gemini-3-pro-image-preview'
+const FALLBACK_IMAGE_MODEL = 'gemini-2.5-flash-preview-image'
+
+// Result type with model info
+interface ImageResult {
+  image: string
+  model: 'pro' | 'flash'
+}
+
+// Helper function to generate image with fallback
+async function generateImageWithFallback(
   client: ReturnType<typeof getGenAIClient>,
-  productImageData: string,
-  productImage2Data: string | null,
-  index: number
-): Promise<string | null> {
+  parts: any[],
+  label: string
+): Promise<ImageResult | null> {
+  const startTime = Date.now()
+  
+  // Try primary model first
   try {
-    console.log(`[Product ${index + 1}] Starting generation...`)
-    const startTime = Date.now()
-    
-    const parts: any[] = [
-      { text: PRODUCT_PROMPT },
-      {
-        inlineData: {
-          mimeType: 'image/jpeg',
-          data: productImageData,
-        },
-      },
-    ]
-    
-    // Add second product image if provided
-    if (productImage2Data) {
-      parts.push({
-        inlineData: {
-          mimeType: 'image/jpeg',
-          data: productImage2Data,
-        },
-      })
-    }
-    
+    console.log(`[${label}] Trying ${PRIMARY_IMAGE_MODEL}...`)
     const response = await client.models.generateContent({
-      model: 'gemini-3-pro-image-preview',
+      model: PRIMARY_IMAGE_MODEL,
       contents: [{ role: 'user', parts }],
       config: {
         responseModalities: ['IMAGE'],
@@ -49,12 +39,82 @@ async function generateProductImage(
     })
     
     const result = extractImage(response)
-    console.log(`[Product ${index + 1}] Completed in ${Date.now() - startTime}ms, success: ${!!result}`)
-    return result
-  } catch (error: any) {
-    console.error(`[Product ${index + 1}] Error:`, error?.message || error)
-    return null
+    if (result) {
+      console.log(`[${label}] ${PRIMARY_IMAGE_MODEL} succeeded in ${Date.now() - startTime}ms`)
+      return { image: result, model: 'pro' }
+    }
+    throw new Error('No image in response')
+  } catch (primaryError: any) {
+    console.log(`[${label}] ${PRIMARY_IMAGE_MODEL} failed: ${primaryError?.message || primaryError}`)
+    
+    // Check if it's a rate limit or quota error
+    const errorMessage = primaryError?.message?.toLowerCase() || ''
+    const shouldFallback = errorMessage.includes('quota') || 
+                          errorMessage.includes('rate') || 
+                          errorMessage.includes('limit') ||
+                          errorMessage.includes('exhausted') ||
+                          errorMessage.includes('429') ||
+                          errorMessage.includes('resource') ||
+                          true // Always try fallback on any error
+    
+    if (!shouldFallback) {
+      console.log(`[${label}] Not a quota/rate error, skipping fallback`)
+      return null
+    }
+    
+    // Try fallback model
+    try {
+      console.log(`[${label}] Trying fallback ${FALLBACK_IMAGE_MODEL}...`)
+      const fallbackResponse = await client.models.generateContent({
+        model: FALLBACK_IMAGE_MODEL,
+        contents: [{ role: 'user', parts }],
+        config: {
+          responseModalities: ['IMAGE'],
+          safetySettings,
+        },
+      })
+      
+      const fallbackResult = extractImage(fallbackResponse)
+      if (fallbackResult) {
+        console.log(`[${label}] ${FALLBACK_IMAGE_MODEL} succeeded in ${Date.now() - startTime}ms`)
+        return { image: fallbackResult, model: 'flash' }
+      }
+      throw new Error('No image in fallback response')
+    } catch (fallbackError: any) {
+      console.error(`[${label}] ${FALLBACK_IMAGE_MODEL} also failed:`, fallbackError?.message || fallbackError)
+      return null
+    }
   }
+}
+
+// Helper function to generate a single product image
+async function generateProductImage(
+  client: ReturnType<typeof getGenAIClient>,
+  productImageData: string,
+  productImage2Data: string | null,
+  index: number
+): Promise<ImageResult | null> {
+  const parts: any[] = [
+    { text: PRODUCT_PROMPT },
+    {
+      inlineData: {
+        mimeType: 'image/jpeg',
+        data: productImageData,
+      },
+    },
+  ]
+  
+  // Add second product image if provided
+  if (productImage2Data) {
+    parts.push({
+      inlineData: {
+        mimeType: 'image/jpeg',
+        data: productImage2Data,
+      },
+    })
+  }
+  
+  return generateImageWithFallback(client, parts, `Product ${index + 1}`)
 }
 
 // Step 1: Generate photography instructions using gemini-3-pro-preview (VLM)
@@ -148,7 +208,7 @@ async function generateInstructions(
   }
 }
 
-// Step 2: Generate model image with instructions using gemini-3-pro-image-preview
+// Step 2: Generate model image with instructions
 async function generateModelImage(
   client: ReturnType<typeof getGenAIClient>,
   productImageData: string,
@@ -160,93 +220,74 @@ async function generateModelImage(
   modelGender: string | undefined,
   instructPrompt: string | null,
   index: number
-): Promise<string | null> {
-  try {
-    console.log(`[Model ${index + 1}] Starting generation...`)
-    const startTime = Date.now()
-    
-    // Build the prompt with instructions
-    const modelPrompt = buildModelPrompt({
-      hasModel: !!modelImageData,
-      modelStyle,
-      modelGender,
-      hasBackground: !!backgroundImageData,
-      hasVibe: !!vibeImageData,
-      instructPrompt: instructPrompt || undefined,
-      hasProduct2: !!productImage2Data,
-    })
-    
-    console.log(`[Model ${index + 1}] Prompt preview:`, modelPrompt.substring(0, 300) + '...')
-    
-    const parts: any[] = []
-    
-    // Add model reference image first if provided
-    if (modelImageData) {
-      parts.push({
-        inlineData: {
-          mimeType: 'image/jpeg',
-          data: modelImageData,
-        },
-      })
-    }
-    
-    // Add prompt
-    parts.push({ text: modelPrompt })
-    
-    // Add product image (required)
+): Promise<ImageResult | null> {
+  // Build the prompt with instructions
+  const modelPrompt = buildModelPrompt({
+    hasModel: !!modelImageData,
+    modelStyle,
+    modelGender,
+    hasBackground: !!backgroundImageData,
+    hasVibe: !!vibeImageData,
+    instructPrompt: instructPrompt || undefined,
+    hasProduct2: !!productImage2Data,
+  })
+  
+  console.log(`[Model ${index + 1}] Prompt preview:`, modelPrompt.substring(0, 300) + '...')
+  
+  const parts: any[] = []
+  
+  // Add model reference image first if provided
+  if (modelImageData) {
     parts.push({
       inlineData: {
         mimeType: 'image/jpeg',
-        data: productImageData,
+        data: modelImageData,
       },
     })
-    
-    // Add second product image if provided
-    if (productImage2Data) {
-      parts.push({
-        inlineData: {
-          mimeType: 'image/jpeg',
-          data: productImage2Data,
-        },
-      })
-    }
-    
-    // Add background reference
-    if (backgroundImageData) {
-      parts.push({
-        inlineData: {
-          mimeType: 'image/jpeg',
-          data: backgroundImageData,
-        },
-      })
-    }
-    
-    // Add vibe reference
-    if (vibeImageData) {
-      parts.push({
-        inlineData: {
-          mimeType: 'image/jpeg',
-          data: vibeImageData,
-        },
-      })
-    }
-    
-    const response = await client.models.generateContent({
-      model: 'gemini-3-pro-image-preview',
-      contents: [{ role: 'user', parts }],
-      config: {
-        responseModalities: ['IMAGE'],
-        safetySettings,
-      },
-    })
-    
-    const result = extractImage(response)
-    console.log(`[Model ${index + 1}] Completed in ${Date.now() - startTime}ms, success: ${!!result}`)
-    return result
-  } catch (error: any) {
-    console.error(`[Model ${index + 1}] Error:`, error?.message || error)
-    return null
   }
+  
+  // Add prompt
+  parts.push({ text: modelPrompt })
+  
+  // Add product image (required)
+  parts.push({
+    inlineData: {
+      mimeType: 'image/jpeg',
+      data: productImageData,
+    },
+  })
+  
+  // Add second product image if provided
+  if (productImage2Data) {
+    parts.push({
+      inlineData: {
+        mimeType: 'image/jpeg',
+        data: productImage2Data,
+      },
+    })
+  }
+  
+  // Add background reference
+  if (backgroundImageData) {
+    parts.push({
+      inlineData: {
+        mimeType: 'image/jpeg',
+        data: backgroundImageData,
+      },
+    })
+  }
+  
+  // Add vibe reference
+  if (vibeImageData) {
+    parts.push({
+      inlineData: {
+        mimeType: 'image/jpeg',
+        data: vibeImageData,
+      },
+    })
+  }
+  
+  return generateImageWithFallback(client, parts, `Model ${index + 1}`)
 }
 
 // Small delay to avoid rate limiting
@@ -316,6 +357,7 @@ export async function POST(request: NextRequest) {
     console.log('- vibeImageData:', vibeImageData?.length || 'null')
     
     const results: string[] = []
+    const modelTypes: ('pro' | 'flash')[] = [] // Track which model generated each image
     
     // Step 1: Generate 2 product images in parallel
     console.log('Step 1: Generating product images...')
@@ -326,7 +368,8 @@ export async function POST(request: NextRequest) {
     
     for (const result of productResults) {
       if (result.status === 'fulfilled' && result.value) {
-        results.push(`data:image/png;base64,${result.value}`)
+        results.push(`data:image/png;base64,${result.value.image}`)
+        modelTypes.push(result.value.model)
       }
     }
     console.log(`Product images done: ${results.length}/2`)
@@ -363,12 +406,14 @@ export async function POST(request: NextRequest) {
     
     for (const result of modelResults) {
       if (result.status === 'fulfilled' && result.value) {
-        results.push(`data:image/png;base64,${result.value}`)
+        results.push(`data:image/png;base64,${result.value.image}`)
+        modelTypes.push(result.value.model)
       }
     }
     
     const duration = Date.now() - startTime
-    console.log(`Generation completed: ${results.length}/4 images in ${duration}ms`)
+    const flashCount = modelTypes.filter(m => m === 'flash').length
+    console.log(`Generation completed: ${results.length}/4 images in ${duration}ms (${flashCount} used fallback)`)
     
     if (results.length === 0) {
       // Save failed generation record
@@ -436,6 +481,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       images: finalImages,
+      modelTypes, // Array indicating which model generated each image: 'pro' or 'flash'
       generationId,
       stats: {
         total: 4,
@@ -443,6 +489,7 @@ export async function POST(request: NextRequest) {
         duration,
         hasInstructions: !!instructPrompt,
         hasProduct2: !!productImage2,
+        flashCount, // Number of images generated by fallback model
       }
     })
     

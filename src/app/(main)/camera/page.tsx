@@ -50,6 +50,7 @@ export default function CameraPage() {
   const [cameraReady, setCameraReady] = useState(false)
   const [permissionChecked, setPermissionChecked] = useState(false)
   const [generatedImages, setGeneratedImages] = useState<string[]>([])
+  const [generatedModelTypes, setGeneratedModelTypes] = useState<('pro' | 'flash')[]>([])
   const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null) // Track current task
   const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
@@ -196,6 +197,7 @@ export default function CameraPage() {
     setProductFromPhone(false)
     setProduct2FromPhone(false)
     setGeneratedImages([])
+    setGeneratedModelTypes([])
     setMode("camera")
   }
   
@@ -342,6 +344,7 @@ export default function CameraPage() {
         // Use modeRef.current to get the latest mode value (avoid stale closure)
         if (modeRef.current === "processing") {
           setGeneratedImages(data.images)
+          setGeneratedModelTypes(data.modelTypes || [])
           setCurrentGenerationId(id)
           setMode("results")
         }
@@ -1381,10 +1384,15 @@ export default function CameraPage() {
                         <Heart className={`w-4 h-4 ${currentGenerationId && isFavorited(currentGenerationId, i) ? "fill-current" : ""}`} />
                       </button>
                       {/* Type badge */}
-                      <div className="absolute top-2 left-2">
+                      <div className="absolute top-2 left-2 flex gap-1">
                         <span className="px-2 py-1 rounded text-[10px] font-medium bg-blue-500 text-white">
                           产品
                         </span>
+                        {generatedModelTypes[i] === 'flash' && (
+                          <span className="px-1.5 py-1 rounded text-[9px] font-medium bg-amber-500 text-white">
+                            2.5
+                          </span>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -1424,10 +1432,15 @@ export default function CameraPage() {
                           <Heart className={`w-4 h-4 ${currentGenerationId && isFavorited(currentGenerationId, actualIndex) ? "fill-current" : ""}`} />
                         </button>
                         {/* Type badge */}
-                        <div className="absolute top-2 left-2">
+                        <div className="absolute top-2 left-2 flex gap-1">
                           <span className="px-2 py-1 rounded text-[10px] font-medium bg-purple-500 text-white">
                             模特
                           </span>
+                          {generatedModelTypes[actualIndex] === 'flash' && (
+                            <span className="px-1.5 py-1 rounded text-[9px] font-medium bg-amber-500 text-white">
+                              2.5
+                            </span>
+                          )}
                         </div>
                       </div>
                     )
@@ -1492,6 +1505,11 @@ export default function CameraPage() {
                             }`}>
                               {selectedResultIndex < 2 ? "产品展示" : "模特展示"}
                             </span>
+                            {generatedModelTypes[selectedResultIndex] === 'flash' && (
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700">
+                                Gemini 2.5
+                              </span>
+                            )}
                           </div>
                           <p className="text-xs text-zinc-400">
                             刚刚生成
