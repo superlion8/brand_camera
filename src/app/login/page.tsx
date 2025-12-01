@@ -12,6 +12,7 @@ function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get("redirect") || "/"
+  const urlError = searchParams.get("error")
   
   const [mode, setMode] = useState<AuthMode>("select")
   const [email, setEmail] = useState("")
@@ -63,13 +64,15 @@ function LoginContent() {
         email,
         options: {
           shouldCreateUser: true, // Auto create user if not exists
+          emailRedirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`,
         },
       })
 
       if (error) throw error
 
-      setMessage("验证码已发送到您的邮箱")
-      setMode("verify-otp")
+      setMessage("登录链接已发送到您的邮箱，请点击邮件中的链接完成登录")
+      // Note: Supabase sends magic link by default, not OTP code
+      // User will be redirected back after clicking the link
     } catch (err: any) {
       console.error("Send OTP error:", err)
       setError(err.message || "发送验证码失败，请重试")
@@ -197,9 +200,9 @@ function LoginContent() {
         </div>
 
         {/* Error Message */}
-        {error && (
+        {(error || urlError) && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-            {error}
+            {error || urlError}
           </div>
         )}
 
