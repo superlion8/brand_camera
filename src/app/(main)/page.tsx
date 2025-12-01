@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { Camera, Wand2, FolderHeart, Images, ArrowRight, Sparkles } from "lucide-react"
+import { Camera, Wand2, FolderHeart, Images, ArrowRight, Sparkles, ChevronRight } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { UserMenu } from "@/components/shared/UserMenu"
 
@@ -21,14 +21,14 @@ export default function HomePage() {
             <Image src="/logo.png" alt="Brand Camera" width={48} height={48} className="rounded-xl" />
             <div>
               <h1 className="text-2xl font-bold text-zinc-900">品牌相机</h1>
-              <p className="text-sm text-zinc-500">AI 驱动的品牌内容创作工具</p>
+              <p className="text-sm text-zinc-500">品牌的AI影棚</p>
             </div>
           </div>
           <UserMenu />
         </div>
         
-        <p className="text-zinc-600 leading-relaxed">
-          为服装品牌主理人和买手店打造，一键生成专业的商品图和模特展示图，让你的产品在社交媒体上脱颖而出。
+        <p className="text-zinc-600 leading-relaxed text-sm">
+          一键生成专业的商品图和模特展示图，搭配灵活更换模特、背景、风格的后编辑能力，让你的产品在社交媒体上脱颖而出。
         </p>
       </div>
       
@@ -61,27 +61,38 @@ export default function HomePage() {
         </div>
       </div>
       
-      {/* Features */}
+      {/* Usage Steps */}
       <div className="px-4 mt-6">
-        <h2 className="text-sm font-semibold text-zinc-500 uppercase mb-3">功能亮点</h2>
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-white rounded-xl p-4 text-center border border-zinc-100">
-            <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-2">
-              <Camera className="w-6 h-6 text-blue-600" />
+        <h2 className="text-sm font-semibold text-zinc-500 uppercase mb-3">使用步骤</h2>
+        <div className="bg-white rounded-xl border border-zinc-100 p-4">
+          <div className="flex items-center justify-between">
+            {/* Step 1 */}
+            <div className="flex-1 text-center">
+              <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-2">
+                <Camera className="w-5 h-5 text-blue-600" />
+              </div>
+              <span className="text-xs font-medium text-zinc-700 block">拍摄商品</span>
             </div>
-            <span className="text-xs font-medium text-zinc-700">商品拍摄</span>
-          </div>
-          <div className="bg-white rounded-xl p-4 text-center border border-zinc-100">
-            <div className="w-12 h-12 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-2">
-              <Sparkles className="w-6 h-6 text-purple-600" />
+            
+            <ChevronRight className="w-4 h-4 text-zinc-300 shrink-0" />
+            
+            {/* Step 2 */}
+            <div className="flex-1 text-center">
+              <div className="w-10 h-10 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-2">
+                <Sparkles className="w-5 h-5 text-purple-600" />
+              </div>
+              <span className="text-xs font-medium text-zinc-700 block leading-tight">一键生成<br/>商品图和模特图</span>
             </div>
-            <span className="text-xs font-medium text-zinc-700">模特展示</span>
-          </div>
-          <div className="bg-white rounded-xl p-4 text-center border border-zinc-100">
-            <div className="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-2">
-              <Wand2 className="w-6 h-6 text-amber-600" />
+            
+            <ChevronRight className="w-4 h-4 text-zinc-300 shrink-0" />
+            
+            {/* Step 3 */}
+            <div className="flex-1 text-center">
+              <div className="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-2">
+                <Wand2 className="w-5 h-5 text-amber-600" />
+              </div>
+              <span className="text-xs font-medium text-zinc-700 block leading-tight">更换模特<br/>和背景</span>
             </div>
-            <span className="text-xs font-medium text-zinc-700">风格定制</span>
           </div>
         </div>
       </div>
@@ -140,17 +151,6 @@ export default function HomePage() {
           </div>
         </div>
       )}
-      
-      {/* Tips */}
-      <div className="px-4 mt-6">
-        <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-          <h3 className="font-medium text-blue-900 mb-1">💡 使用提示</h3>
-          <p className="text-sm text-blue-700">
-            上传清晰的商品图片，选择合适的模特风格和背景，AI 会自动生成专业的展示图。建议使用纯色背景的商品图获得最佳效果。
-          </p>
-        </div>
-      </div>
     </div>
   )
 }
-
