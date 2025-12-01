@@ -10,7 +10,7 @@ export const maxDuration = 120
 
 // Model names
 const PRIMARY_IMAGE_MODEL = 'gemini-3-pro-image-preview'
-const FALLBACK_IMAGE_MODEL = 'gemini-2.5-flash-preview-image'
+const FALLBACK_IMAGE_MODEL = 'gemini-2.5-flash-image'
 
 // Result type with model info
 interface ImageResult {
