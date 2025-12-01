@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { Camera, Wand2, FolderHeart, Images, ArrowRight, Sparkles, ChevronRight } from "lucide-react"
+import { Camera, Wand2, FolderHeart, Images, ArrowRight, Sparkles, ChevronRight, Zap, SlidersHorizontal, Palette } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { UserMenu } from "@/components/shared/UserMenu"
 
@@ -61,37 +61,58 @@ export default function HomePage() {
         </div>
       </div>
       
-      {/* Usage Steps */}
+      {/* Usage Modes */}
       <div className="px-4 mt-6">
-        <h2 className="text-sm font-semibold text-zinc-500 uppercase mb-3">使用步骤</h2>
-        <div className="bg-white rounded-xl border border-zinc-100 p-4">
-          <div className="flex items-center justify-between">
-            {/* Step 1 */}
-            <div className="flex-1 text-center">
-              <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-2">
-                <Camera className="w-5 h-5 text-blue-600" />
+        <h2 className="text-sm font-semibold text-zinc-500 uppercase mb-3">三种模式</h2>
+        <div className="space-y-3">
+          {/* Simple Mode */}
+          <div className="bg-white rounded-xl border border-zinc-100 p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Zap className="w-4 h-4 text-blue-600" />
               </div>
-              <span className="text-xs font-medium text-zinc-700 block">拍摄商品</span>
+              <span className="font-semibold text-zinc-900">极简模式</span>
             </div>
-            
-            <ChevronRight className="w-4 h-4 text-zinc-300 shrink-0" />
-            
-            {/* Step 2 */}
-            <div className="flex-1 text-center">
-              <div className="w-10 h-10 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-2">
-                <Sparkles className="w-5 h-5 text-purple-600" />
-              </div>
-              <span className="text-xs font-medium text-zinc-700 block leading-tight">一键生成<br/>商品图和模特图</span>
+            <div className="flex items-center text-xs text-zinc-600">
+              <span>拍摄商品</span>
+              <ChevronRight className="w-3 h-3 text-zinc-300 mx-1" />
+              <span>一键生成商品图和模特图</span>
+              <ChevronRight className="w-3 h-3 text-zinc-300 mx-1" />
+              <span>编辑图片</span>
             </div>
-            
-            <ChevronRight className="w-4 h-4 text-zinc-300 shrink-0" />
-            
-            {/* Step 3 */}
-            <div className="flex-1 text-center">
-              <div className="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-2">
-                <Wand2 className="w-5 h-5 text-amber-600" />
+          </div>
+          
+          {/* Custom Mode */}
+          <div className="bg-white rounded-xl border border-zinc-100 p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                <SlidersHorizontal className="w-4 h-4 text-purple-600" />
               </div>
-              <span className="text-xs font-medium text-zinc-700 block leading-tight">更换模特<br/>和背景</span>
+              <span className="font-semibold text-zinc-900">自定义模式</span>
+            </div>
+            <div className="flex items-center text-xs text-zinc-600">
+              <span>拍摄商品</span>
+              <ChevronRight className="w-3 h-3 text-zinc-300 mx-1" />
+              <span>选择模特和背景图</span>
+              <ChevronRight className="w-3 h-3 text-zinc-300 mx-1" />
+              <span>生成商品图和模特展示图</span>
+            </div>
+          </div>
+          
+          {/* Vibe Mode */}
+          <div className="bg-white rounded-xl border border-zinc-100 p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                <Palette className="w-4 h-4 text-amber-600" />
+              </div>
+              <span className="font-semibold text-zinc-900">氛围模式</span>
+            </div>
+            <div className="flex items-center flex-wrap text-xs text-zinc-600">
+              <span>拍摄商品</span>
+              <ChevronRight className="w-3 h-3 text-zinc-300 mx-1" />
+              <span>选择喜欢的氛围</span>
+              <ChevronRight className="w-3 h-3 text-zinc-300 mx-1" />
+              <span className="leading-tight">生成和氛围图背景、姿势一致的模特展示图</span>
             </div>
           </div>
         </div>

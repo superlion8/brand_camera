@@ -7,7 +7,7 @@ import Webcam from "react-webcam"
 import { 
   ArrowLeft, Check, Loader2, Image as ImageIcon, 
   SlidersHorizontal, X, Sparkles, Wand2, Camera, Home,
-  Heart, Download, Pin, ZoomIn
+  Heart, Download, Pin, ZoomIn, FolderHeart
 } from "lucide-react"
 import { useCameraStore } from "@/stores/cameraStore"
 import { useAssetStore } from "@/stores/assetStore"
@@ -78,6 +78,7 @@ export default function CameraPage() {
   // Panel states
   const [showCustomPanel, setShowCustomPanel] = useState(false)
   const [showVibePanel, setShowVibePanel] = useState(false)
+  const [showProductPanel, setShowProductPanel] = useState(false)
   const [activeCustomTab, setActiveCustomTab] = useState("style")
   
   // Selections
@@ -89,7 +90,7 @@ export default function CameraPage() {
   const [modelSubcategory, setModelSubcategory] = useState<ModelSubcategory | null>(null)
   const [bgSubcategory, setBgSubcategory] = useState<BackgroundSubcategory | null>(null)
   
-  const { addGeneration, userModels, userBackgrounds, userVibes, addFavorite, removeFavorite, isFavorited, favorites } = useAssetStore()
+  const { addGeneration, userModels, userBackgrounds, userVibes, userProducts, addFavorite, removeFavorite, isFavorited, favorites } = useAssetStore()
   const { addTask, updateTaskStatus, tasks } = useGenerationTaskStore()
   
   // Helper to sort by pinned status
@@ -568,16 +569,30 @@ export default function CameraPage() {
                 </div>
               ) : (
                 <div className="flex items-center justify-around pb-4">
-                  {/* Album */}
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors w-12"
-                  >
-                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-                      <ImageIcon className="w-5 h-5" />
-                    </div>
-                    <span className="text-[10px]">相册</span>
-                  </button>
+                  {/* Left Controls: Album & Assets */}
+                  <div className="flex gap-3">
+                    {/* Album */}
+                    <button 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                        <ImageIcon className="w-5 h-5" />
+                      </div>
+                      <span className="text-[10px]">相册</span>
+                    </button>
+                    
+                    {/* Asset Library */}
+                    <button 
+                      onClick={() => setShowProductPanel(true)}
+                      className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/10">
+                        <FolderHeart className="w-5 h-5" />
+                      </div>
+                      <span className="text-[10px]">资产库</span>
+                    </button>
+                  </div>
 
                   {/* Shutter */}
                   <button 
@@ -823,6 +838,75 @@ export default function CameraPage() {
                         selectedId={selectedVibe} 
                         onSelect={(id) => setSelectedVibe(selectedVibe === id ? null : id)} 
                       />
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+            
+            {/* Slide-up Panel: Product Assets */}
+            <AnimatePresence>
+              {showProductPanel && (
+                <>
+                  <motion.div 
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }} 
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 bg-black/60 z-40 backdrop-blur-sm"
+                    onClick={() => setShowProductPanel(false)}
+                  />
+                  <motion.div 
+                    initial={{ y: "100%" }} 
+                    animate={{ y: 0 }} 
+                    exit={{ y: "100%" }}
+                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                    className="absolute bottom-0 left-0 right-0 h-[50%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
+                  >
+                    <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
+                      <span className="font-semibold">选择商品</span>
+                      <button 
+                        onClick={() => setShowProductPanel(false)} 
+                        className="h-8 w-8 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4">
+                      {userProducts.length > 0 ? (
+                        <div className="grid grid-cols-3 gap-3 pb-20">
+                          {userProducts.map(product => (
+                            <button
+                              key={product.id}
+                              onClick={() => {
+                                setCapturedImage(product.imageUrl)
+                                setMode("review")
+                                setShowProductPanel(false)
+                              }}
+                              className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all"
+                            >
+                              <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
+                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-4">
+                                <p className="text-[10px] text-white truncate text-center">{product.name}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-full text-zinc-400">
+                          <FolderHeart className="w-12 h-12 mb-3 opacity-30" />
+                          <p className="text-sm">暂无商品资产</p>
+                          <p className="text-xs mt-1">在品牌资产中上传商品图片</p>
+                          <button 
+                            onClick={() => {
+                              setShowProductPanel(false)
+                              router.push("/brand-assets")
+                            }}
+                            className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                          >
+                            去上传
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 </>
