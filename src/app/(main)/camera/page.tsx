@@ -293,7 +293,7 @@ export default function CameraPage() {
           backgroundImage: bgBase64,
           vibeImage: vibeBase64,
         }),
-      }, 150000) // 150 second timeout
+      }, 330000) // 330 second timeout (slightly longer than backend 300s)
       
       const data = await response.json()
       
