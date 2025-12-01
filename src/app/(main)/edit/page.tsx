@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
 import { Wand2, X, Check, Loader2, Image as ImageIcon, Home, ArrowLeft } from "lucide-react"
 import { AssetSelector } from "@/components/camera/AssetSelector"
@@ -26,6 +26,15 @@ export default function EditPage() {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [inputImage, setInputImage] = useState<string | null>(null)
+  
+  // Check for image passed from gallery page
+  useEffect(() => {
+    const editImage = sessionStorage.getItem('editImage')
+    if (editImage) {
+      setInputImage(editImage)
+      sessionStorage.removeItem('editImage') // Clean up
+    }
+  }, [])
   const [selectedModel, setSelectedModel] = useState<Asset | null>(null)
   const [selectedBackground, setSelectedBackground] = useState<Asset | null>(null)
   const [selectedVibe, setSelectedVibe] = useState<Asset | null>(null)

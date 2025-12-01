@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { Download, Heart, X, Save, Wand2, Camera, Users, Home } from "lucide-react"
+import { Download, Heart, X, Wand2, Camera, Users, Home } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { Generation, Favorite } from "@/types"
 import { useRouter } from "next/navigation"
@@ -159,25 +159,20 @@ export default function GalleryPage() {
                 </span>
               </div>
               
-              {/* Favorite button */}
-              <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button 
-                  className="w-8 h-8 bg-white/90 backdrop-blur rounded-full flex items-center justify-center text-zinc-700 hover:text-red-500 shadow-sm"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleFavoriteToggle(item.gen.id, item.idx)
-                  }}
-                >
-                  <Heart className={`w-4 h-4 ${isFavorited(item.gen.id, item.idx) ? "fill-red-500 text-red-500" : ""}`} />
-                </button>
-              </div>
-              
-              {/* Favorite indicator */}
-              {isFavorited(item.gen.id, item.idx) && (
-                <div className="absolute bottom-2 right-2">
-                  <Heart className="w-4 h-4 fill-red-500 text-red-500 drop-shadow" />
-                </div>
-              )}
+              {/* Favorite button - always visible */}
+              <button 
+                className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-colors ${
+                  isFavorited(item.gen.id, item.idx) 
+                    ? "bg-red-500 text-white" 
+                    : "bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500"
+                }`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleFavoriteToggle(item.gen.id, item.idx)
+                }}
+              >
+                <Heart className={`w-4 h-4 ${isFavorited(item.gen.id, item.idx) ? "fill-current" : ""}`} />
+              </button>
               
               {/* Date overlay */}
               <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
@@ -277,32 +272,19 @@ export default function GalleryPage() {
                   </div>
                 </div>
 
-                <div className="flex gap-3">
-                  <button className="flex-1 h-12 rounded-lg border border-zinc-200 text-zinc-700 font-medium flex items-center justify-center gap-2 hover:bg-zinc-50 transition-colors">
-                    <Save className="w-4 h-4" />
-                    存为素材
-                  </button>
-                  <button 
-                    onClick={() => {
-                      setSelectedItem(null)
-                      router.push("/edit")
-                    }}
-                    className="flex-1 h-12 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2 transition-colors"
-                  >
-                    <Wand2 className="w-4 h-4" />
-                    去修图
-                  </button>
-                </div>
-
-                {selectedItem.gen.params && (
-                  <div className="mt-4 p-3 bg-zinc-50 rounded-lg text-xs text-zinc-500">
-                    <span className="font-semibold block mb-1">生成参数:</span>
-                    {selectedItem.gen.params.modelGender && <p>性别: {selectedItem.gen.params.modelGender === 'male' ? '男' : '女'}</p>}
-                    {selectedItem.gen.params.modelStyle && <p>风格: {selectedItem.gen.params.modelStyle}</p>}
-                    {selectedItem.gen.params.model && <p>模特: {selectedItem.gen.params.model}</p>}
-                    {selectedItem.gen.params.background && <p>背景: {selectedItem.gen.params.background}</p>}
-                  </div>
-                )}
+                <button 
+                  onClick={() => {
+                    // Store the image URL in sessionStorage to pass to edit page
+                    const imageUrl = selectedItem.gen.outputImageUrls[selectedItem.index]
+                    sessionStorage.setItem('editImage', imageUrl)
+                    setSelectedItem(null)
+                    router.push("/edit")
+                  }}
+                  className="w-full h-12 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2 transition-colors"
+                >
+                  <Wand2 className="w-4 h-4" />
+                  去修图
+                </button>
               </div>
             </div>
           </div>
