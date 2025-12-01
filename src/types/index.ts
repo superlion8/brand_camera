@@ -28,7 +28,8 @@ export interface Generation {
   type: GenerationType
   inputImageUrl: string
   outputImageUrls: string[]
-  prompt?: string
+  prompt?: string // Legacy: combined prompt
+  prompts?: string[] // Per-image prompts (index matches outputImageUrls)
   params?: GenerationParams
   createdAt: string
   // IndexedDB references

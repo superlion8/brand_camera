@@ -52,6 +52,7 @@ export default function CameraPage() {
   const [generatedImages, setGeneratedImages] = useState<string[]>([])
   const [generatedModelTypes, setGeneratedModelTypes] = useState<('pro' | 'flash')[]>([])
   const [generatedGenModes, setGeneratedGenModes] = useState<('extended' | 'simple')[]>([])
+  const [generatedPrompts, setGeneratedPrompts] = useState<string[]>([])
   const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null) // Track current task
   const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
@@ -200,6 +201,7 @@ export default function CameraPage() {
     setGeneratedImages([])
     setGeneratedModelTypes([])
     setGeneratedGenModes([])
+    setGeneratedPrompts([])
     setMode("camera")
   }
   
@@ -361,20 +363,13 @@ export default function CameraPage() {
         }
       }
       
-      // Filter out nulls and create final arrays
+      // Filter out nulls and create final arrays (maintain order: product1, product2, model1, model2)
       const finalImages = allImages.filter((img): img is string => img !== null)
       const finalModelTypes = allModelTypes.filter((t): t is 'pro' | 'flash' => t !== null)
       const finalGenModes = allGenModes.filter((m): m is 'extended' | 'simple' => m !== null)
       
-      // Combine prompts (take first non-null for product and model)
-      const productPrompt = allPrompts[0] || allPrompts[1] || ''
-      const modelPrompt1 = allPrompts[2] || ''
-      const modelPrompt2 = allPrompts[3] || ''
-      const combinedPrompt = [
-        productPrompt ? `[产品图 Prompt]\n${productPrompt}` : '',
-        modelPrompt1 ? `[模特图1 ${allGenModes[2] === 'simple' ? '简单版' : '扩展版'} Prompt]\n${modelPrompt1}` : '',
-        modelPrompt2 ? `[模特图2 ${allGenModes[3] === 'simple' ? '简单版' : '扩展版'} Prompt]\n${modelPrompt2}` : ''
-      ].filter(Boolean).join('\n\n')
+      // Per-image prompts (keep same order as images: product1, product2, model1, model2)
+      const finalPrompts = allPrompts.filter((p): p is string => p !== null)
       
       // Create combined data object
       const data = {
@@ -382,7 +377,7 @@ export default function CameraPage() {
         images: finalImages,
         modelTypes: finalModelTypes,
         genModes: finalGenModes, // Track generation modes
-        prompt: combinedPrompt,
+        prompts: finalPrompts, // Per-image prompts
         stats: {
           total: 4,
           successful: finalImages.length,
@@ -424,7 +419,7 @@ export default function CameraPage() {
           type: "camera_model",
           inputImageUrl: inputImage,
           outputImageUrls: data.images,
-          prompt: data.prompt || undefined,
+          prompts: data.prompts, // Per-image prompts
           createdAt: new Date().toISOString(),
           params: { 
             modelStyle: modelStyle || undefined,
@@ -441,6 +436,7 @@ export default function CameraPage() {
           setGeneratedImages(data.images)
           setGeneratedModelTypes(data.modelTypes || [])
           setGeneratedGenModes(data.genModes || [])
+          setGeneratedPrompts(data.prompts || [])
           setCurrentGenerationId(id)
           setMode("results")
         }
@@ -475,6 +471,7 @@ export default function CameraPage() {
     setGeneratedImages([])
     setGeneratedModelTypes([])
     setGeneratedGenModes([])
+    setGeneratedPrompts([])
     setMode("camera")
   }
   
@@ -1600,7 +1597,7 @@ export default function CameraPage() {
                       </div>
                     </div>
                     
-                    <div className="p-4 bg-white">
+                    <div className="p-4 pb-8 bg-white">
                       <div className="flex items-center justify-between mb-4">
                         <div>
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -1651,12 +1648,91 @@ export default function CameraPage() {
                         </div>
                       </div>
 
+                      {/* Generation Parameters */}
+                      <div className="mt-4 pt-4 border-t border-zinc-100">
+                        <h3 className="text-sm font-semibold text-zinc-700 mb-3">生成参数</h3>
+                        
+                        {/* This image's prompt */}
+                        {generatedPrompts[selectedResultIndex] && (
+                          <div className="mb-4">
+                            <p className="text-xs font-medium text-zinc-500 mb-2">Prompt</p>
+                            <div className="bg-zinc-50 rounded-lg p-3 max-h-32 overflow-y-auto">
+                              <pre className="text-[11px] text-zinc-600 whitespace-pre-wrap font-mono leading-relaxed">
+                                {generatedPrompts[selectedResultIndex]}
+                              </pre>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Reference images and params */}
+                        <div className="space-y-3">
+                          {/* Input Product Image */}
+                          {capturedImage && (
+                            <div className="flex items-start gap-3">
+                              <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 shrink-0">
+                                <img 
+                                  src={capturedImage} 
+                                  alt="商品原图" 
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium text-zinc-700">商品原图</p>
+                                <p className="text-[10px] text-zinc-400 mt-0.5">输入的商品图片</p>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Model, Background, Vibe params */}
+                          <div className="grid grid-cols-3 gap-2">
+                            {activeModel && (
+                              <div className="bg-zinc-50 rounded-lg p-2 text-center">
+                                <p className="text-[10px] text-zinc-400">模特</p>
+                                <p className="text-xs font-medium text-zinc-700 truncate">{activeModel.name}</p>
+                              </div>
+                            )}
+                            {activeBg && (
+                              <div className="bg-zinc-50 rounded-lg p-2 text-center">
+                                <p className="text-[10px] text-zinc-400">背景</p>
+                                <p className="text-xs font-medium text-zinc-700 truncate">{activeBg.name}</p>
+                              </div>
+                            )}
+                            {activeVibe && (
+                              <div className="bg-zinc-50 rounded-lg p-2 text-center">
+                                <p className="text-[10px] text-zinc-400">氛围</p>
+                                <p className="text-xs font-medium text-zinc-700 truncate">{activeVibe.name}</p>
+                              </div>
+                            )}
+                            {selectedModelStyle && selectedModelStyle !== 'auto' && (
+                              <div className="bg-zinc-50 rounded-lg p-2 text-center">
+                                <p className="text-[10px] text-zinc-400">模特风格</p>
+                                <p className="text-xs font-medium text-zinc-700">
+                                  {selectedModelStyle === 'korean' ? '韩系' : 
+                                   selectedModelStyle === 'western' ? '欧美' : selectedModelStyle}
+                                </p>
+                              </div>
+                            )}
+                            {selectedModelGender && (
+                              <div className="bg-zinc-50 rounded-lg p-2 text-center">
+                                <p className="text-[10px] text-zinc-400">模特性别</p>
+                                <p className="text-xs font-medium text-zinc-700">
+                                  {selectedModelGender === 'male' ? '男' : 
+                                   selectedModelGender === 'female' ? '女' : 
+                                   selectedModelGender === 'boy' ? '男童' : 
+                                   selectedModelGender === 'girl' ? '女童' : selectedModelGender}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
                       <button 
                         onClick={() => {
                           setSelectedResultIndex(null)
                           handleGoToEdit(generatedImages[selectedResultIndex])
                         }}
-                        className="w-full h-12 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2 transition-colors"
+                        className="w-full h-12 mt-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2 transition-colors"
                       >
                         <Wand2 className="w-4 h-4" />
                         去修图
