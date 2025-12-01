@@ -5,10 +5,8 @@ import { ModelStyle } from "@/types"
 
 const styles: { value: ModelStyle; label: string }[] = [
   { value: "auto", label: "Auto" },
-  { value: "japanese", label: "日系" },
-  { value: "korean", label: "韩系" },
-  { value: "chinese", label: "中式" },
-  { value: "western", label: "欧美" },
+  { value: "korean", label: "韩模" },
+  { value: "western", label: "外模" },
 ]
 
 interface StyleSelectorProps {

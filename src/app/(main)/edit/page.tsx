@@ -11,10 +11,8 @@ import { useAssetStore } from "@/stores/assetStore"
 
 const styleOptions: { value: ModelStyle; label: string }[] = [
   { value: "auto", label: "智能" },
-  { value: "japanese", label: "日系" },
-  { value: "korean", label: "韩系" },
-  { value: "chinese", label: "中式" },
-  { value: "western", label: "欧美" },
+  { value: "korean", label: "韩模" },
+  { value: "western", label: "外模" },
 ]
 
 const genderOptions: { value: ModelGender; label: string }[] = [
