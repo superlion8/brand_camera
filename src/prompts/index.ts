@@ -8,16 +8,15 @@ export const buildInstructPrompt = (params: {
   hasVibe: boolean
   hasProduct2?: boolean
 }) => {
-  let prompt = `你是一个擅长拍摄小红书/instagram等社媒生活感照片的摄影师。
-
-请你根据用户的商品图{{product}}`
-
+  // Build input description
+  const inputs: string[] = ['商品图{{product}}']
+  
   if (params.hasProduct2) {
-    prompt += `{{product2}}`
+    inputs.push('商品图2{{product2}}')
   }
-
+  
   if (params.hasModel) {
-    prompt += `、模特图{{model}}`
+    inputs.push('模特图{{model}}')
   }
   
   if (params.modelStyle && params.modelStyle !== 'auto') {
@@ -25,20 +24,24 @@ export const buildInstructPrompt = (params: {
       korean: '韩模风格',
       western: '外模风格'
     }
-    prompt += `、模特风格${styleMap[params.modelStyle] || params.modelStyle}`
+    inputs.push(`模特风格${styleMap[params.modelStyle] || params.modelStyle}`)
   }
-
+  
   if (params.hasBackground) {
-    prompt += `、背景图{{background}}`
+    inputs.push('背景图{{background}}')
   }
-
+  
   if (params.hasVibe) {
-    prompt += `和氛围{{vibe}}`
+    inputs.push('氛围{{vibe}}')
   }
 
-  prompt += `，
+  const inputList = inputs.join('、')
 
-输出一段韩系审美、小红书和ins生活感风格的，适合模特展示商品的拍摄指令。请使用以下格式输出：
+  const prompt = `你是一个擅长拍摄小红书/instagram等社媒生活感照片的摄影师。
+
+请你根据用户的${inputList}，
+
+输出一段韩系审美、小红书和ins的，适合模特展示商品的拍摄指令，要求是随意一点、有生活感。请使用以下格式输出：
 
 - composition：
 - model pose：
@@ -46,7 +49,9 @@ export const buildInstructPrompt = (params: {
 - camera position：
 - camera setting：
 - lighting and color:
-- clothing:`
+- clothing:
+
+输出的内容要尽量简单，不要包含太复杂的信息尽量控制在200字以内`
 
   return prompt
 }
@@ -64,14 +69,13 @@ export const buildModelPrompt = (params: {
   // Product placeholder - handle multiple products
   const productPlaceholder = params.hasProduct2 ? '{{product}} and {{product2}}' : '{{product}}'
 
-  // Model description part - different prompts based on whether model image is provided
   let prompt = ''
   
   if (params.hasModel) {
     // When user has selected a model image
     prompt = `take authentic photo of a new model that looks like {{model}}, but do not have an exact same look.
 
-the new model shows the ${productPlaceholder}, use instagram friendly composition, 要有生活感.`
+the new model shows the ${productPlaceholder}, use instagram friendly composition, 要随意一点、有生活感.`
   } else {
     // When no model image is selected - generate model based on style and gender
     prompt = `design a suitable model for the product shown in ${productPlaceholder}.`
@@ -95,31 +99,27 @@ the new model shows the ${productPlaceholder}, use instagram friendly compositio
       prompt += `, gender is ${genderMap[params.modelGender] || params.modelGender}`
     }
     
-    prompt += `. 模特要自然、有生活感，符合韩系社交媒体自然的审美.`
+    prompt += `. 模特要自然、有生活感，符合韩系社交媒体自然的审美。`
   }
 
-  // Background and vibe conditions
-  const conditions: string[] = []
-  if (params.hasBackground) {
-    conditions.push('the background should be consistent to {{background}}')
-  }
-  if (params.hasVibe) {
-    conditions.push('make the vibe consistent to {{vibe}}')
-  }
-  if (conditions.length > 0) {
-    prompt += `\n\n${conditions.join(', ')}.`
-  }
+  // Background and vibe conditions - always add both lines
+  prompt += `
 
-  // Product fidelity
-  prompt += `\n\nthe color/size/design/detail must be exactly same with ${productPlaceholder}.`
+the background should be consistent to {{background}}, make the vibe consistent to {{vibe}}.
+
+the color/size/design/detail must be exactly same with ${productPlaceholder}.`
 
   // Photography instructions from Step 1
   if (params.instructPrompt) {
-    prompt += `\n\nphoto shot instruction:\n${params.instructPrompt}`
+    prompt += `
+
+photo shot instruction: ${params.instructPrompt}`
   }
 
   // Negatives
-  prompt += `\n\nnegatives: exaggerated or distorted anatomy, fake portrait-mode blur, CGI/illustration look.`
+  prompt += `
+
+negatives: exaggerated or distorted anatomy, fake portrait-mode blur, CGI/illustration look.`
 
   return prompt
 }
