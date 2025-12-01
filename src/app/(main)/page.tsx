@@ -32,45 +32,45 @@ export default function HomePage() {
         </p>
       </div>
       
-      {/* Quick Actions */}
+      {/* Quick Actions - 3 cards in a row */}
       <div className="px-4 -mt-4">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-2">
           {/* Camera Card */}
           <Link href="/camera" className="group">
-            <div className="bg-zinc-900 text-white rounded-2xl p-5 h-40 flex flex-col justify-between relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-zinc-800 rounded-full -translate-y-1/2 translate-x-1/2" />
-              <Camera className="w-8 h-8 relative z-10" />
+            <div className="bg-zinc-900 text-white rounded-2xl p-4 h-32 flex flex-col justify-between relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-zinc-800 rounded-full -translate-y-1/2 translate-x-1/2" />
+              <Camera className="w-6 h-6 relative z-10" />
               <div className="relative z-10">
-                <h3 className="font-bold text-lg mb-1">拍摄</h3>
-                <p className="text-zinc-400 text-xs">一键生成商品图和模特图</p>
+                <h3 className="font-bold text-sm mb-0.5">拍摄</h3>
+                <p className="text-zinc-400 text-[10px] leading-tight">商品图+模特图</p>
               </div>
             </div>
           </Link>
           
           {/* Edit Card */}
           <Link href="/edit" className="group">
-            <div className="bg-gradient-to-br from-purple-500 to-purple-700 text-white rounded-2xl p-5 h-40 flex flex-col justify-between relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-purple-400/30 rounded-full -translate-y-1/2 translate-x-1/2" />
-              <Wand2 className="w-8 h-8 relative z-10" />
+            <div className="bg-gradient-to-br from-purple-500 to-purple-700 text-white rounded-2xl p-4 h-32 flex flex-col justify-between relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-purple-400/30 rounded-full -translate-y-1/2 translate-x-1/2" />
+              <Wand2 className="w-6 h-6 relative z-10" />
               <div className="relative z-10">
-                <h3 className="font-bold text-lg mb-1">编辑</h3>
-                <p className="text-purple-200 text-xs">AI 智能修图和风格调整</p>
+                <h3 className="font-bold text-sm mb-0.5">编辑</h3>
+                <p className="text-purple-200 text-[10px] leading-tight">AI 智能修图</p>
+              </div>
+            </div>
+          </Link>
+          
+          {/* Studio Card */}
+          <Link href="/studio" className="group">
+            <div className="bg-gradient-to-br from-amber-400 to-orange-500 text-white rounded-2xl p-4 h-32 flex flex-col justify-between relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-amber-300/30 rounded-full -translate-y-1/2 translate-x-1/2" />
+              <Lightbulb className="w-6 h-6 relative z-10" />
+              <div className="relative z-10">
+                <h3 className="font-bold text-sm mb-0.5">影棚</h3>
+                <p className="text-amber-100 text-[10px] leading-tight">专业光影控制</p>
               </div>
             </div>
           </Link>
         </div>
-        
-        {/* Studio Card */}
-        <Link href="/studio" className="group block mt-3">
-          <div className="bg-gradient-to-br from-amber-400 to-orange-500 text-white rounded-2xl p-5 h-28 flex items-center justify-between relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-40 h-40 bg-amber-300/30 rounded-full -translate-y-1/2 translate-x-1/3" />
-            <div className="relative z-10">
-              <h3 className="font-bold text-lg mb-1">AI 商品影棚</h3>
-              <p className="text-amber-100 text-xs">专业光影控制，生成影棚级商品图</p>
-            </div>
-            <Lightbulb className="w-12 h-12 relative z-10 text-amber-200" />
-          </div>
-        </Link>
       </div>
       
       {/* Usage Modes */}

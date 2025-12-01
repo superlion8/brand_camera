@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
   ArrowLeft, Upload, Loader2, Download, Heart, 
-  Sun, Sparkles, Lightbulb, Zap, Home, FolderHeart, X
+  Sun, Sparkles, Lightbulb, Zap, Home, FolderHeart, X, Camera
 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import Webcam from "react-webcam"
 import { fileToBase64, compressBase64Image, generateId, ensureBase64 } from "@/lib/utils"
 import { useAssetStore } from "@/stores/assetStore"
 import { PRESET_PRODUCTS } from "@/data/presets"
@@ -96,12 +97,13 @@ function hexToHsv(hex: string): [number, number, number] {
   return [h, s, v]
 }
 
-type StudioMode = 'upload' | 'settings' | 'processing' | 'results'
+type StudioMode = 'upload' | 'camera' | 'settings' | 'processing' | 'results'
 
 export default function StudioPage() {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const colorPickerRef = useRef<HTMLDivElement>(null)
+  const webcamRef = useRef<Webcam>(null)
   
   const [mode, setMode] = useState<StudioMode>('upload')
   const [productImage, setProductImage] = useState<string | null>(null)
@@ -109,6 +111,10 @@ export default function StudioPage() {
   const [generatedModelTypes, setGeneratedModelTypes] = useState<('pro' | 'flash')[]>([])
   const [showProductPanel, setShowProductPanel] = useState(false)
   const [productSourceTab, setProductSourceTab] = useState<'preset' | 'user'>('preset')
+  
+  // Camera state
+  const [hasCamera, setHasCamera] = useState(true)
+  const [cameraReady, setCameraReady] = useState(false)
   
   // Settings
   const [lightType, setLightType] = useState('Softbox')
@@ -183,6 +189,32 @@ export default function StudioPage() {
       console.error('Failed to load asset:', e)
     }
   }, [])
+  
+  // Camera handlers
+  const handleCapture = useCallback(() => {
+    if (webcamRef.current) {
+      const imageSrc = webcamRef.current.getScreenshot()
+      if (imageSrc) {
+        setProductImage(imageSrc)
+        setMode('settings')
+      }
+    }
+  }, [])
+  
+  const handleCameraError = useCallback(() => {
+    setHasCamera(false)
+    setCameraReady(false)
+  }, [])
+  
+  const handleCameraReady = useCallback(() => {
+    setCameraReady(true)
+  }, [])
+  
+  const videoConstraints = {
+    width: { ideal: 1920 },
+    height: { ideal: 1080 },
+    facingMode: "environment",
+  }
   
   const handleGenerate = async () => {
     if (!productImage) return
@@ -347,16 +379,26 @@ export default function StudioPage() {
             exit={{ opacity: 0 }}
             className="flex-1 flex flex-col items-center justify-center p-6"
           >
-            <div className="w-full max-w-sm space-y-4">
+            <div className="w-full max-w-sm space-y-3">
+              {/* Camera capture */}
+              <button
+                onClick={() => setMode('camera')}
+                className="w-full h-24 rounded-2xl bg-amber-500 hover:bg-amber-600 transition-colors flex items-center justify-center gap-3 text-white"
+              >
+                <Camera className="w-7 h-7" />
+                <div className="text-left">
+                  <p className="font-semibold">拍摄商品</p>
+                  <p className="text-xs text-amber-100">使用相机拍照</p>
+                </div>
+              </button>
+              
               {/* Upload from album */}
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full h-32 rounded-2xl border-2 border-dashed border-zinc-300 hover:border-amber-500 hover:bg-amber-50/50 transition-colors flex flex-col items-center justify-center gap-3"
+                className="w-full h-20 rounded-2xl border-2 border-zinc-200 bg-white hover:border-amber-500 transition-colors flex items-center justify-center gap-3"
               >
-                <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center">
-                  <Upload className="w-6 h-6 text-amber-600" />
-                </div>
-                <div className="text-center">
+                <Upload className="w-5 h-5 text-zinc-500" />
+                <div className="text-left">
                   <p className="font-medium text-zinc-700">从相册上传</p>
                   <p className="text-xs text-zinc-500">JPG、PNG</p>
                 </div>
@@ -365,12 +407,10 @@ export default function StudioPage() {
               {/* Select from asset library */}
               <button
                 onClick={() => setShowProductPanel(true)}
-                className="w-full h-32 rounded-2xl border-2 border-zinc-200 bg-white hover:border-amber-500 transition-colors flex flex-col items-center justify-center gap-3"
+                className="w-full h-20 rounded-2xl border-2 border-zinc-200 bg-white hover:border-amber-500 transition-colors flex items-center justify-center gap-3"
               >
-                <div className="w-12 h-12 rounded-full bg-zinc-100 flex items-center justify-center">
-                  <FolderHeart className="w-6 h-6 text-zinc-600" />
-                </div>
-                <div className="text-center">
+                <FolderHeart className="w-5 h-5 text-zinc-500" />
+                <div className="text-left">
                   <p className="font-medium text-zinc-700">从资产库选择</p>
                   <p className="text-xs text-zinc-500">官方示例 · 我的商品</p>
                 </div>
@@ -380,6 +420,91 @@ export default function StudioPage() {
             <p className="text-sm text-zinc-400 mt-6 text-center max-w-xs">
               上传商品图片，AI将生成专业影棚级别的商品展示图
             </p>
+          </motion.div>
+        )}
+        
+        {/* Camera Mode */}
+        {mode === 'camera' && (
+          <motion.div
+            key="camera"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex-1 flex flex-col bg-black relative"
+          >
+            {/* Back button */}
+            <button
+              onClick={() => setMode('upload')}
+              className="absolute top-4 left-4 z-20 w-10 h-10 rounded-full bg-black/30 text-white backdrop-blur-md flex items-center justify-center"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            
+            {/* Camera view */}
+            <div className="flex-1 relative">
+              {hasCamera ? (
+                <Webcam
+                  ref={webcamRef}
+                  audio={false}
+                  screenshotFormat="image/jpeg"
+                  screenshotQuality={0.95}
+                  videoConstraints={videoConstraints}
+                  onUserMedia={handleCameraReady}
+                  onUserMediaError={handleCameraError}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
+                  <div className="text-center text-zinc-400">
+                    <Camera className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                    <p className="text-sm">相机不可用</p>
+                    <button
+                      onClick={() => {
+                        setMode('upload')
+                        setTimeout(() => fileInputRef.current?.click(), 100)
+                      }}
+                      className="mt-4 px-4 py-2 bg-amber-500 text-white rounded-lg text-sm"
+                    >
+                      从相册上传
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Grid overlay */}
+              <div className="absolute inset-0 pointer-events-none opacity-30">
+                <div className="w-full h-full grid grid-cols-3 grid-rows-3">
+                  {[...Array(9)].map((_, i) => (
+                    <div key={i} className="border border-white/20" />
+                  ))}
+                </div>
+              </div>
+              
+              {/* Focus frame */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="w-64 h-64 border border-white/50 rounded-lg relative">
+                  <div className="absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 border-amber-400" />
+                  <div className="absolute -top-1 -right-1 w-4 h-4 border-t-4 border-r-4 border-amber-400" />
+                  <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-4 border-l-4 border-amber-400" />
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-4 border-r-4 border-amber-400" />
+                </div>
+              </div>
+              
+              <div className="absolute top-16 left-0 right-0 text-center text-white/80 text-sm font-medium">
+                将商品放入框内拍摄
+              </div>
+            </div>
+            
+            {/* Capture button */}
+            <div className="bg-black py-8 flex justify-center">
+              <button
+                onClick={handleCapture}
+                disabled={!cameraReady}
+                className="w-20 h-20 rounded-full border-4 border-amber-400/50 flex items-center justify-center active:scale-95 transition-transform disabled:opacity-50"
+              >
+                <div className="w-16 h-16 bg-amber-400 rounded-full" />
+              </button>
+            </div>
           </motion.div>
         )}
         
