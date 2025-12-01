@@ -504,7 +504,6 @@ export default function CameraPage() {
                                   key={style.id}
                                   onClick={() => {
                                     setSelectedModelStyle(selectedModelStyle === style.id ? null : style.id)
-                                    if (selectedModelStyle !== style.id) setSelectedModel(null)
                                   }}
                                   className={`h-12 px-4 rounded-lg text-sm font-medium border transition-all flex items-center justify-between ${
                                     selectedModelStyle === style.id 
@@ -527,9 +526,7 @@ export default function CameraPage() {
                           items={allModels} 
                           selectedId={selectedModel} 
                           onSelect={(id) => {
-                            const newId = selectedModel === id ? null : id
-                            setSelectedModel(newId)
-                            if (newId) setSelectedModelStyle(null)
+                            setSelectedModel(selectedModel === id ? null : id)
                           }} 
                         />
                       )}
