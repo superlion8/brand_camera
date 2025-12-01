@@ -42,14 +42,21 @@ export default function CameraPage() {
   
   // Mode and state
   const [mode, setMode] = useState<CameraMode>("camera")
+  const modeRef = useRef<CameraMode>("camera") // Track mode for async callbacks
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
   const [hasCamera, setHasCamera] = useState(true)
   const [cameraReady, setCameraReady] = useState(false)
   const [permissionChecked, setPermissionChecked] = useState(false)
   const [generatedImages, setGeneratedImages] = useState<string[]>([])
   const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
+  const [currentTaskId, setCurrentTaskId] = useState<string | null>(null) // Track current task
   const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
+  
+  // Keep modeRef in sync with mode
+  useEffect(() => {
+    modeRef.current = mode
+  }, [mode])
   
   // Check camera permission on mount
   useEffect(() => {
@@ -180,6 +187,7 @@ export default function CameraPage() {
     }
     
     const taskId = addTask(capturedImage, params)
+    setCurrentTaskId(taskId)
     updateTaskStatus(taskId, 'generating')
     setMode("processing")
     
@@ -266,7 +274,8 @@ export default function CameraPage() {
         })
         
         // If still on processing mode for this task, show results
-        if (mode === "processing") {
+        // Use modeRef.current to get the latest mode value (avoid stale closure)
+        if (modeRef.current === "processing") {
           setGeneratedImages(data.images)
           setCurrentGenerationId(id)
           setMode("results")
@@ -279,7 +288,8 @@ export default function CameraPage() {
       updateTaskStatus(taskId, 'failed', undefined, error.message || "生成失败")
       
       // Only alert if still on processing screen
-      if (mode === "processing") {
+      // Use modeRef.current to get the latest mode value
+      if (modeRef.current === "processing") {
         if (error.name === 'AbortError') {
           alert("生成超时，请重试。建议使用较小的图片。")
         } else {
