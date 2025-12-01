@@ -102,12 +102,12 @@ export default function CameraPage() {
       return 0
     })
   
-  // Filter presets by subcategory
+  // Filter presets by category
   const filteredPresetModels = modelSubcategory 
-    ? PRESET_MODELS.filter(m => m.subcategory === modelSubcategory)
+    ? PRESET_MODELS.filter(m => m.category === modelSubcategory)
     : PRESET_MODELS
   const filteredPresetBackgrounds = bgSubcategory
-    ? PRESET_BACKGROUNDS.filter(b => b.subcategory === bgSubcategory)
+    ? PRESET_BACKGROUNDS.filter(b => b.category === bgSubcategory)
     : PRESET_BACKGROUNDS
   
   // Merge user assets with presets (pinned first, then other user assets, then presets)
