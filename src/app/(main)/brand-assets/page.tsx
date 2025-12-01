@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react"
 import Image from "next/image"
-import { Plus, Trash2, Users, Image as ImageIcon, Package, Sparkles, Upload, Home, Pin } from "lucide-react"
+import { Plus, Trash2, Users, Image as ImageIcon, Package, Sparkles, Upload, Home, Pin, X, ZoomIn } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { Asset, AssetType, ModelSubcategory, BackgroundSubcategory } from "@/types"
 import { fileToBase64, generateId } from "@/lib/utils"
@@ -11,6 +11,8 @@ import {
   PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_VIBES,
   MODEL_SUBCATEGORIES, BACKGROUND_SUBCATEGORIES
 } from "@/data/presets"
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
+import { motion, AnimatePresence } from "framer-motion"
 
 // System presets from centralized data
 const systemPresets: Record<AssetType, Asset[]> = {
@@ -37,17 +39,21 @@ export default function BrandAssetsPage() {
   const [uploadType, setUploadType] = useState<AssetType>("product")
   const [modelSubcategory, setModelSubcategory] = useState<ModelSubcategory | null>(null)
   const [bgSubcategory, setBgSubcategory] = useState<BackgroundSubcategory | null>(null)
+  const [zoomImage, setZoomImage] = useState<string | null>(null)
   
   const {
     userModels,
     userBackgrounds,
     userProducts,
     userVibes,
+    pinnedPresetIds,
     setUserModels,
     setUserBackgrounds,
     setUserProducts,
     setUserVibes,
     togglePin,
+    togglePresetPin,
+    isPresetPinned,
     _hasHydrated,
   } = useAssetStore()
   
@@ -129,9 +135,9 @@ export default function BrandAssetsPage() {
   
   // Filter presets by subcategory if applicable
   if (activeType === "model" && modelSubcategory) {
-    presetAssets = presetAssets.filter(a => a.subcategory === modelSubcategory)
+    presetAssets = presetAssets.filter(a => a.category === modelSubcategory)
   } else if (activeType === "background" && bgSubcategory) {
-    presetAssets = presetAssets.filter(a => a.subcategory === bgSubcategory)
+    presetAssets = presetAssets.filter(a => a.category === bgSubcategory)
   }
   
   // Sort user assets: pinned first
@@ -140,7 +146,17 @@ export default function BrandAssetsPage() {
     if (!a.isPinned && b.isPinned) return 1
     return 0
   })
-  const displayAssets = activeSource === "user" ? sortedUserAssets : presetAssets
+  
+  // Sort preset assets: pinned first
+  const sortedPresetAssets = [...presetAssets].sort((a, b) => {
+    const aIsPinned = pinnedPresetIds.has(a.id)
+    const bIsPinned = pinnedPresetIds.has(b.id)
+    if (aIsPinned && !bIsPinned) return -1
+    if (!aIsPinned && bIsPinned) return 1
+    return 0
+  })
+  
+  const displayAssets = activeSource === "user" ? sortedUserAssets : sortedPresetAssets
   
   if (!_hasHydrated) {
     return (
@@ -305,8 +321,13 @@ export default function BrandAssetsPage() {
                 key={asset.id}
                 asset={asset}
                 isPreset={activeSource === "preset"}
+                isPinned={activeSource === "preset" ? isPresetPinned(asset.id) : asset.isPinned}
                 onDelete={activeSource === "user" ? () => handleDelete(activeType, asset.id) : undefined}
-                onPin={activeSource === "user" ? () => togglePin(activeType, asset.id) : undefined}
+                onPin={activeSource === "user" 
+                  ? () => togglePin(activeType, asset.id) 
+                  : () => togglePresetPin(asset.id)
+                }
+                onZoom={() => setZoomImage(asset.imageUrl)}
               />
             ))}
           </div>
@@ -336,6 +357,51 @@ export default function BrandAssetsPage() {
           </div>
         )}
       </div>
+      
+      {/* Fullscreen Zoom Viewer */}
+      <AnimatePresence>
+        {zoomImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black flex items-center justify-center"
+          >
+            <TransformWrapper
+              initialScale={1}
+              minScale={0.5}
+              maxScale={4}
+              limitToBounds={false}
+              doubleClick={{ disabled: false }}
+              wheel={{ smoothStep: 0.01 }}
+              pinch={{ disabled: false }}
+            >
+              <TransformComponent
+                wrapperStyle={{ width: '100%', height: '100%' }}
+                contentStyle={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Image
+                  src={zoomImage}
+                  alt="Fullscreen"
+                  width={1080}
+                  height={1920}
+                  style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                />
+              </TransformComponent>
+            </TransformWrapper>
+
+            <button
+              onClick={() => setZoomImage(null)}
+              className="absolute top-4 right-4 z-[101] w-10 h-10 rounded-full bg-white/20 text-white hover:bg-white/40 backdrop-blur-md flex items-center justify-center transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <div className="absolute bottom-4 left-0 right-0 text-center text-white/80 text-sm z-[101]">
+              双指缩放 · 双击重置 · 点击 × 关闭
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
@@ -344,16 +410,23 @@ function AssetCard({
   asset, 
   onDelete,
   onPin,
-  isPreset = false
+  onZoom,
+  isPreset = false,
+  isPinned = false
 }: { 
   asset: Asset
   onDelete?: () => void
   onPin?: () => void
+  onZoom?: () => void
   isPreset?: boolean
+  isPinned?: boolean
 }) {
   return (
     <div className="group relative bg-white rounded-xl overflow-hidden shadow-sm border border-zinc-100">
-      <div className="aspect-square bg-zinc-100 relative">
+      <div 
+        className="aspect-square bg-zinc-100 relative cursor-pointer"
+        onClick={onZoom}
+      >
         <Image
           src={asset.imageUrl}
           alt={asset.name || "Asset"}
@@ -365,11 +438,15 @@ function AssetCard({
             官方
           </span>
         )}
-        {asset.isPinned && (
+        {isPinned && (
           <span className="absolute top-2 right-2 w-6 h-6 bg-amber-500 text-white rounded-full flex items-center justify-center shadow-sm">
             <Pin className="w-3 h-3" />
           </span>
         )}
+        {/* Zoom hint on hover */}
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+          <ZoomIn className="w-8 h-8 text-white" />
+        </div>
       </div>
       <div className="p-3 flex items-center justify-between">
         <div className="truncate flex-1 mr-2">
@@ -387,11 +464,11 @@ function AssetCard({
                 onPin()
               }}
               className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
-                asset.isPinned 
+                isPinned 
                   ? "bg-amber-50 text-amber-600 hover:bg-amber-100" 
                   : "hover:bg-zinc-100 text-zinc-400 hover:text-amber-600"
               }`}
-              title={asset.isPinned ? "取消置顶" : "置顶"}
+              title={isPinned ? "取消置顶" : "置顶"}
             >
               <Pin className="w-4 h-4" />
             </button>

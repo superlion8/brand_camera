@@ -16,6 +16,9 @@ interface AssetState {
   userProducts: Asset[]
   userVibes: Asset[]
   
+  // Pinned preset IDs (for official presets)
+  pinnedPresetIds: Set<string>
+  
   // Generations
   generations: Generation[]
   
@@ -38,6 +41,8 @@ interface AssetState {
   
   // Pin actions
   togglePin: (type: AssetType, id: string) => void
+  togglePresetPin: (id: string) => void
+  isPresetPinned: (id: string) => boolean
   
   // Generation actions with IndexedDB persistence
   addGeneration: (generation: Generation) => Promise<void>
@@ -69,6 +74,7 @@ export const useAssetStore = create<AssetState>()(
       userBackgrounds: [],
       userProducts: [],
       userVibes: [],
+      pinnedPresetIds: new Set<string>(),
       generations: [],
       collections: [],
       favorites: [],
@@ -84,7 +90,7 @@ export const useAssetStore = create<AssetState>()(
       setUserProducts: (products) => set({ userProducts: products }),
       setUserVibes: (vibes) => set({ userVibes: vibes }),
       
-      // Toggle pin for assets
+      // Toggle pin for user assets
       togglePin: (type, id) => {
         const updateAssets = (assets: Asset[]) =>
           assets.map(a => a.id === id ? { ...a, isPinned: !a.isPinned } : a)
@@ -103,6 +109,24 @@ export const useAssetStore = create<AssetState>()(
             set((state) => ({ userVibes: updateAssets(state.userVibes) }))
             break
         }
+      },
+      
+      // Toggle pin for preset assets
+      togglePresetPin: (id) => {
+        set((state) => {
+          const newPinnedIds = new Set(state.pinnedPresetIds)
+          if (newPinnedIds.has(id)) {
+            newPinnedIds.delete(id)
+          } else {
+            newPinnedIds.add(id)
+          }
+          return { pinnedPresetIds: newPinnedIds }
+        })
+      },
+      
+      // Check if preset is pinned
+      isPresetPinned: (id) => {
+        return get().pinnedPresetIds.has(id)
       },
       
       // Generation with IndexedDB
@@ -216,7 +240,17 @@ export const useAssetStore = create<AssetState>()(
         userProducts: state.userProducts,
         userVibes: state.userVibes,
         collections: state.collections,
+        // Convert Set to Array for JSON serialization
+        pinnedPresetIds: Array.from(state.pinnedPresetIds),
       }),
+      // Custom merge to convert array back to Set
+      merge: (persistedState: any, currentState) => {
+        return {
+          ...currentState,
+          ...persistedState,
+          pinnedPresetIds: new Set(persistedState?.pinnedPresetIds || []),
+        }
+      },
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true)
         // Load generations and favorites from IndexedDB after hydration
