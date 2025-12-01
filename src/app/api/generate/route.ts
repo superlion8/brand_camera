@@ -12,13 +12,31 @@ export const maxDuration = 120
 const PRIMARY_IMAGE_MODEL = 'gemini-3-pro-image-preview'
 const FALLBACK_IMAGE_MODEL = 'gemini-2.5-flash-image'
 
+// Retry config - prioritize primary model
+const PRIMARY_RETRY_COUNT = 2       // Retry primary model up to 2 times on 429
+const PRIMARY_RETRY_DELAY_MS = 3000 // Wait 3 seconds before retry
+const BATCH_DELAY_MS = 1500         // Delay between batches
+
 // Result type with model info
 interface ImageResult {
   image: string
   model: 'pro' | 'flash'
 }
 
-// Helper function to generate image with fallback
+// Small delay helper
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+// Check if error is a rate limit error (429)
+function isRateLimitError(error: any): boolean {
+  const msg = error?.message?.toLowerCase() || ''
+  return msg.includes('429') || 
+         msg.includes('rate') || 
+         msg.includes('quota') ||
+         msg.includes('exhausted') ||
+         msg.includes('resource')
+}
+
+// Helper function to generate image with retry and fallback
 async function generateImageWithFallback(
   client: ReturnType<typeof getGenAIClient>,
   parts: any[],
@@ -26,47 +44,17 @@ async function generateImageWithFallback(
 ): Promise<ImageResult | null> {
   const startTime = Date.now()
   
-  // Try primary model first
-  try {
-    console.log(`[${label}] Trying ${PRIMARY_IMAGE_MODEL}...`)
-    const response = await client.models.generateContent({
-      model: PRIMARY_IMAGE_MODEL,
-      contents: [{ role: 'user', parts }],
-      config: {
-        responseModalities: ['IMAGE'],
-        safetySettings,
-      },
-    })
-    
-    const result = extractImage(response)
-    if (result) {
-      console.log(`[${label}] ${PRIMARY_IMAGE_MODEL} succeeded in ${Date.now() - startTime}ms`)
-      return { image: result, model: 'pro' }
-    }
-    throw new Error('No image in response')
-  } catch (primaryError: any) {
-    console.log(`[${label}] ${PRIMARY_IMAGE_MODEL} failed: ${primaryError?.message || primaryError}`)
-    
-    // Check if it's a rate limit or quota error
-    const errorMessage = primaryError?.message?.toLowerCase() || ''
-    const shouldFallback = errorMessage.includes('quota') || 
-                          errorMessage.includes('rate') || 
-                          errorMessage.includes('limit') ||
-                          errorMessage.includes('exhausted') ||
-                          errorMessage.includes('429') ||
-                          errorMessage.includes('resource') ||
-                          true // Always try fallback on any error
-    
-    if (!shouldFallback) {
-      console.log(`[${label}] Not a quota/rate error, skipping fallback`)
-      return null
-    }
-    
-    // Try fallback model
+  // Try primary model with retries
+  for (let attempt = 0; attempt <= PRIMARY_RETRY_COUNT; attempt++) {
     try {
-      console.log(`[${label}] Trying fallback ${FALLBACK_IMAGE_MODEL}...`)
-      const fallbackResponse = await client.models.generateContent({
-        model: FALLBACK_IMAGE_MODEL,
+      if (attempt > 0) {
+        console.log(`[${label}] Retry ${attempt}/${PRIMARY_RETRY_COUNT} after ${PRIMARY_RETRY_DELAY_MS}ms wait...`)
+        await delay(PRIMARY_RETRY_DELAY_MS * attempt) // Exponential backoff
+      }
+      
+      console.log(`[${label}] Trying ${PRIMARY_IMAGE_MODEL}${attempt > 0 ? ` (attempt ${attempt + 1})` : ''}...`)
+      const response = await client.models.generateContent({
+        model: PRIMARY_IMAGE_MODEL,
         contents: [{ role: 'user', parts }],
         config: {
           responseModalities: ['IMAGE'],
@@ -74,16 +62,49 @@ async function generateImageWithFallback(
         },
       })
       
-      const fallbackResult = extractImage(fallbackResponse)
-      if (fallbackResult) {
-        console.log(`[${label}] ${FALLBACK_IMAGE_MODEL} succeeded in ${Date.now() - startTime}ms`)
-        return { image: fallbackResult, model: 'flash' }
+      const result = extractImage(response)
+      if (result) {
+        console.log(`[${label}] ${PRIMARY_IMAGE_MODEL} succeeded in ${Date.now() - startTime}ms`)
+        return { image: result, model: 'pro' }
       }
-      throw new Error('No image in fallback response')
-    } catch (fallbackError: any) {
-      console.error(`[${label}] ${FALLBACK_IMAGE_MODEL} also failed:`, fallbackError?.message || fallbackError)
-      return null
+      throw new Error('No image in response')
+    } catch (primaryError: any) {
+      console.log(`[${label}] ${PRIMARY_IMAGE_MODEL} failed: ${primaryError?.message || primaryError}`)
+      
+      // If not a rate limit error, don't retry primary model
+      if (!isRateLimitError(primaryError)) {
+        console.log(`[${label}] Not a rate limit error, skipping to fallback`)
+        break
+      }
+      
+      // If we've exhausted retries, move to fallback
+      if (attempt === PRIMARY_RETRY_COUNT) {
+        console.log(`[${label}] Exhausted ${PRIMARY_RETRY_COUNT} retries, trying fallback...`)
+      }
     }
+  }
+  
+  // Try fallback model only after primary model failed all retries
+  try {
+    console.log(`[${label}] Trying fallback ${FALLBACK_IMAGE_MODEL}...`)
+    const fallbackResponse = await client.models.generateContent({
+      model: FALLBACK_IMAGE_MODEL,
+      contents: [{ role: 'user', parts }],
+      config: {
+        responseModalities: ['IMAGE'],
+        safetySettings,
+      },
+    })
+    
+    const fallbackResult = extractImage(fallbackResponse)
+    if (fallbackResult) {
+      console.log(`[${label}] ${FALLBACK_IMAGE_MODEL} succeeded in ${Date.now() - startTime}ms`)
+      return { image: fallbackResult, model: 'flash' }
+    }
+    throw new Error('No image in fallback response')
+  } catch (fallbackError: any) {
+    console.error(`[${label}] ${FALLBACK_IMAGE_MODEL} also failed:`, fallbackError?.message || fallbackError)
+    return null
   }
 }
 
@@ -290,9 +311,6 @@ async function generateModelImage(
   return generateImageWithFallback(client, parts, `Model ${index + 1}`)
 }
 
-// Small delay to avoid rate limiting
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
-
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
   
@@ -359,25 +377,33 @@ export async function POST(request: NextRequest) {
     const results: string[] = []
     const modelTypes: ('pro' | 'flash')[] = [] // Track which model generated each image
     
-    // Step 1: Generate 2 product images in parallel
-    console.log('Step 1: Generating product images...')
-    const productResults = await Promise.allSettled([
-      generateProductImage(client, productImageData, productImage2Data, 0),
-      generateProductImage(client, productImageData, productImage2Data, 1),
-    ])
+    // === SERIAL GENERATION WITH DELAYS TO REDUCE 429 ===
+    // Generate images one at a time with delays between requests
     
-    for (const result of productResults) {
-      if (result.status === 'fulfilled' && result.value) {
-        results.push(`data:image/png;base64,${result.value.image}`)
-        modelTypes.push(result.value.model)
-      }
+    // Step 1: Generate product image 1
+    console.log('Step 1.1: Generating product image 1...')
+    const product1 = await generateProductImage(client, productImageData, productImage2Data, 0)
+    if (product1) {
+      results.push(`data:image/png;base64,${product1.image}`)
+      modelTypes.push(product1.model)
+    }
+    
+    // Delay before next request
+    await delay(BATCH_DELAY_MS)
+    
+    // Step 1.2: Generate product image 2
+    console.log('Step 1.2: Generating product image 2...')
+    const product2 = await generateProductImage(client, productImageData, productImage2Data, 1)
+    if (product2) {
+      results.push(`data:image/png;base64,${product2.image}`)
+      modelTypes.push(product2.model)
     }
     console.log(`Product images done: ${results.length}/2`)
     
-    // Small delay between batches to avoid rate limiting
-    await delay(500)
+    // Delay before instructions
+    await delay(BATCH_DELAY_MS)
     
-    // Step 2: Generate photography instructions
+    // Step 2: Generate photography instructions (uses VLM, not image generation)
     console.log('Step 2: Generating photography instructions...')
     const instructPrompt = await generateInstructions(
       client,
@@ -389,27 +415,34 @@ export async function POST(request: NextRequest) {
       modelStyle
     )
     
-    await delay(300)
+    // Delay before model images
+    await delay(BATCH_DELAY_MS)
     
-    // Step 3: Generate 2 model images with instructions in parallel
-    console.log('Step 3: Generating model images with instructions...')
-    const modelResults = await Promise.allSettled([
-      generateModelImage(
-        client, productImageData, productImage2Data, modelImageData, backgroundImageData, vibeImageData,
-        modelStyle, modelGender, instructPrompt, 0
-      ),
-      generateModelImage(
-        client, productImageData, productImage2Data, modelImageData, backgroundImageData, vibeImageData,
-        modelStyle, modelGender, instructPrompt, 1
-      ),
-    ])
-    
-    for (const result of modelResults) {
-      if (result.status === 'fulfilled' && result.value) {
-        results.push(`data:image/png;base64,${result.value.image}`)
-        modelTypes.push(result.value.model)
-      }
+    // Step 3.1: Generate model image 1
+    console.log('Step 3.1: Generating model image 1...')
+    const model1 = await generateModelImage(
+      client, productImageData, productImage2Data, modelImageData, backgroundImageData, vibeImageData,
+      modelStyle, modelGender, instructPrompt, 0
+    )
+    if (model1) {
+      results.push(`data:image/png;base64,${model1.image}`)
+      modelTypes.push(model1.model)
     }
+    
+    // Delay before last request
+    await delay(BATCH_DELAY_MS)
+    
+    // Step 3.2: Generate model image 2
+    console.log('Step 3.2: Generating model image 2...')
+    const model2 = await generateModelImage(
+      client, productImageData, productImage2Data, modelImageData, backgroundImageData, vibeImageData,
+      modelStyle, modelGender, instructPrompt, 1
+    )
+    if (model2) {
+      results.push(`data:image/png;base64,${model2.image}`)
+      modelTypes.push(model2.model)
+    }
+    console.log(`Model images done: ${results.length - 2}/2`)
     
     const duration = Date.now() - startTime
     const flashCount = modelTypes.filter(m => m === 'flash').length
