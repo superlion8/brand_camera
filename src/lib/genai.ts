@@ -69,5 +69,27 @@ export function extractImage(response: any): string | null {
   return null;
 }
 
+// Helper: 从响应中提取文本
+export function extractText(response: any): string | null {
+  const candidate = response.candidates?.[0];
+  if (candidate?.finishReason === "SAFETY") {
+    console.warn("Text response blocked by safety filter");
+    return null;
+  }
+  
+  if (candidate?.content?.parts) {
+    const textParts: string[] = [];
+    for (const part of candidate.content.parts) {
+      if (typeof part.text === 'string') {
+        textParts.push(part.text);
+      }
+    }
+    if (textParts.length > 0) {
+      return textParts.join('\n');
+    }
+  }
+  return null;
+}
+
 export { HarmCategory, HarmBlockThreshold };
 

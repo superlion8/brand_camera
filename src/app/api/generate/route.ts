@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getGenAIClient, extractImage, safetySettings } from '@/lib/genai'
-import { PRODUCT_PROMPT, buildModelPrompt } from '@/prompts'
+import { getGenAIClient, extractImage, extractText, safetySettings } from '@/lib/genai'
+import { PRODUCT_PROMPT, buildInstructPrompt, buildModelPrompt } from '@/prompts'
 import { stripBase64Prefix, generateId } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/server'
 import { saveGenerationServer } from '@/lib/supabase/generations-server'
@@ -29,7 +29,7 @@ async function generateProductImage(
     ]
     
     const response = await client.models.generateContent({
-      model: 'gemini-3-pro-image-preview',
+      model: 'gemini-2.0-flash-preview-image-generation',
       contents: [{ role: 'user', parts: productParts }],
       config: {
         responseModalities: ['IMAGE'],
@@ -46,19 +46,114 @@ async function generateProductImage(
   }
 }
 
-// Helper function to generate a single model image
-async function generateModelImage(
+// Step 1: Generate photography instructions using Gemini
+async function generateInstructions(
   client: ReturnType<typeof getGenAIClient>,
   productImageData: string,
-  modelPrompt: string,
   modelImageData: string | null,
   backgroundImageData: string | null,
   vibeImageData: string | null,
+  modelStyle?: string,
+  modelGender?: string
+): Promise<string | null> {
+  try {
+    console.log('[Instructions] Starting instruction generation...')
+    const startTime = Date.now()
+    
+    const instructPrompt = buildInstructPrompt({
+      hasModel: !!modelImageData,
+      modelStyle,
+      modelGender,
+      hasBackground: !!backgroundImageData,
+      hasVibe: !!vibeImageData,
+    })
+    
+    const parts: any[] = [{ text: instructPrompt }]
+    
+    // Add product image
+    parts.push({
+      inlineData: {
+        mimeType: 'image/jpeg',
+        data: productImageData,
+      },
+    })
+    
+    // Add model image if provided
+    if (modelImageData) {
+      parts.push({
+        inlineData: {
+          mimeType: 'image/jpeg',
+          data: modelImageData,
+        },
+      })
+    }
+    
+    // Add background image if provided
+    if (backgroundImageData) {
+      parts.push({
+        inlineData: {
+          mimeType: 'image/jpeg',
+          data: backgroundImageData,
+        },
+      })
+    }
+    
+    // Add vibe image if provided
+    if (vibeImageData) {
+      parts.push({
+        inlineData: {
+          mimeType: 'image/jpeg',
+          data: vibeImageData,
+        },
+      })
+    }
+    
+    const response = await client.models.generateContent({
+      model: 'gemini-2.0-flash-preview-image-generation',
+      contents: [{ role: 'user', parts }],
+      config: {
+        responseModalities: ['TEXT'],
+        safetySettings,
+      },
+    })
+    
+    const instructions = extractText(response)
+    console.log(`[Instructions] Completed in ${Date.now() - startTime}ms`)
+    console.log('[Instructions] Generated:', instructions?.substring(0, 200) + '...')
+    return instructions
+  } catch (error: any) {
+    console.error('[Instructions] Error:', error?.message || error)
+    return null
+  }
+}
+
+// Step 2: Generate model image with instructions
+async function generateModelImage(
+  client: ReturnType<typeof getGenAIClient>,
+  productImageData: string,
+  modelImageData: string | null,
+  backgroundImageData: string | null,
+  vibeImageData: string | null,
+  modelStyle: string | undefined,
+  modelGender: string | undefined,
+  instructPrompt: string | null,
   index: number
 ): Promise<string | null> {
   try {
     console.log(`[Model ${index + 1}] Starting generation...`)
     const startTime = Date.now()
+    
+    // Build the prompt with instructions
+    const modelPrompt = buildModelPrompt({
+      hasModel: !!modelImageData,
+      modelStyle,
+      modelGender,
+      hasBackground: !!backgroundImageData,
+      hasVibe: !!vibeImageData,
+      instructPrompt: instructPrompt || undefined,
+    })
+    
+    console.log(`[Model ${index + 1}] Prompt preview:`, modelPrompt.substring(0, 300) + '...')
     
     const parts: any[] = []
     
@@ -104,7 +199,7 @@ async function generateModelImage(
     }
     
     const response = await client.models.generateContent({
-      model: 'gemini-3-pro-image-preview',
+      model: 'gemini-2.0-flash-preview-image-generation',
       contents: [{ role: 'user', parts }],
       config: {
         responseModalities: ['IMAGE'],
@@ -174,15 +269,6 @@ export async function POST(request: NextRequest) {
     console.log('- backgroundImageData:', backgroundImageData?.length || 'null')
     console.log('- vibeImageData:', vibeImageData?.length || 'null')
     
-    // Build model prompt once
-    const modelPrompt = buildModelPrompt({
-      hasModel: !!modelImage,
-      modelStyle,
-      modelGender,
-      hasBackground: !!backgroundImage,
-      hasVibe: !!vibeImage,
-    })
-    
     const results: string[] = []
     
     // Step 1: Generate 2 product images in parallel
@@ -202,11 +288,31 @@ export async function POST(request: NextRequest) {
     // Small delay between batches to avoid rate limiting
     await delay(500)
     
-    // Step 2: Generate 2 model images in parallel
-    console.log('Step 2: Generating model images...')
+    // Step 2: Generate photography instructions
+    console.log('Step 2: Generating photography instructions...')
+    const instructPrompt = await generateInstructions(
+      client,
+      productImageData,
+      modelImageData,
+      backgroundImageData,
+      vibeImageData,
+      modelStyle,
+      modelGender
+    )
+    
+    await delay(300)
+    
+    // Step 3: Generate 2 model images with instructions in parallel
+    console.log('Step 3: Generating model images with instructions...')
     const modelResults = await Promise.allSettled([
-      generateModelImage(client, productImageData, modelPrompt, modelImageData, backgroundImageData, vibeImageData, 0),
-      generateModelImage(client, productImageData, modelPrompt, modelImageData, backgroundImageData, vibeImageData, 1),
+      generateModelImage(
+        client, productImageData, modelImageData, backgroundImageData, vibeImageData,
+        modelStyle, modelGender, instructPrompt, 0
+      ),
+      generateModelImage(
+        client, productImageData, modelImageData, backgroundImageData, vibeImageData,
+        modelStyle, modelGender, instructPrompt, 1
+      ),
     ])
     
     for (const result of modelResults) {
@@ -269,6 +375,7 @@ export async function POST(request: NextRequest) {
           modelImageUrl: modelImage ? '[provided]' : undefined,
           backgroundImageUrl: backgroundImage ? '[provided]' : undefined,
           vibeImageUrl: vibeImage ? '[provided]' : undefined,
+          instructPrompt: instructPrompt || undefined,
         },
         finalImages,
         duration,
@@ -284,6 +391,7 @@ export async function POST(request: NextRequest) {
         total: 4,
         successful: results.length,
         duration,
+        hasInstructions: !!instructPrompt,
       }
     })
     

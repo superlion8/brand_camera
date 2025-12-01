@@ -9,6 +9,7 @@ export interface GenerationInput {
   backgroundImageUrl?: string
   vibeImageUrl?: string
   customPrompt?: string
+  instructPrompt?: string // Generated photography instructions
 }
 
 export interface GenerationOutput {
