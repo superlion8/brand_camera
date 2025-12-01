@@ -19,6 +19,7 @@ export interface Asset {
   isSystem?: boolean
   styleCategory?: ModelStyle
   subcategory?: ModelSubcategory | BackgroundSubcategory
+  category?: string // For filtering (chinese, korean, western, indoor, outdoor, street)
   isPinned?: boolean
 }
 
