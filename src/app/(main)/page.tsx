@@ -4,6 +4,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { Camera, Wand2, FolderHeart, Images, ArrowRight, Sparkles } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
+import { UserMenu } from "@/components/shared/UserMenu"
 
 export default function HomePage() {
   const { generations, _hasHydrated } = useAssetStore()
@@ -15,12 +16,15 @@ export default function HomePage() {
     <div className="min-h-full bg-zinc-50 pb-24">
       {/* Hero Section */}
       <div className="bg-white px-6 pt-8 pb-10">
-        <div className="flex items-center gap-3 mb-6">
-          <Image src="/logo.png" alt="Brand Camera" width={48} height={48} className="rounded-xl" />
-          <div>
-            <h1 className="text-2xl font-bold text-zinc-900">品牌相机</h1>
-            <p className="text-sm text-zinc-500">AI 驱动的品牌内容创作工具</p>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <Image src="/logo.png" alt="Brand Camera" width={48} height={48} className="rounded-xl" />
+            <div>
+              <h1 className="text-2xl font-bold text-zinc-900">品牌相机</h1>
+              <p className="text-sm text-zinc-500">AI 驱动的品牌内容创作工具</p>
+            </div>
           </div>
+          <UserMenu />
         </div>
         
         <p className="text-zinc-600 leading-relaxed">

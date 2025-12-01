@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { StoreProvider } from '@/components/providers/StoreProvider'
+import { AuthProvider } from '@/components/providers/AuthProvider'
 
 export const metadata: Metadata = {
   title: '品牌相机 - Brand Camera',
@@ -36,9 +37,11 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
       <body className="min-h-screen bg-primary">
-        <StoreProvider>
-          {children}
-        </StoreProvider>
+        <AuthProvider>
+          <StoreProvider>
+            {children}
+          </StoreProvider>
+        </AuthProvider>
       </body>
     </html>
   )
