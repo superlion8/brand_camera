@@ -25,16 +25,19 @@ export const BACKGROUND_SUBCATEGORIES: { id: BackgroundSubcategory; label: strin
 
 // Preset Models - Using Supabase Storage URLs
 export const PRESET_MODELS: Asset[] = [
-  // Chinese
-  { id: 'pm-cn-1', type: 'model', name: '中式 1', imageUrl: `${STORAGE_URL}/models/chinese/model-1.png`, isSystem: true, styleCategory: 'chinese', category: 'chinese' },
-  { id: 'pm-cn-2', type: 'model', name: '中式 2', imageUrl: `${STORAGE_URL}/models/chinese/model-2.png`, isSystem: true, styleCategory: 'chinese', category: 'chinese' },
-  // Korean
-  { id: 'pm-kr-1', type: 'model', name: '韩系 1', imageUrl: `${STORAGE_URL}/models/korean/model-1.png`, isSystem: true, styleCategory: 'korean', category: 'korean' },
-  { id: 'pm-kr-2', type: 'model', name: '韩系 2', imageUrl: `${STORAGE_URL}/models/korean/model-2.png`, isSystem: true, styleCategory: 'korean', category: 'korean' },
-  { id: 'pm-kr-3', type: 'model', name: '韩系 3', imageUrl: `${STORAGE_URL}/models/korean/model-3.png`, isSystem: true, styleCategory: 'korean', category: 'korean' },
-  // Western
-  { id: 'pm-ws-1', type: 'model', name: '欧美 1', imageUrl: `${STORAGE_URL}/models/western/model-1.png`, isSystem: true, styleCategory: 'western', category: 'western' },
-  { id: 'pm-ws-2', type: 'model', name: '欧美 2', imageUrl: `${STORAGE_URL}/models/western/model-2.png`, isSystem: true, styleCategory: 'western', category: 'western' },
+  // 中式 (3)
+  { id: 'pm-ch-1', type: 'model', name: '中式 1', imageUrl: `${STORAGE_URL}/models/chinese/model-1.png`, isSystem: true, styleCategory: 'chinese', category: 'chinese' },
+  { id: 'pm-ch-2', type: 'model', name: '中式 2', imageUrl: `${STORAGE_URL}/models/chinese/model-2.png`, isSystem: true, styleCategory: 'chinese', category: 'chinese' },
+  { id: 'pm-ch-3', type: 'model', name: '中式 3', imageUrl: `${STORAGE_URL}/models/chinese/model-3.png`, isSystem: true, styleCategory: 'chinese', category: 'chinese' },
+  // 韩系 (4)
+  { id: 'pm-ko-1', type: 'model', name: '韩系 1', imageUrl: `${STORAGE_URL}/models/korean/model-1.png`, isSystem: true, styleCategory: 'korean', category: 'korean' },
+  { id: 'pm-ko-2', type: 'model', name: '韩系 2', imageUrl: `${STORAGE_URL}/models/korean/model-2.png`, isSystem: true, styleCategory: 'korean', category: 'korean' },
+  { id: 'pm-ko-3', type: 'model', name: '韩系 3', imageUrl: `${STORAGE_URL}/models/korean/model-3.png`, isSystem: true, styleCategory: 'korean', category: 'korean' },
+  { id: 'pm-ko-4', type: 'model', name: '韩系 4', imageUrl: `${STORAGE_URL}/models/korean/model-4.png`, isSystem: true, styleCategory: 'korean', category: 'korean' },
+  // 欧美 (3)
+  { id: 'pm-we-1', type: 'model', name: '欧美 1', imageUrl: `${STORAGE_URL}/models/western/model-1.png`, isSystem: true, styleCategory: 'western', category: 'western' },
+  { id: 'pm-we-2', type: 'model', name: '欧美 2', imageUrl: `${STORAGE_URL}/models/western/model-2.png`, isSystem: true, styleCategory: 'western', category: 'western' },
+  { id: 'pm-we-3', type: 'model', name: '欧美 3', imageUrl: `${STORAGE_URL}/models/western/model-3.png`, isSystem: true, styleCategory: 'western', category: 'western' },
 ]
 
 // Preset Backgrounds - 232 images total (室内 100, 自然 24, 街头 108)
