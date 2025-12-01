@@ -172,40 +172,44 @@ export function isUrl(str: string): boolean {
   return str.startsWith('http://') || str.startsWith('https://')
 }
 
-// Convert URL to base64
+// Convert URL to base64 using Image + Canvas (more reliable, handles CORS)
 export async function urlToBase64(url: string): Promise<string> {
-  try {
-    const response = await fetch(url)
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    const blob = await response.blob()
+  return new Promise((resolve, reject) => {
+    const img = new window.Image()
+    img.crossOrigin = 'anonymous' // Enable CORS
     
-    // If blob type is not image, try to force it
-    let finalBlob = blob
-    if (!blob.type.startsWith('image/')) {
-      console.warn('urlToBase64: Blob type is not image:', blob.type, 'forcing to image/jpeg')
-      finalBlob = new Blob([blob], { type: 'image/jpeg' })
-    }
-    
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        const result = reader.result as string
-        // Verify it's a valid data URL
-        if (result && result.startsWith('data:')) {
-          resolve(result)
-        } else {
-          reject(new Error('Invalid data URL generated'))
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas')
+        canvas.width = img.naturalWidth
+        canvas.height = img.naturalHeight
+        
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          reject(new Error('Failed to get canvas context'))
+          return
         }
+        
+        ctx.drawImage(img, 0, 0)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.9)
+        
+        console.log('urlToBase64: Converted successfully, length:', dataUrl.length)
+        resolve(dataUrl)
+      } catch (error) {
+        console.error('urlToBase64: Canvas conversion failed:', error)
+        reject(error)
       }
-      reader.onerror = reject
-      reader.readAsDataURL(finalBlob)
-    })
-  } catch (error) {
-    console.error('Failed to convert URL to base64:', url, error)
-    throw error
-  }
+    }
+    
+    img.onerror = (error) => {
+      console.error('urlToBase64: Image load failed:', url, error)
+      reject(new Error(`Failed to load image: ${url}`))
+    }
+    
+    // Add cache buster if URL already has params
+    const separator = url.includes('?') ? '&' : '?'
+    img.src = `${url}${separator}_t=${Date.now()}`
+  })
 }
 
 // Ensure image is base64 (convert URL if needed)
@@ -217,18 +221,36 @@ export async function ensureBase64(imageSource: string | undefined | null): Prom
   
   if (isUrl(imageSource)) {
     try {
-      console.log('ensureBase64: Converting URL to base64:', imageSource.substring(0, 80))
+      console.log('ensureBase64: Converting URL to base64:', imageSource.substring(0, 100))
       const base64 = await urlToBase64(imageSource)
+      
+      // Validate the result
+      if (!base64 || !base64.startsWith('data:image/')) {
+        console.error('ensureBase64: Invalid base64 result')
+        return null
+      }
+      
       console.log('ensureBase64: Successfully converted, length:', base64.length)
       return base64
     } catch (error) {
-      console.error('ensureBase64: Failed to convert URL:', error)
+      console.error('ensureBase64: Failed to convert URL:', imageSource, error)
       return null
     }
   }
   
-  // Already base64
-  console.log('ensureBase64: Already base64, length:', imageSource.length)
+  // Already base64 - validate it
+  if (imageSource.startsWith('data:')) {
+    console.log('ensureBase64: Already data URL, length:', imageSource.length)
+    return imageSource
+  }
+  
+  // Might be raw base64, add prefix
+  if (/^[A-Za-z0-9+/]+=*$/.test(imageSource.substring(0, 100))) {
+    console.log('ensureBase64: Raw base64 detected, adding prefix, length:', imageSource.length)
+    return `data:image/jpeg;base64,${imageSource}`
+  }
+  
+  console.warn('ensureBase64: Unknown format, first 50 chars:', imageSource.substring(0, 50))
   return imageSource
 }
 
