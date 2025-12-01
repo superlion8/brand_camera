@@ -686,13 +686,13 @@ export default function StudioPage() {
             </div>
             
             {/* Generate Button */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t">
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
               <button
                 onClick={handleGenerate}
-                className="w-full h-12 bg-blue-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors"
+                className="w-full h-14 bg-amber-500 text-white rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-amber-600 active:scale-[0.98] transition-all shadow-lg shadow-amber-200"
               >
-                <Sparkles className="w-5 h-5" />
-                生成影棚照片
+                <Sparkles className="w-6 h-6" />
+                开始拍摄
               </button>
             </div>
           </motion.div>
