@@ -8,7 +8,7 @@ import { Asset, AssetType, ModelSubcategory, BackgroundSubcategory } from "@/typ
 import { fileToBase64, generateId } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { 
-  PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_VIBES,
+  PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_VIBES, PRESET_PRODUCTS,
   MODEL_SUBCATEGORIES, BACKGROUND_SUBCATEGORIES
 } from "@/data/presets"
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
@@ -18,12 +18,12 @@ import { motion, AnimatePresence } from "framer-motion"
 const systemPresets: Record<AssetType, Asset[]> = {
   model: PRESET_MODELS,
   background: PRESET_BACKGROUNDS,
-  product: [],
+  product: PRESET_PRODUCTS,
   vibe: PRESET_VIBES,
 }
 
 const typeTabs = [
-  { value: "product" as AssetType, label: "商品", icon: Package },
+  { value: "product" as AssetType, label: "官方示例", icon: Package },
   { value: "model" as AssetType, label: "模特", icon: Users },
   { value: "background" as AssetType, label: "背景", icon: ImageIcon },
   { value: "vibe" as AssetType, label: "氛围", icon: Sparkles },

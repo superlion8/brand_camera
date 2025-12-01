@@ -17,7 +17,7 @@ import { fileToBase64, generateId, compressBase64Image, fetchWithTimeout, ensure
 import { Asset, ModelStyle, ModelGender, ModelSubcategory, BackgroundSubcategory } from "@/types"
 import Image from "next/image"
 import { 
-  PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_VIBES,
+  PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_VIBES, PRESET_PRODUCTS,
   MODEL_SUBCATEGORIES, BACKGROUND_SUBCATEGORIES
 } from "@/data/presets"
 
@@ -80,6 +80,7 @@ export default function CameraPage() {
   const [showVibePanel, setShowVibePanel] = useState(false)
   const [showProductPanel, setShowProductPanel] = useState(false)
   const [activeCustomTab, setActiveCustomTab] = useState("style")
+  const [productSourceTab, setProductSourceTab] = useState<"user" | "preset">("preset")
   
   // Selections
   const [selectedBg, setSelectedBg] = useState<string | null>(null)
@@ -860,7 +861,7 @@ export default function CameraPage() {
                     animate={{ y: 0 }} 
                     exit={{ y: "100%" }}
                     transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className="absolute bottom-0 left-0 right-0 h-[50%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
+                    className="absolute bottom-0 left-0 right-0 h-[60%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
                   >
                     <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
                       <span className="font-semibold">选择商品</span>
@@ -871,8 +872,69 @@ export default function CameraPage() {
                         <X className="w-4 h-4" />
                       </button>
                     </div>
+                    
+                    {/* Source Tabs */}
+                    <div className="px-4 py-2 border-b bg-white dark:bg-zinc-900">
+                      <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1">
+                        <button
+                          onClick={() => setProductSourceTab("preset")}
+                          className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${
+                            productSourceTab === "preset"
+                              ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
+                              : "text-zinc-500 hover:text-zinc-700"
+                          }`}
+                        >
+                          官方示例
+                          <span className="ml-1 text-zinc-400">({PRESET_PRODUCTS.length})</span>
+                        </button>
+                        <button
+                          onClick={() => setProductSourceTab("user")}
+                          className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${
+                            productSourceTab === "user"
+                              ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
+                              : "text-zinc-500 hover:text-zinc-700"
+                          }`}
+                        >
+                          我的商品
+                          {userProducts.length > 0 && (
+                            <span className="ml-1 text-zinc-400">({userProducts.length})</span>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    
                     <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4">
-                      {userProducts.length > 0 ? (
+                      {productSourceTab === "preset" ? (
+                        <div className="grid grid-cols-3 gap-3 pb-20">
+                          {PRESET_PRODUCTS.map(product => (
+                            <button
+                              key={product.id}
+                              onClick={async () => {
+                                // Need to convert URL to base64 for preset products
+                                try {
+                                  const base64 = await ensureBase64(product.imageUrl)
+                                  if (base64) {
+                                    setCapturedImage(base64)
+                                    setMode("review")
+                                    setShowProductPanel(false)
+                                  }
+                                } catch (e) {
+                                  console.error("Failed to load preset product:", e)
+                                }
+                              }}
+                              className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all"
+                            >
+                              <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
+                              <span className="absolute top-1 left-1 bg-blue-600 text-white text-[8px] px-1 py-0.5 rounded font-medium">
+                                官方
+                              </span>
+                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-4">
+                                <p className="text-[10px] text-white truncate text-center">{product.name}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      ) : userProducts.length > 0 ? (
                         <div className="grid grid-cols-3 gap-3 pb-20">
                           {userProducts.map(product => (
                             <button
@@ -894,7 +956,7 @@ export default function CameraPage() {
                       ) : (
                         <div className="flex flex-col items-center justify-center h-full text-zinc-400">
                           <FolderHeart className="w-12 h-12 mb-3 opacity-30" />
-                          <p className="text-sm">暂无商品资产</p>
+                          <p className="text-sm">暂无我的商品</p>
                           <p className="text-xs mt-1">在品牌资产中上传商品图片</p>
                           <button 
                             onClick={() => {

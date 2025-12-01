@@ -92,12 +92,27 @@ export const PRESET_VIBES: Asset[] = [
   { id: 'pv-3', type: 'vibe', name: '氛围 3', imageUrl: `${STORAGE_URL}/vibes/vibe-3.png`, isSystem: true },
 ]
 
+// Preset Products (官方示例) - Using Supabase Storage URLs
+export const PRESET_PRODUCTS: Asset[] = [
+  { id: 'pp-1', type: 'product', name: '示例 1', imageUrl: `${STORAGE_URL}/products/product-1.jpg`, isSystem: true },
+  { id: 'pp-2', type: 'product', name: '示例 2', imageUrl: `${STORAGE_URL}/products/product-2.jpg`, isSystem: true },
+  { id: 'pp-3', type: 'product', name: '示例 3', imageUrl: `${STORAGE_URL}/products/product-3.jpg`, isSystem: true },
+  { id: 'pp-4', type: 'product', name: '示例 4', imageUrl: `${STORAGE_URL}/products/product-4.jpg`, isSystem: true },
+  { id: 'pp-5', type: 'product', name: '示例 5', imageUrl: `${STORAGE_URL}/products/product-5.jpg`, isSystem: true },
+  { id: 'pp-6', type: 'product', name: '示例 6', imageUrl: `${STORAGE_URL}/products/product-6.jpg`, isSystem: true },
+  { id: 'pp-7', type: 'product', name: '示例 7', imageUrl: `${STORAGE_URL}/products/product-7.jpg`, isSystem: true },
+  { id: 'pp-8', type: 'product', name: '示例 8', imageUrl: `${STORAGE_URL}/products/product-8.jpg`, isSystem: true },
+  { id: 'pp-9', type: 'product', name: '示例 9', imageUrl: `${STORAGE_URL}/products/product-9.jpg`, isSystem: true },
+  { id: 'pp-10', type: 'product', name: '示例 10', imageUrl: `${STORAGE_URL}/products/product-10.jpg`, isSystem: true },
+  { id: 'pp-11', type: 'product', name: '示例 11', imageUrl: `${STORAGE_URL}/products/product-11.jpg`, isSystem: true },
+]
+
 // Combined presets by type
 export const allPresets: Record<AssetType, Asset[]> = {
   model: PRESET_MODELS,
   background: PRESET_BACKGROUNDS,
   vibe: PRESET_VIBES,
-  product: [], // No preset products
+  product: PRESET_PRODUCTS,
 }
 
 // Helper functions
