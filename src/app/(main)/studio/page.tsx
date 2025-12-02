@@ -144,7 +144,7 @@ export default function StudioPage() {
   const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
   
   // Quota management
-  const { quota, checkQuota, refreshQuota, showExceededModal, closeExceededModal } = useQuota()
+  const { quota, checkQuota, refreshQuota, showExceededModal, requiredCount, closeExceededModal } = useQuota()
   
   // Update bgColor when HSV changes
   const updateColorFromHSV = useCallback((h: number, s: number, v: number) => {
@@ -1182,6 +1182,7 @@ export default function StudioPage() {
         onClose={closeExceededModal}
         usedCount={quota?.usedCount}
         totalQuota={quota?.totalQuota}
+        requiredCount={requiredCount}
       />
     </div>
   )

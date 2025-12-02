@@ -139,7 +139,7 @@ export default function CameraPage() {
   const { debugMode } = useSettingsStore()
   
   // Quota management
-  const { quota, checkQuota, refreshQuota, showExceededModal, closeExceededModal } = useQuota()
+  const { quota, checkQuota, refreshQuota, showExceededModal, requiredCount, closeExceededModal } = useQuota()
   
   // Helper to sort by pinned status
   const sortByPinned = (assets: Asset[]) => 
@@ -1782,6 +1782,7 @@ export default function CameraPage() {
         onClose={closeExceededModal}
         usedCount={quota?.usedCount}
         totalQuota={quota?.totalQuota}
+        requiredCount={requiredCount}
       />
     </div>
   )

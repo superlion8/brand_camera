@@ -8,14 +8,20 @@ interface QuotaExceededModalProps {
   onClose: () => void
   usedCount?: number
   totalQuota?: number
+  requiredCount?: number // How many images the current operation needs
 }
 
 export function QuotaExceededModal({ 
   isOpen, 
   onClose,
-  usedCount = 30,
+  usedCount = 0,
   totalQuota = 30,
+  requiredCount,
 }: QuotaExceededModalProps) {
+  const remainingQuota = Math.max(0, totalQuota - usedCount)
+  const isExhausted = remainingQuota === 0
+  const isInsufficient = !isExhausted && requiredCount && remainingQuota < requiredCount
+  
   return (
     <AnimatePresence>
       {isOpen && (
@@ -47,11 +53,14 @@ export function QuotaExceededModal({
               </div>
               
               <h2 className="text-xl font-bold text-zinc-900 mb-2">
-                免费额度已用尽
+                {isExhausted ? '免费额度已用尽' : '额度不足'}
               </h2>
               
               <p className="text-zinc-500 text-sm">
-                您已使用 {usedCount}/{totalQuota} 张图片额度
+                {isInsufficient 
+                  ? `本次操作需要 ${requiredCount} 张额度，您仅剩 ${remainingQuota} 张`
+                  : `您已使用 ${usedCount}/${totalQuota} 张图片额度`
+                }
               </p>
             </div>
             
@@ -59,21 +68,27 @@ export function QuotaExceededModal({
             <div className="px-6 pb-6">
               <div className="bg-zinc-50 rounded-xl p-4 mb-4">
                 <p className="text-zinc-600 text-sm text-center leading-relaxed">
-                  您的免费额度已用尽，请联系官方团队申请更多额度
+                  {isExhausted 
+                    ? '您的免费额度已用尽，请联系官方团队申请更多额度'
+                    : '您的剩余额度不足以完成本次操作，请联系官方团队申请更多额度'
+                  }
                 </p>
               </div>
               
               {/* Progress bar */}
               <div className="mb-4">
                 <div className="flex justify-between text-xs text-zinc-500 mb-1">
-                  <span>已使用</span>
-                  <span>{usedCount} / {totalQuota}</span>
+                  <span>已使用 {usedCount}</span>
+                  <span>剩余 {remainingQuota}</span>
                 </div>
                 <div className="h-2 bg-zinc-200 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-gradient-to-r from-amber-500 to-red-500 rounded-full transition-all"
                     style={{ width: `${Math.min((usedCount / totalQuota) * 100, 100)}%` }}
                   />
+                </div>
+                <div className="flex justify-end text-xs text-zinc-400 mt-1">
+                  <span>总额度 {totalQuota}</span>
                 </div>
               </div>
               

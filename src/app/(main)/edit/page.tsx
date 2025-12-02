@@ -172,7 +172,7 @@ export default function EditPage() {
   const { addTask, updateTaskStatus } = useGenerationTaskStore()
   
   // Quota management
-  const { quota, checkQuota, refreshQuota, showExceededModal, closeExceededModal } = useQuota()
+  const { quota, checkQuota, refreshQuota, showExceededModal, requiredCount, closeExceededModal } = useQuota()
   
   // Update lightColor when HSV changes
   const updateColorFromHSV = useCallback((h: number, s: number, v: number) => {
@@ -1251,6 +1251,7 @@ export default function EditPage() {
         onClose={closeExceededModal}
         usedCount={quota?.usedCount}
         totalQuota={quota?.totalQuota}
+        requiredCount={requiredCount}
       />
     </div>
   )

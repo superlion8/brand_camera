@@ -14,6 +14,7 @@ export function useQuota() {
   const [quota, setQuota] = useState<QuotaInfo | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [showExceededModal, setShowExceededModal] = useState(false)
+  const [requiredCount, setRequiredCount] = useState<number | undefined>(undefined)
 
   // Fetch quota on mount and when user changes
   const fetchQuota = useCallback(async () => {
@@ -64,6 +65,7 @@ export function useQuota() {
       })
       
       if (!data.hasQuota) {
+        setRequiredCount(imageCount)
         setShowExceededModal(true)
         return false
       }
@@ -84,14 +86,16 @@ export function useQuota() {
 
   const closeExceededModal = useCallback(() => {
     setShowExceededModal(false)
+    setRequiredCount(undefined)
   }, [])
 
   return {
     quota,
     isLoading,
     showExceededModal,
+    requiredCount,
     checkQuota,
-    refreshQuota, // Renamed from incrementQuota
+    refreshQuota,
     fetchQuota,
     closeExceededModal,
   }
