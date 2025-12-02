@@ -302,35 +302,35 @@ export default function CameraPage() {
       // Check if both model and background are selected for simple mode
       const canUseSimpleMode = !!modelBase64 && !!bgBase64
       
-      // Helper to create a delayed request
-      const createDelayedRequest = (type: string, index: number, delayMs: number, simpleMode: boolean = false) => {
+      // Helper to create a delayed request for model images
+      const createModelRequest = (index: number, delayMs: number, simpleMode: boolean) => {
         return new Promise<Response>((resolve, reject) => {
           setTimeout(() => {
-            const mode = simpleMode ? '简单版' : '扩展版'
-            console.log(`Starting ${type} ${index + 1} (${mode})...`)
+            const mode = simpleMode ? '极简模式' : '扩展模式'
+            console.log(`Starting Model ${index + 1} (${mode})...`)
             fetch("/api/generate-single", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ ...basePayload, type, index, simpleMode }),
+              body: JSON.stringify({ ...basePayload, type: 'model', index, simpleMode }),
             }).then(resolve).catch(reject)
           }, delayMs)
         })
       }
       
-      // Create 4 staggered requests
-      // Model 1: always extended (扩展版)
-      // Model 2: simple mode only if both model and background are selected (简单版), otherwise extended
+      // Create 4 model image requests:
+      // Index 0, 1: 极简模式 (simple mode) - only if model and background are selected, otherwise extended
+      // Index 2, 3: 扩展模式 (extended mode)
       const requests = [
-        createDelayedRequest('product', 0, 0),                               // Product 1
-        createDelayedRequest('product', 1, staggerDelay),                    // Product 2
-        createDelayedRequest('model', 0, staggerDelay * 2, false),           // Model 1: 扩展版
-        createDelayedRequest('model', 1, staggerDelay * 3, canUseSimpleMode), // Model 2: 简单版 (if available)
+        createModelRequest(0, 0, canUseSimpleMode),                    // Model 1: 极简模式 (if available)
+        createModelRequest(1, staggerDelay, canUseSimpleMode),         // Model 2: 极简模式 (if available)
+        createModelRequest(2, staggerDelay * 2, false),                // Model 3: 扩展模式
+        createModelRequest(3, staggerDelay * 3, false),                // Model 4: 扩展模式
       ]
       
       // Wait for all to complete (don't fail if some fail)
       const responses = await Promise.allSettled(requests)
       
-      // Process results - maintain order: product1, product2, model1, model2
+      // Process results - all 4 are model images
       const allImages: (string | null)[] = [null, null, null, null]
       const allModelTypes: (('pro' | 'flash') | null)[] = [null, null, null, null]
       const allPrompts: (string | null)[] = [null, null, null, null]
@@ -343,15 +343,15 @@ export default function CameraPage() {
           try {
             const result = await response.value.json()
             if (result.success && result.image) {
-              // Map: product 0,1 -> 0,1 | model 0,1 -> 2,3
-              const targetIndex = result.type === 'product' ? result.index : result.index + 2
+              // Direct mapping: index 0-3 maps to positions 0-3
+              const targetIndex = result.index
               allImages[targetIndex] = result.image
               allModelTypes[targetIndex] = result.modelType
               allPrompts[targetIndex] = result.prompt || null
               allGenModes[targetIndex] = result.generationMode || 'extended'
               maxDuration = Math.max(maxDuration, result.duration || 0)
-              const modeLabel = result.generationMode === 'simple' ? '简单版' : '扩展版'
-              console.log(`${result.type} ${result.index + 1}: ✓ (${result.modelType}, ${modeLabel}, ${result.duration}ms)`)
+              const modeLabel = result.generationMode === 'simple' ? '极简模式' : '扩展模式'
+              console.log(`Model ${result.index + 1}: ✓ (${result.modelType}, ${modeLabel}, ${result.duration}ms)`)
             } else {
               console.log(`Task ${i + 1}: ✗ (${result.error})`)
             }
@@ -1450,14 +1450,15 @@ export default function CameraPage() {
               <span className="font-semibold ml-2">本次成片</span>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-8 pb-10">
-              {/* Product Images */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-10">
+              {/* Simple Mode Images (极简模式) - indices 0, 1 */}
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-1 h-4 bg-blue-600 rounded-full" />
-                    商品静物图
+                    <span className="w-1 h-4 bg-green-500 rounded-full" />
+                    极简模式
                   </h3>
+                  <span className="text-[10px] text-zinc-400">直接生成</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {generatedImages.slice(0, 2).map((url, i) => (
@@ -1467,7 +1468,7 @@ export default function CameraPage() {
                       onClick={() => setSelectedResultIndex(i)}
                     >
                       <Image src={url} alt="Result" fill className="object-cover" />
-                      {/* Favorite button - always visible */}
+                      {/* Favorite button */}
                       <button 
                         className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-colors ${
                           currentGenerationId && isFavorited(currentGenerationId, i) 
@@ -1482,9 +1483,9 @@ export default function CameraPage() {
                         <Heart className={`w-4 h-4 ${currentGenerationId && isFavorited(currentGenerationId, i) ? "fill-current" : ""}`} />
                       </button>
                       {/* Type badge */}
-                      <div className="absolute top-2 left-2 flex gap-1">
-                        <span className="px-2 py-1 rounded text-[10px] font-medium bg-blue-500 text-white">
-                          产品
+                      <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
+                        <span className="px-2 py-1 rounded text-[10px] font-medium bg-green-500 text-white">
+                          极简
                         </span>
                         {generatedModelTypes[i] === 'flash' && (
                           <span className="px-1.5 py-1 rounded text-[9px] font-medium bg-amber-500 text-white">
@@ -1497,13 +1498,14 @@ export default function CameraPage() {
                 </div>
               </div>
 
-              {/* Model Images */}
+              {/* Extended Mode Images (扩展模式) - indices 2, 3 */}
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-1 h-4 bg-purple-600 rounded-full" />
-                    模特展示图
+                    <span className="w-1 h-4 bg-blue-600 rounded-full" />
+                    扩展模式
                   </h3>
+                  <span className="text-[10px] text-zinc-400">摄影指令 + 生成</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {generatedImages.slice(2, 4).map((url, i) => {
@@ -1515,7 +1517,7 @@ export default function CameraPage() {
                         onClick={() => setSelectedResultIndex(actualIndex)}
                       >
                         <Image src={url} alt="Result" fill className="object-cover" />
-                        {/* Favorite button - always visible */}
+                        {/* Favorite button */}
                         <button 
                           className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-colors ${
                             currentGenerationId && isFavorited(currentGenerationId, actualIndex) 
@@ -1531,16 +1533,8 @@ export default function CameraPage() {
                         </button>
                         {/* Type badge */}
                         <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
-                          <span className="px-2 py-1 rounded text-[10px] font-medium bg-purple-500 text-white">
-                            模特
-                          </span>
-                          {/* Generation mode badge */}
-                          <span className={`px-1.5 py-1 rounded text-[9px] font-medium ${
-                            generatedGenModes[actualIndex] === 'simple' 
-                              ? 'bg-green-500 text-white' 
-                              : 'bg-blue-500 text-white'
-                          }`}>
-                            {generatedGenModes[actualIndex] === 'simple' ? '简单版' : '扩展版'}
+                          <span className="px-2 py-1 rounded text-[10px] font-medium bg-blue-500 text-white">
+                            扩展
                           </span>
                           {generatedModelTypes[actualIndex] === 'flash' && (
                             <span className="px-1.5 py-1 rounded text-[9px] font-medium bg-amber-500 text-white">
@@ -1604,23 +1598,14 @@ export default function CameraPage() {
                       <div className="flex items-center justify-between mb-4">
                         <div>
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            {/* Generation mode badge */}
                             <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                               selectedResultIndex < 2 
-                                ? "bg-blue-100 text-blue-700" 
-                                : "bg-purple-100 text-purple-700"
+                                ? "bg-green-100 text-green-700" 
+                                : "bg-blue-100 text-blue-700"
                             }`}>
-                              {selectedResultIndex < 2 ? "产品展示" : "模特展示"}
+                              {selectedResultIndex < 2 ? "极简模式" : "扩展模式"}
                             </span>
-                            {/* Generation mode badge for model images */}
-                            {selectedResultIndex >= 2 && (
-                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                                generatedGenModes[selectedResultIndex] === 'simple'
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-blue-100 text-blue-700"
-                              }`}>
-                                {generatedGenModes[selectedResultIndex] === 'simple' ? '简单版' : '扩展版'}
-                              </span>
-                            )}
                             {generatedModelTypes[selectedResultIndex] === 'flash' && (
                               <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700">
                                 Gemini 2.5

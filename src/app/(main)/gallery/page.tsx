@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import { Download, Heart, X, Wand2, Camera, Users, Home, ZoomIn, Loader2 } from "lucide-react"
+import { Download, Heart, X, Wand2, Camera, Users, Home, ZoomIn, Loader2, Sparkles } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { useGenerationTaskStore, GenerationTask } from "@/stores/generationTaskStore"
 import { Generation, Favorite } from "@/types"
@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
 
-type TabType = "all" | "product" | "model" | "favorites"
+type TabType = "all" | "simple" | "extended" | "favorites"
 
 export default function GalleryPage() {
   const router = useRouter()
@@ -47,15 +47,15 @@ export default function GalleryPage() {
   // Filter images based on tab
   const getDisplayedHistory = (): { gen: Generation; url: string; idx: number }[] => {
     switch (activeTab) {
-      case "product":
-        // Product images are index 0 and 1
+      case "simple":
+        // Simple mode images are index 0 and 1 (极简模式)
         return generations.flatMap((gen: Generation) => 
           gen.outputImageUrls
             .slice(0, 2)
             .map((url: string, idx: number) => ({ gen, url, idx }))
         )
-      case "model":
-        // Model images are index 2 and 3
+      case "extended":
+        // Extended mode images are index 2 and 3 (扩展模式)
         return generations.flatMap((gen: Generation) => 
           gen.outputImageUrls
             .slice(2, 4)
@@ -134,8 +134,8 @@ export default function GalleryPage() {
 
   const tabs: { id: TabType; label: string; icon?: React.ReactNode }[] = [
     { id: "all", label: "全部" },
-    { id: "product", label: "产品图", icon: <Camera className="w-3.5 h-3.5" /> },
-    { id: "model", label: "模特图", icon: <Users className="w-3.5 h-3.5" /> },
+    { id: "simple", label: "极简模式", icon: <Sparkles className="w-3.5 h-3.5" /> },
+    { id: "extended", label: "扩展模式", icon: <Users className="w-3.5 h-3.5" /> },
     { id: "favorites", label: "收藏", icon: <Heart className="w-3.5 h-3.5" /> },
   ]
   
@@ -237,9 +237,9 @@ export default function GalleryPage() {
             <div className="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-4">
               {activeTab === "favorites" ? (
                 <Heart className="w-8 h-8 text-zinc-300" />
-              ) : activeTab === "product" ? (
-                <Camera className="w-8 h-8 text-zinc-300" />
-              ) : activeTab === "model" ? (
+              ) : activeTab === "simple" ? (
+                <Sparkles className="w-8 h-8 text-zinc-300" />
+              ) : activeTab === "extended" ? (
                 <Users className="w-8 h-8 text-zinc-300" />
               ) : (
                 <Camera className="w-8 h-8 text-zinc-300" />
@@ -247,8 +247,8 @@ export default function GalleryPage() {
             </div>
             <p className="text-sm">
               {activeTab === "favorites" ? "暂无收藏图片" : 
-               activeTab === "product" ? "暂无产品图" :
-               activeTab === "model" ? "暂无模特图" : "暂无图片"}
+               activeTab === "simple" ? "暂无极简模式图" :
+               activeTab === "extended" ? "暂无扩展模式图" : "暂无图片"}
             </p>
             <p className="text-xs text-zinc-300 mt-1">
               {activeTab !== "favorites" && "去拍摄生成你的第一张图片吧"}
@@ -299,10 +299,10 @@ export default function GalleryPage() {
                     <div className="flex items-center gap-2 mb-1">
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                         selectedItem.index < 2 
-                          ? "bg-blue-100 text-blue-700" 
-                          : "bg-purple-100 text-purple-700"
+                          ? "bg-green-100 text-green-700" 
+                          : "bg-blue-100 text-blue-700"
                       }`}>
-                        {selectedItem.index < 2 ? "产品展示" : "模特展示"}
+                        {selectedItem.index < 2 ? "极简模式" : "扩展模式"}
                       </span>
                     </div>
                     <p className="text-xs text-zinc-400">
