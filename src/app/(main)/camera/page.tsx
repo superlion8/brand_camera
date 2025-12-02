@@ -30,6 +30,11 @@ const MODEL_GENDERS: { id: ModelGender; label: string }[] = [
 
 type CameraMode = "camera" | "review" | "processing" | "results"
 
+// Generation config - DEBUG MODE: 2 images (1 simple + 1 extended)
+// TODO: Change back to 6 images (3 simple + 3 extended) for production
+const CAMERA_NUM_IMAGES = 2 // Change to 6 for production
+const CAMERA_NUM_SIMPLE = 1 // Change to 3 for production
+
 export default function CameraPage() {
   const router = useRouter()
   const webcamRef = useRef<Webcam>(null)
@@ -265,8 +270,8 @@ export default function CameraPage() {
   const handleShootIt = async () => {
     if (!capturedImage) return
     
-    // Check quota before starting generation (6 images for camera)
-    const hasQuota = await checkQuota(6)
+    // Check quota before starting generation
+    const hasQuota = await checkQuota(CAMERA_NUM_IMAGES)
     if (!hasQuota) {
       return // Modal will be shown by the hook
     }
@@ -354,10 +359,9 @@ export default function CameraPage() {
       console.log("Model base64 ready:", !!modelBase64, modelBase64 ? modelBase64.substring(0, 30) + "..." : "null")
       console.log("Background base64 ready:", !!bgBase64)
       
-      // DEBUG MODE: 2 images (1 simple + 1 extended) for faster debugging
-      // TODO: Change back to 6 images (3 simple + 3 extended) for production
-      const NUM_IMAGES = 2 // Change to 6 for production
-      const NUM_SIMPLE = 1 // Change to 3 for production
+      // Use the constants defined at module level
+      const NUM_IMAGES = CAMERA_NUM_IMAGES
+      const NUM_SIMPLE = CAMERA_NUM_SIMPLE
       
       console.log(`Sending ${NUM_IMAGES} staggered generation requests (1s apart)...`)
       
