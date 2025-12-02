@@ -152,6 +152,20 @@ export async function saveUserAsset(userId: string, asset: Asset): Promise<Asset
   
   console.log('[Sync] Session user ID:', session.user.id, 'Requested user ID:', userId)
   
+  // Upload image to Storage if it's base64
+  let imageUrl = asset.imageUrl
+  if (isBase64(imageUrl)) {
+    console.log('[Sync] Uploading asset image to storage...')
+    const uploaded = await uploadToUserAssetStorage(imageUrl, userId, asset.type)
+    if (uploaded) {
+      imageUrl = uploaded
+      console.log('[Sync] Asset image uploaded:', imageUrl.substring(0, 60) + '...')
+    } else {
+      console.error('[Sync] Failed to upload asset image to storage')
+      return null
+    }
+  }
+  
   // Don't include 'id' - let Supabase auto-generate UUID
   const { data, error } = await supabase
     .from('user_assets')
@@ -159,7 +173,7 @@ export async function saveUserAsset(userId: string, asset: Asset): Promise<Asset
       user_id: userId,
       type: asset.type,
       name: asset.name,
-      image_url: asset.imageUrl,
+      image_url: imageUrl,
       thumbnail_url: asset.thumbnailUrl,
       tags: asset.tags,
       is_pinned: asset.isPinned || false,
@@ -182,6 +196,68 @@ export async function saveUserAsset(userId: string, asset: Asset): Promise<Asset
     thumbnailUrl: data.thumbnail_url,
     tags: data.tags,
     isPinned: data.is_pinned,
+  }
+}
+
+// Upload base64 image to user-assets bucket
+async function uploadToUserAssetStorage(base64: string, userId: string, assetType: string): Promise<string | null> {
+  if (!isBase64(base64)) return base64 // Already a URL
+  
+  const supabase = getSupabase()
+  
+  try {
+    // Remove data URL prefix if present
+    let base64Content = base64
+    let contentType = 'image/png'
+    
+    if (base64.startsWith('data:')) {
+      const match = base64.match(/^data:(image\/\w+);base64,(.+)$/)
+      if (match) {
+        contentType = match[1]
+        base64Content = match[2]
+      } else {
+        base64Content = base64.replace(/^data:image\/\w+;base64,/, '')
+      }
+    }
+    
+    // Convert base64 to blob
+    const byteCharacters = atob(base64Content)
+    const byteNumbers = new Array(byteCharacters.length)
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i)
+    }
+    const byteArray = new Uint8Array(byteNumbers)
+    const blob = new Blob([byteArray], { type: contentType })
+    
+    // Generate unique filename
+    const timestamp = Date.now()
+    const random = Math.random().toString(36).substring(2, 8)
+    const extension = contentType.split('/')[1] || 'png'
+    const fileName = `${userId}/${assetType}/${timestamp}_${random}.${extension}`
+    
+    // Upload to user-assets bucket
+    const { data, error } = await supabase.storage
+      .from('user-assets')
+      .upload(fileName, blob, {
+        contentType,
+        cacheControl: '31536000',
+        upsert: false,
+      })
+    
+    if (error) {
+      console.error('[Storage] Upload to user-assets error:', error.message)
+      return null
+    }
+    
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('user-assets')
+      .getPublicUrl(data.path)
+    
+    return publicUrl
+  } catch (error) {
+    console.error('[Storage] Error uploading to user-assets:', error)
+    return null
   }
 }
 
