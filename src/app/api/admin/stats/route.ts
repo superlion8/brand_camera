@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       if (favError) throw favError
       
       // Get user emails
-      const userIds = [...new Set(generations?.map(g => g.user_id) || [])]
+      const userIds = Array.from(new Set(generations?.map(g => g.user_id) || []))
       const { data: users } = await supabase
         .from('auth.users')
         .select('id, email')
