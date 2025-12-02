@@ -17,7 +17,7 @@ import { useRouter } from "next/navigation"
 import { fileToBase64, generateId, compressBase64Image, fetchWithTimeout, ensureBase64 } from "@/lib/utils"
 import { Asset, ModelStyle, ModelGender } from "@/types"
 import Image from "next/image"
-import { PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_PRODUCTS } from "@/data/presets"
+import { PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_PRODUCTS, getRandomModel, getRandomBackground } from "@/data/presets"
 
 const MODEL_GENDERS: { id: ModelGender; label: string }[] = [
   { id: "female", label: "女" },
@@ -269,16 +269,16 @@ export default function CameraPage() {
     const currentProductFromPhone = productFromPhone
     const currentProduct2FromPhone = product2FromPhone
     
-    // If model not selected, randomly pick one from presets
-    if (!currentModel && PRESET_MODELS.length > 0) {
-      const randomModel = PRESET_MODELS[Math.floor(Math.random() * PRESET_MODELS.length)]
+    // If model not selected, randomly pick one from ALL presets (including non-visible)
+    if (!currentModel) {
+      const randomModel = getRandomModel()
       currentModel = randomModel
       console.log('Randomly selected model:', randomModel.name)
     }
     
-    // If background not selected, randomly pick one from presets
-    if (!currentBg && PRESET_BACKGROUNDS.length > 0) {
-      const randomBg = PRESET_BACKGROUNDS[Math.floor(Math.random() * PRESET_BACKGROUNDS.length)]
+    // If background not selected, randomly pick one from ALL presets (including non-visible)
+    if (!currentBg) {
+      const randomBg = getRandomBackground()
       currentBg = randomBg
       console.log('Randomly selected background:', randomBg.name)
     }
