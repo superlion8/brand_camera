@@ -32,42 +32,47 @@ export default function HomePage() {
         </p>
       </div>
       
-      {/* Feature Cards - Two column layout */}
+      {/* Feature Cards - Horizontal layout with before-after */}
       <div className="px-4 -mt-4 space-y-3">
-        {/* 模特影棚 */}
+        {/* 模特影棚 Card */}
         <Link href="/camera" className="block">
-          <div className="flex gap-2">
-            {/* Feature Card */}
-            <div className="w-28 shrink-0 bg-zinc-900 text-white rounded-2xl p-4 flex flex-col justify-center">
-              <Users className="w-6 h-6 text-blue-400 mb-2" />
-              <h3 className="font-bold text-sm">模特影棚</h3>
+          <div className="bg-zinc-900 text-white rounded-2xl p-4 flex items-center gap-3 relative overflow-hidden">
+            <div className="flex-1 z-10">
+              <div className="flex items-center gap-2 mb-2">
+                <Users className="w-5 h-5 text-blue-400" />
+                <h3 className="font-bold">模特影棚</h3>
+              </div>
+              <p className="text-zinc-400 text-xs leading-relaxed">
+                上传商品，一键生成模特穿搭展示图
+              </p>
             </div>
-            {/* Effect Preview */}
-            <div className="flex-1 bg-blue-50 border border-blue-200 rounded-2xl p-3 flex items-center justify-center gap-2">
-              <div className="w-16 h-20 rounded-lg overflow-hidden bg-white shadow-sm">
+            {/* Before-After Preview with real images */}
+            <div className="flex items-center gap-1 shrink-0">
+              <div className="w-12 h-16 rounded-lg overflow-hidden border border-zinc-700">
                 <Image 
                   src="/homepage/before.jpg" 
-                  alt="Before" 
-                  width={64} 
-                  height={80} 
+                  alt="商品" 
+                  width={48} 
+                  height={64} 
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div className="w-16 h-20 rounded-lg overflow-hidden bg-white shadow-sm">
+              <ArrowRight className="w-3 h-3 text-zinc-600" />
+              <div className="w-12 h-16 rounded-lg overflow-hidden border border-blue-500/50">
                 <Image 
                   src="/homepage/after1.png" 
-                  alt="After1" 
-                  width={64} 
-                  height={80} 
+                  alt="模特图1" 
+                  width={48} 
+                  height={64} 
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div className="w-16 h-20 rounded-lg overflow-hidden bg-white shadow-sm">
+              <div className="w-12 h-16 rounded-lg overflow-hidden border border-blue-500/50 -ml-1">
                 <Image 
                   src="/homepage/after2.png" 
-                  alt="After2" 
-                  width={64} 
-                  height={80} 
+                  alt="模特图2" 
+                  width={48} 
+                  height={64} 
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -75,47 +80,63 @@ export default function HomePage() {
           </div>
         </Link>
         
-        {/* 商品影棚 */}
+        {/* 商品影棚 Card */}
         <Link href="/studio" className="block">
-          <div className="flex gap-2">
-            {/* Feature Card */}
-            <div className="w-28 shrink-0 bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-2xl p-4 flex flex-col justify-center">
-              <Lightbulb className="w-6 h-6 text-amber-100 mb-2" />
-              <h3 className="font-bold text-sm">商品影棚</h3>
+          <div className="bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden">
+            <div className="flex-1 z-10">
+              <div className="flex items-center gap-2 mb-2">
+                <Lightbulb className="w-5 h-5 text-amber-100" />
+                <h3 className="font-bold">商品影棚</h3>
+              </div>
+              <p className="text-amber-100 text-xs leading-relaxed">
+                专业光影控制，生成影棚级商品照
+              </p>
             </div>
-            {/* Effect Preview */}
-            <div className="flex-1 bg-amber-50 border border-amber-200 rounded-2xl p-3 flex items-center justify-center gap-2">
-              <div className="w-16 h-20 rounded-lg overflow-hidden bg-white shadow-sm flex items-center justify-center">
-                <span className="text-xs text-amber-400">Before</span>
+            {/* Before-After Preview */}
+            <div className="flex items-center gap-1 shrink-0">
+              <div className="w-16 h-20 rounded-lg bg-amber-700/50 overflow-hidden flex items-center justify-center border border-amber-400/30">
+                <div className="text-center">
+                  <div className="w-8 h-10 mx-auto bg-amber-600/50 rounded" />
+                  <span className="text-[8px] text-amber-200 mt-1 block">商品</span>
+                </div>
               </div>
-              <div className="w-16 h-20 rounded-lg overflow-hidden bg-white shadow-sm flex items-center justify-center">
-                <span className="text-xs text-amber-400">After1</span>
-              </div>
-              <div className="w-16 h-20 rounded-lg overflow-hidden bg-white shadow-sm flex items-center justify-center">
-                <span className="text-xs text-amber-400">After2</span>
+              <ArrowRight className="w-4 h-4 text-amber-300" />
+              <div className="w-16 h-20 rounded-lg bg-gradient-to-b from-amber-400/30 to-amber-700/50 overflow-hidden flex items-center justify-center border border-amber-300/50">
+                <div className="text-center">
+                  <Sparkles className="w-6 h-6 mx-auto text-amber-200" />
+                  <span className="text-[8px] text-amber-200 mt-1 block">影棚照</span>
+                </div>
               </div>
             </div>
           </div>
         </Link>
         
-        {/* 修图室 */}
+        {/* 修图室 Card */}
         <Link href="/edit" className="block">
-          <div className="flex gap-2">
-            {/* Feature Card */}
-            <div className="w-28 shrink-0 bg-gradient-to-br from-purple-500 to-purple-700 text-white rounded-2xl p-4 flex flex-col justify-center">
-              <Wand2 className="w-6 h-6 text-purple-200 mb-2" />
-              <h3 className="font-bold text-sm">修图室</h3>
+          <div className="bg-gradient-to-br from-purple-500 to-purple-700 text-white rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden">
+            <div className="flex-1 z-10">
+              <div className="flex items-center gap-2 mb-2">
+                <Wand2 className="w-5 h-5 text-purple-200" />
+                <h3 className="font-bold">修图室</h3>
+              </div>
+              <p className="text-purple-200 text-xs leading-relaxed">
+                AI 智能修图，更换背景和模特
+              </p>
             </div>
-            {/* Effect Preview */}
-            <div className="flex-1 bg-purple-50 border border-purple-200 rounded-2xl p-3 flex items-center justify-center gap-2">
-              <div className="w-16 h-20 rounded-lg overflow-hidden bg-white shadow-sm flex items-center justify-center">
-                <span className="text-xs text-purple-400">Before</span>
+            {/* Before-After Preview */}
+            <div className="flex items-center gap-1 shrink-0">
+              <div className="w-16 h-20 rounded-lg bg-purple-800/50 overflow-hidden flex items-center justify-center border border-purple-400/30">
+                <div className="text-center">
+                  <div className="w-10 h-12 mx-auto bg-purple-600/50 rounded" />
+                  <span className="text-[8px] text-purple-300 mt-1 block">原图</span>
+                </div>
               </div>
-              <div className="w-16 h-20 rounded-lg overflow-hidden bg-white shadow-sm flex items-center justify-center">
-                <span className="text-xs text-purple-400">After1</span>
-              </div>
-              <div className="w-16 h-20 rounded-lg overflow-hidden bg-white shadow-sm flex items-center justify-center">
-                <span className="text-xs text-purple-400">After2</span>
+              <ArrowRight className="w-4 h-4 text-purple-300" />
+              <div className="w-16 h-20 rounded-lg bg-gradient-to-b from-purple-400/30 to-purple-800/50 overflow-hidden flex items-center justify-center border border-purple-300/50">
+                <div className="text-center">
+                  <Wand2 className="w-6 h-6 mx-auto text-purple-200" />
+                  <span className="text-[8px] text-purple-200 mt-1 block">修图后</span>
+                </div>
               </div>
             </div>
           </div>
