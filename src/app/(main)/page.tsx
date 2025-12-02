@@ -2,11 +2,91 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { Camera, Wand2, FolderHeart, Images, ArrowRight, Lightbulb, Users, Sparkles } from "lucide-react"
+import { ArrowRight, FolderHeart, Images, Wand2, Users, Lightbulb, Smile, Move, Camera, Focus } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { useTranslation } from "@/stores/languageStore"
 import { UserMenu } from "@/components/shared/UserMenu"
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher"
+import { BeforeAfterSlider } from "@/components/shared/BeforeAfterSlider"
+
+// Feature card component with before-after slider
+function FeatureCard({
+  href,
+  beforeImage,
+  afterImage,
+  icon: Icon,
+  title,
+  subtitle,
+  height = 200,
+}: {
+  href: string
+  beforeImage: string
+  afterImage: string
+  icon: React.ElementType
+  title: string
+  subtitle: string
+  height?: number
+}) {
+  return (
+    <Link href={href} className="block">
+      <div className="relative rounded-2xl overflow-hidden shadow-sm">
+        <BeforeAfterSlider
+          beforeImage={beforeImage}
+          afterImage={afterImage}
+          height={height}
+        />
+        {/* Overlay with title */}
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-4 pt-12">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+              <Icon className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h3 className="font-bold text-white">{title}</h3>
+              <p className="text-white/70 text-xs">{subtitle}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Link>
+  )
+}
+
+// Pro feature card component
+function ProFeatureCard({
+  href,
+  beforeImage,
+  afterImage,
+  icon: Icon,
+  title,
+}: {
+  href: string
+  beforeImage: string
+  afterImage: string
+  icon: React.ElementType
+  title: string
+}) {
+  return (
+    <Link href={href} className="block">
+      <div className="relative rounded-2xl overflow-hidden shadow-sm">
+        <BeforeAfterSlider
+          beforeImage={beforeImage}
+          afterImage={afterImage}
+          height={180}
+        />
+        {/* Overlay with title */}
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-3 pt-8">
+          <div className="flex flex-col items-center gap-1">
+            <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+              <Icon className="w-5 h-5 text-white" />
+            </div>
+            <h3 className="font-semibold text-white text-sm">{title}</h3>
+          </div>
+        </div>
+      </div>
+    </Link>
+  )
+}
 
 export default function HomePage() {
   const { generations, _hasHydrated } = useAssetStore()
@@ -18,7 +98,7 @@ export default function HomePage() {
   return (
     <div className="min-h-full bg-zinc-50 pb-32">
       {/* Hero Section */}
-      <div className="bg-white px-6 pt-8 pb-10">
+      <div className="bg-white px-6 pt-8 pb-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <Image src="/logo.png" alt="Brand Camera" width={48} height={48} className="rounded-xl" />
@@ -38,115 +118,80 @@ export default function HomePage() {
         </p>
       </div>
       
-      {/* Feature Cards - Horizontal layout with before-after */}
-      <div className="px-4 -mt-4 space-y-3">
-        {/* 模特影棚 Card */}
-        <Link href="/camera" className="block">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-2xl p-4 flex items-center gap-3 relative overflow-hidden">
-            <div className="flex-1 z-10">
-              <div className="flex items-center gap-2 mb-2">
-                <Users className="w-5 h-5 text-blue-100" />
-                <h3 className="font-bold">{t.home.modelStudio}</h3>
-              </div>
-              <p className="text-blue-100 text-xs leading-relaxed">
-                {t.home.modelStudioDesc}
-              </p>
-            </div>
-            {/* Before-After Preview with real images */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              <div className="w-14 h-[72px] rounded-lg overflow-hidden border-2 border-blue-300/50 shadow-md">
-                <Image 
-                  src="/homepage/before.jpg" 
-                  alt="商品" 
-                  width={56} 
-                  height={72} 
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <ArrowRight className="w-4 h-4 text-blue-200" />
-              <div className="w-14 h-[72px] rounded-lg overflow-hidden border-2 border-white/50 shadow-md">
-                <Image 
-                  src="/homepage/after1.png" 
-                  alt="模特图1" 
-                  width={56} 
-                  height={72} 
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="w-14 h-[72px] rounded-lg overflow-hidden border-2 border-white/50 shadow-md">
-                <Image 
-                  src="/homepage/after2.png" 
-                  alt="模特图2" 
-                  width={56} 
-                  height={72} 
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
-          </div>
-        </Link>
+      {/* Main Feature Cards - 2 columns */}
+      <div className="px-4 mt-4">
+        <div className="grid grid-cols-2 gap-3">
+          {/* 模特影棚 */}
+          <FeatureCard
+            href="/camera"
+            beforeImage="/homepage/model-before.jpg"
+            afterImage="/homepage/model-after.jpg"
+            icon={Users}
+            title={t.home.modelStudio}
+            subtitle="AI真人穿拍"
+            height={240}
+          />
+          
+          {/* 商品影棚 */}
+          <FeatureCard
+            href="/studio"
+            beforeImage="/homepage/product-before.jpg"
+            afterImage="/homepage/product-after.jpg"
+            icon={Lightbulb}
+            title={t.home.productStudio}
+            subtitle="静物场景合成"
+            height={240}
+          />
+        </div>
+      </div>
+      
+      {/* AI 修图室 Section */}
+      <div className="px-4 mt-6">
+        <div className="flex items-center gap-2 mb-3">
+          <Wand2 className="w-5 h-5 text-purple-500" />
+          <h2 className="font-bold text-zinc-900">AI 修图室</h2>
+          <span className="px-2 py-0.5 bg-purple-100 text-purple-600 text-xs rounded-full font-medium">
+            专业版功能
+          </span>
+        </div>
         
-        {/* 商品影棚 Card */}
-        <Link href="/studio" className="block">
-          <div className="bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-2xl p-4 flex items-center gap-3 relative overflow-hidden">
-            <div className="flex-1 z-10">
-              <div className="flex items-center gap-2 mb-2">
-                <Lightbulb className="w-5 h-5 text-amber-100" />
-                <h3 className="font-bold">{t.home.productStudio}</h3>
-              </div>
-              <p className="text-amber-100 text-xs leading-relaxed">
-                {t.home.productStudioDesc}
-              </p>
-            </div>
-            {/* Before-After Preview */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              <div className="w-14 h-[72px] rounded-lg bg-amber-700/50 overflow-hidden flex items-center justify-center border-2 border-amber-300/50 shadow-md">
-                <div className="text-center">
-                  <div className="w-8 h-10 mx-auto bg-amber-200/30 rounded" />
-                  <span className="text-[9px] text-amber-100 mt-1 block">商品</span>
-                </div>
-              </div>
-              <ArrowRight className="w-4 h-4 text-amber-200" />
-              <div className="w-14 h-[72px] rounded-lg bg-amber-600/50 overflow-hidden flex items-center justify-center border-2 border-white/50 shadow-md">
-                <div className="text-center">
-                  <Sparkles className="w-6 h-6 mx-auto text-amber-100" />
-                  <span className="text-[9px] text-amber-100 mt-1 block">影棚照</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Link>
-        
-        {/* 修图室 Card */}
-        <Link href="/edit" className="block">
-          <div className="bg-gradient-to-br from-purple-500 to-purple-700 text-white rounded-2xl p-4 flex items-center gap-3 relative overflow-hidden">
-            <div className="flex-1 z-10">
-              <div className="flex items-center gap-2 mb-2">
-                <Wand2 className="w-5 h-5 text-purple-200" />
-                <h3 className="font-bold">{t.home.editRoom}</h3>
-              </div>
-              <p className="text-purple-200 text-xs leading-relaxed">
-                {t.home.editRoomDesc}
-              </p>
-            </div>
-            {/* Before-After Preview */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              <div className="w-14 h-[72px] rounded-lg bg-purple-800/50 overflow-hidden flex items-center justify-center border-2 border-purple-300/50 shadow-md">
-                <div className="text-center">
-                  <div className="w-8 h-10 mx-auto bg-purple-300/30 rounded" />
-                  <span className="text-[9px] text-purple-200 mt-1 block">原图</span>
-                </div>
-              </div>
-              <ArrowRight className="w-4 h-4 text-purple-300" />
-              <div className="w-14 h-[72px] rounded-lg bg-purple-600/50 overflow-hidden flex items-center justify-center border-2 border-white/50 shadow-md">
-                <div className="text-center">
-                  <Wand2 className="w-6 h-6 mx-auto text-purple-200" />
-                  <span className="text-[9px] text-purple-200 mt-1 block">修图后</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Link>
+        <div className="grid grid-cols-2 gap-3">
+          {/* 换模特风格 */}
+          <ProFeatureCard
+            href="/edit"
+            beforeImage="/homepage/style-before.jpg"
+            afterImage="/homepage/style-after.jpg"
+            icon={Users}
+            title="换模特风格"
+          />
+          
+          {/* 镜头控制 */}
+          <ProFeatureCard
+            href="/edit"
+            beforeImage="/homepage/lens-before.jpg"
+            afterImage="/homepage/lens-after.jpg"
+            icon={Focus}
+            title="镜头控制"
+          />
+          
+          {/* Pose控制 */}
+          <ProFeatureCard
+            href="/edit"
+            beforeImage="/homepage/pose-before.jpg"
+            afterImage="/homepage/pose-after.jpg"
+            icon={Move}
+            title="Pose控制"
+          />
+          
+          {/* 表情控制 */}
+          <ProFeatureCard
+            href="/edit"
+            beforeImage="/homepage/expression-before.jpg"
+            afterImage="/homepage/expression-after.jpg"
+            icon={Smile}
+            title="表情控制"
+          />
+        </div>
       </div>
       
       {/* Navigation Cards */}
