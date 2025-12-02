@@ -222,34 +222,56 @@ export async function GET(request: NextRequest) {
       
       // Get favorites for these generations
       const genIds = generations?.map(g => g.id) || []
-      const { data: favorites } = await supabase
-        .from('favorites')
-        .select('generation_id, image_index')
-        .in('generation_id', genIds)
+      let favByGen: Record<string, number[]> = {}
       
-      const favByGen: Record<string, number[]> = {}
-      favorites?.forEach(f => {
-        if (!favByGen[f.generation_id]) favByGen[f.generation_id] = []
-        favByGen[f.generation_id].push(f.image_index)
-      })
+      if (genIds.length > 0) {
+        const { data: favorites } = await supabase
+          .from('favorites')
+          .select('generation_id, image_index')
+          .in('generation_id', genIds)
+        
+        favorites?.forEach(f => {
+          if (!favByGen[f.generation_id]) favByGen[f.generation_id] = []
+          favByGen[f.generation_id].push(f.image_index)
+        })
+      }
       
-      const details = generations?.map(gen => ({
-        id: gen.id,
-        taskId: gen.task_id,
-        userEmail: gen.user_email || gen.user_id,
-        taskType: gen.task_type,
-        status: gen.status,
-        inputImageUrl: gen.input_image_url,
-        inputImage2Url: gen.input_image2_url,
-        modelImageUrl: gen.model_image_url,
-        backgroundImageUrl: gen.background_image_url,
-        outputImageUrls: gen.output_image_urls || [],
-        totalImages: gen.total_images_count || 0,
-        simpleCount: gen.simple_mode_count || 0,
-        extendedCount: gen.extended_mode_count || 0,
-        favoritedIndices: favByGen[gen.id] || [],
-        createdAt: gen.created_at,
-      }))
+      const details = generations?.map(gen => {
+        // Handle output images from different sources
+        let outputUrls: string[] = gen.output_image_urls || []
+        
+        // If output_image_urls is empty, try output_images (JSONB)
+        if (outputUrls.length === 0 && gen.output_images) {
+          if (Array.isArray(gen.output_images)) {
+            outputUrls = gen.output_images.map((img: any) => 
+              typeof img === 'string' ? img : img.url || img.image_url || ''
+            ).filter(Boolean)
+          }
+        }
+        
+        // Try to get input image from various sources
+        const inputUrl = gen.input_image_url || gen.input_images?.[0] || ''
+        
+        return {
+          id: gen.id,
+          taskId: gen.task_id,
+          userEmail: gen.user_email || gen.user_id,
+          taskType: gen.task_type,
+          status: gen.status,
+          inputImageUrl: inputUrl,
+          inputImage2Url: gen.input_image2_url,
+          modelImageUrl: gen.model_image_url,
+          backgroundImageUrl: gen.background_image_url,
+          outputImageUrls: outputUrls,
+          totalImages: gen.total_images_count || outputUrls.length || 0,
+          simpleCount: gen.simple_mode_count || 0,
+          extendedCount: gen.extended_mode_count || 0,
+          favoritedIndices: favByGen[gen.id] || [],
+          createdAt: gen.created_at,
+          // Include raw params for debugging
+          inputParams: gen.input_params,
+        }
+      })?.filter(d => d.inputImageUrl || d.outputImageUrls.length > 0) // Filter out empty tasks
       
       return NextResponse.json({ details })
     }

@@ -52,6 +52,7 @@ interface TaskDetail {
   extendedCount: number
   favoritedIndices: number[]
   createdAt: string
+  inputParams?: Record<string, any>
 }
 
 type TabType = "overview" | "by-type" | "by-user" | "details"
@@ -609,14 +610,25 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 
+                {/* Favorites Summary */}
+                {selectedTask.favoritedIndices.length > 0 && (
+                  <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
+                    <Heart className="w-5 h-5 text-red-500 fill-current" />
+                    <span className="text-sm text-red-700">
+                      {selectedTask.favoritedIndices.length} 张图片被收藏
+                      （第 {selectedTask.favoritedIndices.map(i => i + 1).join(', ')} 张）
+                    </span>
+                  </div>
+                )}
+                
                 {/* Input Images */}
                 <div>
                   <p className="text-sm font-medium text-zinc-700 mb-2">输入图片</p>
                   <div className="flex gap-2 flex-wrap">
-                    {selectedTask.inputImageUrl && (
+                    {(selectedTask.inputImageUrl || selectedTask.inputParams?.inputImage) && (
                       <div className="relative">
                         <Image 
-                          src={selectedTask.inputImageUrl} 
+                          src={selectedTask.inputImageUrl || selectedTask.inputParams?.inputImage} 
                           alt="Input" 
                           width={80} 
                           height={80} 
@@ -625,10 +637,10 @@ export default function AdminDashboard() {
                         <span className="absolute bottom-1 left-1 px-1 py-0.5 bg-black/50 text-white text-[8px] rounded">商品</span>
                       </div>
                     )}
-                    {selectedTask.modelImageUrl && (
+                    {(selectedTask.modelImageUrl || selectedTask.inputParams?.modelImage) && (
                       <div className="relative">
                         <Image 
-                          src={selectedTask.modelImageUrl} 
+                          src={selectedTask.modelImageUrl || selectedTask.inputParams?.modelImage} 
                           alt="Model" 
                           width={80} 
                           height={80} 
@@ -637,10 +649,10 @@ export default function AdminDashboard() {
                         <span className="absolute bottom-1 left-1 px-1 py-0.5 bg-black/50 text-white text-[8px] rounded">模特</span>
                       </div>
                     )}
-                    {selectedTask.backgroundImageUrl && (
+                    {(selectedTask.backgroundImageUrl || selectedTask.inputParams?.backgroundImage) && (
                       <div className="relative">
                         <Image 
-                          src={selectedTask.backgroundImageUrl} 
+                          src={selectedTask.backgroundImageUrl || selectedTask.inputParams?.backgroundImage} 
                           alt="Background" 
                           width={80} 
                           height={80} 
@@ -649,29 +661,39 @@ export default function AdminDashboard() {
                         <span className="absolute bottom-1 left-1 px-1 py-0.5 bg-black/50 text-white text-[8px] rounded">环境</span>
                       </div>
                     )}
+                    {/* Show message if no input images */}
+                    {!selectedTask.inputImageUrl && !selectedTask.inputParams?.inputImage && 
+                     !selectedTask.modelImageUrl && !selectedTask.inputParams?.modelImage &&
+                     !selectedTask.backgroundImageUrl && !selectedTask.inputParams?.backgroundImage && (
+                      <p className="text-sm text-zinc-400">无输入图片记录</p>
+                    )}
                   </div>
                 </div>
                 
                 {/* Output Images */}
                 <div>
                   <p className="text-sm font-medium text-zinc-700 mb-2">输出图片 ({selectedTask.outputImageUrls.length})</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {selectedTask.outputImageUrls.map((url, i) => (
-                      <div key={i} className="relative aspect-[4/5] bg-zinc-100 rounded-lg overflow-hidden">
-                        <Image 
-                          src={url} 
-                          alt={`Output ${i + 1}`} 
-                          fill 
-                          className="object-cover"
-                        />
-                        {selectedTask.favoritedIndices.includes(i) && (
-                          <div className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
-                            <Heart className="w-3 h-3 text-white fill-current" />
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                  {selectedTask.outputImageUrls.length > 0 ? (
+                    <div className="grid grid-cols-3 gap-2">
+                      {selectedTask.outputImageUrls.map((url, i) => (
+                        <div key={i} className="relative aspect-[4/5] bg-zinc-100 rounded-lg overflow-hidden">
+                          <Image 
+                            src={url} 
+                            alt={`Output ${i + 1}`} 
+                            fill 
+                            className="object-cover"
+                          />
+                          {selectedTask.favoritedIndices.includes(i) && (
+                            <div className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                              <Heart className="w-3 h-3 text-white fill-current" />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-zinc-400">无输出图片记录</p>
+                  )}
                 </div>
               </div>
             </motion.div>
