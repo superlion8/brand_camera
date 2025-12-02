@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Also add users with custom quotas but no generations
-    for (const [userId, quota] of customQuotaMap) {
+    Array.from(customQuotaMap.entries()).forEach(([userId, quota]) => {
       if (!userStats.has(userId)) {
         userStats.set(userId, {
           userId,
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
           lastActivity: quota.updated_at,
         })
       }
-    }
+    })
     
     // Format response
     const quotas = Array.from(userStats.values())
