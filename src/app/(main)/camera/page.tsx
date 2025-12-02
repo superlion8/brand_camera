@@ -385,6 +385,7 @@ export default function CameraPage() {
             fetch("/api/generate-single", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
+              credentials: 'include', // Ensure cookies are sent
               body: JSON.stringify({ ...basePayload, type: 'model', index, simpleMode }),
             }).then(resolve).catch(reject)
           }, delayMs)

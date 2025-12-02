@@ -281,6 +281,7 @@ export default function StudioPage() {
             fetch("/api/generate-studio", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
+              credentials: 'include', // Ensure cookies are sent
               body: JSON.stringify({ ...basePayload, index }),
             }).then(resolve).catch(reject)
           }, delayMs)
