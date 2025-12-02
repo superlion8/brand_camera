@@ -9,8 +9,8 @@ interface BeforeAfterSliderProps {
   className?: string
   height?: number
   autoPlay?: boolean
-  autoPlayDuration?: number // Duration for one direction in ms
-  pauseDuration?: number // Pause at each end in ms
+  autoPlayDuration?: number // Duration for one complete cycle in ms
+  pauseDuration?: number // Pause at end before restarting
 }
 
 export function BeforeAfterSlider({
@@ -19,23 +19,19 @@ export function BeforeAfterSlider({
   className = "",
   height = 200,
   autoPlay = true,
-  autoPlayDuration = 4500, // 3x slower (was 1500 per direction)
-  pauseDuration = 1000, // 1 second pause at ends
+  autoPlayDuration = 4500, // Time to go from 0% to 100%
+  pauseDuration = 1000, // Pause at 100% before jumping back to 0%
 }: BeforeAfterSliderProps) {
-  const [sliderPosition, setSliderPosition] = useState(50)
-  const [isAutoPlaying, setIsAutoPlaying] = useState(autoPlay)
+  const [position, setPosition] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
-  const isDragging = useRef(false)
   const animationRef = useRef<number | null>(null)
-  const directionRef = useRef<'forward' | 'backward'>('forward')
   const isPausedRef = useRef(false)
-  const pauseTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const resumeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const lastTimeRef = useRef<number | null>(null)
-  const currentPositionRef = useRef(50)
+  const currentPositionRef = useRef(0)
 
   const animate = useCallback((timestamp: number) => {
     if (isPausedRef.current) {
+      lastTimeRef.current = null
       animationRef.current = requestAnimationFrame(animate)
       return
     }
@@ -47,48 +43,39 @@ export function BeforeAfterSlider({
     const deltaTime = timestamp - lastTimeRef.current
     lastTimeRef.current = timestamp
     
-    // Calculate speed: move from 15% to 85% over autoPlayDuration
-    const range = 70 // 85 - 15
-    const speed = range / autoPlayDuration // percent per ms
+    // Calculate speed: move from 0% to 100% over autoPlayDuration
+    const speed = 100 / autoPlayDuration // percent per ms
     
-    let newPosition = currentPositionRef.current
+    let newPosition = currentPositionRef.current + speed * deltaTime
     
-    if (directionRef.current === 'forward') {
-      newPosition += speed * deltaTime
-      if (newPosition >= 85) {
-        newPosition = 85
-        directionRef.current = 'backward'
-        isPausedRef.current = true
-        // Pause at right end
-        setTimeout(() => {
-          isPausedRef.current = false
-        }, pauseDuration)
-      }
+    if (newPosition >= 100) {
+      newPosition = 100
+      setPosition(100)
+      currentPositionRef.current = 100
+      
+      // Pause at end, then jump back to start
+      isPausedRef.current = true
+      setTimeout(() => {
+        currentPositionRef.current = 0
+        setPosition(0)
+        isPausedRef.current = false
+      }, pauseDuration)
     } else {
-      newPosition -= speed * deltaTime
-      if (newPosition <= 15) {
-        newPosition = 15
-        directionRef.current = 'forward'
-        isPausedRef.current = true
-        // Pause at left end
-        setTimeout(() => {
-          isPausedRef.current = false
-        }, pauseDuration)
-      }
+      currentPositionRef.current = newPosition
+      setPosition(newPosition)
     }
     
-    currentPositionRef.current = newPosition
-    setSliderPosition(newPosition)
-    
-    if (isAutoPlaying && !isDragging.current) {
+    if (autoPlay) {
       animationRef.current = requestAnimationFrame(animate)
     }
-  }, [isAutoPlaying, autoPlayDuration, pauseDuration])
+  }, [autoPlay, autoPlayDuration, pauseDuration])
 
-  // Start/stop auto-play
+  // Start auto-play
   useEffect(() => {
-    if (isAutoPlaying && !isDragging.current) {
+    if (autoPlay) {
       lastTimeRef.current = null
+      currentPositionRef.current = 0
+      setPosition(0)
       animationRef.current = requestAnimationFrame(animate)
     }
     
@@ -97,84 +84,7 @@ export function BeforeAfterSlider({
         cancelAnimationFrame(animationRef.current)
       }
     }
-  }, [isAutoPlaying, animate])
-
-  const stopAutoPlay = useCallback(() => {
-    setIsAutoPlaying(false)
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current)
-      animationRef.current = null
-    }
-    if (pauseTimeoutRef.current) {
-      clearTimeout(pauseTimeoutRef.current)
-    }
-    if (resumeTimeoutRef.current) {
-      clearTimeout(resumeTimeoutRef.current)
-    }
-  }, [])
-
-  const resumeAutoPlay = useCallback(() => {
-    if (autoPlay) {
-      // Resume after 3 seconds of inactivity
-      resumeTimeoutRef.current = setTimeout(() => {
-        lastTimeRef.current = null
-        currentPositionRef.current = sliderPosition
-        // Determine direction based on current position
-        directionRef.current = sliderPosition > 50 ? 'backward' : 'forward'
-        setIsAutoPlaying(true)
-      }, 3000)
-    }
-  }, [autoPlay, sliderPosition])
-
-  const handleMove = useCallback((clientX: number) => {
-    if (!containerRef.current) return
-    
-    const rect = containerRef.current.getBoundingClientRect()
-    const x = clientX - rect.left
-    const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100))
-    setSliderPosition(percentage)
-    currentPositionRef.current = percentage
-  }, [])
-
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    isDragging.current = true
-    stopAutoPlay()
-    handleMove(e.clientX)
-  }, [handleMove, stopAutoPlay])
-
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isDragging.current) return
-    handleMove(e.clientX)
-  }, [handleMove])
-
-  const handleMouseUp = useCallback(() => {
-    isDragging.current = false
-    resumeAutoPlay()
-  }, [resumeAutoPlay])
-
-  const handleMouseLeave = useCallback(() => {
-    if (isDragging.current) {
-      isDragging.current = false
-      resumeAutoPlay()
-    }
-  }, [resumeAutoPlay])
-
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    isDragging.current = true
-    stopAutoPlay()
-    handleMove(e.touches[0].clientX)
-  }, [handleMove, stopAutoPlay])
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isDragging.current) return
-    handleMove(e.touches[0].clientX)
-  }, [handleMove])
-
-  const handleTouchEnd = useCallback(() => {
-    isDragging.current = false
-    resumeAutoPlay()
-  }, [resumeAutoPlay])
+  }, [autoPlay, animate])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -182,27 +92,14 @@ export function BeforeAfterSlider({
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current)
       }
-      if (pauseTimeoutRef.current) {
-        clearTimeout(pauseTimeoutRef.current)
-      }
-      if (resumeTimeoutRef.current) {
-        clearTimeout(resumeTimeoutRef.current)
-      }
     }
   }, [])
 
   return (
     <div
       ref={containerRef}
-      className={`relative overflow-hidden select-none cursor-ew-resize ${className || 'rounded-2xl'}`}
+      className={`relative overflow-hidden select-none ${className || 'rounded-2xl'}`}
       style={{ height }}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseLeave}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
     >
       {/* After Image (Background - full image) */}
       <div className="absolute inset-0">
@@ -215,13 +112,10 @@ export function BeforeAfterSlider({
         />
       </div>
 
-      {/* Before Image (Clipped from left - shows on right side of slider) */}
-      {/* clipPath inset(top right bottom left) - clip from left by sliderPosition% */}
-      {/* When slider at 85% (right), clip 85% from left = show 15% of Before on right */}
-      {/* When slider at 15% (left), clip 15% from left = show 85% of Before on right */}
+      {/* Before Image (Clipped from left - shows on right side) */}
       <div
         className="absolute inset-0 overflow-hidden"
-        style={{ clipPath: `inset(0 0 0 ${sliderPosition}%)` }}
+        style={{ clipPath: `inset(0 0 0 ${position}%)` }}
       >
         <Image
           src={beforeImage}
@@ -230,20 +124,6 @@ export function BeforeAfterSlider({
           className="object-cover"
           draggable={false}
         />
-      </div>
-
-      {/* Slider Handle */}
-      <div
-        className="absolute top-0 bottom-0 w-0.5 bg-white shadow-lg z-10"
-        style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
-      >
-        {/* Handle Circle */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full shadow-lg flex items-center justify-center">
-          <div className="flex items-center gap-0.5">
-            <div className="w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent border-r-[4px] border-r-zinc-400" />
-            <div className="w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent border-l-[4px] border-l-zinc-400" />
-          </div>
-        </div>
       </div>
     </div>
   )
