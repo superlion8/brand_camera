@@ -612,32 +612,32 @@ export interface SyncData {
   pinnedPresetIds: Set<string>
 }
 
-// Helper function to add timeout to promises
-function withTimeout<T>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((resolve) => {
-      setTimeout(() => {
-        console.warn(`[Sync] Request timed out after ${timeoutMs}ms`)
-        resolve(fallback)
-      }, timeoutMs)
-    })
-  ])
-}
-
 export async function syncAllData(userId: string): Promise<SyncData> {
   console.log('[Sync] Starting sync for user:', userId)
   const startTime = Date.now()
   
-  // Add 30 second timeout for each request (increased from 5s to handle slow connections)
-  const TIMEOUT_MS = 30000
-  
+  // Fetch sequentially to avoid connection issues (more reliable than parallel)
   try {
-    const [assets, generations, favorites, pinnedPresetIds] = await Promise.all([
-      withTimeout(fetchUserAssets(userId), TIMEOUT_MS, { models: [], backgrounds: [], products: [], vibes: [] }),
-      withTimeout(fetchGenerations(userId), TIMEOUT_MS, []),
-      withTimeout(fetchFavorites(userId), TIMEOUT_MS, []),
-      withTimeout(fetchPinnedPresets(userId), TIMEOUT_MS, new Set<string>()),
+    // Fetch generations first (most important)
+    console.log('[Sync] Fetching generations...')
+    const generations = await fetchGenerations(userId)
+    console.log('[Sync] Generations fetched:', generations.length)
+    
+    // Then fetch other data
+    console.log('[Sync] Fetching other data...')
+    const [assets, favorites, pinnedPresetIds] = await Promise.all([
+      fetchUserAssets(userId).catch(e => {
+        console.error('[Sync] fetchUserAssets error:', e)
+        return { models: [], backgrounds: [], products: [], vibes: [] }
+      }),
+      fetchFavorites(userId).catch(e => {
+        console.error('[Sync] fetchFavorites error:', e)
+        return []
+      }),
+      fetchPinnedPresets(userId).catch(e => {
+        console.error('[Sync] fetchPinnedPresets error:', e)
+        return new Set<string>()
+      }),
     ])
 
     const duration = Date.now() - startTime
