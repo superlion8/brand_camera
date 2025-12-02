@@ -659,7 +659,7 @@ function GeneratingCard({ task }: { task: GenerationTask }) {
     ? 'AI 正在生成 2 张商品图' 
     : isEdit 
       ? 'AI 正在处理您的图片'
-      : 'AI 正在生成 4 张模特图'
+      : 'AI 正在生成 6 张模特图'
   
   const badgeText = isStudio 
     ? '商品影棚' 
