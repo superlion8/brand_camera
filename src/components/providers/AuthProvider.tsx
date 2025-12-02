@@ -1,10 +1,9 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, useRef } from "react"
+import { createContext, useContext, useEffect, useState, useRef, useCallback } from "react"
 import { User, Session } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
-import { useAssetStore } from "@/stores/assetStore"
 
 interface AuthContextType {
   user: User | null
@@ -31,28 +30,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
   const syncedUserIdRef = useRef<string | null>(null)
 
-  // Get store actions
-  const syncWithCloud = useAssetStore(state => state.syncWithCloud)
-  const clearUserData = useAssetStore(state => state.clearUserData)
-  const setCurrentUserId = useAssetStore(state => state.setCurrentUserId)
+  // Sync with cloud - import store dynamically to avoid hydration issues
+  const syncWithCloud = useCallback(async (userId: string) => {
+    try {
+      const { useAssetStore } = await import("@/stores/assetStore")
+      const store = useAssetStore.getState()
+      await store.syncWithCloud(userId)
+    } catch (error) {
+      console.error("[Auth] Sync error:", error)
+    }
+  }, [])
+
+  // Clear user data
+  const clearUserData = useCallback(() => {
+    try {
+      const { useAssetStore } = require("@/stores/assetStore")
+      const store = useAssetStore.getState()
+      store.clearUserData()
+    } catch (error) {
+      console.error("[Auth] Clear data error:", error)
+    }
+  }, [])
 
   useEffect(() => {
     // Get initial session
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setSession(session)
-      setUser(session?.user ?? null)
-      setIsLoading(false)
-      
-      // Sync data if user is logged in
-      if (session?.user && syncedUserIdRef.current !== session.user.id) {
-        syncedUserIdRef.current = session.user.id
-        setIsSyncing(true)
-        try {
-          await syncWithCloud(session.user.id)
-        } finally {
-          setIsSyncing(false)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        setSession(session)
+        setUser(session?.user ?? null)
+        setIsLoading(false)
+        
+        // Sync data if user is logged in
+        if (session?.user && syncedUserIdRef.current !== session.user.id) {
+          syncedUserIdRef.current = session.user.id
+          setIsSyncing(true)
+          try {
+            await syncWithCloud(session.user.id)
+          } finally {
+            setIsSyncing(false)
+          }
         }
+      } catch (error) {
+        console.error("[Auth] Get session error:", error)
+        setIsLoading(false)
       }
     }
 
@@ -88,14 +109,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe()
     }
-  }, [supabase, router, syncWithCloud, clearUserData, setCurrentUserId])
+  }, [supabase, router, syncWithCloud, clearUserData])
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     syncedUserIdRef.current = null
     clearUserData()
     await supabase.auth.signOut()
     router.push("/login")
-  }
+  }, [supabase, router, clearUserData])
 
   return (
     <AuthContext.Provider value={{ user, session, isLoading, isSyncing, signOut }}>

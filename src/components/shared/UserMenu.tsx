@@ -11,9 +11,11 @@ import { motion, AnimatePresence } from "framer-motion"
 
 export function UserMenu() {
   const { user, signOut, isLoading, isSyncing } = useAuth()
-  const { isSyncing: storeSyncing, lastSyncAt } = useAssetStore()
+  const storeSyncing = useAssetStore(state => state.isSyncing)
+  const lastSyncAt = useAssetStore(state => state.lastSyncAt)
   const { t } = useTranslation()
-  const { debugMode, toggleDebugMode } = useSettingsStore()
+  const debugMode = useSettingsStore(state => state.debugMode)
+  const toggleDebugMode = useSettingsStore(state => state.toggleDebugMode)
   const [isOpen, setIsOpen] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
