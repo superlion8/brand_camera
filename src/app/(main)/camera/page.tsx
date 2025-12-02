@@ -355,8 +355,12 @@ export default function CameraPage() {
       console.log("Model base64 ready:", !!modelBase64, modelBase64 ? modelBase64.substring(0, 30) + "..." : "null")
       console.log("Background base64 ready:", !!bgBase64)
       
-      // Fire 6 independent requests with 1s stagger to avoid rate limits
-      console.log("Sending 6 staggered generation requests (1s apart)...")
+      // DEBUG MODE: 2 images (1 simple + 1 extended) for faster debugging
+      // TODO: Change back to 6 images (3 simple + 3 extended) for production
+      const NUM_IMAGES = 2 // Change to 6 for production
+      const NUM_SIMPLE = 1 // Change to 3 for production
+      
+      console.log(`Sending ${NUM_IMAGES} staggered generation requests (1s apart)...`)
       
       const basePayload = {
         productImage: compressedProduct,
@@ -387,26 +391,23 @@ export default function CameraPage() {
         })
       }
       
-      // Create 6 model image requests:
-      // Index 0, 1, 2: 极简模式 (simple mode) - only if model and background are selected, otherwise extended
-      // Index 3, 4, 5: 扩展模式 (extended mode)
-      const requests = [
-        createModelRequest(0, 0, canUseSimpleMode),                    // Model 1: 极简模式 (if available)
-        createModelRequest(1, staggerDelay, canUseSimpleMode),         // Model 2: 极简模式 (if available)
-        createModelRequest(2, staggerDelay * 2, canUseSimpleMode),     // Model 3: 极简模式 (if available)
-        createModelRequest(3, staggerDelay * 3, false),                // Model 4: 扩展模式
-        createModelRequest(4, staggerDelay * 4, false),                // Model 5: 扩展模式
-        createModelRequest(5, staggerDelay * 5, false),                // Model 6: 扩展模式
-      ]
+      // Create model image requests:
+      // First NUM_SIMPLE: 极简模式 (simple mode) - only if model and background are selected
+      // Rest: 扩展模式 (extended mode)
+      const requests = []
+      for (let i = 0; i < NUM_IMAGES; i++) {
+        const isSimple = i < NUM_SIMPLE && canUseSimpleMode
+        requests.push(createModelRequest(i, staggerDelay * i, isSimple))
+      }
       
       // Wait for all to complete (don't fail if some fail)
       const responses = await Promise.allSettled(requests)
       
-      // Process results - all 6 are model images
-      const allImages: (string | null)[] = [null, null, null, null, null, null]
-      const allModelTypes: (('pro' | 'flash') | null)[] = [null, null, null, null, null, null]
-      const allPrompts: (string | null)[] = [null, null, null, null, null, null]
-      const allGenModes: (('extended' | 'simple') | null)[] = [null, null, null, null, null, null]
+      // Process results - all are model images
+      const allImages: (string | null)[] = Array(NUM_IMAGES).fill(null)
+      const allModelTypes: (('pro' | 'flash') | null)[] = Array(NUM_IMAGES).fill(null)
+      const allPrompts: (string | null)[] = Array(NUM_IMAGES).fill(null)
+      const allGenModes: (('extended' | 'simple') | null)[] = Array(NUM_IMAGES).fill(null)
       let maxDuration = 0
       
       for (let i = 0; i < responses.length; i++) {
@@ -423,9 +424,9 @@ export default function CameraPage() {
             
             const result = await httpResponse.json()
             if (result.success && result.image) {
-              // Direct mapping: index 0-5 maps to positions 0-5
+              // Direct mapping: index maps to position
               const targetIndex = result.index
-              if (targetIndex !== undefined && targetIndex >= 0 && targetIndex < 6) {
+              if (targetIndex !== undefined && targetIndex >= 0 && targetIndex < NUM_IMAGES) {
                 allImages[targetIndex] = result.image
                 allModelTypes[targetIndex] = result.modelType
                 allPrompts[targetIndex] = result.prompt || null
@@ -463,7 +464,7 @@ export default function CameraPage() {
         genModes: finalGenModes, // Track generation modes
         prompts: finalPrompts, // Per-image prompts
         stats: {
-          total: 6,
+          total: NUM_IMAGES,
           successful: finalImages.length,
           duration: maxDuration,
         }
