@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import { Asset, AssetType, Generation, Collection, Favorite } from '@/types'
 import { indexedDBStorage, dbPut, dbGet, dbGetAll, dbDelete, STORES, saveImage } from '@/lib/indexeddb'
 import { generateId } from '@/lib/utils'
+import * as syncService from '@/lib/supabase/syncService'
 
 interface AssetState {
   // System presets
@@ -26,6 +27,11 @@ interface AssetState {
   collections: Collection[]
   favorites: Favorite[]
   
+  // Sync status
+  isSyncing: boolean
+  lastSyncAt: string | null
+  currentUserId: string | null
+  
   // Hydration status
   _hasHydrated: boolean
   setHasHydrated: (state: boolean) => void
@@ -40,11 +46,11 @@ interface AssetState {
   setUserVibes: (vibes: Asset[]) => void
   
   // Add single asset
-  addUserAsset: (asset: Asset) => void
+  addUserAsset: (asset: Asset) => Promise<void>
   
   // Pin actions
-  togglePin: (type: AssetType, id: string) => void
-  togglePresetPin: (id: string) => void
+  togglePin: (type: AssetType, id: string) => Promise<void>
+  togglePresetPin: (id: string) => Promise<void>
   isPresetPinned: (id: string) => boolean
   
   // Generation actions with IndexedDB persistence
@@ -65,6 +71,11 @@ interface AssetState {
   
   // Load data from IndexedDB on init
   loadFromDB: () => Promise<void>
+  
+  // Cloud sync
+  setCurrentUserId: (userId: string | null) => void
+  syncWithCloud: (userId: string) => Promise<void>
+  clearUserData: () => void
 }
 
 export const useAssetStore = create<AssetState>()(
@@ -81,6 +92,9 @@ export const useAssetStore = create<AssetState>()(
       generations: [],
       collections: [],
       favorites: [],
+      isSyncing: false,
+      lastSyncAt: null,
+      currentUserId: null,
       
       _hasHydrated: false,
       setHasHydrated: (state) => set({ _hasHydrated: state }),
@@ -93,8 +107,14 @@ export const useAssetStore = create<AssetState>()(
       setUserProducts: (products) => set({ userProducts: products }),
       setUserVibes: (vibes) => set({ userVibes: vibes }),
       
+      // Set current user ID
+      setCurrentUserId: (userId) => set({ currentUserId: userId }),
+      
       // Add single asset to appropriate collection
-      addUserAsset: (asset) => {
+      addUserAsset: async (asset) => {
+        const { currentUserId } = get()
+        
+        // Update local state
         switch (asset.type) {
           case 'model':
             set((state) => ({ userModels: [asset, ...state.userModels] }))
@@ -109,12 +129,26 @@ export const useAssetStore = create<AssetState>()(
             set((state) => ({ userVibes: [asset, ...state.userVibes] }))
             break
         }
+        
+        // Sync to cloud if logged in
+        if (currentUserId) {
+          await syncService.saveUserAsset(currentUserId, asset)
+        }
       },
       
       // Toggle pin for user assets
-      togglePin: (type, id) => {
+      togglePin: async (type, id) => {
+        const { currentUserId } = get()
+        let newPinState = false
+        
         const updateAssets = (assets: Asset[]) =>
-          assets.map(a => a.id === id ? { ...a, isPinned: !a.isPinned } : a)
+          assets.map(a => {
+            if (a.id === id) {
+              newPinState = !a.isPinned
+              return { ...a, isPinned: newPinState }
+            }
+            return a
+          })
         
         switch (type) {
           case "model":
@@ -130,10 +164,18 @@ export const useAssetStore = create<AssetState>()(
             set((state) => ({ userVibes: updateAssets(state.userVibes) }))
             break
         }
+        
+        // Sync to cloud if logged in
+        if (currentUserId) {
+          await syncService.updateUserAssetPin(currentUserId, id, newPinState)
+        }
       },
       
       // Toggle pin for preset assets
-      togglePresetPin: (id) => {
+      togglePresetPin: async (id) => {
+        const { currentUserId, pinnedPresetIds } = get()
+        const wasPinned = pinnedPresetIds.has(id)
+        
         set((state) => {
           const newPinnedIds = new Set(state.pinnedPresetIds)
           if (newPinnedIds.has(id)) {
@@ -143,6 +185,11 @@ export const useAssetStore = create<AssetState>()(
           }
           return { pinnedPresetIds: newPinnedIds }
         })
+        
+        // Sync to cloud if logged in
+        if (currentUserId) {
+          await syncService.togglePinnedPreset(currentUserId, id, !wasPinned)
+        }
       },
       
       // Check if preset is pinned
@@ -150,9 +197,11 @@ export const useAssetStore = create<AssetState>()(
         return get().pinnedPresetIds.has(id)
       },
       
-      // Generation with IndexedDB
+      // Generation with IndexedDB and cloud sync
       addGeneration: async (generation) => {
-        // Save images to IndexedDB
+        const { currentUserId } = get()
+        
+        // Save images to IndexedDB (for offline/local cache)
         const savedOutputUrls: string[] = []
         for (let i = 0; i < generation.outputImageUrls.length; i++) {
           const imageId = `${generation.id}_output_${i}`
@@ -175,15 +224,27 @@ export const useAssetStore = create<AssetState>()(
         set((state) => ({ 
           generations: [generation, ...state.generations] 
         }))
+        
+        // Sync to cloud if logged in
+        if (currentUserId) {
+          await syncService.saveGeneration(currentUserId, generation)
+        }
       },
       
       setGenerations: (generations) => set({ generations }),
       
       deleteGeneration: async (id) => {
+        const { currentUserId } = get()
+        
         await dbDelete(STORES.GENERATIONS, id)
         set((state) => ({
           generations: state.generations.filter(g => g.id !== id)
         }))
+        
+        // Sync to cloud if logged in
+        if (currentUserId) {
+          await syncService.deleteGeneration(currentUserId, id)
+        }
       },
       
       addCollection: (collection) => set((state) => ({
@@ -196,8 +257,10 @@ export const useAssetStore = create<AssetState>()(
         collections: state.collections.filter(c => c.id !== id)
       })),
       
-      // Favorite with IndexedDB
+      // Favorite with IndexedDB and cloud sync
       addFavorite: async (favoriteData) => {
+        const { currentUserId } = get()
+        
         const favorite: Favorite = {
           ...favoriteData,
           id: generateId(),
@@ -210,13 +273,25 @@ export const useAssetStore = create<AssetState>()(
         set((state) => ({
           favorites: [...state.favorites, favorite]
         }))
+        
+        // Sync to cloud if logged in
+        if (currentUserId) {
+          await syncService.saveFavorite(currentUserId, favorite)
+        }
       },
       
       removeFavorite: async (id) => {
+        const { currentUserId } = get()
+        
         await dbDelete(STORES.FAVORITES, id)
         set((state) => ({
           favorites: state.favorites.filter(f => f.id !== id)
         }))
+        
+        // Sync to cloud if logged in
+        if (currentUserId) {
+          await syncService.deleteFavorite(currentUserId, id)
+        }
       },
       
       setFavorites: (favorites) => set({ favorites }),
@@ -251,6 +326,56 @@ export const useAssetStore = create<AssetState>()(
           console.error('Error loading from IndexedDB:', error)
         }
       },
+      
+      // Sync with cloud - fetch all data from Supabase
+      syncWithCloud: async (userId) => {
+        set({ isSyncing: true, currentUserId: userId })
+        
+        try {
+          console.log('[Sync] Starting cloud sync for user:', userId)
+          const cloudData = await syncService.syncAllData(userId)
+          
+          // Merge cloud data with local data
+          // Cloud data takes precedence for logged-in users
+          set({
+            userModels: cloudData.userModels,
+            userBackgrounds: cloudData.userBackgrounds,
+            userProducts: cloudData.userProducts,
+            userVibes: cloudData.userVibes,
+            generations: cloudData.generations,
+            favorites: cloudData.favorites,
+            pinnedPresetIds: cloudData.pinnedPresetIds,
+            lastSyncAt: new Date().toISOString(),
+            isSyncing: false,
+          })
+          
+          console.log('[Sync] Cloud sync completed:', {
+            models: cloudData.userModels.length,
+            backgrounds: cloudData.userBackgrounds.length,
+            products: cloudData.userProducts.length,
+            generations: cloudData.generations.length,
+            favorites: cloudData.favorites.length,
+          })
+        } catch (error) {
+          console.error('[Sync] Cloud sync failed:', error)
+          set({ isSyncing: false })
+        }
+      },
+      
+      // Clear user data when logging out
+      clearUserData: () => {
+        set({
+          userModels: [],
+          userBackgrounds: [],
+          userProducts: [],
+          userVibes: [],
+          generations: [],
+          favorites: [],
+          pinnedPresetIds: new Set(),
+          currentUserId: null,
+          lastSyncAt: null,
+        })
+      },
     }),
     {
       name: 'asset-storage',
@@ -261,6 +386,8 @@ export const useAssetStore = create<AssetState>()(
         userProducts: state.userProducts,
         userVibes: state.userVibes,
         collections: state.collections,
+        currentUserId: state.currentUserId,
+        lastSyncAt: state.lastSyncAt,
         // Convert Set to Array for JSON serialization
         pinnedPresetIds: Array.from(state.pinnedPresetIds),
       }),

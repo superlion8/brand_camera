@@ -4,11 +4,13 @@ import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useSettingsStore } from "@/stores/settingsStore"
-import { LogOut, Settings, ChevronDown, X, Bug } from "lucide-react"
+import { useAssetStore } from "@/stores/assetStore"
+import { LogOut, Settings, ChevronDown, X, Bug, Cloud, RefreshCw } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
 export function UserMenu() {
-  const { user, signOut, isLoading } = useAuth()
+  const { user, signOut, isLoading, isSyncing } = useAuth()
+  const { isSyncing: storeSyncing, lastSyncAt } = useAssetStore()
   const { debugMode, toggleDebugMode } = useSettingsStore()
   const [isOpen, setIsOpen] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -83,6 +85,20 @@ export function UserMenu() {
                   <p className="font-medium text-zinc-900 truncate">{displayName}</p>
                   <p className="text-xs text-zinc-500 truncate">{user.email}</p>
                 </div>
+              </div>
+              {/* Sync Status */}
+              <div className="mt-3 flex items-center gap-2 text-xs">
+                {(isSyncing || storeSyncing) ? (
+                  <span className="flex items-center gap-1.5 text-blue-600">
+                    <RefreshCw className="w-3 h-3 animate-spin" />
+                    同步中...
+                  </span>
+                ) : lastSyncAt ? (
+                  <span className="flex items-center gap-1.5 text-green-600">
+                    <Cloud className="w-3 h-3" />
+                    已同步
+                  </span>
+                ) : null}
               </div>
             </div>
 
