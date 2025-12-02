@@ -37,25 +37,19 @@ export async function updateSession(request: NextRequest) {
       error,
     } = await supabase.auth.getUser()
 
-    // If there's an error getting user, don't block - let client handle it
-    if (error) {
-      console.warn('[Middleware] Auth error:', error.message)
-      return supabaseResponse
-    }
-
     // Protected routes - redirect to login if not authenticated
-    // Only redirect for initial page loads, not for client-side navigation
     const protectedPaths = ['/camera', '/edit', '/gallery', '/brand-assets', '/studio']
     const isProtectedPath = protectedPaths.some(path => 
       request.nextUrl.pathname.startsWith(path)
     )
 
-    // Check if this is an initial load or client navigation
-    // Client navigation typically has a Referer header from the same origin
-    const referer = request.headers.get('referer')
-    const isClientNavigation = referer && referer.includes(request.nextUrl.origin)
-
-    if (!user && isProtectedPath && !isClientNavigation) {
+    // Always protect these routes - redirect to login if no user
+    if (!user && isProtectedPath) {
+      // Log for debugging
+      if (error) {
+        console.warn('[Middleware] Auth error on protected route:', error.message)
+      }
+      
       const url = request.nextUrl.clone()
       url.pathname = '/login'
       url.searchParams.set('redirect', request.nextUrl.pathname)
@@ -66,7 +60,12 @@ export async function updateSession(request: NextRequest) {
     if (user && request.nextUrl.pathname === '/login') {
       const redirect = request.nextUrl.searchParams.get('redirect')
       const url = request.nextUrl.clone()
-      url.pathname = redirect && redirect.startsWith('/') ? redirect : '/'
+      // Validate redirect URL to prevent open redirect
+      if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
+        url.pathname = redirect
+      } else {
+        url.pathname = '/'
+      }
       url.searchParams.delete('redirect')
       return NextResponse.redirect(url)
     }
@@ -74,7 +73,19 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse
   } catch (e) {
     console.error('[Middleware] Error:', e)
-    // On error, don't block - let the page load and handle auth client-side
+    // On error with protected route, redirect to login
+    const protectedPaths = ['/camera', '/edit', '/gallery', '/brand-assets', '/studio']
+    const isProtectedPath = protectedPaths.some(path => 
+      request.nextUrl.pathname.startsWith(path)
+    )
+    
+    if (isProtectedPath) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      url.searchParams.set('redirect', request.nextUrl.pathname)
+      return NextResponse.redirect(url)
+    }
+    
     return supabaseResponse
   }
 }
