@@ -609,36 +609,74 @@ export interface SyncData {
   pinnedPresetIds: Set<string>
 }
 
+// Add timeout wrapper for individual requests
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, fallback: T, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => {
+      setTimeout(() => {
+        console.warn(`[Sync] ${label} timed out after ${timeoutMs}ms`)
+        resolve(fallback)
+      }, timeoutMs)
+    })
+  ])
+}
+
 export async function syncAllData(userId: string): Promise<SyncData> {
   console.log('[Sync] Starting sync for user:', userId)
   const startTime = Date.now()
   
-  // Fetch sequentially to avoid connection issues (more reliable than parallel)
+  // 60 second timeout for each request
+  const TIMEOUT_MS = 60000
+  
+  // Fetch all data in parallel with individual error handling and timeouts
   try {
-    // Fetch generations first (most important)
-    console.log('[Sync] Fetching generations...')
-    const generations = await fetchGenerations(userId)
-    console.log('[Sync] Generations fetched:', generations.length)
-    
-    // Then fetch other data
-    console.log('[Sync] Fetching other data...')
-    const [assets, favorites, pinnedPresetIds] = await Promise.all([
-      fetchUserAssets(userId).catch(e => {
-        console.error('[Sync] fetchUserAssets error:', e)
-        return { models: [], backgrounds: [], products: [], vibes: [] }
-      }),
-      fetchFavorites(userId).catch(e => {
-        console.error('[Sync] fetchFavorites error:', e)
-        return []
-      }),
-      fetchPinnedPresets(userId).catch(e => {
-        console.error('[Sync] fetchPinnedPresets error:', e)
-        return new Set<string>()
-      }),
+    const [generations, assets, favorites, pinnedPresetIds] = await Promise.all([
+      withTimeout(
+        fetchGenerations(userId).catch(e => {
+          console.error('[Sync] fetchGenerations error:', e)
+          return []
+        }),
+        TIMEOUT_MS,
+        [],
+        'generations'
+      ),
+      withTimeout(
+        fetchUserAssets(userId).catch(e => {
+          console.error('[Sync] fetchUserAssets error:', e)
+          return { models: [], backgrounds: [], products: [], vibes: [] }
+        }),
+        TIMEOUT_MS,
+        { models: [], backgrounds: [], products: [], vibes: [] },
+        'userAssets'
+      ),
+      withTimeout(
+        fetchFavorites(userId).catch(e => {
+          console.error('[Sync] fetchFavorites error:', e)
+          return []
+        }),
+        TIMEOUT_MS,
+        [],
+        'favorites'
+      ),
+      withTimeout(
+        fetchPinnedPresets(userId).catch(e => {
+          console.error('[Sync] fetchPinnedPresets error:', e)
+          return new Set<string>()
+        }),
+        TIMEOUT_MS,
+        new Set<string>(),
+        'pinnedPresets'
+      ),
     ])
 
     const duration = Date.now() - startTime
-    console.log(`[Sync] Completed in ${duration}ms`)
+    console.log(`[Sync] Completed in ${duration}ms`, {
+      generations: generations.length,
+      models: assets.models?.length || 0,
+      backgrounds: assets.backgrounds?.length || 0,
+      favorites: favorites.length,
+    })
 
     return {
       userModels: assets.models || [],

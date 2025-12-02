@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import { Download, Heart, X, Wand2, Camera, Users, Home, ZoomIn, Loader2, Sparkles, Lightbulb } from "lucide-react"
+import { Download, Heart, X, Wand2, Camera, Users, Home, ZoomIn, Loader2, Sparkles, Lightbulb, RefreshCw, Cloud } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
+import { useAuth } from "@/components/providers/AuthProvider"
 import { useGenerationTaskStore, GenerationTask } from "@/stores/generationTaskStore"
 import { useSettingsStore } from "@/stores/settingsStore"
 import { Generation, Favorite } from "@/types"
@@ -18,7 +19,9 @@ export default function GalleryPage() {
   const [activeTab, setActiveTab] = useState<TabType>("all")
   const [selectedItem, setSelectedItem] = useState<{ gen: Generation; index: number } | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
-  const { generations, favorites, _hasHydrated, addFavorite, removeFavorite, isFavorited } = useAssetStore()
+  const { generations, favorites, _hasHydrated, addFavorite, removeFavorite, isFavorited, isSyncing: storeSyncing, lastSyncAt } = useAssetStore()
+  const { isSyncing: authSyncing } = useAuth()
+  const isSyncing = authSyncing || storeSyncing
   const { tasks, removeTask } = useGenerationTaskStore()
   const { debugMode } = useSettingsStore()
   
@@ -160,6 +163,19 @@ export default function GalleryPage() {
           <div className="flex items-center gap-2 ml-2">
             <Image src="/logo.png" alt="Brand Camera" width={28} height={28} className="rounded" />
             <span className="font-semibold text-lg text-zinc-900">图库</span>
+            {/* Sync indicator */}
+            {isSyncing && (
+              <span className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-600 text-xs rounded-full">
+                <RefreshCw className="w-3 h-3 animate-spin" />
+                同步中
+              </span>
+            )}
+            {!isSyncing && lastSyncAt && (
+              <span className="flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-600 text-xs rounded-full">
+                <Cloud className="w-3 h-3" />
+                已同步
+              </span>
+            )}
           </div>
         </div>
         
@@ -260,27 +276,39 @@ export default function GalleryPage() {
           ))}
         </div>
         
-        {displayedHistory.length === 0 && (
+        {displayedHistory.length === 0 && activeTasks.length === 0 && (
           <div className="flex flex-col items-center justify-center h-64 text-zinc-400">
-            <div className="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-4">
-              {activeTab === "favorites" ? (
-                <Heart className="w-8 h-8 text-zinc-300" />
-              ) : activeTab === "model" ? (
-                <Users className="w-8 h-8 text-zinc-300" />
-              ) : activeTab === "product" ? (
-                <Lightbulb className="w-8 h-8 text-zinc-300" />
-              ) : (
-                <Camera className="w-8 h-8 text-zinc-300" />
-              )}
-            </div>
-            <p className="text-sm">
-              {activeTab === "favorites" ? "暂无收藏图片" : 
-               activeTab === "model" ? "暂无模特图" :
-               activeTab === "product" ? "暂无产品图" : "暂无图片"}
-            </p>
-            <p className="text-xs text-zinc-300 mt-1">
-              {activeTab !== "favorites" && "去拍摄生成你的第一张图片吧"}
-            </p>
+            {isSyncing ? (
+              <>
+                <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mb-4">
+                  <RefreshCw className="w-8 h-8 text-blue-400 animate-spin" />
+                </div>
+                <p className="text-sm text-blue-600">正在同步云端数据...</p>
+                <p className="text-xs text-zinc-300 mt-1">请稍候</p>
+              </>
+            ) : (
+              <>
+                <div className="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-4">
+                  {activeTab === "favorites" ? (
+                    <Heart className="w-8 h-8 text-zinc-300" />
+                  ) : activeTab === "model" ? (
+                    <Users className="w-8 h-8 text-zinc-300" />
+                  ) : activeTab === "product" ? (
+                    <Lightbulb className="w-8 h-8 text-zinc-300" />
+                  ) : (
+                    <Camera className="w-8 h-8 text-zinc-300" />
+                  )}
+                </div>
+                <p className="text-sm">
+                  {activeTab === "favorites" ? "暂无收藏图片" : 
+                   activeTab === "model" ? "暂无模特图" :
+                   activeTab === "product" ? "暂无产品图" : "暂无图片"}
+                </p>
+                <p className="text-xs text-zinc-300 mt-1">
+                  {activeTab !== "favorites" && "去拍摄生成你的第一张图片吧"}
+                </p>
+              </>
+            )}
           </div>
         )}
       </div>
