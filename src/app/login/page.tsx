@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, Suspense } from "react"
+import { useState, Suspense, useMemo } from "react"
 import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { validateRedirectClient } from "@/lib/utils/redirect"
 import { Loader2, Mail, Lock, Eye, EyeOff, ArrowLeft } from "lucide-react"
 
 type AuthMode = "select" | "email-otp" | "email-password" | "verify-otp"
@@ -11,7 +12,11 @@ type AuthMode = "select" | "email-otp" | "email-password" | "verify-otp"
 function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get("redirect") || "/"
+  // 验证重定向URL，防止钓鱼攻击
+  const redirectTo = useMemo(() => {
+    const rawRedirect = searchParams.get("redirect")
+    return validateRedirectClient(rawRedirect, "/")
+  }, [searchParams])
   const urlError = searchParams.get("error")
   
   const [mode, setMode] = useState<AuthMode>("select")
