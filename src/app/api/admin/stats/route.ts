@@ -250,7 +250,10 @@ export async function GET(request: NextRequest) {
         }
         
         // Try to get input image from various sources
-        const inputUrl = gen.input_image_url || gen.input_images?.[0] || ''
+        const inputParams = gen.input_params || {}
+        const inputUrl = gen.input_image_url || inputParams.inputImage || inputParams.productImageUrl || ''
+        const modelUrl = gen.model_image_url || inputParams.modelImage || inputParams.modelImageUrl || ''
+        const bgUrl = gen.background_image_url || inputParams.backgroundImage || inputParams.backgroundImageUrl || ''
         
         return {
           id: gen.id,
@@ -259,9 +262,9 @@ export async function GET(request: NextRequest) {
           taskType: gen.task_type,
           status: gen.status,
           inputImageUrl: inputUrl,
-          inputImage2Url: gen.input_image2_url,
-          modelImageUrl: gen.model_image_url,
-          backgroundImageUrl: gen.background_image_url,
+          inputImage2Url: gen.input_image2_url || inputParams.inputImage2 || inputParams.productImage2Url || '',
+          modelImageUrl: modelUrl,
+          backgroundImageUrl: bgUrl,
           outputImageUrls: outputUrls,
           totalImages: gen.total_images_count || outputUrls.length || 0,
           simpleCount: gen.simple_mode_count || 0,
@@ -269,7 +272,7 @@ export async function GET(request: NextRequest) {
           favoritedIndices: favByGen[gen.id] || [],
           createdAt: gen.created_at,
           // Include raw params for debugging
-          inputParams: gen.input_params,
+          inputParams: inputParams,
         }
       })?.filter(d => d.inputImageUrl || d.outputImageUrls.length > 0) // Filter out empty tasks
       

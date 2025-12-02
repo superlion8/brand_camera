@@ -346,12 +346,21 @@ export async function saveGeneration(userId: string, generation: Generation): Pr
     status: 'completed',
   }
   
-  // Input images (now as URLs)
-  if (inputImageUrl && !isBase64(inputImageUrl)) {
-    insertData.input_image_url = inputImageUrl
+  // Input images - save URL if available (not base64)
+  // Log warning if we still have base64 (upload failed)
+  if (inputImageUrl) {
+    if (!isBase64(inputImageUrl)) {
+      insertData.input_image_url = inputImageUrl
+    } else {
+      console.warn('[Sync] Input image is still base64, upload may have failed')
+    }
   }
-  if (inputImage2Url && !isBase64(inputImage2Url)) {
-    insertData.input_image2_url = inputImage2Url
+  if (inputImage2Url) {
+    if (!isBase64(inputImage2Url)) {
+      insertData.input_image2_url = inputImage2Url
+    } else {
+      console.warn('[Sync] Input image 2 is still base64, upload may have failed')
+    }
   }
   if (generation.createdAt) insertData.created_at = generation.createdAt
   
@@ -392,9 +401,27 @@ export async function saveGeneration(userId: string, generation: Generation): Pr
     insertData.output_model_types = generation.outputModelTypes
   }
   
-  // Params as JSONB
-  if (generation.params) {
-    insertData.input_params = generation.params
+  // Params as JSONB - include input images for reference
+  const inputParams: Record<string, any> = {
+    ...generation.params,
+  }
+  // Add input images to params if they're URLs
+  if (inputImageUrl && !isBase64(inputImageUrl)) {
+    inputParams.inputImage = inputImageUrl
+  }
+  if (inputImage2Url && !isBase64(inputImage2Url)) {
+    inputParams.inputImage2 = inputImage2Url
+  }
+  // Add model/background images from params if available
+  if (generation.params?.modelImage && !isBase64(generation.params.modelImage)) {
+    insertData.model_image_url = generation.params.modelImage
+  }
+  if (generation.params?.backgroundImage && !isBase64(generation.params.backgroundImage)) {
+    insertData.background_image_url = generation.params.backgroundImage
+  }
+  
+  if (Object.keys(inputParams).length > 0) {
+    insertData.input_params = inputParams
   }
   
   console.log('[Sync] Saving generation:', generation.id)
