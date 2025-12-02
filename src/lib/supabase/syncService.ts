@@ -185,29 +185,79 @@ export async function fetchGenerations(userId: string): Promise<Generation[]> {
     })
 }
 
+// Helper to map old type names to new task_type values
+function mapTypeToTaskType(type?: string): string {
+  if (!type) return 'model_studio'
+  
+  const typeMap: Record<string, string> = {
+    'camera_product': 'product_studio',
+    'camera_model': 'model_studio',
+    'camera': 'model_studio',
+    'edit': 'edit',
+    'studio': 'product_studio',
+    'model_studio': 'model_studio',
+    'product_studio': 'product_studio',
+  }
+  
+  return typeMap[type] || 'model_studio'
+}
+
 export async function saveGeneration(userId: string, generation: Generation): Promise<Generation | null> {
   const supabase = getSupabase()
   
-  // Build insert object with only non-null values
-  // Note: Don't include 'id' - let database generate UUID
-  // Note: Don't include 'params' - column may not exist
+  // Build insert object matching the actual table schema
+  // Required fields: user_id, task_type, status
   const insertData: Record<string, any> = {
     user_id: userId,
+    task_type: mapTypeToTaskType(generation.type), // Required NOT NULL
     status: 'completed',
   }
   
-  // Add fields that are likely to exist
+  // Optional fields
   if (generation.inputImageUrl) insertData.input_image_url = generation.inputImageUrl
   if (generation.inputImage2Url) insertData.input_image2_url = generation.inputImage2Url
-  if (generation.outputImageUrls?.length) insertData.output_image_urls = generation.outputImageUrls
-  if (generation.prompt) insertData.prompt = generation.prompt
   if (generation.createdAt) insertData.created_at = generation.createdAt
   
-  // These columns may or may not exist depending on schema version
-  // if (generation.type) insertData.type = generation.type
-  // if (generation.outputModelTypes?.length) insertData.output_model_types = generation.outputModelTypes
-  // if (generation.outputGenModes?.length) insertData.output_gen_modes = generation.outputGenModes
-  // if (generation.prompts?.length) insertData.prompts = generation.prompts
+  // Output images - use both formats for compatibility
+  if (generation.outputImageUrls?.length) {
+    insertData.output_image_urls = generation.outputImageUrls
+    insertData.total_images_count = generation.outputImageUrls.length
+    
+    // Also save as JSONB format
+    insertData.output_images = generation.outputImageUrls.map((url, index) => ({
+      type: 'model',
+      url,
+      index,
+      mode: generation.outputGenModes?.[index] || 'extended'
+    }))
+  }
+  
+  // Counts
+  if (generation.outputImageUrls?.length) {
+    insertData.model_images_count = generation.outputImageUrls.length
+    insertData.product_images_count = 0
+  }
+  
+  // Prompts
+  if (generation.prompt) insertData.final_prompt = generation.prompt
+  if (generation.prompts?.length) insertData.prompts = generation.prompts
+  
+  // Mode counts
+  if (generation.outputGenModes?.length) {
+    insertData.output_gen_modes = generation.outputGenModes
+    insertData.simple_mode_count = generation.outputGenModes.filter(m => m === 'simple').length
+    insertData.extended_mode_count = generation.outputGenModes.filter(m => m === 'extended').length
+  }
+  
+  // Model types
+  if (generation.outputModelTypes?.length) {
+    insertData.output_model_types = generation.outputModelTypes
+  }
+  
+  // Params as JSONB
+  if (generation.params) {
+    insertData.input_params = generation.params
+  }
   
   console.log('[Sync] Saving generation:', generation.id)
   
@@ -223,17 +273,17 @@ export async function saveGeneration(userId: string, generation: Generation): Pr
     if (error.code === 'PGRST204' || error.message.includes('column') || error.message.includes('schema cache')) {
       console.warn('[Sync] Trying minimal insert (schema mismatch)...')
       
-      // Absolute minimal - just the required fields
+      // Absolute minimal - just the required NOT NULL fields
       const minimalData: Record<string, any> = {
         user_id: userId,
+        task_type: mapTypeToTaskType(generation.type), // Required NOT NULL
         status: 'completed',
       }
       
-      // Try to add what we can
-      if (generation.inputImageUrl) minimalData.input_image_url = generation.inputImageUrl
+      // Try to add output images
       if (generation.outputImageUrls?.length) {
-        // Try output_image_urls first (TEXT[])
         minimalData.output_image_urls = generation.outputImageUrls
+        minimalData.total_images_count = generation.outputImageUrls.length
       }
       
       const { data: retryData, error: retryError } = await supabase
@@ -259,17 +309,25 @@ export async function saveGeneration(userId: string, generation: Generation): Pr
 
 // Helper to map database row to Generation type
 function mapGenerationRow(data: any): Generation {
+  // Handle output images - could be in output_image_urls (TEXT[]) or output_images (JSONB)
+  let outputUrls = data.output_image_urls || []
+  if ((!outputUrls || outputUrls.length === 0) && data.output_images) {
+    outputUrls = data.output_images.map((img: any) => 
+      typeof img === 'string' ? img : img.url
+    )
+  }
+  
   return {
     id: data.id,
-    type: data.type || data.task_type,
+    type: data.task_type || data.type,
     inputImageUrl: data.input_image_url || '',
     inputImage2Url: data.input_image2_url,
-    outputImageUrls: data.output_image_urls || [],
+    outputImageUrls: outputUrls,
     outputModelTypes: data.output_model_types || [],
     outputGenModes: data.output_gen_modes || [],
-    prompt: data.prompt || data.final_prompt,
+    prompt: data.final_prompt || data.prompt,
     prompts: data.prompts || [],
-    params: data.params || data.input_params,
+    params: data.input_params || data.params,
     createdAt: data.created_at,
   }
 }
