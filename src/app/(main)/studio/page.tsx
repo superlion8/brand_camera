@@ -2,9 +2,10 @@
 
 import { useState, useRef, useCallback, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
 import { 
   ArrowLeft, Upload, Loader2, Download, Heart, 
-  Sun, Sparkles, Lightbulb, Zap, Home, FolderHeart, X, Camera
+  Sun, Sparkles, Lightbulb, Zap, Home, FolderHeart, X, Camera, ZoomIn, Wand2
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Webcam from "react-webcam"
@@ -116,6 +117,8 @@ export default function StudioPage() {
   const [showProductPanel, setShowProductPanel] = useState(false)
   const [productSourceTab, setProductSourceTab] = useState<'preset' | 'user'>('preset')
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
+  const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
   
   // Camera state
   const [hasCamera, setHasCamera] = useState(true)
@@ -400,6 +403,12 @@ export default function StudioPage() {
         createdAt: new Date().toISOString(),
       })
     }
+  }
+  
+  // Handle go to edit with image
+  const handleGoToEdit = (imageUrl: string) => {
+    sessionStorage.setItem('editImage', imageUrl)
+    router.push("/edit")
   }
   
   const handleReset = () => {
@@ -811,36 +820,37 @@ export default function StudioPage() {
                 {generatedImages.map((url, i) => (
                   <div 
                     key={i}
-                    className="relative aspect-square bg-zinc-100 rounded-xl overflow-hidden"
+                    className="relative aspect-square bg-zinc-100 rounded-xl overflow-hidden cursor-pointer group"
+                    onClick={() => setSelectedResultIndex(i)}
                   >
                     <Image src={url} alt={`Result ${i + 1}`} fill className="object-cover" />
                     
                     {/* Model type badge */}
-                    {generatedModelTypes[i] === 'flash' && (
-                      <span className="absolute top-2 left-2 px-1.5 py-0.5 bg-amber-500 text-white text-[9px] rounded font-medium">
-                        2.5
+                    <div className="absolute top-2 left-2 flex gap-1">
+                      <span className="px-2 py-1 rounded text-[10px] font-medium bg-amber-500 text-white">
+                        影棚
                       </span>
-                    )}
-                    
-                    {/* Actions */}
-                    <div className="absolute top-2 right-2 flex gap-1">
-                      <button
-                        onClick={() => handleFavorite(i)}
-                        className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                          currentGenerationId && isFavorited(currentGenerationId, i)
-                            ? 'bg-red-500 text-white'
-                            : 'bg-white/90 text-zinc-600'
-                        }`}
-                      >
-                        <Heart className={`w-4 h-4 ${currentGenerationId && isFavorited(currentGenerationId, i) ? 'fill-current' : ''}`} />
-                      </button>
-                      <button
-                        onClick={() => handleDownload(url)}
-                        className="w-8 h-8 rounded-full bg-white/90 text-zinc-600 flex items-center justify-center"
-                      >
-                        <Download className="w-4 h-4" />
-                      </button>
+                      {generatedModelTypes[i] === 'flash' && (
+                        <span className="px-1.5 py-1 rounded text-[9px] font-medium bg-amber-600 text-white">
+                          2.5
+                        </span>
+                      )}
                     </div>
+                    
+                    {/* Favorite button - always visible */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleFavorite(i)
+                      }}
+                      className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-colors ${
+                        currentGenerationId && isFavorited(currentGenerationId, i)
+                          ? 'bg-red-500 text-white'
+                          : 'bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500'
+                      }`}
+                    >
+                      <Heart className={`w-4 h-4 ${currentGenerationId && isFavorited(currentGenerationId, i) ? 'fill-current' : ''}`} />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -861,6 +871,165 @@ export default function StudioPage() {
                 拍摄新商品
               </button>
             </div>
+            
+            {/* Result Detail Dialog */}
+            {selectedResultIndex !== null && generatedImages[selectedResultIndex] && (
+              <div className="fixed inset-0 z-50 bg-white overflow-hidden">
+                <div className="h-full flex flex-col">
+                  {/* Header */}
+                  <div className="h-14 flex items-center justify-between px-4 bg-white border-b shrink-0">
+                    <button
+                      onClick={() => setSelectedResultIndex(null)}
+                      className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center transition-colors"
+                    >
+                      <X className="w-5 h-5 text-zinc-700" />
+                    </button>
+                    <span className="font-semibold text-zinc-900">详情</span>
+                    <div className="w-10" />
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 overflow-y-auto bg-zinc-100 pb-8">
+                    <div 
+                      className="relative aspect-square bg-zinc-900 cursor-pointer group"
+                      onClick={() => setFullscreenImage(generatedImages[selectedResultIndex])}
+                    >
+                      <Image 
+                        src={generatedImages[selectedResultIndex]} 
+                        alt="Detail" 
+                        fill 
+                        className="object-contain" 
+                      />
+                      {/* Zoom hint */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
+                        <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                          <ZoomIn className="w-6 h-6 text-zinc-700" />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 bg-white">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">
+                              商品影棚
+                            </span>
+                            {generatedModelTypes[selectedResultIndex] === 'flash' && (
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700">
+                                Gemini 2.5
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-zinc-400">
+                            刚刚生成
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleFavorite(selectedResultIndex)}
+                            className={`w-10 h-10 rounded-lg border flex items-center justify-center transition-colors ${
+                              currentGenerationId && isFavorited(currentGenerationId, selectedResultIndex)
+                                ? "bg-red-50 border-red-200 text-red-500"
+                                : "border-zinc-200 text-zinc-600 hover:bg-zinc-50"
+                            }`}
+                          >
+                            <Heart className={`w-4 h-4 ${currentGenerationId && isFavorited(currentGenerationId, selectedResultIndex) ? "fill-current" : ""}`} />
+                          </button>
+                          <button
+                            onClick={() => handleDownload(generatedImages[selectedResultIndex])}
+                            className="w-10 h-10 rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-50 flex items-center justify-center transition-colors"
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Generation Parameters */}
+                      <div className="mt-4 pt-4 border-t border-zinc-100">
+                        <h3 className="text-sm font-semibold text-zinc-700 mb-3">生成参数</h3>
+                        
+                        {/* Reference images */}
+                        <div className="space-y-3">
+                          <div className="flex gap-3 overflow-x-auto pb-2">
+                            {/* Input Product Image */}
+                            {productImage && (
+                              <div className="flex flex-col items-center shrink-0">
+                                <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
+                                  <img 
+                                    src={productImage} 
+                                    alt="商品原图" 
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                                <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">商品原图</p>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Settings params */}
+                          <div className="flex gap-2 flex-wrap">
+                            <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
+                              光源: {LIGHT_TYPES.find(t => t.id === lightType)?.label || lightType}
+                            </span>
+                            <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
+                              比例: {aspectRatio}
+                            </span>
+                            <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600 flex items-center gap-1">
+                              背景: <span className="w-3 h-3 rounded-full border" style={{ backgroundColor: bgColor }} />
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button 
+                        onClick={() => {
+                          setSelectedResultIndex(null)
+                          handleGoToEdit(generatedImages[selectedResultIndex])
+                        }}
+                        className="w-full h-12 mt-4 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-medium flex items-center justify-center gap-2 transition-colors"
+                      >
+                        <Wand2 className="w-4 h-4" />
+                        去修图
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Fullscreen Image Viewer */}
+            {fullscreenImage && (
+              <div 
+                className="fixed inset-0 z-[60] bg-black flex items-center justify-center"
+                onClick={() => setFullscreenImage(null)}
+              >
+                <button
+                  onClick={() => setFullscreenImage(null)}
+                  className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/20 text-white hover:bg-white/30 flex items-center justify-center transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+                <TransformWrapper
+                  initialScale={1}
+                  minScale={0.5}
+                  maxScale={4}
+                  centerOnInit
+                >
+                  <TransformComponent
+                    wrapperClass="!w-full !h-full"
+                    contentClass="!w-full !h-full flex items-center justify-center"
+                  >
+                    <img
+                      src={fullscreenImage}
+                      alt="Fullscreen"
+                      className="max-w-full max-h-full object-contain"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </TransformComponent>
+                </TransformWrapper>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
