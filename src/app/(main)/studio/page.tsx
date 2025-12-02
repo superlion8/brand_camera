@@ -15,6 +15,8 @@ import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { useSettingsStore } from "@/stores/settingsStore"
 import { PRESET_PRODUCTS } from "@/data/presets"
 import Image from "next/image"
+import { useQuota } from "@/hooks/useQuota"
+import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 
 // Light types - compact version
 const LIGHT_TYPES = [
@@ -141,6 +143,9 @@ export default function StudioPage() {
   const { debugMode } = useSettingsStore()
   const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
   
+  // Quota management
+  const { quota, checkQuota, incrementQuota, showExceededModal, closeExceededModal } = useQuota()
+  
   // Update bgColor when HSV changes
   const updateColorFromHSV = useCallback((h: number, s: number, v: number) => {
     const [r, g, b] = hsvToRgb(h, s, v)
@@ -229,6 +234,12 @@ export default function StudioPage() {
   
   const handleGenerate = async () => {
     if (!productImage) return
+    
+    // Check quota before starting generation (2 images for studio)
+    const hasQuota = await checkQuota(2)
+    if (!hasQuota) {
+      return // Modal will be shown by the hook
+    }
     
     // Capture current settings before async operations
     const currentLightType = lightType
@@ -349,6 +360,9 @@ export default function StudioPage() {
           createdAt: new Date().toISOString(),
           params: { lightType: lightTypeVal, lightDirection: lightDirectionVal, lightColor: bgColorVal, aspectRatio: aspectRatioVal },
         })
+        
+        // Increment quota for successful generation
+        await incrementQuota(finalImages.length)
         
         // Only update UI if still on processing mode
         if (modeRef.current === 'processing') {
@@ -1161,6 +1175,14 @@ export default function StudioPage() {
           </>
         )}
       </AnimatePresence>
+      
+      {/* Quota Exceeded Modal */}
+      <QuotaExceededModal
+        isOpen={showExceededModal}
+        onClose={closeExceededModal}
+        usedCount={quota?.usedCount}
+        totalQuota={quota?.totalQuota}
+      />
     </div>
   )
 }

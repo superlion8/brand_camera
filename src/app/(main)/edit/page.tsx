@@ -12,6 +12,8 @@ import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { PRESET_PRODUCTS } from "@/data/presets"
 import Webcam from "react-webcam"
 import { motion, AnimatePresence } from "framer-motion"
+import { useQuota } from "@/hooks/useQuota"
+import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 
 // HSV to RGB conversion
 function hsvToRgb(h: number, s: number, v: number): [number, number, number] {
@@ -169,6 +171,9 @@ export default function EditPage() {
   const { addGeneration, userProducts, generations } = useAssetStore()
   const { addTask, updateTaskStatus } = useGenerationTaskStore()
   
+  // Quota management
+  const { quota, checkQuota, incrementQuota, showExceededModal, closeExceededModal } = useQuota()
+  
   // Update lightColor when HSV changes
   const updateColorFromHSV = useCallback((h: number, s: number, v: number) => {
     const [r, g, b] = hsvToRgb(h, s, v)
@@ -271,6 +276,15 @@ export default function EditPage() {
   
   const handleGenerate = async () => {
     if (!inputImage) return
+    
+    // Determine image count based on edit mode
+    const imageCount = editMode === 'studio' ? 2 : 1
+    
+    // Check quota before starting generation
+    const hasQuota = await checkQuota(imageCount)
+    if (!hasQuota) {
+      return // Modal will be shown by the hook
+    }
     
     // Capture current state before async operations
     const currentInputImage = inputImage
@@ -391,6 +405,9 @@ export default function EditPage() {
           params: { lightType: lightTypeVal, lightDirection: lightDirectionVal, lightColor: lightColorVal, aspectRatio: aspectRatioVal },
         })
         
+        // Increment quota for successful generation
+        await incrementQuota(finalImages.length)
+        
         if (isGeneratingRef.current) {
           setResultImages(finalImages)
           setResultImage(finalImages[0])
@@ -467,6 +484,9 @@ export default function EditPage() {
             vibe: vibe?.name,
           },
         })
+        
+        // Increment quota for successful generation
+        await incrementQuota(1)
         
         if (isGeneratingRef.current) {
           setResultImage(data.image)
@@ -1224,6 +1244,14 @@ export default function EditPage() {
           </>
         )}
       </AnimatePresence>
+      
+      {/* Quota Exceeded Modal */}
+      <QuotaExceededModal
+        isOpen={showExceededModal}
+        onClose={closeExceededModal}
+        usedCount={quota?.usedCount}
+        totalQuota={quota?.totalQuota}
+      />
     </div>
   )
 }

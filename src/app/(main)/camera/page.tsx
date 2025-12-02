@@ -18,6 +18,8 @@ import { fileToBase64, generateId, compressBase64Image, fetchWithTimeout, ensure
 import { Asset, ModelStyle, ModelGender } from "@/types"
 import Image from "next/image"
 import { PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_PRODUCTS, getRandomModel, getRandomBackground } from "@/data/presets"
+import { useQuota } from "@/hooks/useQuota"
+import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 
 const MODEL_GENDERS: { id: ModelGender; label: string }[] = [
   { id: "female", label: "女" },
@@ -135,6 +137,9 @@ export default function CameraPage() {
   const { addGeneration, addUserAsset, userModels, userBackgrounds, userProducts, addFavorite, removeFavorite, isFavorited, favorites } = useAssetStore()
   const { addTask, updateTaskStatus, tasks } = useGenerationTaskStore()
   const { debugMode } = useSettingsStore()
+  
+  // Quota management
+  const { quota, checkQuota, incrementQuota, showExceededModal, closeExceededModal } = useQuota()
   
   // Helper to sort by pinned status
   const sortByPinned = (assets: Asset[]) => 
@@ -259,6 +264,12 @@ export default function CameraPage() {
   
   const handleShootIt = async () => {
     if (!capturedImage) return
+    
+    // Check quota before starting generation (6 images for camera)
+    const hasQuota = await checkQuota(6)
+    if (!hasQuota) {
+      return // Modal will be shown by the hook
+    }
     
     // Capture current selections BEFORE any async operations
     const currentModelStyle = selectedModelStyle
@@ -508,6 +519,9 @@ export default function CameraPage() {
             backgroundImage: background?.imageUrl,
           },
         })
+        
+        // Increment quota for successful generation
+        await incrementQuota(data.images.length)
         
         // If still on processing mode for this task, show results
         // Use modeRef.current to get the latest mode value (avoid stale closure)
@@ -1761,6 +1775,14 @@ export default function CameraPage() {
           </motion.div>
         )}
       </AnimatePresence>
+      
+      {/* Quota Exceeded Modal */}
+      <QuotaExceededModal
+        isOpen={showExceededModal}
+        onClose={closeExceededModal}
+        usedCount={quota?.usedCount}
+        totalQuota={quota?.totalQuota}
+      />
     </div>
   )
 }
