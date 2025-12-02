@@ -189,22 +189,25 @@ export async function saveGeneration(userId: string, generation: Generation): Pr
   const supabase = getSupabase()
   
   // Build insert object with only non-null values
+  // Note: Don't include 'id' - let database generate UUID
+  // Note: Don't include 'params' - column may not exist
   const insertData: Record<string, any> = {
-    id: generation.id,
     user_id: userId,
-    input_image_url: generation.inputImageUrl || '',
-    created_at: generation.createdAt,
+    status: 'completed',
   }
   
-  // Optional fields - only add if they exist
-  if (generation.type) insertData.type = generation.type
+  // Add fields that are likely to exist
+  if (generation.inputImageUrl) insertData.input_image_url = generation.inputImageUrl
   if (generation.inputImage2Url) insertData.input_image2_url = generation.inputImage2Url
   if (generation.outputImageUrls?.length) insertData.output_image_urls = generation.outputImageUrls
-  if (generation.outputModelTypes?.length) insertData.output_model_types = generation.outputModelTypes
-  if (generation.outputGenModes?.length) insertData.output_gen_modes = generation.outputGenModes
   if (generation.prompt) insertData.prompt = generation.prompt
-  if (generation.prompts?.length) insertData.prompts = generation.prompts
-  if (generation.params) insertData.params = generation.params
+  if (generation.createdAt) insertData.created_at = generation.createdAt
+  
+  // These columns may or may not exist depending on schema version
+  // if (generation.type) insertData.type = generation.type
+  // if (generation.outputModelTypes?.length) insertData.output_model_types = generation.outputModelTypes
+  // if (generation.outputGenModes?.length) insertData.output_gen_modes = generation.outputGenModes
+  // if (generation.prompts?.length) insertData.prompts = generation.prompts
   
   console.log('[Sync] Saving generation:', generation.id)
   
@@ -216,16 +219,23 @@ export async function saveGeneration(userId: string, generation: Generation): Pr
 
   if (error) {
     console.error('[Sync] Error saving generation:', error.message, error.code)
-    // If column doesn't exist, try with minimal fields
-    if (error.code === 'PGRST204' || error.message.includes('column')) {
-      console.warn('[Sync] Trying minimal insert...')
-      const minimalData = {
-        id: generation.id,
+    // If column doesn't exist, try with absolute minimal fields
+    if (error.code === 'PGRST204' || error.message.includes('column') || error.message.includes('schema cache')) {
+      console.warn('[Sync] Trying minimal insert (schema mismatch)...')
+      
+      // Absolute minimal - just the required fields
+      const minimalData: Record<string, any> = {
         user_id: userId,
-        input_image_url: generation.inputImageUrl || '',
-        output_image_urls: generation.outputImageUrls || [],
-        created_at: generation.createdAt,
+        status: 'completed',
       }
+      
+      // Try to add what we can
+      if (generation.inputImageUrl) minimalData.input_image_url = generation.inputImageUrl
+      if (generation.outputImageUrls?.length) {
+        // Try output_image_urls first (TEXT[])
+        minimalData.output_image_urls = generation.outputImageUrls
+      }
+      
       const { data: retryData, error: retryError } = await supabase
         .from('generations')
         .insert(minimalData)
@@ -234,13 +244,16 @@ export async function saveGeneration(userId: string, generation: Generation): Pr
       
       if (retryError) {
         console.error('[Sync] Retry also failed:', retryError.message)
+        // Don't block - just log and continue
         return null
       }
+      console.log('[Sync] Minimal insert succeeded')
       return mapGenerationRow(retryData)
     }
     return null
   }
 
+  console.log('[Sync] Generation saved successfully')
   return mapGenerationRow(data)
 }
 
