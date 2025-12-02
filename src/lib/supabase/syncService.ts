@@ -117,7 +117,6 @@ export async function fetchUserAssets(userId: string): Promise<{
     imageUrl: row.image_url,
     thumbnailUrl: row.thumbnail_url,
     tags: row.tags,
-    subcategory: row.subcategory,
     isPinned: row.is_pinned,
   }))
 
@@ -153,7 +152,6 @@ export async function saveUserAsset(userId: string, asset: Asset): Promise<Asset
       image_url: asset.imageUrl,
       thumbnail_url: asset.thumbnailUrl,
       tags: asset.tags,
-      subcategory: asset.subcategory,
       is_pinned: asset.isPinned || false,
     })
     .select()
@@ -173,7 +171,6 @@ export async function saveUserAsset(userId: string, asset: Asset): Promise<Asset
     imageUrl: data.image_url,
     thumbnailUrl: data.thumbnail_url,
     tags: data.tags,
-    subcategory: data.subcategory,
     isPinned: data.is_pinned,
   }
 }
