@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
 import Image from "next/image"
 
 interface BeforeAfterSliderProps {
@@ -10,6 +10,8 @@ interface BeforeAfterSliderProps {
   afterLabel?: string
   className?: string
   height?: number
+  autoPlay?: boolean
+  autoPlayDuration?: number // Duration for one complete cycle in ms
 }
 
 export function BeforeAfterSlider({
@@ -19,10 +21,75 @@ export function BeforeAfterSlider({
   afterLabel,
   className = "",
   height = 200,
+  autoPlay = true,
+  autoPlayDuration = 3000,
 }: BeforeAfterSliderProps) {
   const [sliderPosition, setSliderPosition] = useState(50)
+  const [isAutoPlaying, setIsAutoPlaying] = useState(autoPlay)
   const containerRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
+  const animationRef = useRef<number | null>(null)
+  const startTimeRef = useRef<number | null>(null)
+  const pauseTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Auto-play animation using easeInOutSine for smooth movement
+  const easeInOutSine = (t: number): number => {
+    return -(Math.cos(Math.PI * t) - 1) / 2
+  }
+
+  const animate = useCallback((timestamp: number) => {
+    if (!startTimeRef.current) {
+      startTimeRef.current = timestamp
+    }
+    
+    const elapsed = timestamp - startTimeRef.current
+    const progress = (elapsed % autoPlayDuration) / autoPlayDuration
+    
+    // Animate from 20% to 80% and back
+    const easedProgress = easeInOutSine(progress * 2 <= 1 ? progress * 2 : 2 - progress * 2)
+    const position = 20 + easedProgress * 60 // Range: 20% to 80%
+    
+    setSliderPosition(position)
+    
+    if (isAutoPlaying && !isDragging.current) {
+      animationRef.current = requestAnimationFrame(animate)
+    }
+  }, [isAutoPlaying, autoPlayDuration])
+
+  // Start/stop auto-play
+  useEffect(() => {
+    if (isAutoPlaying && !isDragging.current) {
+      startTimeRef.current = null
+      animationRef.current = requestAnimationFrame(animate)
+    }
+    
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current)
+      }
+    }
+  }, [isAutoPlaying, animate])
+
+  const stopAutoPlay = useCallback(() => {
+    setIsAutoPlaying(false)
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current)
+      animationRef.current = null
+    }
+    if (pauseTimeoutRef.current) {
+      clearTimeout(pauseTimeoutRef.current)
+    }
+  }, [])
+
+  const resumeAutoPlay = useCallback(() => {
+    if (autoPlay) {
+      // Resume after 3 seconds of inactivity
+      pauseTimeoutRef.current = setTimeout(() => {
+        startTimeRef.current = null
+        setIsAutoPlaying(true)
+      }, 3000)
+    }
+  }, [autoPlay])
 
   const handleMove = useCallback((clientX: number) => {
     if (!containerRef.current) return
@@ -36,8 +103,9 @@ export function BeforeAfterSlider({
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
     isDragging.current = true
+    stopAutoPlay()
     handleMove(e.clientX)
-  }, [handleMove])
+  }, [handleMove, stopAutoPlay])
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isDragging.current) return
@@ -46,16 +114,21 @@ export function BeforeAfterSlider({
 
   const handleMouseUp = useCallback(() => {
     isDragging.current = false
-  }, [])
+    resumeAutoPlay()
+  }, [resumeAutoPlay])
 
   const handleMouseLeave = useCallback(() => {
-    isDragging.current = false
-  }, [])
+    if (isDragging.current) {
+      isDragging.current = false
+      resumeAutoPlay()
+    }
+  }, [resumeAutoPlay])
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     isDragging.current = true
+    stopAutoPlay()
     handleMove(e.touches[0].clientX)
-  }, [handleMove])
+  }, [handleMove, stopAutoPlay])
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!isDragging.current) return
@@ -64,6 +137,19 @@ export function BeforeAfterSlider({
 
   const handleTouchEnd = useCallback(() => {
     isDragging.current = false
+    resumeAutoPlay()
+  }, [resumeAutoPlay])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current)
+      }
+      if (pauseTimeoutRef.current) {
+        clearTimeout(pauseTimeoutRef.current)
+      }
+    }
   }, [])
 
   return (
@@ -106,7 +192,7 @@ export function BeforeAfterSlider({
 
       {/* Slider Handle */}
       <div
-        className="absolute top-0 bottom-0 w-1 bg-white shadow-lg z-10"
+        className="absolute top-0 bottom-0 w-1 bg-white shadow-lg z-10 transition-none"
         style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
       >
         {/* Handle Circle */}
@@ -132,4 +218,3 @@ export function BeforeAfterSlider({
     </div>
   )
 }
-
