@@ -117,19 +117,22 @@ export async function fetchGenerations(userId: string): Promise<Generation[]> {
     return []
   }
 
-  return (data || []).map(row => ({
-    id: row.id,
-    type: row.type,
-    inputImageUrl: row.input_image_url,
-    inputImage2Url: row.input_image2_url,
-    outputImageUrls: row.output_image_urls,
-    outputModelTypes: row.output_model_types,
-    outputGenModes: row.output_gen_modes,
-    prompt: row.prompt,
-    prompts: row.prompts,
-    params: row.params,
-    createdAt: row.created_at,
-  }))
+  return (data || [])
+    // Filter out generations without valid output images
+    .filter(row => row.output_image_urls && Array.isArray(row.output_image_urls) && row.output_image_urls.length > 0)
+    .map(row => ({
+      id: row.id,
+      type: row.type,
+      inputImageUrl: row.input_image_url || '',
+      inputImage2Url: row.input_image2_url,
+      outputImageUrls: row.output_image_urls || [],
+      outputModelTypes: row.output_model_types || [],
+      outputGenModes: row.output_gen_modes || [],
+      prompt: row.prompt,
+      prompts: row.prompts || [],
+      params: row.params,
+      createdAt: row.created_at,
+    }))
 }
 
 export async function saveGeneration(userId: string, generation: Generation): Promise<Generation | null> {

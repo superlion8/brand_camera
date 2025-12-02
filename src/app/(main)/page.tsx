@@ -186,17 +186,21 @@ export default function HomePage() {
             <Link href="/gallery" className="text-xs text-blue-600 font-medium">{t.home.viewAll}</Link>
           </div>
           <div className="grid grid-cols-4 gap-2">
-            {recentGenerations.map((gen) => (
-              <Link key={gen.id} href="/gallery" className="aspect-square rounded-lg overflow-hidden bg-zinc-200">
-                <Image
-                  src={gen.outputImageUrls[0]}
-                  alt="Generated"
-                  width={100}
-                  height={100}
-                  className="w-full h-full object-cover"
-                />
-              </Link>
-            ))}
+            {recentGenerations.map((gen) => {
+              const imageUrl = gen.outputImageUrls?.[0]
+              if (!imageUrl) return null
+              return (
+                <Link key={gen.id} href="/gallery" className="aspect-square rounded-lg overflow-hidden bg-zinc-200">
+                  <Image
+                    src={imageUrl}
+                    alt="Generated"
+                    width={100}
+                    height={100}
+                    className="w-full h-full object-cover"
+                  />
+                </Link>
+              )
+            })}
           </div>
         </div>
       )}

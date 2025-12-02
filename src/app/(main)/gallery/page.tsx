@@ -48,32 +48,37 @@ export default function GalleryPage() {
   
   // Filter images based on tab
   const getDisplayedHistory = (): { gen: Generation; url: string; idx: number }[] => {
+    // Filter out generations with invalid outputImageUrls
+    const validGenerations = generations.filter(
+      (gen: Generation) => gen.outputImageUrls && Array.isArray(gen.outputImageUrls) && gen.outputImageUrls.length > 0
+    )
+    
     switch (activeTab) {
       case "model":
         // Model images from camera_model type generations
-        return generations
+        return validGenerations
           .filter((gen: Generation) => gen.type === 'camera_model')
           .flatMap((gen: Generation) => 
-            gen.outputImageUrls.map((url: string, idx: number) => ({ gen, url, idx }))
+            (gen.outputImageUrls || []).map((url: string, idx: number) => ({ gen, url, idx }))
           )
       case "product":
         // Product images from studio type generations
-        return generations
+        return validGenerations
           .filter((gen: Generation) => gen.type === 'studio')
           .flatMap((gen: Generation) => 
-            gen.outputImageUrls.map((url: string, idx: number) => ({ gen, url, idx }))
+            (gen.outputImageUrls || []).map((url: string, idx: number) => ({ gen, url, idx }))
           )
       case "favorites":
         return favorites.map((fav: Favorite) => {
-          const gen = generations.find((g: Generation) => g.id === fav.generationId)
+          const gen = validGenerations.find((g: Generation) => g.id === fav.generationId)
           if (!gen) return null
-          const url = gen.outputImageUrls[fav.imageIndex]
+          const url = gen.outputImageUrls?.[fav.imageIndex]
           if (!url) return null
           return { gen, url, idx: fav.imageIndex }
         }).filter((item): item is { gen: Generation; url: string; idx: number } => item !== null)
       default:
-        return generations.flatMap((gen: Generation) => 
-          gen.outputImageUrls.map((url: string, idx: number) => ({ gen, url, idx }))
+        return validGenerations.flatMap((gen: Generation) => 
+          (gen.outputImageUrls || []).map((url: string, idx: number) => ({ gen, url, idx }))
         )
     }
   }
