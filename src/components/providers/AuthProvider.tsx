@@ -60,9 +60,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  // Clear user data
-  const clearUserData = useCallback(() => {
+  // Clear user data and reset Supabase client
+  const clearUserData = useCallback(async () => {
     try {
+      // Reset Supabase client to clear any cached auth state
+      const { resetSupabaseClient } = await import("@/lib/supabase/syncService")
+      resetSupabaseClient()
+      
       const { useAssetStore } = require("@/stores/assetStore")
       const store = useAssetStore.getState()
       store.clearUserData()

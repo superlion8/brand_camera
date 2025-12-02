@@ -333,42 +333,66 @@ export const useAssetStore = create<AssetState>()(
         }
       },
       
-      // Sync with cloud - fetch all data from Supabase
+      // Sync with cloud - fetch all data from Supabase with retry
       syncWithCloud: async (userId) => {
         set({ isSyncing: true, currentUserId: userId })
         
-        try {
-          console.log('[Sync] Starting cloud sync for user:', userId)
-          const cloudData = await syncService.syncAllData(userId)
-          
-          console.log('[Sync] Cloud data received:', {
-            models: cloudData.userModels.length,
-            backgrounds: cloudData.userBackgrounds.length,
-            products: cloudData.userProducts.length,
-            vibes: cloudData.userVibes.length,
-            generations: cloudData.generations.length,
-            favorites: cloudData.favorites.length,
-            pinnedPresets: cloudData.pinnedPresetIds.size,
-          })
-          
-          // Always update from cloud when logged in
-          // Cloud data is the source of truth for logged-in users
-          set({
-            userModels: cloudData.userModels,
-            userBackgrounds: cloudData.userBackgrounds,
-            userProducts: cloudData.userProducts,
-            userVibes: cloudData.userVibes,
-            generations: cloudData.generations,
-            favorites: cloudData.favorites,
-            pinnedPresetIds: cloudData.pinnedPresetIds,
-            lastSyncAt: new Date().toISOString(),
-            isSyncing: false,
-          })
-          
-          console.log('[Sync] Cloud sync completed successfully')
-        } catch (error) {
-          console.error('[Sync] Cloud sync failed:', error)
-          set({ isSyncing: false })
+        const MAX_RETRIES = 3
+        const RETRY_DELAY = 2000 // 2 seconds
+        
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+          try {
+            console.log(`[Sync] Starting cloud sync for user: ${userId} (attempt ${attempt}/${MAX_RETRIES})`)
+            const cloudData = await syncService.syncAllData(userId)
+            
+            console.log('[Sync] Cloud data received:', {
+              models: cloudData.userModels.length,
+              backgrounds: cloudData.userBackgrounds.length,
+              products: cloudData.userProducts.length,
+              vibes: cloudData.userVibes.length,
+              generations: cloudData.generations.length,
+              favorites: cloudData.favorites.length,
+              pinnedPresets: cloudData.pinnedPresetIds.size,
+            })
+            
+            // Check if we got any data at all
+            const hasData = cloudData.generations.length > 0 || 
+                           cloudData.userModels.length > 0 || 
+                           cloudData.userBackgrounds.length > 0
+            
+            if (!hasData && attempt < MAX_RETRIES) {
+              console.log('[Sync] No data received, retrying...')
+              await new Promise(r => setTimeout(r, RETRY_DELAY))
+              continue
+            }
+            
+            // Always update from cloud when logged in
+            // Cloud data is the source of truth for logged-in users
+            set({
+              userModels: cloudData.userModels,
+              userBackgrounds: cloudData.userBackgrounds,
+              userProducts: cloudData.userProducts,
+              userVibes: cloudData.userVibes,
+              generations: cloudData.generations,
+              favorites: cloudData.favorites,
+              pinnedPresetIds: cloudData.pinnedPresetIds,
+              lastSyncAt: new Date().toISOString(),
+              isSyncing: false,
+            })
+            
+            console.log('[Sync] Cloud sync completed successfully')
+            return // Success, exit the retry loop
+          } catch (error) {
+            console.error(`[Sync] Cloud sync attempt ${attempt} failed:`, error)
+            
+            if (attempt < MAX_RETRIES) {
+              console.log(`[Sync] Retrying in ${RETRY_DELAY}ms...`)
+              await new Promise(r => setTimeout(r, RETRY_DELAY))
+            } else {
+              console.error('[Sync] All retry attempts failed')
+              set({ isSyncing: false })
+            }
+          }
         }
       },
       

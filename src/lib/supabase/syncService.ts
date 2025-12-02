@@ -1,9 +1,19 @@
 import { createClient } from './client'
 import { Asset, AssetType, Generation, Favorite } from '@/types'
 
-// Create a new client for each request to ensure fresh auth state
+// Singleton client for consistency
+let supabaseClient: ReturnType<typeof createClient> | null = null
+
 function getSupabase() {
-  return createClient()
+  if (!supabaseClient) {
+    supabaseClient = createClient()
+  }
+  return supabaseClient
+}
+
+// Reset client (useful for auth changes)
+export function resetSupabaseClient() {
+  supabaseClient = null
 }
 
 // Generate a human-readable task ID
