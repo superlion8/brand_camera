@@ -153,7 +153,7 @@ export default function EditPage() {
   const [customPrompt, setCustomPrompt] = useState("")
   const [resultImage, setResultImage] = useState<string | null>(null)
   const [resultImages, setResultImages] = useState<string[]>([]) // For studio mode (2 images)
-  const [activeTab, setActiveTab] = useState<"model" | "bg" | "vibe">("model")
+  const [activeTab, setActiveTab] = useState<"model" | "bg">("model")
   
   // Studio mode state
   const [lightType, setLightType] = useState('Softbox')
@@ -647,12 +647,11 @@ export default function EditPage() {
                 <div className="flex gap-2 mb-3">
                   {[
                     { id: "model", label: "模特" },
-                    { id: "bg", label: "背景" },
-                    { id: "vibe", label: "氛围" },
+                    { id: "bg", label: "环境" },
                   ].map((tab) => (
                     <button
                       key={tab.id}
-                      onClick={() => setActiveTab(tab.id as "model" | "bg" | "vibe")}
+                      onClick={() => setActiveTab(tab.id as "model" | "bg")}
                       className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
                         activeTab === tab.id
                           ? "bg-zinc-900 text-white"
@@ -714,6 +713,7 @@ export default function EditPage() {
                         onSelect={setSelectedModel}
                         modelStyle={modelStyle}
                         compact
+                        showViewMore
                       />
                     </div>
                   )}
@@ -723,14 +723,7 @@ export default function EditPage() {
                       selected={selectedBackground}
                       onSelect={setSelectedBackground}
                       compact
-                    />
-                  )}
-                  {activeTab === "vibe" && (
-                    <AssetSelector
-                      type="vibe"
-                      selected={selectedVibe}
-                      onSelect={setSelectedVibe}
-                      compact
+                      showViewMore
                     />
                   )}
                 </div>

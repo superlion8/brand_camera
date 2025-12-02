@@ -353,8 +353,8 @@ export default function CameraPage() {
       console.log("Model base64 ready:", !!modelBase64, modelBase64 ? modelBase64.substring(0, 30) + "..." : "null")
       console.log("Background base64 ready:", !!bgBase64)
       
-      // Fire 4 independent requests with 1s stagger to avoid rate limits
-      console.log("Sending 4 staggered generation requests (1s apart)...")
+      // Fire 6 independent requests with 1s stagger to avoid rate limits
+      console.log("Sending 6 staggered generation requests (1s apart)...")
       
       const basePayload = {
         productImage: compressedProduct,
@@ -385,24 +385,26 @@ export default function CameraPage() {
         })
       }
       
-      // Create 4 model image requests:
-      // Index 0, 1: 极简模式 (simple mode) - only if model and background are selected, otherwise extended
-      // Index 2, 3: 扩展模式 (extended mode)
+      // Create 6 model image requests:
+      // Index 0, 1, 2: 极简模式 (simple mode) - only if model and background are selected, otherwise extended
+      // Index 3, 4, 5: 扩展模式 (extended mode)
       const requests = [
         createModelRequest(0, 0, canUseSimpleMode),                    // Model 1: 极简模式 (if available)
         createModelRequest(1, staggerDelay, canUseSimpleMode),         // Model 2: 极简模式 (if available)
-        createModelRequest(2, staggerDelay * 2, false),                // Model 3: 扩展模式
+        createModelRequest(2, staggerDelay * 2, canUseSimpleMode),     // Model 3: 极简模式 (if available)
         createModelRequest(3, staggerDelay * 3, false),                // Model 4: 扩展模式
+        createModelRequest(4, staggerDelay * 4, false),                // Model 5: 扩展模式
+        createModelRequest(5, staggerDelay * 5, false),                // Model 6: 扩展模式
       ]
       
       // Wait for all to complete (don't fail if some fail)
       const responses = await Promise.allSettled(requests)
       
-      // Process results - all 4 are model images
-      const allImages: (string | null)[] = [null, null, null, null]
-      const allModelTypes: (('pro' | 'flash') | null)[] = [null, null, null, null]
-      const allPrompts: (string | null)[] = [null, null, null, null]
-      const allGenModes: (('extended' | 'simple') | null)[] = [null, null, null, null]
+      // Process results - all 6 are model images
+      const allImages: (string | null)[] = [null, null, null, null, null, null]
+      const allModelTypes: (('pro' | 'flash') | null)[] = [null, null, null, null, null, null]
+      const allPrompts: (string | null)[] = [null, null, null, null, null, null]
+      const allGenModes: (('extended' | 'simple') | null)[] = [null, null, null, null, null, null]
       let maxDuration = 0
       
       for (let i = 0; i < responses.length; i++) {
@@ -411,7 +413,7 @@ export default function CameraPage() {
           try {
             const result = await response.value.json()
             if (result.success && result.image) {
-              // Direct mapping: index 0-3 maps to positions 0-3
+              // Direct mapping: index 0-5 maps to positions 0-5
               const targetIndex = result.index
               allImages[targetIndex] = result.image
               allModelTypes[targetIndex] = result.modelType
@@ -431,12 +433,12 @@ export default function CameraPage() {
         }
       }
       
-      // Filter out nulls and create final arrays (maintain order: product1, product2, model1, model2)
+      // Filter out nulls and create final arrays
       const finalImages = allImages.filter((img): img is string => img !== null)
       const finalModelTypes = allModelTypes.filter((t): t is 'pro' | 'flash' => t !== null)
       const finalGenModes = allGenModes.filter((m): m is 'extended' | 'simple' => m !== null)
       
-      // Per-image prompts (keep same order as images: product1, product2, model1, model2)
+      // Per-image prompts
       const finalPrompts = allPrompts.filter((p): p is string => p !== null)
       
       // Create combined data object
@@ -447,13 +449,13 @@ export default function CameraPage() {
         genModes: finalGenModes, // Track generation modes
         prompts: finalPrompts, // Per-image prompts
         stats: {
-          total: 4,
+          total: 6,
           successful: finalImages.length,
           duration: maxDuration,
         }
       }
       
-      console.log(`Generation complete: ${finalImages.length}/4 images in ~${maxDuration}ms`)
+      console.log(`Generation complete: ${finalImages.length}/6 images in ~${maxDuration}ms`)
       
       if (data.success && data.images.length > 0) {
         
@@ -1420,7 +1422,7 @@ export default function CameraPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-10">
-              {/* Simple Mode Images (极简模式) - indices 0, 1 */}
+              {/* Simple Mode Images (极简模式) - indices 0, 1, 2 */}
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
@@ -1429,8 +1431,8 @@ export default function CameraPage() {
                   </h3>
                   <span className="text-[10px] text-zinc-400">直接生成</span>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {generatedImages.slice(0, 2).map((url, i) => (
+                <div className="grid grid-cols-3 gap-3">
+                  {generatedImages.slice(0, 3).map((url, i) => (
                     <div 
                       key={i} 
                       className="group relative aspect-[4/5] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer"
@@ -1439,7 +1441,7 @@ export default function CameraPage() {
                       <Image src={url} alt="Result" fill className="object-cover" />
                       {/* Favorite button */}
                       <button 
-                        className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-colors ${
+                        className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center shadow-sm transition-colors ${
                           currentGenerationId && isFavorited(currentGenerationId, i) 
                             ? "bg-red-500 text-white" 
                             : "bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500"
@@ -1449,15 +1451,15 @@ export default function CameraPage() {
                           handleResultFavorite(i)
                         }}
                       >
-                        <Heart className={`w-4 h-4 ${currentGenerationId && isFavorited(currentGenerationId, i) ? "fill-current" : ""}`} />
+                        <Heart className={`w-3.5 h-3.5 ${currentGenerationId && isFavorited(currentGenerationId, i) ? "fill-current" : ""}`} />
                       </button>
                       {/* Type badge */}
                       <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
-                        <span className="px-2 py-1 rounded text-[10px] font-medium bg-green-500 text-white">
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-500 text-white">
                           极简
                         </span>
                         {generatedModelTypes[i] === 'flash' && (
-                          <span className="px-1.5 py-1 rounded text-[9px] font-medium bg-amber-500 text-white">
+                          <span className="px-1 py-0.5 rounded text-[8px] font-medium bg-amber-500 text-white">
                             2.5
                           </span>
                         )}
@@ -1467,7 +1469,7 @@ export default function CameraPage() {
                 </div>
               </div>
 
-              {/* Extended Mode Images (扩展模式) - indices 2, 3 */}
+              {/* Extended Mode Images (扩展模式) - indices 3, 4, 5 */}
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
@@ -1476,9 +1478,9 @@ export default function CameraPage() {
                   </h3>
                   <span className="text-[10px] text-zinc-400">摄影指令 + 生成</span>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {generatedImages.slice(2, 4).map((url, i) => {
-                    const actualIndex = i + 2
+                <div className="grid grid-cols-3 gap-3">
+                  {generatedImages.slice(3, 6).map((url, i) => {
+                    const actualIndex = i + 3
                     return (
                       <div 
                         key={i} 
@@ -1488,7 +1490,7 @@ export default function CameraPage() {
                         <Image src={url} alt="Result" fill className="object-cover" />
                         {/* Favorite button */}
                         <button 
-                          className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-colors ${
+                          className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center shadow-sm transition-colors ${
                             currentGenerationId && isFavorited(currentGenerationId, actualIndex) 
                               ? "bg-red-500 text-white" 
                               : "bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500"
@@ -1498,15 +1500,15 @@ export default function CameraPage() {
                             handleResultFavorite(actualIndex)
                           }}
                         >
-                          <Heart className={`w-4 h-4 ${currentGenerationId && isFavorited(currentGenerationId, actualIndex) ? "fill-current" : ""}`} />
+                          <Heart className={`w-3.5 h-3.5 ${currentGenerationId && isFavorited(currentGenerationId, actualIndex) ? "fill-current" : ""}`} />
                         </button>
                         {/* Type badge */}
                         <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
-                          <span className="px-2 py-1 rounded text-[10px] font-medium bg-blue-500 text-white">
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-blue-500 text-white">
                             扩展
                           </span>
                           {generatedModelTypes[actualIndex] === 'flash' && (
-                            <span className="px-1.5 py-1 rounded text-[9px] font-medium bg-amber-500 text-white">
+                            <span className="px-1 py-0.5 rounded text-[8px] font-medium bg-amber-500 text-white">
                               2.5
                             </span>
                           )}
@@ -1569,11 +1571,11 @@ export default function CameraPage() {
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             {/* Generation mode badge */}
                             <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                              selectedResultIndex < 2 
+                              selectedResultIndex < 3 
                                 ? "bg-green-100 text-green-700" 
                                 : "bg-blue-100 text-blue-700"
                             }`}>
-                              {selectedResultIndex < 2 ? "极简模式" : "扩展模式"}
+                              {selectedResultIndex < 3 ? "极简模式" : "扩展模式"}
                             </span>
                             {generatedModelTypes[selectedResultIndex] === 'flash' && (
                               <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700">
