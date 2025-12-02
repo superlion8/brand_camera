@@ -12,6 +12,51 @@ import { PRESET_PRODUCTS } from "@/data/presets"
 import Webcam from "react-webcam"
 import { motion, AnimatePresence } from "framer-motion"
 
+// HSV to RGB conversion
+function hsvToRgb(h: number, s: number, v: number): [number, number, number] {
+  let r = 0, g = 0, b = 0
+  const i = Math.floor(h * 6)
+  const f = h * 6 - i
+  const p = v * (1 - s)
+  const q = v * (1 - f * s)
+  const t = v * (1 - (1 - f) * s)
+  switch (i % 6) {
+    case 0: r = v; g = t; b = p; break
+    case 1: r = q; g = v; b = p; break
+    case 2: r = p; g = v; b = t; break
+    case 3: r = p; g = q; b = v; break
+    case 4: r = t; g = p; b = v; break
+    case 5: r = v; g = p; b = q; break
+  }
+  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)]
+}
+
+// RGB to Hex
+function rgbToHex(r: number, g: number, b: number): string {
+  return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('')
+}
+
+// Hex to HSV
+function hexToHsv(hex: string): [number, number, number] {
+  const r = parseInt(hex.slice(1, 3), 16) / 255
+  const g = parseInt(hex.slice(3, 5), 16) / 255
+  const b = parseInt(hex.slice(5, 7), 16) / 255
+  const max = Math.max(r, g, b), min = Math.min(r, g, b)
+  const v = max
+  const d = max - min
+  const s = max === 0 ? 0 : d / max
+  let h = 0
+  if (max !== min) {
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break
+      case g: h = (b - r) / d + 2; break
+      case b: h = (r - g) / d + 4; break
+    }
+    h /= 6
+  }
+  return [h, s, v]
+}
+
 type EditMode = 'edit' | 'studio'
 
 const styleOptions: { value: ModelStyle; label: string }[] = [
@@ -56,12 +101,19 @@ const LIGHT_DIRECTIONS = [
   { id: 'bottom-right', x: 2, y: 2 },
 ]
 
-const PRESET_COLORS = ['#FFFFFF', '#FFF5E6', '#E6F3FF', '#FFE4E1', '#E6FFE6', '#FFE4B5', '#E6E6FA', '#87CEEB']
+// Preset background colors - pairs for gradients
+const PRESET_BG_COLORS = [
+  { id: 'warm', colors: ['#FFE4B5', '#DEB887'], label: '暖金' },
+  { id: 'cool', colors: ['#87CEEB', '#B0E0E6'], label: '冷蓝' },
+  { id: 'neutral', colors: ['#D3D3D3', '#A9A9A9'], label: '中灰' },
+  { id: 'rose', colors: ['#DDA0DD', '#DA70D6'], label: '玫瑰' },
+]
 
 export default function EditPage() {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const webcamRef = useRef<Webcam>(null)
+  const colorPickerRef = useRef<HTMLDivElement>(null)
   const [inputImage, setInputImage] = useState<string | null>(null)
   
   // Mode: edit or studio
@@ -102,7 +154,50 @@ export default function EditPage() {
   const [lightDirection, setLightDirection] = useState('front')
   const [lightColor, setLightColor] = useState('#FFFFFF')
   
+  // Color picker state (HSV)
+  const [hue, setHue] = useState(0)
+  const [saturation, setSaturation] = useState(0)
+  const [brightness, setBrightness] = useState(1)
+  
   const { addGeneration, userProducts, generations } = useAssetStore()
+  
+  // Update lightColor when HSV changes
+  const updateColorFromHSV = useCallback((h: number, s: number, v: number) => {
+    const [r, g, b] = hsvToRgb(h, s, v)
+    setLightColor(rgbToHex(r, g, b))
+  }, [])
+  
+  // Handle saturation/brightness picker
+  const handleSBPick = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    const rect = colorPickerRef.current?.getBoundingClientRect()
+    if (!rect) return
+    
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+    
+    const x = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+    const y = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height))
+    
+    setSaturation(x)
+    setBrightness(1 - y)
+    updateColorFromHSV(hue, x, 1 - y)
+  }, [hue, updateColorFromHSV])
+  
+  // Handle hue slider
+  const handleHueChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const h = parseFloat(e.target.value)
+    setHue(h)
+    updateColorFromHSV(h, saturation, brightness)
+  }, [saturation, brightness, updateColorFromHSV])
+  
+  // Set color from preset
+  const setPresetColor = useCallback((hex: string) => {
+    const [h, s, v] = hexToHsv(hex)
+    setHue(h)
+    setSaturation(s)
+    setBrightness(v)
+    setLightColor(hex)
+  }, [])
   
   // Camera handlers
   const handleCapture = useCallback(() => {
@@ -630,37 +725,73 @@ export default function EditPage() {
                 </div>
               </div>
               
-              {/* Background Color */}
+              {/* Background Color - Advanced picker */}
               <div>
-                <h3 className="text-sm font-semibold text-zinc-700 mb-2">背景颜色</h3>
-                <div className="bg-zinc-50 rounded-xl p-3 border border-zinc-200">
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {PRESET_COLORS.map(color => (
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-semibold text-zinc-700">背景颜色</h3>
+                  <div className="flex items-center gap-2">
+                    {/* Preset color pairs */}
+                    {PRESET_BG_COLORS.map(preset => (
                       <button
-                        key={color}
-                        onClick={() => setLightColor(color)}
-                        className={`w-8 h-8 rounded-full border-2 transition-all ${
-                          lightColor === color
-                            ? 'border-amber-500 scale-110'
-                            : 'border-zinc-200 hover:border-zinc-300'
-                        }`}
-                        style={{ backgroundColor: color }}
+                        key={preset.id}
+                        onClick={() => setPresetColor(preset.colors[0])}
+                        className="w-7 h-7 rounded-full border-2 border-white shadow-sm overflow-hidden"
+                        style={{ 
+                          background: `linear-gradient(135deg, ${preset.colors[0]} 50%, ${preset.colors[1]} 50%)`
+                        }}
+                        title={preset.label}
                       />
                     ))}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      value={lightColor}
-                      onChange={(e) => setLightColor(e.target.value)}
-                      className="w-8 h-8 rounded cursor-pointer border-0"
+                </div>
+                
+                <div className="bg-zinc-900 rounded-2xl p-3 space-y-3">
+                  {/* Saturation/Brightness picker */}
+                  <div
+                    ref={colorPickerRef}
+                    onClick={handleSBPick}
+                    onMouseMove={(e) => e.buttons === 1 && handleSBPick(e)}
+                    onTouchMove={handleSBPick}
+                    className="relative h-32 rounded-xl cursor-crosshair overflow-hidden"
+                    style={{
+                      background: `
+                        linear-gradient(to bottom, transparent, black),
+                        linear-gradient(to right, white, hsl(${hue * 360}, 100%, 50%))
+                      `
+                    }}
+                  >
+                    {/* Picker indicator */}
+                    <div
+                      className="absolute w-4 h-4 rounded-full border-2 border-white shadow-lg pointer-events-none"
+                      style={{
+                        left: `calc(${saturation * 100}% - 8px)`,
+                        top: `calc(${(1 - brightness) * 100}% - 8px)`,
+                        backgroundColor: lightColor,
+                      }}
                     />
+                  </div>
+                  
+                  {/* Hue slider */}
+                  <div className="relative">
                     <input
-                      type="text"
-                      value={lightColor}
-                      onChange={(e) => setLightColor(e.target.value)}
-                      className="flex-1 h-8 px-2 border border-zinc-200 rounded-lg text-xs font-mono"
-                      placeholder="#FFFFFF"
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={hue}
+                      onChange={handleHueChange}
+                      className="w-full h-3 rounded-full appearance-none cursor-pointer"
+                      style={{
+                        background: 'linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)',
+                      }}
+                    />
+                    {/* Custom thumb indicator */}
+                    <div
+                      className="absolute top-0 w-4 h-3 rounded-full border-2 border-white shadow pointer-events-none"
+                      style={{
+                        left: `calc(${hue * 100}% - 8px)`,
+                        backgroundColor: `hsl(${hue * 360}, 100%, 50%)`,
+                      }}
                     />
                   </div>
                 </div>
