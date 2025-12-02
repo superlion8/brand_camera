@@ -48,6 +48,9 @@ interface AssetState {
   // Add single asset
   addUserAsset: (asset: Asset) => Promise<void>
   
+  // Delete single asset
+  deleteUserAsset: (type: AssetType, id: string) => Promise<void>
+  
   // Pin actions
   togglePin: (type: AssetType, id: string) => Promise<void>
   togglePresetPin: (id: string) => Promise<void>
@@ -139,6 +142,38 @@ export const useAssetStore = create<AssetState>()(
           console.log('[Asset] Sync result:', result ? 'success' : 'failed')
         } else {
           console.warn('[Asset] Not syncing - no currentUserId')
+        }
+      },
+      
+      // Delete single asset from appropriate collection
+      deleteUserAsset: async (type, id) => {
+        const { currentUserId } = get()
+        
+        console.log('[Asset] Deleting user asset:', type, id, 'currentUserId:', currentUserId)
+        
+        // Update local state
+        switch (type) {
+          case 'model':
+            set((state) => ({ userModels: state.userModels.filter(a => a.id !== id) }))
+            break
+          case 'background':
+            set((state) => ({ userBackgrounds: state.userBackgrounds.filter(a => a.id !== id) }))
+            break
+          case 'product':
+            set((state) => ({ userProducts: state.userProducts.filter(a => a.id !== id) }))
+            break
+          case 'vibe':
+            set((state) => ({ userVibes: state.userVibes.filter(a => a.id !== id) }))
+            break
+        }
+        
+        // Sync to cloud if logged in
+        if (currentUserId) {
+          console.log('[Asset] Deleting from cloud for user:', currentUserId)
+          const result = await syncService.deleteUserAsset(currentUserId, id)
+          console.log('[Asset] Delete sync result:', result ? 'success' : 'failed')
+        } else {
+          console.warn('[Asset] Not syncing delete - no currentUserId')
         }
       },
       

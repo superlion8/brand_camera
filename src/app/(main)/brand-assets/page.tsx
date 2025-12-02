@@ -45,10 +45,8 @@ export default function BrandAssetsPage() {
     userProducts,
     userVibes,
     pinnedPresetIds,
-    setUserModels,
-    setUserBackgrounds,
-    setUserProducts,
-    setUserVibes,
+    addUserAsset,
+    deleteUserAsset,
     togglePin,
     togglePresetPin,
     isPresetPinned,
@@ -78,33 +76,19 @@ export default function BrandAssetsPage() {
     const files = e.target.files
     if (!files || files.length === 0) return
     
-    // Process all files
-    const newAssets: Asset[] = []
+    // Process all files and add them using addUserAsset (which syncs to cloud)
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
       const base64 = await fileToBase64(file)
-      newAssets.push({
+      const newAsset: Asset = {
         id: generateId(),
         type: uploadType,
         name: file.name.replace(/\.[^/.]+$/, ""),
         imageUrl: base64,
-      })
-    }
-    
-    // Add all new assets at once
-    switch (uploadType) {
-      case "model":
-        setUserModels([...newAssets, ...userModels])
-        break
-      case "background":
-        setUserBackgrounds([...newAssets, ...userBackgrounds])
-        break
-      case "product":
-        setUserProducts([...newAssets, ...userProducts])
-        break
-      case "vibe":
-        setUserVibes([...newAssets, ...userVibes])
-        break
+      }
+      
+      // Use addUserAsset which handles both local state and cloud sync
+      await addUserAsset(newAsset)
     }
     
     // Switch to user tab after upload
@@ -115,21 +99,9 @@ export default function BrandAssetsPage() {
     }
   }
   
-  const handleDelete = (type: AssetType, id: string) => {
-    switch (type) {
-      case "model":
-        setUserModels(userModels.filter((a: Asset) => a.id !== id))
-        break
-      case "background":
-        setUserBackgrounds(userBackgrounds.filter((a: Asset) => a.id !== id))
-        break
-      case "product":
-        setUserProducts(userProducts.filter((a: Asset) => a.id !== id))
-        break
-      case "vibe":
-        setUserVibes(userVibes.filter((a: Asset) => a.id !== id))
-        break
-    }
+  const handleDelete = async (type: AssetType, id: string) => {
+    // Use deleteUserAsset which handles both local state and cloud sync
+    await deleteUserAsset(type, id)
   }
   
   const userAssets = getUserAssets(activeType)
