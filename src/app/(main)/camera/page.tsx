@@ -5,8 +5,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
 import Webcam from "react-webcam"
 import { 
-  ArrowLeft, Check, Loader2, Image as ImageIcon, 
-  SlidersHorizontal, X, Sparkles, Wand2, Camera, Home,
+  ArrowLeft, ArrowRight, Check, Loader2, Image as ImageIcon, 
+  SlidersHorizontal, X, Wand2, Camera, Home,
   Heart, Download, Pin, ZoomIn, FolderHeart, Plus
 } from "lucide-react"
 import { useCameraStore } from "@/stores/cameraStore"
@@ -17,7 +17,7 @@ import { fileToBase64, generateId, compressBase64Image, fetchWithTimeout, ensure
 import { Asset, ModelStyle, ModelGender, ModelSubcategory, BackgroundSubcategory } from "@/types"
 import Image from "next/image"
 import { 
-  PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_VIBES, PRESET_PRODUCTS,
+  PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_PRODUCTS,
   MODEL_SUBCATEGORIES, BACKGROUND_SUBCATEGORIES
 } from "@/data/presets"
 
@@ -89,7 +89,6 @@ export default function CameraPage() {
   
   // Panel states
   const [showCustomPanel, setShowCustomPanel] = useState(false)
-  const [showVibePanel, setShowVibePanel] = useState(false)
   const [showProductPanel, setShowProductPanel] = useState(false)
   const [showProduct2Panel, setShowProduct2Panel] = useState(false)
   const [activeCustomTab, setActiveCustomTab] = useState("style")
@@ -98,18 +97,16 @@ export default function CameraPage() {
   // Selections
   const [selectedBg, setSelectedBg] = useState<string | null>(null)
   const [selectedModel, setSelectedModel] = useState<string | null>(null)
-  const [selectedVibe, setSelectedVibe] = useState<string | null>(null)
   const [selectedModelStyle, setSelectedModelStyle] = useState<ModelStyle | null>(null)
   const [selectedModelGender, setSelectedModelGender] = useState<ModelGender | null>(null)
   const [modelSubcategory, setModelSubcategory] = useState<ModelSubcategory | 'mine' | null>(null)
   const [bgSubcategory, setBgSubcategory] = useState<BackgroundSubcategory | 'mine' | null>(null)
-  const [vibeSubcategory, setVibeSubcategory] = useState<'mine' | null>(null)
   
   // Track if product images came from phone upload (not asset library)
   const [productFromPhone, setProductFromPhone] = useState(false)
   const [product2FromPhone, setProduct2FromPhone] = useState(false)
   
-  const { addGeneration, addUserAsset, userModels, userBackgrounds, userVibes, userProducts, addFavorite, removeFavorite, isFavorited, favorites } = useAssetStore()
+  const { addGeneration, addUserAsset, userModels, userBackgrounds, userProducts, addFavorite, removeFavorite, isFavorited, favorites } = useAssetStore()
   const { addTask, updateTaskStatus, tasks } = useGenerationTaskStore()
   
   // Helper to sort by pinned status
@@ -133,19 +130,13 @@ export default function CameraPage() {
       ? [...sortByPinned(userBackgrounds), ...PRESET_BACKGROUNDS.filter(b => b.category === bgSubcategory)]
       : [...sortByPinned(userBackgrounds), ...PRESET_BACKGROUNDS]
   
-  const filteredVibes = vibeSubcategory === 'mine'
-    ? sortByPinned(userVibes)
-    : [...sortByPinned(userVibes), ...PRESET_VIBES]
-  
   // Aliases for compatibility
   const allModels = filteredModels
   const allBackgrounds = filteredBackgrounds
-  const allVibes = filteredVibes
   
   // Get selected assets from merged arrays
   const activeModel = allModels.find(m => m.id === selectedModel)
   const activeBg = allBackgrounds.find(b => b.id === selectedBg)
-  const activeVibe = allVibes.find(v => v.id === selectedVibe)
   
   const videoConstraints = {
     width: { ideal: 1920 },
@@ -213,7 +204,6 @@ export default function CameraPage() {
     const currentModelGender = selectedModelGender
     const currentModel = activeModel
     const currentBg = activeBg
-    const currentVibe = activeVibe
     const currentProduct2 = capturedImage2
     const currentProductFromPhone = productFromPhone
     const currentProduct2FromPhone = product2FromPhone
@@ -224,7 +214,6 @@ export default function CameraPage() {
       modelGender: currentModelGender || undefined,
       model: currentModel?.name,
       background: currentBg?.name,
-      vibe: currentVibe?.name,
       hasProduct2: !!currentProduct2,
     }
     
@@ -242,7 +231,6 @@ export default function CameraPage() {
       currentModelGender,
       currentModel,
       currentBg,
-      currentVibe,
       currentProductFromPhone,
       currentProduct2FromPhone
     )
@@ -258,7 +246,6 @@ export default function CameraPage() {
     modelGender: ModelGender | null,
     model: Asset | undefined,
     background: Asset | undefined,
-    vibe: Asset | undefined,
     fromPhone: boolean,
     fromPhone2: boolean
   ) => {
@@ -267,22 +254,19 @@ export default function CameraPage() {
       console.log("Preparing images...")
       console.log("Model selected:", model?.name, "URL:", model?.imageUrl?.substring(0, 50))
       console.log("Background selected:", background?.name)
-      console.log("Vibe selected:", vibe?.name)
       console.log("Has second product:", !!inputImage2)
       
       const compressedProduct = await compressBase64Image(inputImage, 1024)
       const compressedProduct2 = inputImage2 ? await compressBase64Image(inputImage2, 1024) : null
       
       // Convert URLs to base64 if needed (for preset assets)
-      const [modelBase64, bgBase64, vibeBase64] = await Promise.all([
+      const [modelBase64, bgBase64] = await Promise.all([
         ensureBase64(model?.imageUrl),
         ensureBase64(background?.imageUrl),
-        ensureBase64(vibe?.imageUrl),
       ])
       
       console.log("Model base64 ready:", !!modelBase64, modelBase64 ? modelBase64.substring(0, 30) + "..." : "null")
       console.log("Background base64 ready:", !!bgBase64)
-      console.log("Vibe base64 ready:", !!vibeBase64)
       
       // Fire 4 independent requests with 1s stagger to avoid rate limits
       console.log("Sending 4 staggered generation requests (1s apart)...")
@@ -294,7 +278,6 @@ export default function CameraPage() {
         modelStyle: modelStyle,
         modelGender: modelGender,
         backgroundImage: bgBase64,
-        vibeImage: vibeBase64,
       }
       
       const staggerDelay = 1000 // 1 second between each request
@@ -426,10 +409,8 @@ export default function CameraPage() {
             modelGender: modelGender || undefined,
             model: model?.name,
             background: background?.name,
-            vibe: vibe?.name,
             modelImage: model?.imageUrl,
             backgroundImage: background?.imageUrl,
-            vibeImage: vibe?.imageUrl,
           },
         })
         
@@ -716,11 +697,6 @@ export default function CameraPage() {
                     背景: {activeBg.name}
                   </span>
                 )}
-                {activeVibe && (
-                  <span className="px-2 py-1 bg-black/50 text-white text-xs rounded-full backdrop-blur-md">
-                    氛围: {activeVibe.name}
-                  </span>
-                )}
               </div>
 
               {mode === "camera" && (
@@ -755,22 +731,14 @@ export default function CameraPage() {
             <div className="bg-black flex flex-col justify-end pb-safe pt-6 px-6 relative z-20 shrink-0 min-h-[9rem]">
               {mode === "review" ? (
                 <div className="space-y-4 pb-4">
-                  {/* Custom & Vibe buttons in review mode */}
-                  <div className="flex justify-center gap-4">
+                  {/* Custom button in review mode */}
+                  <div className="flex justify-center">
                     <button 
                       onClick={() => setShowCustomPanel(true)}
-                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white/90 hover:bg-white/20 transition-colors border border-white/20"
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 text-white/90 hover:bg-white/20 transition-colors border border-white/20"
                     >
                       <SlidersHorizontal className="w-4 h-4" />
-                      <span className="text-sm">自定义</span>
-                    </button>
-                    
-                    <button 
-                      onClick={() => setShowVibePanel(true)}
-                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white/90 hover:bg-white/20 transition-colors border border-white/20"
-                    >
-                      <Sparkles className="w-4 h-4" />
-                      <span className="text-sm">氛围</span>
+                      <span className="text-sm font-medium">自定义模特和背景</span>
                     </button>
                   </div>
                   
@@ -788,63 +756,37 @@ export default function CameraPage() {
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-around pb-4">
-                  {/* Left Controls: Album & Assets */}
-                  <div className="flex gap-3">
-                    {/* Album */}
-                    <button 
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors"
-                    >
-                      <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-                        <ImageIcon className="w-5 h-5" />
-                      </div>
-                      <span className="text-[10px]">相册</span>
-                    </button>
-                    
-                    {/* Asset Library */}
-                    <button 
-                      onClick={() => setShowProductPanel(true)}
-                      className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors"
-                    >
-                      <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/10">
-                        <FolderHeart className="w-5 h-5" />
-                      </div>
-                      <span className="text-[10px]">资产库</span>
-                    </button>
-                  </div>
+                <div className="flex items-center justify-center gap-8 pb-4">
+                  {/* Album - Left of shutter */}
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
+                      <ImageIcon className="w-6 h-6" />
+                    </div>
+                    <span className="text-[10px]">相册</span>
+                  </button>
 
                   {/* Shutter */}
                   <button 
                     onClick={handleCapture}
                     disabled={!hasCamera}
-                    className="w-20 h-20 rounded-full border-4 border-white/30 flex items-center justify-center relative group active:scale-95 transition-transform mx-4 disabled:opacity-50"
+                    className="w-20 h-20 rounded-full border-4 border-white/30 flex items-center justify-center relative group active:scale-95 transition-transform disabled:opacity-50"
                   >
                     <div className="w-[72px] h-[72px] bg-white rounded-full group-active:bg-gray-200 transition-colors border-2 border-black" />
                   </button>
 
-                  {/* Right Controls: Custom & Vibe */}
-                  <div className="flex gap-3">
-                    <button 
-                      onClick={() => setShowCustomPanel(true)}
-                      className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors"
-                    >
-                      <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/10">
-                        <SlidersHorizontal className="w-5 h-5" />
-                      </div>
-                      <span className="text-[10px]">自定义</span>
-                    </button>
-                    
-                    <button 
-                      onClick={() => setShowVibePanel(true)}
-                      className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors"
-                    >
-                      <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/10">
-                        <Sparkles className="w-5 h-5" />
-                      </div>
-                      <span className="text-[10px]">氛围</span>
-                    </button>
-                  </div>
+                  {/* Asset Library - Right of shutter */}
+                  <button 
+                    onClick={() => setShowProductPanel(true)}
+                    className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
+                      <FolderHeart className="w-6 h-6" />
+                    </div>
+                    <span className="text-[10px]">资产库</span>
+                  </button>
                 </div>
               )}
             </div>
@@ -867,13 +809,14 @@ export default function CameraPage() {
                     transition={{ type: "spring", damping: 25, stiffness: 200 }}
                     className="absolute bottom-0 left-0 right-0 h-[60%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
                   >
-                    <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
-                      <span className="font-semibold">自定义配置</span>
+                    <div className="h-14 border-b flex items-center justify-between px-4 shrink-0">
+                      <span className="font-semibold text-lg">自定义配置</span>
                       <button 
                         onClick={() => setShowCustomPanel(false)} 
-                        className="h-8 w-8 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center"
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors"
                       >
-                        <X className="w-4 h-4" />
+                        下一步
+                        <ArrowRight className="w-4 h-4" />
                       </button>
                     </div>
                     <div className="p-2 flex gap-2 border-b overflow-x-auto shrink-0">
@@ -1047,68 +990,6 @@ export default function CameraPage() {
               )}
             </AnimatePresence>
 
-            {/* Slide-up Panel: Vibe */}
-            <AnimatePresence>
-              {showVibePanel && (
-                <>
-                  <motion.div 
-                    initial={{ opacity: 0 }} 
-                    animate={{ opacity: 1 }} 
-                    exit={{ opacity: 0 }}
-                    className="absolute inset-0 bg-black/60 z-40 backdrop-blur-sm"
-                    onClick={() => setShowVibePanel(false)}
-                  />
-                  <motion.div 
-                    initial={{ y: "100%" }} 
-                    animate={{ y: 0 }} 
-                    exit={{ y: "100%" }}
-                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className="absolute bottom-0 left-0 right-0 h-[50%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
-                  >
-                    <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
-                      <span className="font-semibold">选择氛围</span>
-                      <button 
-                        onClick={() => setShowVibePanel(false)} 
-                        className="h-8 w-8 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4">
-                      {/* Vibe Subcategory Tabs */}
-                      <div className="flex gap-2 flex-wrap mb-4">
-                        <button
-                          onClick={() => setVibeSubcategory(null)}
-                          className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                            !vibeSubcategory
-                              ? "bg-zinc-900 text-white"
-                              : "bg-white text-zinc-600 border border-zinc-200"
-                          }`}
-                        >
-                          全部
-                        </button>
-                        <button
-                          onClick={() => setVibeSubcategory(vibeSubcategory === 'mine' ? null : 'mine')}
-                          className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                            vibeSubcategory === 'mine'
-                              ? "bg-zinc-900 text-white"
-                              : "bg-white text-zinc-600 border border-zinc-200"
-                          }`}
-                        >
-                          我的
-                          {userVibes.length > 0 && <span className="ml-1 text-zinc-400">({userVibes.length})</span>}
-                        </button>
-                      </div>
-                      <AssetGrid 
-                        items={allVibes} 
-                        selectedId={selectedVibe} 
-                        onSelect={(id) => setSelectedVibe(selectedVibe === id ? null : id)} 
-                      />
-                    </div>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
             
             {/* Slide-up Panel: Product Assets */}
             <AnimatePresence>
@@ -1702,21 +1583,6 @@ export default function CameraPage() {
                               </div>
                             )}
                             
-                            {/* Vibe Image */}
-                            {activeVibe?.imageUrl && (
-                              <div className="flex flex-col items-center">
-                                <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
-                                  <Image 
-                                    src={activeVibe.imageUrl} 
-                                    alt="氛围" 
-                                    width={56}
-                                    height={56}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                                <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{activeVibe.name || '氛围'}</p>
-                              </div>
-                            )}
                           </div>
                           
                           {/* Style params */}
