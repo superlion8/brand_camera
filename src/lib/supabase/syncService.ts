@@ -228,21 +228,35 @@ export async function fetchGenerations(userId: string): Promise<Generation[]> {
     return []
   }
   
-  console.log('[Sync] Fetched generations:', data?.length || 0)
-
-  return (data || [])
-    // Filter out generations without valid output images
-    .filter(row => {
-      const urls = row.output_image_urls || row.output_images
-      return urls && Array.isArray(urls) && urls.length > 0
+  console.log('[Sync] Fetched generations from DB:', data?.length || 0)
+  
+  if (data && data.length > 0) {
+    console.log('[Sync] First generation sample:', {
+      id: data[0].id,
+      user_id: data[0].user_id,
+      has_output_image_urls: !!data[0].output_image_urls,
+      has_output_images: !!data[0].output_images,
+      output_image_urls_length: data[0].output_image_urls?.length,
+      output_images_length: data[0].output_images?.length,
     })
+  }
+
+  const result = (data || [])
     .map(row => {
       // Handle both old and new table schemas
-      let outputUrls = row.output_image_urls || []
+      let outputUrls: string[] = []
       
-      // If using new schema with output_images JSONB
-      if (row.output_images && Array.isArray(row.output_images)) {
-        outputUrls = row.output_images.map((img: any) => img.url || img)
+      // Try output_image_urls first (TEXT[] array)
+      if (row.output_image_urls && Array.isArray(row.output_image_urls) && row.output_image_urls.length > 0) {
+        outputUrls = row.output_image_urls
+      }
+      // Fallback to output_images (JSONB array)
+      else if (row.output_images && Array.isArray(row.output_images) && row.output_images.length > 0) {
+        outputUrls = row.output_images.map((img: any) => {
+          if (typeof img === 'string') return img
+          if (typeof img === 'object' && img.url) return img.url
+          return null
+        }).filter(Boolean)
       }
       
       return {
@@ -259,6 +273,11 @@ export async function fetchGenerations(userId: string): Promise<Generation[]> {
         createdAt: row.created_at,
       }
     })
+    // Filter out generations without valid output images AFTER mapping
+    .filter(gen => gen.outputImageUrls && gen.outputImageUrls.length > 0)
+  
+  console.log('[Sync] Generations after processing:', result.length)
+  return result
 }
 
 // Helper to map old type names to new task_type values

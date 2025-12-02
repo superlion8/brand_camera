@@ -341,48 +341,31 @@ export const useAssetStore = create<AssetState>()(
           console.log('[Sync] Starting cloud sync for user:', userId)
           const cloudData = await syncService.syncAllData(userId)
           
-          // Check if we got valid data (at least one non-empty category)
-          const hasCloudData = 
-            cloudData.userModels.length > 0 ||
-            cloudData.userBackgrounds.length > 0 ||
-            cloudData.userProducts.length > 0 ||
-            cloudData.userVibes.length > 0 ||
-            cloudData.generations.length > 0 ||
-            cloudData.favorites.length > 0 ||
-            cloudData.pinnedPresetIds.size > 0
+          console.log('[Sync] Cloud data received:', {
+            models: cloudData.userModels.length,
+            backgrounds: cloudData.userBackgrounds.length,
+            products: cloudData.userProducts.length,
+            vibes: cloudData.userVibes.length,
+            generations: cloudData.generations.length,
+            favorites: cloudData.favorites.length,
+            pinnedPresets: cloudData.pinnedPresetIds.size,
+          })
           
-          // Only update if we have cloud data, otherwise keep local data
-          // This prevents clearing local data when cloud tables don't exist
-          if (hasCloudData) {
-            // Cloud data takes precedence for logged-in users
-            set({
-              userModels: cloudData.userModels,
-              userBackgrounds: cloudData.userBackgrounds,
-              userProducts: cloudData.userProducts,
-              userVibes: cloudData.userVibes,
-              generations: cloudData.generations,
-              favorites: cloudData.favorites,
-              pinnedPresetIds: cloudData.pinnedPresetIds,
-              lastSyncAt: new Date().toISOString(),
-              isSyncing: false,
-            })
-            
-            console.log('[Sync] Cloud sync completed with data:', {
-              models: cloudData.userModels.length,
-              backgrounds: cloudData.userBackgrounds.length,
-              products: cloudData.userProducts.length,
-              generations: cloudData.generations.length,
-              favorites: cloudData.favorites.length,
-              pinnedPresets: cloudData.pinnedPresetIds.size,
-            })
-          } else {
-            // No cloud data found - keep local data, just mark as synced
-            set({
-              lastSyncAt: new Date().toISOString(),
-              isSyncing: false,
-            })
-            console.log('[Sync] No cloud data found, keeping local data')
-          }
+          // Always update from cloud when logged in
+          // Cloud data is the source of truth for logged-in users
+          set({
+            userModels: cloudData.userModels,
+            userBackgrounds: cloudData.userBackgrounds,
+            userProducts: cloudData.userProducts,
+            userVibes: cloudData.userVibes,
+            generations: cloudData.generations,
+            favorites: cloudData.favorites,
+            pinnedPresetIds: cloudData.pinnedPresetIds,
+            lastSyncAt: new Date().toISOString(),
+            isSyncing: false,
+          })
+          
+          console.log('[Sync] Cloud sync completed successfully')
         } catch (error) {
           console.error('[Sync] Cloud sync failed:', error)
           set({ isSyncing: false })
