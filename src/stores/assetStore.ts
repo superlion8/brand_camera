@@ -207,6 +207,8 @@ export const useAssetStore = create<AssetState>()(
       addGeneration: async (generation) => {
         const { currentUserId } = get()
         
+        console.log('[Store] Adding generation, currentUserId:', currentUserId, 'generationId:', generation.id)
+        
         // Save images to IndexedDB (for offline/local cache)
         const savedOutputUrls: string[] = []
         for (let i = 0; i < generation.outputImageUrls.length; i++) {
@@ -227,14 +229,26 @@ export const useAssetStore = create<AssetState>()(
         }
         await dbPut(STORES.GENERATIONS, genToStore)
         
-        set((state) => ({ 
-          generations: [generation, ...state.generations] 
-        }))
-        
-        // Sync to cloud if logged in
+        // Sync to cloud if logged in - do this BEFORE updating local state
+        // so we can get the cloud-generated UUID
+        let cloudGeneration = generation
         if (currentUserId) {
-          await syncService.saveGeneration(currentUserId, generation)
+          console.log('[Store] Syncing generation to cloud for user:', currentUserId)
+          const result = await syncService.saveGeneration(currentUserId, generation)
+          if (result) {
+            console.log('[Store] Generation sync success, cloud ID:', result.id)
+            // Use the cloud-generated ID for the local state
+            cloudGeneration = { ...generation, id: result.id }
+          } else {
+            console.warn('[Store] Generation sync failed, using local ID')
+          }
+        } else {
+          console.warn('[Store] Not syncing generation - no currentUserId')
         }
+        
+        set((state) => ({ 
+          generations: [cloudGeneration, ...state.generations] 
+        }))
       },
       
       setGenerations: (generations) => set({ generations }),
@@ -267,6 +281,8 @@ export const useAssetStore = create<AssetState>()(
       addFavorite: async (favoriteData) => {
         const { currentUserId } = get()
         
+        console.log('[Store] Adding favorite, currentUserId:', currentUserId, 'data:', favoriteData)
+        
         const favorite: Favorite = {
           ...favoriteData,
           id: generateId(),
@@ -282,7 +298,11 @@ export const useAssetStore = create<AssetState>()(
         
         // Sync to cloud if logged in
         if (currentUserId) {
-          await syncService.saveFavorite(currentUserId, favorite)
+          console.log('[Store] Syncing favorite to cloud for user:', currentUserId)
+          const result = await syncService.saveFavorite(currentUserId, favorite)
+          console.log('[Store] Favorite sync result:', result ? 'success' : 'failed')
+        } else {
+          console.warn('[Store] Not syncing favorite - no currentUserId')
         }
       },
       

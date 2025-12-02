@@ -152,10 +152,10 @@ export async function saveUserAsset(userId: string, asset: Asset): Promise<Asset
   
   console.log('[Sync] Session user ID:', session.user.id, 'Requested user ID:', userId)
   
+  // Don't include 'id' - let Supabase auto-generate UUID
   const { data, error } = await supabase
     .from('user_assets')
     .insert({
-      id: asset.id,
       user_id: userId,
       type: asset.type,
       name: asset.name,
@@ -543,24 +543,61 @@ export async function fetchFavorites(userId: string): Promise<Favorite[]> {
 }
 
 export async function saveFavorite(userId: string, favorite: Favorite): Promise<Favorite | null> {
+  console.log('[Sync] Saving favorite:', { userId, generationId: favorite.generationId, imageIndex: favorite.imageIndex })
+  
   const supabase = getSupabase()
+  
+  // Check if we have a valid session
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) {
+    console.error('[Sync] No active session, cannot save favorite')
+    return null
+  }
+  
+  console.log('[Sync] Session user ID:', session.user.id, 'Requested user ID:', userId)
+  
+  // The generation_id must be a valid UUID from the generations table
+  // Check if the generation exists and get its UUID
+  const { data: generation, error: genError } = await supabase
+    .from('generations')
+    .select('id')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(50)
+  
+  // Find the generation that matches our local ID
+  // Note: Local generationId might be a custom string, we need to handle this
+  let generationUuid = favorite.generationId
+  
+  // If the generationId doesn't look like a UUID, try to find a matching generation
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (!uuidRegex.test(favorite.generationId)) {
+    console.warn('[Sync] Generation ID is not a UUID, favorite may not sync correctly:', favorite.generationId)
+    // For now, just log and continue - the insert will fail if the FK doesn't exist
+  }
+  
+  // Don't include 'id' - let Supabase auto-generate UUID
   const { data, error } = await supabase
     .from('favorites')
     .insert({
-      id: favorite.id,
       user_id: userId,
       generation_id: favorite.generationId,
       image_index: favorite.imageIndex,
-      created_at: favorite.createdAt,
     })
     .select()
     .single()
 
   if (error) {
-    console.error('Error saving favorite:', error)
+    console.error('[Sync] Error saving favorite:', error.message, error.code, error.details)
+    // Common error: Foreign key violation if generation doesn't exist in cloud
+    if (error.code === '23503') {
+      console.error('[Sync] Foreign key violation - generation may not exist in cloud yet')
+    }
     return null
   }
 
+  console.log('[Sync] Favorite saved successfully:', data.id)
+  
   return {
     id: data.id,
     generationId: data.generation_id,
