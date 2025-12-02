@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import { Download, Heart, X, Wand2, Camera, Users, Home, ZoomIn, Loader2, Sparkles } from "lucide-react"
+import { Download, Heart, X, Wand2, Camera, Users, Home, ZoomIn, Loader2, Sparkles, Lightbulb } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { useGenerationTaskStore, GenerationTask } from "@/stores/generationTaskStore"
 import { Generation, Favorite } from "@/types"
@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
 
-type TabType = "all" | "simple" | "extended" | "favorites"
+type TabType = "all" | "model" | "product" | "favorites"
 
 export default function GalleryPage() {
   const router = useRouter()
@@ -47,20 +47,20 @@ export default function GalleryPage() {
   // Filter images based on tab
   const getDisplayedHistory = (): { gen: Generation; url: string; idx: number }[] => {
     switch (activeTab) {
-      case "simple":
-        // Simple mode images are index 0 and 1 (极简模式)
-        return generations.flatMap((gen: Generation) => 
-          gen.outputImageUrls
-            .slice(0, 2)
-            .map((url: string, idx: number) => ({ gen, url, idx }))
-        )
-      case "extended":
-        // Extended mode images are index 2 and 3 (扩展模式)
-        return generations.flatMap((gen: Generation) => 
-          gen.outputImageUrls
-            .slice(2, 4)
-            .map((url: string, idx: number) => ({ gen, url, idx: idx + 2 }))
-        )
+      case "model":
+        // Model images from camera_model type generations
+        return generations
+          .filter((gen: Generation) => gen.type === 'camera_model')
+          .flatMap((gen: Generation) => 
+            gen.outputImageUrls.map((url: string, idx: number) => ({ gen, url, idx }))
+          )
+      case "product":
+        // Product images from studio type generations
+        return generations
+          .filter((gen: Generation) => gen.type === 'studio')
+          .flatMap((gen: Generation) => 
+            gen.outputImageUrls.map((url: string, idx: number) => ({ gen, url, idx }))
+          )
       case "favorites":
         return favorites.map((fav: Favorite) => {
           const gen = generations.find((g: Generation) => g.id === fav.generationId)
@@ -134,8 +134,8 @@ export default function GalleryPage() {
 
   const tabs: { id: TabType; label: string; icon?: React.ReactNode }[] = [
     { id: "all", label: "全部" },
-    { id: "simple", label: "极简模式", icon: <Sparkles className="w-3.5 h-3.5" /> },
-    { id: "extended", label: "扩展模式", icon: <Users className="w-3.5 h-3.5" /> },
+    { id: "model", label: "模特", icon: <Users className="w-3.5 h-3.5" /> },
+    { id: "product", label: "产品", icon: <Lightbulb className="w-3.5 h-3.5" /> },
     { id: "favorites", label: "收藏", icon: <Heart className="w-3.5 h-3.5" /> },
   ]
   
@@ -197,14 +197,35 @@ export default function GalleryPage() {
               />
               
               {/* Type badge */}
-              <div className="absolute top-2 left-2">
-                <span className={`px-2 py-1 rounded text-[10px] font-medium ${
-                  item.idx < 2 
-                    ? "bg-blue-500 text-white" 
-                    : "bg-purple-500 text-white"
-                }`}>
-                  {item.idx < 2 ? "产品" : "模特"}
-                </span>
+              <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
+                {item.gen.type === 'studio' ? (
+                  <span className="px-2 py-1 rounded text-[10px] font-medium bg-amber-500 text-white">
+                    产品
+                  </span>
+                ) : item.gen.type === 'camera_model' ? (
+                  <>
+                    <span className="px-2 py-1 rounded text-[10px] font-medium bg-blue-500 text-white">
+                      模特
+                    </span>
+                    {item.gen.outputGenModes?.[item.idx] === 'simple' ? (
+                      <span className="px-1.5 py-1 rounded text-[9px] font-medium bg-green-500 text-white">
+                        极简
+                      </span>
+                    ) : (
+                      <span className="px-1.5 py-1 rounded text-[9px] font-medium bg-purple-500 text-white">
+                        扩展
+                      </span>
+                    )}
+                  </>
+                ) : item.gen.type === 'edit' ? (
+                  <span className="px-2 py-1 rounded text-[10px] font-medium bg-purple-500 text-white">
+                    修图
+                  </span>
+                ) : (
+                  <span className="px-2 py-1 rounded text-[10px] font-medium bg-zinc-500 text-white">
+                    其他
+                  </span>
+                )}
               </div>
               
               {/* Favorite button - always visible */}
@@ -237,18 +258,18 @@ export default function GalleryPage() {
             <div className="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-4">
               {activeTab === "favorites" ? (
                 <Heart className="w-8 h-8 text-zinc-300" />
-              ) : activeTab === "simple" ? (
-                <Sparkles className="w-8 h-8 text-zinc-300" />
-              ) : activeTab === "extended" ? (
+              ) : activeTab === "model" ? (
                 <Users className="w-8 h-8 text-zinc-300" />
+              ) : activeTab === "product" ? (
+                <Lightbulb className="w-8 h-8 text-zinc-300" />
               ) : (
                 <Camera className="w-8 h-8 text-zinc-300" />
               )}
             </div>
             <p className="text-sm">
               {activeTab === "favorites" ? "暂无收藏图片" : 
-               activeTab === "simple" ? "暂无极简模式图" :
-               activeTab === "extended" ? "暂无扩展模式图" : "暂无图片"}
+               activeTab === "model" ? "暂无模特图" :
+               activeTab === "product" ? "暂无产品图" : "暂无图片"}
             </p>
             <p className="text-xs text-zinc-300 mt-1">
               {activeTab !== "favorites" && "去拍摄生成你的第一张图片吧"}
