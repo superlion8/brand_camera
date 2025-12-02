@@ -211,8 +211,32 @@ export async function deleteUserAsset(userId: string, assetId: string): Promise<
 // ============== Generations ==============
 
 export async function fetchGenerations(userId: string): Promise<Generation[]> {
-  console.log('[Sync] Fetching generations for:', userId)
+  console.log('[Sync] Fetching generations for user_id:', userId)
   const supabase = getSupabase()
+  
+  // First check if there's any data for this user
+  const { data: countData } = await supabase
+    .from('generations')
+    .select('id, user_id, user_email', { count: 'exact' })
+    .eq('user_id', userId)
+    .limit(1)
+  
+  console.log('[Sync] Count check result:', countData?.length || 0, 'user_email:', countData?.[0]?.user_email)
+  
+  // Also try to find by email if available
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user?.email) {
+    const { data: emailData } = await supabase
+      .from('generations')
+      .select('id, user_id, user_email')
+      .eq('user_email', user.email)
+      .limit(1)
+    
+    console.log('[Sync] Email check - Found by email:', emailData?.length || 0, 
+      'user_id in DB:', emailData?.[0]?.user_id, 
+      'current user_id:', userId,
+      'match:', emailData?.[0]?.user_id === userId)
+  }
   
   const { data, error } = await supabase
     .from('generations')
