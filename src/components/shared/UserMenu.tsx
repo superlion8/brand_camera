@@ -6,10 +6,15 @@ import { useAuth } from "@/components/providers/AuthProvider"
 import { useSettingsStore } from "@/stores/settingsStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { useTranslation } from "@/stores/languageStore"
-import { LogOut, Settings, ChevronDown, X, Bug, Cloud, RefreshCw } from "lucide-react"
+import { LogOut, Settings, ChevronDown, X, Bug, Cloud, RefreshCw, BarChart3 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
+import { useRouter } from "next/navigation"
+
+// Admin emails from environment variable (comma separated)
+const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
 
 export function UserMenu() {
+  const router = useRouter()
   const { user, signOut, isLoading, isSyncing } = useAuth()
   const storeSyncing = useAssetStore(state => state.isSyncing)
   const lastSyncAt = useAssetStore(state => state.lastSyncAt)
@@ -108,6 +113,20 @@ export function UserMenu() {
 
             {/* Menu Items */}
             <div className="p-2">
+              {/* Admin Dashboard - only for admin users */}
+              {ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') && (
+                <button
+                  onClick={() => {
+                    setIsOpen(false)
+                    router.push('/admin')
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-700 hover:bg-zinc-100 transition-colors text-left"
+                >
+                  <BarChart3 className="w-4 h-4 text-blue-500" />
+                  <span className="text-sm">Admin 看板</span>
+                </button>
+              )}
+              
               <button
                 onClick={() => {
                   setIsOpen(false)
