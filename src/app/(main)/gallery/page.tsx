@@ -396,7 +396,7 @@ export default function GalleryPage() {
               </div>
 
               {/* Content - Scrollable */}
-              <div className="flex-1 min-h-0 overflow-y-auto bg-zinc-100">
+              <div className="flex-1 min-h-0 overflow-y-auto bg-zinc-100 pb-20">
                 <div 
                   className="relative aspect-[4/5] bg-zinc-900 cursor-pointer group shrink-0"
                   onClick={() => setFullscreenImage(selectedItem.gen.outputImageUrls[selectedItem.index])}

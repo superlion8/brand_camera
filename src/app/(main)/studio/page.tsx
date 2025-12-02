@@ -905,7 +905,7 @@ export default function StudioPage() {
                   </div>
 
                   {/* Content */}
-                  <div className="flex-1 overflow-y-auto bg-zinc-100 pb-8">
+                  <div className="flex-1 overflow-y-auto bg-zinc-100 pb-24">
                     <div 
                       className="relative aspect-square bg-zinc-900 cursor-pointer group"
                       onClick={() => setFullscreenImage(generatedImages[selectedResultIndex])}
