@@ -63,23 +63,53 @@ export default function CameraPage() {
     modeRef.current = mode
   }, [mode])
   
-  // Check camera permission on mount
+  // Check camera permission on mount - use sessionStorage to avoid repeated prompts
   useEffect(() => {
     const checkCameraPermission = async () => {
       try {
+        // First check sessionStorage for cached permission state
+        const cachedPermission = sessionStorage.getItem('cameraPermissionGranted')
+        if (cachedPermission === 'true') {
+          setCameraReady(true)
+          setPermissionChecked(true)
+          return
+        }
+        
         // Check if permission API is available
         if (navigator.permissions && navigator.permissions.query) {
           const result = await navigator.permissions.query({ name: 'camera' as PermissionName })
           if (result.state === 'granted') {
             setCameraReady(true)
+            sessionStorage.setItem('cameraPermissionGranted', 'true')
           } else if (result.state === 'denied') {
             setHasCamera(false)
+            sessionStorage.setItem('cameraPermissionGranted', 'false')
           }
-          // If 'prompt', we'll let the Webcam component handle it
+          
+          // Listen for permission changes
+          result.addEventListener('change', () => {
+            if (result.state === 'granted') {
+              setCameraReady(true)
+              sessionStorage.setItem('cameraPermissionGranted', 'true')
+            } else if (result.state === 'denied') {
+              setHasCamera(false)
+              sessionStorage.setItem('cameraPermissionGranted', 'false')
+            }
+          })
         }
       } catch (e) {
-        // Permission API not supported, let Webcam handle it
-        console.log('Permission API not supported, using fallback')
+        // Permission API not supported, try to get stream directly
+        console.log('Permission API not supported, trying direct stream access')
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+          // Permission granted, stop the stream (Webcam will create its own)
+          stream.getTracks().forEach(track => track.stop())
+          setCameraReady(true)
+          sessionStorage.setItem('cameraPermissionGranted', 'true')
+        } catch (streamError) {
+          console.log('Camera access denied or unavailable')
+          setHasCamera(false)
+        }
       }
       setPermissionChecked(true)
     }
@@ -182,6 +212,8 @@ export default function CameraPage() {
   
   const handleCameraReady = useCallback(() => {
     setCameraReady(true)
+    // Cache permission state for this session
+    sessionStorage.setItem('cameraPermissionGranted', 'true')
   }, [])
   
   const handleRetake = () => {
