@@ -34,11 +34,6 @@ export function BeforeAfterSlider({
   const lastTimeRef = useRef<number | null>(null)
   const currentPositionRef = useRef(50)
 
-  // Easing function for smooth movement
-  const easeInOutCubic = (t: number): number => {
-    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
-  }
-
   const animate = useCallback((timestamp: number) => {
     if (isPausedRef.current) {
       animationRef.current = requestAnimationFrame(animate)
@@ -209,7 +204,7 @@ export function BeforeAfterSlider({
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* After Image (Background) */}
+      {/* After Image (Background - full image) */}
       <div className="absolute inset-0">
         <Image
           src={afterImage}
@@ -220,7 +215,10 @@ export function BeforeAfterSlider({
         />
       </div>
 
-      {/* Before Image (Clipped) */}
+      {/* Before Image (Clipped from right - shows on left side of slider) */}
+      {/* clipPath inset(top right bottom left) - we clip from right by (100-position)% */}
+      {/* When slider at 85% (right), clip 15% from right = show 85% of Before on left */}
+      {/* When slider at 15% (left), clip 85% from right = show 15% of Before on left */}
       <div
         className="absolute inset-0 overflow-hidden"
         style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
