@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getGenAIClient, extractImage, safetySettings } from '@/lib/genai'
 import { stripBase64Prefix } from '@/lib/utils'
+import { requireAuth } from '@/lib/auth'
 
 export const maxDuration = 180 // 3 minutes
 
@@ -141,6 +142,12 @@ async function generateImageWithFallback(
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
+  
+  // Check authentication
+  const authResult = await requireAuth()
+  if ('response' in authResult) {
+    return authResult.response
+  }
   
   try {
     const body = await request.json()

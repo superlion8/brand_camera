@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getGenAIClient, extractImage, extractText, safetySettings } from '@/lib/genai'
 import { PRODUCT_PROMPT, buildInstructPrompt, buildModelPrompt } from '@/prompts'
 import { stripBase64Prefix } from '@/lib/utils'
+import { requireAuth } from '@/lib/auth'
 
 export const maxDuration = 180 // 3 minutes per single image
 
@@ -142,6 +143,12 @@ const SIMPLE_MODEL_PROMPT = `请为{{product}}生成一个模特实拍图，环�
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
+  
+  // Check authentication
+  const authResult = await requireAuth()
+  if ('response' in authResult) {
+    return authResult.response
+  }
   
   try {
     const body = await request.json()

@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getGenAIClient, extractImage, extractText, safetySettings } from '@/lib/genai'
 import { PRODUCT_PROMPT, buildInstructPrompt, buildModelPrompt } from '@/prompts'
 import { stripBase64Prefix, generateId } from '@/lib/utils'
-import { createClient } from '@/lib/supabase/server'
 import { saveGenerationServer } from '@/lib/supabase/generations-server'
 import { uploadGeneratedImageServer, uploadInputImageServer } from '@/lib/supabase/storage-server'
+import { requireAuth } from '@/lib/auth'
 
 export const maxDuration = 300 // 5 minutes for Pro plan
 
@@ -314,22 +314,19 @@ async function generateModelImage(
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
   
+  // Check authentication
+  const authResult = await requireAuth()
+  if ('response' in authResult) {
+    return authResult.response
+  }
+  const userId = authResult.user.id
+  
   try {
     const body = await request.json()
     const { productImage, productImage2, modelImage, modelStyle, modelGender, backgroundImage, vibeImage } = body
     
     if (!productImage) {
       return NextResponse.json({ success: false, error: '缺少商品图片' }, { status: 400 })
-    }
-    
-    // Get user ID for database recording (optional, won't block generation)
-    let userId: string | null = null
-    try {
-      const supabase = await createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      userId = user?.id || null
-    } catch (e) {
-      console.log('Could not get user ID:', e)
     }
     
     const client = getGenAIClient()
@@ -463,17 +460,15 @@ export async function POST(request: NextRequest) {
     
     if (results.length === 0) {
       // Save failed generation record
-      if (userId) {
-        saveGenerationServer(
-          userId,
-          'camera',
-          { modelStyle, modelGender },
-          [],
-          duration,
-          'failed',
-          '图片生成失败'
-        ).catch(console.error)
-      }
+      saveGenerationServer(
+        userId,
+        'camera',
+        { modelStyle, modelGender },
+        [],
+        duration,
+        'failed',
+        '图片生成失败'
+      ).catch(console.error)
       
       return NextResponse.json({ 
         success: false, 
@@ -481,48 +476,46 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
     
-    // If user is logged in, upload images to Supabase Storage
+    // Upload images to Supabase Storage
     let finalImages = results
     const generationId = generateId()
     
-    if (userId) {
-      console.log('Uploading images to Supabase Storage...')
-      const uploadPromises = results.map((base64Url, index) => 
-        uploadGeneratedImageServer(base64Url, generationId, index, userId)
-      )
-      
-      // Also upload input image(s)
-      uploadInputImageServer(productImage, generationId, userId).catch(console.error)
-      if (productImage2) {
-        uploadInputImageServer(productImage2, generationId + '-2', userId).catch(console.error)
-      }
-      
-      const uploadedUrls = await Promise.all(uploadPromises)
-      
-      // Replace base64 with storage URLs where upload succeeded
-      finalImages = uploadedUrls.map((url, index) => url || results[index])
-      
-      const successfulUploads = uploadedUrls.filter(Boolean).length
-      console.log(`Uploaded ${successfulUploads}/${results.length} images to storage`)
-      
-      // Save generation record with storage URLs
-      saveGenerationServer(
-        userId,
-        'camera',
-        {
-          modelStyle,
-          modelGender,
-          hasProduct2: !!productImage2,
-          modelImageUrl: modelImage ? '[provided]' : undefined,
-          backgroundImageUrl: backgroundImage ? '[provided]' : undefined,
-          vibeImageUrl: vibeImage ? '[provided]' : undefined,
-          instructPrompt: instructPrompt1 || instructPrompt2 || undefined,
-        },
-        finalImages,
-        duration,
-        'completed'
-      ).catch(console.error)
+    console.log('Uploading images to Supabase Storage...')
+    const uploadPromises = results.map((base64Url, index) => 
+      uploadGeneratedImageServer(base64Url, generationId, index, userId)
+    )
+    
+    // Also upload input image(s)
+    uploadInputImageServer(productImage, generationId, userId).catch(console.error)
+    if (productImage2) {
+      uploadInputImageServer(productImage2, generationId + '-2', userId).catch(console.error)
     }
+    
+    const uploadedUrls = await Promise.all(uploadPromises)
+    
+    // Replace base64 with storage URLs where upload succeeded
+    finalImages = uploadedUrls.map((url, index) => url || results[index])
+    
+    const successfulUploads = uploadedUrls.filter(Boolean).length
+    console.log(`Uploaded ${successfulUploads}/${results.length} images to storage`)
+    
+    // Save generation record with storage URLs
+    saveGenerationServer(
+      userId,
+      'camera',
+      {
+        modelStyle,
+        modelGender,
+        hasProduct2: !!productImage2,
+        modelImageUrl: modelImage ? '[provided]' : undefined,
+        backgroundImageUrl: backgroundImage ? '[provided]' : undefined,
+        vibeImageUrl: vibeImage ? '[provided]' : undefined,
+        instructPrompt: instructPrompt1 || instructPrompt2 || undefined,
+      },
+      finalImages,
+      duration,
+      'completed'
+    ).catch(console.error)
     
     return NextResponse.json({
       success: true,
