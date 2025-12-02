@@ -102,8 +102,9 @@ function LoginContent() {
 
       if (error) throw error
 
-      // Successful login, redirect
-      router.push(redirectTo)
+      // Successful login - use full page reload to ensure cookies are synced
+      // This is more reliable than router.push() for auth state
+      window.location.href = redirectTo
     } catch (err: any) {
       console.error("Verify OTP error:", err)
       
@@ -135,7 +136,8 @@ function LoginContent() {
 
       if (error) throw error
 
-      router.push(redirectTo)
+      // Use full page reload to ensure cookies are synced
+      window.location.href = redirectTo
     } catch (err: any) {
       console.error("Password login error:", err)
       
