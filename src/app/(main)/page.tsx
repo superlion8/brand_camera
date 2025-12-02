@@ -32,21 +32,23 @@ function FeatureCard({
 }) {
   return (
     <Link href={href} className="block">
-      <div className="relative rounded-2xl overflow-hidden shadow-sm">
+      <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-zinc-100">
+        {/* Image */}
         <BeforeAfterSlider
           beforeImage={beforeImage}
           afterImage={afterImage}
           height={height}
+          className="rounded-t-2xl rounded-b-none"
         />
-        {/* Overlay with title */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-4 pt-12">
+        {/* Title below image */}
+        <div className="p-3">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-              <Icon className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 bg-zinc-100 rounded-full flex items-center justify-center shrink-0">
+              <Icon className="w-4 h-4 text-zinc-600" />
             </div>
-            <div>
-              <h3 className="font-bold text-white">{title}</h3>
-              <p className="text-white/70 text-xs">{subtitle}</p>
+            <div className="min-w-0">
+              <h3 className="font-bold text-zinc-900 truncate">{title}</h3>
+              <p className="text-zinc-500 text-xs truncate">{subtitle}</p>
             </div>
           </div>
         </div>
@@ -71,20 +73,20 @@ function ProFeatureCard({
 }) {
   return (
     <Link href={href} className="block">
-      <div className="relative rounded-2xl overflow-hidden shadow-sm">
+      <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-zinc-100">
+        {/* Image */}
         <BeforeAfterSlider
           beforeImage={beforeImage}
           afterImage={afterImage}
-          height={180}
+          height={160}
+          className="rounded-t-2xl rounded-b-none"
         />
-        {/* Overlay with title */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-3 pt-8">
-          <div className="flex flex-col items-center gap-1">
-            <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-              <Icon className="w-5 h-5 text-white" />
-            </div>
-            <h3 className="font-semibold text-white text-sm">{title}</h3>
+        {/* Title below image */}
+        <div className="p-3 flex items-center justify-center gap-2">
+          <div className="w-8 h-8 bg-zinc-100 rounded-full flex items-center justify-center shrink-0">
+            <Icon className="w-4 h-4 text-zinc-600" />
           </div>
+          <h3 className="font-semibold text-zinc-900 text-sm">{title}</h3>
         </div>
       </div>
     </Link>

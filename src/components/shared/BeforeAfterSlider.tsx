@@ -6,60 +6,94 @@ import Image from "next/image"
 interface BeforeAfterSliderProps {
   beforeImage: string
   afterImage: string
-  beforeLabel?: string
-  afterLabel?: string
   className?: string
   height?: number
   autoPlay?: boolean
-  autoPlayDuration?: number // Duration for one complete cycle in ms
+  autoPlayDuration?: number // Duration for one direction in ms
+  pauseDuration?: number // Pause at each end in ms
 }
 
 export function BeforeAfterSlider({
   beforeImage,
   afterImage,
-  beforeLabel,
-  afterLabel,
   className = "",
   height = 200,
   autoPlay = true,
-  autoPlayDuration = 3000,
+  autoPlayDuration = 4500, // 3x slower (was 1500 per direction)
+  pauseDuration = 1000, // 1 second pause at ends
 }: BeforeAfterSliderProps) {
   const [sliderPosition, setSliderPosition] = useState(50)
   const [isAutoPlaying, setIsAutoPlaying] = useState(autoPlay)
   const containerRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
   const animationRef = useRef<number | null>(null)
-  const startTimeRef = useRef<number | null>(null)
+  const directionRef = useRef<'forward' | 'backward'>('forward')
+  const isPausedRef = useRef(false)
   const pauseTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const resumeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const lastTimeRef = useRef<number | null>(null)
+  const currentPositionRef = useRef(50)
 
-  // Auto-play animation using easeInOutSine for smooth movement
-  const easeInOutSine = (t: number): number => {
-    return -(Math.cos(Math.PI * t) - 1) / 2
+  // Easing function for smooth movement
+  const easeInOutCubic = (t: number): number => {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
   }
 
   const animate = useCallback((timestamp: number) => {
-    if (!startTimeRef.current) {
-      startTimeRef.current = timestamp
+    if (isPausedRef.current) {
+      animationRef.current = requestAnimationFrame(animate)
+      return
+    }
+
+    if (!lastTimeRef.current) {
+      lastTimeRef.current = timestamp
     }
     
-    const elapsed = timestamp - startTimeRef.current
-    const progress = (elapsed % autoPlayDuration) / autoPlayDuration
+    const deltaTime = timestamp - lastTimeRef.current
+    lastTimeRef.current = timestamp
     
-    // Animate from 20% to 80% and back
-    const easedProgress = easeInOutSine(progress * 2 <= 1 ? progress * 2 : 2 - progress * 2)
-    const position = 20 + easedProgress * 60 // Range: 20% to 80%
+    // Calculate speed: move from 15% to 85% over autoPlayDuration
+    const range = 70 // 85 - 15
+    const speed = range / autoPlayDuration // percent per ms
     
-    setSliderPosition(position)
+    let newPosition = currentPositionRef.current
+    
+    if (directionRef.current === 'forward') {
+      newPosition += speed * deltaTime
+      if (newPosition >= 85) {
+        newPosition = 85
+        directionRef.current = 'backward'
+        isPausedRef.current = true
+        // Pause at right end
+        setTimeout(() => {
+          isPausedRef.current = false
+        }, pauseDuration)
+      }
+    } else {
+      newPosition -= speed * deltaTime
+      if (newPosition <= 15) {
+        newPosition = 15
+        directionRef.current = 'forward'
+        isPausedRef.current = true
+        // Pause at left end
+        setTimeout(() => {
+          isPausedRef.current = false
+        }, pauseDuration)
+      }
+    }
+    
+    currentPositionRef.current = newPosition
+    setSliderPosition(newPosition)
     
     if (isAutoPlaying && !isDragging.current) {
       animationRef.current = requestAnimationFrame(animate)
     }
-  }, [isAutoPlaying, autoPlayDuration])
+  }, [isAutoPlaying, autoPlayDuration, pauseDuration])
 
   // Start/stop auto-play
   useEffect(() => {
     if (isAutoPlaying && !isDragging.current) {
-      startTimeRef.current = null
+      lastTimeRef.current = null
       animationRef.current = requestAnimationFrame(animate)
     }
     
@@ -79,17 +113,23 @@ export function BeforeAfterSlider({
     if (pauseTimeoutRef.current) {
       clearTimeout(pauseTimeoutRef.current)
     }
+    if (resumeTimeoutRef.current) {
+      clearTimeout(resumeTimeoutRef.current)
+    }
   }, [])
 
   const resumeAutoPlay = useCallback(() => {
     if (autoPlay) {
       // Resume after 3 seconds of inactivity
-      pauseTimeoutRef.current = setTimeout(() => {
-        startTimeRef.current = null
+      resumeTimeoutRef.current = setTimeout(() => {
+        lastTimeRef.current = null
+        currentPositionRef.current = sliderPosition
+        // Determine direction based on current position
+        directionRef.current = sliderPosition > 50 ? 'backward' : 'forward'
         setIsAutoPlaying(true)
       }, 3000)
     }
-  }, [autoPlay])
+  }, [autoPlay, sliderPosition])
 
   const handleMove = useCallback((clientX: number) => {
     if (!containerRef.current) return
@@ -98,6 +138,7 @@ export function BeforeAfterSlider({
     const x = clientX - rect.left
     const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100))
     setSliderPosition(percentage)
+    currentPositionRef.current = percentage
   }, [])
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -149,13 +190,16 @@ export function BeforeAfterSlider({
       if (pauseTimeoutRef.current) {
         clearTimeout(pauseTimeoutRef.current)
       }
+      if (resumeTimeoutRef.current) {
+        clearTimeout(resumeTimeoutRef.current)
+      }
     }
   }, [])
 
   return (
     <div
       ref={containerRef}
-      className={`relative overflow-hidden rounded-2xl select-none cursor-ew-resize ${className}`}
+      className={`relative overflow-hidden select-none cursor-ew-resize ${className || 'rounded-2xl'}`}
       style={{ height }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -192,29 +236,17 @@ export function BeforeAfterSlider({
 
       {/* Slider Handle */}
       <div
-        className="absolute top-0 bottom-0 w-1 bg-white shadow-lg z-10 transition-none"
+        className="absolute top-0 bottom-0 w-0.5 bg-white shadow-lg z-10"
         style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
       >
         {/* Handle Circle */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full shadow-lg flex items-center justify-center">
           <div className="flex items-center gap-0.5">
-            <div className="w-0 h-0 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-r-[5px] border-r-zinc-400" />
-            <div className="w-0 h-0 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-l-[5px] border-l-zinc-400" />
+            <div className="w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent border-r-[4px] border-r-zinc-400" />
+            <div className="w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent border-l-[4px] border-l-zinc-400" />
           </div>
         </div>
       </div>
-
-      {/* Labels */}
-      {beforeLabel && (
-        <div className="absolute bottom-3 left-3 px-2 py-1 bg-black/50 text-white text-xs rounded-full backdrop-blur-sm">
-          {beforeLabel}
-        </div>
-      )}
-      {afterLabel && (
-        <div className="absolute bottom-3 right-3 px-2 py-1 bg-black/50 text-white text-xs rounded-full backdrop-blur-sm">
-          {afterLabel}
-        </div>
-      )}
     </div>
   )
 }
