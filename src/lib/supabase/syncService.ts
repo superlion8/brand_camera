@@ -613,24 +613,38 @@ export async function syncAllData(userId: string): Promise<SyncData> {
   // Add 5 second timeout for each request
   const TIMEOUT_MS = 5000
   
-  const [assets, generations, favorites, pinnedPresetIds] = await Promise.all([
-    withTimeout(fetchUserAssets(userId), TIMEOUT_MS, { models: [], backgrounds: [], products: [], vibes: [] }),
-    withTimeout(fetchGenerations(userId), TIMEOUT_MS, []),
-    withTimeout(fetchFavorites(userId), TIMEOUT_MS, []),
-    withTimeout(fetchPinnedPresets(userId), TIMEOUT_MS, new Set<string>()),
-  ])
+  try {
+    const [assets, generations, favorites, pinnedPresetIds] = await Promise.all([
+      withTimeout(fetchUserAssets(userId), TIMEOUT_MS, { models: [], backgrounds: [], products: [], vibes: [] }),
+      withTimeout(fetchGenerations(userId), TIMEOUT_MS, []),
+      withTimeout(fetchFavorites(userId), TIMEOUT_MS, []),
+      withTimeout(fetchPinnedPresets(userId), TIMEOUT_MS, new Set<string>()),
+    ])
 
-  const duration = Date.now() - startTime
-  console.log(`[Sync] Completed in ${duration}ms`)
+    const duration = Date.now() - startTime
+    console.log(`[Sync] Completed in ${duration}ms`)
 
-  return {
-    userModels: assets.models,
-    userBackgrounds: assets.backgrounds,
-    userProducts: assets.products,
-    userVibes: assets.vibes,
-    generations,
-    favorites,
-    pinnedPresetIds,
+    return {
+      userModels: assets.models || [],
+      userBackgrounds: assets.backgrounds || [],
+      userProducts: assets.products || [],
+      userVibes: assets.vibes || [],
+      generations: generations || [],
+      favorites: favorites || [],
+      pinnedPresetIds: pinnedPresetIds || new Set<string>(),
+    }
+  } catch (error) {
+    console.error('[Sync] syncAllData error:', error)
+    // Return empty data on error
+    return {
+      userModels: [],
+      userBackgrounds: [],
+      userProducts: [],
+      userVibes: [],
+      generations: [],
+      favorites: [],
+      pinnedPresetIds: new Set<string>(),
+    }
   }
 }
 
