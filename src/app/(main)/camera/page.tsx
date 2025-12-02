@@ -811,9 +811,9 @@ export default function CameraPage() {
                     性别: {MODEL_GENDERS.find(g => g.id === selectedModelGender)?.label}
                   </span>
                 )}
-                {selectedModelStyle && (
+                {selectedModelStyle && selectedModelStyle !== 'auto' && (
                   <span className="px-2 py-1 bg-black/50 text-white text-xs rounded-full backdrop-blur-md">
-                    风格: {MODEL_STYLES.find(s => s.id === selectedModelStyle)?.label}
+                    风格: {selectedModelStyle === 'korean' ? '韩系' : selectedModelStyle === 'western' ? '欧美' : selectedModelStyle}
                   </span>
                 )}
                 {activeModel && (
@@ -1359,8 +1359,8 @@ export default function CameraPage() {
             <div className="text-zinc-400 space-y-1 text-sm mb-8">
               <p>分析商品光影...</p>
               {activeModel && <p>生成模特 {activeModel.name} ...</p>}
-              {selectedModelStyle && !activeModel && (
-                <p>匹配{MODEL_STYLES.find(s => s.id === selectedModelStyle)?.label}风格...</p>
+              {selectedModelStyle && selectedModelStyle !== 'auto' && !activeModel && (
+                <p>匹配{selectedModelStyle === 'korean' ? '韩系' : selectedModelStyle === 'western' ? '欧美' : selectedModelStyle}风格...</p>
               )}
               {activeBg && <p>渲染场景背景...</p>}
             </div>
