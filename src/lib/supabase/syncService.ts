@@ -315,10 +315,13 @@ export async function saveGeneration(userId: string, generation: Generation): Pr
   // Required fields: user_id, task_type, status
   const insertData: Record<string, any> = {
     user_id: userId,
-    task_id: generateTaskId(), // Human-readable task ID
     task_type: mapTypeToTaskType(generation.type), // Required NOT NULL
     status: 'completed',
   }
+  
+  // task_id is optional - will be added if column exists
+  // Run SQL: ALTER TABLE generations ADD COLUMN IF NOT EXISTS task_id TEXT;
+  // insertData.task_id = generateTaskId()
   
   // Input images (now as URLs)
   if (inputImageUrl && !isBase64(inputImageUrl)) {
