@@ -132,10 +132,12 @@ export function UserMenu() {
               onClick={() => setShowSettings(false)}
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-sm bg-white rounded-2xl shadow-2xl z-[101] overflow-hidden"
+              initial={{ opacity: 0, y: 100 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 100 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="fixed left-0 right-0 bottom-0 bg-white rounded-t-2xl shadow-2xl z-[101] overflow-hidden safe-bottom"
+              onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
               <div className="h-14 flex items-center justify-between px-4 border-b">
@@ -151,25 +153,25 @@ export function UserMenu() {
               {/* Settings Content */}
               <div className="p-4 space-y-4">
                 {/* Debug Mode Toggle */}
-                <div className="flex items-center justify-between p-3 bg-zinc-50 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${debugMode ? 'bg-amber-100' : 'bg-zinc-200'}`}>
+                <div className="flex items-center justify-between p-4 bg-zinc-50 rounded-xl">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${debugMode ? 'bg-amber-100' : 'bg-zinc-200'}`}>
                       <Bug className={`w-5 h-5 ${debugMode ? 'text-amber-600' : 'text-zinc-400'}`} />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="font-medium text-zinc-900 text-sm">调试模式</p>
                       <p className="text-xs text-zinc-500">显示图片生成参数</p>
                     </div>
                   </div>
                   <button
                     onClick={toggleDebugMode}
-                    className={`relative w-12 h-7 rounded-full transition-colors ${
+                    className={`relative w-14 h-8 rounded-full transition-colors shrink-0 ml-3 ${
                       debugMode ? 'bg-amber-500' : 'bg-zinc-300'
                     }`}
                   >
                     <div
-                      className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
-                        debugMode ? 'translate-x-6' : 'translate-x-1'
+                      className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow-sm transition-transform ${
+                        debugMode ? 'translate-x-7' : 'translate-x-1'
                       }`}
                     />
                   </button>
@@ -187,10 +189,10 @@ export function UserMenu() {
               </div>
 
               {/* Footer */}
-              <div className="p-4 border-t bg-zinc-50">
+              <div className="p-4 pb-8 border-t bg-zinc-50">
                 <button
                   onClick={() => setShowSettings(false)}
-                  className="w-full h-10 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg font-medium text-sm transition-colors"
+                  className="w-full h-12 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl font-medium text-sm transition-colors"
                 >
                   完成
                 </button>
