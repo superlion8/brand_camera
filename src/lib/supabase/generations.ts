@@ -1,30 +1,55 @@
 import { createClient } from './client'
 
+// Task types - 任务类型
+export type TaskType = 'model_studio' | 'product_studio' | 'edit'
+
+// Generation modes - 生成模式
+export type GenMode = 'simple' | 'extended'
+
 // Types
 export interface GenerationInput {
   productImageUrl?: string
+  productImage2Url?: string
   modelStyle?: string
   modelGender?: string
   modelImageUrl?: string
   backgroundImageUrl?: string
   vibeImageUrl?: string
   customPrompt?: string
+  // Studio specific
+  lightType?: string
+  lightDirection?: string
+  backgroundColor?: string
+  aspectRatio?: string
 }
 
 export interface GenerationOutput {
   type: 'product' | 'model'
   url: string
   index: number
+  mode?: GenMode // 'simple' or 'extended'
+  prompt?: string // The prompt used for this specific image
 }
 
 export interface GenerationRecord {
   id: string
   user_id: string
-  task_type: 'camera' | 'edit'
+  user_email?: string
+  task_type: TaskType
   status: 'pending' | 'processing' | 'completed' | 'failed'
+  // Input fields (直接存储，便于查询)
+  input_image_url?: string
+  input_image2_url?: string
+  model_image_url?: string
+  background_image_url?: string
+  final_prompt?: string
+  // Counts
   product_images_count: number
   model_images_count: number
+  simple_mode_count: number
+  extended_mode_count: number
   total_images_count: number
+  // Full params (JSON)
   input_params: GenerationInput
   output_images: GenerationOutput[]
   error_message?: string
@@ -34,8 +59,12 @@ export interface GenerationRecord {
 }
 
 export interface CreateGenerationParams {
-  taskType: 'camera' | 'edit'
+  taskType: TaskType
   inputParams: GenerationInput
+  inputImageUrl?: string
+  inputImage2Url?: string
+  modelImageUrl?: string
+  backgroundImageUrl?: string
 }
 
 export interface UpdateGenerationParams {
@@ -43,16 +72,25 @@ export interface UpdateGenerationParams {
   outputImages?: GenerationOutput[]
   productImagesCount?: number
   modelImagesCount?: number
+  simpleModeCount?: number
+  extendedModeCount?: number
+  finalPrompt?: string
   errorMessage?: string
   durationMs?: number
 }
 
 export interface UserGenerationStats {
   user_id: string
+  user_email?: string
   total_generations: number
   total_images: number
   total_product_images: number
   total_model_images: number
+  total_simple_mode: number
+  total_extended_mode: number
+  model_studio_count: number
+  product_studio_count: number
+  edit_count: number
   successful_generations: number
   failed_generations: number
   avg_duration_ms: number
@@ -65,7 +103,7 @@ export async function createGeneration(params: CreateGenerationParams): Promise<
   
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
-    console.error('User not authenticated')
+    console.error('[Generations] User not authenticated')
     return null
   }
 
@@ -76,15 +114,20 @@ export async function createGeneration(params: CreateGenerationParams): Promise<
       task_type: params.taskType,
       status: 'processing',
       input_params: params.inputParams,
+      input_image_url: params.inputImageUrl,
+      input_image2_url: params.inputImage2Url,
+      model_image_url: params.modelImageUrl,
+      background_image_url: params.backgroundImageUrl,
     })
     .select()
     .single()
 
   if (error) {
-    console.error('Error creating generation:', error)
+    console.error('[Generations] Error creating generation:', error)
     return null
   }
 
+  console.log('[Generations] Created record:', data.id)
   return data
 }
 
@@ -104,6 +147,9 @@ export async function updateGeneration(
   }
   if (params.productImagesCount !== undefined) updateData.product_images_count = params.productImagesCount
   if (params.modelImagesCount !== undefined) updateData.model_images_count = params.modelImagesCount
+  if (params.simpleModeCount !== undefined) updateData.simple_mode_count = params.simpleModeCount
+  if (params.extendedModeCount !== undefined) updateData.extended_mode_count = params.extendedModeCount
+  if (params.finalPrompt) updateData.final_prompt = params.finalPrompt
   if (params.errorMessage) updateData.error_message = params.errorMessage
   if (params.durationMs !== undefined) updateData.duration_ms = params.durationMs
 
@@ -115,7 +161,7 @@ export async function updateGeneration(
     .single()
 
   if (error) {
-    console.error('Error updating generation:', error)
+    console.error('[Generations] Error updating generation:', error)
     return null
   }
 
@@ -139,7 +185,7 @@ export async function getUserGenerations(
     .range(from, to)
 
   if (error) {
-    console.error('Error fetching generations:', error)
+    console.error('[Generations] Error fetching generations:', error)
     return { data: [], total: 0 }
   }
 
@@ -157,7 +203,7 @@ export async function getGeneration(id: string): Promise<GenerationRecord | null
     .single()
 
   if (error) {
-    console.error('Error fetching generation:', error)
+    console.error('[Generations] Error fetching generation:', error)
     return null
   }
 
@@ -186,13 +232,18 @@ export async function getUserStats(): Promise<UserGenerationStats | null> {
         total_images: 0,
         total_product_images: 0,
         total_model_images: 0,
+        total_simple_mode: 0,
+        total_extended_mode: 0,
+        model_studio_count: 0,
+        product_studio_count: 0,
+        edit_count: 0,
         successful_generations: 0,
         failed_generations: 0,
         avg_duration_ms: 0,
         last_generation_at: '',
       }
     }
-    console.error('Error fetching user stats:', error)
+    console.error('[Generations] Error fetching user stats:', error)
     return null
   }
 
@@ -209,14 +260,116 @@ export async function deleteGeneration(id: string): Promise<boolean> {
     .eq('id', id)
 
   if (error) {
-    console.error('Error deleting generation:', error)
+    console.error('[Generations] Error deleting generation:', error)
     return false
   }
 
   return true
 }
 
-// Helper function to save generation with full flow
+// Helper function to save generation with full flow - 模特影棚
+export async function saveModelStudioRecord(
+  inputParams: GenerationInput,
+  outputImages: GenerationOutput[],
+  durationMs: number,
+  finalPrompt?: string
+): Promise<GenerationRecord | null> {
+  // Count modes
+  const simpleModeCount = outputImages.filter(img => img.mode === 'simple').length
+  const extendedModeCount = outputImages.filter(img => img.mode === 'extended').length
+  
+  // Create initial record
+  const record = await createGeneration({
+    taskType: 'model_studio',
+    inputParams,
+    inputImageUrl: inputParams.productImageUrl,
+    inputImage2Url: inputParams.productImage2Url,
+    modelImageUrl: inputParams.modelImageUrl,
+    backgroundImageUrl: inputParams.backgroundImageUrl,
+  })
+
+  if (!record) return null
+
+  // Update with results
+  const updated = await updateGeneration(record.id, {
+    status: 'completed',
+    outputImages,
+    productImagesCount: 0, // 模特影棚没有商品图输出
+    modelImagesCount: outputImages.length,
+    simpleModeCount,
+    extendedModeCount,
+    finalPrompt,
+    durationMs,
+  })
+
+  return updated
+}
+
+// Helper function to save generation with full flow - 商品影棚
+export async function saveProductStudioRecord(
+  inputParams: GenerationInput,
+  outputImages: GenerationOutput[],
+  durationMs: number,
+  finalPrompt?: string
+): Promise<GenerationRecord | null> {
+  // Create initial record
+  const record = await createGeneration({
+    taskType: 'product_studio',
+    inputParams,
+    inputImageUrl: inputParams.productImageUrl,
+  })
+
+  if (!record) return null
+
+  // Update with results
+  const updated = await updateGeneration(record.id, {
+    status: 'completed',
+    outputImages,
+    productImagesCount: outputImages.length,
+    modelImagesCount: 0,
+    simpleModeCount: 0,
+    extendedModeCount: 0,
+    finalPrompt,
+    durationMs,
+  })
+
+  return updated
+}
+
+// Helper function to save generation with full flow - 修图室
+export async function saveEditRecord(
+  inputParams: GenerationInput,
+  outputImages: GenerationOutput[],
+  durationMs: number,
+  finalPrompt?: string
+): Promise<GenerationRecord | null> {
+  // Create initial record
+  const record = await createGeneration({
+    taskType: 'edit',
+    inputParams,
+    inputImageUrl: inputParams.productImageUrl,
+    modelImageUrl: inputParams.modelImageUrl,
+    backgroundImageUrl: inputParams.backgroundImageUrl,
+  })
+
+  if (!record) return null
+
+  // Update with results
+  const updated = await updateGeneration(record.id, {
+    status: 'completed',
+    outputImages,
+    productImagesCount: 0,
+    modelImagesCount: outputImages.length,
+    simpleModeCount: 0,
+    extendedModeCount: outputImages.length, // 修图室都是扩展模式
+    finalPrompt,
+    durationMs,
+  })
+
+  return updated
+}
+
+// Legacy function for backward compatibility
 export async function saveGenerationRecord(
   taskType: 'camera' | 'edit',
   inputParams: GenerationInput,
@@ -225,10 +378,16 @@ export async function saveGenerationRecord(
   productCount: number = 2,
   modelCount: number = 2
 ): Promise<GenerationRecord | null> {
+  // Map old task types to new ones
+  const newTaskType: TaskType = taskType === 'camera' ? 'model_studio' : 'edit'
+  
   // Create initial record
   const record = await createGeneration({
-    taskType,
+    taskType: newTaskType,
     inputParams,
+    inputImageUrl: inputParams.productImageUrl,
+    modelImageUrl: inputParams.modelImageUrl,
+    backgroundImageUrl: inputParams.backgroundImageUrl,
   })
 
   if (!record) return null
@@ -238,6 +397,7 @@ export async function saveGenerationRecord(
     type: index < productCount ? 'product' : 'model',
     url,
     index,
+    mode: 'extended' as GenMode,
   }))
 
   // Update with results
@@ -251,4 +411,3 @@ export async function saveGenerationRecord(
 
   return updated
 }
-
