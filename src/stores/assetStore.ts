@@ -114,6 +114,8 @@ export const useAssetStore = create<AssetState>()(
       addUserAsset: async (asset) => {
         const { currentUserId } = get()
         
+        console.log('[Asset] Adding user asset:', asset.type, asset.id, 'currentUserId:', currentUserId)
+        
         // Update local state
         switch (asset.type) {
           case 'model':
@@ -132,7 +134,11 @@ export const useAssetStore = create<AssetState>()(
         
         // Sync to cloud if logged in
         if (currentUserId) {
-          await syncService.saveUserAsset(currentUserId, asset)
+          console.log('[Asset] Syncing to cloud for user:', currentUserId)
+          const result = await syncService.saveUserAsset(currentUserId, asset)
+          console.log('[Asset] Sync result:', result ? 'success' : 'failed')
+        } else {
+          console.warn('[Asset] Not syncing - no currentUserId')
         }
       },
       

@@ -54,7 +54,19 @@ export async function fetchUserAssets(userId: string): Promise<{
 }
 
 export async function saveUserAsset(userId: string, asset: Asset): Promise<Asset | null> {
+  console.log('[Sync] Saving user asset:', { userId, assetId: asset.id, type: asset.type })
+  
   const supabase = getSupabase()
+  
+  // Check if we have a valid session
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) {
+    console.error('[Sync] No active session, cannot save asset')
+    return null
+  }
+  
+  console.log('[Sync] Session user ID:', session.user.id, 'Requested user ID:', userId)
+  
   const { data, error } = await supabase
     .from('user_assets')
     .insert({
@@ -72,10 +84,12 @@ export async function saveUserAsset(userId: string, asset: Asset): Promise<Asset
     .single()
 
   if (error) {
-    console.error('Error saving user asset:', error)
+    console.error('[Sync] Error saving user asset:', error.message, error.code, error.details)
     return null
   }
 
+  console.log('[Sync] Asset saved successfully:', data.id)
+  
   return {
     id: data.id,
     type: data.type as AssetType,
