@@ -21,14 +21,16 @@ export default function HomePage() {
       <div className="bg-white px-6 pt-8 pb-10">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <LanguageSwitcher />
             <Image src="/logo.png" alt="Brand Camera" width={48} height={48} className="rounded-xl" />
             <div>
               <h1 className="text-2xl font-bold text-zinc-900">{t.common.appName}</h1>
               <p className="text-sm text-zinc-500">{t.common.slogan}</p>
             </div>
           </div>
-          <UserMenu />
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+            <UserMenu />
+          </div>
         </div>
         
         <p className="text-zinc-600 leading-relaxed text-sm">

@@ -7,7 +7,7 @@ export type AssetType = 'model' | 'background' | 'product' | 'vibe'
 export type GenerationType = 'camera_product' | 'camera_model' | 'edit' | 'studio'
 
 export type ModelSubcategory = 'korean' | 'western'
-export type BackgroundSubcategory = 'indoor' | 'outdoor' | 'street'
+export type BackgroundSubcategory = 'indoor' | 'street'
 
 export interface Asset {
   id: string

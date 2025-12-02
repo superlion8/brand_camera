@@ -10,7 +10,7 @@ const CACHE_VERSION = 'v4'
 export type ModelSubcategory = 'korean' | 'western'
 
 // Background subcategory type  
-export type BackgroundSubcategory = 'indoor' | 'outdoor' | 'street'
+export type BackgroundSubcategory = 'indoor' | 'street'
 
 // Model subcategory labels
 export const MODEL_SUBCATEGORIES: { id: ModelSubcategory; label: string }[] = [
@@ -21,7 +21,6 @@ export const MODEL_SUBCATEGORIES: { id: ModelSubcategory; label: string }[] = [
 // Background subcategory labels
 export const BACKGROUND_SUBCATEGORIES: { id: BackgroundSubcategory; label: string }[] = [
   { id: 'indoor', label: '室内' },
-  { id: 'outdoor', label: '自然' },
   { id: 'street', label: '街头' },
 ]
 
@@ -49,7 +48,7 @@ export const PRESET_MODELS: Asset[] = [
   })),
 ]
 
-// Preset Backgrounds - 117 total (室内 58 + 自然 13 + 街头 46)
+// Preset Backgrounds - 104 total (室内 58 + 街头 46)
 export const PRESET_BACKGROUNDS: Asset[] = [
   // 室内 (58)
   ...Array.from({ length: 58 }, (_, i) => ({
@@ -59,15 +58,6 @@ export const PRESET_BACKGROUNDS: Asset[] = [
     imageUrl: `${STORAGE_URL}/backgrounds/indoor/bg-${i + 1}.jpg?${CACHE_VERSION}`,
     isSystem: true,
     category: 'indoor' as BackgroundSubcategory,
-  })),
-  // 自然 (13)
-  ...Array.from({ length: 13 }, (_, i) => ({
-    id: `pb-ou-${i + 1}`,
-    type: 'background' as AssetType,
-    name: `自然 ${i + 1}`,
-    imageUrl: `${STORAGE_URL}/backgrounds/outdoor/bg-${i + 1}.jpg?${CACHE_VERSION}`,
-    isSystem: true,
-    category: 'outdoor' as BackgroundSubcategory,
   })),
   // 街头 (46)
   ...Array.from({ length: 46 }, (_, i) => ({
