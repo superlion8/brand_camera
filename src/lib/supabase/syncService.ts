@@ -6,6 +6,82 @@ function getSupabase() {
   return createClient()
 }
 
+// Generate a human-readable task ID
+function generateTaskId(): string {
+  const timestamp = Date.now().toString(36)
+  const random = Math.random().toString(36).substring(2, 6)
+  return `TASK-${timestamp}-${random}`.toUpperCase()
+}
+
+// Check if string is base64
+function isBase64(str: string): boolean {
+  if (!str) return false
+  return str.startsWith('data:image/') || (str.length > 1000 && /^[A-Za-z0-9+/]+=*$/.test(str.substring(0, 100)))
+}
+
+// Upload base64 image to Supabase Storage
+async function uploadToStorage(base64: string, userId: string, prefix: string): Promise<string | null> {
+  if (!isBase64(base64)) return base64 // Already a URL
+  
+  const supabase = getSupabase()
+  
+  try {
+    // Remove data URL prefix if present
+    let base64Content = base64
+    let contentType = 'image/png'
+    
+    if (base64.startsWith('data:')) {
+      const match = base64.match(/^data:(image\/\w+);base64,(.+)$/)
+      if (match) {
+        contentType = match[1]
+        base64Content = match[2]
+      } else {
+        base64Content = base64.replace(/^data:image\/\w+;base64,/, '')
+      }
+    }
+    
+    // Convert base64 to blob
+    const byteCharacters = atob(base64Content)
+    const byteNumbers = new Array(byteCharacters.length)
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i)
+    }
+    const byteArray = new Uint8Array(byteNumbers)
+    const blob = new Blob([byteArray], { type: contentType })
+    
+    // Generate unique filename
+    const timestamp = Date.now()
+    const random = Math.random().toString(36).substring(2, 8)
+    const extension = contentType.split('/')[1] || 'png'
+    const fileName = `${userId}/${prefix}_${timestamp}_${random}.${extension}`
+    
+    // Upload to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from('generations')
+      .upload(fileName, blob, {
+        contentType,
+        cacheControl: '31536000',
+        upsert: false,
+      })
+    
+    if (error) {
+      console.error('[Storage] Upload error:', error.message)
+      return null
+    }
+    
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('generations')
+      .getPublicUrl(data.path)
+    
+    console.log('[Storage] Uploaded:', prefix, '->', publicUrl.substring(0, 60) + '...')
+    return publicUrl
+  } catch (error) {
+    console.error('[Storage] Error:', error)
+    return null
+  }
+}
+
 // ============== User Assets ==============
 
 export async function fetchUserAssets(userId: string): Promise<{
@@ -205,26 +281,62 @@ function mapTypeToTaskType(type?: string): string {
 export async function saveGeneration(userId: string, generation: Generation): Promise<Generation | null> {
   const supabase = getSupabase()
   
+  console.log('[Sync] Processing generation for upload...')
+  
+  // Upload input image to storage if it's base64
+  let inputImageUrl = generation.inputImageUrl
+  if (isBase64(inputImageUrl)) {
+    const uploaded = await uploadToStorage(inputImageUrl, userId, 'input')
+    if (uploaded) inputImageUrl = uploaded
+  }
+  
+  // Upload input image 2 to storage if it's base64
+  let inputImage2Url = generation.inputImage2Url
+  if (inputImage2Url && isBase64(inputImage2Url)) {
+    const uploaded = await uploadToStorage(inputImage2Url, userId, 'input2')
+    if (uploaded) inputImage2Url = uploaded
+  }
+  
+  // Upload output images to storage if they're base64
+  const outputImageUrls: string[] = []
+  if (generation.outputImageUrls?.length) {
+    for (let i = 0; i < generation.outputImageUrls.length; i++) {
+      const url = generation.outputImageUrls[i]
+      if (isBase64(url)) {
+        const uploaded = await uploadToStorage(url, userId, `output_${i}`)
+        outputImageUrls.push(uploaded || url)
+      } else {
+        outputImageUrls.push(url)
+      }
+    }
+  }
+  
   // Build insert object matching the actual table schema
   // Required fields: user_id, task_type, status
   const insertData: Record<string, any> = {
     user_id: userId,
+    task_id: generateTaskId(), // Human-readable task ID
     task_type: mapTypeToTaskType(generation.type), // Required NOT NULL
     status: 'completed',
   }
   
-  // Optional fields
-  if (generation.inputImageUrl) insertData.input_image_url = generation.inputImageUrl
-  if (generation.inputImage2Url) insertData.input_image2_url = generation.inputImage2Url
+  // Input images (now as URLs)
+  if (inputImageUrl && !isBase64(inputImageUrl)) {
+    insertData.input_image_url = inputImageUrl
+  }
+  if (inputImage2Url && !isBase64(inputImage2Url)) {
+    insertData.input_image2_url = inputImage2Url
+  }
   if (generation.createdAt) insertData.created_at = generation.createdAt
   
-  // Output images - use both formats for compatibility
-  if (generation.outputImageUrls?.length) {
-    insertData.output_image_urls = generation.outputImageUrls
-    insertData.total_images_count = generation.outputImageUrls.length
+  // Output images (now as URLs) - use both formats for compatibility
+  const uploadedOutputUrls = outputImageUrls.filter(url => !isBase64(url))
+  if (uploadedOutputUrls.length) {
+    insertData.output_image_urls = uploadedOutputUrls
+    insertData.total_images_count = uploadedOutputUrls.length
     
     // Also save as JSONB format
-    insertData.output_images = generation.outputImageUrls.map((url, index) => ({
+    insertData.output_images = uploadedOutputUrls.map((url, index) => ({
       type: 'model',
       url,
       index,
@@ -233,8 +345,8 @@ export async function saveGeneration(userId: string, generation: Generation): Pr
   }
   
   // Counts
-  if (generation.outputImageUrls?.length) {
-    insertData.model_images_count = generation.outputImageUrls.length
+  if (uploadedOutputUrls.length) {
+    insertData.model_images_count = uploadedOutputUrls.length
     insertData.product_images_count = 0
   }
   
