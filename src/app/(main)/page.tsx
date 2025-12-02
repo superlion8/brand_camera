@@ -36,7 +36,7 @@ export default function HomePage() {
       <div className="px-4 -mt-4 space-y-3">
         {/* 模特影棚 Card */}
         <Link href="/camera" className="block">
-          <div className="bg-zinc-900 text-white rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden">
+          <div className="bg-zinc-900 text-white rounded-2xl p-4 flex items-center gap-3 relative overflow-hidden">
             <div className="flex-1 z-10">
               <div className="flex items-center gap-2 mb-2">
                 <Users className="w-5 h-5 text-blue-400" />
@@ -46,20 +46,35 @@ export default function HomePage() {
                 上传商品，一键生成模特穿搭展示图
               </p>
             </div>
-            {/* Before-After Preview */}
+            {/* Before-After Preview with real images */}
             <div className="flex items-center gap-1 shrink-0">
-              <div className="w-16 h-20 rounded-lg bg-zinc-800 overflow-hidden flex items-center justify-center border border-zinc-700">
-                <div className="text-center">
-                  <div className="w-8 h-10 mx-auto bg-zinc-700 rounded" />
-                  <span className="text-[8px] text-zinc-500 mt-1 block">商品</span>
-                </div>
+              <div className="w-12 h-16 rounded-lg overflow-hidden border border-zinc-700">
+                <Image 
+                  src="/homepage/before.jpg" 
+                  alt="商品" 
+                  width={48} 
+                  height={64} 
+                  className="w-full h-full object-cover"
+                />
               </div>
-              <ArrowRight className="w-4 h-4 text-zinc-600" />
-              <div className="w-16 h-20 rounded-lg bg-gradient-to-b from-blue-900/50 to-zinc-800 overflow-hidden flex items-center justify-center border border-blue-500/30">
-                <div className="text-center">
-                  <Users className="w-6 h-6 mx-auto text-blue-400" />
-                  <span className="text-[8px] text-blue-400 mt-1 block">模特图</span>
-                </div>
+              <ArrowRight className="w-3 h-3 text-zinc-600" />
+              <div className="w-12 h-16 rounded-lg overflow-hidden border border-blue-500/50">
+                <Image 
+                  src="/homepage/after1.png" 
+                  alt="模特图1" 
+                  width={48} 
+                  height={64} 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="w-12 h-16 rounded-lg overflow-hidden border border-blue-500/50 -ml-1">
+                <Image 
+                  src="/homepage/after2.png" 
+                  alt="模特图2" 
+                  width={48} 
+                  height={64} 
+                  className="w-full h-full object-cover"
+                />
               </div>
             </div>
           </div>
