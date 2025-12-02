@@ -172,7 +172,7 @@ export default function EditPage() {
   const { addTask, updateTaskStatus } = useGenerationTaskStore()
   
   // Quota management
-  const { quota, checkQuota, incrementQuota, showExceededModal, closeExceededModal } = useQuota()
+  const { quota, checkQuota, refreshQuota, showExceededModal, closeExceededModal } = useQuota()
   
   // Update lightColor when HSV changes
   const updateColorFromHSV = useCallback((h: number, s: number, v: number) => {
@@ -405,8 +405,8 @@ export default function EditPage() {
           params: { lightType: lightTypeVal, lightDirection: lightDirectionVal, lightColor: lightColorVal, aspectRatio: aspectRatioVal },
         })
         
-        // Increment quota for successful generation
-        await incrementQuota(finalImages.length)
+        // Refresh quota after successful generation
+        await refreshQuota()
         
         if (isGeneratingRef.current) {
           setResultImages(finalImages)
@@ -485,8 +485,8 @@ export default function EditPage() {
           },
         })
         
-        // Increment quota for successful generation
-        await incrementQuota(1)
+        // Refresh quota after successful generation
+        await refreshQuota()
         
         if (isGeneratingRef.current) {
           setResultImage(data.image)

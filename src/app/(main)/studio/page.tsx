@@ -144,7 +144,7 @@ export default function StudioPage() {
   const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
   
   // Quota management
-  const { quota, checkQuota, incrementQuota, showExceededModal, closeExceededModal } = useQuota()
+  const { quota, checkQuota, refreshQuota, showExceededModal, closeExceededModal } = useQuota()
   
   // Update bgColor when HSV changes
   const updateColorFromHSV = useCallback((h: number, s: number, v: number) => {
@@ -361,8 +361,8 @@ export default function StudioPage() {
           params: { lightType: lightTypeVal, lightDirection: lightDirectionVal, lightColor: bgColorVal, aspectRatio: aspectRatioVal },
         })
         
-        // Increment quota for successful generation
-        await incrementQuota(finalImages.length)
+        // Refresh quota after successful generation
+        await refreshQuota()
         
         // Only update UI if still on processing mode
         if (modeRef.current === 'processing') {

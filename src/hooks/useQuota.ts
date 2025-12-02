@@ -43,7 +43,8 @@ export function useQuota() {
   // Check if user has enough quota for the specified number of images
   const checkQuota = useCallback(async (imageCount: number = 1): Promise<boolean> => {
     if (!user) {
-      return false
+      // Allow generation for non-logged-in users (will be handled elsewhere)
+      return true
     }
 
     try {
@@ -55,12 +56,14 @@ export function useQuota() {
 
       const data = await response.json()
       
+      // Update local quota state
+      setQuota({
+        totalQuota: data.totalQuota,
+        usedCount: data.usedCount,
+        remainingQuota: data.remainingQuota,
+      })
+      
       if (!data.hasQuota) {
-        setQuota({
-          totalQuota: data.totalQuota,
-          usedCount: data.usedCount,
-          remainingQuota: data.remainingQuota,
-        })
         setShowExceededModal(true)
         return false
       }
@@ -68,44 +71,16 @@ export function useQuota() {
       return true
     } catch (error) {
       console.error('Error checking quota:', error)
-      return false
+      // On error, allow generation to proceed (fail open)
+      return true
     }
   }, [user])
 
-  // Increment used count after successful generation
-  const incrementQuota = useCallback(async (imageCount: number = 1): Promise<boolean> => {
-    if (!user) {
-      return false
-    }
-
-    try {
-      const response = await fetch('/api/quota', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'increment', imageCount }),
-      })
-
-      const data = await response.json()
-      
-      if (response.ok && data.success) {
-        setQuota({
-          totalQuota: data.totalQuota,
-          usedCount: data.usedCount,
-          remainingQuota: data.remainingQuota,
-        })
-        return true
-      }
-
-      if (!data.hasQuota) {
-        setShowExceededModal(true)
-      }
-
-      return false
-    } catch (error) {
-      console.error('Error incrementing quota:', error)
-      return false
-    }
-  }, [user])
+  // Refresh quota after generation completes
+  // (No longer needs to increment - it's calculated from generations table)
+  const refreshQuota = useCallback(async () => {
+    await fetchQuota()
+  }, [fetchQuota])
 
   const closeExceededModal = useCallback(() => {
     setShowExceededModal(false)
@@ -116,7 +91,7 @@ export function useQuota() {
     isLoading,
     showExceededModal,
     checkQuota,
-    incrementQuota,
+    refreshQuota, // Renamed from incrementQuota
     fetchQuota,
     closeExceededModal,
   }

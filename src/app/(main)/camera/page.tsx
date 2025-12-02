@@ -139,7 +139,7 @@ export default function CameraPage() {
   const { debugMode } = useSettingsStore()
   
   // Quota management
-  const { quota, checkQuota, incrementQuota, showExceededModal, closeExceededModal } = useQuota()
+  const { quota, checkQuota, refreshQuota, showExceededModal, closeExceededModal } = useQuota()
   
   // Helper to sort by pinned status
   const sortByPinned = (assets: Asset[]) => 
@@ -520,8 +520,8 @@ export default function CameraPage() {
           },
         })
         
-        // Increment quota for successful generation
-        await incrementQuota(data.images.length)
+        // Refresh quota after successful generation
+        await refreshQuota()
         
         // If still on processing mode for this task, show results
         // Use modeRef.current to get the latest mode value (avoid stale closure)
