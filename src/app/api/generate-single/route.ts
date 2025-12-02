@@ -144,8 +144,8 @@ const SIMPLE_MODEL_PROMPT = `请为{{product}}生成一个模特实拍图，环�
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
   
-  // Check authentication
-  const authResult = await requireAuth()
+  // Check authentication (supports Cookie and Bearer token)
+  const authResult = await requireAuth(request)
   if ('response' in authResult) {
     return authResult.response
   }

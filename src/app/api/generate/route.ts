@@ -314,8 +314,8 @@ async function generateModelImage(
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
   
-  // Check authentication
-  const authResult = await requireAuth()
+  // Check authentication (supports Cookie and Bearer token)
+  const authResult = await requireAuth(request)
   if ('response' in authResult) {
     return authResult.response
   }

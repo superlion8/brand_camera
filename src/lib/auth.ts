@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
 export interface AuthUser {
   id: string
@@ -8,10 +9,32 @@ export interface AuthUser {
 
 /**
  * Verify authentication for API routes
+ * Supports both Cookie-based auth and Bearer token auth
  * Returns the user if authenticated, null otherwise
  */
-export async function getAuthUser(): Promise<AuthUser | null> {
+export async function getAuthUser(request?: NextRequest): Promise<AuthUser | null> {
   try {
+    // Method 1: Check Bearer token in Authorization header
+    if (request) {
+      const authHeader = request.headers.get('authorization')
+      if (authHeader?.startsWith('Bearer ')) {
+        const token = authHeader.substring(7)
+        const supabase = createSupabaseClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        )
+        
+        const { data: { user }, error } = await supabase.auth.getUser(token)
+        if (!error && user) {
+          return {
+            id: user.id,
+            email: user.email,
+          }
+        }
+      }
+    }
+    
+    // Method 2: Check Cookie-based session (default for web)
     const supabase = await createClient()
     const { data: { user }, error } = await supabase.auth.getUser()
     
@@ -41,10 +64,11 @@ export function unauthorizedResponse() {
 
 /**
  * Require authentication for API routes
+ * Supports both Cookie-based auth and Bearer token auth
  * Returns user if authenticated, or throws unauthorized response
  */
-export async function requireAuth(): Promise<{ user: AuthUser } | { response: NextResponse }> {
-  const user = await getAuthUser()
+export async function requireAuth(request?: NextRequest): Promise<{ user: AuthUser } | { response: NextResponse }> {
+  const user = await getAuthUser(request)
   
   if (!user) {
     return { response: unauthorizedResponse() }
