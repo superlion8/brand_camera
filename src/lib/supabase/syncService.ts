@@ -156,59 +156,107 @@ export async function fetchGenerations(userId: string): Promise<Generation[]> {
 
   return (data || [])
     // Filter out generations without valid output images
-    .filter(row => row.output_image_urls && Array.isArray(row.output_image_urls) && row.output_image_urls.length > 0)
-    .map(row => ({
-      id: row.id,
-      type: row.type,
-      inputImageUrl: row.input_image_url || '',
-      inputImage2Url: row.input_image2_url,
-      outputImageUrls: row.output_image_urls || [],
-      outputModelTypes: row.output_model_types || [],
-      outputGenModes: row.output_gen_modes || [],
-      prompt: row.prompt,
-      prompts: row.prompts || [],
-      params: row.params,
-      createdAt: row.created_at,
-    }))
+    .filter(row => {
+      const urls = row.output_image_urls || row.output_images
+      return urls && Array.isArray(urls) && urls.length > 0
+    })
+    .map(row => {
+      // Handle both old and new table schemas
+      let outputUrls = row.output_image_urls || []
+      
+      // If using new schema with output_images JSONB
+      if (row.output_images && Array.isArray(row.output_images)) {
+        outputUrls = row.output_images.map((img: any) => img.url || img)
+      }
+      
+      return {
+        id: row.id,
+        type: row.type || row.task_type,
+        inputImageUrl: row.input_image_url || '',
+        inputImage2Url: row.input_image2_url,
+        outputImageUrls: outputUrls,
+        outputModelTypes: row.output_model_types || [],
+        outputGenModes: row.output_gen_modes || [],
+        prompt: row.prompt || row.final_prompt,
+        prompts: row.prompts || [],
+        params: row.params || row.input_params,
+        createdAt: row.created_at,
+      }
+    })
 }
 
 export async function saveGeneration(userId: string, generation: Generation): Promise<Generation | null> {
   const supabase = getSupabase()
+  
+  // Build insert object with only non-null values
+  const insertData: Record<string, any> = {
+    id: generation.id,
+    user_id: userId,
+    input_image_url: generation.inputImageUrl || '',
+    created_at: generation.createdAt,
+  }
+  
+  // Optional fields - only add if they exist
+  if (generation.type) insertData.type = generation.type
+  if (generation.inputImage2Url) insertData.input_image2_url = generation.inputImage2Url
+  if (generation.outputImageUrls?.length) insertData.output_image_urls = generation.outputImageUrls
+  if (generation.outputModelTypes?.length) insertData.output_model_types = generation.outputModelTypes
+  if (generation.outputGenModes?.length) insertData.output_gen_modes = generation.outputGenModes
+  if (generation.prompt) insertData.prompt = generation.prompt
+  if (generation.prompts?.length) insertData.prompts = generation.prompts
+  if (generation.params) insertData.params = generation.params
+  
+  console.log('[Sync] Saving generation:', generation.id)
+  
   const { data, error } = await supabase
     .from('generations')
-    .insert({
-      id: generation.id,
-      user_id: userId,
-      type: generation.type,
-      input_image_url: generation.inputImageUrl,
-      input_image2_url: generation.inputImage2Url,
-      output_image_urls: generation.outputImageUrls,
-      output_model_types: generation.outputModelTypes,
-      output_gen_modes: generation.outputGenModes,
-      prompt: generation.prompt,
-      prompts: generation.prompts,
-      params: generation.params,
-      created_at: generation.createdAt,
-    })
+    .insert(insertData)
     .select()
     .single()
 
   if (error) {
-    console.error('Error saving generation:', error)
+    console.error('[Sync] Error saving generation:', error.message, error.code)
+    // If column doesn't exist, try with minimal fields
+    if (error.code === 'PGRST204' || error.message.includes('column')) {
+      console.warn('[Sync] Trying minimal insert...')
+      const minimalData = {
+        id: generation.id,
+        user_id: userId,
+        input_image_url: generation.inputImageUrl || '',
+        output_image_urls: generation.outputImageUrls || [],
+        created_at: generation.createdAt,
+      }
+      const { data: retryData, error: retryError } = await supabase
+        .from('generations')
+        .insert(minimalData)
+        .select()
+        .single()
+      
+      if (retryError) {
+        console.error('[Sync] Retry also failed:', retryError.message)
+        return null
+      }
+      return mapGenerationRow(retryData)
+    }
     return null
   }
 
+  return mapGenerationRow(data)
+}
+
+// Helper to map database row to Generation type
+function mapGenerationRow(data: any): Generation {
   return {
     id: data.id,
-    type: data.type,
-    inputImageUrl: data.input_image_url,
+    type: data.type || data.task_type,
+    inputImageUrl: data.input_image_url || '',
     inputImage2Url: data.input_image2_url,
-    outputImageUrls: data.output_image_urls,
-    outputModelTypes: data.output_model_types,
-    outputGenModes: data.output_gen_modes,
-    prompt: data.prompt,
-    prompts: data.prompts,
-    params: data.params,
+    outputImageUrls: data.output_image_urls || [],
+    outputModelTypes: data.output_model_types || [],
+    outputGenModes: data.output_gen_modes || [],
+    prompt: data.prompt || data.final_prompt,
+    prompts: data.prompts || [],
+    params: data.params || data.input_params,
     createdAt: data.created_at,
   }
 }
