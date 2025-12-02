@@ -17,6 +17,8 @@ export async function getAuthUser(request?: NextRequest): Promise<AuthUser | nul
     // Method 1: Check Bearer token in Authorization header
     if (request) {
       const authHeader = request.headers.get('authorization')
+      console.log('[Auth] Authorization header:', authHeader ? 'present' : 'missing')
+      
       if (authHeader?.startsWith('Bearer ')) {
         const token = authHeader.substring(7)
         const supabase = createSupabaseClient(
@@ -26,28 +28,33 @@ export async function getAuthUser(request?: NextRequest): Promise<AuthUser | nul
         
         const { data: { user }, error } = await supabase.auth.getUser(token)
         if (!error && user) {
+          console.log('[Auth] Bearer token auth success:', user.email)
           return {
             id: user.id,
             email: user.email,
           }
         }
+        console.log('[Auth] Bearer token auth failed:', error?.message)
       }
     }
     
     // Method 2: Check Cookie-based session (default for web)
+    console.log('[Auth] Checking cookie-based session...')
     const supabase = await createClient()
     const { data: { user }, error } = await supabase.auth.getUser()
     
     if (error || !user) {
+      console.log('[Auth] Cookie auth failed:', error?.message || 'No user')
       return null
     }
     
+    console.log('[Auth] Cookie auth success:', user.email)
     return {
       id: user.id,
       email: user.email,
     }
   } catch (e) {
-    console.error('Auth check failed:', e)
+    console.error('[Auth] Auth check exception:', e)
     return null
   }
 }
