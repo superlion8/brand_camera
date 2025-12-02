@@ -348,13 +348,35 @@ export interface SyncData {
   pinnedPresetIds: Set<string>
 }
 
-export async function syncAllData(userId: string): Promise<SyncData> {
-  const [assets, generations, favorites, pinnedPresetIds] = await Promise.all([
-    fetchUserAssets(userId),
-    fetchGenerations(userId),
-    fetchFavorites(userId),
-    fetchPinnedPresets(userId),
+// Helper function to add timeout to promises
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => {
+      setTimeout(() => {
+        console.warn(`[Sync] Request timed out after ${timeoutMs}ms`)
+        resolve(fallback)
+      }, timeoutMs)
+    })
   ])
+}
+
+export async function syncAllData(userId: string): Promise<SyncData> {
+  console.log('[Sync] Starting sync for user:', userId)
+  const startTime = Date.now()
+  
+  // Add 5 second timeout for each request
+  const TIMEOUT_MS = 5000
+  
+  const [assets, generations, favorites, pinnedPresetIds] = await Promise.all([
+    withTimeout(fetchUserAssets(userId), TIMEOUT_MS, { models: [], backgrounds: [], products: [], vibes: [] }),
+    withTimeout(fetchGenerations(userId), TIMEOUT_MS, []),
+    withTimeout(fetchFavorites(userId), TIMEOUT_MS, []),
+    withTimeout(fetchPinnedPresets(userId), TIMEOUT_MS, new Set<string>()),
+  ])
+
+  const duration = Date.now() - startTime
+  console.log(`[Sync] Completed in ${duration}ms`)
 
   return {
     userModels: assets.models,
