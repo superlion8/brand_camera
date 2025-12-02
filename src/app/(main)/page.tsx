@@ -9,6 +9,9 @@ import { UserMenu } from "@/components/shared/UserMenu"
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher"
 import { BeforeAfterSlider } from "@/components/shared/BeforeAfterSlider"
 
+// Supabase Storage base URL for homepage images
+const HOMEPAGE_STORAGE_URL = 'https://cvdogeigbpussfamctsu.supabase.co/storage/v1/object/public/presets/homepage'
+
 // Feature card component with before-after slider
 function FeatureCard({
   href,
@@ -124,8 +127,8 @@ export default function HomePage() {
           {/* 模特影棚 */}
           <FeatureCard
             href="/camera"
-            beforeImage="/homepage/model-before.jpg"
-            afterImage="/homepage/model-after.jpg"
+            beforeImage={`${HOMEPAGE_STORAGE_URL}/model-before.jpg`}
+            afterImage={`${HOMEPAGE_STORAGE_URL}/model-after.png`}
             icon={Users}
             title={t.home.modelStudio}
             subtitle="AI真人穿拍"
@@ -135,8 +138,8 @@ export default function HomePage() {
           {/* 商品影棚 */}
           <FeatureCard
             href="/studio"
-            beforeImage="/homepage/product-before.jpg"
-            afterImage="/homepage/product-after.jpg"
+            beforeImage={`${HOMEPAGE_STORAGE_URL}/product-before.jpg`}
+            afterImage={`${HOMEPAGE_STORAGE_URL}/product-after.jpg`}
             icon={Lightbulb}
             title={t.home.productStudio}
             subtitle="静物场景合成"
@@ -145,22 +148,19 @@ export default function HomePage() {
         </div>
       </div>
       
-      {/* AI 修图室 Section */}
+      {/* 修图室 Section */}
       <div className="px-4 mt-6">
         <div className="flex items-center gap-2 mb-3">
           <Wand2 className="w-5 h-5 text-purple-500" />
-          <h2 className="font-bold text-zinc-900">AI 修图室</h2>
-          <span className="px-2 py-0.5 bg-purple-100 text-purple-600 text-xs rounded-full font-medium">
-            专业版功能
-          </span>
+          <h2 className="font-bold text-zinc-900">修图室</h2>
         </div>
         
         <div className="grid grid-cols-2 gap-3">
           {/* 换模特风格 */}
           <ProFeatureCard
             href="/edit"
-            beforeImage="/homepage/style-before.jpg"
-            afterImage="/homepage/style-after.jpg"
+            beforeImage={`${HOMEPAGE_STORAGE_URL}/style-before.png`}
+            afterImage={`${HOMEPAGE_STORAGE_URL}/style-after.png`}
             icon={Users}
             title="换模特风格"
           />
@@ -168,8 +168,8 @@ export default function HomePage() {
           {/* 镜头控制 */}
           <ProFeatureCard
             href="/edit"
-            beforeImage="/homepage/lens-before.jpg"
-            afterImage="/homepage/lens-after.jpg"
+            beforeImage={`${HOMEPAGE_STORAGE_URL}/lens-before.png`}
+            afterImage={`${HOMEPAGE_STORAGE_URL}/lens-after.png`}
             icon={Focus}
             title="镜头控制"
           />
@@ -177,8 +177,8 @@ export default function HomePage() {
           {/* Pose控制 */}
           <ProFeatureCard
             href="/edit"
-            beforeImage="/homepage/pose-before.jpg"
-            afterImage="/homepage/pose-after.jpg"
+            beforeImage={`${HOMEPAGE_STORAGE_URL}/pose-before.jpg`}
+            afterImage={`${HOMEPAGE_STORAGE_URL}/pose-after.png`}
             icon={Move}
             title="Pose控制"
           />
@@ -186,8 +186,8 @@ export default function HomePage() {
           {/* 表情控制 */}
           <ProFeatureCard
             href="/edit"
-            beforeImage="/homepage/expression-before.jpg"
-            afterImage="/homepage/expression-after.jpg"
+            beforeImage={`${HOMEPAGE_STORAGE_URL}/expression-before.jpg`}
+            afterImage={`${HOMEPAGE_STORAGE_URL}/expression-after.png`}
             icon={Smile}
             title="表情控制"
           />
