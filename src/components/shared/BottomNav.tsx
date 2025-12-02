@@ -4,18 +4,20 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Camera, Briefcase, Image as ImageIcon, Home, Wand2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-
-const tabs = [
-  { id: "home", href: "/", label: "主页", icon: Home },
-  { id: "brand", href: "/brand-assets", label: "资产", icon: Briefcase },
-  { id: "camera", href: "/camera", label: "", icon: Camera, isSpecial: true },
-  { id: "edit", href: "/edit", label: "修图", icon: Wand2 },
-  { id: "gallery", href: "/gallery", label: "图库", icon: ImageIcon },
-]
+import { useTranslation } from "@/stores/languageStore"
 
 export function BottomNav() {
   const pathname = usePathname()
   const router = useRouter()
+  const { t } = useTranslation()
+  
+  const tabs = [
+    { id: "home", href: "/", label: t.nav.home, icon: Home },
+    { id: "brand", href: "/brand-assets", label: t.nav.assets, icon: Briefcase },
+    { id: "camera", href: "/camera", label: "", icon: Camera, isSpecial: true },
+    { id: "edit", href: "/edit", label: t.nav.edit, icon: Wand2 },
+    { id: "gallery", href: "/gallery", label: t.nav.gallery, icon: ImageIcon },
+  ]
   
   // Hide on camera pages
   if (pathname.startsWith("/camera")) {

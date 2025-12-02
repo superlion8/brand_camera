@@ -4,10 +4,13 @@ import Image from "next/image"
 import Link from "next/link"
 import { Camera, Wand2, FolderHeart, Images, ArrowRight, Lightbulb, Users, Sparkles } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
+import { useTranslation } from "@/stores/languageStore"
 import { UserMenu } from "@/components/shared/UserMenu"
+import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher"
 
 export default function HomePage() {
   const { generations, _hasHydrated } = useAssetStore()
+  const { t } = useTranslation()
   
   // Get recent generations (last 4)
   const recentGenerations = generations.slice(0, 4)
@@ -18,17 +21,18 @@ export default function HomePage() {
       <div className="bg-white px-6 pt-8 pb-10">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
+            <LanguageSwitcher />
             <Image src="/logo.png" alt="Brand Camera" width={48} height={48} className="rounded-xl" />
             <div>
-              <h1 className="text-2xl font-bold text-zinc-900">品牌相机</h1>
-              <p className="text-sm text-zinc-500">品牌的AI影棚</p>
+              <h1 className="text-2xl font-bold text-zinc-900">{t.common.appName}</h1>
+              <p className="text-sm text-zinc-500">{t.common.slogan}</p>
             </div>
           </div>
           <UserMenu />
         </div>
         
         <p className="text-zinc-600 leading-relaxed text-sm">
-          一键生成专业的商品图和模特展示图，搭配灵活更换模特、背景、风格的后编辑能力，让你的产品在社交媒体上脱颖而出。
+          {t.home.description}
         </p>
       </div>
       
@@ -40,10 +44,10 @@ export default function HomePage() {
             <div className="flex-1 z-10">
               <div className="flex items-center gap-2 mb-2">
                 <Users className="w-5 h-5 text-blue-100" />
-                <h3 className="font-bold">模特影棚</h3>
+                <h3 className="font-bold">{t.home.modelStudio}</h3>
               </div>
               <p className="text-blue-100 text-xs leading-relaxed">
-                上传商品，一键生成模特穿搭展示图
+                {t.home.modelStudioDesc}
               </p>
             </div>
             {/* Before-After Preview with real images */}
@@ -86,10 +90,10 @@ export default function HomePage() {
             <div className="flex-1 z-10">
               <div className="flex items-center gap-2 mb-2">
                 <Lightbulb className="w-5 h-5 text-amber-100" />
-                <h3 className="font-bold">商品影棚</h3>
+                <h3 className="font-bold">{t.home.productStudio}</h3>
               </div>
               <p className="text-amber-100 text-xs leading-relaxed">
-                专业光影控制，生成影棚级商品照
+                {t.home.productStudioDesc}
               </p>
             </div>
             {/* Before-After Preview */}
@@ -117,10 +121,10 @@ export default function HomePage() {
             <div className="flex-1 z-10">
               <div className="flex items-center gap-2 mb-2">
                 <Wand2 className="w-5 h-5 text-purple-200" />
-                <h3 className="font-bold">修图室</h3>
+                <h3 className="font-bold">{t.home.editRoom}</h3>
               </div>
               <p className="text-purple-200 text-xs leading-relaxed">
-                AI 智能修图，更换背景和模特
+                {t.home.editRoomDesc}
               </p>
             </div>
             {/* Before-After Preview */}
@@ -145,7 +149,6 @@ export default function HomePage() {
       
       {/* Navigation Cards */}
       <div className="px-4 mt-6">
-        <h2 className="text-sm font-semibold text-zinc-500 uppercase mb-3">快速导航</h2>
         <div className="space-y-3">
           <Link href="/brand-assets" className="flex items-center justify-between bg-white rounded-xl p-4 border border-zinc-100 active:bg-zinc-50">
             <div className="flex items-center gap-3">
@@ -153,8 +156,8 @@ export default function HomePage() {
                 <FolderHeart className="w-5 h-5 text-zinc-600" />
               </div>
               <div>
-                <h3 className="font-medium text-zinc-900">品牌资产</h3>
-                <p className="text-xs text-zinc-500">管理模特、背景、商品素材</p>
+                <h3 className="font-medium text-zinc-900">{t.assets.title}</h3>
+                <p className="text-xs text-zinc-500">{t.common.model}、{t.common.background}、{t.common.product}</p>
               </div>
             </div>
             <ArrowRight className="w-5 h-5 text-zinc-400" />
@@ -166,8 +169,8 @@ export default function HomePage() {
                 <Images className="w-5 h-5 text-zinc-600" />
               </div>
               <div>
-                <h3 className="font-medium text-zinc-900">图库</h3>
-                <p className="text-xs text-zinc-500">查看生成历史和收藏</p>
+                <h3 className="font-medium text-zinc-900">{t.nav.gallery}</h3>
+                <p className="text-xs text-zinc-500">{t.gallery.favorites}</p>
               </div>
             </div>
             <ArrowRight className="w-5 h-5 text-zinc-400" />
@@ -179,8 +182,8 @@ export default function HomePage() {
       {_hasHydrated && recentGenerations.length > 0 && (
         <div className="px-4 mt-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-zinc-500 uppercase">我的图库</h2>
-            <Link href="/gallery" className="text-xs text-blue-600 font-medium">查看全部</Link>
+            <h2 className="text-sm font-semibold text-zinc-500 uppercase">{t.home.myGallery}</h2>
+            <Link href="/gallery" className="text-xs text-blue-600 font-medium">{t.home.viewAll}</Link>
           </div>
           <div className="grid grid-cols-4 gap-2">
             {recentGenerations.map((gen) => (

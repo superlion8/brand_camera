@@ -5,12 +5,14 @@ import Image from "next/image"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useSettingsStore } from "@/stores/settingsStore"
 import { useAssetStore } from "@/stores/assetStore"
+import { useTranslation } from "@/stores/languageStore"
 import { LogOut, Settings, ChevronDown, X, Bug, Cloud, RefreshCw } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
 export function UserMenu() {
   const { user, signOut, isLoading, isSyncing } = useAuth()
   const { isSyncing: storeSyncing, lastSyncAt } = useAssetStore()
+  const { t } = useTranslation()
   const { debugMode, toggleDebugMode } = useSettingsStore()
   const [isOpen, setIsOpen] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -91,12 +93,12 @@ export function UserMenu() {
                 {(isSyncing || storeSyncing) ? (
                   <span className="flex items-center gap-1.5 text-blue-600">
                     <RefreshCw className="w-3 h-3 animate-spin" />
-                    同步中...
+                    {t.user.syncing}
                   </span>
                 ) : lastSyncAt ? (
                   <span className="flex items-center gap-1.5 text-green-600">
                     <Cloud className="w-3 h-3" />
-                    已同步
+                    {t.user.synced}
                   </span>
                 ) : null}
               </div>
@@ -112,7 +114,7 @@ export function UserMenu() {
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-700 hover:bg-zinc-100 transition-colors text-left"
               >
                 <Settings className="w-4 h-4" />
-                <span className="text-sm">设置</span>
+                <span className="text-sm">{t.user.settings}</span>
                 {debugMode && (
                   <Bug className="w-3 h-3 text-amber-500 ml-auto" />
                 )}
@@ -129,7 +131,7 @@ export function UserMenu() {
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors text-left"
               >
                 <LogOut className="w-4 h-4" />
-                <span className="text-sm">退出登录</span>
+                <span className="text-sm">{t.user.logout}</span>
               </button>
             </div>
           </div>
@@ -157,7 +159,7 @@ export function UserMenu() {
             >
               {/* Header */}
               <div className="h-14 flex items-center justify-between px-4 border-b">
-                <h2 className="font-semibold text-zinc-900">设置</h2>
+                <h2 className="font-semibold text-zinc-900">{t.user.settings}</h2>
                 <button
                   onClick={() => setShowSettings(false)}
                   className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center transition-colors"
@@ -175,8 +177,8 @@ export function UserMenu() {
                       <Bug className={`w-5 h-5 ${debugMode ? 'text-amber-600' : 'text-zinc-400'}`} />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-medium text-zinc-900 text-sm">调试模式</p>
-                      <p className="text-xs text-zinc-500">显示图片生成参数</p>
+                      <p className="font-medium text-zinc-900 text-sm">{t.user.debugMode}</p>
+                      <p className="text-xs text-zinc-500">{t.user.debugModeDesc}</p>
                     </div>
                   </div>
                   <button
@@ -197,8 +199,8 @@ export function UserMenu() {
                 {debugMode && (
                   <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
                     <p className="text-xs text-amber-700">
-                      <strong>调试模式已开启</strong><br />
-                      在图片详情页面将显示生成参数、Prompt 等技术信息。
+                      <strong>{t.user.debugModeEnabled}</strong><br />
+                      {t.user.debugModeEnabledDesc}
                     </p>
                   </div>
                 )}
@@ -210,7 +212,7 @@ export function UserMenu() {
                   onClick={() => setShowSettings(false)}
                   className="w-full h-12 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl font-medium text-sm transition-colors"
                 >
-                  完成
+                  {t.common.done}
                 </button>
               </div>
             </motion.div>
