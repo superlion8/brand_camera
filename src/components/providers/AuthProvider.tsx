@@ -3,23 +3,32 @@
 import { createContext, useContext, useEffect, useState, useRef, useCallback } from "react"
 import { User, Session } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 
 interface AuthContextType {
   user: User | null
   session: Session | null
+  accessToken: string | null
   isLoading: boolean
   isSyncing: boolean
+  isAuthenticated: boolean
   signOut: () => Promise<void>
+  promptLogin: () => void
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
+  accessToken: null,
   isLoading: true,
   isSyncing: false,
+  isAuthenticated: false,
   signOut: async () => {},
+  promptLogin: () => {},
 })
+
+// Protected routes that require authentication
+const PROTECTED_ROUTES = ['/camera', '/edit', '/gallery', '/brand-assets', '/studio']
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -27,8 +36,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const [isSyncing, setIsSyncing] = useState(false)
   const router = useRouter()
+  const pathname = usePathname()
   const supabase = createClient()
   const syncedUserIdRef = useRef<string | null>(null)
+
+  const accessToken = session?.access_token ?? null
+  const isAuthenticated = Boolean(session && accessToken)
+
+  // Redirect to login with current path
+  const promptLogin = useCallback(() => {
+    const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/'
+    router.push(`/login?redirect=${encodeURIComponent(currentPath)}`)
+  }, [router])
 
   // Sync with cloud - import store dynamically to avoid hydration issues
   const syncWithCloud = useCallback(async (userId: string) => {
@@ -53,10 +72,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   useEffect(() => {
+    let isMounted = true
+
     // Get initial session
     const getSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        if (!isMounted) return
+        
+        if (error) {
+          console.error("[Auth] Get session error:", error.message)
+        }
+        
         setSession(session)
         setUser(session?.user ?? null)
         setIsLoading(false)
@@ -68,12 +96,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           try {
             await syncWithCloud(session.user.id)
           } finally {
-            setIsSyncing(false)
+            if (isMounted) setIsSyncing(false)
           }
         }
       } catch (error) {
         console.error("[Auth] Get session error:", error)
-        setIsLoading(false)
+        if (isMounted) setIsLoading(false)
       }
     }
 
@@ -81,35 +109,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session)
-        setUser(session?.user ?? null)
+      async (event, newSession) => {
+        if (!isMounted) return
+        
+        setSession(newSession)
+        setUser(newSession?.user ?? null)
         setIsLoading(false)
 
-        if (event === "SIGNED_IN" && session?.user) {
+        if (event === "SIGNED_IN" && newSession?.user) {
           // Sync cloud data when user signs in
-          if (syncedUserIdRef.current !== session.user.id) {
-            syncedUserIdRef.current = session.user.id
+          if (syncedUserIdRef.current !== newSession.user.id) {
+            syncedUserIdRef.current = newSession.user.id
             setIsSyncing(true)
             try {
-              await syncWithCloud(session.user.id)
+              await syncWithCloud(newSession.user.id)
             } finally {
-              setIsSyncing(false)
+              if (isMounted) setIsSyncing(false)
             }
           }
         } else if (event === "SIGNED_OUT") {
           // Clear user data and reset sync state
           syncedUserIdRef.current = null
           clearUserData()
-          router.push("/login")
         }
       }
     )
 
     return () => {
+      isMounted = false
       subscription.unsubscribe()
     }
-  }, [supabase, router, syncWithCloud, clearUserData])
+  }, [supabase, syncWithCloud, clearUserData])
+
+  // Client-side route protection
+  useEffect(() => {
+    if (isLoading) return // Wait for auth to load
+    
+    const isProtectedRoute = PROTECTED_ROUTES.some(route => pathname?.startsWith(route))
+    
+    if (!isAuthenticated && isProtectedRoute) {
+      // Redirect to login with return path
+      router.push(`/login?redirect=${encodeURIComponent(pathname || '/')}`)
+    }
+  }, [isLoading, isAuthenticated, pathname, router])
 
   const signOut = useCallback(async () => {
     syncedUserIdRef.current = null
@@ -119,7 +161,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase, router, clearUserData])
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, isSyncing, signOut }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      session, 
+      accessToken,
+      isLoading, 
+      isSyncing, 
+      isAuthenticated,
+      signOut,
+      promptLogin,
+    }}>
       {children}
     </AuthContext.Provider>
   )

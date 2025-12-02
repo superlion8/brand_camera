@@ -28,64 +28,14 @@ export async function updateSession(request: NextRequest) {
       }
     )
 
-    // IMPORTANT: Avoid writing any logic between createServerClient and
-    // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-    // issues with users being randomly logged out.
-
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser()
-
-    // Protected routes - redirect to login if not authenticated
-    const protectedPaths = ['/camera', '/edit', '/gallery', '/brand-assets', '/studio']
-    const isProtectedPath = protectedPaths.some(path => 
-      request.nextUrl.pathname.startsWith(path)
-    )
-
-    // Always protect these routes - redirect to login if no user
-    if (!user && isProtectedPath) {
-      // Log for debugging
-      if (error) {
-        console.warn('[Middleware] Auth error on protected route:', error.message)
-      }
-      
-      const url = request.nextUrl.clone()
-      url.pathname = '/login'
-      url.searchParams.set('redirect', request.nextUrl.pathname)
-      return NextResponse.redirect(url)
-    }
-
-    // Redirect logged in users away from login page
-    if (user && request.nextUrl.pathname === '/login') {
-      const redirect = request.nextUrl.searchParams.get('redirect')
-      const url = request.nextUrl.clone()
-      // Validate redirect URL to prevent open redirect
-      if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
-        url.pathname = redirect
-      } else {
-        url.pathname = '/'
-      }
-      url.searchParams.delete('redirect')
-      return NextResponse.redirect(url)
-    }
+    // Just refresh the session - don't do any route protection here
+    // Route protection is handled on the client side via AuthProvider
+    // This avoids cookie sync issues that cause repeated login prompts
+    await supabase.auth.getUser()
 
     return supabaseResponse
   } catch (e) {
-    console.error('[Middleware] Error:', e)
-    // On error with protected route, redirect to login
-    const protectedPaths = ['/camera', '/edit', '/gallery', '/brand-assets', '/studio']
-    const isProtectedPath = protectedPaths.some(path => 
-      request.nextUrl.pathname.startsWith(path)
-    )
-    
-    if (isProtectedPath) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/login'
-      url.searchParams.set('redirect', request.nextUrl.pathname)
-      return NextResponse.redirect(url)
-    }
-    
+    console.error('[Middleware] Error refreshing session:', e)
     return supabaseResponse
   }
 }
