@@ -23,17 +23,26 @@ export async function GET(request: NextRequest) {
   try {
     if (view === 'overview') {
       // Daily overview statistics
-      const { data: generations, error: genError } = await supabase
+      let genQuery = supabase
         .from('generations')
         .select('id, user_id, task_type, total_images_count, created_at')
         .order('created_at', { ascending: false })
       
+      // Apply date filters
+      if (dateFrom) genQuery = genQuery.gte('created_at', dateFrom)
+      if (dateTo) genQuery = genQuery.lte('created_at', dateTo + 'T23:59:59')
+      
+      const { data: generations, error: genError } = await genQuery
       if (genError) throw genError
       
-      const { data: favorites, error: favError } = await supabase
+      let favQuery = supabase
         .from('favorites')
         .select('id, user_id, created_at')
       
+      if (dateFrom) favQuery = favQuery.gte('created_at', dateFrom)
+      if (dateTo) favQuery = favQuery.lte('created_at', dateTo + 'T23:59:59')
+      
+      const { data: favorites, error: favError } = await favQuery
       if (favError) throw favError
       
       // Get user emails
@@ -92,15 +101,27 @@ export async function GET(request: NextRequest) {
     
     if (view === 'by-type') {
       // Statistics by task type
-      const { data: generations, error } = await supabase
+      let genQuery = supabase
         .from('generations')
-        .select('id, user_id, task_type, total_images_count')
+        .select('id, user_id, task_type, total_images_count, created_at')
       
+      if (dateFrom) genQuery = genQuery.gte('created_at', dateFrom)
+      if (dateTo) genQuery = genQuery.lte('created_at', dateTo + 'T23:59:59')
+      
+      const { data: generations, error } = await genQuery
       if (error) throw error
       
-      const { data: favorites } = await supabase
-        .from('favorites')
-        .select('id, generation_id')
+      // Get generation IDs for favorites query
+      const genIds = generations?.map(g => g.id) || []
+      let favorites: { id: string; generation_id: string }[] = []
+      
+      if (genIds.length > 0) {
+        const { data: favData } = await supabase
+          .from('favorites')
+          .select('id, generation_id')
+          .in('generation_id', genIds)
+        favorites = favData || []
+      }
       
       // Create a map of generation_id to favorite count
       const favCountByGen: Record<string, number> = {}
@@ -140,15 +161,27 @@ export async function GET(request: NextRequest) {
     
     if (view === 'by-user') {
       // Statistics by user
-      const { data: generations, error } = await supabase
+      let genQuery = supabase
         .from('generations')
-        .select('id, user_id, user_email, task_type, total_images_count')
+        .select('id, user_id, user_email, task_type, total_images_count, created_at')
       
+      if (dateFrom) genQuery = genQuery.gte('created_at', dateFrom)
+      if (dateTo) genQuery = genQuery.lte('created_at', dateTo + 'T23:59:59')
+      
+      const { data: generations, error } = await genQuery
       if (error) throw error
       
-      const { data: favorites } = await supabase
-        .from('favorites')
-        .select('id, user_id, generation_id')
+      // Get generation IDs for favorites query
+      const genIds = generations?.map(g => g.id) || []
+      let favorites: { id: string; user_id: string; generation_id: string }[] = []
+      
+      if (genIds.length > 0) {
+        const { data: favData } = await supabase
+          .from('favorites')
+          .select('id, user_id, generation_id')
+          .in('generation_id', genIds)
+        favorites = favData || []
+      }
       
       // Create maps
       const favCountByGen: Record<string, number> = {}

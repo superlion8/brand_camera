@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { 
   Home, Users, BarChart3, FileText, Calendar, Filter, 
-  ChevronDown, ChevronRight, Eye, Heart, Loader2, RefreshCw,
-  ImageIcon, Sparkles, Lightbulb, Wand2
+  ChevronDown, ChevronRight, Heart, Loader2, RefreshCw,
+  ImageIcon, Sparkles, Lightbulb, Wand2, CalendarDays
 } from "lucide-react"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { motion, AnimatePresence } from "framer-motion"
@@ -86,13 +86,25 @@ export default function AdminDashboard() {
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set())
   const [selectedTask, setSelectedTask] = useState<TaskDetail | null>(null)
   
+  // Date filters
+  const [dateFrom, setDateFrom] = useState<string>("")
+  const [dateTo, setDateTo] = useState<string>("")
+  const [showDatePicker, setShowDatePicker] = useState(false)
+  
   // Fetch data based on active tab
-  const fetchData = async (tab: TabType) => {
+  const fetchData = async (tab: TabType, fromDate?: string, toDate?: string) => {
     setIsLoading(true)
     setError(null)
     
     try {
       let url = `/api/admin/stats?view=${tab}`
+      
+      // Add date filters
+      const from = fromDate || dateFrom
+      const to = toDate || dateTo
+      if (from) url += `&from=${from}`
+      if (to) url += `&to=${to}`
+      
       if (tab === 'details') {
         if (filterType) url += `&type=${filterType}`
         if (filterEmail) url += `&email=${encodeURIComponent(filterEmail)}`
@@ -222,6 +234,91 @@ export default function AdminDashboard() {
               </button>
             )
           })}
+        </div>
+        
+        {/* Date Filter */}
+        <div className="px-4 pb-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 bg-zinc-100 rounded-lg p-1">
+              <button
+                onClick={() => {
+                  const today = new Date().toISOString().split('T')[0]
+                  setDateFrom(today)
+                  setDateTo(today)
+                  fetchData(activeTab, today, today)
+                }}
+                className="px-3 py-1.5 text-xs font-medium rounded-md hover:bg-white transition-colors"
+              >
+                今天
+              </button>
+              <button
+                onClick={() => {
+                  const today = new Date()
+                  const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
+                  const from = weekAgo.toISOString().split('T')[0]
+                  const to = today.toISOString().split('T')[0]
+                  setDateFrom(from)
+                  setDateTo(to)
+                  fetchData(activeTab, from, to)
+                }}
+                className="px-3 py-1.5 text-xs font-medium rounded-md hover:bg-white transition-colors"
+              >
+                近7天
+              </button>
+              <button
+                onClick={() => {
+                  const today = new Date()
+                  const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)
+                  const from = monthAgo.toISOString().split('T')[0]
+                  const to = today.toISOString().split('T')[0]
+                  setDateFrom(from)
+                  setDateTo(to)
+                  fetchData(activeTab, from, to)
+                }}
+                className="px-3 py-1.5 text-xs font-medium rounded-md hover:bg-white transition-colors"
+              >
+                近30天
+              </button>
+              <button
+                onClick={() => {
+                  setDateFrom('')
+                  setDateTo('')
+                  fetchData(activeTab, '', '')
+                }}
+                className="px-3 py-1.5 text-xs font-medium rounded-md hover:bg-white transition-colors"
+              >
+                全部
+              </button>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="h-8 px-2 text-xs border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <span className="text-zinc-400 text-xs">至</span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="h-8 px-2 text-xs border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                onClick={() => fetchData(activeTab)}
+                className="h-8 px-3 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700"
+              >
+                查询
+              </button>
+            </div>
+            
+            {(dateFrom || dateTo) && (
+              <span className="text-xs text-zinc-500">
+                {dateFrom || '开始'} ~ {dateTo || '至今'}
+              </span>
+            )}
+          </div>
         </div>
       </div>
       
