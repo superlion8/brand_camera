@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { Camera, Wand2, FolderHeart, Images, ArrowRight, Sparkles, ChevronRight, Zap, SlidersHorizontal, Palette, Lightbulb } from "lucide-react"
+import { Camera, Wand2, FolderHeart, Images, ArrowRight, Lightbulb, Users, Sparkles } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { UserMenu } from "@/components/shared/UserMenu"
 
@@ -32,102 +32,100 @@ export default function HomePage() {
         </p>
       </div>
       
-      {/* Quick Actions - 3 cards in a row */}
-      <div className="px-4 -mt-4">
-        <div className="grid grid-cols-3 gap-2">
-          {/* Camera Card */}
-          <Link href="/camera" className="group">
-            <div className="bg-zinc-900 text-white rounded-2xl p-4 h-32 flex flex-col justify-between relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-zinc-800 rounded-full -translate-y-1/2 translate-x-1/2" />
-              <Camera className="w-6 h-6 relative z-10" />
-              <div className="relative z-10">
-                <h3 className="font-bold text-sm mb-0.5">拍摄</h3>
-                <p className="text-zinc-400 text-[10px] leading-tight">商品图+模特图</p>
+      {/* Feature Cards - Horizontal layout with before-after */}
+      <div className="px-4 -mt-4 space-y-3">
+        {/* 模特影棚 Card */}
+        <Link href="/camera" className="block">
+          <div className="bg-zinc-900 text-white rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden">
+            <div className="flex-1 z-10">
+              <div className="flex items-center gap-2 mb-2">
+                <Users className="w-5 h-5 text-blue-400" />
+                <h3 className="font-bold">模特影棚</h3>
               </div>
+              <p className="text-zinc-400 text-xs leading-relaxed">
+                上传商品，一键生成模特穿搭展示图
+              </p>
             </div>
-          </Link>
-          
-          {/* Edit Card */}
-          <Link href="/edit" className="group">
-            <div className="bg-gradient-to-br from-purple-500 to-purple-700 text-white rounded-2xl p-4 h-32 flex flex-col justify-between relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-purple-400/30 rounded-full -translate-y-1/2 translate-x-1/2" />
-              <Wand2 className="w-6 h-6 relative z-10" />
-              <div className="relative z-10">
-                <h3 className="font-bold text-sm mb-0.5">编辑</h3>
-                <p className="text-purple-200 text-[10px] leading-tight">AI 智能修图</p>
+            {/* Before-After Preview */}
+            <div className="flex items-center gap-1 shrink-0">
+              <div className="w-16 h-20 rounded-lg bg-zinc-800 overflow-hidden flex items-center justify-center border border-zinc-700">
+                <div className="text-center">
+                  <div className="w-8 h-10 mx-auto bg-zinc-700 rounded" />
+                  <span className="text-[8px] text-zinc-500 mt-1 block">商品</span>
+                </div>
               </div>
-            </div>
-          </Link>
-          
-          {/* Studio Card */}
-          <Link href="/studio" className="group">
-            <div className="bg-gradient-to-br from-amber-400 to-orange-500 text-white rounded-2xl p-4 h-32 flex flex-col justify-between relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-amber-300/30 rounded-full -translate-y-1/2 translate-x-1/2" />
-              <Lightbulb className="w-6 h-6 relative z-10" />
-              <div className="relative z-10">
-                <h3 className="font-bold text-sm mb-0.5">影棚</h3>
-                <p className="text-amber-100 text-[10px] leading-tight">专业光影控制</p>
+              <ArrowRight className="w-4 h-4 text-zinc-600" />
+              <div className="w-16 h-20 rounded-lg bg-gradient-to-b from-blue-900/50 to-zinc-800 overflow-hidden flex items-center justify-center border border-blue-500/30">
+                <div className="text-center">
+                  <Users className="w-6 h-6 mx-auto text-blue-400" />
+                  <span className="text-[8px] text-blue-400 mt-1 block">模特图</span>
+                </div>
               </div>
-            </div>
-          </Link>
-        </div>
-      </div>
-      
-      {/* Usage Modes */}
-      <div className="px-4 mt-6">
-        <h2 className="text-sm font-semibold text-zinc-500 uppercase mb-3">三种模式</h2>
-        <div className="space-y-3">
-          {/* Simple Mode */}
-          <div className="bg-white rounded-xl border border-zinc-100 p-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Zap className="w-4 h-4 text-blue-600" />
-              </div>
-              <span className="font-semibold text-zinc-900">极简模式</span>
-            </div>
-            <div className="flex items-center text-xs text-zinc-600">
-              <span>拍摄商品</span>
-              <ChevronRight className="w-3 h-3 text-zinc-300 mx-1" />
-              <span>一键生成商品图和模特图</span>
-              <ChevronRight className="w-3 h-3 text-zinc-300 mx-1" />
-              <span>编辑图片</span>
             </div>
           </div>
-          
-          {/* Custom Mode */}
-          <div className="bg-white rounded-xl border border-zinc-100 p-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                <SlidersHorizontal className="w-4 h-4 text-purple-600" />
+        </Link>
+        
+        {/* 商品影棚 Card */}
+        <Link href="/studio" className="block">
+          <div className="bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden">
+            <div className="flex-1 z-10">
+              <div className="flex items-center gap-2 mb-2">
+                <Lightbulb className="w-5 h-5 text-amber-100" />
+                <h3 className="font-bold">商品影棚</h3>
               </div>
-              <span className="font-semibold text-zinc-900">自定义模式</span>
+              <p className="text-amber-100 text-xs leading-relaxed">
+                专业光影控制，生成影棚级商品照
+              </p>
             </div>
-            <div className="flex items-center text-xs text-zinc-600">
-              <span>拍摄商品</span>
-              <ChevronRight className="w-3 h-3 text-zinc-300 mx-1" />
-              <span>选择模特和背景图</span>
-              <ChevronRight className="w-3 h-3 text-zinc-300 mx-1" />
-              <span>生成商品图和模特展示图</span>
+            {/* Before-After Preview */}
+            <div className="flex items-center gap-1 shrink-0">
+              <div className="w-16 h-20 rounded-lg bg-amber-700/50 overflow-hidden flex items-center justify-center border border-amber-400/30">
+                <div className="text-center">
+                  <div className="w-8 h-10 mx-auto bg-amber-600/50 rounded" />
+                  <span className="text-[8px] text-amber-200 mt-1 block">商品</span>
+                </div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-amber-300" />
+              <div className="w-16 h-20 rounded-lg bg-gradient-to-b from-amber-400/30 to-amber-700/50 overflow-hidden flex items-center justify-center border border-amber-300/50">
+                <div className="text-center">
+                  <Sparkles className="w-6 h-6 mx-auto text-amber-200" />
+                  <span className="text-[8px] text-amber-200 mt-1 block">影棚照</span>
+                </div>
+              </div>
             </div>
           </div>
-          
-          {/* Vibe Mode */}
-          <div className="bg-white rounded-xl border border-zinc-100 p-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
-                <Palette className="w-4 h-4 text-amber-600" />
+        </Link>
+        
+        {/* 修图室 Card */}
+        <Link href="/edit" className="block">
+          <div className="bg-gradient-to-br from-purple-500 to-purple-700 text-white rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden">
+            <div className="flex-1 z-10">
+              <div className="flex items-center gap-2 mb-2">
+                <Wand2 className="w-5 h-5 text-purple-200" />
+                <h3 className="font-bold">修图室</h3>
               </div>
-              <span className="font-semibold text-zinc-900">氛围模式</span>
+              <p className="text-purple-200 text-xs leading-relaxed">
+                AI 智能修图，更换背景和模特
+              </p>
             </div>
-            <div className="flex items-center flex-wrap text-xs text-zinc-600">
-              <span>拍摄商品</span>
-              <ChevronRight className="w-3 h-3 text-zinc-300 mx-1" />
-              <span>选择喜欢的氛围</span>
-              <ChevronRight className="w-3 h-3 text-zinc-300 mx-1" />
-              <span className="leading-tight">生成和氛围图背景、姿势一致的模特展示图</span>
+            {/* Before-After Preview */}
+            <div className="flex items-center gap-1 shrink-0">
+              <div className="w-16 h-20 rounded-lg bg-purple-800/50 overflow-hidden flex items-center justify-center border border-purple-400/30">
+                <div className="text-center">
+                  <div className="w-10 h-12 mx-auto bg-purple-600/50 rounded" />
+                  <span className="text-[8px] text-purple-300 mt-1 block">原图</span>
+                </div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-purple-300" />
+              <div className="w-16 h-20 rounded-lg bg-gradient-to-b from-purple-400/30 to-purple-800/50 overflow-hidden flex items-center justify-center border border-purple-300/50">
+                <div className="text-center">
+                  <Wand2 className="w-6 h-6 mx-auto text-purple-200" />
+                  <span className="text-[8px] text-purple-200 mt-1 block">修图后</span>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        </Link>
       </div>
       
       {/* Navigation Cards */}

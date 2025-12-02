@@ -9,7 +9,7 @@ const tabs = [
   { id: "home", href: "/", label: "主页", icon: Home },
   { id: "brand", href: "/brand-assets", label: "资产", icon: Briefcase },
   { id: "camera", href: "/camera", label: "", icon: Camera, isSpecial: true },
-  { id: "edit", href: "/edit", label: "编辑", icon: Wand2 },
+  { id: "edit", href: "/edit", label: "修图", icon: Wand2 },
   { id: "gallery", href: "/gallery", label: "图库", icon: ImageIcon },
 ]
 

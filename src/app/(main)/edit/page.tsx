@@ -440,7 +440,7 @@ export default function EditPage() {
             }`}
           >
             <Wand2 className="w-3.5 h-3.5 inline mr-1" />
-            编辑
+            修图
           </button>
           <button
             onClick={() => setEditMode('studio')}
@@ -451,7 +451,7 @@ export default function EditPage() {
             }`}
           >
             <Lightbulb className="w-3.5 h-3.5 inline mr-1" />
-            影棚
+            商品影棚
           </button>
         </div>
       </div>
@@ -835,7 +835,7 @@ export default function EditPage() {
             <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full animate-pulse" />
             <Loader2 className="w-16 h-16 text-blue-500 animate-spin relative z-10" />
           </div>
-          <h3 className="text-white text-xl font-bold mb-2">AI 正在编辑...</h3>
+          <h3 className="text-white text-xl font-bold mb-2">AI 正在处理...</h3>
           <p className="text-zinc-400 text-sm">应用您的指令和风格选择</p>
         </div>
       )}

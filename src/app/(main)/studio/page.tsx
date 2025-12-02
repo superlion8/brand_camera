@@ -363,7 +363,7 @@ export default function StudioPage() {
         >
           <Home className="w-5 h-5" />
         </button>
-        <span className="font-semibold ml-2">AI商品影棚</span>
+        <span className="font-semibold ml-2">商品影棚</span>
       </div>
       
       <input 
