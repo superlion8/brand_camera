@@ -25,8 +25,7 @@ const systemPresets: Record<AssetType, Asset[]> = {
 const typeTabs = [
   { value: "product" as AssetType, label: "官方示例", icon: Package },
   { value: "model" as AssetType, label: "模特", icon: Users },
-  { value: "background" as AssetType, label: "背景", icon: ImageIcon },
-  { value: "vibe" as AssetType, label: "氛围", icon: Sparkles },
+  { value: "background" as AssetType, label: "环境", icon: ImageIcon },
 ]
 
 type SourceTab = "user" | "preset"
@@ -342,7 +341,7 @@ export default function BrandAssetsPage() {
             </div>
             <p className="text-zinc-600 mb-2 text-center">
               {activeSource === "user" 
-                ? `暂无${activeType === "model" ? "模特" : activeType === "background" ? "背景" : activeType === "vibe" ? "氛围" : "商品"}资产`
+                ? `暂无${activeType === "model" ? "模特" : activeType === "background" ? "环境" : "商品"}资产`
                 : "该分类暂无官方预设"
               }
             </p>

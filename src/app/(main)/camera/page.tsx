@@ -7,7 +7,7 @@ import Webcam from "react-webcam"
 import { 
   ArrowLeft, ArrowRight, Check, Loader2, Image as ImageIcon, 
   SlidersHorizontal, X, Wand2, Camera, Home,
-  Heart, Download, Pin, ZoomIn, FolderHeart, Plus
+  Heart, Download, Pin, ZoomIn, FolderHeart, Plus, Upload
 } from "lucide-react"
 import { useCameraStore } from "@/stores/cameraStore"
 import { useAssetStore } from "@/stores/assetStore"
@@ -40,6 +40,8 @@ export default function CameraPage() {
   const webcamRef = useRef<Webcam>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef2 = useRef<HTMLInputElement>(null) // For second product image
+  const modelUploadRef = useRef<HTMLInputElement>(null) // For model upload
+  const bgUploadRef = useRef<HTMLInputElement>(null) // For background/environment upload
   
   // Mode and state
   const [mode, setMode] = useState<CameraMode>("camera")
@@ -121,8 +123,9 @@ export default function CameraPage() {
   const [showCustomPanel, setShowCustomPanel] = useState(false)
   const [showProductPanel, setShowProductPanel] = useState(false)
   const [showProduct2Panel, setShowProduct2Panel] = useState(false)
-  const [activeCustomTab, setActiveCustomTab] = useState("style")
+  const [activeCustomTab, setActiveCustomTab] = useState("model")
   const [productSourceTab, setProductSourceTab] = useState<"user" | "preset">("preset")
+  const [isLoadingAssets, setIsLoadingAssets] = useState(false)
   
   // Selections
   const [selectedBg, setSelectedBg] = useState<string | null>(null)
@@ -205,6 +208,42 @@ export default function CameraPage() {
     }
   }, [])
   
+  // Upload model image directly in selector
+  const handleModelUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const base64 = await fileToBase64(file)
+      const newAsset = {
+        id: generateId(),
+        type: 'model' as const,
+        name: `模特 ${new Date().toLocaleDateString('zh-CN')}`,
+        imageUrl: base64,
+      }
+      addUserAsset(newAsset)
+      setSelectedModel(newAsset.id)
+    }
+    // Reset input so same file can be selected again
+    if (e.target) e.target.value = ''
+  }, [addUserAsset])
+  
+  // Upload background/environment image directly in selector
+  const handleBgUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const base64 = await fileToBase64(file)
+      const newAsset = {
+        id: generateId(),
+        type: 'background' as const,
+        name: `环境 ${new Date().toLocaleDateString('zh-CN')}`,
+        imageUrl: base64,
+      }
+      addUserAsset(newAsset)
+      setSelectedBg(newAsset.id)
+    }
+    // Reset input so same file can be selected again
+    if (e.target) e.target.value = ''
+  }, [addUserAsset])
+  
   const handleCameraError = useCallback(() => {
     setHasCamera(false)
     setCameraReady(false)
@@ -234,11 +273,25 @@ export default function CameraPage() {
     // Capture current selections BEFORE any async operations
     const currentModelStyle = selectedModelStyle
     const currentModelGender = selectedModelGender
-    const currentModel = activeModel
-    const currentBg = activeBg
+    let currentModel = activeModel
+    let currentBg = activeBg
     const currentProduct2 = capturedImage2
     const currentProductFromPhone = productFromPhone
     const currentProduct2FromPhone = product2FromPhone
+    
+    // If model not selected, randomly pick one from presets
+    if (!currentModel && PRESET_MODELS.length > 0) {
+      const randomModel = PRESET_MODELS[Math.floor(Math.random() * PRESET_MODELS.length)]
+      currentModel = randomModel
+      console.log('Randomly selected model:', randomModel.name)
+    }
+    
+    // If background not selected, randomly pick one from presets
+    if (!currentBg && PRESET_BACKGROUNDS.length > 0) {
+      const randomBg = PRESET_BACKGROUNDS[Math.floor(Math.random() * PRESET_BACKGROUNDS.length)]
+      currentBg = randomBg
+      console.log('Randomly selected background:', randomBg.name)
+    }
     
     // Create task and switch to processing mode
     const params = {
@@ -562,17 +615,33 @@ export default function CameraPage() {
     }
   }
   
-  // Asset grid component
+  // Asset grid component with upload card
   const AssetGrid = ({ 
     items, 
     selectedId, 
-    onSelect 
+    onSelect,
+    onUpload,
+    uploadLabel = "上传"
   }: { 
     items: Asset[]
     selectedId: string | null
-    onSelect: (id: string) => void 
+    onSelect: (id: string) => void
+    onUpload?: () => void
+    uploadLabel?: string
   }) => (
     <div className="grid grid-cols-3 gap-3 p-1 pb-20">
+      {/* Upload card as first item */}
+      {onUpload && (
+        <button
+          onClick={onUpload}
+          className="aspect-square rounded-lg overflow-hidden relative border-2 border-dashed border-zinc-300 hover:border-blue-500 transition-all flex flex-col items-center justify-center bg-zinc-100 hover:bg-zinc-50"
+        >
+          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mb-2">
+            <Upload className="w-5 h-5 text-blue-600" />
+          </div>
+          <span className="text-xs text-zinc-600 font-medium">{uploadLabel}</span>
+        </button>
+      )}
       {items.map(asset => (
         <button
           key={asset.id}
@@ -617,6 +686,20 @@ export default function CameraPage() {
         className="hidden" 
         accept="image/*" 
         onChange={handleUpload2}
+      />
+      <input 
+        type="file" 
+        ref={modelUploadRef} 
+        className="hidden" 
+        accept="image/*" 
+        onChange={handleModelUpload}
+      />
+      <input 
+        type="file" 
+        ref={bgUploadRef} 
+        className="hidden" 
+        accept="image/*" 
+        onChange={handleBgUpload}
       />
 
       <AnimatePresence mode="wait">
@@ -729,7 +812,7 @@ export default function CameraPage() {
                 )}
                 {activeBg && (
                   <span className="px-2 py-1 bg-black/50 text-white text-xs rounded-full backdrop-blur-md">
-                    背景: {activeBg.name}
+                    环境: {activeBg.name}
                   </span>
                 )}
               </div>
@@ -856,9 +939,8 @@ export default function CameraPage() {
                     </div>
                     <div className="p-2 flex gap-2 border-b overflow-x-auto shrink-0">
                       {[
-                        { id: "style", label: "风格" },
                         { id: "model", label: "模特" },
-                        { id: "bg", label: "背景" }
+                        { id: "bg", label: "环境" }
                       ].map(tab => (
                         <button 
                           key={tab.id}
@@ -874,57 +956,6 @@ export default function CameraPage() {
                       ))}
                     </div>
                     <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4">
-                      {activeCustomTab === "style" && (
-                        <div className="space-y-6">
-                          {/* Gender Selection */}
-                          <div>
-                            <h4 className="text-xs font-semibold text-zinc-500 mb-3 uppercase">模特性别</h4>
-                            <div className="grid grid-cols-2 gap-3">
-                              {MODEL_GENDERS.map(gender => (
-                                <button
-                                  key={gender.id}
-                                  onClick={() => {
-                                    setSelectedModelGender(selectedModelGender === gender.id ? null : gender.id)
-                                  }}
-                                  className={`h-12 px-4 rounded-lg text-sm font-medium border transition-all flex items-center justify-between ${
-                                    selectedModelGender === gender.id 
-                                      ? "bg-blue-50 border-blue-500 text-blue-700 shadow-sm" 
-                                      : "bg-white border-zinc-200 text-zinc-700 hover:border-zinc-300"
-                                  }`}
-                                >
-                                  {gender.label}
-                                  {selectedModelGender === gender.id && <Check className="w-4 h-4" />}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                          
-                          {/* Style Selection */}
-                          <div>
-                            <h4 className="text-xs font-semibold text-zinc-500 mb-3 uppercase">模特风格</h4>
-                            <div className="grid grid-cols-2 gap-3">
-                              {MODEL_STYLES.map(style => (
-                                <button
-                                  key={style.id}
-                                  onClick={() => {
-                                    setSelectedModelStyle(selectedModelStyle === style.id ? null : style.id)
-                                  }}
-                                  className={`h-12 px-4 rounded-lg text-sm font-medium border transition-all flex items-center justify-between ${
-                                    selectedModelStyle === style.id 
-                                      ? "bg-blue-50 border-blue-500 text-blue-700 shadow-sm" 
-                                      : "bg-white border-zinc-200 text-zinc-700 hover:border-zinc-300"
-                                  }`}
-                                >
-                                  {style.label}
-                                  {selectedModelStyle === style.id && <Check className="w-4 h-4" />}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                          
-                          <p className="text-xs text-zinc-400 text-center">选择性别和风格，AI 将自动匹配模特特征</p>
-                        </div>
-                      )}
                       {activeCustomTab === "model" && (
                         <div className="space-y-4">
                           {/* Model Subcategory Tabs */}
@@ -969,7 +1000,9 @@ export default function CameraPage() {
                             selectedId={selectedModel} 
                             onSelect={(id) => {
                               setSelectedModel(selectedModel === id ? null : id)
-                            }} 
+                            }}
+                            onUpload={() => modelUploadRef.current?.click()}
+                            uploadLabel="上传模特"
                           />
                         </div>
                       )}
@@ -1015,7 +1048,9 @@ export default function CameraPage() {
                           <AssetGrid 
                             items={allBackgrounds} 
                             selectedId={selectedBg} 
-                            onSelect={(id) => setSelectedBg(selectedBg === id ? null : id)} 
+                            onSelect={(id) => setSelectedBg(selectedBg === id ? null : id)}
+                            onUpload={() => bgUploadRef.current?.click()}
+                            uploadLabel="上传环境"
                           />
                         </div>
                       )}
@@ -1086,12 +1121,19 @@ export default function CameraPage() {
                     
                     <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4">
                       {productSourceTab === "preset" ? (
-                        <div className="grid grid-cols-3 gap-3 pb-20">
+                        <div className="grid grid-cols-3 gap-3 pb-20 relative">
+                          {isLoadingAssets && (
+                            <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10 rounded-lg">
+                              <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                            </div>
+                          )}
                           {PRESET_PRODUCTS.map(product => (
                             <button
                               key={product.id}
+                              disabled={isLoadingAssets}
                               onClick={async () => {
                                 // Need to convert URL to base64 for preset products
+                                setIsLoadingAssets(true)
                                 try {
                                   const base64 = await ensureBase64(product.imageUrl)
                                   if (base64) {
@@ -1102,9 +1144,11 @@ export default function CameraPage() {
                                   }
                                 } catch (e) {
                                   console.error("Failed to load preset product:", e)
+                                } finally {
+                                  setIsLoadingAssets(false)
                                 }
                               }}
-                              className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all"
+                              className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all disabled:opacity-50"
                             >
                               <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
                               <span className="absolute top-1 left-1 bg-blue-600 text-white text-[8px] px-1 py-0.5 rounded font-medium">
@@ -1232,12 +1276,19 @@ export default function CameraPage() {
                     
                     <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4">
                       {productSourceTab === "preset" ? (
-                        <div className="grid grid-cols-3 gap-3 pb-20">
+                        <div className="grid grid-cols-3 gap-3 pb-20 relative">
+                          {isLoadingAssets && (
+                            <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10 rounded-lg">
+                              <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                            </div>
+                          )}
                           {PRESET_PRODUCTS.map(product => (
                             <button
                               key={product.id}
+                              disabled={isLoadingAssets}
                               onClick={async () => {
                                 // Need to convert URL to base64 for preset products
+                                setIsLoadingAssets(true)
                                 try {
                                   const base64 = await ensureBase64(product.imageUrl)
                                   if (base64) {
@@ -1247,9 +1298,11 @@ export default function CameraPage() {
                                   }
                                 } catch (e) {
                                   console.error("Failed to load preset product:", e)
+                                } finally {
+                                  setIsLoadingAssets(false)
                                 }
                               }}
-                              className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all"
+                              className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all disabled:opacity-50"
                             >
                               <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
                               <span className="absolute top-1 left-1 bg-blue-600 text-white text-[8px] px-1 py-0.5 rounded font-medium">
