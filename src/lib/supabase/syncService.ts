@@ -1,7 +1,10 @@
 import { createClient } from './client'
 import { Asset, AssetType, Generation, Favorite } from '@/types'
 
-const supabase = createClient()
+// Create a new client for each request to ensure fresh auth state
+function getSupabase() {
+  return createClient()
+}
 
 // ============== User Assets ==============
 
@@ -11,6 +14,9 @@ export async function fetchUserAssets(userId: string): Promise<{
   products: Asset[]
   vibes: Asset[]
 }> {
+  console.log('[Sync] Fetching user assets for:', userId)
+  const supabase = getSupabase()
+  
   const { data, error } = await supabase
     .from('user_assets')
     .select('*')
@@ -18,9 +24,15 @@ export async function fetchUserAssets(userId: string): Promise<{
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('Error fetching user assets:', error)
+    console.error('[Sync] Error fetching user assets:', error.message, error.code)
+    // If table doesn't exist, return empty but don't crash
+    if (error.code === '42P01' || error.message.includes('does not exist')) {
+      console.warn('[Sync] user_assets table does not exist. Please run the migration.')
+    }
     return { models: [], backgrounds: [], products: [], vibes: [] }
   }
+  
+  console.log('[Sync] Fetched user assets:', data?.length || 0)
 
   const assets = (data || []).map(row => ({
     id: row.id,
@@ -42,6 +54,7 @@ export async function fetchUserAssets(userId: string): Promise<{
 }
 
 export async function saveUserAsset(userId: string, asset: Asset): Promise<Asset | null> {
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from('user_assets')
     .insert({
@@ -76,6 +89,7 @@ export async function saveUserAsset(userId: string, asset: Asset): Promise<Asset
 }
 
 export async function updateUserAssetPin(userId: string, assetId: string, isPinned: boolean): Promise<boolean> {
+  const supabase = getSupabase()
   const { error } = await supabase
     .from('user_assets')
     .update({ is_pinned: isPinned })
@@ -90,6 +104,7 @@ export async function updateUserAssetPin(userId: string, assetId: string, isPinn
 }
 
 export async function deleteUserAsset(userId: string, assetId: string): Promise<boolean> {
+  const supabase = getSupabase()
   const { error } = await supabase
     .from('user_assets')
     .delete()
@@ -106,6 +121,9 @@ export async function deleteUserAsset(userId: string, assetId: string): Promise<
 // ============== Generations ==============
 
 export async function fetchGenerations(userId: string): Promise<Generation[]> {
+  console.log('[Sync] Fetching generations for:', userId)
+  const supabase = getSupabase()
+  
   const { data, error } = await supabase
     .from('generations')
     .select('*')
@@ -113,9 +131,14 @@ export async function fetchGenerations(userId: string): Promise<Generation[]> {
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('Error fetching generations:', error)
+    console.error('[Sync] Error fetching generations:', error.message, error.code)
+    if (error.code === '42P01' || error.message.includes('does not exist')) {
+      console.warn('[Sync] generations table does not exist. Please run the migration.')
+    }
     return []
   }
+  
+  console.log('[Sync] Fetched generations:', data?.length || 0)
 
   return (data || [])
     // Filter out generations without valid output images
@@ -136,6 +159,7 @@ export async function fetchGenerations(userId: string): Promise<Generation[]> {
 }
 
 export async function saveGeneration(userId: string, generation: Generation): Promise<Generation | null> {
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from('generations')
     .insert({
@@ -176,6 +200,7 @@ export async function saveGeneration(userId: string, generation: Generation): Pr
 }
 
 export async function deleteGeneration(userId: string, generationId: string): Promise<boolean> {
+  const supabase = getSupabase()
   const { error } = await supabase
     .from('generations')
     .delete()
@@ -192,6 +217,9 @@ export async function deleteGeneration(userId: string, generationId: string): Pr
 // ============== Favorites ==============
 
 export async function fetchFavorites(userId: string): Promise<Favorite[]> {
+  console.log('[Sync] Fetching favorites for:', userId)
+  const supabase = getSupabase()
+  
   const { data, error } = await supabase
     .from('favorites')
     .select('*')
@@ -199,9 +227,14 @@ export async function fetchFavorites(userId: string): Promise<Favorite[]> {
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('Error fetching favorites:', error)
+    console.error('[Sync] Error fetching favorites:', error.message, error.code)
+    if (error.code === '42P01' || error.message.includes('does not exist')) {
+      console.warn('[Sync] favorites table does not exist. Please run the migration.')
+    }
     return []
   }
+  
+  console.log('[Sync] Fetched favorites:', data?.length || 0)
 
   return (data || []).map(row => ({
     id: row.id,
@@ -212,6 +245,7 @@ export async function fetchFavorites(userId: string): Promise<Favorite[]> {
 }
 
 export async function saveFavorite(userId: string, favorite: Favorite): Promise<Favorite | null> {
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from('favorites')
     .insert({
@@ -238,6 +272,7 @@ export async function saveFavorite(userId: string, favorite: Favorite): Promise<
 }
 
 export async function deleteFavorite(userId: string, favoriteId: string): Promise<boolean> {
+  const supabase = getSupabase()
   const { error } = await supabase
     .from('favorites')
     .delete()
@@ -254,27 +289,36 @@ export async function deleteFavorite(userId: string, favoriteId: string): Promis
 // ============== Pinned Presets ==============
 
 export async function fetchPinnedPresets(userId: string): Promise<Set<string>> {
+  console.log('[Sync] Fetching pinned presets for:', userId)
+  const supabase = getSupabase()
+  
   const { data, error } = await supabase
     .from('pinned_presets')
     .select('preset_id')
     .eq('user_id', userId)
 
   if (error) {
-    console.error('Error fetching pinned presets:', error)
+    console.error('[Sync] Error fetching pinned presets:', error.message, error.code)
+    if (error.code === '42P01' || error.message.includes('does not exist')) {
+      console.warn('[Sync] pinned_presets table does not exist. Please run the migration.')
+    }
     return new Set()
   }
-
+  
+  console.log('[Sync] Fetched pinned presets:', data?.length || 0)
   return new Set((data || []).map(row => row.preset_id))
 }
 
 export async function togglePinnedPreset(userId: string, presetId: string, isPinned: boolean): Promise<boolean> {
+  const supabase = getSupabase()
+  
   if (isPinned) {
     const { error } = await supabase
       .from('pinned_presets')
       .insert({ user_id: userId, preset_id: presetId })
 
     if (error) {
-      console.error('Error pinning preset:', error)
+      console.error('[Sync] Error pinning preset:', error.message)
       return false
     }
   } else {
@@ -285,7 +329,7 @@ export async function togglePinnedPreset(userId: string, presetId: string, isPin
       .eq('preset_id', presetId)
 
     if (error) {
-      console.error('Error unpinning preset:', error)
+      console.error('[Sync] Error unpinning preset:', error.message)
       return false
     }
   }
