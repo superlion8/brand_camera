@@ -204,28 +204,28 @@ export function BeforeAfterSlider({
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Before Image (Background - full image, visible on left) */}
+      {/* After Image (Background - full image) */}
       <div className="absolute inset-0">
         <Image
-          src={beforeImage}
-          alt="Before"
+          src={afterImage}
+          alt="After"
           fill
           className="object-cover"
           draggable={false}
         />
       </div>
 
-      {/* After Image (Clipped from left - shows on right side of slider) */}
-      {/* clipPath inset(top right bottom left) - we clip from left by (100-position)% */}
-      {/* When slider at 85% (right), clip 15% from left = show 85% of After on right */}
-      {/* When slider at 15% (left), clip 85% from left = show 15% of After on right */}
+      {/* Before Image (Clipped from left - shows on right side of slider) */}
+      {/* clipPath inset(top right bottom left) - clip from left by sliderPosition% */}
+      {/* When slider at 85% (right), clip 85% from left = show 15% of Before on right */}
+      {/* When slider at 15% (left), clip 15% from left = show 85% of Before on right */}
       <div
         className="absolute inset-0 overflow-hidden"
-        style={{ clipPath: `inset(0 0 0 ${100 - sliderPosition}%)` }}
+        style={{ clipPath: `inset(0 0 0 ${sliderPosition}%)` }}
       >
         <Image
-          src={afterImage}
-          alt="After"
+          src={beforeImage}
+          alt="Before"
           fill
           className="object-cover"
           draggable={false}
