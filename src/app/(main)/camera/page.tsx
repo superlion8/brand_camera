@@ -1404,7 +1404,7 @@ export default function CameraPage() {
               <span className="font-semibold ml-2">本次成片</span>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-10">
+            <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-24">
               {/* Simple Mode Images (极简模式) - indices 0, 1, 2 */}
               <div>
                 <div className="flex items-center justify-between mb-3">
@@ -1529,7 +1529,7 @@ export default function CameraPage() {
                   </div>
 
                   {/* Content */}
-                  <div className="flex-1 overflow-y-auto bg-zinc-100">
+                  <div className="flex-1 overflow-y-auto bg-zinc-100 pb-24">
                     <div 
                       className="relative aspect-[4/5] bg-zinc-900 cursor-pointer group"
                       onClick={() => setFullscreenImage(generatedImages[selectedResultIndex])}

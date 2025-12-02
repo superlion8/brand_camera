@@ -601,7 +601,7 @@ export default function StudioPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex-1 overflow-y-auto"
+            className="flex-1 overflow-y-auto pb-24"
           >
             {/* Preview */}
             <div className="p-4">

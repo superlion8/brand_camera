@@ -272,7 +272,7 @@ export default function GalleryPage() {
       </div>
 
       {/* Grid */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 pb-24">
         <div className="grid grid-cols-2 gap-3">
           {activeTab === "all" && activeTasks.map((task) => (
             <GeneratingCard key={task.id} task={task} />

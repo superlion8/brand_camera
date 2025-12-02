@@ -277,7 +277,7 @@ export default function BrandAssetsPage() {
       </div>
       
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 pb-24">
         {displayAssets.length > 0 ? (
           <div className="grid grid-cols-2 gap-3">
             {displayAssets.map((asset) => (

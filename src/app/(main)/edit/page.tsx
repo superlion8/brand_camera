@@ -560,7 +560,7 @@ export default function EditPage() {
         </div>
       </div>
       
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto pb-24">
         {/* Image Area */}
         <div className="bg-zinc-100 min-h-[240px] flex items-center justify-center relative p-4">
           {!inputImage ? (
