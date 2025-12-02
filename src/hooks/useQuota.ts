@@ -42,12 +42,48 @@ export function useQuota() {
   }, [fetchQuota])
 
   // Check if user has enough quota for the specified number of images
+  // Uses local cache first for instant feedback, then verifies with server in background
   const checkQuota = useCallback(async (imageCount: number = 1): Promise<boolean> => {
     if (!user) {
       // Allow generation for non-logged-in users (will be handled elsewhere)
       return true
     }
 
+    // Fast path: Check local cache first (instant, no network delay)
+    if (quota) {
+      const localRemaining = quota.remainingQuota
+      if (localRemaining < imageCount) {
+        // Definitely not enough - show modal immediately
+        setRequiredCount(imageCount)
+        setShowExceededModal(true)
+        
+        // Refresh quota in background to sync latest data
+        fetch('/api/quota').then(res => res.json()).then(data => {
+          setQuota({
+            totalQuota: data.totalQuota,
+            usedCount: data.usedCount,
+            remainingQuota: data.remainingQuota,
+          })
+        }).catch(() => {})
+        
+        return false
+      }
+      
+      // Local cache says we have enough - proceed immediately
+      // Server will do final validation during generation
+      // Refresh quota in background (non-blocking)
+      fetch('/api/quota').then(res => res.json()).then(data => {
+        setQuota({
+          totalQuota: data.totalQuota,
+          usedCount: data.usedCount,
+          remainingQuota: data.remainingQuota,
+        })
+      }).catch(() => {})
+      
+      return true
+    }
+
+    // No local cache - need to fetch (only happens on first load)
     try {
       const response = await fetch('/api/quota', {
         method: 'POST',
@@ -76,7 +112,7 @@ export function useQuota() {
       // On error, allow generation to proceed (fail open)
       return true
     }
-  }, [user])
+  }, [user, quota])
 
   // Refresh quota after generation completes
   // (No longer needs to increment - it's calculated from generations table)
