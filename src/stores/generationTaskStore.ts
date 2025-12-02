@@ -2,8 +2,11 @@ import { create } from 'zustand'
 import { GenerationParams } from '@/types'
 import { generateId } from '@/lib/utils'
 
+export type TaskType = 'camera' | 'studio' | 'edit'
+
 export interface GenerationTask {
   id: string
+  type: TaskType
   status: 'pending' | 'generating' | 'completed' | 'failed'
   inputImageUrl: string
   outputImageUrls: string[]
@@ -16,7 +19,7 @@ interface GenerationTaskState {
   tasks: GenerationTask[]
   
   // Actions
-  addTask: (inputImageUrl: string, params?: GenerationParams) => string
+  addTask: (type: TaskType, inputImageUrl: string, params?: GenerationParams) => string
   updateTaskStatus: (id: string, status: GenerationTask['status'], outputImageUrls?: string[], error?: string) => void
   removeTask: (id: string) => void
   getActiveTasks: () => GenerationTask[]
@@ -26,10 +29,11 @@ interface GenerationTaskState {
 export const useGenerationTaskStore = create<GenerationTaskState>((set, get) => ({
   tasks: [],
   
-  addTask: (inputImageUrl, params) => {
+  addTask: (type, inputImageUrl, params) => {
     const id = generateId()
     const task: GenerationTask = {
       id,
+      type,
       status: 'pending',
       inputImageUrl,
       outputImageUrls: [],

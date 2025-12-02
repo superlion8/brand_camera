@@ -249,7 +249,7 @@ export default function CameraPage() {
       hasProduct2: !!currentProduct2,
     }
     
-    const taskId = addTask(capturedImage, params)
+    const taskId = addTask('camera', capturedImage, params)
     setCurrentTaskId(taskId)
     updateTaskStatus(taskId, 'generating')
     setMode("processing")

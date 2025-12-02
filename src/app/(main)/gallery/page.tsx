@@ -571,10 +571,74 @@ export default function GalleryPage() {
   )
 }
 
-// Generating card component
+// Generating card component with task type support
 function GeneratingCard({ task }: { task: GenerationTask }) {
+  // Determine colors and text based on task type
+  const isStudio = task.type === 'studio'
+  const isEdit = task.type === 'edit'
+  
+  const bgGradient = isStudio 
+    ? 'from-amber-100 to-orange-100' 
+    : isEdit 
+      ? 'from-purple-100 to-pink-100'
+      : 'from-blue-100 to-purple-100'
+  
+  const borderColor = isStudio 
+    ? 'border-amber-300' 
+    : isEdit 
+      ? 'border-purple-300'
+      : 'border-blue-300'
+  
+  const pulseColor = isStudio 
+    ? 'bg-amber-500/20' 
+    : isEdit 
+      ? 'bg-purple-500/20'
+      : 'bg-blue-500/20'
+  
+  const spinnerColor = isStudio 
+    ? 'text-amber-600' 
+    : isEdit 
+      ? 'text-purple-600'
+      : 'text-blue-600'
+  
+  const textColor = isStudio 
+    ? 'text-amber-700' 
+    : isEdit 
+      ? 'text-purple-700'
+      : 'text-blue-700'
+  
+  const subTextColor = isStudio 
+    ? 'text-amber-500' 
+    : isEdit 
+      ? 'text-purple-500'
+      : 'text-blue-500'
+  
+  const badgeColor = isStudio 
+    ? 'bg-amber-500' 
+    : isEdit 
+      ? 'bg-purple-500'
+      : 'bg-blue-500'
+  
+  const title = isStudio 
+    ? '影棚拍摄中...' 
+    : isEdit 
+      ? '修图中...'
+      : '模特拍摄中...'
+  
+  const subtitle = isStudio 
+    ? 'AI 正在生成 2 张商品图' 
+    : isEdit 
+      ? 'AI 正在处理您的图片'
+      : 'AI 正在生成 4 张模特图'
+  
+  const badgeText = isStudio 
+    ? '商品影棚' 
+    : isEdit 
+      ? '修图室'
+      : '模特影棚'
+  
   return (
-    <div className="relative aspect-[4/5] bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl overflow-hidden shadow-sm border-2 border-dashed border-blue-300">
+    <div className={`relative aspect-[4/5] bg-gradient-to-br ${bgGradient} rounded-xl overflow-hidden shadow-sm border-2 border-dashed ${borderColor}`}>
       {/* Thumbnail preview */}
       <div className="absolute inset-0 opacity-30">
         <Image 
@@ -588,17 +652,17 @@ function GeneratingCard({ task }: { task: GenerationTask }) {
       {/* Loading overlay */}
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <div className="relative mb-3">
-          <div className="absolute inset-0 bg-blue-500/20 blur-lg rounded-full animate-pulse" />
-          <Loader2 className="w-10 h-10 text-blue-600 animate-spin relative z-10" />
+          <div className={`absolute inset-0 ${pulseColor} blur-lg rounded-full animate-pulse`} />
+          <Loader2 className={`w-10 h-10 ${spinnerColor} animate-spin relative z-10`} />
         </div>
-        <span className="text-blue-700 font-semibold text-sm">拍摄中...</span>
-        <span className="text-blue-500 text-xs mt-1">AI 正在生成 4 张图片</span>
+        <span className={`${textColor} font-semibold text-sm`}>{title}</span>
+        <span className={`${subTextColor} text-xs mt-1`}>{subtitle}</span>
       </div>
       
       {/* Status badge */}
       <div className="absolute top-2 left-2">
-        <span className="px-2 py-1 rounded text-[10px] font-medium bg-blue-500 text-white animate-pulse">
-          生成中
+        <span className={`px-2 py-1 rounded text-[10px] font-medium ${badgeColor} text-white animate-pulse`}>
+          {badgeText}
         </span>
       </div>
     </div>

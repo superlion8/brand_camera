@@ -8,6 +8,7 @@ import { Asset, ModelStyle, ModelGender } from "@/types"
 import { fileToBase64, compressBase64Image, fetchWithTimeout, generateId, ensureBase64 } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { useAssetStore } from "@/stores/assetStore"
+import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { PRESET_PRODUCTS } from "@/data/presets"
 import Webcam from "react-webcam"
 import { motion, AnimatePresence } from "framer-motion"
@@ -119,6 +120,13 @@ export default function EditPage() {
   // Mode: edit or studio
   const [editMode, setEditMode] = useState<EditMode>('edit')
   
+  // Ref to track generating state for async callbacks
+  const [isGenerating, setIsGenerating] = useState(false)
+  const isGeneratingRef = useRef(isGenerating)
+  useEffect(() => { isGeneratingRef.current = isGenerating }, [isGenerating])
+  
+  const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
+  
   // Camera and upload states
   const [showCamera, setShowCamera] = useState(false)
   const [showProductPanel, setShowProductPanel] = useState(false)
@@ -143,7 +151,6 @@ export default function EditPage() {
   const [modelStyle, setModelStyle] = useState<ModelStyle>("auto")
   const [modelGender, setModelGender] = useState<ModelGender | null>(null)
   const [customPrompt, setCustomPrompt] = useState("")
-  const [isGenerating, setIsGenerating] = useState(false)
   const [resultImage, setResultImage] = useState<string | null>(null)
   const [resultImages, setResultImages] = useState<string[]>([]) // For studio mode (2 images)
   const [activeTab, setActiveTab] = useState<"model" | "bg" | "vibe">("model")
@@ -160,6 +167,7 @@ export default function EditPage() {
   const [brightness, setBrightness] = useState(1)
   
   const { addGeneration, userProducts, generations } = useAssetStore()
+  const { addTask, updateTaskStatus } = useGenerationTaskStore()
   
   // Update lightColor when HSV changes
   const updateColorFromHSV = useCallback((h: number, s: number, v: number) => {
@@ -264,139 +272,221 @@ export default function EditPage() {
   const handleGenerate = async () => {
     if (!inputImage) return
     
+    // Capture current state before async operations
+    const currentInputImage = inputImage
+    const currentEditMode = editMode
+    const currentLightType = lightType
+    const currentLightDirection = lightDirection
+    const currentLightColor = lightColor
+    const currentAspectRatio = aspectRatio
+    const currentSelectedModel = selectedModel
+    const currentSelectedBackground = selectedBackground
+    const currentSelectedVibe = selectedVibe
+    const currentModelStyle = modelStyle
+    const currentModelGender = modelGender
+    const currentCustomPrompt = customPrompt
+    
+    // Create task based on mode
+    const taskType = currentEditMode === 'studio' ? 'studio' : 'edit'
+    const params = currentEditMode === 'studio' 
+      ? { lightType: currentLightType, lightDirection: currentLightDirection, lightColor: currentLightColor, aspectRatio: currentAspectRatio }
+      : { modelStyle: currentModelStyle !== "auto" ? currentModelStyle : undefined, modelGender: currentModelGender || undefined, model: currentSelectedModel?.name, background: currentSelectedBackground?.name, vibe: currentSelectedVibe?.name }
+    
+    const taskId = addTask(taskType, currentInputImage, params)
+    setCurrentTaskId(taskId)
+    updateTaskStatus(taskId, 'generating')
     setIsGenerating(true)
     
+    // Run generation in background
+    if (currentEditMode === 'studio') {
+      runStudioGeneration(taskId, currentInputImage, currentLightType, currentLightDirection, currentLightColor, currentAspectRatio)
+    } else {
+      runEditGeneration(taskId, currentInputImage, currentSelectedModel, currentSelectedBackground, currentSelectedVibe, currentModelStyle, currentModelGender, currentCustomPrompt)
+    }
+  }
+  
+  // Background studio generation
+  const runStudioGeneration = async (
+    taskId: string,
+    inputImg: string,
+    lightTypeVal: string,
+    lightDirectionVal: string,
+    lightColorVal: string,
+    aspectRatioVal: string
+  ) => {
     try {
-      // Compress and prepare images before sending
-      console.log("Preparing images...")
-      const compressedInput = await compressBase64Image(inputImage, 1024)
+      const compressedInput = await compressBase64Image(inputImg, 1024)
       
-      if (editMode === 'studio') {
-        // Studio mode: generate 2 images with staggered requests
-        const basePayload = {
-          productImage: compressedInput,
-          lightType,
-          lightDirection,
-          lightColor,
-          aspectRatio,
-        }
-        
-        const staggerDelay = 1000
-        
-        const createDelayedRequest = (index: number, delayMs: number) => {
-          return new Promise<Response>((resolve, reject) => {
-            setTimeout(() => {
-              console.log(`Starting Studio ${index + 1}...`)
-              fetch("/api/generate-studio", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ...basePayload, index }),
-              }).then(resolve).catch(reject)
-            }, delayMs)
-          })
-        }
-        
-        const requests = [
-          createDelayedRequest(0, 0),
-          createDelayedRequest(1, staggerDelay),
-        ]
-        
-        const responses = await Promise.allSettled(requests)
-        
-        const images: (string | null)[] = [null, null]
-        
-        for (const response of responses) {
-          if (response.status === 'fulfilled') {
-            try {
-              const result = await response.value.json()
-              if (result.success && result.image) {
-                images[result.index] = result.image
-                console.log(`Studio ${result.index + 1}: ✓`)
-              }
-            } catch (e) {
-              console.log('Parse error')
+      const basePayload = {
+        productImage: compressedInput,
+        lightType: lightTypeVal,
+        lightDirection: lightDirectionVal,
+        lightColor: lightColorVal,
+        aspectRatio: aspectRatioVal,
+      }
+      
+      const staggerDelay = 1000
+      
+      const createDelayedRequest = (index: number, delayMs: number) => {
+        return new Promise<Response>((resolve, reject) => {
+          setTimeout(() => {
+            console.log(`Starting Studio ${index + 1}...`)
+            fetch("/api/generate-studio", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ ...basePayload, index }),
+            }).then(resolve).catch(reject)
+          }, delayMs)
+        })
+      }
+      
+      const requests = [
+        createDelayedRequest(0, 0),
+        createDelayedRequest(1, staggerDelay),
+      ]
+      
+      const responses = await Promise.allSettled(requests)
+      
+      const images: (string | null)[] = [null, null]
+      
+      for (const response of responses) {
+        if (response.status === 'fulfilled') {
+          try {
+            const result = await response.value.json()
+            if (result.success && result.image) {
+              images[result.index] = result.image
+              console.log(`Studio ${result.index + 1}: ✓`)
             }
+          } catch (e) {
+            console.log('Parse error')
           }
         }
+      }
+      
+      const finalImages = images.filter((img): img is string => img !== null)
+      
+      if (finalImages.length > 0) {
+        updateTaskStatus(taskId, 'completed', finalImages)
         
-        const finalImages = images.filter((img): img is string => img !== null)
+        await addGeneration({
+          id: taskId,
+          type: "studio",
+          inputImageUrl: inputImg,
+          outputImageUrls: finalImages,
+          createdAt: new Date().toISOString(),
+          params: { lightType: lightTypeVal, lightDirection: lightDirectionVal, lightColor: lightColorVal, aspectRatio: aspectRatioVal },
+        })
         
-        if (finalImages.length > 0) {
+        if (isGeneratingRef.current) {
           setResultImages(finalImages)
           setResultImage(finalImages[0])
-          
-          // Save to generation history
-          const id = generateId()
-          await addGeneration({
-            id,
-            type: "studio",
-            inputImageUrl: inputImage,
-            outputImageUrls: finalImages,
-            createdAt: new Date().toISOString(),
-            params: { lightType, lightDirection, lightColor, aspectRatio },
-          })
-        } else {
-          throw new Error('生成失败，请重试')
+          setIsGenerating(false)
         }
       } else {
-        // Edit mode: original logic
-        const [modelBase64, bgBase64, vibeBase64] = await Promise.all([
-          ensureBase64(selectedModel?.imageUrl),
-          ensureBase64(selectedBackground?.imageUrl),
-          ensureBase64(selectedVibe?.imageUrl),
-        ])
-        
-        console.log("Sending edit request...")
-        const response = await fetchWithTimeout("/api/edit", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            inputImage: compressedInput,
-            modelImage: modelBase64,
-            modelStyle,
-            modelGender,
-            backgroundImage: bgBase64,
-            vibeImage: vibeBase64,
-            customPrompt,
-          }),
-        }, 120000)
-        
-        const data = await response.json()
-        
-        if (data.success && data.image) {
-          setResultImage(data.image)
-          setResultImages([data.image])
-          
-          // Save to generation history
-          const id = generateId()
-          await addGeneration({
-            id,
-            type: "edit",
-            inputImageUrl: inputImage,
-            outputImageUrls: [data.image],
-            createdAt: new Date().toISOString(),
-            params: {
-              modelStyle: modelStyle !== "auto" ? modelStyle : undefined,
-              modelGender: modelGender || undefined,
-              model: selectedModel?.name,
-              background: selectedBackground?.name,
-              vibe: selectedVibe?.name,
-            },
-          })
-        } else {
-          throw new Error(data.error || "编辑失败")
+        updateTaskStatus(taskId, 'failed', undefined, '生成失败')
+        if (isGeneratingRef.current) {
+          alert('生成失败，请重试')
+          setIsGenerating(false)
         }
       }
     } catch (error: any) {
-      console.error("Edit error:", error)
-      if (error.name === 'AbortError') {
-        alert("编辑超时，请重试。建议使用较小的图片。")
-      } else {
-        alert(error.message || "编辑失败，请重试")
+      console.error("Studio error:", error)
+      updateTaskStatus(taskId, 'failed', undefined, error.message || '生成失败')
+      if (isGeneratingRef.current) {
+        alert(error.message || "生成失败，请重试")
+        setIsGenerating(false)
       }
-    } finally {
-      setIsGenerating(false)
     }
+  }
+  
+  // Background edit generation
+  const runEditGeneration = async (
+    taskId: string,
+    inputImg: string,
+    model: Asset | null,
+    background: Asset | null,
+    vibe: Asset | null,
+    style: ModelStyle,
+    gender: ModelGender | null,
+    prompt: string
+  ) => {
+    try {
+      const compressedInput = await compressBase64Image(inputImg, 1024)
+      
+      const [modelBase64, bgBase64, vibeBase64] = await Promise.all([
+        ensureBase64(model?.imageUrl),
+        ensureBase64(background?.imageUrl),
+        ensureBase64(vibe?.imageUrl),
+      ])
+      
+      console.log("Sending edit request...")
+      const response = await fetchWithTimeout("/api/edit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          inputImage: compressedInput,
+          modelImage: modelBase64,
+          modelStyle: style,
+          modelGender: gender,
+          backgroundImage: bgBase64,
+          vibeImage: vibeBase64,
+          customPrompt: prompt,
+        }),
+      }, 120000)
+      
+      const data = await response.json()
+      
+      if (data.success && data.image) {
+        updateTaskStatus(taskId, 'completed', [data.image])
+        
+        await addGeneration({
+          id: taskId,
+          type: "edit",
+          inputImageUrl: inputImg,
+          outputImageUrls: [data.image],
+          createdAt: new Date().toISOString(),
+          params: {
+            modelStyle: style !== "auto" ? style : undefined,
+            modelGender: gender || undefined,
+            model: model?.name,
+            background: background?.name,
+            vibe: vibe?.name,
+          },
+        })
+        
+        if (isGeneratingRef.current) {
+          setResultImage(data.image)
+          setResultImages([data.image])
+          setIsGenerating(false)
+        }
+      } else {
+        throw new Error(data.error || "编辑失败")
+      }
+    } catch (error: any) {
+      console.error("Edit error:", error)
+      updateTaskStatus(taskId, 'failed', undefined, error.message || '编辑失败')
+      if (isGeneratingRef.current) {
+        if (error.name === 'AbortError') {
+          alert("编辑超时，请重试。建议使用较小的图片。")
+        } else {
+          alert(error.message || "编辑失败，请重试")
+        }
+        setIsGenerating(false)
+      }
+    }
+  }
+  
+  // Navigation handlers during processing
+  const handleNewEditDuringProcessing = () => {
+    setIsGenerating(false)
+    setInputImage(null)
+    setResultImage(null)
+    setResultImages([])
+  }
+  
+  const handleReturnHomeDuringProcessing = () => {
+    setIsGenerating(false)
+    router.push('/')
   }
   
   const handleReset = () => {
@@ -832,11 +922,32 @@ export default function EditPage() {
       {isGenerating && (
         <div className="fixed inset-0 z-50 bg-zinc-950 flex flex-col items-center justify-center p-8 text-center">
           <div className="relative mb-6">
-            <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full animate-pulse" />
-            <Loader2 className="w-16 h-16 text-blue-500 animate-spin relative z-10" />
+            <div className={`absolute inset-0 blur-xl rounded-full animate-pulse ${editMode === 'studio' ? 'bg-amber-500/20' : 'bg-purple-500/20'}`} />
+            <Loader2 className={`w-16 h-16 animate-spin relative z-10 ${editMode === 'studio' ? 'text-amber-500' : 'text-purple-500'}`} />
           </div>
           <h3 className="text-white text-xl font-bold mb-2">AI 正在处理...</h3>
-          <p className="text-zinc-400 text-sm">应用您的指令和风格选择</p>
+          <p className="text-zinc-400 text-sm mb-8">应用您的指令和风格选择</p>
+          
+          {/* Navigation buttons during processing */}
+          <div className="space-y-3 w-full max-w-xs">
+            <p className="text-zinc-500 text-xs mb-4">生成将在后台继续，您可以：</p>
+            <button
+              onClick={handleNewEditDuringProcessing}
+              className={`w-full h-12 rounded-full text-white font-medium flex items-center justify-center gap-2 transition-colors ${
+                editMode === 'studio' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-purple-500 hover:bg-purple-600'
+              }`}
+            >
+              <Wand2 className="w-5 h-5" />
+              修新的图
+            </button>
+            <button
+              onClick={handleReturnHomeDuringProcessing}
+              className="w-full h-12 rounded-full bg-white/10 text-white/90 border border-white/20 font-medium flex items-center justify-center gap-2 hover:bg-white/20 transition-colors"
+            >
+              <Home className="w-5 h-5" />
+              返回主页
+            </button>
+          </div>
         </div>
       )}
       

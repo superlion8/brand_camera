@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation"
 import Webcam from "react-webcam"
 import { fileToBase64, compressBase64Image, generateId, ensureBase64 } from "@/lib/utils"
 import { useAssetStore } from "@/stores/assetStore"
+import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { PRESET_PRODUCTS } from "@/data/presets"
 import Image from "next/image"
 
@@ -106,11 +107,15 @@ export default function StudioPage() {
   const webcamRef = useRef<Webcam>(null)
   
   const [mode, setMode] = useState<StudioMode>('upload')
+  const modeRef = useRef(mode) // Ref to track latest mode for async callbacks
+  useEffect(() => { modeRef.current = mode }, [mode])
+  
   const [productImage, setProductImage] = useState<string | null>(null)
   const [generatedImages, setGeneratedImages] = useState<string[]>([])
   const [generatedModelTypes, setGeneratedModelTypes] = useState<('pro' | 'flash')[]>([])
   const [showProductPanel, setShowProductPanel] = useState(false)
   const [productSourceTab, setProductSourceTab] = useState<'preset' | 'user'>('preset')
+  const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
   
   // Camera state
   const [hasCamera, setHasCamera] = useState(true)
@@ -128,6 +133,7 @@ export default function StudioPage() {
   const [brightness, setBrightness] = useState(1)
   
   const { addGeneration, addFavorite, removeFavorite, isFavorited, favorites, userProducts } = useAssetStore()
+  const { addTask, updateTaskStatus } = useGenerationTaskStore()
   const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
   
   // Update bgColor when HSV changes
@@ -219,19 +225,45 @@ export default function StudioPage() {
   const handleGenerate = async () => {
     if (!productImage) return
     
+    // Capture current settings before async operations
+    const currentLightType = lightType
+    const currentLightDirection = lightDirection
+    const currentBgColor = bgColor
+    const currentAspectRatio = aspectRatio
+    const currentProductImage = productImage
+    
+    // Create task and switch to processing mode
+    const params = { lightType: currentLightType, lightDirection: currentLightDirection, lightColor: currentBgColor, aspectRatio: currentAspectRatio }
+    const taskId = addTask('studio', currentProductImage, params)
+    setCurrentTaskId(taskId)
+    updateTaskStatus(taskId, 'generating')
+    
     setMode('processing')
     setGeneratedImages([])
     setGeneratedModelTypes([])
     
+    // Run generation in background
+    runBackgroundGeneration(taskId, currentProductImage, currentLightType, currentLightDirection, currentBgColor, currentAspectRatio)
+  }
+  
+  // Background generation function (runs async, doesn't block UI)
+  const runBackgroundGeneration = async (
+    taskId: string,
+    inputImage: string,
+    lightTypeVal: string,
+    lightDirectionVal: string,
+    bgColorVal: string,
+    aspectRatioVal: string
+  ) => {
     try {
-      const compressedProduct = await compressBase64Image(productImage, 1024)
+      const compressedProduct = await compressBase64Image(inputImage, 1024)
       
       const basePayload = {
         productImage: compressedProduct,
-        lightType,
-        lightDirection,
-        lightColor: bgColor, // background color
-        aspectRatio,
+        lightType: lightTypeVal,
+        lightDirection: lightDirectionVal,
+        lightColor: bgColorVal,
+        aspectRatio: aspectRatioVal,
       }
       
       // Stagger 2 requests
@@ -283,31 +315,55 @@ export default function StudioPage() {
       const finalModelTypes = modelTypes.filter((t): t is 'pro' | 'flash' => t !== null)
       
       if (finalImages.length > 0) {
-        const id = generateId()
+        // Update task with results
+        updateTaskStatus(taskId, 'completed', finalImages)
+        
+        const id = taskId
         setCurrentGenerationId(id)
-        setGeneratedImages(finalImages)
-        setGeneratedModelTypes(finalModelTypes)
         
         await addGeneration({
           id,
           type: "studio",
-          inputImageUrl: productImage,
+          inputImageUrl: inputImage,
           outputImageUrls: finalImages,
           prompt: usedPrompt || undefined,
           createdAt: new Date().toISOString(),
-          params: { lightType, lightDirection, lightColor: bgColor, aspectRatio },
+          params: { lightType: lightTypeVal, lightDirection: lightDirectionVal, lightColor: bgColorVal, aspectRatio: aspectRatioVal },
         })
         
-        setMode('results')
+        // Only update UI if still on processing mode
+        if (modeRef.current === 'processing') {
+          setGeneratedImages(finalImages)
+          setGeneratedModelTypes(finalModelTypes)
+          setMode('results')
+        }
       } else {
-        alert('生成失败，请重试')
-        setMode('settings')
+        updateTaskStatus(taskId, 'failed', undefined, '生成失败')
+        if (modeRef.current === 'processing') {
+          alert('生成失败，请重试')
+          setMode('settings')
+        }
       }
     } catch (error: any) {
       console.error('Generation error:', error)
-      alert(error.message || '生成失败')
-      setMode('settings')
+      updateTaskStatus(taskId, 'failed', undefined, error.message || '生成失败')
+      if (modeRef.current === 'processing') {
+        alert(error.message || '生成失败')
+        setMode('settings')
+      }
     }
+  }
+  
+  // Navigation handlers during processing
+  const handleNewProductDuringProcessing = () => {
+    setProductImage(null)
+    setGeneratedImages([])
+    setGeneratedModelTypes([])
+    setMode('upload')
+  }
+  
+  const handleReturnHomeDuringProcessing = () => {
+    router.push('/')
   }
   
   const handleDownload = async (url: string) => {
@@ -713,11 +769,30 @@ export default function StudioPage() {
             className="flex-1 flex flex-col items-center justify-center p-8"
           >
             <div className="relative mb-6">
-              <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full animate-pulse" />
-              <Loader2 className="w-16 h-16 text-blue-500 animate-spin relative z-10" />
+              <div className="absolute inset-0 bg-amber-500/20 blur-xl rounded-full animate-pulse" />
+              <Loader2 className="w-16 h-16 text-amber-500 animate-spin relative z-10" />
             </div>
             <h3 className="text-xl font-bold text-zinc-800 mb-2">AI 影棚拍摄中...</h3>
-            <p className="text-zinc-500 text-sm">正在生成专业商品照片</p>
+            <p className="text-zinc-500 text-sm mb-8">正在生成专业商品照片</p>
+            
+            {/* Navigation buttons during processing */}
+            <div className="space-y-3 w-full max-w-xs">
+              <p className="text-zinc-400 text-xs text-center mb-4">生成将在后台继续，您可以：</p>
+              <button
+                onClick={handleNewProductDuringProcessing}
+                className="w-full h-12 rounded-full bg-amber-500 text-white font-medium flex items-center justify-center gap-2 hover:bg-amber-600 transition-colors"
+              >
+                <Camera className="w-5 h-5" />
+                拍摄新商品
+              </button>
+              <button
+                onClick={handleReturnHomeDuringProcessing}
+                className="w-full h-12 rounded-full bg-zinc-100 text-zinc-700 font-medium flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors"
+              >
+                <Home className="w-5 h-5" />
+                返回主页
+              </button>
+            </div>
           </motion.div>
         )}
         
