@@ -15,17 +15,9 @@ import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { useSettingsStore } from "@/stores/settingsStore"
 import { useRouter } from "next/navigation"
 import { fileToBase64, generateId, compressBase64Image, fetchWithTimeout, ensureBase64 } from "@/lib/utils"
-import { Asset, ModelStyle, ModelGender, ModelSubcategory, BackgroundSubcategory } from "@/types"
+import { Asset, ModelStyle, ModelGender } from "@/types"
 import Image from "next/image"
-import { 
-  PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_PRODUCTS,
-  MODEL_SUBCATEGORIES, BACKGROUND_SUBCATEGORIES
-} from "@/data/presets"
-
-const MODEL_STYLES: { id: ModelStyle; label: string }[] = [
-  { id: "korean", label: "韩模" },
-  { id: "western", label: "外模" },
-]
+import { PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_PRODUCTS } from "@/data/presets"
 
 const MODEL_GENDERS: { id: ModelGender; label: string }[] = [
   { id: "female", label: "女" },
@@ -133,8 +125,8 @@ export default function CameraPage() {
   const [selectedModel, setSelectedModel] = useState<string | null>(null)
   const [selectedModelStyle, setSelectedModelStyle] = useState<ModelStyle | null>(null)
   const [selectedModelGender, setSelectedModelGender] = useState<ModelGender | null>(null)
-  const [modelSubcategory, setModelSubcategory] = useState<ModelSubcategory | 'mine' | null>(null)
-  const [bgSubcategory, setBgSubcategory] = useState<BackgroundSubcategory | 'mine' | null>(null)
+  const [modelSubcategory, setModelSubcategory] = useState<'mine' | null>(null)
+  const [bgSubcategory, setBgSubcategory] = useState<'mine' | null>(null)
   
   // Track if product images came from phone upload (not asset library)
   const [productFromPhone, setProductFromPhone] = useState(false)
@@ -155,15 +147,11 @@ export default function CameraPage() {
   // Filter assets by category - 'mine' shows only user assets
   const filteredModels = modelSubcategory === 'mine'
     ? sortByPinned(userModels)
-    : modelSubcategory
-      ? [...sortByPinned(userModels), ...PRESET_MODELS.filter(m => m.category === modelSubcategory)]
-      : [...sortByPinned(userModels), ...PRESET_MODELS]
+    : [...sortByPinned(userModels), ...PRESET_MODELS]
   
   const filteredBackgrounds = bgSubcategory === 'mine'
     ? sortByPinned(userBackgrounds)
-    : bgSubcategory
-      ? [...sortByPinned(userBackgrounds), ...PRESET_BACKGROUNDS.filter(b => b.category === bgSubcategory)]
-      : [...sortByPinned(userBackgrounds), ...PRESET_BACKGROUNDS]
+    : [...sortByPinned(userBackgrounds), ...PRESET_BACKGROUNDS]
   
   // Aliases for compatibility
   const allModels = filteredModels
@@ -1004,19 +992,6 @@ export default function CameraPage() {
                               我的
                               {userModels.length > 0 && <span className="ml-1 text-zinc-400">({userModels.length})</span>}
                             </button>
-                            {MODEL_SUBCATEGORIES.map(sub => (
-                              <button
-                                key={sub.id}
-                                onClick={() => setModelSubcategory(modelSubcategory === sub.id ? null : sub.id)}
-                                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                                  modelSubcategory === sub.id
-                                    ? "bg-zinc-900 text-white"
-                                    : "bg-white text-zinc-600 border border-zinc-200"
-                                }`}
-                              >
-                                {sub.label}
-                              </button>
-                            ))}
                           </div>
                           <AssetGrid 
                             items={allModels} 
@@ -1054,19 +1029,6 @@ export default function CameraPage() {
                               我的
                               {userBackgrounds.length > 0 && <span className="ml-1 text-zinc-400">({userBackgrounds.length})</span>}
                             </button>
-                            {BACKGROUND_SUBCATEGORIES.map(sub => (
-                              <button
-                                key={sub.id}
-                                onClick={() => setBgSubcategory(bgSubcategory === sub.id ? null : sub.id)}
-                                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                                  bgSubcategory === sub.id
-                                    ? "bg-zinc-900 text-white"
-                                    : "bg-white text-zinc-600 border border-zinc-200"
-                                }`}
-                              >
-                                {sub.label}
-                              </button>
-                            ))}
                           </div>
                           <AssetGrid 
                             items={allBackgrounds} 

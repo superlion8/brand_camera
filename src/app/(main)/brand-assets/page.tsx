@@ -2,16 +2,13 @@
 
 import { useState, useRef } from "react"
 import Image from "next/image"
-import { Plus, Trash2, Users, Image as ImageIcon, Package, Sparkles, Upload, Home, Pin, X, ZoomIn, RefreshCw, Cloud } from "lucide-react"
+import { Plus, Trash2, Users, Image as ImageIcon, Package, Upload, Home, Pin, X, ZoomIn, RefreshCw, Cloud } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { useAuth } from "@/components/providers/AuthProvider"
-import { Asset, AssetType, ModelSubcategory, BackgroundSubcategory } from "@/types"
+import { Asset, AssetType } from "@/types"
 import { fileToBase64, generateId } from "@/lib/utils"
 import { useRouter } from "next/navigation"
-import { 
-  PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_VIBES, PRESET_PRODUCTS,
-  MODEL_SUBCATEGORIES, BACKGROUND_SUBCATEGORIES
-} from "@/data/presets"
+import { PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_VIBES, PRESET_PRODUCTS } from "@/data/presets"
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -24,7 +21,7 @@ const systemPresets: Record<AssetType, Asset[]> = {
 }
 
 const typeTabs = [
-  { value: "product" as AssetType, label: "官方示例", icon: Package },
+  { value: "product" as AssetType, label: "商品", icon: Package },
   { value: "model" as AssetType, label: "模特", icon: Users },
   { value: "background" as AssetType, label: "环境", icon: ImageIcon },
 ]
@@ -37,8 +34,6 @@ export default function BrandAssetsPage() {
   const [activeType, setActiveType] = useState<AssetType>("product")
   const [activeSource, setActiveSource] = useState<SourceTab>("user")
   const [uploadType, setUploadType] = useState<AssetType>("product")
-  const [modelSubcategory, setModelSubcategory] = useState<ModelSubcategory | null>(null)
-  const [bgSubcategory, setBgSubcategory] = useState<BackgroundSubcategory | null>(null)
   const [zoomImage, setZoomImage] = useState<string | null>(null)
   
   // Auth and sync state
@@ -138,14 +133,7 @@ export default function BrandAssetsPage() {
   }
   
   const userAssets = getUserAssets(activeType)
-  let presetAssets = systemPresets[activeType] || []
-  
-  // Filter presets by subcategory if applicable
-  if (activeType === "model" && modelSubcategory) {
-    presetAssets = presetAssets.filter(a => a.category === modelSubcategory)
-  } else if (activeType === "background" && bgSubcategory) {
-    presetAssets = presetAssets.filter(a => a.category === bgSubcategory)
-  }
+  const presetAssets = systemPresets[activeType] || []
   
   // Sort user assets: pinned first
   const sortedUserAssets = [...userAssets].sort((a, b) => {
@@ -288,50 +276,6 @@ export default function BrandAssetsPage() {
         </div>
       </div>
       
-      {/* Subcategory Tabs - only for model and background in preset mode */}
-      {activeSource === "preset" && (activeType === "model" || activeType === "background") && (
-        <div className="bg-white border-b px-4 py-2">
-          <div className="flex gap-2 flex-wrap">
-            <button
-              onClick={() => activeType === "model" ? setModelSubcategory(null) : setBgSubcategory(null)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                (activeType === "model" ? !modelSubcategory : !bgSubcategory)
-                  ? "bg-zinc-900 text-white"
-                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-              }`}
-            >
-              全部
-            </button>
-            {activeType === "model" && MODEL_SUBCATEGORIES.map(sub => (
-              <button
-                key={sub.id}
-                onClick={() => setModelSubcategory(modelSubcategory === sub.id ? null : sub.id)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  modelSubcategory === sub.id
-                    ? "bg-zinc-900 text-white"
-                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-                }`}
-              >
-                {sub.label}
-              </button>
-            ))}
-            {activeType === "background" && BACKGROUND_SUBCATEGORIES.map(sub => (
-              <button
-                key={sub.id}
-                onClick={() => setBgSubcategory(bgSubcategory === sub.id ? null : sub.id)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  bgSubcategory === sub.id
-                    ? "bg-zinc-900 text-white"
-                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-                }`}
-              >
-                {sub.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-      
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4">
         {displayAssets.length > 0 ? (
@@ -357,7 +301,7 @@ export default function BrandAssetsPage() {
               {activeSource === "user" ? (
                 <Upload className="w-8 h-8 text-zinc-300" />
               ) : (
-                <Sparkles className="w-8 h-8 text-zinc-300" />
+                <Package className="w-8 h-8 text-zinc-300" />
               )}
             </div>
             <p className="text-zinc-600 mb-2 text-center">
@@ -471,9 +415,6 @@ function AssetCard({
       <div className="p-3 flex items-center justify-between">
         <div className="truncate flex-1 mr-2">
           <h4 className="text-sm font-medium text-zinc-900 truncate">{asset.name}</h4>
-          {asset.styleCategory && (
-            <p className="text-xs text-zinc-400 capitalize">{asset.styleCategory}</p>
-          )}
         </div>
         
         <div className="flex items-center gap-1">
