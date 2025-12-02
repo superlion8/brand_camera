@@ -2,8 +2,9 @@
 
 import { useState, useRef } from "react"
 import Image from "next/image"
-import { Plus, Trash2, Users, Image as ImageIcon, Package, Sparkles, Upload, Home, Pin, X, ZoomIn } from "lucide-react"
+import { Plus, Trash2, Users, Image as ImageIcon, Package, Sparkles, Upload, Home, Pin, X, ZoomIn, RefreshCw, Cloud } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
+import { useAuth } from "@/components/providers/AuthProvider"
 import { Asset, AssetType, ModelSubcategory, BackgroundSubcategory } from "@/types"
 import { fileToBase64, generateId } from "@/lib/utils"
 import { useRouter } from "next/navigation"
@@ -40,6 +41,9 @@ export default function BrandAssetsPage() {
   const [bgSubcategory, setBgSubcategory] = useState<BackgroundSubcategory | null>(null)
   const [zoomImage, setZoomImage] = useState<string | null>(null)
   
+  // Auth and sync state
+  const { isSyncing: authSyncing } = useAuth()
+  
   const {
     userModels,
     userBackgrounds,
@@ -54,7 +58,11 @@ export default function BrandAssetsPage() {
     togglePresetPin,
     isPresetPinned,
     _hasHydrated,
+    isSyncing: storeSyncing,
+    lastSyncAt,
   } = useAssetStore()
+  
+  const isSyncing = authSyncing || storeSyncing
   
   const getUserAssets = (type: AssetType): Asset[] => {
     switch (type) {
@@ -192,6 +200,19 @@ export default function BrandAssetsPage() {
             <div className="flex items-center gap-2 ml-2">
               <Image src="/logo.png" alt="Brand Camera" width={28} height={28} className="rounded" />
               <span className="font-semibold text-lg text-zinc-900">品牌资产</span>
+              {/* Syncing indicator */}
+              {isSyncing && (
+                <span className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-600 text-xs rounded-full">
+                  <RefreshCw className="w-3 h-3 animate-spin" />
+                  同步中
+                </span>
+              )}
+              {!isSyncing && lastSyncAt && (
+                <span className="flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-600 text-xs rounded-full">
+                  <Cloud className="w-3 h-3" />
+                  已同步
+                </span>
+              )}
             </div>
           </div>
           <button
