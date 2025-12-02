@@ -247,7 +247,7 @@ export async function GET(request: NextRequest) {
         query = query.gte('created_at', dateFrom)
       }
       if (dateTo) {
-        query = query.lte('created_at', dateTo)
+        query = query.lte('created_at', dateTo + 'T23:59:59')
       }
       
       const { data: generations, error } = await query
