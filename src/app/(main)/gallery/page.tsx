@@ -319,11 +319,11 @@ export default function GalleryPage() {
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                        selectedItem.index < 2 
+                        selectedItem.gen.outputGenModes?.[selectedItem.index] === 'simple'
                           ? "bg-green-100 text-green-700" 
-                          : "bg-blue-100 text-blue-700"
+                          : "bg-purple-100 text-purple-700"
                       }`}>
-                        {selectedItem.index < 2 ? "极简模式" : "扩展模式"}
+                        {selectedItem.gen.outputGenModes?.[selectedItem.index] === 'simple' ? "极简模式" : "扩展模式"}
                       </span>
                     </div>
                     <p className="text-xs text-zinc-400">

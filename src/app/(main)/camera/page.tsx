@@ -433,7 +433,10 @@ export default function CameraPage() {
           id,
           type: "camera_model",
           inputImageUrl: inputImage,
+          inputImage2Url: inputImage2 || undefined,
           outputImageUrls: data.images,
+          outputModelTypes: data.modelTypes, // Pro or Flash for each image
+          outputGenModes: data.genModes, // Simple or Extended for each image
           prompts: data.prompts, // Per-image prompts
           createdAt: new Date().toISOString(),
           params: { 
