@@ -375,9 +375,9 @@ export default function GalleryPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-white overflow-hidden"
+            className="fixed inset-0 z-50 bg-white"
           >
-            <div className="h-full flex flex-col">
+            <div className="h-full flex flex-col overflow-hidden">
               {/* Header */}
               <div className="h-14 flex items-center justify-between px-4 bg-white border-b shrink-0">
                 <button
@@ -395,10 +395,10 @@ export default function GalleryPage() {
                 </button>
               </div>
 
-              {/* Content */}
-              <div className="flex-1 overflow-y-auto bg-zinc-100">
+              {/* Content - Scrollable */}
+              <div className="flex-1 min-h-0 overflow-y-auto bg-zinc-100">
                 <div 
-                  className="relative aspect-[4/5] bg-zinc-900 cursor-pointer group"
+                  className="relative aspect-[4/5] bg-zinc-900 cursor-pointer group shrink-0"
                   onClick={() => setFullscreenImage(selectedItem.gen.outputImageUrls[selectedItem.index])}
                 >
                   <Image 
@@ -414,7 +414,7 @@ export default function GalleryPage() {
                   </div>
                 </div>
                 
-                <div className="p-4 bg-white">
+                <div className="p-4 bg-white pb-8">
                   {/* Type and date info */}
                   <div className="flex items-center justify-between mb-4">
                     <div>
