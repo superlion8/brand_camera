@@ -5,6 +5,7 @@ import Image from "next/image"
 import { Download, Heart, X, Wand2, Camera, Users, Home, ZoomIn, Loader2, Sparkles, Lightbulb } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { useGenerationTaskStore, GenerationTask } from "@/stores/generationTaskStore"
+import { useSettingsStore } from "@/stores/settingsStore"
 import { Generation, Favorite } from "@/types"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
@@ -19,6 +20,7 @@ export default function GalleryPage() {
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
   const { generations, favorites, _hasHydrated, addFavorite, removeFavorite, isFavorited } = useAssetStore()
   const { tasks, removeTask } = useGenerationTaskStore()
+  const { debugMode } = useSettingsStore()
   
   // Get active tasks (generating)
   const activeTasks = tasks.filter(t => t.status === 'pending' || t.status === 'generating')
@@ -364,9 +366,10 @@ export default function GalleryPage() {
                   去修图
                 </button>
                 
-                {/* Generation Details */}
+                {/* Generation Details - Only show in debug mode */}
+                {debugMode && (
                 <div className="mt-6 pt-4 border-t border-zinc-100 pb-8">
-                  <h3 className="text-sm font-semibold text-zinc-700 mb-3">生成参数</h3>
+                  <h3 className="text-sm font-semibold text-zinc-700 mb-3">生成参数 (调试模式)</h3>
                   
                   {/* Prompt - show per-image prompt if available */}
                   {(selectedItem.gen.prompts?.[selectedItem.index] || selectedItem.gen.prompt) && (
@@ -518,6 +521,7 @@ export default function GalleryPage() {
                     </div>
                   </div>
                 </div>
+                )}
               </div>
             </div>
           </div>

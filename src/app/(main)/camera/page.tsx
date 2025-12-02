@@ -12,6 +12,7 @@ import {
 import { useCameraStore } from "@/stores/cameraStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
+import { useSettingsStore } from "@/stores/settingsStore"
 import { useRouter } from "next/navigation"
 import { fileToBase64, generateId, compressBase64Image, fetchWithTimeout, ensureBase64 } from "@/lib/utils"
 import { Asset, ModelStyle, ModelGender, ModelSubcategory, BackgroundSubcategory } from "@/types"
@@ -141,6 +142,7 @@ export default function CameraPage() {
   
   const { addGeneration, addUserAsset, userModels, userBackgrounds, userProducts, addFavorite, removeFavorite, isFavorited, favorites } = useAssetStore()
   const { addTask, updateTaskStatus, tasks } = useGenerationTaskStore()
+  const { debugMode } = useSettingsStore()
   
   // Helper to sort by pinned status
   const sortByPinned = (assets: Asset[]) => 
@@ -1624,9 +1626,10 @@ export default function CameraPage() {
                         </div>
                       </div>
 
-                      {/* Generation Parameters */}
+                      {/* Generation Parameters - Only show in debug mode */}
+                      {debugMode && (
                       <div className="mt-4 pt-4 border-t border-zinc-100">
-                        <h3 className="text-sm font-semibold text-zinc-700 mb-3">生成参数</h3>
+                        <h3 className="text-sm font-semibold text-zinc-700 mb-3">生成参数 (调试模式)</h3>
                         
                         {/* This image's prompt */}
                         {generatedPrompts[selectedResultIndex] && (
@@ -1709,6 +1712,7 @@ export default function CameraPage() {
                           ) : null}
                         </div>
                       </div>
+                      )}
 
                       <button 
                         onClick={() => {

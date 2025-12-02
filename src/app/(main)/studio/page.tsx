@@ -12,6 +12,7 @@ import Webcam from "react-webcam"
 import { fileToBase64, compressBase64Image, generateId, ensureBase64 } from "@/lib/utils"
 import { useAssetStore } from "@/stores/assetStore"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
+import { useSettingsStore } from "@/stores/settingsStore"
 import { PRESET_PRODUCTS } from "@/data/presets"
 import Image from "next/image"
 
@@ -137,6 +138,7 @@ export default function StudioPage() {
   
   const { addGeneration, addFavorite, removeFavorite, isFavorited, favorites, userProducts } = useAssetStore()
   const { addTask, updateTaskStatus } = useGenerationTaskStore()
+  const { debugMode } = useSettingsStore()
   const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
   
   // Update bgColor when HSV changes
@@ -958,9 +960,10 @@ export default function StudioPage() {
                         </div>
                       </div>
 
-                      {/* Generation Parameters */}
+                      {/* Generation Parameters - Only show in debug mode */}
+                      {debugMode && (
                       <div className="mt-4 pt-4 border-t border-zinc-100">
-                        <h3 className="text-sm font-semibold text-zinc-700 mb-3">生成参数</h3>
+                        <h3 className="text-sm font-semibold text-zinc-700 mb-3">生成参数 (调试模式)</h3>
                         
                         {/* Reference images */}
                         <div className="space-y-3">
@@ -994,6 +997,7 @@ export default function StudioPage() {
                           </div>
                         </div>
                       </div>
+                      )}
 
                       <button 
                         onClick={() => {
