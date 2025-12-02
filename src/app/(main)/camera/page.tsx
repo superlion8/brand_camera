@@ -410,26 +410,38 @@ export default function CameraPage() {
       for (let i = 0; i < responses.length; i++) {
         const response = responses[i]
         if (response.status === 'fulfilled') {
+          const httpResponse = response.value
           try {
-            const result = await response.value.json()
+            // Check HTTP status first
+            if (!httpResponse.ok) {
+              const errorData = await httpResponse.json().catch(() => ({ error: `HTTP ${httpResponse.status}` }))
+              console.log(`Task ${i + 1}: ✗ HTTP ${httpResponse.status} (${errorData.error || 'Unknown error'})`)
+              continue
+            }
+            
+            const result = await httpResponse.json()
             if (result.success && result.image) {
               // Direct mapping: index 0-5 maps to positions 0-5
               const targetIndex = result.index
-              allImages[targetIndex] = result.image
-              allModelTypes[targetIndex] = result.modelType
-              allPrompts[targetIndex] = result.prompt || null
-              allGenModes[targetIndex] = result.generationMode || 'extended'
-              maxDuration = Math.max(maxDuration, result.duration || 0)
-              const modeLabel = result.generationMode === 'simple' ? '极简模式' : '扩展模式'
-              console.log(`Model ${result.index + 1}: ✓ (${result.modelType}, ${modeLabel}, ${result.duration}ms)`)
+              if (targetIndex !== undefined && targetIndex >= 0 && targetIndex < 6) {
+                allImages[targetIndex] = result.image
+                allModelTypes[targetIndex] = result.modelType
+                allPrompts[targetIndex] = result.prompt || null
+                allGenModes[targetIndex] = result.generationMode || 'extended'
+                maxDuration = Math.max(maxDuration, result.duration || 0)
+                const modeLabel = result.generationMode === 'simple' ? '极简模式' : '扩展模式'
+                console.log(`Model ${targetIndex + 1}: ✓ (${result.modelType}, ${modeLabel}, ${result.duration}ms)`)
+              } else {
+                console.log(`Task ${i + 1}: ✗ (invalid index: ${targetIndex})`)
+              }
             } else {
-              console.log(`Task ${i + 1}: ✗ (${result.error})`)
+              console.log(`Task ${i + 1}: ✗ (${result.error || 'No image in response'})`)
             }
-          } catch (e) {
-            console.log(`Task ${i + 1}: ✗ (parse error)`)
+          } catch (e: any) {
+            console.log(`Task ${i + 1}: ✗ (parse error: ${e.message})`)
           }
         } else {
-          console.log(`Task ${i + 1}: ✗ (${response.reason})`)
+          console.log(`Task ${i + 1}: ✗ (promise rejected: ${response.reason})`)
         }
       }
       
@@ -456,6 +468,7 @@ export default function CameraPage() {
       }
       
       console.log(`Generation complete: ${finalImages.length}/6 images in ~${maxDuration}ms`)
+      console.log('Final images array:', finalImages.map((_, i) => allImages[i] ? `✓[${i}]` : `✗[${i}]`).join(' '))
       
       if (data.success && data.images.length > 0) {
         
@@ -515,7 +528,11 @@ export default function CameraPage() {
           setMode("results")
         }
       } else {
-        throw new Error("所有图片生成失败，请重试")
+        // All tasks failed - log more details
+        const failedCount = responses.filter(r => r.status === 'rejected').length
+        const httpErrorCount = responses.filter(r => r.status === 'fulfilled' && !r.value.ok).length
+        console.error(`All tasks failed. Rejected: ${failedCount}, HTTP errors: ${httpErrorCount}`)
+        throw new Error(`生成失败 (${failedCount}个请求失败, ${httpErrorCount}个HTTP错误)，请重试`)
       }
     } catch (error: any) {
       console.error("Generation error:", error)

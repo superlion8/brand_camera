@@ -296,10 +296,19 @@ export default function StudioPage() {
       const modelTypes: (('pro' | 'flash') | null)[] = [null, null]
       let usedPrompt: string = ''
       
-      for (const response of responses) {
+      for (let i = 0; i < responses.length; i++) {
+        const response = responses[i]
         if (response.status === 'fulfilled') {
+          const httpResponse = response.value
           try {
-            const result = await response.value.json()
+            // Check HTTP status first
+            if (!httpResponse.ok) {
+              const errorData = await httpResponse.json().catch(() => ({ error: `HTTP ${httpResponse.status}` }))
+              console.log(`Studio ${i + 1}: ✗ HTTP ${httpResponse.status} (${errorData.error || 'Unknown error'})`)
+              continue
+            }
+            
+            const result = await httpResponse.json()
             if (result.success && result.image) {
               images[result.index] = result.image
               modelTypes[result.index] = result.modelType
@@ -307,10 +316,14 @@ export default function StudioPage() {
                 usedPrompt = result.prompt
               }
               console.log(`Studio ${result.index + 1}: ✓ (${result.modelType}, ${result.duration}ms)`)
+            } else {
+              console.log(`Studio ${i + 1}: ✗ (${result.error || 'No image'})`)
             }
-          } catch (e) {
-            console.log('Parse error')
+          } catch (e: any) {
+            console.log(`Studio ${i + 1}: ✗ (parse error: ${e.message})`)
           }
+        } else {
+          console.log(`Studio ${i + 1}: ✗ (promise rejected: ${response.reason})`)
         }
       }
       
