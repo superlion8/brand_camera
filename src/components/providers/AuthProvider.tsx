@@ -58,6 +58,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { useAssetStore } = await import("@/stores/assetStore")
       const store = useAssetStore.getState()
       
+      // IMPORTANT: Always set currentUserId first, before any async operations
+      // This ensures operations can sync even if the full sync fails
+      store.setCurrentUserId(userId)
+      console.log("[Auth] Set currentUserId:", userId)
+      
       // Race between sync and timeout
       await Promise.race([
         store.syncWithCloud(userId),
@@ -67,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ])
     } catch (error) {
       console.error("[Auth] Sync error:", error)
-      // Ensure store isSyncing is also reset on timeout
+      // Ensure store isSyncing is also reset on timeout, but keep currentUserId
       try {
         const { useAssetStore } = await import("@/stores/assetStore")
         useAssetStore.setState({ isSyncing: false })

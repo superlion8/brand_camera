@@ -390,13 +390,17 @@ export const useAssetStore = create<AssetState>()(
       
       // Sync with cloud - fetch all data from Supabase
       syncWithCloud: async (userId) => {
+        // Always set currentUserId immediately, even if sync is skipped
+        // This ensures subsequent operations can sync to cloud
+        set({ currentUserId: userId })
+        
         // Prevent multiple simultaneous syncs
         if (get().isSyncing) {
-          console.log('[Store] Sync already in progress, skipping')
+          console.log('[Store] Sync already in progress, skipping (but userId is set)')
           return
         }
         
-        set({ isSyncing: true, currentUserId: userId })
+        set({ isSyncing: true })
         
         const startTime = Date.now()
         
