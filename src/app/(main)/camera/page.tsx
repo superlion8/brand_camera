@@ -422,8 +422,8 @@ export default function CameraPage() {
         if (!modelForThisImage) {
           const randomModel = getRandomModel()
           modelForThisImage = await ensureBase64(randomModel.imageUrl)
-          modelNameForThis = randomModel.name
-          modelUrlForThis = randomModel.imageUrl
+          modelNameForThis = randomModel.name || '模特'
+          modelUrlForThis = randomModel.imageUrl || ''
           modelIsRandom = true
           console.log(`Image ${index + 1}: Random model = ${randomModel.name}`)
         }
@@ -432,8 +432,8 @@ export default function CameraPage() {
         if (!bgForThisImage) {
           const randomBg = getRandomBackground()
           bgForThisImage = await ensureBase64(randomBg.imageUrl)
-          bgNameForThis = randomBg.name
-          bgUrlForThis = randomBg.imageUrl
+          bgNameForThis = randomBg.name || '环境'
+          bgUrlForThis = randomBg.imageUrl || ''
           bgIsRandom = true
           console.log(`Image ${index + 1}: Random background = ${randomBg.name}`)
         }
