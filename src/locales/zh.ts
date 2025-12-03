@@ -234,6 +234,7 @@ export const zh = {
     lightType: "光源",
     lightDirection: "方向",
     bgColor: "背景色",
+    syncing: "同步中...",
   },
   
   // Brand Assets Page

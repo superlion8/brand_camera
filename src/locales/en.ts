@@ -236,6 +236,7 @@ export const en: Translations = {
     lightType: "Light",
     lightDirection: "Direction",
     bgColor: "Background",
+    syncing: "Syncing...",
   },
   
   // Brand Assets Page

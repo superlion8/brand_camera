@@ -473,6 +473,7 @@ export default function GalleryPage() {
                     task={task} 
                     slot={slot}
                     slotIndex={slot.index}
+                    onImageClick={(url) => setFullscreenImage(url)}
                   />
                 ))
               : <GeneratingCard key={task.id} task={task} />
@@ -1059,7 +1060,12 @@ export default function GalleryPage() {
 }
 
 // Single image slot card - shows individual image status
-function ImageSlotCard({ task, slot, slotIndex }: { task: GenerationTask; slot: ImageSlot; slotIndex: number }) {
+function ImageSlotCard({ task, slot, slotIndex, onImageClick }: { 
+  task: GenerationTask; 
+  slot: ImageSlot; 
+  slotIndex: number;
+  onImageClick?: (imageUrl: string) => void;
+}) {
   const { t } = useTranslation()
   const isStudio = task.type === 'studio'
   const isEdit = task.type === 'edit'
@@ -1067,12 +1073,15 @@ function ImageSlotCard({ task, slot, slotIndex }: { task: GenerationTask; slot: 
   // 已完成且有图片，直接显示结果
   if (slot.status === 'completed' && slot.imageUrl) {
     return (
-      <div className="relative aspect-[4/5] bg-zinc-100 rounded-xl overflow-hidden shadow-sm">
+      <div 
+        className="group relative aspect-[4/5] bg-zinc-100 rounded-xl overflow-hidden shadow-sm cursor-pointer"
+        onClick={() => onImageClick?.(slot.imageUrl!)}
+      >
         <Image 
           src={slot.imageUrl} 
           alt={`Generated ${slotIndex + 1}`}
           fill
-          className="object-cover"
+          className="object-cover transition-transform group-hover:scale-105"
         />
         {/* 显示模型类型和生成模式标签 */}
         <div className="absolute top-2 left-2 flex gap-1">
@@ -1094,6 +1103,21 @@ function ImageSlotCard({ task, slot, slotIndex }: { task: GenerationTask; slot: 
               {slot.genMode === 'simple' ? '极简' : '扩展'}
             </span>
           )}
+        </div>
+        {/* 同步中的收藏按钮 - 禁用状态 */}
+        <button 
+          className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-sm bg-white/70 backdrop-blur text-zinc-400 cursor-not-allowed"
+          disabled
+          title={t.gallery.syncing || '同步中...'}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Loader2 className="w-4 h-4 animate-spin" />
+        </button>
+        {/* Date overlay */}
+        <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+          <p className="text-[10px] text-white truncate">
+            {t.gallery.syncing || '同步中...'}
+          </p>
         </div>
       </div>
     )

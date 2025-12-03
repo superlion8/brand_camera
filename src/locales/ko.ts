@@ -236,6 +236,7 @@ export const ko: Translations = {
     lightType: "조명",
     lightDirection: "방향",
     bgColor: "배경색",
+    syncing: "동기화 중...",
   },
   
   // Brand Assets Page
