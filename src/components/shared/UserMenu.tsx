@@ -274,7 +274,7 @@ export function UserMenu() {
                   </>
                 ) : (
                   <div className="p-4 bg-zinc-50 rounded-xl text-center">
-                    <p className="text-sm text-zinc-500">暂无可配置项</p>
+                    <p className="text-sm text-zinc-500">{t.user.noSettings}</p>
                   </div>
                 )}
               </div>

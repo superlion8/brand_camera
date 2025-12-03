@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation"
 import { PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_VIBES, PRESET_PRODUCTS } from "@/data/presets"
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
 import { motion, AnimatePresence } from "framer-motion"
+import { useLanguageStore } from "@/stores/languageStore"
 
 // System presets from centralized data
 const systemPresets: Record<AssetType, Asset[]> = {
@@ -20,16 +21,18 @@ const systemPresets: Record<AssetType, Asset[]> = {
   vibe: PRESET_VIBES,
 }
 
-const typeTabs = [
-  { value: "product" as AssetType, label: "商品", icon: Package },
-  { value: "model" as AssetType, label: "模特", icon: Users },
-  { value: "background" as AssetType, label: "环境", icon: ImageIcon },
-]
-
 type SourceTab = "user" | "preset"
 
 export default function BrandAssetsPage() {
   const router = useRouter()
+  const t = useLanguageStore(state => state.translations)
+  
+  // Type tabs with translated labels
+  const typeTabs = [
+    { value: "product" as AssetType, label: t.assets.products, icon: Package },
+    { value: "model" as AssetType, label: t.assets.models, icon: Users },
+    { value: "background" as AssetType, label: t.assets.backgrounds, icon: ImageIcon },
+  ]
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [activeType, setActiveType] = useState<AssetType>("product")
   const [activeSource, setActiveSource] = useState<SourceTab>("user")
@@ -129,7 +132,7 @@ export default function BrandAssetsPage() {
       <div className="h-screen w-full bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-zinc-500">加载中...</p>
+          <p className="text-zinc-500">{t.common.loading}</p>
         </div>
       </div>
     )
@@ -158,12 +161,12 @@ export default function BrandAssetsPage() {
             </button>
             <div className="flex items-center gap-2 ml-2">
               <Image src="/logo.png" alt="Brand Camera" width={28} height={28} className="rounded" />
-              <span className="font-semibold text-lg text-zinc-900">品牌资产</span>
+              <span className="font-semibold text-lg text-zinc-900">{t.assets.title}</span>
               {/* Syncing indicator - only show when actively syncing */}
               {isSyncing && (
                 <span className="flex items-center gap-1 px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-600 text-xs font-medium rounded-full">
                   <RefreshCw className="w-3 h-3 animate-spin" />
-                  同步中
+                  {t.user.syncing}
                 </span>
               )}
             </div>
@@ -173,7 +176,7 @@ export default function BrandAssetsPage() {
             className="flex items-center gap-1 px-3 py-1.5 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            上传
+            {t.assets.upload}
           </button>
         </div>
         
@@ -220,7 +223,7 @@ export default function BrandAssetsPage() {
                 : "text-zinc-500 hover:text-zinc-700"
             }`}
           >
-            我的资产
+            {t.common.my}{t.nav.assets}
             {userAssets.length > 0 && (
               <span className="ml-1.5 text-xs text-zinc-400">({userAssets.length})</span>
             )}
@@ -233,7 +236,7 @@ export default function BrandAssetsPage() {
                 : "text-zinc-500 hover:text-zinc-700"
             }`}
           >
-            官方预设
+            {t.common.official}{t.common.preset}
             {presetAssets.length > 0 && (
               <span className="ml-1.5 text-xs text-zinc-400">({presetAssets.length})</span>
             )}
@@ -271,8 +274,8 @@ export default function BrandAssetsPage() {
             </div>
             <p className="text-zinc-600 mb-2 text-center">
               {activeSource === "user" 
-                ? `暂无${activeType === "model" ? "模特" : activeType === "background" ? "环境" : "商品"}资产`
-                : "该分类暂无官方预设"
+                ? (activeType === "model" ? t.assets.noModels : activeType === "background" ? t.assets.noBackgrounds : t.assets.noProducts)
+                : t.common.preset
               }
             </p>
             {activeSource === "user" && (
@@ -280,7 +283,7 @@ export default function BrandAssetsPage() {
                 onClick={() => handleUploadClick(activeType)}
                 className="text-blue-600 hover:text-blue-700 text-sm font-medium"
               >
-                点击上传
+                {t.assets.clickUpload}
               </button>
             )}
           </div>
@@ -326,7 +329,7 @@ export default function BrandAssetsPage() {
               <X className="w-6 h-6" />
             </button>
             <div className="absolute bottom-4 left-0 right-0 text-center text-white/80 text-sm z-[101]">
-              双指缩放 · 双击重置 · 点击 × 关闭
+              {t.imageActions.longPressSaveZoom}
             </div>
           </motion.div>
         )}
@@ -364,7 +367,7 @@ function AssetCard({
         />
         {isPreset && (
           <span className="absolute top-2 left-2 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded font-medium">
-            官方
+            {useLanguageStore.getState().translations.common.official}
           </span>
         )}
         {isPinned && (

@@ -6,10 +6,12 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { validateRedirectClient } from "@/lib/utils/redirect"
 import { Loader2, Mail, Lock, Eye, EyeOff, ArrowLeft } from "lucide-react"
+import { useLanguageStore } from "@/stores/languageStore"
 
 type AuthMode = "select" | "email-otp" | "email-password" | "verify-otp"
 
 function LoginContent() {
+  const t = useLanguageStore(state => state.translations)
   const router = useRouter()
   const searchParams = useSearchParams()
   // 验证重定向URL，防止钓鱼攻击
@@ -50,7 +52,7 @@ function LoginContent() {
       if (error) throw error
     } catch (err: any) {
       console.error("Google login error:", err)
-      setError(err.message || "Google 登录失败，请重试")
+      setError(err.message || t.errors.loginFailed)
       setIsGoogleLoading(false)
     }
   }
@@ -75,11 +77,11 @@ function LoginContent() {
 
       if (error) throw error
 
-      setMessage("验证码已发送到您的邮箱")
+      setMessage(t.login.codeSent)
       setMode("verify-otp")
     } catch (err: any) {
       console.error("Send OTP error:", err)
-      setError(err.message || "发送验证码失败，请重试")
+      setError(err.message || t.errors.codeSendFailed)
     } finally {
       setIsLoading(false)
     }
@@ -110,9 +112,9 @@ function LoginContent() {
       
       let errorMessage = err.message
       if (err.message.includes("Token has expired")) {
-        errorMessage = "验证码已过期，请重新获取"
+        errorMessage = t.errors.codeExpired || "验证码已过期，请重新获取"
       } else if (err.message.includes("Invalid")) {
-        errorMessage = "验证码错误，请重新输入"
+        errorMessage = t.errors.invalidCode || "验证码错误，请重新输入"
       }
       
       setError(errorMessage)
@@ -143,9 +145,9 @@ function LoginContent() {
       
       let errorMessage = err.message
       if (err.message.includes("Invalid login credentials")) {
-        errorMessage = "邮箱或密码错误"
+        errorMessage = t.errors.invalidCredentials || "邮箱或密码错误"
       } else if (err.message.includes("Email not confirmed")) {
-        errorMessage = "请先验证您的邮箱"
+        errorMessage = t.errors.emailNotConfirmed || "请先验证您的邮箱"
       }
       
       setError(errorMessage)
@@ -196,12 +198,12 @@ function LoginContent() {
             height={64}
             className="mb-3"
           />
-          <h1 className="text-2xl font-bold text-zinc-900">品牌相机</h1>
+          <h1 className="text-2xl font-bold text-zinc-900">{t.login.title}</h1>
           <p className="text-sm text-zinc-500 mt-1">
-            {mode === "select" && "选择登录方式"}
-            {mode === "email-otp" && "邮箱验证码登录"}
-            {mode === "email-password" && "邮箱密码登录"}
-            {mode === "verify-otp" && "输入验证码"}
+            {mode === "select" && t.login.selectMethod}
+            {mode === "email-otp" && t.login.emailOtp}
+            {mode === "email-password" && t.login.emailPassword}
+            {mode === "verify-otp" && t.login.enterCode}
           </p>
         </div>
 
@@ -238,7 +240,7 @@ function LoginContent() {
                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                   </svg>
-                  <span>使用 Google 账号</span>
+                  <span>{t.login.useGoogle}</span>
                 </>
               )}
             </button>
@@ -246,7 +248,7 @@ function LoginContent() {
             {/* Divider */}
             <div className="flex items-center gap-4 py-2">
               <div className="flex-1 h-px bg-zinc-200" />
-              <span className="text-sm text-zinc-400">或</span>
+              <span className="text-sm text-zinc-400">{t.login.and}</span>
               <div className="flex-1 h-px bg-zinc-200" />
             </div>
 
@@ -256,7 +258,7 @@ function LoginContent() {
               className="w-full h-12 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg font-medium flex items-center justify-center gap-3 transition-colors"
             >
               <Mail className="w-5 h-5" />
-              <span>邮箱验证码登录</span>
+              <span>{t.login.emailOtp}</span>
             </button>
 
             {/* Email Password Login */}
@@ -265,7 +267,7 @@ function LoginContent() {
               className="w-full h-12 bg-white border border-zinc-200 rounded-lg font-medium text-zinc-700 flex items-center justify-center gap-3 hover:bg-zinc-50 hover:border-zinc-300 transition-colors"
             >
               <Lock className="w-5 h-5" />
-              <span>邮箱密码登录</span>
+              <span>{t.login.emailPassword}</span>
             </button>
           </div>
         )}
@@ -275,7 +277,7 @@ function LoginContent() {
           <form onSubmit={handleSendOTP} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1.5">
-                邮箱地址
+                {t.login.email}
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
@@ -299,7 +301,7 @@ function LoginContent() {
               {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
-                "发送验证码"
+                {t.login.sendCode}
               )}
             </button>
           </form>
@@ -309,18 +311,18 @@ function LoginContent() {
         {mode === "verify-otp" && (
           <form onSubmit={handleVerifyOTP} className="space-y-4">
             <p className="text-sm text-zinc-600 text-center mb-4">
-              验证码已发送至 <span className="font-medium text-zinc-900">{email}</span>
+              {t.login.codeSent}: <span className="font-medium text-zinc-900">{email}</span>
             </p>
 
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1.5">
-                验证码
+                {t.login.enterCode}
               </label>
               <input
                 type="text"
                 value={otpCode}
                 onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                placeholder="输入 6 位验证码"
+                placeholder={t.login.codePlaceholder}
                 required
                 autoFocus
                 maxLength={6}
@@ -336,7 +338,7 @@ function LoginContent() {
               {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
-                "验证并登录"
+                {t.login.verifyAndLogin}
               )}
             </button>
 
@@ -346,7 +348,7 @@ function LoginContent() {
               disabled={isLoading}
               className="w-full text-sm text-blue-600 hover:underline disabled:opacity-50"
             >
-              重新发送验证码
+              {t.login.resendCode}
             </button>
           </form>
         )}
@@ -356,7 +358,7 @@ function LoginContent() {
           <form onSubmit={handlePasswordLogin} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1.5">
-                邮箱地址
+                {t.login.email}
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
@@ -374,7 +376,7 @@ function LoginContent() {
 
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-1.5">
-                密码
+                {t.login.password}
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
@@ -404,28 +406,28 @@ function LoginContent() {
               {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
-                "登录"
+                {t.login.login}
               )}
             </button>
 
             <p className="text-xs text-zinc-500 text-center">
-              如果您是新用户，请使用「邮箱验证码登录」自动注册
+              {t.login.newUserHint}
             </p>
           </form>
         )}
 
         {/* Terms */}
         <p className="mt-6 text-xs text-zinc-400 text-center">
-          登录即表示您同意我们的
-          <a href="#" className="text-blue-600 hover:underline">服务条款</a>
-          和
-          <a href="#" className="text-blue-600 hover:underline">隐私政策</a>
+          {t.login.termsAgree}
+          <a href="#" className="text-blue-600 hover:underline">{t.login.terms}</a>
+          {t.login.and}
+          <a href="#" className="text-blue-600 hover:underline">{t.login.privacy}</a>
         </p>
       </div>
 
       {/* Footer */}
       <p className="relative z-10 mt-8 text-white/60 text-sm">
-        © 2024 品牌相机. All rights reserved.
+        © 2024 {t.common.appName}. All rights reserved.
       </p>
     </div>
   )

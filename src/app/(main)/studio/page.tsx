@@ -18,24 +18,14 @@ import Image from "next/image"
 import { useQuota } from "@/hooks/useQuota"
 import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { useAuth } from "@/components/providers/AuthProvider"
+import { useLanguageStore } from "@/stores/languageStore"
 
-// Light types - compact version
-const LIGHT_TYPES = [
-  { id: 'Softbox', label: '柔光', icon: Lightbulb },
-  { id: 'Sunlight', label: '自然', icon: Sun },
-  { id: 'Dramatic', label: '戏剧', icon: Sparkles },
-  { id: 'Neon', label: '霓虹', icon: Zap },
-]
+// Light types - IDs only, labels come from translations
+const LIGHT_TYPE_IDS = ['Softbox', 'Sunlight', 'Dramatic', 'Neon'] as const
+const LIGHT_TYPE_ICONS = { Softbox: Lightbulb, Sunlight: Sun, Dramatic: Sparkles, Neon: Zap }
 
 // Aspect ratios
-const ASPECT_RATIOS = [
-  { id: 'original', label: '原图' },
-  { id: '1:1', label: '1:1' },
-  { id: '3:4', label: '3:4' },
-  { id: '4:3', label: '4:3' },
-  { id: '16:9', label: '16:9' },
-  { id: '9:16', label: '9:16' },
-]
+const ASPECT_RATIO_IDS = ['original', '1:1', '3:4', '4:3', '16:9', '9:16'] as const
 
 // Light direction positions (relative to center)
 const LIGHT_DIRECTIONS = [
@@ -50,12 +40,12 @@ const LIGHT_DIRECTIONS = [
   { id: 'bottom-right', x: 2, y: 2 },
 ]
 
-// Preset background colors - pairs for gradients
-const PRESET_BG_COLORS = [
-  { id: 'warm', colors: ['#FFE4B5', '#DEB887'], label: '暖金' },
-  { id: 'cool', colors: ['#87CEEB', '#B0E0E6'], label: '冷蓝' },
-  { id: 'neutral', colors: ['#D3D3D3', '#A9A9A9'], label: '中灰' },
-  { id: 'rose', colors: ['#DDA0DD', '#DA70D6'], label: '玫瑰' },
+// Preset background colors - pairs for gradients (labels from translations)
+const PRESET_BG_COLOR_IDS = [
+  { id: 'warm', colors: ['#FFE4B5', '#DEB887'] },
+  { id: 'cool', colors: ['#87CEEB', '#B0E0E6'] },
+  { id: 'neutral', colors: ['#D3D3D3', '#A9A9A9'] },
+  { id: 'rose', colors: ['#DDA0DD', '#DA70D6'] },
 ]
 
 // HSV to RGB conversion
@@ -108,6 +98,24 @@ type StudioMode = 'main' | 'camera' | 'processing' | 'results'
 export default function StudioPage() {
   const router = useRouter()
   const { user } = useAuth()
+  const t = useLanguageStore(state => state.translations)
+  
+  // Build light types with translations
+  const LIGHT_TYPES = LIGHT_TYPE_IDS.map(id => ({
+    id,
+    label: t.studio[id.toLowerCase() as keyof typeof t.studio] || id,
+    icon: LIGHT_TYPE_ICONS[id],
+  }))
+  
+  // Build aspect ratios with translations  
+  const ASPECT_RATIOS = ASPECT_RATIO_IDS.map(id => ({
+    id,
+    label: id === 'original' ? t.studio.original : id,
+  }))
+  
+  // Build preset colors with translations
+  const bgColorLabels: Record<string, string> = { warm: t.studio.warmGold, cool: t.studio.coolBlue, neutral: t.studio.neutral, rose: t.studio.rose }
+  const PRESET_BG_COLORS = PRESET_BG_COLOR_IDS.map(c => ({ ...c, label: bgColorLabels[c.id] || c.id }))
   const fileInputRef = useRef<HTMLInputElement>(null)
   const colorPickerRef = useRef<HTMLDivElement>(null)
   const webcamRef = useRef<Webcam>(null)
@@ -424,15 +432,15 @@ export default function StudioPage() {
           console.warn('[Quota] Failed to refund on total failure:', e)
         }
         
-        updateTaskStatus(taskId, 'failed', undefined, '生成失败')
+        updateTaskStatus(taskId, 'failed', undefined, t.studio.generationFailed)
         if (modeRef.current === 'processing') {
-          alert('生成失败，请重试')
+          alert(t.studio.generationFailed)
           setMode('main')
         }
       }
     } catch (error: any) {
       console.error('Generation error:', error)
-      updateTaskStatus(taskId, 'failed', undefined, error.message || '生成失败')
+      updateTaskStatus(taskId, 'failed', undefined, error.message || t.studio.generationFailed)
       
       // Refund quota on error
       console.log('[Quota] Error occurred, refunding reserved quota')
@@ -444,7 +452,7 @@ export default function StudioPage() {
       }
       
       if (modeRef.current === 'processing') {
-        alert(error.message || '生成失败')
+        alert(error.message || t.studio.generationFailed)
         setMode('main')
       }
     }
@@ -533,7 +541,7 @@ export default function StudioPage() {
         >
           <Home className="w-5 h-5" />
         </button>
-        <span className="font-semibold ml-2">商品影棚</span>
+        <span className="font-semibold ml-2">{t.studio.title}</span>
       </div>
       
       <input 
@@ -564,7 +572,7 @@ export default function StudioPage() {
                     className="w-full h-14 rounded-xl bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center gap-3 transition-colors shadow-lg shadow-amber-200"
                   >
                     <Camera className="w-5 h-5" />
-                    <span className="font-medium">拍摄商品</span>
+                    <span className="font-medium">{t.studio.shootProduct}</span>
                   </button>
                   
                   <div className="grid grid-cols-3 gap-2">
@@ -574,7 +582,7 @@ export default function StudioPage() {
                       className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-amber-400 flex items-center justify-center gap-2 transition-colors"
                     >
                       <Upload className="w-4 h-4 text-zinc-500" />
-                      <span className="text-sm text-zinc-700">相册</span>
+                      <span className="text-sm text-zinc-700">{t.camera.album}</span>
                     </button>
                     
                     {/* Gallery */}
@@ -583,7 +591,7 @@ export default function StudioPage() {
                       className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-amber-400 flex items-center justify-center gap-2 transition-colors"
                     >
                       <Home className="w-4 h-4 text-zinc-500" />
-                      <span className="text-sm text-zinc-700">图库</span>
+                      <span className="text-sm text-zinc-700">{t.studio.fromGallery}</span>
                     </button>
                     
                     {/* Asset library */}
@@ -592,7 +600,7 @@ export default function StudioPage() {
                       className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-amber-400 flex items-center justify-center gap-2 transition-colors"
                     >
                       <FolderHeart className="w-4 h-4 text-zinc-500" />
-                      <span className="text-sm text-zinc-700">资产库</span>
+                      <span className="text-sm text-zinc-700">{t.camera.assetLibrary}</span>
                     </button>
                   </div>
                 </div>
@@ -609,7 +617,7 @@ export default function StudioPage() {
                     onClick={() => setProductImage(null)}
                     className="absolute bottom-2 right-2 px-3 py-1.5 bg-white/90 hover:bg-white text-zinc-700 text-sm font-medium rounded-lg shadow transition-colors"
                   >
-                    重选
+                    {t.edit.editNew}
                   </button>
                 </div>
               )}
@@ -619,7 +627,7 @@ export default function StudioPage() {
             <div className="p-4 bg-white rounded-t-2xl -mt-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] relative z-10 space-y-5">
               {/* Light Type */}
               <div>
-                <h3 className="text-sm font-semibold text-zinc-700 mb-2">光源类型</h3>
+                <h3 className="text-sm font-semibold text-zinc-700 mb-2">{t.studio.lightType}</h3>
                 <div className="flex gap-2">
                   {LIGHT_TYPES.map(type => {
                     const Icon = type.icon
@@ -645,7 +653,7 @@ export default function StudioPage() {
               
               {/* Aspect Ratio */}
               <div>
-                <h3 className="text-sm font-semibold text-zinc-700 mb-2">画面比例</h3>
+                <h3 className="text-sm font-semibold text-zinc-700 mb-2">{t.studio.aspectRatio}</h3>
                 <div className="flex flex-wrap gap-2">
                   {ASPECT_RATIOS.map(ratio => (
                     <button
@@ -665,7 +673,7 @@ export default function StudioPage() {
               
               {/* Light Direction */}
               <div>
-                <h3 className="text-sm font-semibold text-zinc-700 mb-2">光源方向</h3>
+                <h3 className="text-sm font-semibold text-zinc-700 mb-2">{t.studio.lightDirection}</h3>
                 <div className="bg-zinc-50 rounded-xl p-3 border border-zinc-200">
                   <div className="grid grid-cols-3 gap-1.5 max-w-[140px] mx-auto">
                     {LIGHT_DIRECTIONS.map(dir => (
@@ -696,7 +704,7 @@ export default function StudioPage() {
               {/* Background Color - Simplified */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-semibold text-zinc-700">背景颜色</h3>
+                  <h3 className="text-sm font-semibold text-zinc-700">{t.studio.backgroundColor}</h3>
                   <div className="flex items-center gap-1">
                     {PRESET_BG_COLORS.map(preset => (
                       <button
@@ -774,7 +782,7 @@ export default function StudioPage() {
                   }`}
                 >
                   <Sparkles className="w-5 h-5" />
-                  <span>开始拍摄</span>
+                  <span>{t.camera.startShoot}</span>
                 </button>
               </div>
             </div>
@@ -815,7 +823,7 @@ export default function StudioPage() {
                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
                   <div className="text-center text-zinc-400">
                     <Camera className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                    <p className="text-sm">相机不可用</p>
+                    <p className="text-sm">{t.errors.uploadFailed}</p>
                     <button
                       onClick={() => {
                         setMode('main')
@@ -823,7 +831,7 @@ export default function StudioPage() {
                       }}
                       className="mt-4 px-4 py-2 bg-amber-500 text-white rounded-lg text-sm"
                     >
-                      从相册上传
+                      {t.studio.fromAlbum}
                     </button>
                   </div>
                 </div>
@@ -849,7 +857,7 @@ export default function StudioPage() {
               </div>
               
               <div className="absolute top-16 left-0 right-0 text-center text-white/80 text-sm font-medium">
-                将商品放入框内拍摄
+                {t.camera.shootYourProduct}
               </div>
             </div>
             
@@ -879,25 +887,25 @@ export default function StudioPage() {
               <div className="absolute inset-0 bg-amber-500/20 blur-xl rounded-full animate-pulse" />
               <Loader2 className="w-16 h-16 text-amber-500 animate-spin relative z-10" />
             </div>
-            <h3 className="text-xl font-bold text-zinc-800 mb-2">AI 影棚拍摄中...</h3>
-            <p className="text-zinc-500 text-sm mb-8">正在生成专业商品照片</p>
+            <h3 className="text-xl font-bold text-zinc-800 mb-2">{t.studio.generating}</h3>
+            <p className="text-zinc-500 text-sm mb-8">{t.studio.generatingDesc}</p>
             
             {/* Navigation buttons during processing */}
             <div className="space-y-3 w-full max-w-xs">
-              <p className="text-zinc-400 text-xs text-center mb-4">生成将在后台继续，您可以：</p>
+              <p className="text-zinc-400 text-xs text-center mb-4">{t.studio.continueInBackground}</p>
               <button
                 onClick={handleNewProductDuringProcessing}
                 className="w-full h-12 rounded-full bg-amber-500 text-white font-medium flex items-center justify-center gap-2 hover:bg-amber-600 transition-colors"
               >
                 <Camera className="w-5 h-5" />
-                拍摄新商品
+                {t.studio.shootNew}
               </button>
               <button
                 onClick={handleReturnHomeDuringProcessing}
                 className="w-full h-12 rounded-full bg-zinc-100 text-zinc-700 font-medium flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors"
               >
                 <Home className="w-5 h-5" />
-                返回主页
+                {t.studio.returnHome}
               </button>
             </div>
           </motion.div>
@@ -913,7 +921,7 @@ export default function StudioPage() {
             className="flex-1 overflow-y-auto"
           >
             <div className="p-4 pb-32">
-              <h3 className="text-sm font-semibold text-zinc-700 mb-3">生成结果</h3>
+              <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.studio.results}</h3>
               <div className="grid grid-cols-2 gap-3">
                 {generatedImages.map((url, i) => (
                   <div 
@@ -959,15 +967,15 @@ export default function StudioPage() {
               <button
                 onClick={() => setMode('main')}
                 className="flex-1 h-12 border border-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 transition-colors"
-              >
-                调整参数
-              </button>
-              <button
-                onClick={handleReset}
-                className="flex-1 h-12 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 transition-colors"
-              >
-                拍摄新商品
-              </button>
+                >
+                  {t.studio.adjustParams}
+                </button>
+                <button
+                  onClick={handleReset}
+                  className="flex-1 h-12 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 transition-colors"
+                >
+                  {t.studio.shootNew}
+                </button>
             </div>
             
             {/* Result Detail Dialog */}
@@ -982,7 +990,7 @@ export default function StudioPage() {
                     >
                       <X className="w-5 h-5 text-zinc-700" />
                     </button>
-                    <span className="font-semibold text-zinc-900">详情</span>
+                    <span className="font-semibold text-zinc-900">{t.common.detail}</span>
                     <div className="w-10" />
                   </div>
 
@@ -1011,7 +1019,7 @@ export default function StudioPage() {
                         <div>
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">
-                              商品影棚
+                              {t.gallery.productStudio}
                             </span>
                             {generatedModelTypes[selectedResultIndex] === 'flash' && (
                               <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700">
@@ -1020,7 +1028,7 @@ export default function StudioPage() {
                             )}
                           </div>
                           <p className="text-xs text-zinc-400">
-                            刚刚生成
+                            {t.common.justNow}
                           </p>
                         </div>
                         <div className="flex gap-2">
@@ -1046,7 +1054,7 @@ export default function StudioPage() {
                       {/* Generation Parameters - Only show in debug mode */}
                       {debugMode && (
                       <div className="mt-4 pt-4 border-t border-zinc-100">
-                        <h3 className="text-sm font-semibold text-zinc-700 mb-3">生成参数 (调试模式)</h3>
+                        <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.studio.debugParams}</h3>
                         
                         {/* Reference images */}
                         <div className="space-y-3">
@@ -1057,11 +1065,11 @@ export default function StudioPage() {
                                 <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
                                   <img 
                                     src={productImage} 
-                                    alt="商品原图" 
+                                    alt={t.studio.productOriginal}
                                     className="w-full h-full object-cover"
                                   />
                                 </div>
-                                <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">商品原图</p>
+                                <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{t.studio.productOriginal}</p>
                               </div>
                             )}
                           </div>
@@ -1069,13 +1077,13 @@ export default function StudioPage() {
                           {/* Settings params */}
                           <div className="flex gap-2 flex-wrap">
                             <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
-                              光源: {LIGHT_TYPES.find(t => t.id === lightType)?.label || lightType}
+                              {t.studio.lightSource}: {LIGHT_TYPES.find(lt => lt.id === lightType)?.label || lightType}
                             </span>
                             <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
-                              比例: {aspectRatio}
+                              {t.studio.aspectRatio}: {aspectRatio}
                             </span>
                             <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600 flex items-center gap-1">
-                              背景: <span className="w-3 h-3 rounded-full border" style={{ backgroundColor: bgColor }} />
+                              {t.studio.bgColor}: <span className="w-3 h-3 rounded-full border" style={{ backgroundColor: bgColor }} />
                             </span>
                           </div>
                         </div>
@@ -1090,7 +1098,7 @@ export default function StudioPage() {
                         className="w-full h-12 mt-4 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-medium flex items-center justify-center gap-2 transition-colors"
                       >
                         <Wand2 className="w-4 h-4" />
-                        去修图
+                        {t.gallery.goEdit}
                       </button>
                     </div>
                   </div>
@@ -1153,7 +1161,7 @@ export default function StudioPage() {
               className="fixed bottom-0 left-0 right-0 h-[70%] bg-white rounded-t-2xl z-50 flex flex-col overflow-hidden"
             >
               <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
-                <span className="font-semibold">选择商品</span>
+                <span className="font-semibold">{t.studio.selectProduct}</span>
                 <button
                   onClick={() => setShowProductPanel(false)}
                   className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center"
@@ -1173,7 +1181,7 @@ export default function StudioPage() {
                         : "text-zinc-500 hover:text-zinc-700"
                     }`}
                   >
-                    官方示例 ({PRESET_PRODUCTS.length})
+                    {t.studio.officialExamples} ({PRESET_PRODUCTS.length})
                   </button>
                   <button
                     onClick={() => setProductSourceTab("user")}
@@ -1183,7 +1191,7 @@ export default function StudioPage() {
                         : "text-zinc-500 hover:text-zinc-700"
                     }`}
                   >
-                    我的商品 ({userProducts.length})
+                    {t.studio.myProducts} ({userProducts.length})
                   </button>
                 </div>
               </div>
@@ -1206,7 +1214,7 @@ export default function StudioPage() {
                       >
                         <Image src={product.imageUrl} alt={product.name || ''} fill className="object-cover" />
                         <span className="absolute top-1 left-1 bg-amber-500 text-white text-[8px] px-1 py-0.5 rounded font-medium">
-                          官方
+                          {t.common.official}
                         </span>
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-1.5 pt-4">
                           <p className="text-[10px] text-white truncate text-center">{product.name}</p>
@@ -1233,8 +1241,8 @@ export default function StudioPage() {
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-zinc-400">
                     <FolderHeart className="w-12 h-12 mb-3 opacity-30" />
-                    <p className="text-sm">暂无我的商品</p>
-                    <p className="text-xs mt-1">在品牌资产中上传商品图片</p>
+                    <p className="text-sm">{t.studio.noMyProducts}</p>
+                    <p className="text-xs mt-1">{t.studio.uploadInAssets}</p>
                     <button
                       onClick={() => {
                         setShowProductPanel(false)
@@ -1242,7 +1250,7 @@ export default function StudioPage() {
                       }}
                       className="mt-4 px-4 py-2 bg-amber-500 text-white text-sm rounded-lg hover:bg-amber-600"
                     >
-                      去上传
+                      {t.studio.goUpload}
                     </button>
                   </div>
                 )}
@@ -1271,7 +1279,7 @@ export default function StudioPage() {
               className="fixed bottom-0 left-0 right-0 h-[70%] bg-white rounded-t-2xl z-50 flex flex-col overflow-hidden"
             >
               <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
-                <span className="font-semibold">从图库选择</span>
+                <span className="font-semibold">{t.edit.selectFromGallery}</span>
                 <button
                   onClick={() => setShowGalleryPanel(false)}
                   className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center"
@@ -1316,8 +1324,8 @@ export default function StudioPage() {
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-zinc-400">
                     <Home className="w-12 h-12 mb-3 opacity-30" />
-                    <p className="text-sm">图库暂无图片</p>
-                    <p className="text-xs mt-1">先去生成一些图片吧</p>
+                    <p className="text-sm">{t.studio.noGalleryImages}</p>
+                    <p className="text-xs mt-1">{t.studio.goShootToGenerate}</p>
                   </div>
                 )}
               </div>
