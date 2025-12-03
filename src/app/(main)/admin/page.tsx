@@ -6,7 +6,7 @@ import Image from "next/image"
 import { 
   Home, Users, BarChart3, FileText, Calendar, Filter, 
   ChevronDown, ChevronRight, Heart, Loader2, RefreshCw,
-  ImageIcon, Sparkles, Lightbulb, Wand2, CalendarDays, Download
+  ImageIcon, Sparkles, Lightbulb, Wand2, CalendarDays, Download, FolderOpen
 } from "lucide-react"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { motion, AnimatePresence } from "framer-motion"
@@ -212,13 +212,22 @@ export default function AdminDashboard() {
               <span className="font-semibold text-lg text-zinc-900">管理员看板</span>
             </div>
           </div>
-          <button
-            onClick={handleRefresh}
-            className="w-10 h-10 rounded-full hover:bg-zinc-100 flex items-center justify-center"
-            disabled={isLoading}
-          >
-            <RefreshCw className={`w-5 h-5 text-zinc-600 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push("/admin/presets")}
+              className="h-9 px-3 rounded-lg bg-violet-100 hover:bg-violet-200 text-violet-700 flex items-center gap-2 transition-colors"
+            >
+              <FolderOpen className="w-4 h-4" />
+              <span className="text-sm font-medium">资源管理</span>
+            </button>
+            <button
+              onClick={handleRefresh}
+              className="w-10 h-10 rounded-full hover:bg-zinc-100 flex items-center justify-center"
+              disabled={isLoading}
+            >
+              <RefreshCw className={`w-5 h-5 text-zinc-600 ${isLoading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
         
         {/* Tabs */}
