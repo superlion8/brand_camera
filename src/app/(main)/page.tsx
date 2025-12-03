@@ -92,30 +92,30 @@ export default function HomePage() {
       {/* Main Feature Cards - 2 columns */}
       <div className="px-4 mt-4">
         <div className="grid grid-cols-2 gap-3">
-          {/* 模特影棚 */}
+          {/* Model Studio */}
           <FeatureCard
             href="/camera"
             beforeImage={`${HOMEPAGE_STORAGE_URL}/model-before.jpg`}
             afterImage={`${HOMEPAGE_STORAGE_URL}/model-after.png`}
             icon={Users}
             title={t.home.modelStudio}
-            subtitle="AI真人穿拍"
+            subtitle={t.home.modelStudioSubtitle}
             height={220}
           />
           
-          {/* 商品影棚 */}
+          {/* Product Studio */}
           <FeatureCard
             href="/studio"
             beforeImage={`${HOMEPAGE_STORAGE_URL}/product-before.jpg`}
             afterImage={`${HOMEPAGE_STORAGE_URL}/product-after.jpg`}
             icon={Lightbulb}
             title={t.home.productStudio}
-            subtitle="静物场景合成"
+            subtitle={t.home.productStudioSubtitle}
             height={220}
           />
         </div>
         
-        {/* 修图室 - 第二排 */}
+        {/* Edit Room */}
         <Link href="/edit/general" className="block mt-3">
           <div className="bg-gradient-to-r from-violet-500 to-purple-600 rounded-2xl p-4 flex items-center justify-between shadow-sm">
             <div className="flex items-center gap-3">
@@ -123,8 +123,8 @@ export default function HomePage() {
                 <Wand2 className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="font-bold text-white text-base">修图室</h3>
-                <p className="text-white/80 text-xs">AI智能修图 · 自由描述你想要的效果</p>
+                <h3 className="font-bold text-white text-base">{t.home.editRoom}</h3>
+                <p className="text-white/80 text-xs">{t.home.editRoomDesc}</p>
               </div>
             </div>
             <ArrowRight className="w-5 h-5 text-white/80" />
