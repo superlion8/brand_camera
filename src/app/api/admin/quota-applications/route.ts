@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 
 // Admin emails from environment variable
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
@@ -14,11 +14,21 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   
+  // Use service role client to bypass RLS for admin queries
+  let adminClient
+  try {
+    adminClient = createServiceClient()
+  } catch (error) {
+    console.error('[Admin] Service client error:', error)
+    // Fallback to regular client if service key not configured
+    adminClient = supabase
+  }
+  
   try {
     const searchParams = request.nextUrl.searchParams
     const status = searchParams.get('status') || 'pending'
     
-    let query = supabase
+    let query = adminClient
       .from('quota_applications')
       .select('*')
       .order('created_at', { ascending: false })
@@ -35,7 +45,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Count pending applications
-    const { count: pendingCount } = await supabase
+    const { count: pendingCount } = await adminClient
       .from('quota_applications')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'pending')
@@ -60,6 +70,15 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   
+  // Use service role client to bypass RLS for admin operations
+  let adminClient
+  try {
+    adminClient = createServiceClient()
+  } catch (error) {
+    console.error('[Admin] Service client error:', error)
+    adminClient = supabase
+  }
+  
   try {
     const body = await request.json()
     console.log('[Quota Applications PUT] Request body:', body)
@@ -71,7 +90,7 @@ export async function PUT(request: NextRequest) {
     }
     
     // Update application status
-    const { data: application, error: appError } = await supabase
+    const { data: application, error: appError } = await adminClient
       .from('quota_applications')
       .update({
         status,
@@ -96,7 +115,7 @@ export async function PUT(request: NextRequest) {
     // Also support updating quota by email if user_id is not available
     if (status === 'approved' && newQuota) {
       if (application.user_id) {
-        const { error: quotaError } = await supabase
+        const { error: quotaError } = await adminClient
           .from('user_quotas')
           .upsert({
             user_id: application.user_id,
@@ -113,11 +132,11 @@ export async function PUT(request: NextRequest) {
         }
       } else {
         // Try to find user by email and update quota
-        const { data: userData } = await supabase.auth.admin.listUsers()
+        const { data: userData } = await adminClient.auth.admin.listUsers()
         const targetUser = userData?.users?.find(u => u.email?.toLowerCase() === application.email?.toLowerCase())
         
         if (targetUser) {
-          const { error: quotaError } = await supabase
+          const { error: quotaError } = await adminClient
             .from('user_quotas')
             .upsert({
               user_id: targetUser.id,

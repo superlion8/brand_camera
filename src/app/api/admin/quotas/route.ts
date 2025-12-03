@@ -27,10 +27,11 @@ export async function GET(request: NextRequest) {
   
   try {
     // Get all generations grouped by user
+    // IMPORTANT: Include pending, processing, and completed to match user-facing quota calculation
     const { data: generations, error: genError } = await adminClient
       .from('generations')
-      .select('user_id, user_email, output_image_urls, total_images_count, created_at')
-      .eq('status', 'completed')
+      .select('user_id, user_email, output_image_urls, total_images_count, created_at, status')
+      .in('status', ['pending', 'processing', 'completed'])
       .order('created_at', { ascending: false })
     
     if (genError) {
@@ -164,11 +165,12 @@ export async function PUT(request: NextRequest) {
     }
     
     // Get actual used count from generations
+    // IMPORTANT: Include pending, processing, and completed to match user-facing quota calculation
     const { data: generations } = await adminClient
       .from('generations')
       .select('output_image_urls, total_images_count')
       .eq('user_id', userId)
-      .eq('status', 'completed')
+      .in('status', ['pending', 'processing', 'completed'])
     
     let usedCount = 0
     if (generations) {
