@@ -374,6 +374,24 @@ export default function CameraPage() {
       const userModelBase64 = model ? await ensureBase64(model.imageUrl) : null
       const userBgBase64 = background ? await ensureBase64(background.imageUrl) : null
       
+      // For saving purposes, if user didn't select model/background, 
+      // pick a random one as "representative" for the generation record
+      let representativeModelUrl = model?.imageUrl
+      let representativeModelName = model?.name
+      let representativeBgUrl = background?.imageUrl
+      let representativeBgName = background?.name
+      
+      if (!model) {
+        const randomModelForSave = getRandomModel()
+        representativeModelUrl = randomModelForSave.imageUrl
+        representativeModelName = randomModelForSave.name
+      }
+      if (!background) {
+        const randomBgForSave = getRandomBackground()
+        representativeBgUrl = randomBgForSave.imageUrl
+        representativeBgName = randomBgForSave.name
+      }
+      
       // Use the constants defined at module level
       const NUM_IMAGES = CAMERA_NUM_IMAGES
       const NUM_SIMPLE = CAMERA_NUM_SIMPLE
@@ -526,7 +544,7 @@ export default function CameraPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               taskId,
-              actualImageCount: finalImages.length,
+              actualImageCount: successCount,
               refundCount: failedCount,
             }),
           })
@@ -589,10 +607,10 @@ export default function CameraPage() {
           params: { 
             modelStyle: modelStyle || undefined,
             modelGender: modelGender || undefined,
-            model: model?.name,
-            background: background?.name,
-            modelImage: model?.imageUrl,
-            backgroundImage: background?.imageUrl,
+            model: representativeModelName,
+            background: representativeBgName,
+            modelImage: representativeModelUrl,
+            backgroundImage: representativeBgUrl,
             modelIsUserSelected, // true = user selected, false = system random
             bgIsUserSelected,    // true = user selected, false = system random
           },
@@ -1713,92 +1731,111 @@ export default function CameraPage() {
                       </div>
 
                       {/* Generation Parameters - Only show in debug mode */}
-                      {debugMode && (
-                      <div className="mt-4 pt-4 border-t border-zinc-100">
-                        <h3 className="text-sm font-semibold text-zinc-700 mb-3">生成参数 (调试模式)</h3>
+                      {debugMode && (() => {
+                        // Get generation record from store to display saved params
+                        const generation = currentGenerationId 
+                          ? generations.find(g => g.id === currentGenerationId)
+                          : null
+                        const savedParams = generation?.params
                         
-                        {/* This image's prompt */}
-                        {generatedPrompts[selectedResultIndex] && (
-                          <div className="mb-4">
-                            <p className="text-xs font-medium text-zinc-500 mb-2">Prompt</p>
-                            <div className="bg-zinc-50 rounded-lg p-3 max-h-32 overflow-y-auto">
-                              <pre className="text-[11px] text-zinc-600 whitespace-pre-wrap font-mono leading-relaxed">
-                                {generatedPrompts[selectedResultIndex]}
-                              </pre>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Reference images */}
-                        <div className="space-y-3">
-                          {/* Reference images grid */}
-                          <div className="grid grid-cols-4 gap-2">
-                            {/* Input Product Image */}
-                            {capturedImage && (
-                              <div className="flex flex-col items-center">
-                                <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
-                                  <img 
-                                    src={capturedImage} 
-                                    alt="商品" 
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                                <p className="text-[10px] text-zinc-500 mt-1">商品</p>
-                              </div>
-                            )}
-                            
-                            {/* Model Image */}
-                            {activeModel?.imageUrl && (
-                              <div className="flex flex-col items-center">
-                                <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
-                                  <Image 
-                                    src={activeModel.imageUrl} 
-                                    alt="模特" 
-                                    width={56}
-                                    height={56}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                                <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{activeModel.name || '模特'}</p>
-                              </div>
-                            )}
-                            
-                            {/* Background Image */}
-                            {activeBg?.imageUrl && (
-                              <div className="flex flex-col items-center">
-                                <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
-                                  <Image 
-                                    src={activeBg.imageUrl} 
-                                    alt="背景" 
-                                    width={56}
-                                    height={56}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                                <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{activeBg.name || '背景'}</p>
-                              </div>
-                            )}
-                            
-                          </div>
+                        return (
+                        <div className="mt-4 pt-4 border-t border-zinc-100">
+                          <h3 className="text-sm font-semibold text-zinc-700 mb-3">生成参数 (调试模式)</h3>
                           
-                          {/* Style params */}
-                          {(selectedModelStyle && selectedModelStyle !== 'auto') || selectedModelGender ? (
-                            <div className="flex gap-2 flex-wrap">
-                              {selectedModelStyle && selectedModelStyle !== 'auto' && (
-                                <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
-                                  风格: {selectedModelStyle === 'korean' ? '韩系' : selectedModelStyle === 'western' ? '欧美' : selectedModelStyle}
-                                </span>
-                              )}
-                              {selectedModelGender && (
-                                <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
-                                  性别: {selectedModelGender === 'male' ? '男' : selectedModelGender === 'female' ? '女' : selectedModelGender === 'boy' ? '男童' : '女童'}
-                                </span>
-                              )}
+                          {/* This image's prompt */}
+                          {generatedPrompts[selectedResultIndex] && (
+                            <div className="mb-4">
+                              <p className="text-xs font-medium text-zinc-500 mb-2">Prompt</p>
+                              <div className="bg-zinc-50 rounded-lg p-3 max-h-32 overflow-y-auto">
+                                <pre className="text-[11px] text-zinc-600 whitespace-pre-wrap font-mono leading-relaxed">
+                                  {generatedPrompts[selectedResultIndex]}
+                                </pre>
+                              </div>
                             </div>
-                          ) : null}
+                          )}
+                          
+                          {/* Reference images */}
+                          <div className="space-y-3">
+                            {/* Reference images grid */}
+                            <div className="grid grid-cols-4 gap-2">
+                              {/* Input Product Image - from captured or saved */}
+                              {(capturedImage || generation?.inputImageUrl) && (
+                                <div className="flex flex-col items-center">
+                                  <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
+                                    <img 
+                                      src={capturedImage || generation?.inputImageUrl || ''} 
+                                      alt="商品" 
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                  <p className="text-[10px] text-zinc-500 mt-1">商品</p>
+                                </div>
+                              )}
+                              
+                              {/* Model Image - prefer saved params, fallback to current selection */}
+                              {(savedParams?.modelImage || activeModel?.imageUrl) && (
+                                <div className="flex flex-col items-center">
+                                  <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
+                                    <Image 
+                                      src={savedParams?.modelImage || activeModel?.imageUrl || ''} 
+                                      alt="模特" 
+                                      width={56}
+                                      height={56}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                  <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">
+                                    {savedParams?.model || activeModel?.name || '模特'}
+                                    {savedParams?.modelIsUserSelected === false && ' (随机)'}
+                                  </p>
+                                </div>
+                              )}
+                              
+                              {/* Background Image - prefer saved params, fallback to current selection */}
+                              {(savedParams?.backgroundImage || activeBg?.imageUrl) && (
+                                <div className="flex flex-col items-center">
+                                  <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
+                                    <Image 
+                                      src={savedParams?.backgroundImage || activeBg?.imageUrl || ''} 
+                                      alt="背景" 
+                                      width={56}
+                                      height={56}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                  <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">
+                                    {savedParams?.background || activeBg?.name || '背景'}
+                                    {savedParams?.bgIsUserSelected === false && ' (随机)'}
+                                  </p>
+                                </div>
+                              )}
+                              
+                            </div>
+                            
+                            {/* Style params - prefer saved, fallback to current selection */}
+                            {((savedParams?.modelStyle || selectedModelStyle) && (savedParams?.modelStyle || selectedModelStyle) !== 'auto') || 
+                             (savedParams?.modelGender || selectedModelGender) ? (
+                              <div className="flex gap-2 flex-wrap">
+                                {(savedParams?.modelStyle || selectedModelStyle) && (savedParams?.modelStyle || selectedModelStyle) !== 'auto' && (
+                                  <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
+                                    风格: {(savedParams?.modelStyle || selectedModelStyle) === 'korean' ? '韩系' : 
+                                           (savedParams?.modelStyle || selectedModelStyle) === 'western' ? '欧美' : 
+                                           (savedParams?.modelStyle || selectedModelStyle)}
+                                  </span>
+                                )}
+                                {(savedParams?.modelGender || selectedModelGender) && (
+                                  <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
+                                    性别: {(savedParams?.modelGender || selectedModelGender) === 'male' ? '男' : 
+                                           (savedParams?.modelGender || selectedModelGender) === 'female' ? '女' : 
+                                           (savedParams?.modelGender || selectedModelGender) === 'boy' ? '男童' : '女童'}
+                                  </span>
+                                )}
+                              </div>
+                            ) : null}
+                          </div>
                         </div>
-                      </div>
-                      )}
+                        )
+                      })()}
 
                       <button 
                         onClick={() => {

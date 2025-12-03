@@ -610,7 +610,10 @@ export default function GalleryPage() {
                                 className="w-full h-full object-cover"
                               />
                             </div>
-                            <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{selectedItem.gen.params.model || '模特'}</p>
+                            <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">
+                              {selectedItem.gen.params.model || '模特'}
+                              {selectedItem.gen.params.modelIsUserSelected === false && ' (随机)'}
+                            </p>
                           </div>
                         )}
                         
@@ -625,7 +628,10 @@ export default function GalleryPage() {
                                 className="w-full h-full object-cover"
                               />
                             </div>
-                            <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{selectedItem.gen.params.background || '环境'}</p>
+                            <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">
+                              {selectedItem.gen.params.background || '环境'}
+                              {selectedItem.gen.params.bgIsUserSelected === false && ' (随机)'}
+                            </p>
                           </div>
                         )}
                       </div>
