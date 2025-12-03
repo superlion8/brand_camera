@@ -73,7 +73,12 @@ export default function HomePage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Image src="/logo.png" alt="Brand Camera" width={36} height={36} className="rounded-lg" />
-            <h1 className="text-lg font-bold text-zinc-900">{t.common.appName}</h1>
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-lg font-bold text-zinc-900">{t.common.appName}</h1>
+              <span className="px-1.5 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-bold rounded-full">
+                Beta
+              </span>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <SyncIndicator />
