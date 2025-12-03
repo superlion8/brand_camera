@@ -113,36 +113,51 @@ export async function compressImage(file: File, maxSizeMB: number = 1): Promise<
   })
 }
 
-// Compress base64 image
+// Compress base64 image (also handles URLs)
 export async function compressBase64Image(base64: string, maxDimension: number = 1024): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image()
+    
+    // Enable CORS for cross-origin images (e.g., from Supabase Storage)
+    // Must be set before img.src
+    img.crossOrigin = 'anonymous'
+    
     img.onload = () => {
-      const canvas = document.createElement('canvas')
-      const ctx = canvas.getContext('2d')!
-      
-      let { width, height } = img
-      
-      // Scale down if needed
-      if (width > maxDimension || height > maxDimension) {
-        if (width > height) {
-          height = (height / width) * maxDimension
-          width = maxDimension
-        } else {
-          width = (width / height) * maxDimension
-          height = maxDimension
+      try {
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')!
+        
+        let { width, height } = img
+        
+        // Scale down if needed
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = (height / width) * maxDimension
+            width = maxDimension
+          } else {
+            width = (width / height) * maxDimension
+            height = maxDimension
+          }
         }
+        
+        canvas.width = width
+        canvas.height = height
+        ctx.drawImage(img, 0, 0, width, height)
+        
+        // Use lower quality for faster transfer
+        const compressed = canvas.toDataURL('image/jpeg', 0.8)
+        resolve(compressed)
+      } catch (error) {
+        // If canvas is tainted, return original (for URLs that don't support CORS)
+        console.warn('[compressBase64Image] Canvas tainted, returning original:', error)
+        resolve(base64)
       }
-      
-      canvas.width = width
-      canvas.height = height
-      ctx.drawImage(img, 0, 0, width, height)
-      
-      // Use lower quality for faster transfer
-      const compressed = canvas.toDataURL('image/jpeg', 0.8)
-      resolve(compressed)
     }
-    img.onerror = reject
+    img.onerror = (e) => {
+      console.error('[compressBase64Image] Image load error:', e)
+      // Return original on error
+      resolve(base64)
+    }
     img.src = base64
   })
 }
