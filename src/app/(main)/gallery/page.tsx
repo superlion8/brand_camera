@@ -1020,16 +1020,29 @@ export default function GalleryPage() {
                     try {
                       const response = await fetch(fullscreenImage)
                       const blob = await response.blob()
-                      const url = URL.createObjectURL(blob)
-                      const a = document.createElement('a')
-                      a.href = url
-                      a.download = `image-${Date.now()}.png`
-                      document.body.appendChild(a)
-                      a.click()
-                      document.body.removeChild(a)
-                      URL.revokeObjectURL(url)
-                    } catch (e) {
-                      console.error('Download failed:', e)
+                      const file = new File([blob], `brand-camera-${Date.now()}.png`, { type: 'image/png' })
+                      
+                      // 优先使用系统分享（iOS 会显示"存储图像"选项）
+                      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+                        await navigator.share({
+                          files: [file],
+                        })
+                      } else {
+                        // 回退到下载
+                        const url = URL.createObjectURL(blob)
+                        const a = document.createElement('a')
+                        a.href = url
+                        a.download = file.name
+                        document.body.appendChild(a)
+                        a.click()
+                        document.body.removeChild(a)
+                        URL.revokeObjectURL(url)
+                      }
+                    } catch (e: any) {
+                      // 用户取消分享不算错误
+                      if (e.name !== 'AbortError') {
+                        console.error('Share/Download failed:', e)
+                      }
                     }
                   }}
                   className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
