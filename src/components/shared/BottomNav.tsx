@@ -2,14 +2,19 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Camera, Briefcase, Image as ImageIcon, Home, Wand2 } from "lucide-react"
+import { Camera, Briefcase, Image as ImageIcon, Home, Wand2, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "@/stores/languageStore"
+import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 
 export function BottomNav() {
   const pathname = usePathname()
   const router = useRouter()
   const { t } = useTranslation()
+  const { tasks } = useGenerationTaskStore()
+  
+  // Check if there are any active (pending/processing) tasks
+  const hasActiveTasks = tasks.some(task => task.status === 'pending' || task.status === 'processing')
   
   const tabs = [
     { id: "home", href: "/", label: t.nav.home, icon: Home },
@@ -30,6 +35,7 @@ export function BottomNav() {
         {tabs.map((tab) => {
           const Icon = tab.icon
           const isActive = tab.href === "/" ? pathname === "/" : pathname.startsWith(tab.href)
+          const showLoading = tab.id === "gallery" && hasActiveTasks
           
           if (tab.isSpecial) {
             return (
@@ -49,13 +55,20 @@ export function BottomNav() {
               key={tab.id}
               href={tab.href}
               className={cn(
-                "flex flex-col items-center justify-center w-full h-16 space-y-1 transition-colors duration-200",
+                "flex flex-col items-center justify-center w-full h-16 space-y-1 transition-colors duration-200 relative",
                 isActive 
                   ? "text-zinc-900 font-medium" 
                   : "text-zinc-400 hover:text-zinc-600"
               )}
             >
-              <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+              <div className="relative">
+                <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+                {showLoading && (
+                  <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-blue-500 rounded-full flex items-center justify-center">
+                    <Loader2 size={8} className="text-white animate-spin" />
+                  </div>
+                )}
+              </div>
               <span className="text-[10px]">{tab.label}</span>
             </Link>
           )

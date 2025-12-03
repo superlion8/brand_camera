@@ -24,16 +24,15 @@ export function QuotaIndicator() {
   const isExhausted = quota.remainingQuota <= 0
 
   return (
-    <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium ${
+    <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
       isExhausted 
         ? 'bg-red-100 text-red-700' 
         : isLow 
           ? 'bg-amber-100 text-amber-700'
           : 'bg-blue-50 text-blue-700'
     }`}>
-      <Sparkles className="w-3.5 h-3.5" />
+      <Sparkles className="w-3 h-3" />
       <span>{quota.remainingQuota}</span>
-      <span className="text-[10px] opacity-70">/ {quota.totalQuota}</span>
     </div>
   )
 }
