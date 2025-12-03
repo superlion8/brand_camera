@@ -50,13 +50,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [router])
 
   // Sync with cloud - import store dynamically to avoid hydration issues
+  // Add timeout to prevent infinite sync state
   const syncWithCloud = useCallback(async (userId: string) => {
+    const SYNC_TIMEOUT = 15000 // 15 seconds max
+    
     try {
       const { useAssetStore } = await import("@/stores/assetStore")
       const store = useAssetStore.getState()
-      await store.syncWithCloud(userId)
+      
+      // Race between sync and timeout
+      await Promise.race([
+        store.syncWithCloud(userId),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Sync timeout')), SYNC_TIMEOUT)
+        )
+      ])
     } catch (error) {
       console.error("[Auth] Sync error:", error)
+      // Ensure store isSyncing is also reset on timeout
+      try {
+        const { useAssetStore } = await import("@/stores/assetStore")
+        useAssetStore.setState({ isSyncing: false })
+      } catch {}
     }
   }, [])
 

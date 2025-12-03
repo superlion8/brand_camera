@@ -390,13 +390,22 @@ export const useAssetStore = create<AssetState>()(
       
       // Sync with cloud - fetch all data from Supabase
       syncWithCloud: async (userId) => {
+        // Prevent multiple simultaneous syncs
+        if (get().isSyncing) {
+          console.log('[Store] Sync already in progress, skipping')
+          return
+        }
+        
         set({ isSyncing: true, currentUserId: userId })
+        
+        const startTime = Date.now()
         
         try {
           console.log('[Store] Starting cloud sync for user:', userId)
           const cloudData = await syncService.syncAllData(userId)
           
-          console.log('[Store] Cloud data received:', {
+          const duration = Date.now() - startTime
+          console.log('[Store] Cloud data received in', duration, 'ms:', {
             models: cloudData.userModels.length,
             backgrounds: cloudData.userBackgrounds.length,
             products: cloudData.userProducts.length,
@@ -420,10 +429,11 @@ export const useAssetStore = create<AssetState>()(
             isSyncing: false,
           })
           
-          console.log('[Store] Cloud sync completed, generations:', cloudData.generations.length)
+          console.log('[Store] Cloud sync completed successfully')
         } catch (error) {
-          console.error('[Store] Cloud sync failed:', error)
-          set({ isSyncing: false })
+          console.error('[Store] Cloud sync failed after', Date.now() - startTime, 'ms:', error)
+          // Always reset isSyncing on error
+          set({ isSyncing: false, lastSyncAt: new Date().toISOString() })
         }
       },
       
