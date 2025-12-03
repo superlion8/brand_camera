@@ -6,7 +6,7 @@ import { useAuth } from "@/components/providers/AuthProvider"
 import { useSettingsStore } from "@/stores/settingsStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { useTranslation } from "@/stores/languageStore"
-import { LogOut, Settings, ChevronDown, X, Bug, Cloud, RefreshCw, BarChart3, Gauge, Inbox } from "lucide-react"
+import { LogOut, Settings, ChevronDown, X, Bug, Cloud, RefreshCw, BarChart3, Gauge, Inbox, FolderOpen } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useRouter } from "next/navigation"
 
@@ -174,6 +174,16 @@ export function UserMenu() {
                         {pendingApplications}
                       </span>
                     )}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsOpen(false)
+                      router.push('/admin/presets')
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-700 hover:bg-zinc-100 transition-colors text-left"
+                  >
+                    <FolderOpen className="w-4 h-4 text-green-500" />
+                    <span className="text-sm">资源管理</span>
                   </button>
                 </>
               )}
