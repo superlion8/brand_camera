@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight, FolderHeart, Images, Wand2, Users, Lightbulb, Smile, Move, Camera, Focus } from "lucide-react"
+import { ArrowRight, FolderHeart, Images, Wand2, Users, Lightbulb } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { useTranslation } from "@/stores/languageStore"
 import { UserMenu } from "@/components/shared/UserMenu"
@@ -43,14 +43,14 @@ function FeatureCard({
           className="rounded-t-2xl rounded-b-none"
         />
         {/* Title below image */}
-        <div className="p-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-zinc-100 rounded-full flex items-center justify-center shrink-0">
-              <Icon className="w-4 h-4 text-zinc-600" />
+        <div className="p-2.5">
+          <div className="flex items-center gap-1.5">
+            <div className="w-6 h-6 bg-zinc-100 rounded-full flex items-center justify-center shrink-0">
+              <Icon className="w-3 h-3 text-zinc-600" />
             </div>
             <div className="min-w-0">
-              <h3 className="font-bold text-zinc-900 truncate">{title}</h3>
-              <p className="text-zinc-500 text-xs truncate">{subtitle}</p>
+              <h3 className="font-bold text-zinc-900 text-sm truncate">{title}</h3>
+              <p className="text-zinc-500 text-[10px] truncate">{subtitle}</p>
             </div>
           </div>
         </div>
@@ -59,36 +59,42 @@ function FeatureCard({
   )
 }
 
-// Pro feature card component
-function ProFeatureCard({
+// Simple feature card (icon + title, no before-after)
+function SimpleFeatureCard({
   href,
-  beforeImage,
-  afterImage,
   icon: Icon,
   title,
+  subtitle,
+  gradient,
+  iconColor,
 }: {
   href: string
-  beforeImage: string
-  afterImage: string
   icon: React.ElementType
   title: string
+  subtitle: string
+  gradient: string
+  iconColor: string
 }) {
   return (
     <Link href={href} className="block">
-      <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-zinc-100">
-        {/* Image */}
-        <BeforeAfterSlider
-          beforeImage={beforeImage}
-          afterImage={afterImage}
-          height={160}
-          className="rounded-t-2xl rounded-b-none"
-        />
-        {/* Title below image */}
-        <div className="p-3 flex items-center justify-center gap-2">
-          <div className="w-8 h-8 bg-zinc-100 rounded-full flex items-center justify-center shrink-0">
-            <Icon className="w-4 h-4 text-zinc-600" />
+      <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-zinc-100 h-full">
+        {/* Gradient background with icon */}
+        <div className={`h-[180px] ${gradient} flex items-center justify-center`}>
+          <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+            <Icon className={`w-8 h-8 ${iconColor}`} />
           </div>
-          <h3 className="font-semibold text-zinc-900 text-sm">{title}</h3>
+        </div>
+        {/* Title below */}
+        <div className="p-2.5">
+          <div className="flex items-center gap-1.5">
+            <div className="w-6 h-6 bg-zinc-100 rounded-full flex items-center justify-center shrink-0">
+              <Icon className="w-3 h-3 text-zinc-600" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="font-bold text-zinc-900 text-sm truncate">{title}</h3>
+              <p className="text-zinc-500 text-[10px] truncate">{subtitle}</p>
+            </div>
+          </div>
         </div>
       </div>
     </Link>
@@ -120,9 +126,9 @@ export default function HomePage() {
         </div>
       </div>
       
-      {/* Main Feature Cards - 2 columns */}
+      {/* Main Feature Cards - 3 columns */}
       <div className="px-4 mt-4">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-2">
           {/* 模特影棚 */}
           <FeatureCard
             href="/camera"
@@ -131,7 +137,7 @@ export default function HomePage() {
             icon={Users}
             title={t.home.modelStudio}
             subtitle="AI真人穿拍"
-            height={240}
+            height={180}
           />
           
           {/* 商品影棚 */}
@@ -142,53 +148,17 @@ export default function HomePage() {
             icon={Lightbulb}
             title={t.home.productStudio}
             subtitle="静物场景合成"
-            height={240}
-          />
-        </div>
-      </div>
-      
-      {/* 修图室 Section */}
-      <div className="px-4 mt-6">
-        <div className="flex items-center gap-2 mb-3">
-          <Wand2 className="w-5 h-5 text-purple-500" />
-          <h2 className="font-bold text-zinc-900">修图室</h2>
-        </div>
-        
-        <div className="grid grid-cols-2 gap-3">
-          {/* 换模特风格 */}
-          <ProFeatureCard
-            href="/edit"
-            beforeImage={`${HOMEPAGE_STORAGE_URL}/style-before.png`}
-            afterImage={`${HOMEPAGE_STORAGE_URL}/style-after.png`}
-            icon={Users}
-            title="换模特风格"
+            height={180}
           />
           
-          {/* 镜头控制 */}
-          <ProFeatureCard
-            href="/edit"
-            beforeImage={`${HOMEPAGE_STORAGE_URL}/lens-before.png`}
-            afterImage={`${HOMEPAGE_STORAGE_URL}/lens-after.png`}
-            icon={Focus}
-            title="镜头控制"
-          />
-          
-          {/* Pose控制 */}
-          <ProFeatureCard
-            href="/edit"
-            beforeImage={`${HOMEPAGE_STORAGE_URL}/pose-before.jpg`}
-            afterImage={`${HOMEPAGE_STORAGE_URL}/pose-after.png`}
-            icon={Move}
-            title="Pose控制"
-          />
-          
-          {/* 表情控制 */}
-          <ProFeatureCard
-            href="/edit"
-            beforeImage={`${HOMEPAGE_STORAGE_URL}/expression-before.jpg`}
-            afterImage={`${HOMEPAGE_STORAGE_URL}/expression-after.png`}
-            icon={Smile}
-            title="表情控制"
+          {/* 修图室 */}
+          <SimpleFeatureCard
+            href="/edit/general"
+            icon={Wand2}
+            title="修图室"
+            subtitle="AI智能修图"
+            gradient="bg-gradient-to-br from-violet-400 to-purple-600"
+            iconColor="text-white"
           />
         </div>
       </div>
