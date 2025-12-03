@@ -494,33 +494,30 @@ export default function CameraPage() {
         }
       }
       
-      // Filter out nulls and create final arrays
-      const finalImages = allImages.filter((img): img is string => img !== null)
-      const finalModelTypes = allModelTypes.filter((t): t is 'pro' | 'flash' => t !== null)
-      const finalGenModes = allGenModes.filter((m): m is 'extended' | 'simple' => m !== null)
+      // Keep arrays as-is (with nulls) to preserve position mapping
+      // Simple mode: indices 0, 1, 2
+      // Extended mode: indices 3, 4, 5
+      const successCount = allImages.filter(img => img !== null).length
       
-      // Per-image prompts
-      const finalPrompts = allPrompts.filter((p): p is string => p !== null)
-      
-      // Create combined data object
+      // Create combined data object - preserve positions (nulls become empty strings for display)
       const data = {
-        success: finalImages.length > 0,
-        images: finalImages,
-        modelTypes: finalModelTypes,
-        genModes: finalGenModes, // Track generation modes
-        prompts: finalPrompts, // Per-image prompts
+        success: successCount > 0,
+        images: allImages.map(img => img || ''), // Replace null with empty string
+        modelTypes: allModelTypes.map(t => t || 'pro'), // Default to 'pro'
+        genModes: allGenModes.map(m => m || 'extended'), // Default to 'extended'
+        prompts: allPrompts.map(p => p || ''), // Replace null with empty string
         stats: {
           total: NUM_IMAGES,
-          successful: finalImages.length,
+          successful: successCount,
           duration: maxDuration,
         }
       }
       
-      console.log(`Generation complete: ${finalImages.length}/${NUM_IMAGES} images in ~${maxDuration}ms`)
-      console.log('Final images array:', finalImages.map((_, i) => allImages[i] ? `✓[${i}]` : `✗[${i}]`).join(' '))
+      console.log(`Generation complete: ${successCount}/${NUM_IMAGES} images in ~${maxDuration}ms`)
+      console.log('Final images array:', allImages.map((img, i) => img ? `✓[${i}]` : `✗[${i}]`).join(' '))
       
       // Calculate refund for failed images
-      const failedCount = NUM_IMAGES - finalImages.length
+      const failedCount = NUM_IMAGES - successCount
       if (failedCount > 0) {
         console.log(`[Quota] Refunding ${failedCount} failed images`)
         try {
@@ -563,17 +560,31 @@ export default function CameraPage() {
           })
         }
         
-        // Save to IndexedDB/history
+        // Save to IndexedDB/history - filter out empty strings (failed images)
         const id = taskId
+        const savedImages: string[] = []
+        const savedModelTypes: ('pro' | 'flash')[] = []
+        const savedGenModes: ('extended' | 'simple')[] = []
+        const savedPrompts: string[] = []
+        
+        data.images.forEach((img, i) => {
+          if (img) {
+            savedImages.push(img)
+            savedModelTypes.push(data.modelTypes[i])
+            savedGenModes.push(data.genModes[i])
+            savedPrompts.push(data.prompts[i])
+          }
+        })
+        
         await addGeneration({
           id,
           type: "camera_model",
           inputImageUrl: inputImage,
           inputImage2Url: inputImage2 || undefined,
-          outputImageUrls: data.images,
-          outputModelTypes: data.modelTypes, // Pro or Flash for each image
-          outputGenModes: data.genModes, // Simple or Extended for each image
-          prompts: data.prompts, // Per-image prompts
+          outputImageUrls: savedImages,
+          outputModelTypes: savedModelTypes, // Pro or Flash for each image
+          outputGenModes: savedGenModes, // Simple or Extended for each image
+          prompts: savedPrompts, // Per-image prompts
           createdAt: new Date().toISOString(),
           params: { 
             modelStyle: modelStyle || undefined,
@@ -1513,40 +1524,48 @@ export default function CameraPage() {
                   <span className="text-[10px] text-zinc-400">直接生成</span>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
-                  {generatedImages.slice(0, 3).map((url, i) => (
-                    <div 
-                      key={i} 
-                      className="group relative aspect-[4/5] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer"
-                      onClick={() => setSelectedResultIndex(i)}
-                    >
-                      <Image src={url} alt="Result" fill className="object-cover" />
-                      {/* Favorite button */}
-                      <button 
-                        className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center shadow-sm transition-colors ${
-                          currentGenerationId && isFavorited(currentGenerationId, i) 
-                            ? "bg-red-500 text-white" 
-                            : "bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500"
-                        }`}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleResultFavorite(i)
-                        }}
-                      >
-                        <Heart className={`w-3.5 h-3.5 ${currentGenerationId && isFavorited(currentGenerationId, i) ? "fill-current" : ""}`} />
-                      </button>
-                      {/* Type badge */}
-                      <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-500 text-white">
-                          极简
-                        </span>
-                        {generatedModelTypes[i] === 'flash' && (
-                          <span className="px-1 py-0.5 rounded text-[8px] font-medium bg-amber-500 text-white">
-                            2.5
-                          </span>
-                        )}
+                  {[0, 1, 2].map((i) => {
+                    const url = generatedImages[i]
+                    if (!url) return (
+                      <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
+                        生成失败
                       </div>
-                    </div>
-                  ))}
+                    )
+                    return (
+                      <div 
+                        key={i} 
+                        className="group relative aspect-[4/5] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer"
+                        onClick={() => setSelectedResultIndex(i)}
+                      >
+                        <Image src={url} alt="Result" fill className="object-cover" />
+                        {/* Favorite button */}
+                        <button 
+                          className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center shadow-sm transition-colors ${
+                            currentGenerationId && isFavorited(currentGenerationId, i) 
+                              ? "bg-red-500 text-white" 
+                              : "bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500"
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleResultFavorite(i)
+                          }}
+                        >
+                          <Heart className={`w-3.5 h-3.5 ${currentGenerationId && isFavorited(currentGenerationId, i) ? "fill-current" : ""}`} />
+                        </button>
+                        {/* Type badge */}
+                        <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-500 text-white">
+                            极简
+                          </span>
+                          {generatedModelTypes[i] === 'flash' && (
+                            <span className="px-1 py-0.5 rounded text-[8px] font-medium bg-amber-500 text-white">
+                              2.5
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
 
@@ -1560,11 +1579,16 @@ export default function CameraPage() {
                   <span className="text-[10px] text-zinc-400">摄影指令 + 生成</span>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
-                  {generatedImages.slice(3, 6).map((url, i) => {
-                    const actualIndex = i + 3
+                  {[3, 4, 5].map((actualIndex) => {
+                    const url = generatedImages[actualIndex]
+                    if (!url) return (
+                      <div key={actualIndex} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
+                        生成失败
+                      </div>
+                    )
                     return (
                       <div 
-                        key={i} 
+                        key={actualIndex} 
                         className="group relative aspect-[4/5] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer"
                         onClick={() => setSelectedResultIndex(actualIndex)}
                       >
