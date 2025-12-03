@@ -228,13 +228,13 @@ export default function QuotaApplicationsPage() {
       {/* Application Detail Modal */}
       {selectedApp && (
         <div 
-          className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-4"
+          className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4"
           onClick={() => setSelectedApp(null)}
         >
           <motion.div
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="bg-white rounded-2xl w-full sm:max-w-md max-h-[85vh] overflow-hidden flex flex-col"
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-2xl w-full max-w-md max-h-[80vh] overflow-hidden flex flex-col shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
