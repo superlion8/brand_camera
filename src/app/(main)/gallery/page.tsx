@@ -1156,7 +1156,6 @@ function ImageSlotCard({ task, slot, slotIndex, onImageClick }: {
     } else {
       addFavorite({
         generationId: generationRecord.id,
-        imageUrl: favoriteImageUrl,
         imageIndex: slotIndex,
         createdAt: new Date().toISOString(),
       })
