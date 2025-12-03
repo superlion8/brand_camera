@@ -46,8 +46,8 @@ export interface GenerationParams {
   background?: string
   vibe?: string
   // Per-image model/background for random selection (indexed by image position)
-  perImageModels?: { name: string; imageUrl: string; isRandom?: boolean }[]
-  perImageBackgrounds?: { name: string; imageUrl: string; isRandom?: boolean }[]
+  perImageModels?: { name: string; imageUrl: string; isRandom?: boolean; isPreset?: boolean }[]
+  perImageBackgrounds?: { name: string; imageUrl: string; isRandom?: boolean; isPreset?: boolean }[]
   // Studio params
   lightType?: string
   lightDirection?: string

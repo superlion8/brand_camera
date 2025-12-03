@@ -414,8 +414,11 @@ export default function CameraPage() {
       const staggerDelay = 1000 // 1 second between each request
       
       // Track per-image model/background for saving later
-      const perImageModels: { name: string; imageUrl: string; isRandom: boolean }[] = Array(NUM_IMAGES).fill(null)
-      const perImageBackgrounds: { name: string; imageUrl: string; isRandom: boolean }[] = Array(NUM_IMAGES).fill(null)
+      const perImageModels: { name: string; imageUrl: string; isRandom: boolean; isPreset: boolean }[] = Array(NUM_IMAGES).fill(null)
+      const perImageBackgrounds: { name: string; imageUrl: string; isRandom: boolean; isPreset: boolean }[] = Array(NUM_IMAGES).fill(null)
+      
+      // Helper to check if URL is from preset storage
+      const isPresetUrl = (url: string) => url?.includes('/presets/') || url?.includes('presets%2F')
       
       // Helper to create a delayed request for model images
       // Each request gets its own model/background (random if not user-selected)
@@ -450,9 +453,19 @@ export default function CameraPage() {
           console.log(`Image ${index + 1}: Random background = ${randomBg.name}`)
         }
         
-        // Save per-image model/background info with isRandom flag
-        perImageModels[index] = { name: modelNameForThis, imageUrl: modelUrlForThis, isRandom: modelIsRandom }
-        perImageBackgrounds[index] = { name: bgNameForThis, imageUrl: bgUrlForThis, isRandom: bgIsRandom }
+        // Save per-image model/background info with isRandom and isPreset flags
+        perImageModels[index] = { 
+          name: modelNameForThis, 
+          imageUrl: modelUrlForThis, 
+          isRandom: modelIsRandom,
+          isPreset: isPresetUrl(modelUrlForThis)
+        }
+        perImageBackgrounds[index] = { 
+          name: bgNameForThis, 
+          imageUrl: bgUrlForThis, 
+          isRandom: bgIsRandom,
+          isPreset: isPresetUrl(bgUrlForThis)
+        }
         
         const payload = {
           productImage: compressedProduct,

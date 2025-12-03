@@ -56,6 +56,8 @@ interface TaskDetail {
   favoritedIndices: number[]
   downloadedIndices: number[]
   createdAt: string
+  outputModelTypes?: ('pro' | 'flash')[]
+  outputGenModes?: ('simple' | 'extended')[]
   inputParams?: Record<string, any>
 }
 
@@ -753,6 +755,56 @@ export default function AdminDashboard() {
                   </div>
                 )}
                 
+                {/* Generation Parameters */}
+                {selectedTask.inputParams && (
+                  <div className="p-3 bg-zinc-50 rounded-lg space-y-2">
+                    <p className="text-sm font-medium text-zinc-700">生成参数</p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedTask.inputParams.modelStyle && selectedTask.inputParams.modelStyle !== 'auto' && (
+                        <span className="px-2 py-1 bg-white rounded text-xs text-zinc-600 border border-zinc-200">
+                          风格: {selectedTask.inputParams.modelStyle === 'korean' ? '韩系' : 
+                                 selectedTask.inputParams.modelStyle === 'western' ? '欧美' : selectedTask.inputParams.modelStyle}
+                        </span>
+                      )}
+                      {selectedTask.inputParams.modelGender && (
+                        <span className="px-2 py-1 bg-white rounded text-xs text-zinc-600 border border-zinc-200">
+                          性别: {selectedTask.inputParams.modelGender === 'male' ? '男' : 
+                                 selectedTask.inputParams.modelGender === 'female' ? '女' : 
+                                 selectedTask.inputParams.modelGender === 'boy' ? '男童' : '女童'}
+                        </span>
+                      )}
+                      {selectedTask.inputParams.lightType && (
+                        <span className="px-2 py-1 bg-white rounded text-xs text-zinc-600 border border-zinc-200">
+                          光源: {selectedTask.inputParams.lightType}
+                        </span>
+                      )}
+                      {selectedTask.inputParams.lightDirection && (
+                        <span className="px-2 py-1 bg-white rounded text-xs text-zinc-600 border border-zinc-200">
+                          方向: {selectedTask.inputParams.lightDirection}
+                        </span>
+                      )}
+                      {selectedTask.inputParams.modelIsUserSelected !== undefined && (
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          selectedTask.inputParams.modelIsUserSelected 
+                            ? 'bg-blue-100 text-blue-700' 
+                            : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          模特: {selectedTask.inputParams.modelIsUserSelected ? '用户选择' : '系统随机'}
+                        </span>
+                      )}
+                      {selectedTask.inputParams.bgIsUserSelected !== undefined && (
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          selectedTask.inputParams.bgIsUserSelected 
+                            ? 'bg-blue-100 text-blue-700' 
+                            : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          背景: {selectedTask.inputParams.bgIsUserSelected ? '用户选择' : '系统随机'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
                 {/* Input Image (Product only - model/bg shown per output image) */}
                 <div>
                   <p className="text-sm font-medium text-zinc-700 mb-2">输入商品图</p>
@@ -791,72 +843,123 @@ export default function AdminDashboard() {
                         // Check isRandom field, or fallback to checking if name contains "(随机)" for old data
                         const modelIsRandom = perImageModel?.isRandom === true || rawModelName.includes('(随机)')
                         const bgIsRandom = perImageBg?.isRandom === true || rawBgName.includes('(随机)')
+                        // Check isPreset field, or fallback to checking URL for old data
+                        const isPresetUrl = (url: string) => url?.includes('/presets/') || url?.includes('presets%2F')
+                        const modelIsPreset = perImageModel?.isPreset === true || isPresetUrl(modelUrl || '')
+                        const bgIsPreset = perImageBg?.isPreset === true || isPresetUrl(bgUrl || '')
                         // Clean up display name (remove "(随机)" suffix if present)
                         const modelName = rawModelName.replace(' (随机)', '').replace('(随机)', '')
                         const bgName = rawBgName.replace(' (随机)', '').replace('(随机)', '')
+                        // Get AI model type for this image
+                        const outputModelType = selectedTask.outputModelTypes?.[i]
+                        const genMode = selectedTask.outputGenModes?.[i]
                         
                         return (
-                          <div key={i} className="flex gap-2 p-2 bg-zinc-50 rounded-lg">
-                            {/* Output image */}
-                            <div className="relative w-24 h-30 bg-zinc-100 rounded-lg overflow-hidden shrink-0">
-                              <Image 
-                                src={url} 
-                                alt={`Output ${i + 1}`} 
-                                width={96}
-                                height={120}
-                                className="w-full h-full object-cover"
-                              />
-                              {/* Badges */}
-                              <div className="absolute top-1 right-1 flex flex-col gap-1">
-                                {selectedTask.favoritedIndices.includes(i) && (
-                                  <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-                                    <Heart className="w-2.5 h-2.5 text-white fill-current" />
-                                  </div>
+                          <div key={i} className="p-2 bg-zinc-50 rounded-lg space-y-2">
+                            {/* AI Model Type Badge */}
+                            {(outputModelType || genMode) && (
+                              <div className="flex gap-1 flex-wrap">
+                                {outputModelType && (
+                                  <span className={`px-1.5 py-0.5 text-[9px] rounded font-medium ${
+                                    outputModelType === 'pro' 
+                                      ? 'bg-green-100 text-green-700' 
+                                      : 'bg-orange-100 text-orange-700'
+                                  }`}>
+                                    {outputModelType === 'pro' ? 'Gemini Pro' : 'Gemini Flash (降级)'}
+                                  </span>
                                 )}
-                                {downloadCount > 0 && (
-                                  <div className="w-4 h-4 bg-cyan-500 rounded-full flex items-center justify-center">
-                                    <Download className="w-2.5 h-2.5 text-white" />
-                                  </div>
+                                {genMode && (
+                                  <span className={`px-1.5 py-0.5 text-[9px] rounded font-medium ${
+                                    genMode === 'simple' 
+                                      ? 'bg-blue-100 text-blue-700' 
+                                      : 'bg-purple-100 text-purple-700'
+                                  }`}>
+                                    {genMode === 'simple' ? '极简模式' : '扩展模式'}
+                                  </span>
                                 )}
                               </div>
-                              {/* Image number */}
-                              <div className="absolute bottom-1 left-1 px-1 py-0.5 bg-black/50 text-white text-[9px] rounded">
-                                #{i + 1}
-                              </div>
-                            </div>
+                            )}
                             
-                            {/* Per-image model and background */}
-                            <div className="flex gap-3 flex-1 min-w-0">
-                              {modelUrl && (
-                                <div className="flex flex-col items-center">
-                                  <div className="w-16 h-20 rounded-lg overflow-hidden bg-zinc-200">
-                                    <Image src={modelUrl} alt="Model" width={64} height={80} className="w-full h-full object-cover" />
-                                  </div>
-                                  <p className="text-[10px] text-zinc-600 mt-1 truncate max-w-[64px] text-center font-medium">{modelName}</p>
-                                  <span className={`mt-0.5 px-1.5 py-0.5 text-[9px] rounded font-medium ${
-                                    modelIsRandom 
-                                      ? 'bg-amber-100 text-amber-700' 
-                                      : 'bg-blue-100 text-blue-700'
-                                  }`}>
-                                    {modelIsRandom ? '随机' : '用户选择'}
-                                  </span>
+                            <div className="flex gap-2">
+                              {/* Output image */}
+                              <div className="relative w-24 h-30 bg-zinc-100 rounded-lg overflow-hidden shrink-0">
+                                <Image 
+                                  src={url} 
+                                  alt={`Output ${i + 1}`} 
+                                  width={96}
+                                  height={120}
+                                  className="w-full h-full object-cover"
+                                />
+                                {/* Badges */}
+                                <div className="absolute top-1 right-1 flex flex-col gap-1">
+                                  {selectedTask.favoritedIndices.includes(i) && (
+                                    <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                                      <Heart className="w-2.5 h-2.5 text-white fill-current" />
+                                    </div>
+                                  )}
+                                  {downloadCount > 0 && (
+                                    <div className="w-4 h-4 bg-cyan-500 rounded-full flex items-center justify-center">
+                                      <Download className="w-2.5 h-2.5 text-white" />
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                              {bgUrl && (
-                                <div className="flex flex-col items-center">
-                                  <div className="w-16 h-20 rounded-lg overflow-hidden bg-zinc-200">
-                                    <Image src={bgUrl} alt="Background" width={64} height={80} className="w-full h-full object-cover" />
-                                  </div>
-                                  <p className="text-[10px] text-zinc-600 mt-1 truncate max-w-[64px] text-center font-medium">{bgName}</p>
-                                  <span className={`mt-0.5 px-1.5 py-0.5 text-[9px] rounded font-medium ${
-                                    bgIsRandom 
-                                      ? 'bg-amber-100 text-amber-700' 
-                                      : 'bg-blue-100 text-blue-700'
-                                  }`}>
-                                    {bgIsRandom ? '随机' : '用户选择'}
-                                  </span>
+                                {/* Image number */}
+                                <div className="absolute bottom-1 left-1 px-1 py-0.5 bg-black/50 text-white text-[9px] rounded">
+                                  #{i + 1}
                                 </div>
-                              )}
+                              </div>
+                              
+                              {/* Per-image model and background */}
+                              <div className="flex gap-3 flex-1 min-w-0">
+                                {modelUrl && (
+                                  <div className="flex flex-col items-center">
+                                    <div className="w-16 h-20 rounded-lg overflow-hidden bg-zinc-200">
+                                      <Image src={modelUrl} alt="Model" width={64} height={80} className="w-full h-full object-cover" />
+                                    </div>
+                                    <p className="text-[10px] text-zinc-600 mt-1 truncate max-w-[64px] text-center font-medium">{modelName}</p>
+                                    <div className="flex flex-col gap-0.5 items-center">
+                                      <span className={`px-1.5 py-0.5 text-[9px] rounded font-medium ${
+                                        modelIsRandom 
+                                          ? 'bg-amber-100 text-amber-700' 
+                                          : 'bg-blue-100 text-blue-700'
+                                      }`}>
+                                        {modelIsRandom ? '随机' : '指定'}
+                                      </span>
+                                      <span className={`px-1.5 py-0.5 text-[9px] rounded font-medium ${
+                                        modelIsPreset 
+                                          ? 'bg-zinc-200 text-zinc-600' 
+                                          : 'bg-pink-100 text-pink-700'
+                                      }`}>
+                                        {modelIsPreset ? '系统' : '上传'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+                                {bgUrl && (
+                                  <div className="flex flex-col items-center">
+                                    <div className="w-16 h-20 rounded-lg overflow-hidden bg-zinc-200">
+                                      <Image src={bgUrl} alt="Background" width={64} height={80} className="w-full h-full object-cover" />
+                                    </div>
+                                    <p className="text-[10px] text-zinc-600 mt-1 truncate max-w-[64px] text-center font-medium">{bgName}</p>
+                                    <div className="flex flex-col gap-0.5 items-center">
+                                      <span className={`px-1.5 py-0.5 text-[9px] rounded font-medium ${
+                                        bgIsRandom 
+                                          ? 'bg-amber-100 text-amber-700' 
+                                          : 'bg-blue-100 text-blue-700'
+                                      }`}>
+                                        {bgIsRandom ? '随机' : '指定'}
+                                      </span>
+                                      <span className={`px-1.5 py-0.5 text-[9px] rounded font-medium ${
+                                        bgIsPreset 
+                                          ? 'bg-zinc-200 text-zinc-600' 
+                                          : 'bg-pink-100 text-pink-700'
+                                      }`}>
+                                        {bgIsPreset ? '系统' : '上传'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
                         )

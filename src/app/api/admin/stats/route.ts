@@ -407,6 +407,9 @@ export async function GET(request: NextRequest) {
           favoritedIndices: favByGen[gen.id] || [],
           downloadedIndices: downloadsByGen[gen.id] || [],
           createdAt: gen.created_at,
+          // Output metadata
+          outputModelTypes: gen.output_model_types || [],
+          outputGenModes: gen.output_gen_modes || [],
           // Include raw params for debugging
           inputParams: inputParams,
         }
