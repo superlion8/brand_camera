@@ -115,50 +115,49 @@ export default function HomePage() {
           />
         </div>
         
-        {/* Edit Room */}
-        <Link href="/edit/general" className="block mt-3">
-          <div className="bg-gradient-to-r from-violet-500 to-purple-600 rounded-2xl p-4 flex items-center justify-between shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                <Wand2 className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h3 className="font-bold text-white text-base">{t.home.editRoom}</h3>
-                <p className="text-white/80 text-xs">{t.home.editRoomDesc}</p>
-              </div>
-            </div>
-            <ArrowRight className="w-5 h-5 text-white/80" />
-          </div>
-        </Link>
       </div>
       
       {/* Navigation Cards */}
-      <div className="px-4 mt-6">
-        <div className="space-y-3">
-          <Link href="/brand-assets" className="flex items-center justify-between bg-white rounded-xl p-4 border border-zinc-100 active:bg-zinc-50">
+      <div className="px-4 mt-4">
+        <div className="space-y-2">
+          {/* Edit Room - 弱化样式 */}
+          <Link href="/edit/general" className="flex items-center justify-between bg-white rounded-xl p-3 border border-zinc-100 active:bg-zinc-50">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-zinc-100 rounded-lg flex items-center justify-center">
-                <FolderHeart className="w-5 h-5 text-zinc-600" />
+              <div className="w-9 h-9 bg-purple-100 rounded-lg flex items-center justify-center">
+                <Wand2 className="w-4 h-4 text-purple-600" />
               </div>
               <div>
-                <h3 className="font-medium text-zinc-900">{t.assets.title}</h3>
-                <p className="text-xs text-zinc-500">{t.common.model}、{t.common.background}、{t.common.product}</p>
+                <h3 className="font-medium text-zinc-900 text-sm">{t.home.editRoom}</h3>
+                <p className="text-[11px] text-zinc-500">{t.home.editRoomDesc}</p>
               </div>
             </div>
-            <ArrowRight className="w-5 h-5 text-zinc-400" />
+            <ArrowRight className="w-4 h-4 text-zinc-400" />
           </Link>
           
-          <Link href="/gallery" className="flex items-center justify-between bg-white rounded-xl p-4 border border-zinc-100 active:bg-zinc-50">
+          <Link href="/brand-assets" className="flex items-center justify-between bg-white rounded-xl p-3 border border-zinc-100 active:bg-zinc-50">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-zinc-100 rounded-lg flex items-center justify-center">
-                <Images className="w-5 h-5 text-zinc-600" />
+              <div className="w-9 h-9 bg-zinc-100 rounded-lg flex items-center justify-center">
+                <FolderHeart className="w-4 h-4 text-zinc-600" />
               </div>
               <div>
-                <h3 className="font-medium text-zinc-900">{t.nav.gallery}</h3>
-                <p className="text-xs text-zinc-500">{t.gallery.favorites}</p>
+                <h3 className="font-medium text-zinc-900 text-sm">{t.assets.title}</h3>
+                <p className="text-[11px] text-zinc-500">{t.common.model}、{t.common.background}、{t.common.product}</p>
               </div>
             </div>
-            <ArrowRight className="w-5 h-5 text-zinc-400" />
+            <ArrowRight className="w-4 h-4 text-zinc-400" />
+          </Link>
+          
+          <Link href="/gallery" className="flex items-center justify-between bg-white rounded-xl p-3 border border-zinc-100 active:bg-zinc-50">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-zinc-100 rounded-lg flex items-center justify-center">
+                <Images className="w-4 h-4 text-zinc-600" />
+              </div>
+              <div>
+                <h3 className="font-medium text-zinc-900 text-sm">{t.nav.gallery}</h3>
+                <p className="text-[11px] text-zinc-500">{t.gallery.favorites}</p>
+              </div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-zinc-400" />
           </Link>
         </div>
       </div>
