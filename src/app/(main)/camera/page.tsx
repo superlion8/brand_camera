@@ -714,7 +714,7 @@ export default function CameraPage() {
   // Handle go to edit with image
   const handleGoToEdit = (imageUrl: string) => {
     sessionStorage.setItem('editImage', imageUrl)
-    router.push("/edit")
+    router.push("/edit/general")
   }
   
   // Handle download

@@ -103,7 +103,7 @@ function hexToHsv(hex: string): [number, number, number] {
   return [h, s, v]
 }
 
-type StudioMode = 'upload' | 'camera' | 'settings' | 'processing' | 'results'
+type StudioMode = 'main' | 'camera' | 'processing' | 'results'
 
 export default function StudioPage() {
   const router = useRouter()
@@ -112,7 +112,7 @@ export default function StudioPage() {
   const colorPickerRef = useRef<HTMLDivElement>(null)
   const webcamRef = useRef<Webcam>(null)
   
-  const [mode, setMode] = useState<StudioMode>('upload')
+  const [mode, setMode] = useState<StudioMode>('main')
   const modeRef = useRef(mode) // Ref to track latest mode for async callbacks
   useEffect(() => { modeRef.current = mode }, [mode])
   
@@ -192,7 +192,7 @@ export default function StudioPage() {
     if (file) {
       const base64 = await fileToBase64(file)
       setProductImage(base64)
-      setMode('settings')
+      setMode('main')
     }
   }, [])
   
@@ -203,7 +203,7 @@ export default function StudioPage() {
       if (base64) {
         setProductImage(base64)
         setShowProductPanel(false)
-        setMode('settings')
+        setMode('main')
       }
     } catch (e) {
       console.error('Failed to load asset:', e)
@@ -218,7 +218,7 @@ export default function StudioPage() {
       const imageSrc = webcamRef.current.getScreenshot()
       if (imageSrc) {
         setProductImage(imageSrc)
-        setMode('settings')
+        setMode('main')
       }
     }
   }, [])
@@ -426,7 +426,7 @@ export default function StudioPage() {
         updateTaskStatus(taskId, 'failed', undefined, '生成失败')
         if (modeRef.current === 'processing') {
           alert('生成失败，请重试')
-          setMode('settings')
+          setMode('main')
         }
       }
     } catch (error: any) {
@@ -444,7 +444,7 @@ export default function StudioPage() {
       
       if (modeRef.current === 'processing') {
         alert(error.message || '生成失败')
-        setMode('settings')
+        setMode('main')
       }
     }
   }
@@ -454,7 +454,7 @@ export default function StudioPage() {
     setProductImage(null)
     setGeneratedImages([])
     setGeneratedModelTypes([])
-    setMode('upload')
+    setMode('main')
   }
   
   const handleReturnHomeDuringProcessing = () => {
@@ -500,14 +500,14 @@ export default function StudioPage() {
   // Handle go to edit with image
   const handleGoToEdit = (imageUrl: string) => {
     sessionStorage.setItem('editImage', imageUrl)
-    router.push("/edit")
+    router.push("/edit/general")
   }
   
   const handleReset = () => {
     setProductImage(null)
     setGeneratedImages([])
     setGeneratedModelTypes([])
-    setMode('upload')
+    setMode('main')
   }
   
   return (
@@ -532,169 +532,70 @@ export default function StudioPage() {
       />
       
       <AnimatePresence mode="wait">
-        {/* Upload Mode */}
-        {mode === 'upload' && (
+        {/* Main Mode - Combined Upload + Settings */}
+        {mode === 'main' && (
           <motion.div
-            key="upload"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex-1 flex flex-col items-center justify-center p-6"
-          >
-            <div className="w-full max-w-sm space-y-3">
-              {/* Camera capture */}
-              <button
-                onClick={() => setMode('camera')}
-                className="w-full h-24 rounded-2xl bg-amber-500 hover:bg-amber-600 transition-colors flex items-center justify-center gap-3 text-white"
-              >
-                <Camera className="w-7 h-7" />
-                <div className="text-left">
-                  <p className="font-semibold">拍摄商品</p>
-                  <p className="text-xs text-amber-100">使用相机拍照</p>
-                </div>
-              </button>
-              
-              {/* Upload from album */}
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full h-20 rounded-2xl border-2 border-zinc-200 bg-white hover:border-amber-500 transition-colors flex items-center justify-center gap-3"
-              >
-                <Upload className="w-5 h-5 text-zinc-500" />
-                <div className="text-left">
-                  <p className="font-medium text-zinc-700">从相册上传</p>
-                  <p className="text-xs text-zinc-500">JPG、PNG</p>
-                </div>
-              </button>
-              
-              {/* Select from asset library */}
-              <button
-                onClick={() => setShowProductPanel(true)}
-                className="w-full h-20 rounded-2xl border-2 border-zinc-200 bg-white hover:border-amber-500 transition-colors flex items-center justify-center gap-3"
-              >
-                <FolderHeart className="w-5 h-5 text-zinc-500" />
-                <div className="text-left">
-                  <p className="font-medium text-zinc-700">从资产库选择</p>
-                  <p className="text-xs text-zinc-500">官方示例 · 我的商品</p>
-                </div>
-              </button>
-            </div>
-            
-            <p className="text-sm text-zinc-400 mt-6 text-center max-w-xs">
-              上传商品图片，AI将生成专业影棚级别的商品展示图
-            </p>
-          </motion.div>
-        )}
-        
-        {/* Camera Mode */}
-        {mode === 'camera' && (
-          <motion.div
-            key="camera"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex-1 flex flex-col bg-black relative"
-          >
-            {/* Back button */}
-            <button
-              onClick={() => setMode('upload')}
-              className="absolute top-4 left-4 z-20 w-10 h-10 rounded-full bg-black/30 text-white backdrop-blur-md flex items-center justify-center"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            
-            {/* Camera view */}
-            <div className="flex-1 relative">
-              {hasCamera ? (
-                <Webcam
-                  ref={webcamRef}
-                  audio={false}
-                  screenshotFormat="image/jpeg"
-                  screenshotQuality={0.95}
-                  videoConstraints={videoConstraints}
-                  onUserMedia={handleCameraReady}
-                  onUserMediaError={handleCameraError}
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
-                  <div className="text-center text-zinc-400">
-                    <Camera className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                    <p className="text-sm">相机不可用</p>
-                    <button
-                      onClick={() => {
-                        setMode('upload')
-                        setTimeout(() => fileInputRef.current?.click(), 100)
-                      }}
-                      className="mt-4 px-4 py-2 bg-amber-500 text-white rounded-lg text-sm"
-                    >
-                      从相册上传
-                    </button>
-                  </div>
-                </div>
-              )}
-              
-              {/* Grid overlay */}
-              <div className="absolute inset-0 pointer-events-none opacity-30">
-                <div className="w-full h-full grid grid-cols-3 grid-rows-3">
-                  {[...Array(9)].map((_, i) => (
-                    <div key={i} className="border border-white/20" />
-                  ))}
-                </div>
-              </div>
-              
-              {/* Focus frame */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-64 h-64 border border-white/50 rounded-lg relative">
-                  <div className="absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 border-amber-400" />
-                  <div className="absolute -top-1 -right-1 w-4 h-4 border-t-4 border-r-4 border-amber-400" />
-                  <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-4 border-l-4 border-amber-400" />
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-4 border-r-4 border-amber-400" />
-                </div>
-              </div>
-              
-              <div className="absolute top-16 left-0 right-0 text-center text-white/80 text-sm font-medium">
-                将商品放入框内拍摄
-              </div>
-            </div>
-            
-            {/* Capture button */}
-            <div className="bg-black py-8 flex justify-center">
-              <button
-                onClick={handleCapture}
-                disabled={!cameraReady}
-                className="w-20 h-20 rounded-full border-4 border-amber-400/50 flex items-center justify-center active:scale-95 transition-transform disabled:opacity-50"
-              >
-                <div className="w-16 h-16 bg-amber-400 rounded-full" />
-              </button>
-            </div>
-          </motion.div>
-        )}
-        
-        {/* Settings Mode */}
-        {mode === 'settings' && productImage && (
-          <motion.div
-            key="settings"
+            key="main"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="flex-1 overflow-y-auto pb-24"
           >
-            {/* Preview */}
-            <div className="p-4">
-              <div className="relative aspect-square bg-zinc-200 rounded-xl overflow-hidden max-w-xs mx-auto">
-                <Image src={productImage} alt="Product" fill className="object-contain" />
-                <button
-                  onClick={handleReset}
-                  className="absolute top-2 right-2 px-3 py-1 bg-white/90 rounded-full text-xs font-medium hover:bg-white"
-                >
-                  更换图片
-                </button>
-              </div>
+            {/* Image Upload Area */}
+            <div className="bg-zinc-100 min-h-[200px] flex items-center justify-center relative p-4">
+              {!productImage ? (
+                <div className="w-full max-w-sm space-y-2">
+                  {/* Camera */}
+                  <button
+                    onClick={() => setMode('camera')}
+                    className="w-full h-14 rounded-xl bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center gap-3 transition-colors shadow-lg shadow-amber-200"
+                  >
+                    <Camera className="w-5 h-5" />
+                    <span className="font-medium">拍摄商品</span>
+                  </button>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Album */}
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-amber-400 flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <Upload className="w-4 h-4 text-zinc-500" />
+                      <span className="text-sm text-zinc-700">相册上传</span>
+                    </button>
+                    
+                    {/* Asset library */}
+                    <button
+                      onClick={() => setShowProductPanel(true)}
+                      className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-amber-400 flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <FolderHeart className="w-4 h-4 text-zinc-500" />
+                      <span className="text-sm text-zinc-700">资产库</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative w-full max-w-xs">
+                  <Image 
+                    src={productImage} 
+                    alt="Product"
+                    width={300}
+                    height={300}
+                    className="w-full rounded-xl shadow-lg object-contain bg-white"
+                  />
+                  <button
+                    onClick={() => setProductImage(null)}
+                    className="absolute bottom-2 right-2 px-3 py-1.5 bg-white/90 hover:bg-white text-zinc-700 text-sm font-medium rounded-lg shadow transition-colors"
+                  >
+                    重选
+                  </button>
+                </div>
+              )}
             </div>
             
-            {/* Settings */}
-            <div className="px-4 pb-40 space-y-5">
-              {/* Light Type - Single row */}
+            {/* Settings Panel */}
+            <div className="p-4 bg-white rounded-t-2xl -mt-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] relative z-10 space-y-5">
+              {/* Light Type */}
               <div>
                 <h3 className="text-sm font-semibold text-zinc-700 mb-2">光源类型</h3>
                 <div className="flex gap-2">
@@ -743,7 +644,7 @@ export default function StudioPage() {
               {/* Light Direction */}
               <div>
                 <h3 className="text-sm font-semibold text-zinc-700 mb-2">光源方向</h3>
-                <div className="bg-white rounded-xl p-3 border border-zinc-200">
+                <div className="bg-zinc-50 rounded-xl p-3 border border-zinc-200">
                   <div className="grid grid-cols-3 gap-1.5 max-w-[140px] mx-auto">
                     {LIGHT_DIRECTIONS.map(dir => (
                       <button
@@ -754,7 +655,7 @@ export default function StudioPage() {
                             ? 'bg-zinc-800 text-white'
                             : lightDirection === dir.id
                               ? 'bg-yellow-400 shadow-md'
-                              : 'bg-zinc-100 hover:bg-zinc-200'
+                              : 'bg-zinc-200 hover:bg-zinc-300'
                         }`}
                       >
                         {dir.id === 'front' ? (
@@ -762,7 +663,7 @@ export default function StudioPage() {
                         ) : lightDirection === dir.id ? (
                           <Sun className="w-4 h-4 text-yellow-800" />
                         ) : (
-                          <div className="w-1.5 h-1.5 rounded-full bg-zinc-300" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
                         )}
                       </button>
                     ))}
@@ -770,38 +671,43 @@ export default function StudioPage() {
                 </div>
               </div>
               
-              {/* Background Color - Advanced picker */}
+              {/* Background Color - Simplified */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-sm font-semibold text-zinc-700">背景颜色</h3>
-                  <div className="flex items-center gap-2">
-                    {/* Upload custom background */}
-                    <button className="w-7 h-7 rounded-full border-2 border-dashed border-zinc-300 flex items-center justify-center hover:border-zinc-400">
-                      <Upload className="w-3 h-3 text-zinc-400" />
-                    </button>
-                    {/* Preset color pairs */}
+                  <div className="flex items-center gap-1">
                     {PRESET_BG_COLORS.map(preset => (
                       <button
                         key={preset.id}
                         onClick={() => setPresetColor(preset.colors[0])}
-                        className="w-7 h-7 rounded-full border-2 border-white shadow-sm overflow-hidden"
+                        className={`w-6 h-6 rounded-full border-2 overflow-hidden transition-all ${
+                          bgColor === preset.colors[0] ? 'border-amber-500 scale-110' : 'border-white shadow-sm'
+                        }`}
                         style={{ 
                           background: `linear-gradient(135deg, ${preset.colors[0]} 50%, ${preset.colors[1]} 50%)`
                         }}
                         title={preset.label}
                       />
                     ))}
+                    <button
+                      onClick={() => setBgColor('#FFFFFF')}
+                      className={`w-6 h-6 rounded-full border-2 overflow-hidden transition-all ${
+                        bgColor === '#FFFFFF' ? 'border-amber-500 scale-110' : 'border-zinc-200 shadow-sm'
+                      }`}
+                      style={{ background: '#FFFFFF' }}
+                      title="白色"
+                    />
                   </div>
                 </div>
                 
-                <div className="bg-zinc-900 rounded-2xl p-3 space-y-3">
-                  {/* Saturation/Brightness picker */}
+                {/* Color Picker */}
+                <div className="bg-zinc-900 rounded-xl p-3 space-y-3">
                   <div
                     ref={colorPickerRef}
                     onClick={handleSBPick}
                     onMouseMove={(e) => e.buttons === 1 && handleSBPick(e)}
                     onTouchMove={handleSBPick}
-                    className="relative h-32 rounded-xl cursor-crosshair overflow-hidden"
+                    className="relative h-24 rounded-lg cursor-crosshair overflow-hidden"
                     style={{
                       background: `
                         linear-gradient(to bottom, transparent, black),
@@ -809,7 +715,6 @@ export default function StudioPage() {
                       `
                     }}
                   >
-                    {/* Picker indicator */}
                     <div
                       className="absolute w-4 h-4 rounded-full border-2 border-white shadow-lg pointer-events-none"
                       style={{
@@ -820,41 +725,120 @@ export default function StudioPage() {
                     />
                   </div>
                   
-                  {/* Hue slider */}
-                  <div className="relative">
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.01"
-                      value={hue}
-                      onChange={handleHueChange}
-                      className="w-full h-3 rounded-full appearance-none cursor-pointer"
-                      style={{
-                        background: 'linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)',
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={hue}
+                    onChange={handleHueChange}
+                    className="w-full h-3 rounded-full appearance-none cursor-pointer"
+                    style={{
+                      background: 'linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)',
+                    }}
+                  />
+                </div>
+              </div>
+              
+              {/* Generate Button */}
+              <div className="pt-4 pb-20">
+                <button
+                  onClick={handleGenerate}
+                  disabled={!productImage}
+                  className={`w-full h-14 rounded-full text-base font-semibold gap-2 flex items-center justify-center transition-all ${
+                    !productImage
+                      ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
+                      : "bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-200"
+                  }`}
+                >
+                  <Sparkles className="w-5 h-5" />
+                  <span>开始拍摄</span>
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+        
+        {/* Camera Mode */}
+        {mode === 'camera' && (
+          <motion.div
+            key="camera"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex-1 flex flex-col bg-black relative"
+          >
+            {/* Back button */}
+            <button
+              onClick={() => setMode('main')}
+              className="absolute top-4 left-4 z-20 w-10 h-10 rounded-full bg-black/30 text-white backdrop-blur-md flex items-center justify-center"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            
+            {/* Camera view */}
+            <div className="flex-1 relative">
+              {hasCamera ? (
+                <Webcam
+                  ref={webcamRef}
+                  audio={false}
+                  screenshotFormat="image/jpeg"
+                  screenshotQuality={0.95}
+                  videoConstraints={videoConstraints}
+                  onUserMedia={handleCameraReady}
+                  onUserMediaError={handleCameraError}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
+                  <div className="text-center text-zinc-400">
+                    <Camera className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                    <p className="text-sm">相机不可用</p>
+                    <button
+                      onClick={() => {
+                        setMode('main')
+                        setTimeout(() => fileInputRef.current?.click(), 100)
                       }}
-                    />
-                    {/* Custom thumb indicator */}
-                    <div
-                      className="absolute top-0 w-4 h-3 rounded-full border-2 border-white shadow pointer-events-none"
-                      style={{
-                        left: `calc(${hue * 100}% - 8px)`,
-                        backgroundColor: `hsl(${hue * 360}, 100%, 50%)`,
-                      }}
-                    />
+                      className="mt-4 px-4 py-2 bg-amber-500 text-white rounded-lg text-sm"
+                    >
+                      从相册上传
+                    </button>
                   </div>
                 </div>
+              )}
+              
+              {/* Grid overlay */}
+              <div className="absolute inset-0 pointer-events-none opacity-30">
+                <div className="w-full h-full grid grid-cols-3 grid-rows-3">
+                  {[...Array(9)].map((_, i) => (
+                    <div key={i} className="border border-white/20" />
+                  ))}
+                </div>
+              </div>
+              
+              {/* Focus frame */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="w-64 h-64 border border-white/50 rounded-lg relative">
+                  <div className="absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 border-amber-400" />
+                  <div className="absolute -top-1 -right-1 w-4 h-4 border-t-4 border-r-4 border-amber-400" />
+                  <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-4 border-l-4 border-amber-400" />
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-4 border-r-4 border-amber-400" />
+                </div>
+              </div>
+              
+              <div className="absolute top-16 left-0 right-0 text-center text-white/80 text-sm font-medium">
+                将商品放入框内拍摄
               </div>
             </div>
             
-            {/* Generate Button - positioned above bottom nav */}
-            <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+            {/* Capture button */}
+            <div className="bg-black py-8 flex justify-center">
               <button
-                onClick={handleGenerate}
-                className="w-full h-14 bg-amber-500 text-white rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-amber-600 active:scale-[0.98] transition-all shadow-lg shadow-amber-200"
+                onClick={handleCapture}
+                disabled={!cameraReady}
+                className="w-20 h-20 rounded-full border-4 border-amber-400/50 flex items-center justify-center active:scale-95 transition-transform disabled:opacity-50"
               >
-                <Sparkles className="w-6 h-6" />
-                开始拍摄
+                <div className="w-16 h-16 bg-amber-400 rounded-full" />
               </button>
             </div>
           </motion.div>
@@ -951,7 +935,7 @@ export default function StudioPage() {
             {/* Actions */}
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t flex gap-3">
               <button
-                onClick={() => setMode('settings')}
+                onClick={() => setMode('main')}
                 className="flex-1 h-12 border border-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 transition-colors"
               >
                 调整参数

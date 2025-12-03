@@ -561,7 +561,7 @@ export default function GalleryPage() {
                         const imageUrl = selectedItem.gen.outputImageUrls[selectedItem.index]
                         sessionStorage.setItem('editImage', imageUrl)
                         setSelectedItem(null)
-                        router.push("/edit")
+                        router.push("/edit/general")
                       }}
                       className="flex-1 h-12 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2 transition-colors"
                     >
