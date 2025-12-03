@@ -137,8 +137,8 @@ export default function GeneralEditPage() {
     const currentInputImage = inputImage
     const currentCustomPrompt = customPrompt
     
-    // Create task
-    const taskId = addTask('edit', currentInputImage, { customPrompt: currentCustomPrompt })
+    // Create task (edit generates 1 image)
+    const taskId = addTask('edit', currentInputImage, { customPrompt: currentCustomPrompt }, 1)
     setCurrentTaskId(taskId)
     updateTaskStatus(taskId, 'generating')
     setIsGenerating(true)

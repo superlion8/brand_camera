@@ -304,7 +304,7 @@ export default function CameraPage() {
       bgIsUserSelected,    // Track if user selected or system random
     }
     
-    const taskId = addTask('camera', capturedImage, params)
+    const taskId = addTask('camera', capturedImage, params, CAMERA_NUM_IMAGES)
     setCurrentTaskId(taskId)
     updateTaskStatus(taskId, 'generating')
     setMode("processing")

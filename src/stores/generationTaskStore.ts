@@ -11,6 +11,7 @@ export interface GenerationTask {
   inputImageUrl: string
   outputImageUrls: string[]
   params?: GenerationParams
+  expectedImageCount?: number // Expected number of images to generate
   createdAt: string
   error?: string
 }
@@ -19,7 +20,7 @@ interface GenerationTaskState {
   tasks: GenerationTask[]
   
   // Actions
-  addTask: (type: TaskType, inputImageUrl: string, params?: GenerationParams) => string
+  addTask: (type: TaskType, inputImageUrl: string, params?: GenerationParams, expectedImageCount?: number) => string
   updateTaskStatus: (id: string, status: GenerationTask['status'], outputImageUrls?: string[], error?: string) => void
   removeTask: (id: string) => void
   getActiveTasks: () => GenerationTask[]
@@ -29,7 +30,7 @@ interface GenerationTaskState {
 export const useGenerationTaskStore = create<GenerationTaskState>((set, get) => ({
   tasks: [],
   
-  addTask: (type, inputImageUrl, params) => {
+  addTask: (type, inputImageUrl, params, expectedImageCount) => {
     const id = generateId()
     const task: GenerationTask = {
       id,
@@ -38,6 +39,7 @@ export const useGenerationTaskStore = create<GenerationTaskState>((set, get) => 
       inputImageUrl,
       outputImageUrls: [],
       params,
+      expectedImageCount,
       createdAt: new Date().toISOString(),
     }
     

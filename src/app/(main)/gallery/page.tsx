@@ -922,11 +922,14 @@ function GeneratingCard({ task }: { task: GenerationTask }) {
       ? '修图中...'
       : '模特拍摄中...'
   
+  // Get expected image count, fallback to defaults
+  const imageCount = task.expectedImageCount || (isStudio ? 2 : isEdit ? 1 : 6)
+  
   const subtitle = isStudio 
-    ? 'AI 正在生成 2 张商品图' 
+    ? `AI 正在生成 ${imageCount} 张商品图` 
     : isEdit 
       ? 'AI 正在处理您的图片'
-      : 'AI 正在生成 2 张模特图'
+      : `AI 正在生成 ${imageCount} 张模特图`
   
   const badgeText = isStudio 
     ? '商品影棚' 

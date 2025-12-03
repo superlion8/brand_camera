@@ -254,9 +254,9 @@ export default function StudioPage() {
     const currentAspectRatio = aspectRatio
     const currentProductImage = productImage
     
-    // Create task and switch to processing mode
+    // Create task and switch to processing mode (studio generates 2 images)
     const params = { lightType: currentLightType, lightDirection: currentLightDirection, lightColor: currentBgColor, aspectRatio: currentAspectRatio }
-    const taskId = addTask('studio', currentProductImage, params)
+    const taskId = addTask('studio', currentProductImage, params, 2)
     setCurrentTaskId(taskId)
     updateTaskStatus(taskId, 'generating')
     
