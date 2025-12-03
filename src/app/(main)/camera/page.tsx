@@ -11,7 +11,7 @@ import {
 } from "lucide-react"
 import { useCameraStore } from "@/stores/cameraStore"
 import { useAssetStore } from "@/stores/assetStore"
-import { useGenerationTaskStore } from "@/stores/generationTaskStore"
+import { useGenerationTaskStore, base64ToBlobUrl } from "@/stores/generationTaskStore"
 import { useSettingsStore } from "@/stores/settingsStore"
 import { useRouter } from "next/navigation"
 import { fileToBase64, generateId, compressBase64Image, fetchWithTimeout, ensureBase64 } from "@/lib/utils"
@@ -527,17 +527,21 @@ export default function CameraPage() {
               const result = await response.json()
               if (result.success && result.image) {
                 const genMode = result.generationMode || (simpleMode ? 'simple' : 'extended')
+                // 将 base64 转换为 Blob URL，释放内存
+                const imageUrl = result.image.startsWith('data:') 
+                  ? base64ToBlobUrl(result.image) 
+                  : result.image
                 console.log(`Image ${index + 1}: ✓ (${result.modelType}, ${mode}, ${result.duration}ms)`)
                 updateImageSlot(taskId, index, {
                   status: 'completed',
-                  imageUrl: result.image,
+                  imageUrl: imageUrl,
                   modelType: result.modelType,
                   genMode: genMode,
                 })
                 resolve({ 
                   index, 
                   success: true, 
-                  image: result.image,
+                  image: result.image, // 保留原始 base64 用于上传
                   modelType: result.modelType,
                   genMode: genMode,
                   prompt: result.prompt,

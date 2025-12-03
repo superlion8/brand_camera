@@ -1,39 +1,34 @@
 import { create } from 'zustand'
-import { persist, createJSONStorage, StateStorage } from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import { GenerationParams } from '@/types'
 import { generateId } from '@/lib/utils'
+import { indexedDBStorage } from '@/lib/indexeddb'
 
-// 安全的 localStorage wrapper，防止 QuotaExceededError 阻塞应用
-const safeLocalStorage: StateStorage = {
-  getItem: (name) => {
-    try {
-      return localStorage.getItem(name)
-    } catch (e) {
-      console.warn('[TaskStore] Failed to read from localStorage:', e)
-      return null
+// base64 转 Blob URL（释放内存）
+export function base64ToBlobUrl(base64: string): string {
+  try {
+    // 提取 MIME 类型和数据
+    const matches = base64.match(/^data:([^;]+);base64,(.+)$/)
+    if (!matches) return base64
+    
+    const mimeType = matches[1]
+    const data = matches[2]
+    
+    // 解码 base64
+    const byteCharacters = atob(data)
+    const byteNumbers = new Array(byteCharacters.length)
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i)
     }
-  },
-  setItem: (name, value) => {
-    try {
-      localStorage.setItem(name, value)
-    } catch (e) {
-      console.warn('[TaskStore] Failed to write to localStorage (quota exceeded?):', e)
-      // 尝试清理旧数据后重试
-      try {
-        localStorage.removeItem(name)
-        localStorage.setItem(name, value)
-      } catch (e2) {
-        console.error('[TaskStore] Failed to write even after cleanup:', e2)
-      }
-    }
-  },
-  removeItem: (name) => {
-    try {
-      localStorage.removeItem(name)
-    } catch (e) {
-      console.warn('[TaskStore] Failed to remove from localStorage:', e)
-    }
-  },
+    const byteArray = new Uint8Array(byteNumbers)
+    
+    // 创建 Blob 和 URL
+    const blob = new Blob([byteArray], { type: mimeType })
+    return URL.createObjectURL(blob)
+  } catch (e) {
+    console.error('[TaskStore] Failed to convert base64 to blob URL:', e)
+    return base64
+  }
 }
 
 export type TaskType = 'camera' | 'studio' | 'edit'
@@ -217,11 +212,12 @@ export const useGenerationTaskStore = create<GenerationTaskState>()(
     }),
     {
       name: 'generation-task-storage',
-      storage: createJSONStorage(() => safeLocalStorage),
+      // 使用 IndexedDB 替代 localStorage（支持更大存储，不会 QuotaExceeded）
+      storage: createJSONStorage(() => indexedDBStorage),
       partialize: (state) => ({
-        // 只持久化 pending/generating 的任务，不持久化 completed（已同步到 generations）
+        // 持久化所有未完成的任务（不限制数量）
         tasks: state.tasks
-          .filter(t => t.status === 'pending' || t.status === 'generating')
+          .filter(t => t.status === 'pending' || t.status === 'generating' || t.status === 'failed')
           .map(t => ({
             id: t.id,
             type: t.type,
@@ -229,17 +225,19 @@ export const useGenerationTaskStore = create<GenerationTaskState>()(
             createdAt: t.createdAt,
             expectedImageCount: t.expectedImageCount,
             error: t.error,
-            // 不存储 base64 图片数据
-            inputImageUrl: t.inputImageUrl?.startsWith('data:') ? '[base64]' : t.inputImageUrl,
+            // 不存储图片数据（base64 和 blob URL 都不存储）
+            inputImageUrl: (t.inputImageUrl?.startsWith('data:') || t.inputImageUrl?.startsWith('blob:')) 
+              ? '[image]' : t.inputImageUrl,
             outputImageUrls: [],
-            // 只保留 pending/generating 状态的 imageSlots（不含图片）
-            imageSlots: t.imageSlots
-              ?.filter(slot => slot.status === 'pending' || slot.status === 'generating')
-              .map(slot => ({
-                index: slot.index,
-                status: slot.status,
-                // 不存储图片 URL
-              })),
+            // 保留所有 imageSlots 的状态，但不存储图片
+            imageSlots: t.imageSlots?.map(slot => ({
+              index: slot.index,
+              status: slot.status,
+              modelType: slot.modelType,
+              genMode: slot.genMode,
+              error: slot.error,
+              // 不存储图片 URL（blob URL 刷新后会失效）
+            })),
             // 不存储 params 中的图片数据
             params: t.params ? {
               ...t.params,
@@ -249,7 +247,7 @@ export const useGenerationTaskStore = create<GenerationTaskState>()(
               backgroundImage: undefined,
             } : undefined,
           }))
-          .slice(0, 5) // 最多保留5个进行中的任务
+        // 不限制任务数量，IndexedDB 可以存储更多数据
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true)

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
-import { Download, Heart, X, Wand2, Camera, Users, Home, ZoomIn, Loader2, Lightbulb, RefreshCw, Trash2, Package, FolderPlus, ChevronDown } from "lucide-react"
+import { Download, Heart, X, Wand2, Camera, Users, Home, ZoomIn, Loader2, Lightbulb, RefreshCw, Trash2, Package, FolderPlus, ChevronDown, Check } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useGenerationTaskStore, GenerationTask, ImageSlot } from "@/stores/generationTaskStore"
@@ -1115,15 +1115,20 @@ function ImageSlotCard({ task, slot, slotIndex, onImageClick }: {
   const isStudio = task.type === 'studio'
   const isEdit = task.type === 'edit'
   
-  // 已完成且有图片，直接显示结果
-  if (slot.status === 'completed' && slot.imageUrl) {
+  // 检查图片 URL 是否有效（排除占位符和 blob URL 刷新后失效的情况）
+  const hasValidImageUrl = slot.imageUrl && 
+    !slot.imageUrl.startsWith('[') && 
+    (slot.imageUrl.startsWith('http') || slot.imageUrl.startsWith('blob:') || slot.imageUrl.startsWith('data:'))
+  
+  // 已完成且有有效图片，直接显示结果
+  if (slot.status === 'completed' && hasValidImageUrl) {
     return (
       <div 
         className="group relative aspect-[4/5] bg-zinc-100 rounded-xl overflow-hidden shadow-sm cursor-pointer"
         onClick={() => onImageClick?.(slot.imageUrl!)}
       >
         <Image 
-          src={slot.imageUrl} 
+          src={slot.imageUrl!} 
           alt={`Generated ${slotIndex + 1}`}
           fill
           className="object-cover transition-transform group-hover:scale-105"
@@ -1163,6 +1168,31 @@ function ImageSlotCard({ task, slot, slotIndex, onImageClick }: {
           <p className="text-[10px] text-white truncate">
             {t.gallery.syncing || '同步中...'}
           </p>
+        </div>
+      </div>
+    )
+  }
+  
+  // 已完成但图片丢失（刷新后 blob URL 失效），显示"同步中"状态
+  if (slot.status === 'completed' && !hasValidImageUrl) {
+    return (
+      <div className="relative aspect-[4/5] bg-gradient-to-br from-green-50 to-emerald-100 rounded-xl overflow-hidden shadow-sm border-2 border-dashed border-green-300">
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-green-200 flex items-center justify-center mb-2">
+            <Check className="w-5 h-5 text-green-600" />
+          </div>
+          <p className="text-xs text-green-700 font-medium">{t.gallery.syncing || '同步中...'}</p>
+          <p className="text-[10px] text-green-600 mt-1">第 {slotIndex + 1} 张</p>
+        </div>
+        {/* 标签 */}
+        <div className="absolute top-2 left-2 flex gap-1">
+          {slot.modelType && (
+            <span className={`px-1.5 py-0.5 text-[9px] rounded font-medium ${
+              slot.modelType === 'pro' ? 'bg-green-500 text-white' : 'bg-orange-500 text-white'
+            }`}>
+              {slot.modelType === 'pro' ? 'Pro' : 'Flash'}
+            </span>
+          )}
         </div>
       </div>
     )
