@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import { Download, Heart, X, Wand2, Camera, Users, Home, ZoomIn, Loader2, Lightbulb, RefreshCw, Cloud, Trash2, Package, FolderPlus } from "lucide-react"
+import { Download, Heart, X, Wand2, Camera, Users, Home, ZoomIn, Loader2, Lightbulb, RefreshCw, Trash2, Package, FolderPlus } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useGenerationTaskStore, GenerationTask } from "@/stores/generationTaskStore"
@@ -86,8 +86,7 @@ export default function GalleryPage() {
     isFavorited, 
     deleteGeneration,
     addUserAsset,
-    isSyncing: storeSyncing, 
-    lastSyncAt 
+    isSyncing: storeSyncing,
   } = useAssetStore()
   
   const { isSyncing: authSyncing } = useAuth()
@@ -308,15 +307,9 @@ export default function GalleryPage() {
             <Image src="/logo.png" alt="Brand Camera" width={28} height={28} className="rounded" />
             <span className="font-semibold text-lg text-zinc-900">图库</span>
             {isSyncing && (
-              <span className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-600 text-xs rounded-full">
+              <span className="flex items-center gap-1 px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-600 text-xs font-medium rounded-full">
                 <RefreshCw className="w-3 h-3 animate-spin" />
                 同步中
-              </span>
-            )}
-            {!isSyncing && lastSyncAt && (
-              <span className="flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-600 text-xs rounded-full">
-                <Cloud className="w-3 h-3" />
-                已同步
               </span>
             )}
           </div>

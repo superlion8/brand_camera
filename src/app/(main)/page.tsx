@@ -8,6 +8,7 @@ import { useTranslation } from "@/stores/languageStore"
 import { UserMenu } from "@/components/shared/UserMenu"
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher"
 import { QuotaIndicator } from "@/components/shared/QuotaIndicator"
+import { SyncIndicator } from "@/components/shared/SyncIndicator"
 import { BeforeAfterSlider } from "@/components/shared/BeforeAfterSlider"
 
 // Supabase Storage base URL for homepage images
@@ -111,6 +112,7 @@ export default function HomePage() {
             <h1 className="text-lg font-bold text-zinc-900">{t.common.appName}</h1>
           </div>
           <div className="flex items-center gap-2">
+            <SyncIndicator />
             <QuotaIndicator />
             <LanguageSwitcher />
             <UserMenu />

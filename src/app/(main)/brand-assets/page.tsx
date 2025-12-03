@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react"
 import Image from "next/image"
-import { Plus, Trash2, Users, Image as ImageIcon, Package, Upload, Home, Pin, X, ZoomIn, RefreshCw, Cloud } from "lucide-react"
+import { Plus, Trash2, Users, Image as ImageIcon, Package, Upload, Home, Pin, X, ZoomIn, RefreshCw } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { Asset, AssetType } from "@/types"
@@ -52,7 +52,6 @@ export default function BrandAssetsPage() {
     isPresetPinned,
     _hasHydrated,
     isSyncing: storeSyncing,
-    lastSyncAt,
   } = useAssetStore()
   
   const isSyncing = authSyncing || storeSyncing
@@ -160,17 +159,11 @@ export default function BrandAssetsPage() {
             <div className="flex items-center gap-2 ml-2">
               <Image src="/logo.png" alt="Brand Camera" width={28} height={28} className="rounded" />
               <span className="font-semibold text-lg text-zinc-900">品牌资产</span>
-              {/* Syncing indicator */}
+              {/* Syncing indicator - only show when actively syncing */}
               {isSyncing && (
-                <span className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-600 text-xs rounded-full">
+                <span className="flex items-center gap-1 px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-600 text-xs font-medium rounded-full">
                   <RefreshCw className="w-3 h-3 animate-spin" />
                   同步中
-                </span>
-              )}
-              {!isSyncing && lastSyncAt && (
-                <span className="flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-600 text-xs rounded-full">
-                  <Cloud className="w-3 h-3" />
-                  已同步
                 </span>
               )}
             </div>
