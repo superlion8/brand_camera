@@ -60,7 +60,14 @@ export function UserMenu() {
   }
 
   if (!user) {
-    return null
+    return (
+      <button
+        onClick={() => router.push('/login')}
+        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-full transition-colors"
+      >
+        {t.user.pleaseLogin}
+      </button>
+    )
   }
 
   const avatarUrl = user.user_metadata?.avatar_url

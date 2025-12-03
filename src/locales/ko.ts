@@ -237,6 +237,7 @@ export const ko: Translations = {
   user: {
     settings: "설정",
     logout: "로그아웃",
+    pleaseLogin: "로그인",
     debugMode: "디버그 모드",
     debugModeDesc: "생성 파라미터 표시",
     debugModeEnabled: "디버그 모드 활성화",

@@ -237,6 +237,7 @@ export const en: Translations = {
   user: {
     settings: "Settings",
     logout: "Logout",
+    pleaseLogin: "Login",
     debugMode: "Debug Mode",
     debugModeDesc: "Show generation parameters",
     debugModeEnabled: "Debug mode enabled",

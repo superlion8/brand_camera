@@ -235,6 +235,7 @@ export const zh = {
   user: {
     settings: "设置",
     logout: "退出登录",
+    pleaseLogin: "请登录",
     debugMode: "调试模式",
     debugModeDesc: "显示图片生成参数",
     debugModeEnabled: "调试模式已开启",
