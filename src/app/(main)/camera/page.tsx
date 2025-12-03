@@ -434,38 +434,52 @@ export default function CameraPage() {
         let modelIsRandom = false
         let bgIsRandom = false
         
-        // If user didn't select model, pick a random one for this image
+        // If user didn't select model, pick a random one for this image (with retry)
         if (!modelForThisImage) {
-          const randomModel = getRandomModel()
-          const modelBase64 = await ensureBase64(randomModel.imageUrl)
-          if (!modelBase64) {
-            console.error(`Image ${index + 1}: Failed to load random model image`)
+          const MAX_RETRIES = 3
+          for (let retry = 0; retry < MAX_RETRIES; retry++) {
+            const randomModel = getRandomModel()
+            const modelBase64 = await ensureBase64(randomModel.imageUrl)
+            if (modelBase64) {
+              modelForThisImage = modelBase64
+              modelNameForThis = randomModel.name || t.common.model
+              modelUrlForThis = randomModel.imageUrl || ''
+              modelIsRandom = true
+              console.log(`Image ${index + 1}: Random model = ${randomModel.name}${retry > 0 ? ` (retry ${retry})` : ''}`)
+              break
+            }
+            console.warn(`Image ${index + 1}: Failed to load model ${randomModel.name}, retrying...`)
+          }
+          if (!modelForThisImage) {
+            console.error(`Image ${index + 1}: Failed to load model after ${MAX_RETRIES} retries`)
             updateImageSlot(taskId, index, { status: 'failed', error: '模特图片加载失败' })
             resolve({ index, success: false, error: '模特图片加载失败' })
             return
           }
-          modelForThisImage = modelBase64
-          modelNameForThis = randomModel.name || t.common.model
-          modelUrlForThis = randomModel.imageUrl || ''
-          modelIsRandom = true
-          console.log(`Image ${index + 1}: Random model = ${randomModel.name}`)
         }
         
-        // If user didn't select background, pick a random one for this image
+        // If user didn't select background, pick a random one for this image (with retry)
         if (!bgForThisImage) {
-          const randomBg = getRandomBackground()
-          const bgBase64 = await ensureBase64(randomBg.imageUrl)
-          if (!bgBase64) {
-            console.error(`Image ${index + 1}: Failed to load random background image`)
+          const MAX_RETRIES = 3
+          for (let retry = 0; retry < MAX_RETRIES; retry++) {
+            const randomBg = getRandomBackground()
+            const bgBase64 = await ensureBase64(randomBg.imageUrl)
+            if (bgBase64) {
+              bgForThisImage = bgBase64
+              bgNameForThis = randomBg.name || t.common.background
+              bgUrlForThis = randomBg.imageUrl || ''
+              bgIsRandom = true
+              console.log(`Image ${index + 1}: Random background = ${randomBg.name}${retry > 0 ? ` (retry ${retry})` : ''}`)
+              break
+            }
+            console.warn(`Image ${index + 1}: Failed to load background ${randomBg.name}, retrying...`)
+          }
+          if (!bgForThisImage) {
+            console.error(`Image ${index + 1}: Failed to load background after ${MAX_RETRIES} retries`)
             updateImageSlot(taskId, index, { status: 'failed', error: '背景图片加载失败' })
             resolve({ index, success: false, error: '背景图片加载失败' })
             return
           }
-          bgForThisImage = bgBase64
-          bgNameForThis = randomBg.name || t.common.background
-          bgUrlForThis = randomBg.imageUrl || ''
-          bgIsRandom = true
-          console.log(`Image ${index + 1}: Random background = ${randomBg.name}`)
         }
         
         // Save per-image model/background info with isRandom and isPreset flags
