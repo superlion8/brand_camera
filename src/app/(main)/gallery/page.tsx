@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import Image from "next/image"
-import { Download, Heart, X, Wand2, Camera, Users, Home, ZoomIn, Loader2, Lightbulb, RefreshCw, Trash2, Package, FolderPlus } from "lucide-react"
+import { Download, Heart, X, Wand2, Camera, Users, Home, ZoomIn, Loader2, Lightbulb, RefreshCw, Trash2, Package, FolderPlus, ChevronDown } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useGenerationTaskStore, GenerationTask } from "@/stores/generationTaskStore"
@@ -77,6 +77,13 @@ export default function GalleryPage() {
   const [showSaveMenu, setShowSaveMenu] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null)
   
+  // Pull to refresh states
+  const [pullDistance, setPullDistance] = useState(0)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const touchStartY = useRef(0)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const PULL_THRESHOLD = 80
+  
   const { 
     generations, 
     favorites, 
@@ -88,9 +95,10 @@ export default function GalleryPage() {
     deleteGenerationImage,
     addUserAsset,
     isSyncing: storeSyncing,
+    syncWithCloud,
   } = useAssetStore()
   
-  const { isSyncing: authSyncing } = useAuth()
+  const { isSyncing: authSyncing, user } = useAuth()
   const isSyncing = authSyncing || storeSyncing
   const { tasks, removeTask } = useGenerationTaskStore()
   const { debugMode } = useSettingsStore()
@@ -272,6 +280,48 @@ export default function GalleryPage() {
     }
   }
   
+  // Pull to refresh handlers
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (scrollContainerRef.current?.scrollTop === 0) {
+      touchStartY.current = e.touches[0].clientY
+    }
+  }, [])
+  
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (isRefreshing) return
+    if (scrollContainerRef.current?.scrollTop !== 0) {
+      setPullDistance(0)
+      return
+    }
+    
+    const currentY = e.touches[0].clientY
+    const diff = currentY - touchStartY.current
+    
+    if (diff > 0) {
+      // Apply resistance - the further you pull, the harder it gets
+      const resistance = Math.min(diff * 0.4, 120)
+      setPullDistance(resistance)
+    }
+  }, [isRefreshing])
+  
+  const handleTouchEnd = useCallback(async () => {
+    if (pullDistance >= PULL_THRESHOLD && !isRefreshing && user?.id) {
+      setIsRefreshing(true)
+      setPullDistance(PULL_THRESHOLD) // Keep at threshold during refresh
+      
+      try {
+        await syncWithCloud(user.id)
+      } catch (error) {
+        console.error('Refresh failed:', error)
+      } finally {
+        setIsRefreshing(false)
+        setPullDistance(0)
+      }
+    } else {
+      setPullDistance(0)
+    }
+  }, [pullDistance, isRefreshing, user?.id, syncWithCloud])
+  
   const handleDelete = async () => {
     if (!selectedItem) return
     
@@ -356,9 +406,47 @@ export default function GalleryPage() {
         </div>
       </div>
 
-      {/* Grid */}
-      <div className="flex-1 overflow-y-auto p-4 pb-24">
-        <div className="grid grid-cols-2 gap-3">
+      {/* Grid with Pull to Refresh */}
+      <div 
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto p-4 pb-24 relative"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* Pull to refresh indicator */}
+        <div 
+          className="absolute left-0 right-0 flex flex-col items-center justify-center transition-all duration-200 overflow-hidden"
+          style={{ 
+            height: pullDistance,
+            top: 0,
+            transform: `translateY(-${Math.max(0, PULL_THRESHOLD - pullDistance)}px)`
+          }}
+        >
+          <div className={`flex items-center gap-2 text-zinc-500 ${isRefreshing ? 'animate-pulse' : ''}`}>
+            {isRefreshing ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                <span className="text-sm">刷新中...</span>
+              </>
+            ) : pullDistance >= PULL_THRESHOLD ? (
+              <>
+                <RefreshCw className="w-5 h-5 text-blue-500" />
+                <span className="text-sm text-blue-500">松开刷新</span>
+              </>
+            ) : (
+              <>
+                <ChevronDown className="w-5 h-5" style={{ transform: `rotate(${Math.min(pullDistance / PULL_THRESHOLD * 180, 180)}deg)` }} />
+                <span className="text-sm">下拉刷新</span>
+              </>
+            )}
+          </div>
+        </div>
+        
+        <div 
+          className="grid grid-cols-2 gap-3 transition-transform duration-200"
+          style={{ transform: `translateY(${pullDistance}px)` }}
+        >
           {/* Show loading cards for active tasks */}
           {activeTab === "all" && activeTasks.map((task) => (
             <GeneratingCard key={task.id} task={task} />
