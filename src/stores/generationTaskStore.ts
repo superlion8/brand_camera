@@ -76,9 +76,6 @@ interface GenerationTaskState {
   cleanupStaleTasks: () => void
 }
 
-// 任务超时时间：5分钟（超过这个时间的 generating 任务会被标记为失败）
-const TASK_TIMEOUT_MS = 5 * 60 * 1000
-
 export const useGenerationTaskStore = create<GenerationTaskState>()(
   persist(
     (set, get) => ({
@@ -190,69 +187,27 @@ export const useGenerationTaskStore = create<GenerationTaskState>()(
         return get().tasks.filter(t => t.status === 'completed')
       },
       
-      // 清理超时的任务 - 页面刷新后，之前的 generating 任务已失去连接
+      // 清理任务（刷新后不再需要，因为不持久化了）
       cleanupStaleTasks: () => {
-        const now = Date.now()
-        set((state) => ({
-          tasks: state.tasks.map(task => {
-            // 如果任务正在生成中且已超时，标记为失败
-            if ((task.status === 'pending' || task.status === 'generating') && 
-                new Date(task.createdAt).getTime() + TASK_TIMEOUT_MS < now) {
-              console.log('[TaskStore] Marking stale task as failed:', task.id)
-              return {
-                ...task,
-                status: 'failed' as const,
-                error: '生成超时，请重试'
-              }
-            }
-            return task
-          })
-        }))
+        // 后端直接写入数据库，刷新后从云端拉取
+        // 不再需要清理超时任务
+        console.log('[TaskStore] cleanupStaleTasks: no-op (tasks not persisted)')
       },
     }),
     {
       name: 'generation-task-storage',
       // 使用 IndexedDB 替代 localStorage（支持更大存储，不会 QuotaExceeded）
       storage: createJSONStorage(() => indexedDBStorage),
-      partialize: (state) => ({
-        // 持久化所有未完成的任务（不限制数量）
-        tasks: state.tasks
-          .filter(t => t.status === 'pending' || t.status === 'generating' || t.status === 'failed')
-          .map(t => ({
-            id: t.id,
-            type: t.type,
-            status: t.status,
-            createdAt: t.createdAt,
-            expectedImageCount: t.expectedImageCount,
-            error: t.error,
-            // 不存储图片数据（base64 和 blob URL 都不存储）
-            inputImageUrl: (t.inputImageUrl?.startsWith('data:') || t.inputImageUrl?.startsWith('blob:')) 
-              ? '[image]' : t.inputImageUrl,
-            outputImageUrls: [],
-            // 保留所有 imageSlots 的状态，但不存储图片
-            imageSlots: t.imageSlots?.map(slot => ({
-              index: slot.index,
-              status: slot.status,
-              modelType: slot.modelType,
-              genMode: slot.genMode,
-              error: slot.error,
-              // 不存储图片 URL（blob URL 刷新后会失效）
-            })),
-            // 不存储 params 中的图片数据
-            params: t.params ? {
-              ...t.params,
-              inputImage: undefined,
-              productImage: undefined,
-              modelImage: undefined,
-              backgroundImage: undefined,
-            } : undefined,
-          }))
-        // 不限制任务数量，IndexedDB 可以存储更多数据
+      partialize: () => ({
+        // 不持久化任何 tasks
+        // 原因：
+        //   1. 后端现在直接写入数据库，刷新后从云端拉取结果
+        //   2. 避免显示"假的" loading 卡片（后端可能已完成或失败）
+        //   3. 刷新后：骨架屏 → syncWithCloud → 显示云端结果
+        tasks: [],
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true)
-        // 页面刷新后清理超时任务
-        state?.cleanupStaleTasks()
       },
     }
   )

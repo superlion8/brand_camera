@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
       if (taskId) {
         await markImageFailed({
           taskId,
-          userId,
+        userId,
           imageIndex: 0,
           error: 'RESOURCE_BUSY',
         })
@@ -215,7 +215,7 @@ export async function POST(request: NextRequest) {
       if (taskId) {
         const dbSuccess = await appendImageToGeneration({
           taskId,
-          userId,
+      userId,
           imageIndex: 0,
           imageUrl: storageUrl,
           modelType: result.model,
@@ -223,9 +223,9 @@ export async function POST(request: NextRequest) {
           prompt: prompt,
           taskType: 'edit',
           inputParams: {
-            modelStyle,
-            modelGender,
-            customPrompt,
+        modelStyle,
+        modelGender,
+        customPrompt,
             hasModel: !!modelImage,
             hasBackground: !!backgroundImage,
             hasVibe: !!vibeImage,
