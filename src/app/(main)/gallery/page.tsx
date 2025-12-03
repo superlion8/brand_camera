@@ -529,8 +529,8 @@ export default function GalleryPage() {
           })}
         </div>
         
-        {/* Load More Button */}
-        {hasMoreGenerations && displayedHistory.length > 0 && activeTab === "all" && (
+        {/* Load More Button - 所有tab都显示 */}
+        {hasMoreGenerations && displayedHistory.length > 0 && (
           <div className="flex justify-center py-4">
             <button
               onClick={() => loadMoreGenerations()}
