@@ -453,8 +453,7 @@ export default function CameraPage() {
           if (!modelForThisImage) {
             console.error(`Image ${index + 1}: Failed to load model after ${MAX_RETRIES} retries`)
             updateImageSlot(taskId, index, { status: 'failed', error: '模特图片加载失败' })
-            resolve({ index, success: false, error: '模特图片加载失败' })
-            return
+            return Promise.resolve({ index, success: false, error: '模特图片加载失败' })
           }
         }
         
@@ -477,8 +476,7 @@ export default function CameraPage() {
           if (!bgForThisImage) {
             console.error(`Image ${index + 1}: Failed to load background after ${MAX_RETRIES} retries`)
             updateImageSlot(taskId, index, { status: 'failed', error: '背景图片加载失败' })
-            resolve({ index, success: false, error: '背景图片加载失败' })
-            return
+            return Promise.resolve({ index, success: false, error: '背景图片加载失败' })
           }
         }
         
