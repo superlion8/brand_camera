@@ -1155,7 +1155,6 @@ function ImageSlotCard({ task, slot, slotIndex, onImageClick }: {
       removeFavorite(favoriteImageUrl)
     } else {
       addFavorite({
-        id: `${generationRecord.id}_${slotIndex}`,
         generationId: generationRecord.id,
         imageUrl: favoriteImageUrl,
         imageIndex: slotIndex,
