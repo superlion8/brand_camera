@@ -5,6 +5,8 @@ const DEFAULT_QUOTA = 30
 
 // GET - Get current user's quota (count from generations table)
 // Includes pending/processing tasks to deduct quota upfront
+// NOTE: Deleted generations (is_deleted=true) are still counted towards quota
+// This prevents users from hacking the quota system by deleting generations
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
   
@@ -17,6 +19,7 @@ export async function GET(request: NextRequest) {
   try {
     // Count total images from generations table
     // Include pending, processing, and completed tasks (deduct quota when task starts)
+    // Do NOT filter by is_deleted - deleted generations still count towards quota
     const { data: generations, error: genError } = await supabase
       .from('generations')
       .select('output_image_urls, total_images_count, status')
@@ -65,6 +68,7 @@ export async function GET(request: NextRequest) {
 
 // POST - Check quota before generation
 // Includes pending/processing tasks to deduct quota upfront
+// NOTE: Deleted generations (is_deleted=true) are still counted towards quota
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
   
@@ -85,6 +89,7 @@ export async function POST(request: NextRequest) {
     
     // Count total images from generations table
     // Include pending, processing, and completed tasks
+    // Do NOT filter by is_deleted - deleted generations still count towards quota
     const { data: generations, error: genError } = await supabase
       .from('generations')
       .select('output_image_urls, total_images_count, status')

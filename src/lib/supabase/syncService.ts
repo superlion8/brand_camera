@@ -297,10 +297,13 @@ export async function fetchGenerations(userId: string): Promise<Generation[]> {
   console.log('[Sync] Fetching generations for user_id:', userId)
   const supabase = getSupabase()
   
+  // Fetch only non-deleted generations (soft delete)
+  // is_deleted = false OR is_deleted IS NULL (for older records)
   const { data, error } = await supabase
     .from('generations')
     .select('*')
     .eq('user_id', userId)
+    .or('is_deleted.is.null,is_deleted.eq.false')
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -575,16 +578,24 @@ function mapGenerationRow(data: any): Generation {
 
 export async function deleteGeneration(userId: string, generationId: string): Promise<boolean> {
   const supabase = getSupabase()
+  
+  // Soft delete: mark as deleted instead of actually deleting
+  // This prevents users from hacking the quota system by deleting generations
   const { error } = await supabase
     .from('generations')
-    .delete()
+    .update({ 
+      is_deleted: true,
+      deleted_at: new Date().toISOString()
+    })
     .eq('id', generationId)
     .eq('user_id', userId)
 
   if (error) {
-    console.error('Error deleting generation:', error)
+    console.error('Error soft-deleting generation:', error)
     return false
   }
+  
+  console.log('[Sync] Soft-deleted generation:', generationId)
   return true
 }
 
