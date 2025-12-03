@@ -72,6 +72,65 @@ Negatives: exaggerated or distorted anatomy, fake portrait-mode blur, CGI/illust
   return prompt
 }
 
+// Edit page prompt builder - different from camera model prompt
+export const buildEditPrompt = (params: {
+  hasModel: boolean
+  modelStyle?: string
+  modelGender?: string
+  hasBackground: boolean
+  hasVibe: boolean
+}) => {
+  let prompt = ''
+  
+  if (params.hasModel) {
+    prompt = `take authentic photo of a new model that looks like the reference model, but do not have an exact same look.
+
+the new model shows the product in the input image, use instagram friendly composition, 要随意一点、有生活感.`
+  } else {
+    prompt = `design a suitable model for the product shown in the input image.`
+    
+    if (params.modelStyle && params.modelStyle !== 'auto') {
+      const styleMap: Record<string, string> = {
+        korean: 'Korean idol',
+        western: 'Western'
+      }
+      prompt += ` in a style of ${styleMap[params.modelStyle] || params.modelStyle}`
+    }
+    
+    if (params.modelGender) {
+      const genderMap: Record<string, string> = {
+        female: 'female',
+        male: 'male',
+        girl: 'young girl (child)',
+        boy: 'young boy (child)'
+      }
+      prompt += `, gender is ${genderMap[params.modelGender] || params.modelGender}`
+    }
+    
+    prompt += `. 模特要自然、有生活感，符合韩系社交媒体自然的审美。`
+  }
+
+  if (params.hasBackground) {
+    prompt += `
+
+the background should be consistent to the background reference image.`
+  }
+
+  if (params.hasVibe) {
+    prompt += `
+
+make the overall vibe consistent to the vibe reference image.`
+  }
+
+  prompt += `
+
+the color/size/design/detail of the product must be exactly same with the input image.
+
+negatives: exaggerated or distorted anatomy, fake portrait-mode blur, CGI/illustration look.`
+
+  return prompt
+}
+
 export const EDIT_PROMPT_PREFIX = `You are a professional image editor. Based on the user's requirements, edit the provided image while maintaining the core elements.
 
 User requirements: `

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getGenAIClient, extractImage, safetySettings } from '@/lib/genai'
-import { buildModelPrompt, EDIT_PROMPT_PREFIX } from '@/prompts'
+import { buildEditPrompt, EDIT_PROMPT_PREFIX } from '@/prompts'
 import { stripBase64Prefix, generateId } from '@/lib/utils'
 import { saveGenerationServer } from '@/lib/supabase/generations-server'
 import { uploadGeneratedImageServer, uploadInputImageServer } from '@/lib/supabase/storage-server'
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     if (customPrompt) {
       prompt = EDIT_PROMPT_PREFIX + customPrompt
     } else {
-      prompt = buildModelPrompt({
+      prompt = buildEditPrompt({
         hasModel: !!modelImage,
         modelStyle,
         modelGender,
