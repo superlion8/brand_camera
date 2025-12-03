@@ -6,7 +6,7 @@ import Image from "next/image"
 import { 
   Home, Upload, Trash2, RefreshCw, Loader2, 
   Users, Image as ImageIcon, Palette, Package, Check, X,
-  ChevronLeft, FolderOpen, AlertCircle
+  ChevronLeft, FolderOpen, AlertCircle, ZoomIn
 } from "lucide-react"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { motion, AnimatePresence } from "framer-motion"
@@ -16,10 +16,10 @@ const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map
 
 // Asset categories
 const CATEGORIES = [
-  { id: 'models', label: '模特 (随机)', folder: 'models', icon: Users, color: 'bg-blue-500' },
-  { id: 'backgrounds', label: '背景 (随机)', folder: 'backgrounds', icon: ImageIcon, color: 'bg-green-500' },
-  { id: 'visible-models', label: '模特 (展示)', folder: 'models/visible', icon: Users, color: 'bg-blue-400' },
-  { id: 'visible-backgrounds', label: '背景 (展示)', folder: 'backgrounds/visible', icon: ImageIcon, color: 'bg-green-400' },
+  { id: 'models', label: '模特（不可见）', folder: 'models', icon: Users, color: 'bg-blue-500', excludeSubfolders: true },
+  { id: 'backgrounds', label: '背景（不可见）', folder: 'backgrounds', icon: ImageIcon, color: 'bg-green-500', excludeSubfolders: true },
+  { id: 'visible-models', label: '模特（展示）', folder: 'models/visible', icon: Users, color: 'bg-blue-400' },
+  { id: 'visible-backgrounds', label: '背景（展示）', folder: 'backgrounds/visible', icon: ImageIcon, color: 'bg-green-400' },
   { id: 'vibes', label: '氛围图', folder: 'vibes', icon: Palette, color: 'bg-purple-500' },
   { id: 'products', label: '商品示例', folder: 'products', icon: Package, color: 'bg-amber-500' },
 ]
@@ -42,6 +42,7 @@ export default function PresetsManagement() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set())
   const [isDeleting, setIsDeleting] = useState(false)
+  const [previewImage, setPreviewImage] = useState<StorageFile | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Auth check
@@ -64,7 +65,8 @@ export default function PresetsManagement() {
     setIsLoading(true)
     setError(null)
     try {
-      const response = await fetch(`/api/admin/presets?folder=${activeCategory.folder}`)
+      const excludeSubfolders = activeCategory.excludeSubfolders ? '&excludeSubfolders=true' : ''
+      const response = await fetch(`/api/admin/presets?folder=${activeCategory.folder}${excludeSubfolders}`)
       if (!response.ok) {
         throw new Error('Failed to fetch files')
       }
@@ -154,7 +156,8 @@ export default function PresetsManagement() {
     }
   }
 
-  const toggleSelectFile = (fileName: string) => {
+  const toggleSelectFile = (fileName: string, e: React.MouseEvent) => {
+    e.stopPropagation()
     const newSelected = new Set(selectedFiles)
     if (newSelected.has(fileName)) {
       newSelected.delete(fileName)
@@ -170,6 +173,10 @@ export default function PresetsManagement() {
     } else {
       setSelectedFiles(new Set(files.map(f => f.name)))
     }
+  }
+
+  const handlePreview = (file: StorageFile) => {
+    setPreviewImage(file)
   }
 
   if (authLoading) {
@@ -230,14 +237,14 @@ export default function PresetsManagement() {
                   setActiveCategory(category)
                   setSelectedFiles(new Set())
                 }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all text-sm ${
                   isActive
                     ? 'bg-zinc-900 text-white'
                     : 'bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50'
                 }`}
               >
-                <div className={`w-6 h-6 rounded-md ${category.color} flex items-center justify-center`}>
-                  <Icon className="w-3.5 h-3.5 text-white" />
+                <div className={`w-5 h-5 rounded ${category.color} flex items-center justify-center`}>
+                  <Icon className="w-3 h-3 text-white" />
                 </div>
                 {category.label}
               </button>
@@ -248,15 +255,15 @@ export default function PresetsManagement() {
         {/* Action Bar */}
         <div className="bg-white rounded-xl border border-zinc-200 p-4 mb-6">
           <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               {/* Upload Button */}
-              <label className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg cursor-pointer transition-colors">
+              <label className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg cursor-pointer transition-colors text-sm">
                 {isUploading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <Upload className="w-4 h-4" />
                 )}
-                <span>{isUploading ? '上传中...' : '上传文件'}</span>
+                <span>{isUploading ? '上传中...' : '上传'}</span>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -272,7 +279,7 @@ export default function PresetsManagement() {
               <button
                 onClick={handleDelete}
                 disabled={selectedFiles.size === 0 || isDeleting}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
                   selectedFiles.size > 0
                     ? 'bg-red-600 hover:bg-red-700 text-white'
                     : 'bg-zinc-100 text-zinc-400 cursor-not-allowed'
@@ -290,16 +297,15 @@ export default function PresetsManagement() {
               <button
                 onClick={fetchFiles}
                 disabled={isLoading}
-                className="flex items-center gap-2 px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-3 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-lg transition-colors text-sm"
               >
                 <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-                <span>刷新</span>
               </button>
             </div>
 
-            <div className="flex items-center gap-4 text-sm text-zinc-500">
-              <span>文件夹: <code className="bg-zinc-100 px-2 py-0.5 rounded">presets/{activeCategory.folder}</code></span>
-              <span>共 {files.length} 个文件</span>
+            <div className="flex items-center gap-3 text-xs text-zinc-500">
+              <span><code className="bg-zinc-100 px-1.5 py-0.5 rounded">presets/{activeCategory.folder}</code></span>
+              <span>{files.length} 个</span>
             </div>
           </div>
 
@@ -310,7 +316,7 @@ export default function PresetsManagement() {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                className="mt-4 flex items-center gap-2 text-red-600 bg-red-50 px-4 py-2 rounded-lg"
+                className="mt-4 flex items-center gap-2 text-red-600 bg-red-50 px-4 py-2 rounded-lg text-sm"
               >
                 <AlertCircle className="w-4 h-4" />
                 {error}
@@ -321,7 +327,7 @@ export default function PresetsManagement() {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                className="mt-4 flex items-center gap-2 text-green-600 bg-green-50 px-4 py-2 rounded-lg"
+                className="mt-4 flex items-center gap-2 text-green-600 bg-green-50 px-4 py-2 rounded-lg text-sm"
               >
                 <Check className="w-4 h-4" />
                 {successMessage}
@@ -349,7 +355,7 @@ export default function PresetsManagement() {
           </div>
         )}
 
-        {/* Files Grid */}
+        {/* Files Grid - 3 columns on mobile */}
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
@@ -358,49 +364,57 @@ export default function PresetsManagement() {
           <div className="flex flex-col items-center justify-center py-20 text-zinc-400">
             <FolderOpen className="w-16 h-16 mb-4" />
             <p className="text-lg font-medium">此文件夹为空</p>
-            <p className="text-sm">点击"上传文件"添加新资源</p>
+            <p className="text-sm">点击"上传"添加新资源</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2">
             {files.map((file) => (
               <motion.div
                 key={file.name}
                 layout
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className={`relative group rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
+                className={`relative group rounded-lg overflow-hidden border-2 transition-all ${
                   selectedFiles.has(file.name)
                     ? 'border-blue-500 ring-2 ring-blue-200'
                     : 'border-zinc-200 hover:border-zinc-300'
                 }`}
-                onClick={() => toggleSelectFile(file.name)}
               >
-                <div className="aspect-square relative bg-zinc-100">
+                {/* Image - click to preview */}
+                <div 
+                  className="aspect-square relative bg-zinc-100 cursor-pointer"
+                  onClick={() => handlePreview(file)}
+                >
                   <Image
                     src={file.url}
                     alt={file.name}
                     fill
                     className="object-cover"
-                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
+                    sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, (max-width: 1024px) 20vw, 12vw"
                   />
                   
-                  {/* Selection indicator */}
-                  <div className={`absolute top-2 left-2 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-                    selectedFiles.has(file.name)
-                      ? 'bg-blue-600 border-blue-600'
-                      : 'bg-white/80 border-zinc-300 opacity-0 group-hover:opacity-100'
-                  }`}>
-                    {selectedFiles.has(file.name) && <Check className="w-4 h-4 text-white" />}
+                  {/* Zoom icon on hover */}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                    <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                  
+                  {/* Selection checkbox */}
+                  <div 
+                    className={`absolute top-1 left-1 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all cursor-pointer ${
+                      selectedFiles.has(file.name)
+                        ? 'bg-blue-600 border-blue-600'
+                        : 'bg-white/90 border-zinc-300 opacity-0 group-hover:opacity-100'
+                    }`}
+                    onClick={(e) => toggleSelectFile(file.name, e)}
+                  >
+                    {selectedFiles.has(file.name) && <Check className="w-3 h-3 text-white" />}
                   </div>
                 </div>
                 
-                {/* File info */}
-                <div className="p-2 bg-white">
-                  <p className="text-xs font-medium text-zinc-700 truncate" title={file.name}>
+                {/* File name - compact */}
+                <div className="px-1.5 py-1 bg-white">
+                  <p className="text-[10px] font-medium text-zinc-600 truncate" title={file.name}>
                     {file.name}
-                  </p>
-                  <p className="text-xs text-zinc-400">
-                    {(file.size / 1024).toFixed(1)} KB
                   </p>
                 </div>
               </motion.div>
@@ -408,7 +422,68 @@ export default function PresetsManagement() {
           </div>
         )}
       </div>
+
+      {/* Image Preview Modal */}
+      <AnimatePresence>
+        {previewImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+            onClick={() => setPreviewImage(null)}
+          >
+            {/* Close button */}
+            <button
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+              onClick={() => setPreviewImage(null)}
+            >
+              <X className="w-6 h-6 text-white" />
+            </button>
+
+            {/* Image info */}
+            <div className="absolute top-4 left-4 text-white">
+              <p className="font-medium">{previewImage.name}</p>
+              <p className="text-sm text-white/70">{(previewImage.size / 1024).toFixed(1)} KB</p>
+            </div>
+
+            {/* Image */}
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="relative max-w-4xl max-h-[80vh] w-full h-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Image
+                src={previewImage.url}
+                alt={previewImage.name}
+                fill
+                className="object-contain"
+                sizes="100vw"
+                priority
+              />
+            </motion.div>
+
+            {/* Select/Deselect button */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  toggleSelectFile(previewImage.name, e)
+                }}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  selectedFiles.has(previewImage.name)
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-zinc-800'
+                }`}
+              >
+                {selectedFiles.has(previewImage.name) ? '✓ 已选中' : '选中'}
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
-

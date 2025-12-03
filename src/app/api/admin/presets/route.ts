@@ -15,12 +15,13 @@ export async function GET(request: NextRequest) {
   }
 
   const folder = request.nextUrl.searchParams.get('folder') || 'models'
+  const excludeSubfolders = request.nextUrl.searchParams.get('excludeSubfolders') === 'true'
   
   try {
     const { data, error } = await supabase.storage
       .from('presets')
       .list(folder, {
-        limit: 500,
+        limit: 1000,
         sortBy: { column: 'name', order: 'asc' },
       })
 
@@ -29,9 +30,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    // Filter out folders and get public URLs
+    // Filter out folders (folders don't have id) and get public URLs
+    // When excludeSubfolders is true, we're already only getting direct files
+    // because Supabase list() doesn't recurse into subfolders
     const files = (data || [])
-      .filter(item => item.id) // Only files have id
+      .filter(item => item.id) // Only files have id, folders don't
       .map(item => {
         const { data: urlData } = supabase.storage
           .from('presets')
