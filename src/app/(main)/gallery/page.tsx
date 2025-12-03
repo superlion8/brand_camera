@@ -107,11 +107,24 @@ export default function GalleryPage() {
     return { label: t.gallery.editRoom, color: 'bg-purple-500' }
   }
   
-  // Get active tasks (pending/generating) - show loading cards for these
-  const activeTasks = tasks.filter(t => t.status === 'pending' || t.status === 'generating')
+  // Get tasks that need to show imageSlot cards
+  // Include: pending, generating, AND completed tasks that haven't been synced to generations yet
+  const activeTasks = tasks.filter(t => {
+    // Always show pending/generating
+    if (t.status === 'pending' || t.status === 'generating') return true
+    // For completed tasks with imageSlots, show until synced to generations
+    if (t.status === 'completed' && t.imageSlots && t.imageSlots.length > 0) {
+      // Check if this task's images are already in generations
+      const isSynced = generations.some(gen => 
+        t.outputImageUrls.some(url => url && gen.outputImageUrls?.includes(url))
+      )
+      return !isSynced // Show if not yet synced
+    }
+    return false
+  })
   
-  // Get completed tasks that might not yet be in generations store
-  const completedTasks = tasks.filter(t => t.status === 'completed')
+  // Get completed tasks that might not yet be in generations store (legacy - no imageSlots)
+  const completedTasks = tasks.filter(t => t.status === 'completed' && !t.imageSlots)
   
   // Track which completed tasks have their generations in the store
   // We need to keep showing completed task cards until generation is definitely visible
@@ -454,16 +467,14 @@ export default function GalleryPage() {
           {/* Show cards for active tasks - each imageSlot gets its own card */}
           {activeTab === "all" && activeTasks.map((task) => (
             task.imageSlots && task.imageSlots.length > 0 
-              ? task.imageSlots
-                  .filter(slot => slot.status !== 'completed') // 只显示未完成的
-                  .map((slot) => (
-                    <ImageSlotCard 
-                      key={`${task.id}-slot-${slot.index}`} 
-                      task={task} 
-                      slot={slot}
-                      slotIndex={slot.index}
-                    />
-                  ))
+              ? task.imageSlots.map((slot) => (
+                  <ImageSlotCard 
+                    key={`${task.id}-slot-${slot.index}`} 
+                    task={task} 
+                    slot={slot}
+                    slotIndex={slot.index}
+                  />
+                ))
               : <GeneratingCard key={task.id} task={task} />
           ))}
           
@@ -1047,15 +1058,45 @@ export default function GalleryPage() {
   )
 }
 
-// Single image slot card - shows individual image status (only loading/error, not completed)
+// Single image slot card - shows individual image status
 function ImageSlotCard({ task, slot, slotIndex }: { task: GenerationTask; slot: ImageSlot; slotIndex: number }) {
   const { t } = useTranslation()
   const isStudio = task.type === 'studio'
   const isEdit = task.type === 'edit'
   
-  // 已完成的图片不在这里显示，等任务全部完成后由 generations store 统一显示
-  if (slot.status === 'completed') {
-    return null
+  // 已完成且有图片，直接显示结果
+  if (slot.status === 'completed' && slot.imageUrl) {
+    return (
+      <div className="relative aspect-[4/5] bg-zinc-100 rounded-xl overflow-hidden shadow-sm">
+        <Image 
+          src={slot.imageUrl} 
+          alt={`Generated ${slotIndex + 1}`}
+          fill
+          className="object-cover"
+        />
+        {/* 显示模型类型和生成模式标签 */}
+        <div className="absolute top-2 left-2 flex gap-1">
+          {slot.modelType && (
+            <span className={`px-1.5 py-0.5 text-[9px] rounded font-medium ${
+              slot.modelType === 'pro' 
+                ? 'bg-green-500 text-white' 
+                : 'bg-orange-500 text-white'
+            }`}>
+              {slot.modelType === 'pro' ? 'Pro' : 'Flash'}
+            </span>
+          )}
+          {slot.genMode && (
+            <span className={`px-1.5 py-0.5 text-[9px] rounded font-medium ${
+              slot.genMode === 'simple' 
+                ? 'bg-blue-500 text-white' 
+                : 'bg-purple-500 text-white'
+            }`}>
+              {slot.genMode === 'simple' ? '极简' : '扩展'}
+            </span>
+          )}
+        </div>
+      </div>
+    )
   }
   
   // 如果失败，显示错误
