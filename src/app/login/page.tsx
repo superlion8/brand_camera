@@ -11,7 +11,7 @@ import { useLanguageStore } from "@/stores/languageStore"
 type AuthMode = "select" | "email-otp" | "email-password" | "verify-otp"
 
 function LoginContent() {
-  const t = useLanguageStore(state => state.translations)
+  const t = useLanguageStore(state => state.t)
   const router = useRouter()
   const searchParams = useSearchParams()
   // 验证重定向URL，防止钓鱼攻击

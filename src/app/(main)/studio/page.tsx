@@ -98,7 +98,7 @@ type StudioMode = 'main' | 'camera' | 'processing' | 'results'
 export default function StudioPage() {
   const router = useRouter()
   const { user } = useAuth()
-  const t = useLanguageStore(state => state.translations)
+  const t = useLanguageStore(state => state.t)
   
   // Build light types with translations
   const LIGHT_TYPES = LIGHT_TYPE_IDS.map(id => ({

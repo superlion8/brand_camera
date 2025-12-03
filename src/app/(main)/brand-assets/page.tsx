@@ -25,7 +25,7 @@ type SourceTab = "user" | "preset"
 
 export default function BrandAssetsPage() {
   const router = useRouter()
-  const t = useLanguageStore(state => state.translations)
+  const t = useLanguageStore(state => state.t)
   
   // Type tabs with translated labels
   const typeTabs = [
