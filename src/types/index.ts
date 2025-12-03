@@ -50,6 +50,9 @@ export interface GenerationParams {
   lightDirection?: string
   lightColor?: string
   aspectRatio?: string
+  // User selection tracking (for model studio)
+  modelIsUserSelected?: boolean  // true = user selected, false = system random
+  bgIsUserSelected?: boolean     // true = user selected, false = system random
 }
 
 export interface Collection {
