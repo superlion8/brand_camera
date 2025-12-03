@@ -303,7 +303,7 @@ export default function GeneralEditPage() {
                   className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <Upload className="w-4 h-4 text-zinc-500" />
-                  <span className="text-xs text-zinc-700">相册</span>
+                  <span className="text-xs text-zinc-700">{t.camera.album}</span>
                 </button>
                 
                 {/* Asset library */}
@@ -366,7 +366,7 @@ export default function GeneralEditPage() {
               <label className="text-base font-semibold text-zinc-900">{t.edit.describeEdit}</label>
             </div>
             <textarea
-              placeholder="例如：把裤子换成蓝色牛仔裤、去掉图片背后的路人...."
+              placeholder={t.edit.editPlaceholder}
               value={customPrompt}
               onChange={(e) => setCustomPrompt(e.target.value)}
               className="w-full min-h-[120px] px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-300 text-sm leading-relaxed"
