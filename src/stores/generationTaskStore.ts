@@ -1,7 +1,40 @@
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
+import { persist, createJSONStorage, StateStorage } from 'zustand/middleware'
 import { GenerationParams } from '@/types'
 import { generateId } from '@/lib/utils'
+
+// 安全的 localStorage wrapper，防止 QuotaExceededError 阻塞应用
+const safeLocalStorage: StateStorage = {
+  getItem: (name) => {
+    try {
+      return localStorage.getItem(name)
+    } catch (e) {
+      console.warn('[TaskStore] Failed to read from localStorage:', e)
+      return null
+    }
+  },
+  setItem: (name, value) => {
+    try {
+      localStorage.setItem(name, value)
+    } catch (e) {
+      console.warn('[TaskStore] Failed to write to localStorage (quota exceeded?):', e)
+      // 尝试清理旧数据后重试
+      try {
+        localStorage.removeItem(name)
+        localStorage.setItem(name, value)
+      } catch (e2) {
+        console.error('[TaskStore] Failed to write even after cleanup:', e2)
+      }
+    }
+  },
+  removeItem: (name) => {
+    try {
+      localStorage.removeItem(name)
+    } catch (e) {
+      console.warn('[TaskStore] Failed to remove from localStorage:', e)
+    }
+  },
+}
 
 export type TaskType = 'camera' | 'studio' | 'edit'
 
@@ -116,7 +149,7 @@ export const useGenerationTaskStore = create<GenerationTaskState>()(
     }),
     {
       name: 'generation-task-storage',
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => safeLocalStorage),
       partialize: (state) => ({
         // 持久化任务状态，但不存储 base64 图片数据（太大会超限）
         tasks: state.tasks
