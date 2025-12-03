@@ -276,6 +276,7 @@ export const zh = {
   imageActions: {
     longPressSave: "长按图片保存",
     longPressSaveZoom: "长按保存 · 双指缩放 · 双击重置",
+    pinchToZoom: "双指缩放 · 双击重置 · 点右上角下载",
   },
   
   // Beta tag

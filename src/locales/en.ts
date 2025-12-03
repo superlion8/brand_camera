@@ -278,6 +278,7 @@ export const en: Translations = {
   imageActions: {
     longPressSave: "Long press to save",
     longPressSaveZoom: "Long press to save · Pinch to zoom · Double tap to reset",
+    pinchToZoom: "Pinch to zoom · Double tap to reset · Tap top-right to download",
   },
   
   // Beta tag

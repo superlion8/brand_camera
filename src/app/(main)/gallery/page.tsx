@@ -1010,12 +1010,40 @@ export default function GalleryPage() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[60] bg-black flex items-center justify-center"
           >
-            <button
-              onClick={() => setFullscreenImage(null)}
-              className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
-            >
-              <X className="w-6 h-6 text-white" />
-            </button>
+            {/* Top bar with close and download buttons */}
+            <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between">
+              <div /> {/* Spacer */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={async () => {
+                    if (!fullscreenImage) return
+                    try {
+                      const response = await fetch(fullscreenImage)
+                      const blob = await response.blob()
+                      const url = URL.createObjectURL(blob)
+                      const a = document.createElement('a')
+                      a.href = url
+                      a.download = `image-${Date.now()}.png`
+                      document.body.appendChild(a)
+                      a.click()
+                      document.body.removeChild(a)
+                      URL.revokeObjectURL(url)
+                    } catch (e) {
+                      console.error('Download failed:', e)
+                    }
+                  }}
+                  className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                >
+                  <Download className="w-5 h-5 text-white" />
+                </button>
+                <button
+                  onClick={() => setFullscreenImage(null)}
+                  className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                >
+                  <X className="w-6 h-6 text-white" />
+                </button>
+              </div>
+            </div>
             
             <TransformWrapper
               initialScale={1}
@@ -1050,7 +1078,7 @@ export default function GalleryPage() {
             </TransformWrapper>
             
             <div className="absolute bottom-8 left-0 right-0 text-center pointer-events-none">
-              <span className="text-white/60 text-sm">{t.imageActions.longPressSaveZoom}</span>
+              <span className="text-white/60 text-sm">{t.imageActions.pinchToZoom}</span>
             </div>
           </motion.div>
         )}

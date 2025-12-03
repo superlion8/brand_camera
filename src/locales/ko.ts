@@ -278,6 +278,7 @@ export const ko: Translations = {
   imageActions: {
     longPressSave: "길게 눌러 저장",
     longPressSaveZoom: "길게 눌러 저장 · 핀치하여 확대 · 더블 탭하여 리셋",
+    pinchToZoom: "핀치하여 확대 · 더블 탭하여 리셋 · 오른쪽 상단 탭하여 다운로드",
   },
   
   // Beta tag
