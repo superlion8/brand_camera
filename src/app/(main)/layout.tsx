@@ -1,4 +1,5 @@
 import { BottomNav } from "@/components/shared/BottomNav"
+import { UpdatePrompt } from "@/components/shared/UpdatePrompt"
 
 export default function MainLayout({
   children,
@@ -12,6 +13,7 @@ export default function MainLayout({
         {children}
       </div>
       <BottomNav />
+      <UpdatePrompt />
     </div>
   )
 }
