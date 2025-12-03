@@ -13,8 +13,8 @@ export function BottomNav() {
   const { t } = useTranslation()
   const { tasks } = useGenerationTaskStore()
   
-  // Check if there are any active (pending/processing) tasks
-  const hasActiveTasks = tasks.some(task => task.status === 'pending' || task.status === 'processing')
+  // Check if there are any active (pending/generating) tasks
+  const hasActiveTasks = tasks.some(task => task.status === 'pending' || task.status === 'generating')
   
   const tabs = [
     { id: "home", href: "/", label: t.nav.home, icon: Home },
