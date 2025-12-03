@@ -747,7 +747,7 @@ export default function AdminDashboard() {
                     <Download className="w-5 h-5 text-cyan-500" />
                     <span className="text-sm text-cyan-700">
                       {selectedTask.downloadedIndices.length} 次下载
-                      （第 {[...new Set(selectedTask.downloadedIndices)].map(i => i + 1).join(', ')} 张）
+                      （第 {Array.from(new Set(selectedTask.downloadedIndices)).map(i => i + 1).join(', ')} 张）
                     </span>
                   </div>
                 )}
