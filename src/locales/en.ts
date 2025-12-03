@@ -118,6 +118,7 @@ export const en: Translations = {
   // Edit Page
   edit: {
     title: "AI Edit Room",
+    subtitle: "Choose a tool to get started",
     editRoom: "Edit Room",
     describeEdit: "Describe your edits",
     editPlaceholder: "e.g.: Change pants to blue jeans, remove people in background...",
@@ -136,6 +137,7 @@ export const en: Translations = {
     comingExpression: "Expression Control",
     comingCamera: "Camera Control",
     comingSoon: "Coming Soon",
+    moreComingSoon: "More features in development...",
     moreFeatures: "More AI features coming...",
     backToTools: "Back to Tools",
     takePhoto: "Take Photo",

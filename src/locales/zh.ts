@@ -116,6 +116,7 @@ export const zh = {
   // Edit Page
   edit: {
     title: "AI 修图室",
+    subtitle: "选择工具开始创作",
     editRoom: "修图室",
     describeEdit: "描述你想要的修改",
     editPlaceholder: "例如：把裤子换成蓝色牛仔裤、去掉图片背后的路人....",
@@ -134,6 +135,7 @@ export const zh = {
     comingExpression: "表情控制",
     comingCamera: "镜头控制",
     comingSoon: "即将推出",
+    moreComingSoon: "更多功能开发中...",
     moreFeatures: "更多AI功能敬请期待...",
     backToTools: "返回工具",
     takePhoto: "拍照",

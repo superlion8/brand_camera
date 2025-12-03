@@ -2,9 +2,80 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { Wand2, Lightbulb, Home, Sparkles, ChevronRight } from "lucide-react"
+import { Wand2, Lightbulb, Home, ChevronRight, Layers } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useLanguageStore } from "@/stores/languageStore"
+import { motion } from "framer-motion"
+
+// Tool Card Component - 参考 Bcamui 设计
+interface ToolCardProps {
+  title: string
+  description: string
+  icon: React.ReactNode
+  image: string
+  color: string
+  href: string
+}
+
+function ToolCard({ title, description, icon, image, color, href }: ToolCardProps) {
+  return (
+    <Link href={href}>
+      <motion.div 
+        whileHover={{ y: -4 }}
+        whileTap={{ scale: 0.98 }}
+        className="relative h-44 rounded-[20px] overflow-hidden cursor-pointer shadow-sm border border-zinc-100 group"
+      >
+        {/* Background Image with zoom effect */}
+        <Image 
+          src={image} 
+          alt={title} 
+          fill
+          className="object-cover transition-transform duration-700 group-hover:scale-110" 
+        />
+        
+        {/* Color overlay */}
+        <div className={`absolute inset-0 opacity-70 mix-blend-multiply ${color}`} />
+        
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+
+        {/* Content */}
+        <div className="absolute inset-0 p-4 flex flex-col justify-between z-10">
+          {/* Icon */}
+          <div className="w-11 h-11 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shadow-lg">
+            {icon}
+          </div>
+          
+          {/* Text */}
+          <div>
+            <h3 className="text-xl font-bold text-white mb-1 drop-shadow-md">{title}</h3>
+            <p className="text-sm text-white/85 font-medium leading-snug drop-shadow-sm">{description}</p>
+          </div>
+        </div>
+
+        {/* Arrow Icon (visible on hover) */}
+        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+          <div className="w-9 h-9 rounded-full bg-white text-zinc-800 flex items-center justify-center shadow-lg">
+            <ChevronRight className="w-5 h-5" />
+          </div>
+        </div>
+      </motion.div>
+    </Link>
+  )
+}
+
+// Coming Soon Card Component
+function ComingSoonCard({ title, icon }: { title: string; icon: string }) {
+  return (
+    <motion.div
+      whileHover={{ scale: 1.02 }}
+      className="bg-white/80 backdrop-blur-sm border border-zinc-200/50 rounded-2xl p-4 flex items-center gap-3 opacity-70 hover:opacity-90 transition-opacity cursor-not-allowed"
+    >
+      <span className="text-2xl">{icon}</span>
+      <span className="text-sm font-medium text-zinc-500">{title}</span>
+    </motion.div>
+  )
+}
 
 export default function EditHubPage() {
   const router = useRouter()
@@ -15,26 +86,20 @@ export default function EditHubPage() {
     {
       id: 'general',
       title: t.edit.generalEdit,
-      subtitle: t.edit.generalEditDesc,
-      description: t.edit.generalEditExamples,
-      icon: Wand2,
+      description: t.edit.generalEditDesc,
+      icon: <Wand2 className="w-5 h-5" />,
       href: '/edit/general',
-      gradient: 'from-violet-500 to-purple-600',
-      shadowColor: 'shadow-purple-200',
-      iconBg: 'bg-purple-100',
-      iconColor: 'text-purple-600',
+      color: 'bg-violet-600',
+      image: 'https://images.unsplash.com/photo-1607616996527-a641c438bc69?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600',
     },
     {
       id: 'studio',
       title: t.edit.productStudioCard,
-      subtitle: t.edit.productStudioCardDesc,
-      description: t.edit.productStudioExamples,
-      icon: Lightbulb,
+      description: t.edit.productStudioCardDesc,
+      icon: <Lightbulb className="w-5 h-5" />,
       href: '/studio',
-      gradient: 'from-amber-500 to-orange-500',
-      shadowColor: 'shadow-amber-200',
-      iconBg: 'bg-amber-100',
-      iconColor: 'text-amber-600',
+      color: 'bg-amber-600',
+      image: 'https://images.unsplash.com/photo-1693763824929-bd6b4b959e2b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600',
     },
   ]
 
@@ -49,7 +114,7 @@ export default function EditHubPage() {
   return (
     <div className="h-full flex flex-col bg-zinc-50">
       {/* Header */}
-      <div className="h-14 border-b bg-white flex items-center px-4 shrink-0">
+      <div className="h-14 border-b bg-white/95 backdrop-blur-md flex items-center px-4 shrink-0 sticky top-0 z-30">
         <button
           onClick={() => router.push("/")}
           className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center transition-colors"
@@ -64,61 +129,72 @@ export default function EditHubPage() {
       
       <div className="flex-1 overflow-y-auto pb-24">
         {/* Hero Section */}
-        <div className="bg-gradient-to-br from-violet-50 to-purple-50 px-4 py-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <h1 className="text-xl font-bold text-zinc-900">{t.edit.title}</h1>
-          </div>
+        <div className="px-4 pt-6 pb-4">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <h1 className="text-2xl font-bold text-zinc-900">{t.edit.title}</h1>
+            <p className="text-sm text-zinc-500 mt-1.5">{t.edit.subtitle || '选择工具开始创作'}</p>
+          </motion.div>
         </div>
         
         {/* Feature Cards */}
-        <div className="px-4 py-6 space-y-4">
-          {FEATURE_CARDS.map((card) => {
-            const Icon = card.icon
-            return (
-              <Link
-                key={card.id}
+        <div className="px-4 space-y-4">
+          {FEATURE_CARDS.map((card, index) => (
+            <motion.div
+              key={card.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: index * 0.1 }}
+            >
+              <ToolCard
+                title={card.title}
+                description={card.description}
+                icon={card.icon}
+                image={card.image}
+                color={card.color}
                 href={card.href}
-                className={`block bg-white rounded-2xl p-5 border border-zinc-100 shadow-sm ${card.shadowColor} hover:shadow-md transition-all active:scale-[0.98]`}
-              >
-                <div className="flex items-start gap-4">
-                  <div className={`w-14 h-14 rounded-xl ${card.iconBg} flex items-center justify-center shrink-0`}>
-                    <Icon className={`w-7 h-7 ${card.iconColor}`} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-bold text-lg text-zinc-900">{card.title}</h3>
-                      <ChevronRight className="w-5 h-5 text-zinc-400" />
-                    </div>
-                    <p className="text-sm font-medium text-zinc-600 mb-1">{card.subtitle}</p>
-                    <p className="text-xs text-zinc-400">{card.description}</p>
-                  </div>
-                </div>
-                
-                {/* Gradient bar */}
-                <div className={`mt-4 h-1.5 rounded-full bg-gradient-to-r ${card.gradient} opacity-80`} />
-              </Link>
-            )
-          })}
+              />
+            </motion.div>
+          ))}
         </div>
         
         {/* Coming Soon Section */}
-        <div className="px-4 pb-6">
-          <h2 className="text-sm font-semibold text-zinc-400 uppercase mb-3">{t.edit.comingSoon}</h2>
+        <motion.div 
+          className="px-4 pt-8 pb-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.3 }}
+        >
+          <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-4">{t.edit.comingSoon}</h2>
           <div className="grid grid-cols-2 gap-3">
-            {COMING_SOON.map((item) => (
-              <div
+            {COMING_SOON.map((item, index) => (
+              <motion.div
                 key={item.title}
-                className="bg-white/60 border border-zinc-100 rounded-xl p-4 flex items-center gap-3 opacity-60"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3, delay: 0.4 + index * 0.05 }}
               >
-                <span className="text-2xl">{item.icon}</span>
-                <span className="text-sm font-medium text-zinc-500">{item.title}</span>
-              </div>
+                <ComingSoonCard title={item.title} icon={item.icon} />
+              </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
+
+        {/* Footer hint */}
+        <motion.div 
+          className="text-center pb-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.6 }}
+        >
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-100 rounded-full border border-zinc-200/50">
+            <Layers className="w-4 h-4 text-zinc-400" />
+            <span className="text-xs text-zinc-400 font-medium">{t.edit.moreComingSoon || '更多功能开发中...'}</span>
+          </div>
+        </motion.div>
       </div>
     </div>
   )

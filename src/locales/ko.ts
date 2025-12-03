@@ -118,6 +118,7 @@ export const ko: Translations = {
   // Edit Page
   edit: {
     title: "AI 편집실",
+    subtitle: "도구를 선택하여 시작하세요",
     editRoom: "편집실",
     describeEdit: "원하는 수정 사항 설명",
     editPlaceholder: "예: 바지를 청바지로 변경, 배경의 사람 제거...",
@@ -136,6 +137,7 @@ export const ko: Translations = {
     comingExpression: "표정 제어",
     comingCamera: "카메라 제어",
     comingSoon: "출시 예정",
+    moreComingSoon: "더 많은 기능 개발 중...",
     moreFeatures: "더 많은 AI 기능 출시 예정...",
     backToTools: "도구로 돌아가기",
     takePhoto: "사진 촬영",
