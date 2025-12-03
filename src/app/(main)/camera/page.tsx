@@ -402,8 +402,8 @@ export default function CameraPage() {
       const staggerDelay = 1000 // 1 second between each request
       
       // Track per-image model/background for saving later
-      const perImageModels: { name: string; imageUrl: string }[] = Array(NUM_IMAGES).fill(null)
-      const perImageBackgrounds: { name: string; imageUrl: string }[] = Array(NUM_IMAGES).fill(null)
+      const perImageModels: { name: string; imageUrl: string; isRandom: boolean }[] = Array(NUM_IMAGES).fill(null)
+      const perImageBackgrounds: { name: string; imageUrl: string; isRandom: boolean }[] = Array(NUM_IMAGES).fill(null)
       
       // Helper to create a delayed request for model images
       // Each request gets its own model/background (random if not user-selected)
@@ -415,13 +415,16 @@ export default function CameraPage() {
         let bgNameForThis = background?.name || ''
         let modelUrlForThis = model?.imageUrl || ''
         let bgUrlForThis = background?.imageUrl || ''
+        let modelIsRandom = false
+        let bgIsRandom = false
         
         // If user didn't select model, pick a random one for this image
         if (!modelForThisImage) {
           const randomModel = getRandomModel()
           modelForThisImage = await ensureBase64(randomModel.imageUrl)
-          modelNameForThis = `${randomModel.name} (随机)`
+          modelNameForThis = randomModel.name
           modelUrlForThis = randomModel.imageUrl
+          modelIsRandom = true
           console.log(`Image ${index + 1}: Random model = ${randomModel.name}`)
         }
         
@@ -429,14 +432,15 @@ export default function CameraPage() {
         if (!bgForThisImage) {
           const randomBg = getRandomBackground()
           bgForThisImage = await ensureBase64(randomBg.imageUrl)
-          bgNameForThis = `${randomBg.name} (随机)`
+          bgNameForThis = randomBg.name
           bgUrlForThis = randomBg.imageUrl
+          bgIsRandom = true
           console.log(`Image ${index + 1}: Random background = ${randomBg.name}`)
         }
         
-        // Save per-image model/background info
-        perImageModels[index] = { name: modelNameForThis, imageUrl: modelUrlForThis }
-        perImageBackgrounds[index] = { name: bgNameForThis, imageUrl: bgUrlForThis }
+        // Save per-image model/background info with isRandom flag
+        perImageModels[index] = { name: modelNameForThis, imageUrl: modelUrlForThis, isRandom: modelIsRandom }
+        perImageBackgrounds[index] = { name: bgNameForThis, imageUrl: bgUrlForThis, isRandom: bgIsRandom }
         
         const payload = {
           productImage: compressedProduct,

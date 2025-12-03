@@ -786,10 +786,14 @@ export default function AdminDashboard() {
                         const perImageBg = selectedTask.inputParams?.perImageBackgrounds?.[i]
                         const modelUrl = perImageModel?.imageUrl || selectedTask.modelImageUrl || selectedTask.inputParams?.modelImage
                         const bgUrl = perImageBg?.imageUrl || selectedTask.backgroundImageUrl || selectedTask.inputParams?.backgroundImage
-                        const modelName = perImageModel?.name || selectedTask.inputParams?.model || '模特'
-                        const bgName = perImageBg?.name || selectedTask.inputParams?.background || '环境'
-                        const modelIsRandom = perImageModel?.isRandom
-                        const bgIsRandom = perImageBg?.isRandom
+                        const rawModelName = perImageModel?.name || selectedTask.inputParams?.model || '模特'
+                        const rawBgName = perImageBg?.name || selectedTask.inputParams?.background || '环境'
+                        // Check isRandom field, or fallback to checking if name contains "(随机)" for old data
+                        const modelIsRandom = perImageModel?.isRandom === true || rawModelName.includes('(随机)')
+                        const bgIsRandom = perImageBg?.isRandom === true || rawBgName.includes('(随机)')
+                        // Clean up display name (remove "(随机)" suffix if present)
+                        const modelName = rawModelName.replace(' (随机)', '').replace('(随机)', '')
+                        const bgName = rawBgName.replace(' (随机)', '').replace('(随机)', '')
                         
                         return (
                           <div key={i} className="flex gap-2 p-2 bg-zinc-50 rounded-lg">

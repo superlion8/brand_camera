@@ -626,22 +626,25 @@ export default function GalleryPage() {
                         {(() => {
                           const perImageModel = selectedItem.gen.params?.perImageModels?.[selectedItem.index]
                           const modelUrl = perImageModel?.imageUrl || selectedItem.gen.params?.modelImage
-                          const modelName = perImageModel?.name || selectedItem.gen.params?.model
+                          const rawModelName = perImageModel?.name || selectedItem.gen.params?.model
+                          const modelIsRandom = perImageModel?.isRandom === true || rawModelName?.includes('(随机)')
+                          const modelName = rawModelName?.replace(' (随机)', '').replace('(随机)', '') || '模特'
                           if (!modelUrl) return null
                           return (
                             <div className="flex flex-col items-center">
                               <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
-                                <Image 
+                                <img 
                                   src={modelUrl} 
                                   alt="模特" 
-                                  width={56}
-                                  height={56}
                                   className="w-full h-full object-cover"
                                 />
                               </div>
                               <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">
-                                {modelName || '模特'}
+                                {modelName}
                               </p>
+                              <span className={`text-[8px] px-1 py-0.5 rounded ${modelIsRandom ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600'}`}>
+                                {modelIsRandom ? '随机' : '选择'}
+                              </span>
                             </div>
                           )
                         })()}
@@ -650,22 +653,25 @@ export default function GalleryPage() {
                         {(() => {
                           const perImageBg = selectedItem.gen.params?.perImageBackgrounds?.[selectedItem.index]
                           const bgUrl = perImageBg?.imageUrl || selectedItem.gen.params?.backgroundImage
-                          const bgName = perImageBg?.name || selectedItem.gen.params?.background
+                          const rawBgName = perImageBg?.name || selectedItem.gen.params?.background
+                          const bgIsRandom = perImageBg?.isRandom === true || rawBgName?.includes('(随机)')
+                          const bgName = rawBgName?.replace(' (随机)', '').replace('(随机)', '') || '环境'
                           if (!bgUrl) return null
                           return (
                             <div className="flex flex-col items-center">
                               <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
-                                <Image 
+                                <img 
                                   src={bgUrl} 
                                   alt="环境" 
-                                  width={56}
-                                  height={56}
                                   className="w-full h-full object-cover"
                                 />
                               </div>
                               <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">
-                                {bgName || '环境'}
+                                {bgName}
                               </p>
+                              <span className={`text-[8px] px-1 py-0.5 rounded ${bgIsRandom ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600'}`}>
+                                {bgIsRandom ? '随机' : '选择'}
+                              </span>
                             </div>
                           )
                         })()}
