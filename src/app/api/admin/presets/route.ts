@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-// Admin emails
-const ADMIN_EMAILS = ["lionceo@gmail.com"]
+// Admin emails from environment variable (comma separated)
+const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
 
 // GET - List files in a folder
 export async function GET(request: NextRequest) {
@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   
   // Check auth
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user || !ADMIN_EMAILS.includes(user.email || '')) {
+  if (!user || !ADMIN_EMAILS.includes(user.email?.toLowerCase() || '')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
   
   // Check auth
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user || !ADMIN_EMAILS.includes(user.email || '')) {
+  if (!user || !ADMIN_EMAILS.includes(user.email?.toLowerCase() || '')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -116,7 +116,7 @@ export async function DELETE(request: NextRequest) {
   
   // Check auth
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user || !ADMIN_EMAILS.includes(user.email || '')) {
+  if (!user || !ADMIN_EMAILS.includes(user.email?.toLowerCase() || '')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

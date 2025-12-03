@@ -11,8 +11,8 @@ import {
 import { useAuth } from "@/components/providers/AuthProvider"
 import { motion, AnimatePresence } from "framer-motion"
 
-// Admin emails
-const ADMIN_EMAILS = ["lionceo@gmail.com"]
+// Admin emails from environment variable (comma separated)
+const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
 
 // Asset categories
 const CATEGORIES = [
@@ -45,18 +45,20 @@ export default function PresetsManagement() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Auth check
+  const isAdmin = ADMIN_EMAILS.includes(user?.email?.toLowerCase() || '')
+  
   useEffect(() => {
-    if (!authLoading && (!user || !ADMIN_EMAILS.includes(user.email || ""))) {
+    if (!authLoading && (!user || !isAdmin)) {
       router.push("/")
     }
-  }, [user, authLoading, router])
+  }, [user, authLoading, router, isAdmin])
 
   // Fetch files when category changes
   useEffect(() => {
-    if (user && ADMIN_EMAILS.includes(user.email || "")) {
+    if (user && isAdmin) {
       fetchFiles()
     }
-  }, [activeCategory, user])
+  }, [activeCategory, user, isAdmin])
 
   const fetchFiles = async () => {
     setIsLoading(true)
@@ -178,7 +180,7 @@ export default function PresetsManagement() {
     )
   }
 
-  if (!user || !ADMIN_EMAILS.includes(user.email || "")) {
+  if (!user || !isAdmin) {
     return null
   }
 
