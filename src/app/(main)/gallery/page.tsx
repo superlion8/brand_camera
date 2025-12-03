@@ -1128,6 +1128,7 @@ function ImageSlotCard({ task, slot, slotIndex, onImageClick }: {
   onImageClick?: (imageUrl: string) => void;
 }) {
   const { t } = useTranslation()
+  const { generations, addFavorite, removeFavorite, isFavorited } = useAssetStore()
   const isStudio = task.type === 'studio'
   const isEdit = task.type === 'edit'
   
@@ -1135,6 +1136,33 @@ function ImageSlotCard({ task, slot, slotIndex, onImageClick }: {
   const hasValidImageUrl = slot.imageUrl && 
     !slot.imageUrl.startsWith('[') && 
     (slot.imageUrl.startsWith('http') || slot.imageUrl.startsWith('blob:') || slot.imageUrl.startsWith('data:'))
+  
+  // 检查 generations store 是否已有这个任务的记录（后端已写入数据库）
+  const generationRecord = generations.find(g => g.id === task.id)
+  const imageUrlInDb = generationRecord?.outputImageUrls?.[slotIndex]
+  const canFavorite = !!generationRecord && !!imageUrlInDb
+  
+  // 检查当前图片是否已收藏
+  const favoriteImageUrl = imageUrlInDb || slot.imageUrl
+  const isImageFavorited = favoriteImageUrl ? isFavorited(favoriteImageUrl) : false
+  
+  // 收藏/取消收藏
+  const handleFavorite = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!canFavorite || !favoriteImageUrl || !generationRecord) return
+    
+    if (isImageFavorited) {
+      removeFavorite(favoriteImageUrl)
+    } else {
+      addFavorite({
+        id: `${generationRecord.id}_${slotIndex}`,
+        generationId: generationRecord.id,
+        imageUrl: favoriteImageUrl,
+        imageIndex: slotIndex,
+        createdAt: new Date().toISOString(),
+      })
+    }
+  }
   
   // 已完成且有有效图片，直接显示结果
   if (slot.status === 'completed' && hasValidImageUrl) {
@@ -1170,19 +1198,32 @@ function ImageSlotCard({ task, slot, slotIndex, onImageClick }: {
             </span>
           )}
         </div>
-        {/* 同步中的收藏按钮 - 禁用状态 */}
-        <button 
-          className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-sm bg-white/70 backdrop-blur text-zinc-400 cursor-not-allowed"
-          disabled
-          title={t.gallery.syncing || '同步中...'}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Loader2 className="w-4 h-4 animate-spin" />
-        </button>
+        {/* 收藏按钮 - 根据数据库状态显示 */}
+        {canFavorite ? (
+          <button 
+            className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-colors ${
+              isImageFavorited 
+                ? 'bg-red-500 text-white' 
+                : 'bg-white/70 backdrop-blur text-zinc-400 hover:text-red-500'
+            }`}
+            onClick={handleFavorite}
+          >
+            <Heart className={`w-4 h-4 ${isImageFavorited ? 'fill-current' : ''}`} />
+          </button>
+        ) : (
+          <button 
+            className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-sm bg-white/70 backdrop-blur text-zinc-400 cursor-not-allowed"
+            disabled
+            title={t.gallery.syncing || '同步中...'}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Loader2 className="w-4 h-4 animate-spin" />
+          </button>
+        )}
         {/* Date overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
           <p className="text-[10px] text-white truncate">
-            {t.gallery.syncing || '同步中...'}
+            {canFavorite ? new Date(generationRecord.createdAt).toLocaleString() : (t.gallery.syncing || '同步中...')}
           </p>
         </div>
       </div>
