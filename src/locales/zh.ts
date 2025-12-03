@@ -46,6 +46,7 @@ export const zh = {
     random: "随机",
     userSelected: "用户选择",
     selected: "选择",
+    select: "选择",
   },
   
   // Navigation
@@ -217,6 +218,7 @@ export const zh = {
     noBackgrounds: "暂无环境资产",
     noProducts: "暂无商品资产",
     clickUpload: "点击上传",
+    noAssets: "暂无资产",
   },
   
   // User Menu

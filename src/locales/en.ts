@@ -48,6 +48,7 @@ export const en: Translations = {
     random: "Random",
     userSelected: "Selected",
     selected: "Selected",
+    select: "Select",
   },
   
   // Navigation
@@ -219,6 +220,7 @@ export const en: Translations = {
     noBackgrounds: "No background assets",
     noProducts: "No product assets",
     clickUpload: "Click to upload",
+    noAssets: "No assets",
   },
   
   // User Menu

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { Asset, AssetType, ModelStyle } from "@/types"
 import { useAssetStore } from "@/stores/assetStore"
 import { PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_VIBES } from "@/data/presets"
+import { useLanguageStore } from "@/stores/languageStore"
 
 // Preset assets from centralized data
 const demoPresets: Record<AssetType, Asset[]> = {
@@ -37,6 +38,7 @@ interface AssetSelectorProps {
 export function AssetSelector({ title, type, selected, onSelect, modelStyle, compact = false, showViewMore = false }: AssetSelectorProps) {
   const [isOpen, setIsOpen] = useState(false)
   const { userModels, userBackgrounds, userVibes } = useAssetStore()
+  const t = useLanguageStore(state => state.t)
   
   // Get user assets based on type
   const getUserAssets = (): Asset[] => {
@@ -64,14 +66,14 @@ export function AssetSelector({ title, type, selected, onSelect, modelStyle, com
   if (compact) {
     // Compact grid view for tabs
     const hasMore = allAssets.length > displayPresets.length
-    const typeLabel = type === "model" ? "模特" : type === "background" ? "环境" : "氛围"
+    const typeLabel = type === "model" ? t.common.model : type === "background" ? t.common.background : t.common.vibe
     
     return (
       <div className="space-y-3">
         <div className="grid grid-cols-3 gap-3">
           {displayPresets.length === 0 ? (
             <div className="col-span-3 text-center text-zinc-400 text-sm py-8">
-              暂无{typeLabel}资产
+              {t.assets.noAssets || `No ${typeLabel} assets`}
             </div>
           ) : (
             displayPresets.map((asset) => (
@@ -115,7 +117,7 @@ export function AssetSelector({ title, type, selected, onSelect, modelStyle, com
             onClick={() => setIsOpen(true)}
             className="w-full py-2.5 text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors flex items-center justify-center gap-1"
           >
-            查看更多{typeLabel} ({allAssets.length})
+            {t.home.viewAll} ({allAssets.length})
             <ChevronRight className="w-4 h-4" />
           </button>
         )}
@@ -131,7 +133,7 @@ export function AssetSelector({ title, type, selected, onSelect, modelStyle, com
               >
                 <X className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
               </button>
-              <h3 className="text-zinc-900 dark:text-white font-bold">选择{typeLabel}</h3>
+              <h3 className="text-zinc-900 dark:text-white font-bold">{t.common.select || 'Select'} {typeLabel}</h3>
               <div className="w-10" />
             </div>
             
@@ -151,7 +153,7 @@ export function AssetSelector({ title, type, selected, onSelect, modelStyle, com
                       : "border-zinc-300 dark:border-zinc-600 text-zinc-500 hover:border-zinc-400"
                   )}
                 >
-                  <span className="text-xs font-medium">随机</span>
+                  <span className="text-xs font-medium">{t.common.random}</span>
                 </button>
                 
                 {allAssets.map((asset) => (
@@ -207,7 +209,7 @@ export function AssetSelector({ title, type, selected, onSelect, modelStyle, com
           onClick={() => setIsOpen(true)}
           className="text-xs text-blue-600 flex items-center gap-1 hover:text-blue-700 transition-colors"
         >
-          查看更多 <ChevronRight className="w-3 h-3" />
+          {t.home.viewAll} <ChevronRight className="w-3 h-3" />
         </button>
       </div>
       

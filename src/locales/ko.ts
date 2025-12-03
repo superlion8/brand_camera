@@ -48,6 +48,7 @@ export const ko: Translations = {
     random: "랜덤",
     userSelected: "선택됨",
     selected: "선택",
+    select: "선택",
   },
   
   // Navigation
@@ -219,6 +220,7 @@ export const ko: Translations = {
     noBackgrounds: "배경 자산 없음",
     noProducts: "상품 자산 없음",
     clickUpload: "클릭하여 업로드",
+    noAssets: "자산 없음",
   },
   
   // User Menu
