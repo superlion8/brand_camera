@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import { Download, Heart, X, Wand2, Camera, Users, Home, ZoomIn, Loader2, Lightbulb, RefreshCw, Trash2, Package, FolderPlus, ChevronDown } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
@@ -281,13 +281,13 @@ export default function GalleryPage() {
   }
   
   // Pull to refresh handlers
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+  const handleTouchStart = (e: React.TouchEvent) => {
     if (scrollContainerRef.current?.scrollTop === 0) {
       touchStartY.current = e.touches[0].clientY
     }
-  }, [])
+  }
   
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+  const handleTouchMove = (e: React.TouchEvent) => {
     if (isRefreshing) return
     if (scrollContainerRef.current?.scrollTop !== 0) {
       setPullDistance(0)
@@ -302,9 +302,9 @@ export default function GalleryPage() {
       const resistance = Math.min(diff * 0.4, 120)
       setPullDistance(resistance)
     }
-  }, [isRefreshing])
+  }
   
-  const handleTouchEnd = useCallback(async () => {
+  const handleTouchEnd = async () => {
     if (pullDistance >= PULL_THRESHOLD && !isRefreshing && user?.id) {
       setIsRefreshing(true)
       setPullDistance(PULL_THRESHOLD) // Keep at threshold during refresh
@@ -320,7 +320,7 @@ export default function GalleryPage() {
     } else {
       setPullDistance(0)
     }
-  }, [pullDistance, isRefreshing, user?.id, syncWithCloud])
+  }
   
   const handleDelete = async () => {
     if (!selectedItem) return
