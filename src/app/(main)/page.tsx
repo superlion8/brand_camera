@@ -75,15 +75,14 @@ export default function HomePage() {
             <Image src="/logo.png" alt="Brand Camera" width={36} height={36} className="rounded-lg" />
             <div className="flex items-center gap-1.5">
               <h1 className="text-lg font-bold text-zinc-900">{t.common.appName}</h1>
-              <span className="px-1.5 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-bold rounded-full">
-                Beta
+              <span className="px-1.5 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[9px] font-medium rounded">
+                内测
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <SyncIndicator />
             <QuotaIndicator />
-            <LanguageSwitcher />
             <UserMenu />
           </div>
         </div>
