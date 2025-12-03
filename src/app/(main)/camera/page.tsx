@@ -576,6 +576,14 @@ export default function CameraPage() {
                   modelType: result.modelType,
                   genMode: genMode,
                 })
+                
+                // 第一张图片完成时，立即切换到 results 模式
+                // 用户可以边看结果边等待其他图片
+                if (modeRef.current === "processing") {
+                  console.log(`[Camera] First image ready, switching to results mode`)
+                  setMode("results")
+                }
+                
                 resolve({ 
                   index, 
                   success: true, 
@@ -1706,12 +1714,33 @@ export default function CameraPage() {
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   {[0, 1, 2].map((i) => {
-                    const url = generatedImages[i]
-                    if (!url) return (
-                      <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
-                        {t.camera.generationFailed}
-                      </div>
-                    )
+                    // 优先使用实时 imageSlots，回退到 generatedImages
+                    const currentTask = tasks.find(t => t.id === currentTaskId)
+                    const slot = currentTask?.imageSlots?.[i]
+                    const url = slot?.imageUrl || generatedImages[i]
+                    const status = slot?.status || (url ? 'completed' : 'failed')
+                    const modelType = slot?.modelType || generatedModelTypes[i]
+                    
+                    // Loading 状态
+                    if (status === 'pending' || status === 'generating') {
+                      return (
+                        <div key={i} className="aspect-[4/5] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
+                          <Loader2 className="w-6 h-6 text-zinc-400 animate-spin mb-2" />
+                          <span className="text-[10px] text-zinc-400">生成中...</span>
+                        </div>
+                      )
+                    }
+                    
+                    // 失败状态
+                    if (status === 'failed' || !url) {
+                      return (
+                        <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
+                          {slot?.error || t.camera.generationFailed}
+                        </div>
+                      )
+                    }
+                    
+                    // 成功状态
                     return (
                       <div 
                         key={i} 
@@ -1738,7 +1767,7 @@ export default function CameraPage() {
                           <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-500 text-white">
                             极简
                           </span>
-                          {generatedModelTypes[i] === 'flash' && (
+                          {modelType === 'flash' && (
                             <span className="px-1 py-0.5 rounded text-[8px] font-medium bg-amber-500 text-white">
                               2.5
                             </span>
@@ -1761,12 +1790,33 @@ export default function CameraPage() {
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   {[3, 4, 5].map((actualIndex) => {
-                    const url = generatedImages[actualIndex]
-                    if (!url) return (
-                      <div key={actualIndex} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
-                        {t.camera.generationFailed}
-                      </div>
-                    )
+                    // 优先使用实时 imageSlots，回退到 generatedImages
+                    const currentTask = tasks.find(t => t.id === currentTaskId)
+                    const slot = currentTask?.imageSlots?.[actualIndex]
+                    const url = slot?.imageUrl || generatedImages[actualIndex]
+                    const status = slot?.status || (url ? 'completed' : 'failed')
+                    const modelType = slot?.modelType || generatedModelTypes[actualIndex]
+                    
+                    // Loading 状态
+                    if (status === 'pending' || status === 'generating') {
+                      return (
+                        <div key={actualIndex} className="aspect-[4/5] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
+                          <Loader2 className="w-6 h-6 text-zinc-400 animate-spin mb-2" />
+                          <span className="text-[10px] text-zinc-400">生成中...</span>
+                        </div>
+                      )
+                    }
+                    
+                    // 失败状态
+                    if (status === 'failed' || !url) {
+                      return (
+                        <div key={actualIndex} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
+                          {slot?.error || t.camera.generationFailed}
+                        </div>
+                      )
+                    }
+                    
+                    // 成功状态
                     return (
                       <div 
                         key={actualIndex} 
@@ -1793,7 +1843,7 @@ export default function CameraPage() {
                           <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-blue-500 text-white">
                             扩展
                           </span>
-                          {generatedModelTypes[actualIndex] === 'flash' && (
+                          {modelType === 'flash' && (
                             <span className="px-1 py-0.5 rounded text-[8px] font-medium bg-amber-500 text-white">
                               2.5
                             </span>
