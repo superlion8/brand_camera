@@ -421,9 +421,21 @@ export default function CameraPage() {
       // Helper to check if URL is from preset storage
       const isPresetUrl = (url: string) => url?.includes('/presets/') || url?.includes('presets%2F')
       
+      // Result type for image generation
+      interface ImageResult {
+        index: number
+        success: boolean
+        image?: string
+        modelType?: 'pro' | 'flash'
+        genMode?: 'simple' | 'extended'
+        prompt?: string
+        duration?: number
+        error?: string
+      }
+      
       // Helper to create a delayed request for model images
       // Each request gets its own model/background (random if not user-selected)
-      const createModelRequest = async (index: number, delayMs: number, simpleMode: boolean) => {
+      const createModelRequest = async (index: number, delayMs: number, simpleMode: boolean): Promise<ImageResult> => {
         // For each image, use user's selection or pick random
         let modelForThisImage = userModelBase64
         let bgForThisImage = userBgBase64
@@ -453,7 +465,7 @@ export default function CameraPage() {
           if (!modelForThisImage) {
             console.error(`Image ${index + 1}: Failed to load model after ${MAX_RETRIES} retries`)
             updateImageSlot(taskId, index, { status: 'failed', error: '模特图片加载失败' })
-            return Promise.resolve({ index, success: false, error: '模特图片加载失败' })
+            return { index, success: false, error: '模特图片加载失败' }
           }
         }
         
@@ -476,7 +488,7 @@ export default function CameraPage() {
           if (!bgForThisImage) {
             console.error(`Image ${index + 1}: Failed to load background after ${MAX_RETRIES} retries`)
             updateImageSlot(taskId, index, { status: 'failed', error: '背景图片加载失败' })
-            return Promise.resolve({ index, success: false, error: '背景图片加载失败' })
+            return { index, success: false, error: '背景图片加载失败' }
           }
         }
         
@@ -510,17 +522,6 @@ export default function CameraPage() {
         }
         
         // 返回处理结果而不是 Response（因为我们需要在这里解析并实时更新状态）
-        interface ImageResult {
-          index: number
-          success: boolean
-          image?: string
-          modelType?: 'pro' | 'flash'
-          genMode?: 'simple' | 'extended'
-          prompt?: string
-          duration?: number
-          error?: string
-        }
-        
         return new Promise<ImageResult>((resolve) => {
           setTimeout(async () => {
             const mode = simpleMode ? '极简模式' : '扩展模式'
