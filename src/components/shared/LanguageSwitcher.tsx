@@ -28,10 +28,9 @@ export function LanguageSwitcher() {
     <div ref={menuRef} className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-zinc-100 transition-colors text-zinc-600"
+        className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-zinc-100 transition-colors text-zinc-500"
         title="切换语言 / Switch Language / 언어 변경"
       >
-        <span className="text-base">{currentLang?.flag}</span>
         <Globe className="w-4 h-4" />
       </button>
 

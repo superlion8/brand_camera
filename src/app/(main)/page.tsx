@@ -71,16 +71,16 @@ export default function HomePage() {
       {/* Hero Section */}
       <div className="bg-white px-4 pt-4 pb-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Image src="/logo.png" alt="Brand Camera" width={36} height={36} className="rounded-lg" />
-            <div className="flex items-center gap-1.5">
-              <h1 className="text-lg font-bold text-zinc-900">{t.common.appName}</h1>
-              <span className="px-1.5 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[9px] font-medium rounded">
+          <div className="flex items-center gap-1.5">
+            <Image src="/logo.png" alt="Brand Camera" width={28} height={28} className="rounded-md" />
+            <div className="flex items-center gap-1">
+              <h1 className="text-base font-bold text-zinc-900">{t.common.appName}</h1>
+              <span className="px-1 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[8px] font-medium rounded">
                 {t.beta.tag}
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-0.5">
             <SyncIndicator />
             <QuotaIndicator />
             <LanguageSwitcher />
