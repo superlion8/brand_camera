@@ -434,12 +434,12 @@ export default function GalleryPage() {
             ) : pullDistance >= PULL_THRESHOLD ? (
               <>
                 <RefreshCw className="w-5 h-5 text-blue-500" />
-                <span className="text-sm text-blue-500">{t.pullRefresh.release}</span>
+                <span className="text-sm text-blue-500">{t.pullRefresh.releaseToRefresh}</span>
               </>
             ) : (
               <>
                 <ChevronDown className="w-5 h-5" style={{ transform: `rotate(${Math.min(pullDistance / PULL_THRESHOLD * 180, 180)}deg)` }} />
-                <span className="text-sm">{t.pullRefresh.pull}</span>
+                <span className="text-sm">{t.pullRefresh.pullToRefresh}</span>
               </>
             )}
           </div>
