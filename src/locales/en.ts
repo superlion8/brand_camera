@@ -47,6 +47,7 @@ export const en: Translations = {
     justNow: "Just now",
     random: "Random",
     userSelected: "Selected",
+    selected: "Selected",
   },
   
   // Navigation
@@ -114,6 +115,7 @@ export const en: Translations = {
   // Edit Page
   edit: {
     title: "AI Edit Room",
+    editRoom: "Edit Room",
     editPlaceholder: "e.g.: Change pants to blue jeans, remove people in background...",
     startGenerate: "Start Generate",
     processing: "AI is processing...",
@@ -200,6 +202,10 @@ export const en: Translations = {
     saveAsProduct: "Save as Product",
     savedToModels: "Saved to My Models",
     savedToProducts: "Saved to My Products",
+    generatingImages: "AI generating",
+    productImages: "product images",
+    modelImages: "model images",
+    processingImage: "AI is processing your image",
   },
   
   // Brand Assets Page

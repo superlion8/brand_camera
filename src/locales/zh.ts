@@ -45,6 +45,7 @@ export const zh = {
     justNow: "刚刚生成",
     random: "随机",
     userSelected: "用户选择",
+    selected: "选择",
   },
   
   // Navigation
@@ -112,6 +113,7 @@ export const zh = {
   // Edit Page
   edit: {
     title: "AI 修图室",
+    editRoom: "修图室",
     editPlaceholder: "例如：把裤子换成蓝色牛仔裤、去掉图片背后的路人....",
     startGenerate: "开始生成",
     processing: "AI 正在处理...",
@@ -198,6 +200,10 @@ export const zh = {
     saveAsProduct: "保存为商品",
     savedToModels: "已保存到我的模特",
     savedToProducts: "已保存到我的商品",
+    generatingImages: "AI 正在生成",
+    productImages: "张商品图",
+    modelImages: "张模特图",
+    processingImage: "AI 正在处理您的图片",
   },
   
   // Brand Assets Page

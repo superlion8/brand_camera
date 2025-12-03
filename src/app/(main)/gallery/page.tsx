@@ -44,12 +44,12 @@ function isEditType(gen: Generation): boolean {
 function getTypeLabel(gen: Generation, imageIndex: number, debugMode: boolean = false): { label: string; color: string; subLabel?: string; subColor?: string } {
   // Studio/product types
   if (isProductType(gen)) {
-    return { label: '产品', color: 'bg-amber-500' }
+    return { label: t.gallery.product, color: 'bg-amber-500' }
   }
   
   // Edit types
   if (isEditType(gen)) {
-    return { label: '修图', color: 'bg-purple-500' }
+    return { label: t.gallery.editRoom, color: 'bg-purple-500' }
   }
   
   // Model/camera types (most common)
@@ -58,7 +58,7 @@ function getTypeLabel(gen: Generation, imageIndex: number, debugMode: boolean = 
     // Only show sub-labels in debug mode
     const subLabel = debugMode && mode ? (mode === 'simple' ? '极简' : '扩展') : undefined
     return { 
-      label: '模特', 
+      label: t.gallery.model, 
       color: 'bg-blue-500',
       subLabel,
       subColor: mode === 'simple' ? 'bg-green-500' : 'bg-purple-500'
@@ -345,7 +345,7 @@ export default function GalleryPage() {
     const newAsset: Asset = {
       id: generateId(),
       type: type,
-      name: `${type === 'product' ? '商品' : '模特'}-${new Date().toLocaleString()}`,
+      name: `${type === 'product' ? t.common.product : t.common.model}-${new Date().toLocaleString()}`,
       imageUrl: imageUrl,
       isSystem: false,
     }
@@ -353,17 +353,17 @@ export default function GalleryPage() {
     try {
       await addUserAsset(newAsset)
       setShowSaveMenu(false)
-      setSaveSuccess(type === 'product' ? '已保存到我的商品' : '已保存到我的模特')
+      setSaveSuccess(type === 'product' ? t.gallery.savedToProducts : t.gallery.savedToModels)
     } catch (error) {
       console.error("Save failed:", error)
     }
   }
 
   const tabs: { id: TabType; label: string; icon?: React.ReactNode }[] = [
-    { id: "all", label: "全部" },
-    { id: "model", label: "模特", icon: <Users className="w-3.5 h-3.5" /> },
-    { id: "product", label: "产品", icon: <Lightbulb className="w-3.5 h-3.5" /> },
-    { id: "favorites", label: "收藏", icon: <Heart className="w-3.5 h-3.5" /> },
+    { id: "all", label: t.gallery.all },
+    { id: "model", label: t.gallery.model, icon: <Users className="w-3.5 h-3.5" /> },
+    { id: "product", label: t.gallery.product, icon: <Lightbulb className="w-3.5 h-3.5" /> },
+    { id: "favorites", label: t.gallery.favorites, icon: <Heart className="w-3.5 h-3.5" /> },
   ]
   
   return (
@@ -379,7 +379,7 @@ export default function GalleryPage() {
           </button>
           <div className="flex items-center gap-2 ml-2">
             <Image src="/logo.png" alt="Brand Camera" width={28} height={28} className="rounded" />
-            <span className="font-semibold text-lg text-zinc-900">图库</span>
+            <span className="font-semibold text-lg text-zinc-900">{t.gallery.title}</span>
             {isSyncing && (
               <span className="flex items-center gap-1 px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-600 text-xs font-medium rounded-full">
                 <RefreshCw className="w-3 h-3 animate-spin" />
@@ -551,9 +551,9 @@ export default function GalleryPage() {
                   )}
                 </div>
                 <p className="text-sm">
-                  {activeTab === "favorites" ? "暂无收藏图片" : 
-                   activeTab === "model" ? "暂无模特图" :
-                   activeTab === "product" ? "暂无产品图" : "暂无图片"}
+                  {activeTab === "favorites" ? t.gallery.noFavorites : 
+                   activeTab === "model" ? t.gallery.noModelImages :
+                   activeTab === "product" ? t.gallery.noProductImages : t.gallery.noImages}
                 </p>
                 <p className="text-xs text-zinc-300 mt-1">
                   {activeTab !== "favorites" && "去拍摄生成你的第一张图片吧"}
@@ -582,7 +582,7 @@ export default function GalleryPage() {
                 >
                   <X className="w-5 h-5 text-zinc-700" />
                 </button>
-                <span className="font-semibold text-zinc-900">详情</span>
+                <span className="font-semibold text-zinc-900">{t.gallery.detail}</span>
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
                   className="w-10 h-10 -mr-2 rounded-full hover:bg-red-50 flex items-center justify-center transition-colors text-zinc-400 hover:text-red-500"
@@ -610,7 +610,7 @@ export default function GalleryPage() {
                       </div>
                     </div>
                   </div>
-                  <p className="text-center text-zinc-500 text-xs py-2">长按图片保存</p>
+                  <p className="text-center text-zinc-500 text-xs py-2">{t.imageActions.longPressSave}</p>
                 </div>
                 
                 <div className="p-4 bg-white pb-8">
@@ -668,7 +668,7 @@ export default function GalleryPage() {
                       className="flex-1 h-12 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2 transition-colors"
                     >
                       <Wand2 className="w-4 h-4" />
-                      去修图
+                      {t.gallery.goEdit}
                     </button>
                     <button 
                       onClick={() => setShowSaveMenu(true)}
@@ -682,7 +682,7 @@ export default function GalleryPage() {
                   {/* Generation Details - Only show in debug mode */}
                   {debugMode && (
                   <div className="mt-6 pt-4 border-t border-zinc-100 pb-8">
-                    <h3 className="text-sm font-semibold text-zinc-700 mb-3">生成参数 (调试模式)</h3>
+                    <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.gallery.debugParams}</h3>
                     
                     {(selectedItem.gen.prompts?.[selectedItem.index] || selectedItem.gen.prompt) && (
                       <div className="mb-4">
@@ -702,13 +702,13 @@ export default function GalleryPage() {
                             <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
                               <Image 
                                 src={selectedItem.gen.inputImageUrl} 
-                                alt="商品" 
+                                alt={t.gallery.productOriginal} 
                                 width={56}
                                 height={56}
                                 className="w-full h-full object-cover"
                               />
                             </div>
-                            <p className="text-[10px] text-zinc-500 mt-1">商品</p>
+                            <p className="text-[10px] text-zinc-500 mt-1">{t.gallery.productOriginal}</p>
                           </div>
                         )}
                         
@@ -718,14 +718,14 @@ export default function GalleryPage() {
                           const modelUrl = perImageModel?.imageUrl || selectedItem.gen.params?.modelImage
                           const rawModelName = perImageModel?.name || selectedItem.gen.params?.model
                           const modelIsRandom = perImageModel?.isRandom === true || rawModelName?.includes('(随机)')
-                          const modelName = rawModelName?.replace(' (随机)', '').replace('(随机)', '') || '模特'
+                          const modelName = rawModelName?.replace(' (随机)', '').replace('(随机)', '') || t.common.model
                           if (!modelUrl) return null
                           return (
                             <div className="flex flex-col items-center">
                               <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
                                 <img 
                                   src={modelUrl} 
-                                  alt="模特" 
+                                  alt={t.common.model} 
                                   className="w-full h-full object-cover"
                                 />
                               </div>
@@ -733,7 +733,7 @@ export default function GalleryPage() {
                                 {modelName}
                               </p>
                               <span className={`text-[8px] px-1 py-0.5 rounded ${modelIsRandom ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600'}`}>
-                                {modelIsRandom ? '随机' : '选择'}
+                                {modelIsRandom ? t.common.random : t.common.selected}
                               </span>
                             </div>
                           )
@@ -745,7 +745,7 @@ export default function GalleryPage() {
                           const bgUrl = perImageBg?.imageUrl || selectedItem.gen.params?.backgroundImage
                           const rawBgName = perImageBg?.name || selectedItem.gen.params?.background
                           const bgIsRandom = perImageBg?.isRandom === true || rawBgName?.includes('(随机)')
-                          const bgName = rawBgName?.replace(' (随机)', '').replace('(随机)', '') || '环境'
+                          const bgName = rawBgName?.replace(' (随机)', '').replace('(随机)', '') || t.common.background
                           if (!bgUrl) return null
                           return (
                             <div className="flex flex-col items-center">
@@ -760,7 +760,7 @@ export default function GalleryPage() {
                                 {bgName}
                               </p>
                               <span className={`text-[8px] px-1 py-0.5 rounded ${bgIsRandom ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600'}`}>
-                                {bgIsRandom ? '随机' : '选择'}
+                                {bgIsRandom ? t.common.random : t.common.selected}
                               </span>
                             </div>
                           )
@@ -851,7 +851,7 @@ export default function GalleryPage() {
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="w-12 h-1 bg-zinc-200 rounded-full mx-auto mb-4" />
-                    <h3 className="font-semibold text-zinc-900 text-center mb-4">保存到我的素材</h3>
+                    <h3 className="font-semibold text-zinc-900 text-center mb-4">{t.common.save}</h3>
                     <div className="space-y-2">
                       <button
                         onClick={() => handleSaveAsAsset('product')}
@@ -861,7 +861,7 @@ export default function GalleryPage() {
                           <Package className="w-5 h-5 text-amber-600" />
                         </div>
                         <div className="text-left">
-                          <p className="font-medium text-zinc-900">保存到我的商品</p>
+                          <p className="font-medium text-zinc-900">{t.gallery.saveAsProduct}</p>
                           <p className="text-xs text-zinc-500">可在拍摄时选择使用</p>
                         </div>
                       </button>
@@ -873,8 +873,8 @@ export default function GalleryPage() {
                           <Users className="w-5 h-5 text-blue-600" />
                         </div>
                         <div className="text-left">
-                          <p className="font-medium text-zinc-900">保存到我的模特</p>
-                          <p className="text-xs text-zinc-500">可在拍摄时作为参考模特</p>
+                          <p className="font-medium text-zinc-900">{t.gallery.saveAsModel}</p>
+                          <p className="text-xs text-zinc-500">{t.gallery.savedToModels}</p>
                         </div>
                       </button>
                     </div>
@@ -1005,7 +1005,7 @@ export default function GalleryPage() {
             </TransformWrapper>
             
             <div className="absolute bottom-8 left-0 right-0 text-center pointer-events-none">
-              <span className="text-white/60 text-sm">长按保存 · 双指缩放 · 双击重置</span>
+              <span className="text-white/60 text-sm">{t.imageActions.longPressSaveZoom}</span>
             </div>
           </motion.div>
         )}
@@ -1062,25 +1062,25 @@ function GeneratingCard({ task }: { task: GenerationTask }) {
       : 'bg-blue-500'
   
   const title = isStudio 
-    ? '影棚拍摄中...' 
+    ? t.studio.generating
     : isEdit 
-      ? '修图中...'
-      : '模特拍摄中...'
+      ? t.edit.processing
+      : t.camera.generating
   
   // Get expected image count, fallback to defaults
   const imageCount = task.expectedImageCount || (isStudio ? 2 : isEdit ? 1 : 6)
   
   const subtitle = isStudio 
-    ? `AI 正在生成 ${imageCount} 张商品图` 
+    ? `${t.gallery.generatingImages} ${imageCount} ${t.gallery.productImages}` 
     : isEdit 
-      ? 'AI 正在处理您的图片'
-      : `AI 正在生成 ${imageCount} 张模特图`
+      ? t.gallery.processingImage
+      : `${t.gallery.generatingImages} ${imageCount} ${t.gallery.modelImages}`
   
   const badgeText = isStudio 
-    ? '商品影棚' 
+    ? t.home.productStudio
     : isEdit 
-      ? '修图室'
-      : '模特影棚'
+      ? t.edit.editRoom
+      : t.home.modelStudio
   
   return (
     <div className={`relative aspect-[4/5] bg-gradient-to-br ${bgGradient} rounded-xl overflow-hidden shadow-sm border-2 border-dashed ${borderColor}`}>

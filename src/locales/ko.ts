@@ -47,6 +47,7 @@ export const ko: Translations = {
     justNow: "방금 생성",
     random: "랜덤",
     userSelected: "선택됨",
+    selected: "선택",
   },
   
   // Navigation
@@ -114,6 +115,7 @@ export const ko: Translations = {
   // Edit Page
   edit: {
     title: "AI 편집실",
+    editRoom: "편집실",
     editPlaceholder: "예: 바지를 청바지로 변경, 배경의 사람 제거...",
     startGenerate: "생성 시작",
     processing: "AI 처리 중...",
@@ -200,6 +202,10 @@ export const ko: Translations = {
     saveAsProduct: "상품으로 저장",
     savedToModels: "내 모델에 저장됨",
     savedToProducts: "내 상품에 저장됨",
+    generatingImages: "AI 생성 중",
+    productImages: "장 상품 이미지",
+    modelImages: "장 모델 이미지",
+    processingImage: "AI가 이미지 처리 중",
   },
   
   // Brand Assets Page
