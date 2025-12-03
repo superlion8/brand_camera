@@ -5,10 +5,10 @@ import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { validateRedirectClient } from "@/lib/utils/redirect"
-import { Loader2, Mail, Lock, Eye, EyeOff, ArrowLeft } from "lucide-react"
+import { Loader2, Mail, ArrowLeft } from "lucide-react"
 import { useLanguageStore } from "@/stores/languageStore"
 
-type AuthMode = "select" | "email-otp" | "email-password" | "verify-otp"
+type AuthMode = "select" | "email-otp" | "verify-otp"
 
 function LoginContent() {
   const t = useLanguageStore(state => state.t)
@@ -23,9 +23,7 @@ function LoginContent() {
   
   const [mode, setMode] = useState<AuthMode>("select")
   const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
   const [otpCode, setOtpCode] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -122,39 +120,6 @@ function LoginContent() {
     }
   }
 
-  // Email + Password login
-  const handlePasswordLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const supabase = createClient()
-      
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      if (error) throw error
-
-      // Use full page reload to ensure cookies are synced
-      window.location.href = redirectTo
-    } catch (err: any) {
-      console.error("Password login error:", err)
-      
-      let errorMessage = err.message
-      if (err.message.includes("Invalid login credentials")) {
-        errorMessage = t.errors.invalidCredentials || "邮箱或密码错误"
-      } else if (err.message.includes("Email not confirmed")) {
-        errorMessage = t.errors.emailNotConfirmed || "请先验证您的邮箱"
-      }
-      
-      setError(errorMessage)
-      setIsLoading(false)
-    }
-  }
-
   const resetState = () => {
     setError(null)
     setMessage(null)
@@ -202,7 +167,6 @@ function LoginContent() {
           <p className="text-sm text-zinc-500 mt-1">
             {mode === "select" && t.login.selectMethod}
             {mode === "email-otp" && t.login.emailOtp}
-            {mode === "email-password" && t.login.emailPassword}
             {mode === "verify-otp" && t.login.enterCode}
           </p>
         </div>
@@ -259,15 +223,6 @@ function LoginContent() {
             >
               <Mail className="w-5 h-5" />
               <span>{t.login.emailOtp}</span>
-            </button>
-
-            {/* Email Password Login */}
-            <button
-              onClick={() => { setMode("email-password"); resetState(); }}
-              className="w-full h-12 bg-white border border-zinc-200 rounded-lg font-medium text-zinc-700 flex items-center justify-center gap-3 hover:bg-zinc-50 hover:border-zinc-300 transition-colors"
-            >
-              <Lock className="w-5 h-5" />
-              <span>{t.login.emailPassword}</span>
             </button>
           </div>
         )}
@@ -350,69 +305,6 @@ function LoginContent() {
             >
               {t.login.resendCode}
             </button>
-          </form>
-        )}
-
-        {/* Email Password Login */}
-        {mode === "email-password" && (
-          <form onSubmit={handlePasswordLogin} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1.5">
-                {t.login.email}
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your@email.com"
-                  required
-                  autoFocus
-                  className="w-full h-12 pl-11 pr-4 border border-zinc-200 rounded-lg text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1.5">
-                {t.login.password}
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  className="w-full h-12 pl-11 pr-12 border border-zinc-200 rounded-lg text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full h-12 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                t.login.login
-              )}
-            </button>
-
-            <p className="text-xs text-zinc-500 text-center">
-              {t.login.newUserHint}
-            </p>
           </form>
         )}
 
