@@ -599,6 +599,33 @@ export async function deleteGeneration(userId: string, generationId: string): Pr
   return true
 }
 
+// Update generation images (for deleting single image)
+// Note: This only updates the display, quota is NOT refunded
+export async function updateGenerationImages(
+  userId: string, 
+  generationId: string, 
+  newOutputUrls: string[]
+): Promise<boolean> {
+  const supabase = getSupabase()
+  
+  const { error } = await supabase
+    .from('generations')
+    .update({ 
+      output_image_urls: newOutputUrls,
+      // Don't update total_images_count - keep original for quota calculation
+    })
+    .eq('id', generationId)
+    .eq('user_id', userId)
+
+  if (error) {
+    console.error('Error updating generation images:', error)
+    return false
+  }
+  
+  console.log('[Sync] Updated generation images:', generationId, 'remaining:', newOutputUrls.length)
+  return true
+}
+
 // ============== Favorites ==============
 
 export async function fetchFavorites(userId: string): Promise<Favorite[]> {

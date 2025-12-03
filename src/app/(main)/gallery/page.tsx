@@ -85,6 +85,7 @@ export default function GalleryPage() {
     removeFavorite, 
     isFavorited, 
     deleteGeneration,
+    deleteGenerationImage,
     addUserAsset,
     isSyncing: storeSyncing,
   } = useAssetStore()
@@ -255,7 +256,8 @@ export default function GalleryPage() {
     if (!selectedItem) return
     
     try {
-      await deleteGeneration(selectedItem.gen.id)
+      // Delete only the selected image, not the entire generation
+      await deleteGenerationImage(selectedItem.gen.id, selectedItem.index)
       setSelectedItem(null)
       setShowDeleteConfirm(false)
     } catch (error) {
