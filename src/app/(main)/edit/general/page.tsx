@@ -245,7 +245,7 @@ export default function GeneralEditPage() {
       
       if (isGeneratingRef.current) {
         if (error.name === 'AbortError') {
-          alert(t.edit?.timeout || "编辑超时，请重试。建议使用较小的图片。")
+          alert("编辑超时，请重试。建议使用较小的图片。")
         } else {
           const errorMsg = getErrorMessage(error.message, t) || t.errors?.generateFailed || "编辑失败，请重试"
           alert(errorMsg)
