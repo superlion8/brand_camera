@@ -454,14 +454,16 @@ export default function GalleryPage() {
           {/* Show cards for active tasks - each imageSlot gets its own card */}
           {activeTab === "all" && activeTasks.map((task) => (
             task.imageSlots && task.imageSlots.length > 0 
-              ? task.imageSlots.map((slot, idx) => (
-                  <ImageSlotCard 
-                    key={`${task.id}-slot-${idx}`} 
-                    task={task} 
-                    slot={slot}
-                    slotIndex={idx}
-                  />
-                ))
+              ? task.imageSlots
+                  .filter(slot => slot.status !== 'completed') // 只显示未完成的
+                  .map((slot) => (
+                    <ImageSlotCard 
+                      key={`${task.id}-slot-${slot.index}`} 
+                      task={task} 
+                      slot={slot}
+                      slotIndex={slot.index}
+                    />
+                  ))
               : <GeneratingCard key={task.id} task={task} />
           ))}
           
@@ -1045,51 +1047,15 @@ export default function GalleryPage() {
   )
 }
 
-// Single image slot card - shows individual image status
+// Single image slot card - shows individual image status (only loading/error, not completed)
 function ImageSlotCard({ task, slot, slotIndex }: { task: GenerationTask; slot: ImageSlot; slotIndex: number }) {
   const { t } = useTranslation()
   const isStudio = task.type === 'studio'
   const isEdit = task.type === 'edit'
   
-  // 如果已完成且有图片，显示图片
-  if (slot.status === 'completed' && slot.imageUrl) {
-    return (
-      <div className="relative aspect-[4/5] bg-zinc-200 rounded-xl overflow-hidden shadow-sm ring-2 ring-green-400">
-        <Image 
-          src={slot.imageUrl} 
-          alt={`Generated ${slotIndex + 1}`}
-          fill
-          className="object-cover"
-        />
-        {/* 显示模型类型标签 */}
-        <div className="absolute top-2 left-2 flex gap-1">
-          {slot.modelType && (
-            <span className={`px-1.5 py-0.5 text-[9px] rounded font-medium ${
-              slot.modelType === 'pro' 
-                ? 'bg-green-500 text-white' 
-                : 'bg-orange-500 text-white'
-            }`}>
-              {slot.modelType === 'pro' ? 'Pro' : 'Flash'}
-            </span>
-          )}
-          {slot.genMode && (
-            <span className={`px-1.5 py-0.5 text-[9px] rounded font-medium ${
-              slot.genMode === 'simple' 
-                ? 'bg-blue-500 text-white' 
-                : 'bg-purple-500 text-white'
-            }`}>
-              {slot.genMode === 'simple' ? '极简' : '扩展'}
-            </span>
-          )}
-        </div>
-        {/* 新生成标记 */}
-        <div className="absolute bottom-2 right-2">
-          <span className="px-2 py-1 bg-green-500 text-white text-[10px] rounded-full font-medium">
-            ✓ 新
-          </span>
-        </div>
-      </div>
-    )
+  // 已完成的图片不在这里显示，等任务全部完成后由 generations store 统一显示
+  if (slot.status === 'completed') {
+    return null
   }
   
   // 如果失败，显示错误
