@@ -31,10 +31,9 @@ const MODEL_GENDERS: { id: ModelGender; label: string }[] = [
 
 type CameraMode = "camera" | "review" | "processing" | "results"
 
-// Generation config - DEBUG MODE: 2 images (1 simple + 1 extended)
-// TODO: Change back to 6 images (3 simple + 3 extended) for production
-const CAMERA_NUM_IMAGES = 2 // Change to 6 for production
-const CAMERA_NUM_SIMPLE = 1 // Change to 3 for production
+// Generation config - 6 images total (3 simple + 3 extended)
+const CAMERA_NUM_IMAGES = 6
+const CAMERA_NUM_SIMPLE = 3
 
 export default function CameraPage() {
   const router = useRouter()
@@ -281,36 +280,25 @@ export default function CameraPage() {
     // Capture current selections BEFORE any async operations
     const currentModelStyle = selectedModelStyle
     const currentModelGender = selectedModelGender
-    let currentModel = activeModel
-    let currentBg = activeBg
+    const currentModel = activeModel // May be undefined - random selection happens per-image
+    const currentBg = activeBg       // May be undefined - random selection happens per-image
     const currentProduct2 = capturedImage2
     const currentProductFromPhone = productFromPhone
     const currentProduct2FromPhone = product2FromPhone
     
-    // Track if user selected or system randomly assigned
+    // Track if user selected or will use random (per-image)
     const modelIsUserSelected = !!activeModel
     const bgIsUserSelected = !!activeBg
     
-    // If model not selected, randomly pick one from ALL presets (including non-visible)
-    if (!currentModel) {
-      const randomModel = getRandomModel()
-      currentModel = randomModel
-      console.log('Randomly selected model:', randomModel.name)
-    }
-    
-    // If background not selected, randomly pick one from ALL presets (including non-visible)
-    if (!currentBg) {
-      const randomBg = getRandomBackground()
-      currentBg = randomBg
-      console.log('Randomly selected background:', randomBg.name)
-    }
+    // Note: Random model/background selection now happens per-image in runBackgroundGeneration
+    // This ensures each of the 6 images can have different random model/background
     
     // Create task and switch to processing mode
     const params = {
       modelStyle: currentModelStyle || undefined,
       modelGender: currentModelGender || undefined,
-      model: currentModel?.name,
-      background: currentBg?.name,
+      model: currentModel?.name || '每张随机',
+      background: currentBg?.name || '每张随机',
       hasProduct2: !!currentProduct2,
       modelIsUserSelected, // Track if user selected or system random
       bgIsUserSelected,    // Track if user selected or system random
@@ -374,64 +362,87 @@ export default function CameraPage() {
     try {
       // Compress and prepare images before sending
       console.log("Preparing images...")
-      console.log("Model selected:", model?.name, "URL:", model?.imageUrl?.substring(0, 50))
-      console.log("Background selected:", background?.name)
+      console.log("User selected model:", model?.name || 'none (will use random per image)')
+      console.log("User selected background:", background?.name || 'none (will use random per image)')
       console.log("Has second product:", !!inputImage2)
       
       const compressedProduct = await compressBase64Image(inputImage, 1024)
       const compressedProduct2 = inputImage2 ? await compressBase64Image(inputImage2, 1024) : null
       
-      // Convert URLs to base64 if needed (for preset assets)
-      const [modelBase64, bgBase64] = await Promise.all([
-        ensureBase64(model?.imageUrl),
-        ensureBase64(background?.imageUrl),
-      ])
-      
-      console.log("Model base64 ready:", !!modelBase64, modelBase64 ? modelBase64.substring(0, 30) + "..." : "null")
-      console.log("Background base64 ready:", !!bgBase64)
+      // If user selected model/background, convert to base64 once
+      // Otherwise, will pick random for each image
+      const userModelBase64 = model ? await ensureBase64(model.imageUrl) : null
+      const userBgBase64 = background ? await ensureBase64(background.imageUrl) : null
       
       // Use the constants defined at module level
       const NUM_IMAGES = CAMERA_NUM_IMAGES
       const NUM_SIMPLE = CAMERA_NUM_SIMPLE
       
       console.log(`Sending ${NUM_IMAGES} staggered generation requests (1s apart)...`)
-      
-      const basePayload = {
-        productImage: compressedProduct,
-        productImage2: compressedProduct2,
-        modelImage: modelBase64,
-        modelStyle: modelStyle,
-        modelGender: modelGender,
-        backgroundImage: bgBase64,
-      }
+      console.log(`Config: ${NUM_SIMPLE} simple + ${NUM_IMAGES - NUM_SIMPLE} extended`)
       
       const staggerDelay = 1000 // 1 second between each request
       
-      // Check if both model and background are selected for simple mode
-      const canUseSimpleMode = !!modelBase64 && !!bgBase64
-      
       // Helper to create a delayed request for model images
-      const createModelRequest = (index: number, delayMs: number, simpleMode: boolean) => {
+      // Each request gets its own model/background (random if not user-selected)
+      const createModelRequest = async (index: number, delayMs: number, simpleMode: boolean) => {
+        // For each image, use user's selection or pick random
+        let modelForThisImage = userModelBase64
+        let bgForThisImage = userBgBase64
+        let modelNameForThis = model?.name || ''
+        let bgNameForThis = background?.name || ''
+        
+        // If user didn't select model, pick a random one for this image
+        if (!modelForThisImage) {
+          const randomModel = getRandomModel()
+          modelForThisImage = await ensureBase64(randomModel.imageUrl)
+          modelNameForThis = `${randomModel.name} (随机)`
+          console.log(`Image ${index + 1}: Random model = ${randomModel.name}`)
+        }
+        
+        // If user didn't select background, pick a random one for this image
+        if (!bgForThisImage) {
+          const randomBg = getRandomBackground()
+          bgForThisImage = await ensureBase64(randomBg.imageUrl)
+          bgNameForThis = `${randomBg.name} (随机)`
+          console.log(`Image ${index + 1}: Random background = ${randomBg.name}`)
+        }
+        
+        const payload = {
+          productImage: compressedProduct,
+          productImage2: compressedProduct2,
+          modelImage: modelForThisImage,
+          modelStyle: modelStyle,
+          modelGender: modelGender,
+          backgroundImage: bgForThisImage,
+          type: 'model',
+          index,
+          simpleMode,
+          // Pass model/bg info for logging
+          modelName: modelNameForThis,
+          bgName: bgNameForThis,
+        }
+        
         return new Promise<Response>((resolve, reject) => {
           setTimeout(() => {
             const mode = simpleMode ? '极简模式' : '扩展模式'
-            console.log(`Starting Model ${index + 1} (${mode})...`)
+            console.log(`Starting Image ${index + 1} (${mode}) - Model: ${modelNameForThis}, Bg: ${bgNameForThis}`)
             fetch("/api/generate-single", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              credentials: 'include', // Ensure cookies are sent
-              body: JSON.stringify({ ...basePayload, type: 'model', index, simpleMode }),
+              credentials: 'include',
+              body: JSON.stringify(payload),
             }).then(resolve).catch(reject)
           }, delayMs)
         })
       }
       
       // Create model image requests:
-      // First NUM_SIMPLE: 极简模式 (simple mode) - only if model and background are selected
+      // First NUM_SIMPLE: 极简模式 (simple mode)
       // Rest: 扩展模式 (extended mode)
       const requests = []
       for (let i = 0; i < NUM_IMAGES; i++) {
-        const isSimple = i < NUM_SIMPLE && canUseSimpleMode
+        const isSimple = i < NUM_SIMPLE
         requests.push(createModelRequest(i, staggerDelay * i, isSimple))
       }
       

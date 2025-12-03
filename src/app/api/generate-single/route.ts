@@ -94,46 +94,35 @@ async function generateImageWithFallback(
 async function generateInstructions(
   client: ReturnType<typeof getGenAIClient>,
   productImageData: string,
-  productImage2Data: string | null,
-  modelImageData: string | null,
-  backgroundImageData: string | null,
-  vibeImageData: string | null,
-  modelStyle?: string
+  modelImageData: string,
+  backgroundImageData: string,
+  label: string
 ): Promise<string | null> {
   try {
-    const instructPrompt = buildInstructPrompt({
-      hasModel: !!modelImageData,
-      modelStyle,
-      hasBackground: !!backgroundImageData,
-      hasVibe: !!vibeImageData,
-      hasProduct2: !!productImage2Data,
-    })
+    const instructPrompt = buildInstructPrompt()
     
-    const parts: any[] = [{ text: instructPrompt }]
-    parts.push({ inlineData: { mimeType: 'image/jpeg', data: productImageData } })
+    // Input: product, model, background
+    const parts: any[] = [
+      { text: instructPrompt },
+      { inlineData: { mimeType: 'image/jpeg', data: productImageData } },  // {{product}}
+      { inlineData: { mimeType: 'image/jpeg', data: modelImageData } },    // {{model}}
+      { inlineData: { mimeType: 'image/jpeg', data: backgroundImageData } }, // {{background}}
+    ]
     
-    if (productImage2Data) {
-      parts.push({ inlineData: { mimeType: 'image/jpeg', data: productImage2Data } })
-    }
-    if (modelImageData) {
-      parts.push({ inlineData: { mimeType: 'image/jpeg', data: modelImageData } })
-    }
-    if (backgroundImageData) {
-      parts.push({ inlineData: { mimeType: 'image/jpeg', data: backgroundImageData } })
-    }
-    if (vibeImageData) {
-      parts.push({ inlineData: { mimeType: 'image/jpeg', data: vibeImageData } })
-    }
-    
+    console.log(`[${label}] Generating photography instructions with VLM...`)
     const response = await client.models.generateContent({
       model: VLM_MODEL,
       contents: [{ role: 'user', parts }],
       config: { safetySettings },
     })
     
-    return extractText(response)
+    const result = extractText(response)
+    if (result) {
+      console.log(`[${label}] Instructions generated (${result.length} chars)`)
+    }
+    return result
   } catch (err: any) {
-    console.error('[Instructions] Error:', err?.message)
+    console.error(`[${label}] Instructions error:`, err?.message)
     return null
   }
 }
@@ -220,21 +209,25 @@ export async function POST(request: NextRequest) {
       result = await generateImageWithFallback(client, parts, label)
       
     } else {
-      // Extended mode: Generate model image with instructions (扩展版)
-      console.log(`[${label}] Generating instructions...`)
+      // Extended mode: 2-step process (扩展版)
+      // Step 1: Generate photography instructions with VLM
+      // Step 2: Generate image with the instructions
+      
+      if (!modelImageData || !backgroundImageData) {
+        return NextResponse.json({ 
+          success: false, 
+          error: '扩展模式需要模特和背景图片' 
+        }, { status: 400 })
+      }
+      
+      console.log(`[${label}] Step 1: Generating instructions...`)
       const instructPrompt = await generateInstructions(
-        client, productImageData, productImage2Data, modelImageData,
-        backgroundImageData, vibeImageData, modelStyle
+        client, productImageData, modelImageData, backgroundImageData, label
       )
       
+      // Step 2: Generate image
       const modelPrompt = buildModelPrompt({
-        hasModel: !!modelImageData,
-        modelStyle,
-        modelGender,
-        hasBackground: !!backgroundImageData,
-        hasVibe: !!vibeImageData,
         instructPrompt: instructPrompt || undefined,
-        hasProduct2: !!productImage2Data,
       })
       
       // Save the full prompt used
@@ -243,23 +236,15 @@ export async function POST(request: NextRequest) {
         usedPrompt = `[Photography Instructions]\n${instructPrompt}\n\n[Image Generation Prompt]\n${modelPrompt}`
       }
       
-      const parts: any[] = []
-      if (modelImageData) {
-        parts.push({ inlineData: { mimeType: 'image/jpeg', data: modelImageData } })
-      }
-      parts.push({ text: modelPrompt })
-      parts.push({ inlineData: { mimeType: 'image/jpeg', data: productImageData } })
-      if (productImage2Data) {
-        parts.push({ inlineData: { mimeType: 'image/jpeg', data: productImage2Data } })
-      }
-      if (backgroundImageData) {
-        parts.push({ inlineData: { mimeType: 'image/jpeg', data: backgroundImageData } })
-      }
-      if (vibeImageData) {
-        parts.push({ inlineData: { mimeType: 'image/jpeg', data: vibeImageData } })
-      }
+      // Parts order: product, model, background, prompt
+      const parts: any[] = [
+        { inlineData: { mimeType: 'image/jpeg', data: productImageData } },  // {{product}}
+        { inlineData: { mimeType: 'image/jpeg', data: modelImageData } },    // {{model}}
+        { inlineData: { mimeType: 'image/jpeg', data: backgroundImageData } }, // {{background}}
+        { text: modelPrompt },
+      ]
       
-      console.log(`[${label}] Generating model image...`)
+      console.log(`[${label}] Step 2: Generating model image...`)
       result = await generateImageWithFallback(client, parts, label)
     }
     
