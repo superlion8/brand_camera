@@ -118,13 +118,16 @@ export const useGenerationTaskStore = create<GenerationTaskState>()(
       name: 'generation-task-storage',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-        // 只持久化进行中和最近完成的任务
-        tasks: state.tasks.filter(t => 
-          t.status === 'pending' || 
-          t.status === 'generating' ||
-          // 保留最近10分钟内的已完成/失败任务
-          (new Date(t.createdAt).getTime() > Date.now() - 10 * 60 * 1000)
-        )
+        // 只持久化进行中的任务，且不存储 base64 图片数据
+        tasks: state.tasks
+          .filter(t => t.status === 'pending' || t.status === 'generating')
+          .map(t => ({
+            ...t,
+            // 不存储 base64 图片，只保留 URL
+            inputImageUrl: t.inputImageUrl?.startsWith('data:') ? '' : t.inputImageUrl,
+            outputImageUrls: t.outputImageUrls.filter(url => !url?.startsWith('data:')),
+          }))
+          .slice(0, 5) // 最多保留5个任务
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true)
