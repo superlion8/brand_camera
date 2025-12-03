@@ -71,8 +71,8 @@ export default function CameraPage() {
   useEffect(() => {
     const checkCameraPermission = async () => {
       try {
-        // First check sessionStorage for cached permission state
-        const cachedPermission = sessionStorage.getItem('cameraPermissionGranted')
+        // First check localStorage for cached permission state
+        const cachedPermission = localStorage.getItem('cameraPermissionGranted')
         if (cachedPermission === 'true') {
           setCameraReady(true)
           setPermissionChecked(true)
@@ -84,20 +84,20 @@ export default function CameraPage() {
           const result = await navigator.permissions.query({ name: 'camera' as PermissionName })
           if (result.state === 'granted') {
             setCameraReady(true)
-            sessionStorage.setItem('cameraPermissionGranted', 'true')
+            localStorage.setItem('cameraPermissionGranted', 'true')
           } else if (result.state === 'denied') {
             setHasCamera(false)
-            sessionStorage.setItem('cameraPermissionGranted', 'false')
+            localStorage.setItem('cameraPermissionGranted', 'false')
           }
           
           // Listen for permission changes
           result.addEventListener('change', () => {
             if (result.state === 'granted') {
               setCameraReady(true)
-              sessionStorage.setItem('cameraPermissionGranted', 'true')
+              localStorage.setItem('cameraPermissionGranted', 'true')
             } else if (result.state === 'denied') {
               setHasCamera(false)
-              sessionStorage.setItem('cameraPermissionGranted', 'false')
+              localStorage.setItem('cameraPermissionGranted', 'false')
             }
           })
         }
@@ -109,7 +109,7 @@ export default function CameraPage() {
           // Permission granted, stop the stream (Webcam will create its own)
           stream.getTracks().forEach(track => track.stop())
           setCameraReady(true)
-          sessionStorage.setItem('cameraPermissionGranted', 'true')
+          localStorage.setItem('cameraPermissionGranted', 'true')
         } catch (streamError) {
           console.log('Camera access denied or unavailable')
           setHasCamera(false)
@@ -253,8 +253,8 @@ export default function CameraPage() {
   
   const handleCameraReady = useCallback(() => {
     setCameraReady(true)
-    // Cache permission state for this session
-    sessionStorage.setItem('cameraPermissionGranted', 'true')
+    // Cache permission state in localStorage
+    localStorage.setItem('cameraPermissionGranted', 'true')
   }, [])
   
   const handleRetake = () => {
