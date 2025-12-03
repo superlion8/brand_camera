@@ -10,6 +10,17 @@ interface LanguageState {
   setHasHydrated: (state: boolean) => void
 }
 
+// 根据浏览器语言自动检测默认语言
+function detectBrowserLanguage(): Language {
+  if (typeof window === 'undefined') return 'zh'
+  
+  const browserLang = navigator.language.toLowerCase()
+  
+  if (browserLang.startsWith('ko')) return 'ko'  // 韩语
+  if (browserLang.startsWith('zh')) return 'zh'  // 中文
+  return 'en'  // 默认英语
+}
+
 export const useLanguageStore = create<LanguageState>()(
   persist(
     (set, get) => ({
@@ -30,9 +41,19 @@ export const useLanguageStore = create<LanguageState>()(
       name: 'language-storage',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ language: state.language }),
-      onRehydrateStorage: () => (state) => {
-        // Update translations based on persisted language
+      onRehydrateStorage: () => (state, error) => {
         if (state) {
+          // 检查 localStorage 中是否已有保存的语言
+          const savedLang = localStorage.getItem('language-storage')
+          const hasSavedLanguage = savedLang && JSON.parse(savedLang)?.state?.language
+          
+          // 如果用户没有手动选择过，根据浏览器语言自动检测
+          if (!hasSavedLanguage) {
+            const detectedLang = detectBrowserLanguage()
+            state.language = detectedLang
+            console.log('[Language] Auto-detected from browser:', detectedLang)
+          }
+          
           state.t = translations[state.language]
           state._hasHydrated = true
         }
