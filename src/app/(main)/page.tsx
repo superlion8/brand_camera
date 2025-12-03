@@ -23,6 +23,7 @@ function FeatureCard({
   title,
   subtitle,
   height = 200,
+  accent,
 }: {
   href: string
   beforeImage: string
@@ -31,7 +32,14 @@ function FeatureCard({
   title: string
   subtitle: string
   height?: number
+  accent?: 'blue' | 'amber'
 }) {
+  const accentStyles = accent === 'blue' 
+    ? { bg: 'bg-blue-500', iconBg: 'bg-blue-100', iconColor: 'text-blue-600', textColor: 'text-white', subColor: 'text-blue-100' }
+    : accent === 'amber'
+    ? { bg: 'bg-amber-500', iconBg: 'bg-amber-100', iconColor: 'text-amber-600', textColor: 'text-white', subColor: 'text-amber-100' }
+    : { bg: 'bg-white', iconBg: 'bg-zinc-100', iconColor: 'text-zinc-600', textColor: 'text-zinc-900', subColor: 'text-zinc-500' }
+  
   return (
     <Link href={href} className="block">
       <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-zinc-100">
@@ -43,14 +51,14 @@ function FeatureCard({
           className="rounded-t-2xl rounded-b-none"
         />
         {/* Title below image */}
-        <div className="p-2.5">
+        <div className={`p-2.5 ${accentStyles.bg}`}>
           <div className="flex items-center gap-1.5">
-            <div className="w-6 h-6 bg-zinc-100 rounded-full flex items-center justify-center shrink-0">
-              <Icon className="w-3 h-3 text-zinc-600" />
+            <div className={`w-6 h-6 ${accent ? 'bg-white/20' : accentStyles.iconBg} rounded-full flex items-center justify-center shrink-0`}>
+              <Icon className={`w-3 h-3 ${accent ? 'text-white' : accentStyles.iconColor}`} />
             </div>
             <div className="min-w-0">
-              <h3 className="font-bold text-zinc-900 text-sm truncate">{title}</h3>
-              <p className="text-zinc-500 text-[10px] truncate">{subtitle}</p>
+              <h3 className={`font-bold text-sm truncate ${accentStyles.textColor}`}>{title}</h3>
+              <p className={`text-[10px] truncate ${accentStyles.subColor}`}>{subtitle}</p>
             </div>
           </div>
         </div>
@@ -101,6 +109,7 @@ export default function HomePage() {
             title={t.home.modelStudio}
             subtitle={t.home.modelStudioSubtitle}
             height={220}
+            accent="blue"
           />
           
           {/* Product Studio */}
