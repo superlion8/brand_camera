@@ -367,7 +367,7 @@ function AssetCard({
         />
         {isPreset && (
           <span className="absolute top-2 left-2 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded font-medium">
-            {useLanguageStore.getState().translations.common.official}
+            {useLanguageStore.getState().t.common.official}
           </span>
         )}
         {isPinned && (
