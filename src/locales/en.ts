@@ -49,6 +49,8 @@ export const en: Translations = {
     userSelected: "Selected",
     selected: "Selected",
     select: "Select",
+    syncing: "Syncing with cloud...",
+    pleaseWait: "Please wait",
   },
   
   // Navigation
@@ -214,6 +216,7 @@ export const en: Translations = {
     productImages: "product images",
     modelImages: "model images",
     processingImage: "AI is processing your image",
+    loadMore: "Load More",
   },
   
   // Brand Assets Page

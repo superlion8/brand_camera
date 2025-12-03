@@ -47,6 +47,8 @@ export const zh = {
     userSelected: "用户选择",
     selected: "选择",
     select: "选择",
+    syncing: "正在同步云端数据...",
+    pleaseWait: "请稍候",
   },
   
   // Navigation
@@ -212,6 +214,7 @@ export const zh = {
     productImages: "张商品图",
     modelImages: "张模特图",
     processingImage: "AI 正在处理您的图片",
+    loadMore: "加载更多",
   },
   
   // Brand Assets Page

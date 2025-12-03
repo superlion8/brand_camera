@@ -293,41 +293,35 @@ export async function deleteUserAsset(userId: string, assetId: string): Promise<
 
 // ============== Generations ==============
 
-export async function fetchGenerations(userId: string): Promise<Generation[]> {
-  console.log('[Sync] Fetching generations for user_id:', userId)
+// Pagination config
+const PAGE_SIZE = 30
+
+export async function fetchGenerations(userId: string, page: number = 0): Promise<{ generations: Generation[], hasMore: boolean }> {
+  console.log('[Sync] Fetching generations for user_id:', userId, 'page:', page)
   const supabase = getSupabase()
   
-  // Fetch only completed, non-deleted generations
-  // Filter out: is_deleted = true, status = 'failed', status = 'pending', status = 'processing'
-  const { data, error } = await supabase
+  const from = page * PAGE_SIZE
+  const to = from + PAGE_SIZE - 1
+  
+  // Fetch only completed, non-deleted generations with pagination
+  const { data, error, count } = await supabase
     .from('generations')
-    .select('*')
+    .select('*', { count: 'exact' })
     .eq('user_id', userId)
     .eq('status', 'completed')
     .or('is_deleted.is.null,is_deleted.eq.false')
     .order('created_at', { ascending: false })
-    .limit(200) // Limit to most recent 200 for performance
+    .range(from, to)
 
   if (error) {
     console.error('[Sync] Error fetching generations:', error.message, error.code)
     if (error.code === '42P01' || error.message.includes('does not exist')) {
       console.warn('[Sync] generations table does not exist. Please run the migration.')
     }
-    return []
+    return { generations: [], hasMore: false }
   }
   
-  console.log('[Sync] Fetched generations from DB:', data?.length || 0)
-  
-  if (data && data.length > 0) {
-    console.log('[Sync] First generation sample:', {
-      id: data[0].id,
-      user_id: data[0].user_id,
-      has_output_image_urls: !!data[0].output_image_urls,
-      has_output_images: !!data[0].output_images,
-      output_image_urls_length: data[0].output_image_urls?.length,
-      output_images_length: data[0].output_images?.length,
-    })
-  }
+  console.log('[Sync] Fetched generations from DB:', data?.length || 0, 'total:', count)
 
   const result = (data || [])
     .map(row => {
@@ -364,8 +358,33 @@ export async function fetchGenerations(userId: string): Promise<Generation[]> {
     // Filter out generations without valid output images AFTER mapping
     .filter(gen => gen.outputImageUrls && gen.outputImageUrls.length > 0)
   
-  console.log('[Sync] Generations after processing:', result.length)
-  return result
+  const hasMore = count ? (from + PAGE_SIZE) < count : false
+  console.log('[Sync] Generations after processing:', result.length, 'hasMore:', hasMore)
+  
+  return { generations: result, hasMore }
+}
+
+// Fetch all generations (for backward compatibility) - uses pagination internally
+export async function fetchAllGenerations(userId: string): Promise<Generation[]> {
+  const allGenerations: Generation[] = []
+  let page = 0
+  let hasMore = true
+  
+  // Fetch first page
+  const firstResult = await fetchGenerations(userId, 0)
+  allGenerations.push(...firstResult.generations)
+  hasMore = firstResult.hasMore
+  page = 1
+  
+  // For initial sync, fetch remaining pages in background (max 5 pages = 150 items)
+  while (hasMore && page < 5) {
+    const result = await fetchGenerations(userId, page)
+    allGenerations.push(...result.generations)
+    hasMore = result.hasMore
+    page++
+  }
+  
+  return allGenerations
 }
 
 // Helper to map old type names to new task_type values
@@ -797,6 +816,7 @@ export interface SyncData {
   generations: Generation[]
   favorites: Favorite[]
   pinnedPresetIds: Set<string>
+  hasMoreGenerations?: boolean
 }
 
 export async function syncAllData(userId: string): Promise<SyncData> {
@@ -812,13 +832,13 @@ export async function syncAllData(userId: string): Promise<SyncData> {
     await supabase.from('generations').select('id').limit(1).maybeSingle()
     console.log('[Sync] Connection ready')
     
-    // Now fetch all data sequentially for reliability
-    console.log('[Sync] Fetching generations...')
-    const generations = await fetchGenerations(userId).catch(e => {
+    // Fetch first page of generations quickly for fast initial load
+    console.log('[Sync] Fetching first page of generations...')
+    const firstPageResult = await fetchGenerations(userId, 0).catch(e => {
       console.error('[Sync] fetchGenerations error:', e)
-      return []
+      return { generations: [], hasMore: false }
     })
-    console.log('[Sync] Generations:', generations.length)
+    console.log('[Sync] First page:', firstPageResult.generations.length, 'hasMore:', firstPageResult.hasMore)
     
     console.log('[Sync] Fetching user assets...')
     const assets = await fetchUserAssets(userId).catch(e => {
@@ -841,7 +861,8 @@ export async function syncAllData(userId: string): Promise<SyncData> {
 
     const duration = Date.now() - startTime
     console.log(`[Sync] Completed in ${duration}ms`, {
-      generations: generations.length,
+      generations: firstPageResult.generations.length,
+      hasMoreGenerations: firstPageResult.hasMore,
       models: assets.models?.length || 0,
       backgrounds: assets.backgrounds?.length || 0,
       favorites: favorites.length,
@@ -852,9 +873,10 @@ export async function syncAllData(userId: string): Promise<SyncData> {
       userBackgrounds: assets.backgrounds || [],
       userProducts: assets.products || [],
       userVibes: assets.vibes || [],
-      generations: generations || [],
+      generations: firstPageResult.generations || [],
       favorites: favorites || [],
       pinnedPresetIds: pinnedPresetIds || new Set<string>(),
+      hasMoreGenerations: firstPageResult.hasMore,
     }
   } catch (error) {
     console.error('[Sync] syncAllData error:', error)

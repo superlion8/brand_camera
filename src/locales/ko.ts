@@ -49,6 +49,8 @@ export const ko: Translations = {
     userSelected: "선택됨",
     selected: "선택",
     select: "선택",
+    syncing: "클라우드 동기화 중...",
+    pleaseWait: "잠시만 기다려 주세요",
   },
   
   // Navigation
@@ -214,6 +216,7 @@ export const ko: Translations = {
     productImages: "장 상품 이미지",
     modelImages: "장 모델 이미지",
     processingImage: "AI가 이미지 처리 중",
+    loadMore: "더 보기",
   },
   
   // Brand Assets Page

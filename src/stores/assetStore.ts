@@ -80,7 +80,12 @@ interface AssetState {
   // Cloud sync
   setCurrentUserId: (userId: string | null) => void
   syncWithCloud: (userId: string) => Promise<void>
+  loadMoreGenerations: () => Promise<void>
   clearUserData: () => void
+  
+  // Pagination state
+  generationsPage: number
+  hasMoreGenerations: boolean
 }
 
 export const useAssetStore = create<AssetState>()(
@@ -100,6 +105,8 @@ export const useAssetStore = create<AssetState>()(
       isSyncing: false,
       lastSyncAt: null,
       currentUserId: null,
+      generationsPage: 0,
+      hasMoreGenerations: false,
       
       _hasHydrated: false,
       _hasLoadedFromDB: false, // Prevent duplicate loadFromDB calls
@@ -493,6 +500,50 @@ export const useAssetStore = create<AssetState>()(
         }
       },
       
+      // Load more generations (pagination)
+      loadMoreGenerations: async () => {
+        const { currentUserId, generationsPage, hasMoreGenerations, isSyncing, generations } = get()
+        
+        if (!currentUserId || !hasMoreGenerations || isSyncing) {
+          console.log('[Store] Cannot load more:', { currentUserId, hasMoreGenerations, isSyncing })
+          return
+        }
+        
+        const nextPage = generationsPage + 1
+        console.log('[Store] Loading more generations, page:', nextPage)
+        
+        set({ isSyncing: true })
+        
+        try {
+          const result = await syncService.fetchGenerations(currentUserId, nextPage)
+          
+          // Merge with existing generations
+          const existingIds = new Set(generations.map(g => g.id))
+          const newGenerations = result.generations.filter(g => !existingIds.has(g.id))
+          
+          // Save to IndexedDB
+          for (const gen of newGenerations) {
+            try {
+              await dbPut(STORES.GENERATIONS, gen)
+            } catch (e) {
+              console.warn('[Store] Failed to save generation to IndexedDB:', gen.id)
+            }
+          }
+          
+          set({
+            generations: [...generations, ...newGenerations],
+            generationsPage: nextPage,
+            hasMoreGenerations: result.hasMore,
+            isSyncing: false,
+          })
+          
+          console.log('[Store] Loaded', newGenerations.length, 'more generations, hasMore:', result.hasMore)
+        } catch (error) {
+          console.error('[Store] Failed to load more generations:', error)
+          set({ isSyncing: false })
+        }
+      },
+      
       // Sync with cloud - fetch all data from Supabase
       syncWithCloud: async (userId) => {
         // Always set currentUserId immediately, even if sync is skipped
@@ -582,6 +633,8 @@ export const useAssetStore = create<AssetState>()(
             pinnedPresetIds: cloudData.pinnedPresetIds,
             lastSyncAt: new Date().toISOString(),
             isSyncing: false,
+            generationsPage: 0,
+            hasMoreGenerations: cloudData.hasMoreGenerations || false,
           })
           
           console.log('[Store] Cloud sync completed successfully')

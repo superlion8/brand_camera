@@ -67,6 +67,8 @@ export default function GalleryPage() {
     addUserAsset,
     isSyncing: storeSyncing,
     syncWithCloud,
+    loadMoreGenerations,
+    hasMoreGenerations,
   } = useAssetStore()
   
   const { isSyncing: authSyncing, user } = useAuth()
@@ -527,6 +529,26 @@ export default function GalleryPage() {
           })}
         </div>
         
+        {/* Load More Button */}
+        {hasMoreGenerations && displayedHistory.length > 0 && activeTab === "all" && (
+          <div className="flex justify-center py-4">
+            <button
+              onClick={() => loadMoreGenerations()}
+              disabled={storeSyncing}
+              className="px-6 py-2.5 bg-zinc-100 hover:bg-zinc-200 disabled:bg-zinc-50 text-zinc-700 disabled:text-zinc-400 rounded-full text-sm font-medium transition-colors flex items-center gap-2"
+            >
+              {storeSyncing ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {t.common.loading}
+                </>
+              ) : (
+                t.gallery.loadMore || '加载更多'
+              )}
+            </button>
+          </div>
+        )}
+        
         {displayedHistory.length === 0 && activeTasks.length === 0 && completedTasksToShow.length === 0 && (
           <div className="flex flex-col items-center justify-center h-64 text-zinc-400">
             {isSyncing ? (
@@ -534,8 +556,8 @@ export default function GalleryPage() {
                 <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mb-4">
                   <RefreshCw className="w-8 h-8 text-blue-400 animate-spin" />
                 </div>
-                <p className="text-sm text-blue-600">正在同步云端数据...</p>
-                <p className="text-xs text-zinc-300 mt-1">请稍候</p>
+                <p className="text-sm text-blue-600">{t.common.syncing || '正在同步云端数据...'}</p>
+                <p className="text-xs text-zinc-300 mt-1">{t.common.pleaseWait || '请稍候'}</p>
               </>
             ) : (
               <>
