@@ -118,16 +118,36 @@ export const useGenerationTaskStore = create<GenerationTaskState>()(
       name: 'generation-task-storage',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-        // 只持久化进行中的任务，且不存储 base64 图片数据
+        // 持久化任务状态，但不存储 base64 图片数据（太大会超限）
         tasks: state.tasks
-          .filter(t => t.status === 'pending' || t.status === 'generating')
+          .filter(t => 
+            t.status === 'pending' || 
+            t.status === 'generating' ||
+            // 保留最近30分钟内的已完成/失败任务
+            (new Date(t.createdAt).getTime() > Date.now() - 30 * 60 * 1000)
+          )
           .map(t => ({
-            ...t,
-            // 不存储 base64 图片，只保留 URL
-            inputImageUrl: t.inputImageUrl?.startsWith('data:') ? '' : t.inputImageUrl,
-            outputImageUrls: t.outputImageUrls.filter(url => !url?.startsWith('data:')),
+            id: t.id,
+            type: t.type,
+            status: t.status,
+            createdAt: t.createdAt,
+            expectedImageCount: t.expectedImageCount,
+            error: t.error,
+            // 不存储 base64 图片数据，用占位符标记
+            inputImageUrl: t.inputImageUrl?.startsWith('data:') ? '[base64]' : t.inputImageUrl,
+            outputImageUrls: t.outputImageUrls.map(url => 
+              url?.startsWith('data:') ? '[base64]' : url
+            ),
+            // 不存储 params 中的图片数据
+            params: t.params ? {
+              ...t.params,
+              inputImage: undefined,
+              productImage: undefined,
+              modelImage: undefined,
+              backgroundImage: undefined,
+            } : undefined,
           }))
-          .slice(0, 5) // 最多保留5个任务
+          .slice(0, 10) // 最多保留10个任务
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true)
