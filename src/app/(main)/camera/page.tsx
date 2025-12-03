@@ -401,6 +401,10 @@ export default function CameraPage() {
       
       const staggerDelay = 1000 // 1 second between each request
       
+      // Track per-image model/background for saving later
+      const perImageModels: { name: string; imageUrl: string }[] = Array(NUM_IMAGES).fill(null)
+      const perImageBackgrounds: { name: string; imageUrl: string }[] = Array(NUM_IMAGES).fill(null)
+      
       // Helper to create a delayed request for model images
       // Each request gets its own model/background (random if not user-selected)
       const createModelRequest = async (index: number, delayMs: number, simpleMode: boolean) => {
@@ -409,12 +413,15 @@ export default function CameraPage() {
         let bgForThisImage = userBgBase64
         let modelNameForThis = model?.name || ''
         let bgNameForThis = background?.name || ''
+        let modelUrlForThis = model?.imageUrl || ''
+        let bgUrlForThis = background?.imageUrl || ''
         
         // If user didn't select model, pick a random one for this image
         if (!modelForThisImage) {
           const randomModel = getRandomModel()
           modelForThisImage = await ensureBase64(randomModel.imageUrl)
           modelNameForThis = `${randomModel.name} (随机)`
+          modelUrlForThis = randomModel.imageUrl
           console.log(`Image ${index + 1}: Random model = ${randomModel.name}`)
         }
         
@@ -423,8 +430,13 @@ export default function CameraPage() {
           const randomBg = getRandomBackground()
           bgForThisImage = await ensureBase64(randomBg.imageUrl)
           bgNameForThis = `${randomBg.name} (随机)`
+          bgUrlForThis = randomBg.imageUrl
           console.log(`Image ${index + 1}: Random background = ${randomBg.name}`)
         }
+        
+        // Save per-image model/background info
+        perImageModels[index] = { name: modelNameForThis, imageUrl: modelUrlForThis }
+        perImageBackgrounds[index] = { name: bgNameForThis, imageUrl: bgUrlForThis }
         
         const payload = {
           productImage: compressedProduct,
@@ -594,6 +606,16 @@ export default function CameraPage() {
           }
         })
         
+        // Filter per-image info to match saved images (only successful ones)
+        const savedPerImageModels: { name: string; imageUrl: string }[] = []
+        const savedPerImageBgs: { name: string; imageUrl: string }[] = []
+        data.images.forEach((img, i) => {
+          if (img) {
+            savedPerImageModels.push(perImageModels[i])
+            savedPerImageBgs.push(perImageBackgrounds[i])
+          }
+        })
+        
         await addGeneration({
           id,
           type: "camera_model",
@@ -613,6 +635,8 @@ export default function CameraPage() {
             backgroundImage: representativeBgUrl,
             modelIsUserSelected, // true = user selected, false = system random
             bgIsUserSelected,    // true = user selected, false = system random
+            perImageModels: savedPerImageModels,
+            perImageBackgrounds: savedPerImageBgs,
           },
         })
         
@@ -1775,43 +1799,53 @@ export default function CameraPage() {
                                 </div>
                               )}
                               
-                              {/* Model Image - prefer saved params, fallback to current selection */}
-                              {(savedParams?.modelImage || activeModel?.imageUrl) && (
-                                <div className="flex flex-col items-center">
-                                  <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
-                                    <Image 
-                                      src={savedParams?.modelImage || activeModel?.imageUrl || ''} 
-                                      alt="模特" 
-                                      width={56}
-                                      height={56}
-                                      className="w-full h-full object-cover"
-                                    />
+                              {/* Model Image - use per-image data if available */}
+                              {(() => {
+                                const perImageModel = savedParams?.perImageModels?.[selectedResultIndex]
+                                const modelUrl = perImageModel?.imageUrl || savedParams?.modelImage || activeModel?.imageUrl
+                                const modelName = perImageModel?.name || savedParams?.model || activeModel?.name
+                                if (!modelUrl) return null
+                                return (
+                                  <div className="flex flex-col items-center">
+                                    <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
+                                      <Image 
+                                        src={modelUrl} 
+                                        alt="模特" 
+                                        width={56}
+                                        height={56}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                    <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">
+                                      {modelName || '模特'}
+                                    </p>
                                   </div>
-                                  <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">
-                                    {savedParams?.model || activeModel?.name || '模特'}
-                                    {savedParams?.modelIsUserSelected === false && ' (随机)'}
-                                  </p>
-                                </div>
-                              )}
+                                )
+                              })()}
                               
-                              {/* Background Image - prefer saved params, fallback to current selection */}
-                              {(savedParams?.backgroundImage || activeBg?.imageUrl) && (
-                                <div className="flex flex-col items-center">
-                                  <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
-                                    <Image 
-                                      src={savedParams?.backgroundImage || activeBg?.imageUrl || ''} 
-                                      alt="背景" 
-                                      width={56}
-                                      height={56}
-                                      className="w-full h-full object-cover"
-                                    />
+                              {/* Background Image - use per-image data if available */}
+                              {(() => {
+                                const perImageBg = savedParams?.perImageBackgrounds?.[selectedResultIndex]
+                                const bgUrl = perImageBg?.imageUrl || savedParams?.backgroundImage || activeBg?.imageUrl
+                                const bgName = perImageBg?.name || savedParams?.background || activeBg?.name
+                                if (!bgUrl) return null
+                                return (
+                                  <div className="flex flex-col items-center">
+                                    <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
+                                      <Image 
+                                        src={bgUrl} 
+                                        alt="背景" 
+                                        width={56}
+                                        height={56}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                    <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">
+                                      {bgName || '背景'}
+                                    </p>
                                   </div>
-                                  <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">
-                                    {savedParams?.background || activeBg?.name || '背景'}
-                                    {savedParams?.bgIsUserSelected === false && ' (随机)'}
-                                  </p>
-                                </div>
-                              )}
+                                )
+                              })()}
                               
                             </div>
                             

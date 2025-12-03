@@ -610,41 +610,53 @@ export default function GalleryPage() {
                           </div>
                         )}
                         
-                        {selectedItem.gen.params?.modelImage && (
-                          <div className="flex flex-col items-center">
-                            <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
-                              <Image 
-                                src={selectedItem.gen.params.modelImage} 
-                                alt="模特" 
-                                width={56}
-                                height={56}
-                                className="w-full h-full object-cover"
-                              />
+                        {/* Model Image - use per-image data if available, fallback to params */}
+                        {(() => {
+                          const perImageModel = selectedItem.gen.params?.perImageModels?.[selectedItem.index]
+                          const modelUrl = perImageModel?.imageUrl || selectedItem.gen.params?.modelImage
+                          const modelName = perImageModel?.name || selectedItem.gen.params?.model
+                          if (!modelUrl) return null
+                          return (
+                            <div className="flex flex-col items-center">
+                              <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
+                                <Image 
+                                  src={modelUrl} 
+                                  alt="模特" 
+                                  width={56}
+                                  height={56}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">
+                                {modelName || '模特'}
+                              </p>
                             </div>
-                            <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">
-                              {selectedItem.gen.params.model || '模特'}
-                              {selectedItem.gen.params.modelIsUserSelected === false && ' (随机)'}
-                            </p>
-                          </div>
-                        )}
+                          )
+                        })()}
                         
-                        {selectedItem.gen.params?.backgroundImage && (
-                          <div className="flex flex-col items-center">
-                            <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
-                              <Image 
-                                src={selectedItem.gen.params.backgroundImage} 
-                                alt="环境" 
-                                width={56}
-                                height={56}
-                                className="w-full h-full object-cover"
-                              />
+                        {/* Background Image - use per-image data if available, fallback to params */}
+                        {(() => {
+                          const perImageBg = selectedItem.gen.params?.perImageBackgrounds?.[selectedItem.index]
+                          const bgUrl = perImageBg?.imageUrl || selectedItem.gen.params?.backgroundImage
+                          const bgName = perImageBg?.name || selectedItem.gen.params?.background
+                          if (!bgUrl) return null
+                          return (
+                            <div className="flex flex-col items-center">
+                              <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
+                                <Image 
+                                  src={bgUrl} 
+                                  alt="环境" 
+                                  width={56}
+                                  height={56}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">
+                                {bgName || '环境'}
+                              </p>
                             </div>
-                            <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">
-                              {selectedItem.gen.params.background || '环境'}
-                              {selectedItem.gen.params.bgIsUserSelected === false && ' (随机)'}
-                            </p>
-                          </div>
-                        )}
+                          )
+                        })()}
                       </div>
                       
                       {selectedItem.gen.params && (
