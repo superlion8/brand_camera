@@ -254,48 +254,77 @@ export const useAssetStore = create<AssetState>()(
         
         console.log('[Store] Adding generation, currentUserId:', currentUserId, 'generationId:', generation.id)
         
-        // Save images to IndexedDB (for offline/local cache)
-        const savedOutputUrls: string[] = []
-        for (let i = 0; i < generation.outputImageUrls.length; i++) {
-          const imageId = `${generation.id}_output_${i}`
-          await saveImage(imageId, generation.outputImageUrls[i])
-          savedOutputUrls.push(imageId)
-        }
-        
-        // Save input image
-        const inputImageId = `${generation.id}_input`
-        await saveImage(inputImageId, generation.inputImageUrl)
-        
-        // Sync to cloud first to get the cloud-generated ID
-        // This ensures both IndexedDB and memory use the same ID
-        let finalGeneration = generation
-        if (currentUserId) {
-          console.log('[Store] Syncing generation to cloud for user:', currentUserId)
-          const result = await syncService.saveGeneration(currentUserId, generation)
-          if (result) {
-            console.log('[Store] Generation sync success, cloud ID:', result.id)
-            // Use the cloud-generated ID for consistency
-            finalGeneration = { ...generation, id: result.id }
-          } else {
-            console.warn('[Store] Generation sync failed, using local ID')
-          }
-        } else {
-          console.warn('[Store] Not syncing generation - no currentUserId')
-        }
-        
-        // Store generation metadata with image references
-        // Use the final ID (cloud ID if synced, otherwise local ID)
-        const genToStore = {
-          ...finalGeneration,
-          inputImageRef: inputImageId,
-          outputImageRefs: savedOutputUrls,
-        }
-        await dbPut(STORES.GENERATIONS, genToStore)
-        
-        // Update memory state with the same ID as IndexedDB
+        // 1. 立即更新内存状态（用户立即可见）
         set((state) => ({ 
-          generations: [finalGeneration, ...state.generations] 
+          generations: [generation, ...state.generations] 
         }))
+        console.log('[Store] Generation added to memory state')
+        
+        // 2. 后台异步保存到 IndexedDB 和云端（失败不影响用户体验）
+        // 使用 setTimeout 确保不阻塞 UI
+        setTimeout(async () => {
+          try {
+            // Save images to IndexedDB (for offline/local cache)
+            const savedOutputUrls: string[] = []
+            for (let i = 0; i < generation.outputImageUrls.length; i++) {
+              try {
+                const imageId = `${generation.id}_output_${i}`
+                await saveImage(imageId, generation.outputImageUrls[i])
+                savedOutputUrls.push(imageId)
+              } catch (e) {
+                console.warn(`[Store] Failed to save output image ${i} to IndexedDB:`, e)
+              }
+            }
+            
+            // Save input image
+            const inputImageId = `${generation.id}_input`
+            try {
+              await saveImage(inputImageId, generation.inputImageUrl)
+            } catch (e) {
+              console.warn('[Store] Failed to save input image to IndexedDB:', e)
+            }
+            
+            // Store generation metadata with image references
+            const genToStore = {
+              ...generation,
+              inputImageRef: inputImageId,
+              outputImageRefs: savedOutputUrls,
+            }
+            try {
+              await dbPut(STORES.GENERATIONS, genToStore)
+              console.log('[Store] Generation saved to IndexedDB')
+            } catch (e) {
+              console.warn('[Store] Failed to save generation to IndexedDB:', e)
+            }
+            
+            // Sync to cloud
+            if (currentUserId) {
+              console.log('[Store] Syncing generation to cloud for user:', currentUserId)
+              try {
+                const result = await syncService.saveGeneration(currentUserId, generation)
+                if (result) {
+                  console.log('[Store] Generation sync success, cloud ID:', result.id)
+                  // 如果云端返回了不同的 ID，更新内存状态
+                  if (result.id !== generation.id) {
+                    set((state) => ({
+                      generations: state.generations.map(g => 
+                        g.id === generation.id ? { ...g, id: result.id } : g
+                      )
+                    }))
+                  }
+                } else {
+                  console.warn('[Store] Generation sync failed, data remains local')
+                }
+              } catch (e) {
+                console.error('[Store] Error syncing to cloud:', e)
+              }
+            } else {
+              console.warn('[Store] Not syncing generation - no currentUserId')
+            }
+          } catch (e) {
+            console.error('[Store] Error in background save:', e)
+          }
+        }, 0)
       },
       
       setGenerations: (generations) => set({ generations }),

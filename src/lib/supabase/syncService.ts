@@ -30,66 +30,82 @@ function isBase64(str: string): boolean {
 }
 
 // Upload base64 image to Supabase Storage
-async function uploadToStorage(base64: string, userId: string, prefix: string): Promise<string | null> {
+async function uploadToStorage(base64: string, userId: string, prefix: string, retries = 3): Promise<string | null> {
   if (!isBase64(base64)) return base64 // Already a URL
   
   const supabase = getSupabase()
   
-  try {
-    // Remove data URL prefix if present
-    let base64Content = base64
-    let contentType = 'image/png'
-    
-    if (base64.startsWith('data:')) {
-      const match = base64.match(/^data:(image\/\w+);base64,(.+)$/)
-      if (match) {
-        contentType = match[1]
-        base64Content = match[2]
-      } else {
-        base64Content = base64.replace(/^data:image\/\w+;base64,/, '')
-      }
+  // Remove data URL prefix if present
+  let base64Content = base64
+  let contentType = 'image/png'
+  
+  if (base64.startsWith('data:')) {
+    const match = base64.match(/^data:(image\/\w+);base64,(.+)$/)
+    if (match) {
+      contentType = match[1]
+      base64Content = match[2]
+    } else {
+      base64Content = base64.replace(/^data:image\/\w+;base64,/, '')
     }
-    
-    // Convert base64 to blob
+  }
+  
+  // Convert base64 to blob
+  let blob: Blob
+  try {
     const byteCharacters = atob(base64Content)
     const byteNumbers = new Array(byteCharacters.length)
     for (let i = 0; i < byteCharacters.length; i++) {
       byteNumbers[i] = byteCharacters.charCodeAt(i)
     }
     const byteArray = new Uint8Array(byteNumbers)
-    const blob = new Blob([byteArray], { type: contentType })
-    
-    // Generate unique filename
-    const timestamp = Date.now()
-    const random = Math.random().toString(36).substring(2, 8)
-    const extension = contentType.split('/')[1] || 'png'
-    const fileName = `${userId}/${prefix}_${timestamp}_${random}.${extension}`
-    
-    // Upload to Supabase Storage
-    const { data, error } = await supabase.storage
-      .from('generations')
-      .upload(fileName, blob, {
-        contentType,
-        cacheControl: '31536000',
-        upsert: false,
-      })
-    
-    if (error) {
-      console.error('[Storage] Upload error:', error.message)
-      return null
-    }
-    
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('generations')
-      .getPublicUrl(data.path)
-    
-    console.log('[Storage] Uploaded:', prefix, '->', publicUrl.substring(0, 60) + '...')
-    return publicUrl
-  } catch (error) {
-    console.error('[Storage] Error:', error)
+    blob = new Blob([byteArray], { type: contentType })
+  } catch (e) {
+    console.error('[Storage] Failed to decode base64:', e)
     return null
   }
+  
+  // Generate unique filename
+  const timestamp = Date.now()
+  const random = Math.random().toString(36).substring(2, 8)
+  const extension = contentType.split('/')[1] || 'png'
+  const fileName = `${userId}/${prefix}_${timestamp}_${random}.${extension}`
+  
+  // Upload with retry
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      if (attempt > 0) {
+        console.log(`[Storage] Retry ${attempt}/${retries - 1} for ${prefix}...`)
+        await new Promise(r => setTimeout(r, 1000 * attempt)) // 递增延迟
+      }
+      
+      const { data, error } = await supabase.storage
+        .from('generations')
+        .upload(fileName, blob, {
+          contentType,
+          cacheControl: '31536000',
+          upsert: false,
+        })
+      
+      if (error) {
+        console.error(`[Storage] Upload error (attempt ${attempt + 1}):`, error.message)
+        if (attempt === retries - 1) return null
+        continue
+      }
+      
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('generations')
+        .getPublicUrl(data.path)
+      
+      console.log('[Storage] Uploaded:', prefix, '->', publicUrl.substring(0, 60) + '...')
+      return publicUrl
+    } catch (error) {
+      console.error(`[Storage] Error (attempt ${attempt + 1}):`, error)
+      if (attempt === retries - 1) return null
+    }
+  }
+  
+  return null
 }
 
 // ============== User Assets ==============
@@ -437,11 +453,11 @@ export async function saveGeneration(userId: string, generation: Generation): Pr
     }
   }
   
-  // Build insert object matching the actual table schema
+  // Build insert/update object matching the actual table schema
   // Required fields: user_id, task_type, status
   const insertData: Record<string, any> = {
     user_id: userId,
-    task_id: generateTaskId(), // Human-readable task ID
+    task_id: generation.id, // 使用传入的 taskId，与 quota/reserve 关联
     task_type: mapTypeToTaskType(generation.type), // Required NOT NULL
     status: 'completed',
   }
@@ -466,7 +482,13 @@ export async function saveGeneration(userId: string, generation: Generation): Pr
   
   // Output images (now as URLs) - use both formats for compatibility
   const uploadedOutputUrls = outputImageUrls.filter(url => !isBase64(url))
-  if (uploadedOutputUrls.length) {
+  const failedUploadCount = outputImageUrls.length - uploadedOutputUrls.length
+  
+  if (failedUploadCount > 0) {
+    console.warn(`[Sync] ${failedUploadCount}/${outputImageUrls.length} images failed to upload to storage`)
+  }
+  
+  if (uploadedOutputUrls.length > 0) {
     insertData.output_image_urls = uploadedOutputUrls
     insertData.total_images_count = uploadedOutputUrls.length
     
@@ -526,11 +548,41 @@ export async function saveGeneration(userId: string, generation: Generation): Pr
   
   console.log('[Sync] Saving generation:', generation.id)
   
-  const { data, error } = await supabase
+  // 先检查是否存在该 task_id 的记录（由 quota/reserve 创建的预扣配额记录）
+  // 可能是 pending 状态（还没被 quota/reserve PUT 更新）
+  // 也可能是 completed/failed 状态（已被 quota/reserve PUT 更新）
+  // 如果存在，UPDATE 它；否则 INSERT 新记录
+  const { data: existingRecord } = await supabase
     .from('generations')
-    .insert(insertData)
-    .select()
+    .select('id, status')
+    .eq('user_id', userId)
+    .eq('task_id', generation.id)
     .single()
+  
+  let data: any
+  let error: any
+  
+  if (existingRecord) {
+    // UPDATE 已存在的记录（可能是 pending 或已被 quota/reserve PUT 更新）
+    console.log('[Sync] Found existing record (status:', existingRecord.status, '), updating:', existingRecord.id)
+    const result = await supabase
+      .from('generations')
+      .update(insertData)
+      .eq('id', existingRecord.id)
+      .select()
+      .single()
+    data = result.data
+    error = result.error
+  } else {
+    // INSERT 新记录
+    const result = await supabase
+      .from('generations')
+      .insert(insertData)
+      .select()
+      .single()
+    data = result.data
+    error = result.error
+  }
 
   if (error) {
     console.error('[Sync] Error saving generation:', error.message, error.code)
