@@ -301,7 +301,7 @@ function LoginContent() {
               {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
-                {t.login.sendCode}
+                t.login.sendCode
               )}
             </button>
           </form>
@@ -338,7 +338,7 @@ function LoginContent() {
               {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
-                {t.login.verifyAndLogin}
+                t.login.verifyAndLogin
               )}
             </button>
 
@@ -406,7 +406,7 @@ function LoginContent() {
               {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
-                {t.login.login}
+                t.login.login
               )}
             </button>
 
