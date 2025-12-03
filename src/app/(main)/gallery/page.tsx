@@ -64,16 +64,32 @@ export default function GalleryPage() {
   const { tasks, removeTask } = useGenerationTaskStore()
   const { debugMode } = useSettingsStore()
   
-  // Get active tasks (generating)
+  // Get active tasks (pending/generating) - show loading cards for these
   const activeTasks = tasks.filter(t => t.status === 'pending' || t.status === 'generating')
   
-  // Auto-refresh when tasks complete
+  // Get completed tasks that might not yet be in generations store
+  const completedTasks = tasks.filter(t => t.status === 'completed')
+  
+  // Auto-remove completed tasks only after their images appear in generations
   useEffect(() => {
-    const completedTasks = tasks.filter(t => t.status === 'completed')
     completedTasks.forEach(task => {
-      setTimeout(() => removeTask(task.id), 1000)
+      // Check if task's generation is already in the store by matching input image
+      const existsInGenerations = generations.some(gen => 
+        gen.inputImageUrl === task.inputImageUrl && 
+        gen.outputImageUrls && 
+        gen.outputImageUrls.length > 0
+      )
+      
+      if (existsInGenerations) {
+        // Generation is synced, safe to remove task
+        removeTask(task.id)
+      } else {
+        // Give it more time (up to 5 seconds) then remove anyway
+        const timer = setTimeout(() => removeTask(task.id), 5000)
+        return () => clearTimeout(timer)
+      }
     })
-  }, [tasks, removeTask])
+  }, [completedTasks, generations, removeTask])
   
   // Clear save success message
   useEffect(() => {
@@ -274,8 +290,29 @@ export default function GalleryPage() {
       {/* Grid */}
       <div className="flex-1 overflow-y-auto p-4 pb-24">
         <div className="grid grid-cols-2 gap-3">
+          {/* Show loading cards for active tasks */}
           {activeTab === "all" && activeTasks.map((task) => (
             <GeneratingCard key={task.id} task={task} />
+          ))}
+          
+          {/* Show completed task images while waiting for sync */}
+          {activeTab === "all" && completedTasks.map((task) => (
+            task.outputImageUrls.map((url, idx) => (
+              <div 
+                key={`completed-${task.id}-${idx}`}
+                className="relative aspect-[4/5] bg-zinc-200 rounded-xl overflow-hidden shadow-sm ring-2 ring-green-400"
+              >
+                <Image 
+                  src={url} 
+                  alt={`Generated ${idx + 1}`}
+                  fill
+                  className="object-cover"
+                />
+                <div className="absolute top-2 left-2 px-2 py-1 bg-green-500 text-white text-xs rounded-full flex items-center gap-1">
+                  <span>✓ 完成</span>
+                </div>
+              </div>
+            ))
           ))}
           
           {displayedHistory.map((item, i) => {
@@ -331,7 +368,7 @@ export default function GalleryPage() {
           })}
         </div>
         
-        {displayedHistory.length === 0 && activeTasks.length === 0 && (
+        {displayedHistory.length === 0 && activeTasks.length === 0 && completedTasks.length === 0 && (
           <div className="flex flex-col items-center justify-center h-64 text-zinc-400">
             {isSyncing ? (
               <>
