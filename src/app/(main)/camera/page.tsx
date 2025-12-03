@@ -140,7 +140,7 @@ export default function CameraPage() {
   const [productFromPhone, setProductFromPhone] = useState(false)
   const [product2FromPhone, setProduct2FromPhone] = useState(false)
   
-  const { addGeneration, addUserAsset, userModels, userBackgrounds, userProducts, addFavorite, removeFavorite, isFavorited, favorites } = useAssetStore()
+  const { addGeneration, addUserAsset, userModels, userBackgrounds, userProducts, addFavorite, removeFavorite, isFavorited, favorites, generations } = useAssetStore()
   const { addTask, updateTaskStatus, tasks } = useGenerationTaskStore()
   const { debugMode } = useSettingsStore()
   
