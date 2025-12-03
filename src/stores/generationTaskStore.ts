@@ -219,14 +219,9 @@ export const useGenerationTaskStore = create<GenerationTaskState>()(
       name: 'generation-task-storage',
       storage: createJSONStorage(() => safeLocalStorage),
       partialize: (state) => ({
-        // 持久化任务状态，但不存储 base64 图片数据（太大会超限）
+        // 只持久化 pending/generating 的任务，不持久化 completed（已同步到 generations）
         tasks: state.tasks
-          .filter(t => 
-            t.status === 'pending' || 
-            t.status === 'generating' ||
-            // 保留最近30分钟内的已完成/失败任务
-            (new Date(t.createdAt).getTime() > Date.now() - 30 * 60 * 1000)
-          )
+          .filter(t => t.status === 'pending' || t.status === 'generating')
           .map(t => ({
             id: t.id,
             type: t.type,
@@ -234,16 +229,17 @@ export const useGenerationTaskStore = create<GenerationTaskState>()(
             createdAt: t.createdAt,
             expectedImageCount: t.expectedImageCount,
             error: t.error,
-            // 不存储 base64 图片数据，用占位符标记
+            // 不存储 base64 图片数据
             inputImageUrl: t.inputImageUrl?.startsWith('data:') ? '[base64]' : t.inputImageUrl,
-            outputImageUrls: t.outputImageUrls.map(url => 
-              url?.startsWith('data:') ? '[base64]' : url
-            ),
-            // 保存 imageSlots 但不存储 base64 图片
-            imageSlots: t.imageSlots?.map(slot => ({
-              ...slot,
-              imageUrl: slot.imageUrl?.startsWith('data:') ? '[base64]' : slot.imageUrl,
-            })),
+            outputImageUrls: [],
+            // 只保留 pending/generating 状态的 imageSlots（不含图片）
+            imageSlots: t.imageSlots
+              ?.filter(slot => slot.status === 'pending' || slot.status === 'generating')
+              .map(slot => ({
+                index: slot.index,
+                status: slot.status,
+                // 不存储图片 URL
+              })),
             // 不存储 params 中的图片数据
             params: t.params ? {
               ...t.params,
@@ -253,7 +249,7 @@ export const useGenerationTaskStore = create<GenerationTaskState>()(
               backgroundImage: undefined,
             } : undefined,
           }))
-          .slice(0, 10) // 最多保留10个任务
+          .slice(0, 5) // 最多保留5个进行中的任务
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true)
