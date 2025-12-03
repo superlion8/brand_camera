@@ -120,6 +120,7 @@ export default function StudioPage() {
   const [generatedImages, setGeneratedImages] = useState<string[]>([])
   const [generatedModelTypes, setGeneratedModelTypes] = useState<('pro' | 'flash')[]>([])
   const [showProductPanel, setShowProductPanel] = useState(false)
+  const [showGalleryPanel, setShowGalleryPanel] = useState(false)
   const [productSourceTab, setProductSourceTab] = useState<'preset' | 'user'>('preset')
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
   const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
@@ -141,7 +142,7 @@ export default function StudioPage() {
   const [saturation, setSaturation] = useState(0)
   const [brightness, setBrightness] = useState(1)
   
-  const { addGeneration, addFavorite, removeFavorite, isFavorited, favorites, userProducts } = useAssetStore()
+  const { addGeneration, addFavorite, removeFavorite, isFavorited, favorites, userProducts, generations } = useAssetStore()
   const { addTask, updateTaskStatus } = useGenerationTaskStore()
   const { debugMode } = useSettingsStore()
   const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
@@ -566,14 +567,23 @@ export default function StudioPage() {
                     <span className="font-medium">拍摄商品</span>
                   </button>
                   
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     {/* Album */}
                     <button
                       onClick={() => fileInputRef.current?.click()}
                       className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-amber-400 flex items-center justify-center gap-2 transition-colors"
                     >
                       <Upload className="w-4 h-4 text-zinc-500" />
-                      <span className="text-sm text-zinc-700">相册上传</span>
+                      <span className="text-sm text-zinc-700">相册</span>
+                    </button>
+                    
+                    {/* Gallery */}
+                    <button
+                      onClick={() => setShowGalleryPanel(true)}
+                      className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-amber-400 flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <Home className="w-4 h-4 text-zinc-500" />
+                      <span className="text-sm text-zinc-700">图库</span>
                     </button>
                     
                     {/* Asset library */}
@@ -1234,6 +1244,80 @@ export default function StudioPage() {
                     >
                       去上传
                     </button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+      
+      {/* Gallery Selection Panel */}
+      <AnimatePresence>
+        {showGalleryPanel && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
+              onClick={() => setShowGalleryPanel(false)}
+            />
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed bottom-0 left-0 right-0 h-[70%] bg-white rounded-t-2xl z-50 flex flex-col overflow-hidden"
+            >
+              <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
+                <span className="font-semibold">从图库选择</span>
+                <button
+                  onClick={() => setShowGalleryPanel(false)}
+                  className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto bg-zinc-50 p-4 relative">
+                {/* Loading overlay */}
+                {isLoadingAsset && (
+                  <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
+                    <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+                  </div>
+                )}
+                {generations.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-2">
+                    {generations.flatMap(gen => 
+                      (gen.outputImageUrls || []).map((url, idx) => (
+                        <button
+                          key={`${gen.id}-${idx}`}
+                          disabled={isLoadingAsset}
+                          onClick={async () => {
+                            setIsLoadingAsset(true)
+                            try {
+                              const base64 = await ensureBase64(url)
+                              setProductImage(base64)
+                              setShowGalleryPanel(false)
+                            } catch (error) {
+                              console.error('Failed to load image:', error)
+                            } finally {
+                              setIsLoadingAsset(false)
+                            }
+                          }}
+                          className="aspect-[4/5] rounded-lg overflow-hidden relative border-2 border-transparent hover:border-amber-500 transition-all bg-white disabled:opacity-50"
+                        >
+                          <Image src={url} alt={`Gallery ${idx + 1}`} fill className="object-cover" />
+                        </button>
+                      ))
+                    ).slice(0, 30)}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-zinc-400">
+                    <Home className="w-12 h-12 mb-3 opacity-30" />
+                    <p className="text-sm">图库暂无图片</p>
+                    <p className="text-xs mt-1">先去生成一些图片吧</p>
                   </div>
                 )}
               </div>
