@@ -66,7 +66,9 @@ export default function PresetsManagement() {
     setError(null)
     try {
       const excludeSubfolders = activeCategory.excludeSubfolders ? '&excludeSubfolders=true' : ''
-      const response = await fetch(`/api/admin/presets?folder=${activeCategory.folder}${excludeSubfolders}`)
+      // Add cache buster to force fresh data
+      const cacheBuster = `&t=${Date.now()}`
+      const response = await fetch(`/api/admin/presets?folder=${activeCategory.folder}${excludeSubfolders}${cacheBuster}`)
       if (!response.ok) {
         throw new Error('Failed to fetch files')
       }
@@ -146,9 +148,16 @@ export default function PresetsManagement() {
       }
 
       const data = await response.json()
-      setSuccessMessage(`成功删除 ${data.deleted} 个文件`)
+      if (data.deleted === 0) {
+        setError(`删除失败：没有文件被删除（可能是权限问题）`)
+      } else if (data.deleted < data.requested) {
+        setSuccessMessage(`部分删除：${data.deleted}/${data.requested} 个文件`)
+      } else {
+        setSuccessMessage(`成功删除 ${data.deleted} 个文件`)
+      }
       setSelectedFiles(new Set())
-      fetchFiles()
+      // Wait a moment for storage to sync, then refresh
+      setTimeout(() => fetchFiles(), 500)
     } catch (err: any) {
       setError(err.message || '删除失败')
     } finally {

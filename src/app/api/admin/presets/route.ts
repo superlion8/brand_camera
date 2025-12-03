@@ -132,17 +132,24 @@ export async function DELETE(request: NextRequest) {
     }
 
     const filePaths = files.map(f => `${folder}/${f}`)
+    console.log('[Presets API] Deleting files:', filePaths)
 
-    const { error } = await supabase.storage
+    const { data, error } = await supabase.storage
       .from('presets')
       .remove(filePaths)
+
+    console.log('[Presets API] Delete result:', { data, error })
 
     if (error) {
       console.error('Delete error:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ deleted: files.length })
+    // Check if files were actually deleted
+    const deletedCount = data?.length || 0
+    console.log('[Presets API] Actually deleted:', deletedCount)
+
+    return NextResponse.json({ deleted: deletedCount, requested: files.length })
   } catch (error) {
     console.error('Delete error:', error)
     return NextResponse.json({ error: 'Delete failed' }, { status: 500 })
