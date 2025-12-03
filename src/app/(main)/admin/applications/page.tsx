@@ -31,9 +31,13 @@ interface Application {
   created_at: string
 }
 
+// Admin emails from environment variable (comma separated)
+const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
+
 export default function QuotaApplicationsPage() {
   const router = useRouter()
-  const { user, isAdmin } = useAuth()
+  const { user } = useAuth()
+  const isAdmin = ADMIN_EMAILS.includes(user?.email?.toLowerCase() || '')
   const [applications, setApplications] = useState<Application[]>([])
   const [pendingCount, setPendingCount] = useState(0)
   const [loading, setLoading] = useState(true)
