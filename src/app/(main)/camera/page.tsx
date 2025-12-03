@@ -315,6 +315,25 @@ export default function CameraPage() {
     updateTaskStatus(taskId, 'generating')
     setMode("processing")
     
+    // IMMEDIATELY reserve quota - deduct before generation starts
+    // This will be refunded if generation fails
+    try {
+      await fetch('/api/quota/reserve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskId,
+          imageCount: CAMERA_NUM_IMAGES,
+          taskType: 'model_studio',
+        }),
+      })
+      console.log('[Quota] Reserved', CAMERA_NUM_IMAGES, 'images for task', taskId)
+      // Refresh quota display
+      refreshQuota()
+    } catch (e) {
+      console.warn('[Quota] Failed to reserve quota:', e)
+    }
+    
     // Start background generation with captured values
     runBackgroundGeneration(
       taskId, 
@@ -476,8 +495,27 @@ export default function CameraPage() {
         }
       }
       
-      console.log(`Generation complete: ${finalImages.length}/6 images in ~${maxDuration}ms`)
+      console.log(`Generation complete: ${finalImages.length}/${NUM_IMAGES} images in ~${maxDuration}ms`)
       console.log('Final images array:', finalImages.map((_, i) => allImages[i] ? `✓[${i}]` : `✗[${i}]`).join(' '))
+      
+      // Calculate refund for failed images
+      const failedCount = NUM_IMAGES - finalImages.length
+      if (failedCount > 0) {
+        console.log(`[Quota] Refunding ${failedCount} failed images`)
+        try {
+          await fetch('/api/quota/reserve', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              taskId,
+              actualImageCount: finalImages.length,
+              refundCount: failedCount,
+            }),
+          })
+        } catch (e) {
+          console.warn('[Quota] Failed to refund:', e)
+        }
+      }
       
       if (data.success && data.images.length > 0) {
         
@@ -540,7 +578,15 @@ export default function CameraPage() {
           setMode("results")
         }
       } else {
-        // All tasks failed - log more details
+        // All tasks failed - refund all reserved quota
+        console.log('[Quota] All tasks failed, refunding all', NUM_IMAGES, 'images')
+        try {
+          await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
+        } catch (e) {
+          console.warn('[Quota] Failed to refund on total failure:', e)
+        }
+        
+        // Log more details
         const failedCount = responses.filter(r => r.status === 'rejected').length
         const httpErrorCount = responses.filter(r => r.status === 'fulfilled' && !r.value.ok).length
         console.error(`All tasks failed. Rejected: ${failedCount}, HTTP errors: ${httpErrorCount}`)
@@ -549,6 +595,15 @@ export default function CameraPage() {
     } catch (error: any) {
       console.error("Generation error:", error)
       updateTaskStatus(taskId, 'failed', undefined, error.message || "生成失败")
+      
+      // Refund quota on error
+      console.log('[Quota] Error occurred, refunding reserved quota')
+      try {
+        await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
+        await refreshQuota()
+      } catch (e) {
+        console.warn('[Quota] Failed to refund on error:', e)
+      }
       
       // Only alert if still on processing screen
       // Use modeRef.current to get the latest mode value

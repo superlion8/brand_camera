@@ -260,6 +260,23 @@ export default function StudioPage() {
     setGeneratedImages([])
     setGeneratedModelTypes([])
     
+    // IMMEDIATELY reserve quota - deduct before generation starts
+    try {
+      await fetch('/api/quota/reserve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskId,
+          imageCount: 2,
+          taskType: 'product_studio',
+        }),
+      })
+      console.log('[Quota] Reserved 2 images for task', taskId)
+      refreshQuota()
+    } catch (e) {
+      console.warn('[Quota] Failed to reserve quota:', e)
+    }
+    
     // Run generation in background
     runBackgroundGeneration(taskId, currentProductImage, currentLightType, currentLightDirection, currentBgColor, currentAspectRatio)
   }
@@ -345,6 +362,26 @@ export default function StudioPage() {
       
       const finalImages = images.filter((img): img is string => img !== null)
       const finalModelTypes = modelTypes.filter((t): t is 'pro' | 'flash' => t !== null)
+      const expectedCount = 2
+      const failedCount = expectedCount - finalImages.length
+      
+      // Refund failed images
+      if (failedCount > 0) {
+        console.log('[Quota] Refunding', failedCount, 'failed studio images')
+        try {
+          await fetch('/api/quota/reserve', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              taskId,
+              actualImageCount: finalImages.length,
+              refundCount: failedCount,
+            }),
+          })
+        } catch (e) {
+          console.warn('[Quota] Failed to refund:', e)
+        }
+      }
       
       if (finalImages.length > 0) {
         // Update task with results
@@ -373,6 +410,15 @@ export default function StudioPage() {
           setMode('results')
         }
       } else {
+        // All failed - full refund
+        console.log('[Quota] All studio tasks failed, refunding all')
+        try {
+          await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
+          await refreshQuota()
+        } catch (e) {
+          console.warn('[Quota] Failed to refund on total failure:', e)
+        }
+        
         updateTaskStatus(taskId, 'failed', undefined, '生成失败')
         if (modeRef.current === 'processing') {
           alert('生成失败，请重试')
@@ -382,6 +428,16 @@ export default function StudioPage() {
     } catch (error: any) {
       console.error('Generation error:', error)
       updateTaskStatus(taskId, 'failed', undefined, error.message || '生成失败')
+      
+      // Refund quota on error
+      console.log('[Quota] Error occurred, refunding reserved quota')
+      try {
+        await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
+        await refreshQuota()
+      } catch (e) {
+        console.warn('[Quota] Failed to refund on error:', e)
+      }
+      
       if (modeRef.current === 'processing') {
         alert(error.message || '生成失败')
         setMode('settings')

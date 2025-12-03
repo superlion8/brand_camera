@@ -313,6 +313,23 @@ export default function EditPage() {
     updateTaskStatus(taskId, 'generating')
     setIsGenerating(true)
     
+    // IMMEDIATELY reserve quota - deduct before generation starts
+    try {
+      await fetch('/api/quota/reserve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskId,
+          imageCount,
+          taskType: currentEditMode === 'studio' ? 'product_studio' : 'edit',
+        }),
+      })
+      console.log('[Quota] Reserved', imageCount, 'images for task', taskId)
+      refreshQuota()
+    } catch (e) {
+      console.warn('[Quota] Failed to reserve quota:', e)
+    }
+    
     // Run generation in background
     if (currentEditMode === 'studio') {
       runStudioGeneration(taskId, currentInputImage, currentLightType, currentLightDirection, currentLightColor, currentAspectRatio)
@@ -394,6 +411,26 @@ export default function EditPage() {
       }
       
       const finalImages = images.filter((img): img is string => img !== null)
+      const expectedCount = 2
+      const failedCount = expectedCount - finalImages.length
+      
+      // Refund failed images
+      if (failedCount > 0) {
+        console.log('[Quota] Refunding', failedCount, 'failed studio images')
+        try {
+          await fetch('/api/quota/reserve', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              taskId,
+              actualImageCount: finalImages.length,
+              refundCount: failedCount,
+            }),
+          })
+        } catch (e) {
+          console.warn('[Quota] Failed to refund:', e)
+        }
+      }
       
       if (finalImages.length > 0) {
         updateTaskStatus(taskId, 'completed', finalImages)
@@ -416,6 +453,15 @@ export default function EditPage() {
           setIsGenerating(false)
         }
       } else {
+        // All failed - full refund
+        console.log('[Quota] All studio tasks failed, refunding all')
+        try {
+          await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
+          await refreshQuota()
+        } catch (e) {
+          console.warn('[Quota] Failed to refund on total failure:', e)
+        }
+        
         updateTaskStatus(taskId, 'failed', undefined, '生成失败')
         if (isGeneratingRef.current) {
           alert('生成失败，请重试')
@@ -425,6 +471,16 @@ export default function EditPage() {
     } catch (error: any) {
       console.error("Studio error:", error)
       updateTaskStatus(taskId, 'failed', undefined, error.message || '生成失败')
+      
+      // Refund quota on error
+      console.log('[Quota] Error occurred, refunding reserved quota')
+      try {
+        await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
+        await refreshQuota()
+      } catch (e) {
+        console.warn('[Quota] Failed to refund on error:', e)
+      }
+      
       if (isGeneratingRef.current) {
         alert(error.message || "生成失败，请重试")
         setIsGenerating(false)
@@ -496,11 +552,29 @@ export default function EditPage() {
           setIsGenerating(false)
         }
       } else {
+        // Edit failed - full refund
+        console.log('[Quota] Edit failed, refunding')
+        try {
+          await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
+          await refreshQuota()
+        } catch (e) {
+          console.warn('[Quota] Failed to refund:', e)
+        }
         throw new Error(data.error || "编辑失败")
       }
     } catch (error: any) {
       console.error("Edit error:", error)
       updateTaskStatus(taskId, 'failed', undefined, error.message || '编辑失败')
+      
+      // Refund quota on error (in case not already refunded)
+      console.log('[Quota] Error occurred, refunding reserved quota')
+      try {
+        await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
+        await refreshQuota()
+      } catch (e) {
+        console.warn('[Quota] Failed to refund on error:', e)
+      }
+      
       if (isGeneratingRef.current) {
         if (error.name === 'AbortError') {
           alert("编辑超时，请重试。建议使用较小的图片。")
