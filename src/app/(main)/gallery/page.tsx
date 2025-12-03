@@ -15,45 +15,56 @@ import { generateId } from "@/lib/utils"
 
 type TabType = "all" | "model" | "product" | "favorites"
 
-// Helper to get display label for generation type
-function getTypeLabel(gen: Generation, imageIndex: number): { label: string; color: string; subLabel?: string; subColor?: string } {
-  // Handle the type, including legacy types
+// Helper functions for type classification
+function isModelType(gen: Generation): boolean {
   const type = gen.type?.toLowerCase() || ''
-  
+  if (type === 'camera_model' || type === 'model' || type === 'camera' || type === 'model_studio') {
+    return true
+  }
+  // Fallback: has generation modes = likely model generation
+  if (gen.outputGenModes && gen.outputGenModes.length > 0) {
+    return true
+  }
+  return false
+}
+
+function isProductType(gen: Generation): boolean {
+  const type = gen.type?.toLowerCase() || ''
+  return type === 'studio' || type === 'camera_product' || type === 'product' || type === 'product_studio'
+}
+
+function isEditType(gen: Generation): boolean {
+  const type = gen.type?.toLowerCase() || ''
+  return type === 'edit' || type === 'editing'
+}
+
+// Helper to get display label for generation type
+// debugMode controls whether to show sub-labels (极简/扩展)
+function getTypeLabel(gen: Generation, imageIndex: number, debugMode: boolean = false): { label: string; color: string; subLabel?: string; subColor?: string } {
   // Studio/product types
-  if (type === 'studio' || type === 'camera_product' || type === 'product' || type === 'product_studio') {
+  if (isProductType(gen)) {
     return { label: '产品', color: 'bg-amber-500' }
   }
   
   // Edit types
-  if (type === 'edit' || type === 'editing') {
+  if (isEditType(gen)) {
     return { label: '修图', color: 'bg-purple-500' }
   }
   
   // Model/camera types (most common)
-  if (type === 'camera_model' || type === 'model' || type === 'camera' || type === 'model_studio') {
+  if (isModelType(gen)) {
     const mode = gen.outputGenModes?.[imageIndex]
+    // Only show sub-labels in debug mode
+    const subLabel = debugMode && mode ? (mode === 'simple' ? '极简' : '扩展') : undefined
     return { 
       label: '模特', 
       color: 'bg-blue-500',
-      subLabel: mode === 'simple' ? '极简' : mode === 'extended' ? '扩展' : undefined,
+      subLabel,
       subColor: mode === 'simple' ? 'bg-green-500' : 'bg-purple-500'
     }
   }
   
-  // Fallback - try to infer from other fields
-  if (gen.outputGenModes && gen.outputGenModes.length > 0) {
-    // Has generation modes = likely model generation
-    const mode = gen.outputGenModes?.[imageIndex]
-    return { 
-      label: '模特', 
-      color: 'bg-blue-500',
-      subLabel: mode === 'simple' ? '极简' : mode === 'extended' ? '扩展' : undefined,
-      subColor: mode === 'simple' ? 'bg-green-500' : 'bg-purple-500'
-    }
-  }
-  
-  // Last fallback
+  // Last fallback - treat as edit
   return { label: '修图', color: 'bg-purple-500' }
 }
 
@@ -163,13 +174,13 @@ export default function GalleryPage() {
     switch (activeTab) {
       case "model":
         return validGenerations
-          .filter((gen: Generation) => gen.type === 'camera_model')
+          .filter((gen: Generation) => isModelType(gen))
           .flatMap((gen: Generation) => 
             (gen.outputImageUrls || []).map((url: string, idx: number) => ({ gen, url, idx }))
           )
       case "product":
         return validGenerations
-          .filter((gen: Generation) => gen.type === 'studio' || gen.type === 'camera_product')
+          .filter((gen: Generation) => isProductType(gen))
           .flatMap((gen: Generation) => 
             (gen.outputImageUrls || []).map((url: string, idx: number) => ({ gen, url, idx }))
           )
@@ -359,7 +370,7 @@ export default function GalleryPage() {
           ))}
           
           {displayedHistory.map((item, i) => {
-            const typeInfo = getTypeLabel(item.gen, item.idx)
+            const typeInfo = getTypeLabel(item.gen, item.idx, debugMode)
             return (
               <div 
                 key={`${item.gen.id}-${item.idx}-${i}`}
@@ -499,7 +510,7 @@ export default function GalleryPage() {
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       {(() => {
-                        const typeInfo = getTypeLabel(selectedItem.gen, selectedItem.index)
+                        const typeInfo = getTypeLabel(selectedItem.gen, selectedItem.index, debugMode)
                         return (
                           <div className="flex items-center gap-2 mb-1">
                             <span className={`px-2 py-0.5 rounded text-xs font-medium text-white ${typeInfo.color}`}>
