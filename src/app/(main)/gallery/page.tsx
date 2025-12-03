@@ -39,36 +39,6 @@ function isEditType(gen: Generation): boolean {
   return type === 'edit' || type === 'editing'
 }
 
-// Helper to get display label for generation type
-// debugMode controls whether to show sub-labels (极简/扩展)
-function getTypeLabel(gen: Generation, imageIndex: number, debugMode: boolean = false): { label: string; color: string; subLabel?: string; subColor?: string } {
-  // Studio/product types
-  if (isProductType(gen)) {
-    return { label: t.gallery.product, color: 'bg-amber-500' }
-  }
-  
-  // Edit types
-  if (isEditType(gen)) {
-    return { label: t.gallery.editRoom, color: 'bg-purple-500' }
-  }
-  
-  // Model/camera types (most common)
-  if (isModelType(gen)) {
-    const mode = gen.outputGenModes?.[imageIndex]
-    // Only show sub-labels in debug mode
-    const subLabel = debugMode && mode ? (mode === 'simple' ? '极简' : '扩展') : undefined
-    return { 
-      label: t.gallery.model, 
-      color: 'bg-blue-500',
-      subLabel,
-      subColor: mode === 'simple' ? 'bg-green-500' : 'bg-purple-500'
-    }
-  }
-  
-  // Last fallback - treat as edit
-  return { label: '修图', color: 'bg-purple-500' }
-}
-
 export default function GalleryPage() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<TabType>("all")
@@ -104,6 +74,36 @@ export default function GalleryPage() {
   const { tasks, removeTask } = useGenerationTaskStore()
   const { debugMode } = useSettingsStore()
   const { t } = useTranslation()
+  
+  // Helper to get display label for generation type
+  // debugMode controls whether to show sub-labels (极简/扩展)
+  const getTypeLabel = (gen: Generation, imageIndex: number, isDebugMode: boolean = false): { label: string; color: string; subLabel?: string; subColor?: string } => {
+    // Studio/product types
+    if (isProductType(gen)) {
+      return { label: t.gallery.product, color: 'bg-amber-500' }
+    }
+    
+    // Edit types
+    if (isEditType(gen)) {
+      return { label: t.gallery.editRoom, color: 'bg-purple-500' }
+    }
+    
+    // Model/camera types (most common)
+    if (isModelType(gen)) {
+      const mode = gen.outputGenModes?.[imageIndex]
+      // Only show sub-labels in debug mode
+      const subLabel = isDebugMode && mode ? (mode === 'simple' ? t.common.simple : t.common.extended) : undefined
+      return { 
+        label: t.gallery.model, 
+        color: 'bg-blue-500',
+        subLabel,
+        subColor: mode === 'simple' ? 'bg-green-500' : 'bg-purple-500'
+      }
+    }
+    
+    // Last fallback - treat as edit
+    return { label: t.gallery.editRoom, color: 'bg-purple-500' }
+  }
   
   // Get active tasks (pending/generating) - show loading cards for these
   const activeTasks = tasks.filter(t => t.status === 'pending' || t.status === 'generating')
@@ -1016,6 +1016,7 @@ export default function GalleryPage() {
 
 // Generating card component
 function GeneratingCard({ task }: { task: GenerationTask }) {
+  const { t } = useTranslation()
   const isStudio = task.type === 'studio'
   const isEdit = task.type === 'edit'
   
