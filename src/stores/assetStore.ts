@@ -34,6 +34,7 @@ interface AssetState {
   
   // Hydration status
   _hasHydrated: boolean
+  _hasLoadedFromDB: boolean
   setHasHydrated: (state: boolean) => void
   
   // Actions
@@ -101,6 +102,7 @@ export const useAssetStore = create<AssetState>()(
       currentUserId: null,
       
       _hasHydrated: false,
+      _hasLoadedFromDB: false, // Prevent duplicate loadFromDB calls
       setHasHydrated: (state) => set({ _hasHydrated: state }),
       
       setPresetModels: (models) => set({ presetModels: models }),
@@ -428,9 +430,16 @@ export const useAssetStore = create<AssetState>()(
         )
       },
       
-      // Load from IndexedDB
+      // Load from IndexedDB - only runs once at startup
       loadFromDB: async () => {
+        // Prevent duplicate loads - this should only run once at app startup
+        if (get()._hasLoadedFromDB) {
+          console.log('[Store] loadFromDB: already loaded, skipping')
+          return
+        }
+        
         try {
+          console.log('[Store] loadFromDB: starting initial load')
           const [dbGenerations, dbFavorites, dbCollections] = await Promise.all([
             dbGetAll<Generation>(STORES.GENERATIONS),
             dbGetAll<Favorite>(STORES.FAVORITES),
@@ -469,13 +478,18 @@ export const useAssetStore = create<AssetState>()(
             console.log('[Store] loadFromDB: preserved', recentInMemory.length, 'recent in-memory generations')
           }
           
+          console.log('[Store] loadFromDB: loaded', uniqueGenerations.length, 'generations')
+          
           set({
             generations: uniqueGenerations,
             favorites: dbFavorites,
             collections: dbCollections,
+            _hasLoadedFromDB: true, // Mark as loaded
           })
         } catch (error) {
           console.error('Error loading from IndexedDB:', error)
+          // Still mark as loaded to prevent infinite retries
+          set({ _hasLoadedFromDB: true })
         }
       },
       
