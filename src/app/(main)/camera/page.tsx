@@ -742,7 +742,19 @@ export default function CameraPage() {
   }
   
   // Handle download
-  const handleDownload = async (url: string) => {
+  const handleDownload = async (url: string, generationId?: string, imageIndex?: number) => {
+    // Track download event (don't await, fire and forget)
+    fetch('/api/track/download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        imageUrl: url,
+        generationId,
+        imageIndex,
+        source: 'camera',
+      }),
+    }).catch(() => {}) // Silently ignore tracking errors
+    
     try {
       let blob: Blob
       
@@ -1749,7 +1761,7 @@ export default function CameraPage() {
                             <Heart className={`w-4 h-4 ${currentGenerationId && isFavorited(currentGenerationId, selectedResultIndex) ? "fill-current" : ""}`} />
                           </button>
                           <button
-                            onClick={() => handleDownload(generatedImages[selectedResultIndex])}
+                            onClick={() => handleDownload(generatedImages[selectedResultIndex], currentGenerationId || undefined, selectedResultIndex)}
                             className="w-10 h-10 rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-50 flex items-center justify-center transition-colors"
                           >
                             <Download className="w-4 h-4" />
