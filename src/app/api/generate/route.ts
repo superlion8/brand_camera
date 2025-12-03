@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getGenAIClient, extractImage, extractText, safetySettings } from '@/lib/genai'
-import { PRODUCT_PROMPT, buildInstructPrompt, buildModelPrompt } from '@/prompts'
+import { PRODUCT_PROMPT, buildEditPrompt } from '@/prompts'
 import { stripBase64Prefix, generateId } from '@/lib/utils'
 import { saveGenerationServer } from '@/lib/supabase/generations-server'
 import { uploadGeneratedImageServer, uploadInputImageServer } from '@/lib/supabase/storage-server'
@@ -138,6 +138,19 @@ async function generateProductImage(
   return generateImageWithFallback(client, parts, `Product ${index + 1}`)
 }
 
+// Legacy instruct prompt for this route
+const LEGACY_INSTRUCT_PROMPT = `你是一个擅长拍摄小红书/instagram等社媒生活感照片的摄影师。
+
+请你根据商品图，输出一段韩系审美、小红书和ins的，适合模特展示商品的拍摄指令，要求是随意一点、有生活感。请使用以下格式输出：
+
+- composition：
+- model pose：
+- model expression：
+- lighting and color:
+- clothing:
+
+输出的内容要尽量简单，不要包含太复杂的信息尽量控制在200字以内`
+
 // Step 1: Generate photography instructions using gemini-3-pro-preview (VLM)
 async function generateInstructions(
   client: ReturnType<typeof getGenAIClient>,
@@ -145,22 +158,13 @@ async function generateInstructions(
   productImage2Data: string | null,
   modelImageData: string | null,
   backgroundImageData: string | null,
-  vibeImageData: string | null,
-  modelStyle?: string
+  vibeImageData: string | null
 ): Promise<string | null> {
   try {
     console.log('[Instructions] Starting instruction generation...')
     const startTime = Date.now()
     
-    const instructPrompt = buildInstructPrompt({
-      hasModel: !!modelImageData,
-      modelStyle,
-      hasBackground: !!backgroundImageData,
-      hasVibe: !!vibeImageData,
-      hasProduct2: !!productImage2Data,
-    })
-    
-    const parts: any[] = [{ text: instructPrompt }]
+    const parts: any[] = [{ text: LEGACY_INSTRUCT_PROMPT }]
     
     // Add product image
     parts.push({
@@ -242,16 +246,14 @@ async function generateModelImage(
   instructPrompt: string | null,
   index: number
 ): Promise<ImageResult | null> {
-  // Build the prompt with instructions
-  const modelPrompt = buildModelPrompt({
+  // Build the prompt with instructions using edit prompt builder
+  const modelPrompt = buildEditPrompt({
     hasModel: !!modelImageData,
     modelStyle,
     modelGender,
     hasBackground: !!backgroundImageData,
     hasVibe: !!vibeImageData,
-    instructPrompt: instructPrompt || undefined,
-    hasProduct2: !!productImage2Data,
-  })
+  }) + (instructPrompt ? `\n\nPhoto shot instruction:\n${instructPrompt}` : '')
   
   console.log(`[Model ${index + 1}] Prompt preview:`, modelPrompt.substring(0, 300) + '...')
   
@@ -408,8 +410,7 @@ export async function POST(request: NextRequest) {
       productImage2Data,
       modelImageData,
       backgroundImageData,
-      vibeImageData,
-      modelStyle
+      vibeImageData
     )
     
     await delay(BATCH_DELAY_MS)
@@ -436,8 +437,7 @@ export async function POST(request: NextRequest) {
       productImage2Data,
       modelImageData,
       backgroundImageData,
-      vibeImageData,
-      modelStyle
+      vibeImageData
     )
     
     await delay(BATCH_DELAY_MS)
