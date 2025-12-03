@@ -126,10 +126,13 @@ export default function GalleryPage() {
   
   // Auto-remove completed tasks after they're no longer needed
   useEffect(() => {
+    const timers: NodeJS.Timeout[] = []
+    
+    // Remove tasks that already have their generation in the store
     tasksToHide.forEach(task => {
       // Add a small delay to ensure smooth transition
       const timer = setTimeout(() => removeTask(task.id), 500)
-      return () => clearTimeout(timer)
+      timers.push(timer)
     })
     
     // Also remove completed tasks that have been around too long (10 seconds)
@@ -141,8 +144,13 @@ export default function GalleryPage() {
           removeTask(task.id)
         }
       }, 10000)
-      return () => clearTimeout(timer)
+      timers.push(timer)
     })
+    
+    // Cleanup all timers when dependencies change
+    return () => {
+      timers.forEach(timer => clearTimeout(timer))
+    }
   }, [tasksToHide, completedTasks, tasks, removeTask])
   
   // Clear save success message

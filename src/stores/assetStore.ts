@@ -481,14 +481,36 @@ export const useAssetStore = create<AssetState>()(
             pinnedPresets: cloudData.pinnedPresetIds.size,
           })
           
-          // Always update from cloud when logged in
-          // Cloud data is the source of truth for logged-in users
+          // Merge cloud and local data
+          // For generations: keep recent local ones that might not be in cloud yet
+          const { generations: localGenerations } = get()
+          const now = Date.now()
+          const RECENT_THRESHOLD_MS = 60000 // 60 seconds
+          
+          // Find local generations that are recent (might not be synced to cloud yet)
+          const recentLocalGenerations = localGenerations.filter(localGen => {
+            const createdAt = new Date(localGen.createdAt).getTime()
+            const isRecent = (now - createdAt) < RECENT_THRESHOLD_MS
+            // Keep if recent AND not in cloud data (by ID)
+            const existsInCloud = cloudData.generations.some(cloudGen => cloudGen.id === localGen.id)
+            return isRecent && !existsInCloud
+          })
+          
+          // Merge: cloud generations first, then recent local ones
+          const mergedGenerations = [...cloudData.generations, ...recentLocalGenerations]
+            // Sort by createdAt descending
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          
+          if (recentLocalGenerations.length > 0) {
+            console.log('[Store] Preserving', recentLocalGenerations.length, 'recent local generations not yet in cloud')
+          }
+          
           set({
             userModels: cloudData.userModels,
             userBackgrounds: cloudData.userBackgrounds,
             userProducts: cloudData.userProducts,
             userVibes: cloudData.userVibes,
-            generations: cloudData.generations,
+            generations: mergedGenerations,
             favorites: cloudData.favorites,
             pinnedPresetIds: cloudData.pinnedPresetIds,
             lastSyncAt: new Date().toISOString(),
