@@ -152,27 +152,28 @@ export async function GET(request: NextRequest) {
         favorites = favData || []
       }
       
-      // Get downloads by source (which maps to type)
+      // Get downloads with generation_id to map to task type
       let downloadQuery = adminClient
         .from('download_events')
-        .select('id, source')
+        .select('id, generation_id')
       
       if (dateFrom) downloadQuery = downloadQuery.gte('created_at', dateFrom)
       if (dateTo) downloadQuery = downloadQuery.lte('created_at', dateTo + 'T23:59:59')
       
       const { data: downloads } = await downloadQuery
       
-      // Map source to task type
-      const sourceToType: Record<string, string> = {
-        'camera': 'model_studio',
-        'studio': 'product_studio',
-        'gallery': 'mixed', // gallery contains all types
-      }
+      // Create a map of generation_id to task_type
+      const genIdToType: Record<string, string> = {}
+      generations?.forEach(g => {
+        genIdToType[g.id] = g.task_type || 'unknown'
+      })
       
-      const downloadsByType: Record<string, number> = {}
+      // Count downloads by task type using generation_id
+      const downloadCountByGen: Record<string, number> = {}
       downloads?.forEach(d => {
-        const type = sourceToType[d.source] || 'unknown'
-        downloadsByType[type] = (downloadsByType[type] || 0) + 1
+        if (d.generation_id) {
+          downloadCountByGen[d.generation_id] = (downloadCountByGen[d.generation_id] || 0) + 1
+        }
       })
       
       // Create a map of generation_id to favorite count
@@ -199,18 +200,10 @@ export async function GET(request: NextRequest) {
         byType[type].tasks++
         byType[type].images += gen.total_images_count || 0
         byType[type].favorites += favCountByGen[gen.id] || 0
+        byType[type].downloads += downloadCountByGen[gen.id] || 0
       })
       
-      // Add downloads - distribute gallery downloads proportionally or just show total
       const totalDownloads = downloads?.length || 0
-      Object.keys(byType).forEach(type => {
-        // For simplicity, show downloads from matching source
-        if (type === 'model_studio' || type === 'camera_model') {
-          byType[type].downloads = downloadsByType['model_studio'] || 0
-        } else if (type === 'product_studio' || type === 'studio') {
-          byType[type].downloads = downloadsByType['product_studio'] || 0
-        }
-      })
       
       const result = Object.values(byType).map(d => ({
         type: d.type,
