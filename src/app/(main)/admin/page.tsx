@@ -6,7 +6,7 @@ import Image from "next/image"
 import { 
   Home, Users, BarChart3, FileText, Calendar, Filter, 
   ChevronDown, ChevronRight, Heart, Loader2, RefreshCw,
-  ImageIcon, Sparkles, Lightbulb, Wand2, CalendarDays
+  ImageIcon, Sparkles, Lightbulb, Wand2, CalendarDays, Download
 } from "lucide-react"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { motion, AnimatePresence } from "framer-motion"
@@ -17,6 +17,7 @@ interface DailyStat {
   tasks: number
   images: number
   favorites: number
+  downloads: number
 }
 
 interface TypeStat {
@@ -25,6 +26,7 @@ interface TypeStat {
   tasks: number
   images: number
   favorites: number
+  downloads: number
 }
 
 interface UserStat {
@@ -33,6 +35,7 @@ interface UserStat {
   totalTasks: number
   totalImages: number
   totalFavorites: number
+  totalDownloads: number
   byType: Record<string, { tasks: number; images: number; favorites: number }>
 }
 
@@ -51,6 +54,7 @@ interface TaskDetail {
   simpleCount: number
   extendedCount: number
   favoritedIndices: number[]
+  downloadedIndices: number[]
   createdAt: string
   inputParams?: Record<string, any>
 }
@@ -75,7 +79,7 @@ export default function AdminDashboard() {
   
   // Data states
   const [overview, setOverview] = useState<DailyStat[]>([])
-  const [totals, setTotals] = useState({ totalUsers: 0, totalTasks: 0, totalImages: 0, totalFavorites: 0 })
+  const [totals, setTotals] = useState({ totalUsers: 0, totalTasks: 0, totalImages: 0, totalFavorites: 0, totalDownloads: 0 })
   const [byType, setByType] = useState<TypeStat[]>([])
   const [byUser, setByUser] = useState<UserStat[]>([])
   const [details, setDetails] = useState<TaskDetail[]>([])
@@ -123,7 +127,7 @@ export default function AdminDashboard() {
       
       if (tab === 'overview') {
         setOverview(data.overview || [])
-        setTotals(data.totals || { totalUsers: 0, totalTasks: 0, totalImages: 0, totalFavorites: 0 })
+        setTotals(data.totals || { totalUsers: 0, totalTasks: 0, totalImages: 0, totalFavorites: 0, totalDownloads: 0 })
       } else if (tab === 'by-type') {
         setByType(data.byType || [])
       } else if (tab === 'by-user') {
@@ -362,6 +366,12 @@ export default function AdminDashboard() {
                 icon={Heart}
                 color="bg-red-500"
               />
+              <StatCard 
+                label="总下载数" 
+                value={totals.totalDownloads} 
+                icon={Download}
+                color="bg-cyan-500"
+              />
             </div>
             
             {/* Daily Stats Table */}
@@ -378,18 +388,19 @@ export default function AdminDashboard() {
                       <th className="px-4 py-3 text-right font-medium text-zinc-500">任务数</th>
                       <th className="px-4 py-3 text-right font-medium text-zinc-500">图片数</th>
                       <th className="px-4 py-3 text-right font-medium text-zinc-500">收藏数</th>
+                      <th className="px-4 py-3 text-right font-medium text-zinc-500">下载数</th>
                     </tr>
                   </thead>
                   <tbody>
                     {isLoading ? (
                       <tr>
-                        <td colSpan={5} className="px-4 py-8 text-center text-zinc-400">
+                        <td colSpan={6} className="px-4 py-8 text-center text-zinc-400">
                           <Loader2 className="w-6 h-6 animate-spin mx-auto" />
                         </td>
                       </tr>
                     ) : overview.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-4 py-8 text-center text-zinc-400">暂无数据</td>
+                        <td colSpan={6} className="px-4 py-8 text-center text-zinc-400">暂无数据</td>
                       </tr>
                     ) : overview.map(day => (
                       <tr key={day.date} className="border-t border-zinc-100 hover:bg-zinc-50">
@@ -398,6 +409,7 @@ export default function AdminDashboard() {
                         <td className="px-4 py-3 text-right text-zinc-600">{day.tasks}</td>
                         <td className="px-4 py-3 text-right text-zinc-600">{day.images}</td>
                         <td className="px-4 py-3 text-right text-zinc-600">{day.favorites}</td>
+                        <td className="px-4 py-3 text-right text-cyan-600 font-medium">{day.downloads || 0}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -422,18 +434,19 @@ export default function AdminDashboard() {
                     <th className="px-4 py-3 text-right font-medium text-zinc-500">任务数</th>
                     <th className="px-4 py-3 text-right font-medium text-zinc-500">图片数</th>
                     <th className="px-4 py-3 text-right font-medium text-zinc-500">收藏数</th>
+                    <th className="px-4 py-3 text-right font-medium text-zinc-500">下载数</th>
                   </tr>
                 </thead>
                 <tbody>
                   {isLoading ? (
                     <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-zinc-400">
+                      <td colSpan={6} className="px-4 py-8 text-center text-zinc-400">
                         <Loader2 className="w-6 h-6 animate-spin mx-auto" />
                       </td>
                     </tr>
                   ) : byType.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-zinc-400">暂无数据</td>
+                      <td colSpan={6} className="px-4 py-8 text-center text-zinc-400">暂无数据</td>
                     </tr>
                   ) : byType.map(item => {
                     const typeInfo = TASK_TYPE_LABELS[item.type] || TASK_TYPE_LABELS['unknown']
@@ -452,6 +465,7 @@ export default function AdminDashboard() {
                         <td className="px-4 py-3 text-right text-zinc-600">{item.tasks}</td>
                         <td className="px-4 py-3 text-right text-zinc-600">{item.images}</td>
                         <td className="px-4 py-3 text-right text-zinc-600">{item.favorites}</td>
+                        <td className="px-4 py-3 text-right text-cyan-600 font-medium">{item.downloads || 0}</td>
                       </tr>
                     )
                   })}
@@ -497,6 +511,7 @@ export default function AdminDashboard() {
                           <span>{user.totalTasks} 任务</span>
                           <span>{user.totalImages} 图片</span>
                           <span>{user.totalFavorites} 收藏</span>
+                          <span className="text-cyan-600">{user.totalDownloads || 0} 下载</span>
                         </div>
                       </button>
                       
@@ -620,6 +635,12 @@ export default function AdminDashboard() {
                                   {task.favoritedIndices.length}
                                 </span>
                               )}
+                              {task.downloadedIndices && task.downloadedIndices.length > 0 && (
+                                <span className="flex items-center gap-0.5 text-cyan-500 text-[10px]">
+                                  <Download className="w-3 h-3" />
+                                  {task.downloadedIndices.length}
+                                </span>
+                              )}
                             </div>
                             <p className="text-sm text-zinc-900 truncate">{task.userEmail}</p>
                             <p className="text-xs text-zinc-400 mt-0.5">
@@ -720,6 +741,17 @@ export default function AdminDashboard() {
                   </div>
                 )}
                 
+                {/* Downloads Summary */}
+                {selectedTask.downloadedIndices && selectedTask.downloadedIndices.length > 0 && (
+                  <div className="flex items-center gap-2 p-3 bg-cyan-50 rounded-lg">
+                    <Download className="w-5 h-5 text-cyan-500" />
+                    <span className="text-sm text-cyan-700">
+                      {selectedTask.downloadedIndices.length} 次下载
+                      （第 {[...new Set(selectedTask.downloadedIndices)].map(i => i + 1).join(', ')} 张）
+                    </span>
+                  </div>
+                )}
+                
                 {/* Input Images */}
                 <div>
                   <p className="text-sm font-medium text-zinc-700 mb-2">输入图片</p>
@@ -792,21 +824,36 @@ export default function AdminDashboard() {
                   <p className="text-sm font-medium text-zinc-700 mb-2">输出图片 ({selectedTask.outputImageUrls.length})</p>
                   {selectedTask.outputImageUrls.length > 0 ? (
                     <div className="grid grid-cols-3 gap-2">
-                      {selectedTask.outputImageUrls.map((url, i) => (
-                        <div key={i} className="relative aspect-[4/5] bg-zinc-100 rounded-lg overflow-hidden">
-                          <Image 
-                            src={url} 
-                            alt={`Output ${i + 1}`} 
-                            fill 
-                            className="object-cover"
-                          />
-                          {selectedTask.favoritedIndices.includes(i) && (
-                            <div className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
-                              <Heart className="w-3 h-3 text-white fill-current" />
+                      {selectedTask.outputImageUrls.map((url, i) => {
+                        const downloadCount = selectedTask.downloadedIndices?.filter(idx => idx === i).length || 0
+                        return (
+                          <div key={i} className="relative aspect-[4/5] bg-zinc-100 rounded-lg overflow-hidden">
+                            <Image 
+                              src={url} 
+                              alt={`Output ${i + 1}`} 
+                              fill 
+                              className="object-cover"
+                            />
+                            {/* Badges */}
+                            <div className="absolute top-1 right-1 flex flex-col gap-1">
+                              {selectedTask.favoritedIndices.includes(i) && (
+                                <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                                  <Heart className="w-3 h-3 text-white fill-current" />
+                                </div>
+                              )}
+                              {downloadCount > 0 && (
+                                <div className="w-5 h-5 bg-cyan-500 rounded-full flex items-center justify-center">
+                                  <Download className="w-3 h-3 text-white" />
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      ))}
+                            {/* Image number */}
+                            <div className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-black/50 text-white text-[10px] rounded">
+                              #{i + 1}
+                            </div>
+                          </div>
+                        )
+                      })}
                     </div>
                   ) : (
                     <p className="text-sm text-zinc-400">无输出图片记录</p>

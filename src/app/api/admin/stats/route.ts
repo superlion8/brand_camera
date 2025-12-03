@@ -57,6 +57,16 @@ export async function GET(request: NextRequest) {
       const { data: favorites, error: favError } = await favQuery
       if (favError) throw favError
       
+      // Get download events
+      let downloadQuery = adminClient
+        .from('download_events')
+        .select('id, user_id, created_at')
+      
+      if (dateFrom) downloadQuery = downloadQuery.gte('created_at', dateFrom)
+      if (dateTo) downloadQuery = downloadQuery.lte('created_at', dateTo + 'T23:59:59')
+      
+      const { data: downloads } = await downloadQuery
+      
       // Group by date
       const dailyStats: Record<string, {
         date: string
@@ -64,12 +74,13 @@ export async function GET(request: NextRequest) {
         tasks: number
         images: number
         favorites: number
+        downloads: number
       }> = {}
       
       generations?.forEach(gen => {
         const date = gen.created_at.split('T')[0]
         if (!dailyStats[date]) {
-          dailyStats[date] = { date, uniqueUsers: new Set(), tasks: 0, images: 0, favorites: 0 }
+          dailyStats[date] = { date, uniqueUsers: new Set(), tasks: 0, images: 0, favorites: 0, downloads: 0 }
         }
         dailyStats[date].uniqueUsers.add(gen.user_id)
         dailyStats[date].tasks++
@@ -83,6 +94,14 @@ export async function GET(request: NextRequest) {
         }
       })
       
+      downloads?.forEach(dl => {
+        const date = dl.created_at.split('T')[0]
+        if (!dailyStats[date]) {
+          dailyStats[date] = { date, uniqueUsers: new Set(), tasks: 0, images: 0, favorites: 0, downloads: 0 }
+        }
+        dailyStats[date].downloads++
+      })
+      
       const overview = Object.values(dailyStats)
         .map(d => ({
           date: d.date,
@@ -90,6 +109,7 @@ export async function GET(request: NextRequest) {
           tasks: d.tasks,
           images: d.images,
           favorites: d.favorites,
+          downloads: d.downloads,
         }))
         .sort((a, b) => b.date.localeCompare(a.date))
         .slice(0, 30) // Last 30 days
@@ -100,6 +120,7 @@ export async function GET(request: NextRequest) {
         totalTasks: generations?.length || 0,
         totalImages: generations?.reduce((sum, g) => sum + (g.total_images_count || 0), 0) || 0,
         totalFavorites: favorites?.length || 0,
+        totalDownloads: downloads?.length || 0,
       }
       
       return NextResponse.json({ overview, totals })
@@ -131,6 +152,29 @@ export async function GET(request: NextRequest) {
         favorites = favData || []
       }
       
+      // Get downloads by source (which maps to type)
+      let downloadQuery = adminClient
+        .from('download_events')
+        .select('id, source')
+      
+      if (dateFrom) downloadQuery = downloadQuery.gte('created_at', dateFrom)
+      if (dateTo) downloadQuery = downloadQuery.lte('created_at', dateTo + 'T23:59:59')
+      
+      const { data: downloads } = await downloadQuery
+      
+      // Map source to task type
+      const sourceToType: Record<string, string> = {
+        'camera': 'model_studio',
+        'studio': 'product_studio',
+        'gallery': 'mixed', // gallery contains all types
+      }
+      
+      const downloadsByType: Record<string, number> = {}
+      downloads?.forEach(d => {
+        const type = sourceToType[d.source] || 'unknown'
+        downloadsByType[type] = (downloadsByType[type] || 0) + 1
+      })
+      
       // Create a map of generation_id to favorite count
       const favCountByGen: Record<string, number> = {}
       favorites?.forEach(f => {
@@ -143,17 +187,29 @@ export async function GET(request: NextRequest) {
         tasks: number
         images: number
         favorites: number
+        downloads: number
       }> = {}
       
       generations?.forEach(gen => {
         const type = gen.task_type || 'unknown'
         if (!byType[type]) {
-          byType[type] = { type, uniqueUsers: new Set(), tasks: 0, images: 0, favorites: 0 }
+          byType[type] = { type, uniqueUsers: new Set(), tasks: 0, images: 0, favorites: 0, downloads: 0 }
         }
         byType[type].uniqueUsers.add(gen.user_id)
         byType[type].tasks++
         byType[type].images += gen.total_images_count || 0
         byType[type].favorites += favCountByGen[gen.id] || 0
+      })
+      
+      // Add downloads - distribute gallery downloads proportionally or just show total
+      const totalDownloads = downloads?.length || 0
+      Object.keys(byType).forEach(type => {
+        // For simplicity, show downloads from matching source
+        if (type === 'model_studio' || type === 'camera_model') {
+          byType[type].downloads = downloadsByType['model_studio'] || 0
+        } else if (type === 'product_studio' || type === 'studio') {
+          byType[type].downloads = downloadsByType['product_studio'] || 0
+        }
       })
       
       const result = Object.values(byType).map(d => ({
@@ -162,9 +218,10 @@ export async function GET(request: NextRequest) {
         tasks: d.tasks,
         images: d.images,
         favorites: d.favorites,
+        downloads: d.downloads,
       }))
       
-      return NextResponse.json({ byType: result })
+      return NextResponse.json({ byType: result, totalDownloads })
     }
     
     if (view === 'by-user') {
@@ -193,6 +250,24 @@ export async function GET(request: NextRequest) {
         favorites = favData || []
       }
       
+      // Get downloads by user
+      let downloadQuery = adminClient
+        .from('download_events')
+        .select('id, user_id')
+      
+      if (dateFrom) downloadQuery = downloadQuery.gte('created_at', dateFrom)
+      if (dateTo) downloadQuery = downloadQuery.lte('created_at', dateTo + 'T23:59:59')
+      
+      const { data: downloads } = await downloadQuery
+      
+      // Create download count by user
+      const downloadCountByUser: Record<string, number> = {}
+      downloads?.forEach(d => {
+        if (d.user_id) {
+          downloadCountByUser[d.user_id] = (downloadCountByUser[d.user_id] || 0) + 1
+        }
+      })
+      
       // Create maps
       const favCountByGen: Record<string, number> = {}
       const favCountByUser: Record<string, number> = {}
@@ -207,6 +282,7 @@ export async function GET(request: NextRequest) {
         totalTasks: number
         totalImages: number
         totalFavorites: number
+        totalDownloads: number
         byType: Record<string, { tasks: number; images: number; favorites: number }>
       }> = {}
       
@@ -219,6 +295,7 @@ export async function GET(request: NextRequest) {
             totalTasks: 0,
             totalImages: 0,
             totalFavorites: favCountByUser[gen.user_id] || 0,
+            totalDownloads: downloadCountByUser[gen.user_id] || 0,
             byType: {},
           }
         }
@@ -268,6 +345,7 @@ export async function GET(request: NextRequest) {
       // Get favorites for these generations
       const genIds = generations?.map(g => g.id) || []
       let favByGen: Record<string, number[]> = {}
+      let downloadsByGen: Record<string, number[]> = {}
       
       if (genIds.length > 0) {
         const { data: favorites } = await adminClient
@@ -278,6 +356,19 @@ export async function GET(request: NextRequest) {
         favorites?.forEach(f => {
           if (!favByGen[f.generation_id]) favByGen[f.generation_id] = []
           favByGen[f.generation_id].push(f.image_index)
+        })
+        
+        // Get downloads for these generations
+        const { data: downloads } = await adminClient
+          .from('download_events')
+          .select('generation_id, image_index')
+          .in('generation_id', genIds)
+        
+        downloads?.forEach(d => {
+          if (d.generation_id) {
+            if (!downloadsByGen[d.generation_id]) downloadsByGen[d.generation_id] = []
+            if (d.image_index !== null) downloadsByGen[d.generation_id].push(d.image_index)
+          }
         })
       }
       
@@ -315,6 +406,7 @@ export async function GET(request: NextRequest) {
           simpleCount: gen.simple_mode_count || 0,
           extendedCount: gen.extended_mode_count || 0,
           favoritedIndices: favByGen[gen.id] || [],
+          downloadedIndices: downloadsByGen[gen.id] || [],
           createdAt: gen.created_at,
           // Include raw params for debugging
           inputParams: inputParams,
