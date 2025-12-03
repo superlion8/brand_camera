@@ -53,6 +53,8 @@ export interface GenerationParams {
   // User selection tracking (for model studio)
   modelIsUserSelected?: boolean  // true = user selected, false = system random
   bgIsUserSelected?: boolean     // true = user selected, false = system random
+  // Edit params
+  customPrompt?: string
 }
 
 export interface Collection {
