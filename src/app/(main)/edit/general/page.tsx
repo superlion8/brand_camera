@@ -13,10 +13,12 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useQuota } from "@/hooks/useQuota"
 import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { useAuth } from "@/components/providers/AuthProvider"
+import { useLanguageStore } from "@/stores/languageStore"
 
 export default function GeneralEditPage() {
   const router = useRouter()
   const { user } = useAuth()
+  const t = useLanguageStore(state => state.t)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const webcamRef = useRef<Webcam>(null)
   const [inputImage, setInputImage] = useState<string | null>(null)
@@ -276,7 +278,7 @@ export default function GeneralEditPage() {
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
             <Wand2 className="w-4 h-4 text-white" />
           </div>
-          <span className="font-semibold text-zinc-900">通用修图</span>
+          <span className="font-semibold text-zinc-900">{t.edit.generalEdit}</span>
         </div>
       </div>
       
@@ -291,7 +293,7 @@ export default function GeneralEditPage() {
                 className="w-full h-16 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white flex items-center justify-center gap-3 transition-colors shadow-lg shadow-purple-200"
               >
                 <Camera className="w-5 h-5" />
-                <span className="font-medium">拍摄</span>
+                <span className="font-medium">{t.edit.takePhoto}</span>
               </button>
               
               <div className="grid grid-cols-3 gap-2">
@@ -310,7 +312,7 @@ export default function GeneralEditPage() {
                   className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <FolderHeart className="w-4 h-4 text-zinc-500" />
-                  <span className="text-xs text-zinc-700">资产库</span>
+                  <span className="text-xs text-zinc-700">{t.edit.selectFromAssets}</span>
                 </button>
                 
                 {/* Gallery */}
@@ -319,7 +321,7 @@ export default function GeneralEditPage() {
                   className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <Images className="w-4 h-4 text-zinc-500" />
-                  <span className="text-xs text-zinc-700">图库</span>
+                  <span className="text-xs text-zinc-700">{t.edit.selectFromGallery}</span>
                 </button>
               </div>
             </div>
@@ -333,7 +335,7 @@ export default function GeneralEditPage() {
                 className="w-full rounded-xl shadow-lg"
               />
               {resultImage && (
-                <span className="absolute top-2 left-2 px-2 py-1 bg-green-500 text-white text-xs rounded font-medium">已生成</span>
+                <span className="absolute top-2 left-2 px-2 py-1 bg-green-500 text-white text-xs rounded font-medium">{t.edit.generationResult}</span>
               )}
               {!resultImage && (
                 <span className="absolute top-2 left-2 px-2 py-1 bg-zinc-500 text-white text-xs rounded font-medium">原图</span>
@@ -370,7 +372,7 @@ export default function GeneralEditPage() {
               className="w-full min-h-[120px] px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-300 text-sm leading-relaxed"
             />
             <p className="text-xs text-zinc-400">
-              💡 提示：描述越具体，效果越好
+              💡 {t.edit.editPlaceholder}
             </p>
           </div>
           
@@ -388,12 +390,12 @@ export default function GeneralEditPage() {
               {isGenerating ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>生成中...</span>
+                  <span>{t.common.generating}</span>
                 </>
               ) : (
                 <>
                   <Wand2 className="w-5 h-5" />
-                  <span>开始生成</span>
+                  <span>{t.edit.startGenerate}</span>
                 </>
               )}
             </button>
@@ -413,7 +415,7 @@ export default function GeneralEditPage() {
           
           {/* Navigation buttons during processing */}
           <div className="space-y-3 w-full max-w-xs">
-            <p className="text-zinc-500 text-xs mb-4">生成将在后台继续，您可以：</p>
+            <p className="text-zinc-500 text-xs mb-4">{t.camera.continueInBackground}</p>
             <button
               onClick={handleNewEditDuringProcessing}
               className="w-full h-12 rounded-full bg-purple-500 hover:bg-purple-600 text-white font-medium flex items-center justify-center gap-2 transition-colors"
@@ -426,7 +428,7 @@ export default function GeneralEditPage() {
               className="w-full h-12 rounded-full bg-white/10 text-white/90 border border-white/20 font-medium flex items-center justify-center gap-2 hover:bg-white/20 transition-colors"
             >
               <Home className="w-5 h-5" />
-              返回主页
+              {t.camera.returnHome}
             </button>
           </div>
         </div>
@@ -474,7 +476,7 @@ export default function GeneralEditPage() {
                       }}
                       className="mt-4 px-4 py-2 bg-purple-500 text-white rounded-lg text-sm"
                     >
-                      从相册上传
+                      {t.edit.selectFromAlbum}
                     </button>
                   </div>
                 </div>
@@ -533,7 +535,7 @@ export default function GeneralEditPage() {
               className="fixed bottom-0 left-0 right-0 h-[70%] bg-white rounded-t-2xl z-50 flex flex-col overflow-hidden"
             >
               <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
-                <span className="font-semibold">选择图片</span>
+                <span className="font-semibold">{t.camera.selectProduct}</span>
                 <button
                   onClick={() => setShowProductPanel(false)}
                   className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center"
@@ -613,8 +615,8 @@ export default function GeneralEditPage() {
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-zinc-400">
                     <FolderHeart className="w-12 h-12 mb-3 opacity-30" />
-                    <p className="text-sm">暂无我的商品</p>
-                    <p className="text-xs mt-1">在品牌资产中上传商品图片</p>
+                    <p className="text-sm">{t.camera.noMyProducts}</p>
+                    <p className="text-xs mt-1">{t.camera.uploadInAssets}</p>
                     <button
                       onClick={() => {
                         setShowProductPanel(false)
@@ -622,7 +624,7 @@ export default function GeneralEditPage() {
                       }}
                       className="mt-4 px-4 py-2 bg-purple-500 text-white text-sm rounded-lg hover:bg-purple-600"
                     >
-                      去上传
+                      {t.camera.goUpload}
                     </button>
                   </div>
                 )}
@@ -651,7 +653,7 @@ export default function GeneralEditPage() {
               className="fixed bottom-0 left-0 right-0 h-[70%] bg-white rounded-t-2xl z-50 flex flex-col overflow-hidden"
             >
               <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
-                <span className="font-semibold">从图库选择</span>
+                <span className="font-semibold">{t.edit.selectFromGallery}</span>
                 <button
                   onClick={() => setShowGalleryPanel(false)}
                   className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center"
@@ -679,13 +681,13 @@ export default function GeneralEditPage() {
                           onClick={() => handleSelectFromGallery(item.url)}
                           className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-purple-500 transition-all bg-white disabled:opacity-50"
                         >
-                          <Image src={item.url} alt={`生成图 ${index + 1}`} fill className="object-cover" />
+                          <Image src={item.url} alt={`${t.edit.generationResult} ${index + 1}`} fill className="object-cover" />
                           <span className={`absolute top-1 left-1 text-white text-[8px] px-1 py-0.5 rounded font-medium ${
                             item.gen.type === 'studio' ? 'bg-amber-500' :
                             item.gen.type === 'edit' ? 'bg-purple-500' : 'bg-blue-500'
                           }`}>
                             {item.gen.type === 'studio' ? '影棚' :
-                             item.gen.type === 'edit' ? '修图' : '模特'}
+                             item.gen.type === 'edit' ? t.nav.edit : t.common.model}
                           </span>
                         </button>
                       ))}
@@ -693,8 +695,8 @@ export default function GeneralEditPage() {
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-zinc-400">
                     <Images className="w-12 h-12 mb-3 opacity-30" />
-                    <p className="text-sm">暂无生成记录</p>
-                    <p className="text-xs mt-1">先去拍摄生成一些图片吧</p>
+                    <p className="text-sm">{t.edit.noGallery}</p>
+                    <p className="text-xs mt-1">{t.studio.goShootToGenerate}</p>
                     <button
                       onClick={() => {
                         setShowGalleryPanel(false)
@@ -702,7 +704,7 @@ export default function GeneralEditPage() {
                       }}
                       className="mt-4 px-4 py-2 bg-purple-500 text-white text-sm rounded-lg hover:bg-purple-600"
                     >
-                      去拍摄
+                      {t.edit.goShoot}
                     </button>
                   </div>
                 )}
