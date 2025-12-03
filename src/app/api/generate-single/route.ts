@@ -3,8 +3,9 @@ import { getGenAIClient, extractImage, extractText, safetySettings } from '@/lib
 import { PRODUCT_PROMPT, buildInstructPrompt, buildModelPrompt } from '@/prompts'
 import { stripBase64Prefix } from '@/lib/utils'
 import { requireAuth } from '@/lib/auth'
+import { uploadImageToStorage, appendImageToGeneration, markImageFailed } from '@/lib/supabase/generationService'
 
-export const maxDuration = 180 // 3 minutes per single image
+export const maxDuration = 300 // 5 minutes (Pro plan) - includes image upload
 
 // Model names
 const PRIMARY_IMAGE_MODEL = 'gemini-3-pro-image-preview'
@@ -139,11 +140,14 @@ export async function POST(request: NextRequest) {
     return authResult.response
   }
   
+  const userId = authResult.user.id
+  
   try {
     const body = await request.json()
     const { 
       type, // 'product' | 'model'
       index, // 0 or 1
+      taskId, // 任务 ID，用于数据库写入
       productImage, 
       productImage2, 
       modelImage, 
@@ -152,6 +156,8 @@ export async function POST(request: NextRequest) {
       backgroundImage, 
       vibeImage,
       simpleMode, // New: use simple prompt for model generation
+      // 新增：用于数据库写入的参数
+      inputParams, // 生成参数（modelStyle, modelGender 等）
     } = body
     
     if (!productImage) {
@@ -252,6 +258,17 @@ export async function POST(request: NextRequest) {
     
     if (!result) {
       console.log(`[${label}] Failed in ${duration}ms`)
+      
+      // 标记图片失败（如果有 taskId）
+      if (taskId) {
+        await markImageFailed({
+          taskId,
+          userId,
+          imageIndex: index || 0,
+          error: 'RESOURCE_BUSY',
+        })
+      }
+      
       return NextResponse.json({ 
         success: false, 
         error: 'RESOURCE_BUSY',
@@ -261,17 +278,54 @@ export async function POST(request: NextRequest) {
       }, { status: 503 })
     }
     
-    console.log(`[${label}] Completed in ${duration}ms`)
+    console.log(`[${label}] Generated in ${duration}ms, uploading to storage...`)
+    
+    // 上传图片到 Storage
+    const base64Image = `data:image/png;base64,${result.image}`
+    let uploadedUrl = base64Image // 默认返回 base64
+    
+    if (taskId) {
+      const uploaded = await uploadImageToStorage(base64Image, userId, `output_${index || 0}`)
+      if (uploaded) {
+        uploadedUrl = uploaded
+        console.log(`[${label}] Uploaded to storage`)
+        
+        // 写入数据库
+        const dbSuccess = await appendImageToGeneration({
+          taskId,
+          userId,
+          imageIndex: index || 0,
+          imageUrl: uploaded,
+          modelType: result.model,
+          genMode: generationMode,
+          prompt: usedPrompt,
+          taskType: type === 'product' ? 'product_studio' : 'model_studio',
+          inputParams,
+        })
+        
+        if (dbSuccess) {
+          console.log(`[${label}] Saved to database`)
+        } else {
+          console.warn(`[${label}] Failed to save to database, but image is uploaded`)
+        }
+      } else {
+        console.warn(`[${label}] Upload failed, returning base64`)
+      }
+    }
+    
+    const totalDuration = Date.now() - startTime
+    console.log(`[${label}] Completed in ${totalDuration}ms (gen: ${duration}ms)`)
     
     return NextResponse.json({
       success: true,
       type,
       index,
-      image: `data:image/png;base64,${result.image}`,
+      image: uploadedUrl, // 返回 Storage URL 或 base64
       modelType: result.model,
       generationMode, // 'extended' or 'simple'
       prompt: usedPrompt,
-      duration,
+      duration: totalDuration,
+      savedToDb: !!taskId, // 告诉前端是否已保存到数据库
     })
     
   } catch (error: any) {

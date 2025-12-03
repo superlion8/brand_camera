@@ -2,11 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getGenAIClient, extractImage, safetySettings } from '@/lib/genai'
 import { buildEditPrompt, EDIT_PROMPT_PREFIX } from '@/prompts'
 import { stripBase64Prefix, generateId } from '@/lib/utils'
-import { saveGenerationServer } from '@/lib/supabase/generations-server'
-import { uploadGeneratedImageServer, uploadInputImageServer } from '@/lib/supabase/storage-server'
+import { uploadImageToStorage, appendImageToGeneration, markImageFailed } from '@/lib/supabase/generationService'
 import { requireAuth } from '@/lib/auth'
 
-export const maxDuration = 120
+export const maxDuration = 300 // 5 minutes (Pro plan)
 
 // Model names
 const PRIMARY_IMAGE_MODEL = 'gemini-3-pro-image-preview'
@@ -105,7 +104,16 @@ export async function POST(request: NextRequest) {
   
   try {
     const body = await request.json()
-    const { inputImage, modelImage, modelStyle, modelGender, backgroundImage, vibeImage, customPrompt } = body
+    const { 
+      inputImage, 
+      modelImage, 
+      modelStyle, 
+      modelGender, 
+      backgroundImage, 
+      vibeImage, 
+      customPrompt,
+      taskId, // 任务 ID，用于数据库写入
+    } = body
     
     if (!inputImage) {
       return NextResponse.json({ success: false, error: '缺少输入图片' }, { status: 400 })
@@ -175,16 +183,15 @@ export async function POST(request: NextRequest) {
     const duration = Date.now() - startTime
     
     if (!result) {
-      // Save failed edit record
-      saveGenerationServer(
-        userId,
-        'edit',
-        { modelStyle, modelGender, customPrompt },
-        [],
-        duration,
-        'failed',
-        '资源紧张，请稍后重试'
-      ).catch(console.error)
+      // 标记失败
+      if (taskId) {
+        await markImageFailed({
+          taskId,
+          userId,
+          imageIndex: 0,
+          error: 'RESOURCE_BUSY',
+        })
+      }
       
       return NextResponse.json({ 
         success: false, 
@@ -192,44 +199,58 @@ export async function POST(request: NextRequest) {
       }, { status: 503 })
     }
     
-    let outputUrl = `data:image/png;base64,${result.image}`
-    const generationId = generateId()
+    console.log(`[Edit] Generated in ${duration}ms, uploading to storage...`)
     
-    // Upload to Supabase Storage
-    console.log('[Edit] Uploading to Supabase Storage...')
+    const base64Image = `data:image/png;base64,${result.image}`
+    let uploadedUrl = base64Image
+    const generationId = taskId || generateId()
     
-    // Upload output image
-    const storageUrl = await uploadGeneratedImageServer(outputUrl, generationId, 0, userId)
+    // 上传到 Storage
+    const storageUrl = await uploadImageToStorage(base64Image, userId, 'edit_0')
     if (storageUrl) {
-      outputUrl = storageUrl
+      uploadedUrl = storageUrl
       console.log('[Edit] Successfully uploaded to storage')
+      
+      // 写入数据库
+      if (taskId) {
+        const dbSuccess = await appendImageToGeneration({
+          taskId,
+          userId,
+          imageIndex: 0,
+          imageUrl: storageUrl,
+          modelType: result.model,
+          genMode: 'extended',
+          prompt: prompt,
+          taskType: 'edit',
+          inputParams: {
+            modelStyle,
+            modelGender,
+            customPrompt,
+            hasModel: !!modelImage,
+            hasBackground: !!backgroundImage,
+            hasVibe: !!vibeImage,
+          },
+        })
+        
+        if (dbSuccess) {
+          console.log('[Edit] Saved to database')
+        } else {
+          console.warn('[Edit] Failed to save to database')
+        }
+      }
+    } else {
+      console.warn('[Edit] Upload failed, returning base64')
     }
     
-    // Also upload input image
-    uploadInputImageServer(inputImage, generationId, userId).catch(console.error)
-    
-    // Save edit record with storage URL and model type
-    saveGenerationServer(
-      userId,
-      'edit',
-      {
-        modelStyle,
-        modelGender,
-        customPrompt,
-        modelImageUrl: modelImage ? '[provided]' : undefined,
-        backgroundImageUrl: backgroundImage ? '[provided]' : undefined,
-        vibeImageUrl: vibeImage ? '[provided]' : undefined,
-      },
-      [outputUrl],
-      duration,
-      'completed'
-    ).catch(console.error)
+    const totalDuration = Date.now() - startTime
+    console.log(`[Edit] Completed in ${totalDuration}ms`)
     
     return NextResponse.json({
       success: true,
-      image: outputUrl,
+      image: uploadedUrl,
       modelType: result.model,
       generationId,
+      savedToDb: !!taskId,
     })
     
   } catch (error: any) {

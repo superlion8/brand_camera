@@ -59,7 +59,7 @@ interface AssetState {
   isPresetPinned: (id: string) => boolean
   
   // Generation actions with IndexedDB persistence
-  addGeneration: (generation: Generation) => Promise<void>
+  addGeneration: (generation: Generation, skipCloudSync?: boolean) => Promise<void>
   setGenerations: (generations: Generation[]) => void
   deleteGeneration: (id: string) => Promise<void>
   deleteGenerationImage: (generationId: string, imageIndex: number) => Promise<void>
@@ -251,10 +251,11 @@ export const useAssetStore = create<AssetState>()(
       },
       
       // Generation with IndexedDB and cloud sync
-      addGeneration: async (generation) => {
+      // skipCloudSync: 如果后端已经写入数据库，跳过前端的云端同步
+      addGeneration: async (generation, skipCloudSync = false) => {
         const { currentUserId } = get()
         
-        console.log('[Store] Adding generation, currentUserId:', currentUserId, 'generationId:', generation.id)
+        console.log('[Store] Adding generation, currentUserId:', currentUserId, 'generationId:', generation.id, 'skipCloudSync:', skipCloudSync)
         
         // 1. 立即更新内存状态（用户立即可见）
         set((state) => ({ 
@@ -262,7 +263,7 @@ export const useAssetStore = create<AssetState>()(
         }))
         console.log('[Store] Generation added to memory state')
         
-        // 2. 后台异步保存到 IndexedDB 和云端（失败不影响用户体验）
+        // 2. 后台异步保存到 IndexedDB（和云端，除非 skipCloudSync）
         // 使用 setTimeout 确保不阻塞 UI
         setTimeout(async () => {
           try {
@@ -299,7 +300,12 @@ export const useAssetStore = create<AssetState>()(
               console.warn('[Store] Failed to save generation to IndexedDB:', e)
             }
             
-            // Sync to cloud
+            // Sync to cloud (除非 skipCloudSync，表示后端已经写入)
+            if (skipCloudSync) {
+              console.log('[Store] Skipping cloud sync - backend already saved')
+              return
+            }
+            
             if (currentUserId) {
               console.log('[Store] Syncing generation to cloud for user:', currentUserId)
               try {

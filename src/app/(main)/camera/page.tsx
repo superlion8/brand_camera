@@ -431,6 +431,7 @@ export default function CameraPage() {
         prompt?: string
         duration?: number
         error?: string
+        savedToDb?: boolean // 后端是否已写入数据库
       }
       
       // Helper to create a delayed request for model images
@@ -519,6 +520,16 @@ export default function CameraPage() {
           // Pass model/bg info for logging
           modelName: modelNameForThis,
           bgName: bgNameForThis,
+          // 传递 taskId，让后端直接写入数据库
+          taskId,
+          inputParams: {
+            modelStyle,
+            modelGender,
+            model: modelNameForThis,
+            background: bgNameForThis,
+            modelIsUserSelected: !modelIsRandom,
+            bgIsUserSelected: !bgIsRandom,
+          },
         }
         
         // 返回处理结果而不是 Response（因为我们需要在这里解析并实时更新状态）
@@ -554,11 +565,11 @@ export default function CameraPage() {
               const result = await response.json()
               if (result.success && result.image) {
                 const genMode = result.generationMode || (simpleMode ? 'simple' : 'extended')
-                // 将 base64 转换为 Blob URL，释放内存
+                // 如果是 Storage URL 直接用，如果是 base64 转换为 Blob URL
                 const imageUrl = result.image.startsWith('data:') 
                   ? base64ToBlobUrl(result.image) 
                   : result.image
-                console.log(`Image ${index + 1}: ✓ (${result.modelType}, ${mode}, ${result.duration}ms)`)
+                console.log(`Image ${index + 1}: ✓ (${result.modelType}, ${mode}, ${result.duration}ms, savedToDb: ${result.savedToDb})`)
                 updateImageSlot(taskId, index, {
                   status: 'completed',
                   imageUrl: imageUrl,
@@ -568,11 +579,12 @@ export default function CameraPage() {
                 resolve({ 
                   index, 
                   success: true, 
-                  image: result.image, // 保留原始 base64 用于上传
+                  image: result.image, // Storage URL 或 base64
                   modelType: result.modelType,
                   genMode: genMode,
                   prompt: result.prompt,
                   duration: result.duration,
+                  savedToDb: result.savedToDb, // 后端是否已写入数据库
                 })
               } else {
                 const errorMsg = result.error || '生成失败'
@@ -622,6 +634,7 @@ export default function CameraPage() {
       const allPrompts: (string | null)[] = Array(NUM_IMAGES).fill(null)
       const allGenModes: (('extended' | 'simple') | null)[] = Array(NUM_IMAGES).fill(null)
       let maxDuration = 0
+      let allSavedToDb = true // 检查是否所有成功的图片都已被后端保存
       
       for (const result of results) {
         if (result.success && result.image) {
@@ -630,6 +643,9 @@ export default function CameraPage() {
           allPrompts[result.index] = result.prompt || null
           allGenModes[result.index] = result.genMode || 'extended'
           maxDuration = Math.max(maxDuration, result.duration || 0)
+          if (!result.savedToDb) {
+            allSavedToDb = false
+          }
         }
       }
       
@@ -725,6 +741,8 @@ export default function CameraPage() {
           }
         })
         
+        // 如果后端已经写入数据库，跳过云端同步（避免重复写入）
+        // addGeneration 仍会更新本地 store 和 IndexedDB
         await addGeneration({
           id,
           type: "camera_model",
@@ -747,7 +765,7 @@ export default function CameraPage() {
             perImageModels: savedPerImageModels,
             perImageBackgrounds: savedPerImageBgs,
           },
-        })
+        }, allSavedToDb) // 后端已写入数据库时，跳过前端的云端同步
         
         // Refresh quota after successful generation
         await refreshQuota()

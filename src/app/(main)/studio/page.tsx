@@ -320,6 +320,13 @@ export default function StudioPage() {
         lightDirection: lightDirectionVal,
         lightColor: bgColorVal,
         aspectRatio: aspectRatioVal,
+        taskId, // 传递 taskId，让后端直接写入数据库
+        inputParams: {
+          lightType: lightTypeVal,
+          lightDirection: lightDirectionVal,
+          lightColor: bgColorVal,
+          aspectRatio: aspectRatioVal,
+        },
       }
       
       // Stagger 2 requests
@@ -349,6 +356,7 @@ export default function StudioPage() {
       const images: (string | null)[] = [null, null]
       const modelTypes: (('pro' | 'flash') | null)[] = [null, null]
       let usedPrompt: string = ''
+      let allSavedToDb = true // 检查是否所有成功的图片都已被后端保存
       
       for (let i = 0; i < responses.length; i++) {
         const response = responses[i]
@@ -370,7 +378,10 @@ export default function StudioPage() {
               if (result.prompt && !usedPrompt) {
                 usedPrompt = result.prompt
               }
-              console.log(`Studio ${result.index + 1}: ✓ (${result.modelType}, ${result.duration}ms)`)
+              if (!result.savedToDb) {
+                allSavedToDb = false
+              }
+              console.log(`Studio ${result.index + 1}: ✓ (${result.modelType}, ${result.duration}ms, savedToDb: ${result.savedToDb})`)
             } else {
               console.log(`Studio ${i + 1}: ✗ (${result.error || 'No image'})`)
             }
@@ -420,7 +431,7 @@ export default function StudioPage() {
           prompt: usedPrompt || undefined,
           createdAt: new Date().toISOString(),
           params: { lightType: lightTypeVal, lightDirection: lightDirectionVal, lightColor: bgColorVal, aspectRatio: aspectRatioVal },
-        })
+        }, allSavedToDb) // 后端已写入数据库时，跳过前端的云端同步
         
         // Refresh quota after successful generation
         await refreshQuota()

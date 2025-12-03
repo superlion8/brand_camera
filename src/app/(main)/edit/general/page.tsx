@@ -190,14 +190,19 @@ export default function GeneralEditPage() {
         body: JSON.stringify({
           inputImage: compressedInput,
           customPrompt: prompt,
+          taskId, // 传递 taskId，让后端直接写入数据库
           // No model/background/vibe for general edit
         }),
-      }, 120000)
+      }, 180000) // 增加超时时间，因为后端现在会上传图片
       
       const data = await response.json()
       
       if (data.success && data.image) {
         updateTaskStatus(taskId, 'completed', [data.image])
+        
+        // 后端已写入数据库时，跳过前端的云端同步
+        const skipCloudSync = !!data.savedToDb
+        console.log(`Edit completed, savedToDb: ${data.savedToDb}`)
         
         await addGeneration({
           id: taskId,
@@ -209,7 +214,7 @@ export default function GeneralEditPage() {
           params: {
             customPrompt: prompt,
           },
-        })
+        }, skipCloudSync)
         
         // Refresh quota after successful generation
         await refreshQuota()
