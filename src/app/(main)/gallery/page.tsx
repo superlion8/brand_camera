@@ -267,29 +267,33 @@ export default function GalleryPage() {
     }).catch(() => {}) // Silently ignore tracking errors
     
     try {
-      let blob: Blob
+      const response = await fetch(url)
+      const blob = await response.blob()
+      const file = new File([blob], `brand-camera-${Date.now()}.png`, { type: 'image/png' })
       
-      if (url.startsWith('data:')) {
-        const response = await fetch(url)
-        blob = await response.blob()
+      // 优先使用系统分享（iOS 会显示"存储图像"选项）
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file] })
       } else {
-        const response = await fetch(url)
-        blob = await response.blob()
+        // 回退到下载
+        const blobUrl = URL.createObjectURL(blob)
+        const link = document.createElement("a")
+        link.href = blobUrl
+        link.download = file.name
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(blobUrl)
       }
+    } catch (error: any) {
+      // 用户取消分享不算错误
+      if (error.name === 'AbortError') return
       
-      const blobUrl = URL.createObjectURL(blob)
-      const link = document.createElement("a")
-      link.href = blobUrl
-      link.download = `brand-camera-${Date.now()}.jpg`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(blobUrl)
-    } catch (error) {
       console.error("Download failed:", error)
+      // 回退：直接打开链接
       const link = document.createElement("a")
       link.href = url
-      link.download = `brand-camera-${Date.now()}.jpg`
+      link.download = `brand-camera-${Date.now()}.png`
       link.target = "_blank"
       document.body.appendChild(link)
       link.click()
