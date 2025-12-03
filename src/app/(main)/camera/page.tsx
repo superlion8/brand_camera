@@ -153,7 +153,7 @@ export default function CameraPage() {
   const [product2FromPhone, setProduct2FromPhone] = useState(false)
   
   const { addGeneration, addUserAsset, userModels, userBackgrounds, userProducts, addFavorite, removeFavorite, isFavorited, favorites, generations } = useAssetStore()
-  const { addTask, updateTaskStatus, tasks } = useGenerationTaskStore()
+  const { addTask, updateTaskStatus, updateImageSlot, initImageSlots, tasks } = useGenerationTaskStore()
   const { debugMode } = useSettingsStore()
   
   // Quota management
@@ -318,7 +318,8 @@ export default function CameraPage() {
     
     const taskId = addTask('camera', capturedImage, params, CAMERA_NUM_IMAGES)
     setCurrentTaskId(taskId)
-    updateTaskStatus(taskId, 'generating')
+    // 初始化 imageSlots - 每张图一个独立状态
+    initImageSlots(taskId, CAMERA_NUM_IMAGES)
     setMode("processing")
     
     // IMMEDIATELY reserve quota - deduct before generation starts
@@ -482,16 +483,84 @@ export default function CameraPage() {
           bgName: bgNameForThis,
         }
         
-        return new Promise<Response>((resolve, reject) => {
-          setTimeout(() => {
+        // 返回处理结果而不是 Response（因为我们需要在这里解析并实时更新状态）
+        interface ImageResult {
+          index: number
+          success: boolean
+          image?: string
+          modelType?: 'pro' | 'flash'
+          genMode?: 'simple' | 'extended'
+          prompt?: string
+          duration?: number
+          error?: string
+        }
+        
+        return new Promise<ImageResult>((resolve) => {
+          setTimeout(async () => {
             const mode = simpleMode ? '极简模式' : '扩展模式'
             console.log(`Starting Image ${index + 1} (${mode}) - Model: ${modelNameForThis}, Bg: ${bgNameForThis}`)
-            fetch("/api/generate-single", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              credentials: 'include',
-              body: JSON.stringify(payload),
-            }).then(resolve).catch(reject)
+            
+            // 更新状态为 generating
+            updateImageSlot(taskId, index, { status: 'generating' })
+            
+            try {
+              const response = await fetch("/api/generate-single", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: 'include',
+                body: JSON.stringify(payload),
+              })
+              
+              // 处理响应并立即更新状态
+              if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }))
+                const errorMsg = getErrorMessage(errorData.error || 'Unknown error', t)
+                console.log(`Image ${index + 1}: ✗ HTTP ${response.status} (${errorMsg})`)
+                updateImageSlot(taskId, index, { 
+                  status: 'failed', 
+                  error: errorMsg 
+                })
+                resolve({ index, success: false, error: errorMsg })
+                return
+              }
+              
+              const result = await response.json()
+              if (result.success && result.image) {
+                const genMode = result.generationMode || (simpleMode ? 'simple' : 'extended')
+                console.log(`Image ${index + 1}: ✓ (${result.modelType}, ${mode}, ${result.duration}ms)`)
+                updateImageSlot(taskId, index, {
+                  status: 'completed',
+                  imageUrl: result.image,
+                  modelType: result.modelType,
+                  genMode: genMode,
+                })
+                resolve({ 
+                  index, 
+                  success: true, 
+                  image: result.image,
+                  modelType: result.modelType,
+                  genMode: genMode,
+                  prompt: result.prompt,
+                  duration: result.duration,
+                })
+              } else {
+                const errorMsg = result.error || '生成失败'
+                console.log(`Image ${index + 1}: ✗ (${errorMsg})`)
+                updateImageSlot(taskId, index, { 
+                  status: 'failed', 
+                  error: errorMsg 
+                })
+                resolve({ index, success: false, error: errorMsg })
+              }
+            } catch (e: any) {
+              const errorMsg = e.message || '网络错误'
+              console.log(`Image ${index + 1}: ✗ (${errorMsg})`)
+              updateImageSlot(taskId, index, { 
+                status: 'failed', 
+                error: errorMsg 
+              })
+              resolve({ index, success: false, error: errorMsg })
+            }
           }, delayMs)
         })
       }
@@ -505,52 +574,23 @@ export default function CameraPage() {
         requests.push(createModelRequest(i, staggerDelay * i, isSimple))
       }
       
-      // Wait for all to complete (don't fail if some fail)
-      const responses = await Promise.allSettled(requests)
+      // Wait for all to complete (UI already updated in real-time via updateImageSlot)
+      const results = await Promise.all(requests)
       
-      // Process results - all are model images
+      // Collect results for saving to assetStore
       const allImages: (string | null)[] = Array(NUM_IMAGES).fill(null)
       const allModelTypes: (('pro' | 'flash') | null)[] = Array(NUM_IMAGES).fill(null)
       const allPrompts: (string | null)[] = Array(NUM_IMAGES).fill(null)
       const allGenModes: (('extended' | 'simple') | null)[] = Array(NUM_IMAGES).fill(null)
       let maxDuration = 0
       
-      for (let i = 0; i < responses.length; i++) {
-        const response = responses[i]
-        if (response.status === 'fulfilled') {
-          const httpResponse = response.value
-          try {
-            // Check HTTP status first
-            if (!httpResponse.ok) {
-              const errorData = await httpResponse.json().catch(() => ({ error: `HTTP ${httpResponse.status}` }))
-              const errorMsg = getErrorMessage(errorData.error || 'Unknown error', t)
-              console.log(`Task ${i + 1}: ✗ HTTP ${httpResponse.status} (${errorMsg})`)
-              continue
-            }
-            
-            const result = await httpResponse.json()
-            if (result.success && result.image) {
-              // Direct mapping: index maps to position
-              const targetIndex = result.index
-              if (targetIndex !== undefined && targetIndex >= 0 && targetIndex < NUM_IMAGES) {
-                allImages[targetIndex] = result.image
-                allModelTypes[targetIndex] = result.modelType
-                allPrompts[targetIndex] = result.prompt || null
-                allGenModes[targetIndex] = result.generationMode || 'extended'
-                maxDuration = Math.max(maxDuration, result.duration || 0)
-                const modeLabel = result.generationMode === 'simple' ? '极简模式' : '扩展模式'
-                console.log(`Model ${targetIndex + 1}: ✓ (${result.modelType}, ${modeLabel}, ${result.duration}ms)`)
-              } else {
-                console.log(`Task ${i + 1}: ✗ (invalid index: ${targetIndex})`)
-              }
-            } else {
-              console.log(`Task ${i + 1}: ✗ (${result.error || 'No image in response'})`)
-            }
-          } catch (e: any) {
-            console.log(`Task ${i + 1}: ✗ (parse error: ${e.message})`)
-          }
-        } else {
-          console.log(`Task ${i + 1}: ✗ (promise rejected: ${response.reason})`)
+      for (const result of results) {
+        if (result.success && result.image) {
+          allImages[result.index] = result.image
+          allModelTypes[result.index] = result.modelType || 'pro'
+          allPrompts[result.index] = result.prompt || null
+          allGenModes[result.index] = result.genMode || 'extended'
+          maxDuration = Math.max(maxDuration, result.duration || 0)
         }
       }
       
@@ -693,9 +733,8 @@ export default function CameraPage() {
         }
         
         // Log more details
-        const failedCount = responses.filter(r => r.status === 'rejected').length
-        const httpErrorCount = responses.filter(r => r.status === 'fulfilled' && !r.value.ok).length
-        console.error(`All tasks failed. Rejected: ${failedCount}, HTTP errors: ${httpErrorCount}`)
+        const failedCount = results.filter(r => !r.success).length
+        console.error(`All tasks failed. Failed: ${failedCount}/${results.length}`)
         throw new Error(t.camera.generationFailed)
       }
     } catch (error: any) {

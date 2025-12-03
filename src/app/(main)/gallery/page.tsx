@@ -5,7 +5,7 @@ import Image from "next/image"
 import { Download, Heart, X, Wand2, Camera, Users, Home, ZoomIn, Loader2, Lightbulb, RefreshCw, Trash2, Package, FolderPlus, ChevronDown } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { useAuth } from "@/components/providers/AuthProvider"
-import { useGenerationTaskStore, GenerationTask } from "@/stores/generationTaskStore"
+import { useGenerationTaskStore, GenerationTask, ImageSlot } from "@/stores/generationTaskStore"
 import { useSettingsStore } from "@/stores/settingsStore"
 import { useTranslation } from "@/stores/languageStore"
 import { Generation, Favorite, Asset } from "@/types"
@@ -451,9 +451,18 @@ export default function GalleryPage() {
           className="grid grid-cols-2 gap-3 transition-transform duration-200"
           style={{ transform: `translateY(${pullDistance}px)` }}
         >
-          {/* Show loading cards for active tasks */}
+          {/* Show cards for active tasks - each imageSlot gets its own card */}
           {activeTab === "all" && activeTasks.map((task) => (
-            <GeneratingCard key={task.id} task={task} />
+            task.imageSlots && task.imageSlots.length > 0 
+              ? task.imageSlots.map((slot, idx) => (
+                  <ImageSlotCard 
+                    key={`${task.id}-slot-${idx}`} 
+                    task={task} 
+                    slot={slot}
+                    slotIndex={idx}
+                  />
+                ))
+              : <GeneratingCard key={task.id} task={task} />
           ))}
           
           {/* Show completed task images while waiting for sync to generations store */}
@@ -1036,7 +1045,143 @@ export default function GalleryPage() {
   )
 }
 
-// Generating card component
+// Single image slot card - shows individual image status
+function ImageSlotCard({ task, slot, slotIndex }: { task: GenerationTask; slot: ImageSlot; slotIndex: number }) {
+  const { t } = useTranslation()
+  const isStudio = task.type === 'studio'
+  const isEdit = task.type === 'edit'
+  
+  // 如果已完成且有图片，显示图片
+  if (slot.status === 'completed' && slot.imageUrl) {
+    return (
+      <div className="relative aspect-[4/5] bg-zinc-200 rounded-xl overflow-hidden shadow-sm ring-2 ring-green-400">
+        <Image 
+          src={slot.imageUrl} 
+          alt={`Generated ${slotIndex + 1}`}
+          fill
+          className="object-cover"
+        />
+        {/* 显示模型类型标签 */}
+        <div className="absolute top-2 left-2 flex gap-1">
+          {slot.modelType && (
+            <span className={`px-1.5 py-0.5 text-[9px] rounded font-medium ${
+              slot.modelType === 'pro' 
+                ? 'bg-green-500 text-white' 
+                : 'bg-orange-500 text-white'
+            }`}>
+              {slot.modelType === 'pro' ? 'Pro' : 'Flash'}
+            </span>
+          )}
+          {slot.genMode && (
+            <span className={`px-1.5 py-0.5 text-[9px] rounded font-medium ${
+              slot.genMode === 'simple' 
+                ? 'bg-blue-500 text-white' 
+                : 'bg-purple-500 text-white'
+            }`}>
+              {slot.genMode === 'simple' ? '极简' : '扩展'}
+            </span>
+          )}
+        </div>
+        {/* 新生成标记 */}
+        <div className="absolute bottom-2 right-2">
+          <span className="px-2 py-1 bg-green-500 text-white text-[10px] rounded-full font-medium">
+            ✓ 新
+          </span>
+        </div>
+      </div>
+    )
+  }
+  
+  // 如果失败，显示错误
+  if (slot.status === 'failed') {
+    return (
+      <div className="relative aspect-[4/5] bg-gradient-to-br from-red-50 to-red-100 rounded-xl overflow-hidden shadow-sm border-2 border-dashed border-red-300">
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
+          <div className="w-10 h-10 rounded-full bg-red-200 flex items-center justify-center mb-2">
+            <X className="w-5 h-5 text-red-600" />
+          </div>
+          <p className="text-xs text-red-600 text-center font-medium">生成失败</p>
+          {slot.error && (
+            <p className="text-[10px] text-red-500 text-center mt-1 line-clamp-2">{slot.error}</p>
+          )}
+        </div>
+        {/* 序号 */}
+        <div className="absolute top-2 left-2">
+          <span className="px-1.5 py-0.5 text-[9px] rounded font-medium bg-red-500 text-white">
+            #{slotIndex + 1}
+          </span>
+        </div>
+      </div>
+    )
+  }
+  
+  // pending 或 generating 状态，显示 loading
+  const bgGradient = isStudio 
+    ? 'from-amber-100 to-orange-100' 
+    : isEdit 
+      ? 'from-purple-100 to-pink-100'
+      : 'from-blue-100 to-purple-100'
+  
+  const borderColor = isStudio 
+    ? 'border-amber-300' 
+    : isEdit 
+      ? 'border-purple-300'
+      : 'border-blue-300'
+  
+  const spinnerColor = isStudio 
+    ? 'text-amber-600' 
+    : isEdit 
+      ? 'text-purple-600'
+      : 'text-blue-600'
+  
+  const textColor = isStudio 
+    ? 'text-amber-700' 
+    : isEdit 
+      ? 'text-purple-700'
+      : 'text-blue-700'
+  
+  return (
+    <div className={`relative aspect-[4/5] bg-gradient-to-br ${bgGradient} rounded-xl overflow-hidden shadow-sm border-2 border-dashed ${borderColor}`}>
+      {/* 背景模糊的输入图 */}
+      {task.inputImageUrl && task.inputImageUrl !== '[base64]' && (
+        <div className="absolute inset-0 opacity-30">
+          <Image 
+            src={task.inputImageUrl} 
+            alt="Input" 
+            fill 
+            className="object-cover blur-sm" 
+          />
+        </div>
+      )}
+      
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        {/* Loading 动画 */}
+        <div className="relative mb-2">
+          <div className={`absolute inset-0 rounded-full ${spinnerColor.replace('text-', 'bg-')}/20 animate-ping`} />
+          <Loader2 className={`w-8 h-8 ${spinnerColor} animate-spin`} />
+        </div>
+        
+        <p className={`text-sm font-medium ${textColor}`}>
+          {slot.status === 'generating' ? '生成中...' : '等待中...'}
+        </p>
+        <p className={`text-xs ${textColor} opacity-70 mt-1`}>
+          第 {slotIndex + 1} 张
+        </p>
+      </div>
+      
+      {/* 序号标签 */}
+      <div className="absolute top-2 left-2">
+        <span className={`px-1.5 py-0.5 text-[9px] rounded font-medium ${
+          isStudio ? 'bg-amber-500' : isEdit ? 'bg-purple-500' : 'bg-blue-500'
+        } text-white`}>
+          #{slotIndex + 1}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+// Generating card component (legacy - for tasks without imageSlots)
 function GeneratingCard({ task }: { task: GenerationTask }) {
   const { t } = useTranslation()
   const isStudio = task.type === 'studio'

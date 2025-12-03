@@ -37,15 +37,27 @@ const safeLocalStorage: StateStorage = {
 }
 
 export type TaskType = 'camera' | 'studio' | 'edit'
+export type ImageStatus = 'pending' | 'generating' | 'completed' | 'failed'
+
+// 每张图的独立状态
+export interface ImageSlot {
+  index: number
+  status: ImageStatus
+  imageUrl?: string
+  modelType?: 'pro' | 'flash'
+  genMode?: 'simple' | 'extended'
+  error?: string
+}
 
 export interface GenerationTask {
   id: string
   type: TaskType
-  status: 'pending' | 'generating' | 'completed' | 'failed'
+  status: 'pending' | 'generating' | 'completed' | 'failed' // 整体状态
   inputImageUrl: string
-  outputImageUrls: string[]
+  outputImageUrls: string[] // 保留向后兼容
   params?: GenerationParams
   expectedImageCount?: number // Expected number of images to generate
+  imageSlots?: ImageSlot[] // 每张图的独立状态（新增）
   createdAt: string
   error?: string
 }
@@ -58,6 +70,10 @@ interface GenerationTaskState {
   setHasHydrated: (state: boolean) => void
   addTask: (type: TaskType, inputImageUrl: string, params?: GenerationParams, expectedImageCount?: number) => string
   updateTaskStatus: (id: string, status: GenerationTask['status'], outputImageUrls?: string[], error?: string) => void
+  // 更新单张图片的状态（新增）
+  updateImageSlot: (taskId: string, index: number, update: Partial<ImageSlot>) => void
+  // 初始化图片槽位（新增）
+  initImageSlots: (taskId: string, count: number) => void
   removeTask: (id: string) => void
   getActiveTasks: () => GenerationTask[]
   getCompletedTasks: () => GenerationTask[]
@@ -110,6 +126,58 @@ export const useGenerationTaskStore = create<GenerationTaskState>()(
                 }
               : task
           )
+        }))
+      },
+      
+      // 初始化图片槽位
+      initImageSlots: (taskId, count) => {
+        const slots: ImageSlot[] = Array.from({ length: count }, (_, i) => ({
+          index: i,
+          status: 'pending' as ImageStatus,
+        }))
+        set((state) => ({
+          tasks: state.tasks.map(task =>
+            task.id === taskId
+              ? { ...task, imageSlots: slots, status: 'generating' as const }
+              : task
+          )
+        }))
+      },
+      
+      // 更新单张图片的状态
+      updateImageSlot: (taskId, index, update) => {
+        set((state) => ({
+          tasks: state.tasks.map(task => {
+            if (task.id !== taskId) return task
+            
+            const newSlots = [...(task.imageSlots || [])]
+            if (newSlots[index]) {
+              newSlots[index] = { ...newSlots[index], ...update }
+            }
+            
+            // 更新 outputImageUrls 保持兼容
+            const newOutputUrls = [...task.outputImageUrls]
+            if (update.imageUrl) {
+              newOutputUrls[index] = update.imageUrl
+            }
+            
+            // 检查是否所有图片都已完成/失败
+            const allDone = newSlots.every(s => s.status === 'completed' || s.status === 'failed')
+            const anyCompleted = newSlots.some(s => s.status === 'completed')
+            const allFailed = newSlots.every(s => s.status === 'failed')
+            
+            let newStatus = task.status
+            if (allDone) {
+              newStatus = allFailed ? 'failed' : 'completed'
+            }
+            
+            return {
+              ...task,
+              imageSlots: newSlots,
+              outputImageUrls: newOutputUrls,
+              status: newStatus,
+            }
+          })
         }))
       },
       
@@ -171,6 +239,11 @@ export const useGenerationTaskStore = create<GenerationTaskState>()(
             outputImageUrls: t.outputImageUrls.map(url => 
               url?.startsWith('data:') ? '[base64]' : url
             ),
+            // 保存 imageSlots 但不存储 base64 图片
+            imageSlots: t.imageSlots?.map(slot => ({
+              ...slot,
+              imageUrl: slot.imageUrl?.startsWith('data:') ? '[base64]' : slot.imageUrl,
+            })),
             // 不存储 params 中的图片数据
             params: t.params ? {
               ...t.params,
