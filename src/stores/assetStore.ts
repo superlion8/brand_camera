@@ -585,12 +585,22 @@ export const useAssetStore = create<AssetState>()(
           return
         }
         
+        // 保存当前内存中的"刚生成"数据（可能还没保存到云端）
+        const { generations: currentGenerations } = get()
+        const now = Date.now()
+        const RECENT_THRESHOLD_MS = 60000 // 1 分钟内的数据视为"刚生成"
+        const recentLocalGenerations = currentGenerations.filter(gen => {
+          const createdAt = new Date(gen.createdAt).getTime()
+          return (now - createdAt) < RECENT_THRESHOLD_MS
+        })
+        
         set({ isSyncing: true })
         
         const startTime = Date.now()
         
         try {
           console.log('[Store] Starting cloud sync for user:', userId)
+          console.log('[Store] Preserving', recentLocalGenerations.length, 'recent local generations during sync')
           const cloudData = await syncService.syncAllData(userId)
           
           const duration = Date.now() - startTime
@@ -605,29 +615,21 @@ export const useAssetStore = create<AssetState>()(
           })
           
           // Merge cloud and local data
-          // For generations: keep recent local ones that might not be in cloud yet
-          const { generations: localGenerations } = get()
-          const now = Date.now()
-          const RECENT_THRESHOLD_MS = 120000 // 2 minutes - increased for slower connections
+          // 使用 sync 开始前保存的 recentLocalGenerations，避免丢失刚生成的数据
+          // 过滤掉已在云端存在的（通过 ID 匹配）
+          const localNotInCloud = recentLocalGenerations.filter(localGen => 
+            !cloudData.generations.some(cloudGen => cloudGen.id === localGen.id)
+          )
           
-          // Find local generations that are recent (might not be synced to cloud yet)
-          const recentLocalGenerations = localGenerations.filter(localGen => {
-            const createdAt = new Date(localGen.createdAt).getTime()
-            const isRecent = (now - createdAt) < RECENT_THRESHOLD_MS
-            // Keep if recent AND not in cloud data (by ID)
-            const existsInCloud = cloudData.generations.some(cloudGen => cloudGen.id === localGen.id)
-            return isRecent && !existsInCloud
-          })
-          
-          // Merge: cloud generations first, then recent local ones
-          const mergedGenerations = [...cloudData.generations, ...recentLocalGenerations]
+          // Merge: cloud generations first, then recent local ones not in cloud
+          const mergedGenerations = [...cloudData.generations, ...localNotInCloud]
             // Sort by createdAt descending
             .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
             // Remove duplicates by ID
             .filter((gen, index, self) => index === self.findIndex(g => g.id === gen.id))
           
-          if (recentLocalGenerations.length > 0) {
-            console.log('[Store] Preserving', recentLocalGenerations.length, 'recent local generations not yet in cloud')
+          if (localNotInCloud.length > 0) {
+            console.log('[Store] Merged', localNotInCloud.length, 'recent local generations not yet in cloud')
           }
           
           // Save merged generations to IndexedDB FIRST to prevent data loss
