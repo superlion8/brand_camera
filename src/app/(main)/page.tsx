@@ -32,10 +32,10 @@ function FeatureCard({
   title: string
   subtitle: string
   height?: number
-  accent?: 'blue' | 'amber'
+  accent?: 'purple' | 'amber'
 }) {
-  const accentStyles = accent === 'blue' 
-    ? { bg: 'bg-blue-500', iconBg: 'bg-blue-100', iconColor: 'text-blue-600', textColor: 'text-white', subColor: 'text-blue-100' }
+  const accentStyles = accent === 'purple' 
+    ? { bg: 'bg-purple-500', iconBg: 'bg-purple-100', iconColor: 'text-purple-600', textColor: 'text-white', subColor: 'text-purple-100' }
     : accent === 'amber'
     ? { bg: 'bg-amber-500', iconBg: 'bg-amber-100', iconColor: 'text-amber-600', textColor: 'text-white', subColor: 'text-amber-100' }
     : { bg: 'bg-white', iconBg: 'bg-zinc-100', iconColor: 'text-zinc-600', textColor: 'text-zinc-900', subColor: 'text-zinc-500' }
@@ -109,7 +109,7 @@ export default function HomePage() {
             title={t.home.modelStudio}
             subtitle={t.home.modelStudioSubtitle}
             height={220}
-            accent="blue"
+            accent="purple"
           />
           
           {/* Product Studio */}
@@ -121,6 +121,7 @@ export default function HomePage() {
             title={t.home.productStudio}
             subtitle={t.home.productStudioSubtitle}
             height={220}
+            accent="amber"
           />
         </div>
         

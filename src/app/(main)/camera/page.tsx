@@ -437,7 +437,14 @@ export default function CameraPage() {
         // If user didn't select model, pick a random one for this image
         if (!modelForThisImage) {
           const randomModel = getRandomModel()
-          modelForThisImage = await ensureBase64(randomModel.imageUrl)
+          const modelBase64 = await ensureBase64(randomModel.imageUrl)
+          if (!modelBase64) {
+            console.error(`Image ${index + 1}: Failed to load random model image`)
+            updateImageSlot(taskId, index, { status: 'failed', error: '模特图片加载失败' })
+            resolve({ index, success: false, error: '模特图片加载失败' })
+            return
+          }
+          modelForThisImage = modelBase64
           modelNameForThis = randomModel.name || t.common.model
           modelUrlForThis = randomModel.imageUrl || ''
           modelIsRandom = true
@@ -447,7 +454,14 @@ export default function CameraPage() {
         // If user didn't select background, pick a random one for this image
         if (!bgForThisImage) {
           const randomBg = getRandomBackground()
-          bgForThisImage = await ensureBase64(randomBg.imageUrl)
+          const bgBase64 = await ensureBase64(randomBg.imageUrl)
+          if (!bgBase64) {
+            console.error(`Image ${index + 1}: Failed to load random background image`)
+            updateImageSlot(taskId, index, { status: 'failed', error: '背景图片加载失败' })
+            resolve({ index, success: false, error: '背景图片加载失败' })
+            return
+          }
+          bgForThisImage = bgBase64
           bgNameForThis = randomBg.name || t.common.background
           bgUrlForThis = randomBg.imageUrl || ''
           bgIsRandom = true
