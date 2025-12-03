@@ -257,24 +257,16 @@ export const useAssetStore = create<AssetState>()(
         const inputImageId = `${generation.id}_input`
         await saveImage(inputImageId, generation.inputImageUrl)
         
-        // Store generation metadata with image references
-        const genToStore = {
-          ...generation,
-          inputImageRef: inputImageId,
-          outputImageRefs: savedOutputUrls,
-        }
-        await dbPut(STORES.GENERATIONS, genToStore)
-        
-        // Sync to cloud if logged in - do this BEFORE updating local state
-        // so we can get the cloud-generated UUID
-        let cloudGeneration = generation
+        // Sync to cloud first to get the cloud-generated ID
+        // This ensures both IndexedDB and memory use the same ID
+        let finalGeneration = generation
         if (currentUserId) {
           console.log('[Store] Syncing generation to cloud for user:', currentUserId)
           const result = await syncService.saveGeneration(currentUserId, generation)
           if (result) {
             console.log('[Store] Generation sync success, cloud ID:', result.id)
-            // Use the cloud-generated ID for the local state
-            cloudGeneration = { ...generation, id: result.id }
+            // Use the cloud-generated ID for consistency
+            finalGeneration = { ...generation, id: result.id }
           } else {
             console.warn('[Store] Generation sync failed, using local ID')
           }
@@ -282,8 +274,18 @@ export const useAssetStore = create<AssetState>()(
           console.warn('[Store] Not syncing generation - no currentUserId')
         }
         
+        // Store generation metadata with image references
+        // Use the final ID (cloud ID if synced, otherwise local ID)
+        const genToStore = {
+          ...finalGeneration,
+          inputImageRef: inputImageId,
+          outputImageRefs: savedOutputUrls,
+        }
+        await dbPut(STORES.GENERATIONS, genToStore)
+        
+        // Update memory state with the same ID as IndexedDB
         set((state) => ({ 
-          generations: [cloudGeneration, ...state.generations] 
+          generations: [finalGeneration, ...state.generations] 
         }))
       },
       
@@ -429,21 +431,48 @@ export const useAssetStore = create<AssetState>()(
       // Load from IndexedDB
       loadFromDB: async () => {
         try {
-          const [generations, favorites, collections] = await Promise.all([
+          const [dbGenerations, dbFavorites, dbCollections] = await Promise.all([
             dbGetAll<Generation>(STORES.GENERATIONS),
             dbGetAll<Favorite>(STORES.FAVORITES),
             dbGetAll<Collection>(STORES.COLLECTIONS),
           ])
           
+          // Get current state to merge with (avoid losing recent in-memory data)
+          const { generations: currentGenerations } = get()
+          const now = Date.now()
+          const RECENT_THRESHOLD_MS = 30000 // 30 seconds
+          
+          // Find very recent generations in memory that might not be in DB yet
+          // (e.g., still being processed/saved)
+          const recentInMemory = currentGenerations.filter(gen => {
+            const createdAt = new Date(gen.createdAt).getTime()
+            const isRecent = (now - createdAt) < RECENT_THRESHOLD_MS
+            // Keep if recent AND not in DB (by ID)
+            const existsInDb = dbGenerations.some(dbGen => dbGen.id === gen.id)
+            return isRecent && !existsInDb
+          })
+          
+          // Merge: DB generations + recent in-memory ones
+          const mergedGenerations = [...dbGenerations, ...recentInMemory]
+          
           // Sort by createdAt desc
-          generations.sort((a, b) => 
+          mergedGenerations.sort((a, b) => 
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           )
           
+          // Remove duplicates (by ID)
+          const uniqueGenerations = mergedGenerations.filter((gen, index, self) =>
+            index === self.findIndex(g => g.id === gen.id)
+          )
+          
+          if (recentInMemory.length > 0) {
+            console.log('[Store] loadFromDB: preserved', recentInMemory.length, 'recent in-memory generations')
+          }
+          
           set({
-            generations,
-            favorites,
-            collections,
+            generations: uniqueGenerations,
+            favorites: dbFavorites,
+            collections: dbCollections,
           })
         } catch (error) {
           console.error('Error loading from IndexedDB:', error)
