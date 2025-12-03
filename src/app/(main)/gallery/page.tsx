@@ -400,12 +400,6 @@ export default function GalleryPage() {
           <div className="flex items-center gap-2 ml-2">
             <Image src="/logo.png" alt="Brand Camera" width={28} height={28} className="rounded" />
             <span className="font-semibold text-lg text-zinc-900">{t.gallery.title}</span>
-            {isSyncing && (
-              <span className="flex items-center gap-1 px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-600 text-xs font-medium rounded-full">
-                <RefreshCw className="w-3 h-3 animate-spin" />
-                同步中
-              </span>
-            )}
           </div>
         </div>
         
@@ -464,6 +458,17 @@ export default function GalleryPage() {
             )}
           </div>
         </div>
+        
+        {/* 同步中状态条 - 显示在图片列表上方 */}
+        {isSyncing && (
+          <div 
+            className="flex items-center justify-center gap-2 py-2 mb-3 bg-blue-50 border border-blue-100 rounded-xl transition-transform duration-200"
+            style={{ transform: `translateY(${pullDistance}px)` }}
+          >
+            <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
+            <span className="text-sm text-blue-600">{t.common.syncing || '正在同步云端数据...'}</span>
+          </div>
+        )}
         
         <div 
           className="grid grid-cols-2 gap-3 transition-transform duration-200"
