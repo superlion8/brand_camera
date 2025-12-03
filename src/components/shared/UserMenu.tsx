@@ -235,38 +235,46 @@ export function UserMenu() {
 
               {/* Settings Content */}
               <div className="p-4 space-y-4">
-                {/* Debug Mode Toggle */}
-                <div className="flex items-center justify-between p-4 bg-zinc-50 rounded-xl">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${debugMode ? 'bg-amber-100' : 'bg-zinc-200'}`}>
-                      <Bug className={`w-5 h-5 ${debugMode ? 'text-amber-600' : 'text-zinc-400'}`} />
+                {/* Debug Mode Toggle - Only visible to admins */}
+                {isAdmin ? (
+                  <>
+                    <div className="flex items-center justify-between p-4 bg-zinc-50 rounded-xl">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${debugMode ? 'bg-amber-100' : 'bg-zinc-200'}`}>
+                          <Bug className={`w-5 h-5 ${debugMode ? 'text-amber-600' : 'text-zinc-400'}`} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-zinc-900 text-sm">{t.user.debugMode}</p>
+                          <p className="text-xs text-zinc-500">{t.user.debugModeDesc}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={toggleDebugMode}
+                        className={`relative w-14 h-8 rounded-full transition-colors shrink-0 ml-3 ${
+                          debugMode ? 'bg-amber-500' : 'bg-zinc-300'
+                        }`}
+                      >
+                        <div
+                          className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow-sm transition-transform ${
+                            debugMode ? 'translate-x-7' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
                     </div>
-                    <div className="min-w-0">
-                      <p className="font-medium text-zinc-900 text-sm">{t.user.debugMode}</p>
-                      <p className="text-xs text-zinc-500">{t.user.debugModeDesc}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={toggleDebugMode}
-                    className={`relative w-14 h-8 rounded-full transition-colors shrink-0 ml-3 ${
-                      debugMode ? 'bg-amber-500' : 'bg-zinc-300'
-                    }`}
-                  >
-                    <div
-                      className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow-sm transition-transform ${
-                        debugMode ? 'translate-x-7' : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
-                </div>
 
-                {/* Debug Mode Description */}
-                {debugMode && (
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                    <p className="text-xs text-amber-700">
-                      <strong>{t.user.debugModeEnabled}</strong><br />
-                      {t.user.debugModeEnabledDesc}
-                    </p>
+                    {/* Debug Mode Description */}
+                    {debugMode && (
+                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                        <p className="text-xs text-amber-700">
+                          <strong>{t.user.debugModeEnabled}</strong><br />
+                          {t.user.debugModeEnabledDesc}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="p-4 bg-zinc-50 rounded-xl text-center">
+                    <p className="text-sm text-zinc-500">暂无可配置项</p>
                   </div>
                 )}
               </div>
