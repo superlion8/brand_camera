@@ -2,47 +2,49 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { Wand2, Lightbulb, Home, ArrowRight, Sparkles, ChevronRight } from "lucide-react"
+import { Wand2, Lightbulb, Home, Sparkles, ChevronRight } from "lucide-react"
 import { useRouter } from "next/navigation"
-
-// 功能卡片数据
-const FEATURE_CARDS = [
-  {
-    id: 'general',
-    title: '通用修图',
-    subtitle: '自由描述，AI帮你实现',
-    description: '换背景、换颜色、去路人、加元素...',
-    icon: Wand2,
-    href: '/edit/general',
-    gradient: 'from-violet-500 to-purple-600',
-    shadowColor: 'shadow-purple-200',
-    iconBg: 'bg-purple-100',
-    iconColor: 'text-purple-600',
-  },
-  {
-    id: 'studio',
-    title: '商品影棚',
-    subtitle: '专业静物摄影效果',
-    description: '调整光源、背景、画面比例',
-    icon: Lightbulb,
-    href: '/studio',
-    gradient: 'from-amber-500 to-orange-500',
-    shadowColor: 'shadow-amber-200',
-    iconBg: 'bg-amber-100',
-    iconColor: 'text-amber-600',
-  },
-]
-
-// 即将推出的功能
-const COMING_SOON = [
-  { title: '换模特风格', icon: '👤' },
-  { title: 'Pose控制', icon: '🕺' },
-  { title: '表情控制', icon: '😊' },
-  { title: '镜头控制', icon: '📷' },
-]
+import { useLanguageStore } from "@/stores/languageStore"
 
 export default function EditHubPage() {
   const router = useRouter()
+  const t = useLanguageStore(state => state.t)
+  
+  // Feature cards with translations
+  const FEATURE_CARDS = [
+    {
+      id: 'general',
+      title: t.edit.generalEdit,
+      subtitle: t.edit.generalEditDesc,
+      description: t.edit.generalEditExamples,
+      icon: Wand2,
+      href: '/edit/general',
+      gradient: 'from-violet-500 to-purple-600',
+      shadowColor: 'shadow-purple-200',
+      iconBg: 'bg-purple-100',
+      iconColor: 'text-purple-600',
+    },
+    {
+      id: 'studio',
+      title: t.edit.productStudioCard,
+      subtitle: t.edit.productStudioCardDesc,
+      description: t.edit.productStudioExamples,
+      icon: Lightbulb,
+      href: '/studio',
+      gradient: 'from-amber-500 to-orange-500',
+      shadowColor: 'shadow-amber-200',
+      iconBg: 'bg-amber-100',
+      iconColor: 'text-amber-600',
+    },
+  ]
+
+  // Coming soon features with translations
+  const COMING_SOON = [
+    { title: t.edit.comingModelStyle, icon: '👤' },
+    { title: t.edit.comingPose, icon: '🕺' },
+    { title: t.edit.comingExpression, icon: '😊' },
+    { title: t.edit.comingCamera, icon: '📷' },
+  ]
   
   return (
     <div className="h-full flex flex-col bg-zinc-50">
@@ -56,7 +58,7 @@ export default function EditHubPage() {
         </button>
         <div className="flex items-center gap-2 ml-2">
           <Image src="/logo.png" alt="Brand Camera" width={28} height={28} className="rounded" />
-          <span className="font-semibold text-lg text-zinc-900">修图室</span>
+          <span className="font-semibold text-lg text-zinc-900">{t.edit.editRoom}</span>
         </div>
       </div>
       
@@ -67,7 +69,7 @@ export default function EditHubPage() {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-zinc-900">AI 修图室</h1>
+            <h1 className="text-xl font-bold text-zinc-900">{t.edit.title}</h1>
           </div>
         </div>
         
@@ -104,7 +106,7 @@ export default function EditHubPage() {
         
         {/* Coming Soon Section */}
         <div className="px-4 pb-6">
-          <h2 className="text-sm font-semibold text-zinc-400 uppercase mb-3">即将推出</h2>
+          <h2 className="text-sm font-semibold text-zinc-400 uppercase mb-3">{t.edit.comingSoon}</h2>
           <div className="grid grid-cols-2 gap-3">
             {COMING_SOON.map((item) => (
               <div
