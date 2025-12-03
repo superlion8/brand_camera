@@ -20,6 +20,7 @@ import Image from "next/image"
 import { PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_PRODUCTS, getRandomModel, getRandomBackground } from "@/data/presets"
 import { useQuota } from "@/hooks/useQuota"
 import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
+import { useAuth } from "@/components/providers/AuthProvider"
 
 const MODEL_GENDERS: { id: ModelGender; label: string }[] = [
   { id: "female", label: "女" },
@@ -37,6 +38,7 @@ const CAMERA_NUM_SIMPLE = 1 // Change to 3 for production
 
 export default function CameraPage() {
   const router = useRouter()
+  const { user } = useAuth()
   const webcamRef = useRef<Webcam>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef2 = useRef<HTMLInputElement>(null) // For second product image
@@ -1787,6 +1789,7 @@ export default function CameraPage() {
         usedCount={quota?.usedCount}
         totalQuota={quota?.totalQuota}
         requiredCount={requiredCount}
+        userEmail={user?.email || ''}
       />
     </div>
   )

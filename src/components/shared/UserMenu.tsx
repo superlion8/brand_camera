@@ -6,7 +6,7 @@ import { useAuth } from "@/components/providers/AuthProvider"
 import { useSettingsStore } from "@/stores/settingsStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { useTranslation } from "@/stores/languageStore"
-import { LogOut, Settings, ChevronDown, X, Bug, Cloud, RefreshCw, BarChart3, Gauge } from "lucide-react"
+import { LogOut, Settings, ChevronDown, X, Bug, Cloud, RefreshCw, BarChart3, Gauge, Inbox } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useRouter } from "next/navigation"
 
@@ -23,7 +23,24 @@ export function UserMenu() {
   const toggleDebugMode = useSettingsStore(state => state.toggleDebugMode)
   const [isOpen, setIsOpen] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [pendingApplications, setPendingApplications] = useState(0)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  // Fetch pending applications count for admin
+  const isAdmin = ADMIN_EMAILS.includes(user?.email?.toLowerCase() || '')
+  
+  useEffect(() => {
+    if (isAdmin) {
+      fetch('/api/admin/quota-applications?status=pending')
+        .then(res => res.json())
+        .then(data => {
+          if (data.pendingCount !== undefined) {
+            setPendingApplications(data.pendingCount)
+          }
+        })
+        .catch(() => {})
+    }
+  }, [isAdmin])
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -114,7 +131,7 @@ export function UserMenu() {
             {/* Menu Items */}
             <div className="p-2">
               {/* Admin Dashboard - only for admin users */}
-              {ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') && (
+              {isAdmin && (
                 <>
                   <button
                     onClick={() => {
@@ -135,6 +152,21 @@ export function UserMenu() {
                   >
                     <Gauge className="w-4 h-4 text-amber-500" />
                     <span className="text-sm">管理用户额度</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsOpen(false)
+                      router.push('/admin/applications')
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-700 hover:bg-zinc-100 transition-colors text-left"
+                  >
+                    <Inbox className="w-4 h-4 text-purple-500" />
+                    <span className="text-sm">额度申请</span>
+                    {pendingApplications > 0 && (
+                      <span className="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                        {pendingApplications}
+                      </span>
+                    )}
                   </button>
                 </>
               )}

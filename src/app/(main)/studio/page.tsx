@@ -17,6 +17,7 @@ import { PRESET_PRODUCTS } from "@/data/presets"
 import Image from "next/image"
 import { useQuota } from "@/hooks/useQuota"
 import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
+import { useAuth } from "@/components/providers/AuthProvider"
 
 // Light types - compact version
 const LIGHT_TYPES = [
@@ -106,6 +107,7 @@ type StudioMode = 'upload' | 'camera' | 'settings' | 'processing' | 'results'
 
 export default function StudioPage() {
   const router = useRouter()
+  const { user } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const colorPickerRef = useRef<HTMLDivElement>(null)
   const webcamRef = useRef<Webcam>(null)
@@ -1183,6 +1185,7 @@ export default function StudioPage() {
         usedCount={quota?.usedCount}
         totalQuota={quota?.totalQuota}
         requiredCount={requiredCount}
+        userEmail={user?.email || ''}
       />
     </div>
   )

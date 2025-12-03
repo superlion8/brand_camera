@@ -7,6 +7,7 @@ import { useAssetStore } from "@/stores/assetStore"
 import { useTranslation } from "@/stores/languageStore"
 import { UserMenu } from "@/components/shared/UserMenu"
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher"
+import { QuotaIndicator } from "@/components/shared/QuotaIndicator"
 import { BeforeAfterSlider } from "@/components/shared/BeforeAfterSlider"
 
 // Supabase Storage base URL for homepage images
@@ -103,24 +104,18 @@ export default function HomePage() {
   return (
     <div className="min-h-full bg-zinc-50 pb-32">
       {/* Hero Section */}
-      <div className="bg-white px-6 pt-8 pb-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Image src="/logo.png" alt="Brand Camera" width={48} height={48} className="rounded-xl" />
-            <div>
-              <h1 className="text-2xl font-bold text-zinc-900">{t.common.appName}</h1>
-              <p className="text-sm text-zinc-500">{t.common.slogan}</p>
-            </div>
+      <div className="bg-white px-4 pt-4 pb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Image src="/logo.png" alt="Brand Camera" width={36} height={36} className="rounded-lg" />
+            <h1 className="text-lg font-bold text-zinc-900">{t.common.appName}</h1>
           </div>
           <div className="flex items-center gap-2">
+            <QuotaIndicator />
             <LanguageSwitcher />
             <UserMenu />
           </div>
         </div>
-        
-        <p className="text-zinc-600 leading-relaxed text-sm">
-          {t.home.description}
-        </p>
       </div>
       
       {/* Main Feature Cards - 2 columns */}

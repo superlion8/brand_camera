@@ -14,6 +14,7 @@ import Webcam from "react-webcam"
 import { motion, AnimatePresence } from "framer-motion"
 import { useQuota } from "@/hooks/useQuota"
 import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
+import { useAuth } from "@/components/providers/AuthProvider"
 
 // HSV to RGB conversion
 function hsvToRgb(h: number, s: number, v: number): [number, number, number] {
@@ -114,6 +115,7 @@ const PRESET_BG_COLORS = [
 
 export default function EditPage() {
   const router = useRouter()
+  const { user } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const webcamRef = useRef<Webcam>(null)
   const colorPickerRef = useRef<HTMLDivElement>(null)
@@ -1252,6 +1254,7 @@ export default function EditPage() {
         usedCount={quota?.usedCount}
         totalQuota={quota?.totalQuota}
         requiredCount={requiredCount}
+        userEmail={user?.email || ''}
       />
     </div>
   )
