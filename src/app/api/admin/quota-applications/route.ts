@@ -62,6 +62,8 @@ export async function PUT(request: NextRequest) {
   
   try {
     const body = await request.json()
+    console.log('[Quota Applications PUT] Request body:', body)
+    
     const { applicationId, status, adminNotes, newQuota } = body
     
     if (!applicationId || !status) {
@@ -80,31 +82,65 @@ export async function PUT(request: NextRequest) {
       .single()
     
     if (appError) {
-      console.error('Error updating application:', appError)
-      return NextResponse.json({ error: 'Failed to update application' }, { status: 500 })
+      console.error('[Quota Applications PUT] Error updating application:', appError)
+      return NextResponse.json({ 
+        error: 'Failed to update application', 
+        details: appError.message,
+        code: appError.code 
+      }, { status: 500 })
     }
     
+    console.log('[Quota Applications PUT] Updated application:', application)
+    
     // If approved and newQuota is specified, update user's quota
-    if (status === 'approved' && newQuota && application.user_id) {
-      const { error: quotaError } = await supabase
-        .from('user_quotas')
-        .upsert({
-          user_id: application.user_id,
-          user_email: application.email,
-          total_quota: newQuota,
-        }, {
-          onConflict: 'user_id'
-        })
-      
-      if (quotaError) {
-        console.error('Error updating quota:', quotaError)
-        // Don't fail the whole request, just log the error
+    // Also support updating quota by email if user_id is not available
+    if (status === 'approved' && newQuota) {
+      if (application.user_id) {
+        const { error: quotaError } = await supabase
+          .from('user_quotas')
+          .upsert({
+            user_id: application.user_id,
+            user_email: application.email,
+            total_quota: newQuota,
+          }, {
+            onConflict: 'user_id'
+          })
+        
+        if (quotaError) {
+          console.error('[Quota Applications PUT] Error updating quota by user_id:', quotaError)
+        } else {
+          console.log('[Quota Applications PUT] Updated quota for user_id:', application.user_id)
+        }
+      } else {
+        // Try to find user by email and update quota
+        const { data: userData } = await supabase.auth.admin.listUsers()
+        const targetUser = userData?.users?.find(u => u.email?.toLowerCase() === application.email?.toLowerCase())
+        
+        if (targetUser) {
+          const { error: quotaError } = await supabase
+            .from('user_quotas')
+            .upsert({
+              user_id: targetUser.id,
+              user_email: application.email,
+              total_quota: newQuota,
+            }, {
+              onConflict: 'user_id'
+            })
+          
+          if (quotaError) {
+            console.error('[Quota Applications PUT] Error updating quota by email:', quotaError)
+          } else {
+            console.log('[Quota Applications PUT] Updated quota for email:', application.email)
+          }
+        } else {
+          console.log('[Quota Applications PUT] User not found for email:', application.email)
+        }
       }
     }
     
     return NextResponse.json({ success: true, application })
   } catch (error: any) {
-    console.error('Admin applications error:', error)
+    console.error('[Quota Applications PUT] Unexpected error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

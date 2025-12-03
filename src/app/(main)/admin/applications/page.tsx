@@ -228,18 +228,22 @@ export default function QuotaApplicationsPage() {
       {/* Application Detail Modal */}
       {selectedApp && (
         <div 
-          className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center"
+          className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-4"
           onClick={() => setSelectedApp(null)}
         >
           <motion.div
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-2xl w-full sm:max-w-md max-h-[85vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-6">
-              <h3 className="text-lg font-bold mb-4">申请详情</h3>
-              
+            {/* Modal Header */}
+            <div className="p-4 border-b flex-shrink-0">
+              <h3 className="text-lg font-bold">申请详情</h3>
+            </div>
+            
+            {/* Modal Content - Scrollable */}
+            <div className="flex-1 overflow-y-auto p-4">
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <Mail className="w-5 h-5 text-zinc-400" />
@@ -297,24 +301,6 @@ export default function QuotaApplicationsPage() {
                         placeholder="处理备注..."
                       />
                     </div>
-                    
-                    <div className="flex gap-3 pt-2">
-                      <button
-                        onClick={() => handleAction('rejected')}
-                        disabled={processing}
-                        className="flex-1 h-12 border border-red-200 text-red-600 font-medium rounded-xl hover:bg-red-50 transition-colors"
-                      >
-                        拒绝
-                      </button>
-                      <button
-                        onClick={() => handleAction('approved')}
-                        disabled={processing}
-                        className="flex-1 h-12 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-                      >
-                        {processing && <Loader2 className="w-4 h-4 animate-spin" />}
-                        批准
-                      </button>
-                    </div>
                   </>
                 )}
                 
@@ -325,10 +311,38 @@ export default function QuotaApplicationsPage() {
                   </div>
                 )}
               </div>
-              
+            </div>
+            
+            {/* Modal Footer - Fixed */}
+            <div className="p-4 border-t flex-shrink-0 space-y-2">
+              {selectedApp.status === 'pending' && (
+                <div className="flex gap-3">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleAction('rejected')
+                    }}
+                    disabled={processing}
+                    className="flex-1 h-12 border border-red-200 text-red-600 font-medium rounded-xl hover:bg-red-50 transition-colors"
+                  >
+                    拒绝
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleAction('approved')
+                    }}
+                    disabled={processing}
+                    className="flex-1 h-12 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    {processing && <Loader2 className="w-4 h-4 animate-spin" />}
+                    批准
+                  </button>
+                </div>
+              )}
               <button
                 onClick={() => setSelectedApp(null)}
-                className="w-full h-12 mt-4 text-zinc-500 hover:text-zinc-700 font-medium"
+                className="w-full h-12 text-zinc-500 hover:text-zinc-700 font-medium bg-zinc-100 rounded-xl"
               >
                 关闭
               </button>
