@@ -36,7 +36,7 @@ interface UserStat {
   totalImages: number
   totalFavorites: number
   totalDownloads: number
-  byType: Record<string, { tasks: number; images: number; favorites: number }>
+  byType: Record<string, { tasks: number; images: number; favorites: number; downloads: number }>
 }
 
 interface TaskDetail {
@@ -529,6 +529,7 @@ export default function AdminDashboard() {
                                     <p>{stats.tasks} 任务</p>
                                     <p>{stats.images} 图片</p>
                                     <p>{stats.favorites} 收藏</p>
+                                    <p className="text-cyan-600">{stats.downloads || 0} 下载</p>
                                   </div>
                                 </div>
                               )

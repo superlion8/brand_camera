@@ -243,10 +243,10 @@ export async function GET(request: NextRequest) {
         favorites = favData || []
       }
       
-      // Get downloads by user
+      // Get downloads by user and generation
       let downloadQuery = adminClient
         .from('download_events')
-        .select('id, user_id')
+        .select('id, user_id, generation_id')
       
       if (dateFrom) downloadQuery = downloadQuery.gte('created_at', dateFrom)
       if (dateTo) downloadQuery = downloadQuery.lte('created_at', dateTo + 'T23:59:59')
@@ -255,9 +255,14 @@ export async function GET(request: NextRequest) {
       
       // Create download count by user
       const downloadCountByUser: Record<string, number> = {}
+      // Create download count by generation (for byType breakdown)
+      const downloadCountByGen: Record<string, number> = {}
       downloads?.forEach(d => {
         if (d.user_id) {
           downloadCountByUser[d.user_id] = (downloadCountByUser[d.user_id] || 0) + 1
+        }
+        if (d.generation_id) {
+          downloadCountByGen[d.generation_id] = (downloadCountByGen[d.generation_id] || 0) + 1
         }
       })
       
@@ -276,7 +281,7 @@ export async function GET(request: NextRequest) {
         totalImages: number
         totalFavorites: number
         totalDownloads: number
-        byType: Record<string, { tasks: number; images: number; favorites: number }>
+        byType: Record<string, { tasks: number; images: number; favorites: number; downloads: number }>
       }> = {}
       
       generations?.forEach(gen => {
@@ -297,11 +302,12 @@ export async function GET(request: NextRequest) {
         
         const type = gen.task_type || 'unknown'
         if (!byUser[gen.user_id].byType[type]) {
-          byUser[gen.user_id].byType[type] = { tasks: 0, images: 0, favorites: 0 }
+          byUser[gen.user_id].byType[type] = { tasks: 0, images: 0, favorites: 0, downloads: 0 }
         }
         byUser[gen.user_id].byType[type].tasks++
         byUser[gen.user_id].byType[type].images += gen.total_images_count || 0
         byUser[gen.user_id].byType[type].favorites += favCountByGen[gen.id] || 0
+        byUser[gen.user_id].byType[type].downloads += downloadCountByGen[gen.id] || 0
       })
       
       const result = Object.values(byUser).sort((a, b) => b.totalTasks - a.totalTasks)
