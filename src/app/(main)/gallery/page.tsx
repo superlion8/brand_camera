@@ -66,6 +66,7 @@ export default function GalleryPage() {
     deleteGenerationImage,
     addUserAsset,
     isSyncing: storeSyncing,
+    isInitialLoading,
     syncWithCloud,
     loadMoreGenerations,
     hasMoreGenerations,
@@ -576,7 +577,17 @@ export default function GalleryPage() {
           </div>
         )}
         
-        {displayedHistory.length === 0 && activeTasks.length === 0 && completedTasksToShow.length === 0 && (
+        {/* 骨架屏 - 首次加载时显示 */}
+        {isInitialLoading && displayedHistory.length === 0 && (
+          <div className="grid grid-cols-2 gap-3">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl animate-pulse" />
+            ))}
+          </div>
+        )}
+        
+        {/* 空状态 - 加载完成后没有数据时显示 */}
+        {!isInitialLoading && displayedHistory.length === 0 && activeTasks.length === 0 && completedTasksToShow.length === 0 && (
           <div className="flex flex-col items-center justify-center h-64 text-zinc-400">
             {isSyncing ? (
               <>

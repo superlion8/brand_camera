@@ -29,6 +29,7 @@ interface AssetState {
   
   // Sync status
   isSyncing: boolean
+  isInitialLoading: boolean  // 首次加载状态，用于显示骨架屏
   lastSyncAt: string | null
   currentUserId: string | null
   
@@ -103,6 +104,7 @@ export const useAssetStore = create<AssetState>()(
       collections: [],
       favorites: [],
       isSyncing: false,
+      isInitialLoading: true,  // 默认 true，加载完成后设为 false
       lastSyncAt: null,
       currentUserId: null,
       generationsPage: 0,
@@ -466,7 +468,7 @@ export const useAssetStore = create<AssetState>()(
         )
       },
       
-      // Load from IndexedDB - only runs once at startup
+      // Load from IndexedDB - only runs once at startup (for offline/not logged in users)
       loadFromDB: async () => {
         // Prevent duplicate loads - this should only run once at app startup
         if (get()._hasLoadedFromDB) {
@@ -516,16 +518,19 @@ export const useAssetStore = create<AssetState>()(
           
           console.log('[Store] loadFromDB: loaded', uniqueGenerations.length, 'generations')
           
+          // 如果没有登录用户，直接显示 IndexedDB 数据并结束 loading
+          const { currentUserId } = get()
           set({
             generations: uniqueGenerations,
             favorites: dbFavorites,
             collections: dbCollections,
-            _hasLoadedFromDB: true, // Mark as loaded
+            _hasLoadedFromDB: true,
+            isInitialLoading: !currentUserId, // 未登录时结束 loading，登录用户等云端
           })
         } catch (error) {
           console.error('Error loading from IndexedDB:', error)
           // Still mark as loaded to prevent infinite retries
-          set({ _hasLoadedFromDB: true })
+          set({ _hasLoadedFromDB: true, isInitialLoading: false })
         }
       },
       
@@ -599,9 +604,21 @@ export const useAssetStore = create<AssetState>()(
         const startTime = Date.now()
         
         try {
-          console.log('[Store] Starting cloud sync for user:', userId)
+          console.log('[Store] Starting parallel load: IndexedDB + Cloud for user:', userId)
           console.log('[Store] Preserving', recentLocalGenerations.length, 'recent local generations during sync')
-          const cloudData = await syncService.syncAllData(userId)
+          
+          // 并行加载 IndexedDB 和云端数据
+          const [indexedDBData, cloudData] = await Promise.all([
+            // IndexedDB 加载
+            Promise.all([
+              dbGetAll<Generation>(STORES.GENERATIONS),
+              dbGetAll<Favorite>(STORES.FAVORITES),
+            ]).then(([gens, favs]) => ({ generations: gens, favorites: favs })),
+            // 云端加载
+            syncService.syncAllData(userId),
+          ])
+          
+          console.log('[Store] IndexedDB loaded:', indexedDBData.generations.length, 'generations')
           
           const duration = Date.now() - startTime
           console.log('[Store] Cloud data received in', duration, 'ms:', {
@@ -614,22 +631,24 @@ export const useAssetStore = create<AssetState>()(
             pinnedPresets: cloudData.pinnedPresetIds.size,
           })
           
-          // Merge cloud and local data
-          // 使用 sync 开始前保存的 recentLocalGenerations，避免丢失刚生成的数据
-          // 过滤掉已在云端存在的（通过 ID 匹配）
-          const localNotInCloud = recentLocalGenerations.filter(localGen => 
-            !cloudData.generations.some(cloudGen => cloudGen.id === localGen.id)
-          )
+          // 合并三个数据源：云端 + IndexedDB + 内存中刚生成的
+          // 优先级：云端 > IndexedDB > 内存（刚生成的）
+          const allGenerations = [
+            ...cloudData.generations,
+            ...indexedDBData.generations,
+            ...recentLocalGenerations,
+          ]
           
-          // Merge: cloud generations first, then recent local ones not in cloud
-          const mergedGenerations = [...cloudData.generations, ...localNotInCloud]
+          // 去重：相同 ID 只保留第一个（按上面的顺序，云端优先）
+          const mergedGenerations = allGenerations
+            .filter((gen, index, self) => index === self.findIndex(g => g.id === gen.id))
             // Sort by createdAt descending
             .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-            // Remove duplicates by ID
-            .filter((gen, index, self) => index === self.findIndex(g => g.id === gen.id))
           
-          if (localNotInCloud.length > 0) {
-            console.log('[Store] Merged', localNotInCloud.length, 'recent local generations not yet in cloud')
+          const cloudCount = cloudData.generations.length
+          const localOnlyCount = mergedGenerations.length - cloudCount
+          if (localOnlyCount > 0) {
+            console.log('[Store] Merged', localOnlyCount, 'local-only generations (IndexedDB + memory)')
           }
           
           // Save merged generations to IndexedDB FIRST to prevent data loss
@@ -653,7 +672,7 @@ export const useAssetStore = create<AssetState>()(
           
           console.log('[Store] IndexedDB sync complete, updating state...')
           
-          // Now update memory state
+          // Now update memory state - 一次性更新所有数据，结束 loading
           set({
             userModels: cloudData.userModels,
             userBackgrounds: cloudData.userBackgrounds,
@@ -664,6 +683,7 @@ export const useAssetStore = create<AssetState>()(
             pinnedPresetIds: cloudData.pinnedPresetIds,
             lastSyncAt: new Date().toISOString(),
             isSyncing: false,
+            isInitialLoading: false,  // 结束首次加载
             generationsPage: 0,
             hasMoreGenerations: cloudData.hasMoreGenerations || false,
           })
@@ -671,8 +691,8 @@ export const useAssetStore = create<AssetState>()(
           console.log('[Store] Cloud sync completed successfully')
         } catch (error) {
           console.error('[Store] Cloud sync failed after', Date.now() - startTime, 'ms:', error)
-          // Always reset isSyncing on error
-          set({ isSyncing: false, lastSyncAt: new Date().toISOString() })
+          // Always reset isSyncing on error, also end initial loading
+          set({ isSyncing: false, isInitialLoading: false, lastSyncAt: new Date().toISOString() })
         }
       },
       
