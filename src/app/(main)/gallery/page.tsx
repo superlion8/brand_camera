@@ -17,24 +17,44 @@ type TabType = "all" | "model" | "product" | "favorites"
 
 // Helper to get display label for generation type
 function getTypeLabel(gen: Generation, imageIndex: number): { label: string; color: string; subLabel?: string; subColor?: string } {
-  switch (gen.type) {
-    case 'studio':
-      return { label: '产品', color: 'bg-amber-500' }
-    case 'edit':
-      return { label: '修图', color: 'bg-purple-500' }
-    case 'camera_model':
-      const mode = gen.outputGenModes?.[imageIndex]
-      return { 
-        label: '模特', 
-        color: 'bg-blue-500',
-        subLabel: mode === 'simple' ? '极简' : '扩展',
-        subColor: mode === 'simple' ? 'bg-green-500' : 'bg-purple-500'
-      }
-    case 'camera_product':
-      return { label: '产品', color: 'bg-amber-500' }
-    default:
-      return { label: '图片', color: 'bg-zinc-500' }
+  // Handle the type, including legacy types
+  const type = gen.type?.toLowerCase() || ''
+  
+  // Studio/product types
+  if (type === 'studio' || type === 'camera_product' || type === 'product' || type === 'product_studio') {
+    return { label: '产品', color: 'bg-amber-500' }
   }
+  
+  // Edit types
+  if (type === 'edit' || type === 'editing') {
+    return { label: '修图', color: 'bg-purple-500' }
+  }
+  
+  // Model/camera types (most common)
+  if (type === 'camera_model' || type === 'model' || type === 'camera' || type === 'model_studio') {
+    const mode = gen.outputGenModes?.[imageIndex]
+    return { 
+      label: '模特', 
+      color: 'bg-blue-500',
+      subLabel: mode === 'simple' ? '极简' : mode === 'extended' ? '扩展' : undefined,
+      subColor: mode === 'simple' ? 'bg-green-500' : 'bg-purple-500'
+    }
+  }
+  
+  // Fallback - try to infer from other fields
+  if (gen.outputGenModes && gen.outputGenModes.length > 0) {
+    // Has generation modes = likely model generation
+    const mode = gen.outputGenModes?.[imageIndex]
+    return { 
+      label: '模特', 
+      color: 'bg-blue-500',
+      subLabel: mode === 'simple' ? '极简' : mode === 'extended' ? '扩展' : undefined,
+      subColor: mode === 'simple' ? 'bg-green-500' : 'bg-purple-500'
+    }
+  }
+  
+  // Last fallback
+  return { label: '修图', color: 'bg-purple-500' }
 }
 
 export default function GalleryPage() {

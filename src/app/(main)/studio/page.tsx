@@ -124,6 +124,7 @@ export default function StudioPage() {
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
   const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
+  const [isLoadingAsset, setIsLoadingAsset] = useState(false)
   
   // Camera state
   const [hasCamera, setHasCamera] = useState(true)
@@ -196,6 +197,7 @@ export default function StudioPage() {
   }, [])
   
   const handleSelectFromAsset = useCallback(async (imageUrl: string) => {
+    setIsLoadingAsset(true)
     try {
       const base64 = await ensureBase64(imageUrl)
       if (base64) {
@@ -205,6 +207,8 @@ export default function StudioPage() {
       }
     } catch (e) {
       console.error('Failed to load asset:', e)
+    } finally {
+      setIsLoadingAsset(false)
     }
   }, [])
   
@@ -1178,14 +1182,21 @@ export default function StudioPage() {
                 </div>
               </div>
               
-              <div className="flex-1 overflow-y-auto bg-zinc-50 p-4">
+              <div className="flex-1 overflow-y-auto bg-zinc-50 p-4 relative">
+                {/* Loading overlay */}
+                {isLoadingAsset && (
+                  <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
+                    <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+                  </div>
+                )}
                 {productSourceTab === 'preset' ? (
                   <div className="grid grid-cols-3 gap-3">
                     {PRESET_PRODUCTS.map(product => (
                       <button
                         key={product.id}
+                        disabled={isLoadingAsset}
                         onClick={() => handleSelectFromAsset(product.imageUrl)}
-                        className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-amber-500 transition-all bg-white"
+                        className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-amber-500 transition-all bg-white disabled:opacity-50"
                       >
                         <Image src={product.imageUrl} alt={product.name || ''} fill className="object-cover" />
                         <span className="absolute top-1 left-1 bg-amber-500 text-white text-[8px] px-1 py-0.5 rounded font-medium">
@@ -1202,8 +1213,9 @@ export default function StudioPage() {
                     {userProducts.map(product => (
                       <button
                         key={product.id}
+                        disabled={isLoadingAsset}
                         onClick={() => handleSelectFromAsset(product.imageUrl)}
-                        className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-amber-500 transition-all bg-white"
+                        className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-amber-500 transition-all bg-white disabled:opacity-50"
                       >
                         <Image src={product.imageUrl} alt={product.name || ''} fill className="object-cover" />
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-1.5 pt-4">

@@ -138,6 +138,7 @@ export default function EditPage() {
   const [productSourceTab, setProductSourceTab] = useState<'preset' | 'user'>('preset')
   const [hasCamera, setHasCamera] = useState(true)
   const [cameraReady, setCameraReady] = useState(false)
+  const [isLoadingAsset, setIsLoadingAsset] = useState(false)
   
   // Check for image passed from gallery page
   useEffect(() => {
@@ -236,6 +237,7 @@ export default function EditPage() {
   }, [])
   
   const handleSelectFromAsset = useCallback(async (imageUrl: string) => {
+    setIsLoadingAsset(true)
     try {
       const base64 = await ensureBase64(imageUrl)
       if (base64) {
@@ -245,10 +247,13 @@ export default function EditPage() {
       }
     } catch (e) {
       console.error('Failed to load asset:', e)
+    } finally {
+      setIsLoadingAsset(false)
     }
   }, [])
   
   const handleSelectFromGallery = useCallback(async (imageUrl: string) => {
+    setIsLoadingAsset(true)
     try {
       const base64 = await ensureBase64(imageUrl)
       if (base64) {
@@ -258,6 +263,8 @@ export default function EditPage() {
       }
     } catch (e) {
       console.error('Failed to load gallery image:', e)
+    } finally {
+      setIsLoadingAsset(false)
     }
   }, [])
   
@@ -1192,14 +1199,21 @@ export default function EditPage() {
                 </div>
               </div>
               
-              <div className="flex-1 overflow-y-auto bg-zinc-50 p-4">
+              <div className="flex-1 overflow-y-auto bg-zinc-50 p-4 relative">
+                {/* Loading overlay */}
+                {isLoadingAsset && (
+                  <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
+                    <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                  </div>
+                )}
                 {productSourceTab === 'preset' ? (
                   <div className="grid grid-cols-3 gap-3">
                     {PRESET_PRODUCTS.map(product => (
                       <button
                         key={product.id}
+                        disabled={isLoadingAsset}
                         onClick={() => handleSelectFromAsset(product.imageUrl)}
-                        className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all bg-white"
+                        className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all bg-white disabled:opacity-50"
                       >
                         <Image src={product.imageUrl} alt={product.name || ''} fill className="object-cover" />
                         <span className="absolute top-1 left-1 bg-blue-500 text-white text-[8px] px-1 py-0.5 rounded font-medium">
@@ -1216,8 +1230,9 @@ export default function EditPage() {
                     {userProducts.map(product => (
                       <button
                         key={product.id}
+                        disabled={isLoadingAsset}
                         onClick={() => handleSelectFromAsset(product.imageUrl)}
-                        className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all bg-white"
+                        className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all bg-white disabled:opacity-50"
                       >
                         <Image src={product.imageUrl} alt={product.name || ''} fill className="object-cover" />
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-1.5 pt-4">
@@ -1276,7 +1291,13 @@ export default function EditPage() {
                 </button>
               </div>
               
-              <div className="flex-1 overflow-y-auto bg-zinc-50 p-4">
+              <div className="flex-1 overflow-y-auto bg-zinc-50 p-4 relative">
+                {/* Loading overlay */}
+                {isLoadingAsset && (
+                  <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
+                    <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                  </div>
+                )}
                 {generations.length > 0 ? (
                   <div className="grid grid-cols-3 gap-3">
                     {generations
@@ -1285,8 +1306,9 @@ export default function EditPage() {
                       .map((item, index) => (
                         <button
                           key={`${item.gen.id}-${item.idx}`}
+                          disabled={isLoadingAsset}
                           onClick={() => handleSelectFromGallery(item.url)}
-                          className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all bg-white"
+                          className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all bg-white disabled:opacity-50"
                         >
                           <Image src={item.url} alt={`生成图 ${index + 1}`} fill className="object-cover" />
                           <span className={`absolute top-1 left-1 text-white text-[8px] px-1 py-0.5 rounded font-medium ${
