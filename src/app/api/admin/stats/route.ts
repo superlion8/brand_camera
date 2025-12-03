@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 
 // Admin emails from environment variable (comma separated)
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
@@ -13,6 +13,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   
+  // Use service role client to bypass RLS for admin queries
+  let adminClient
+  try {
+    adminClient = createServiceClient()
+  } catch (error) {
+    console.error('[Admin] Service client error:', error)
+    // Fallback to regular client if service key not configured
+    adminClient = supabase
+  }
+  
   const searchParams = request.nextUrl.searchParams
   const view = searchParams.get('view') || 'overview' // overview, by-type, by-user, details
   const filterType = searchParams.get('type') || null
@@ -23,9 +33,9 @@ export async function GET(request: NextRequest) {
   try {
     if (view === 'overview') {
       // Daily overview statistics
-      let genQuery = supabase
+      let genQuery = adminClient
         .from('generations')
-        .select('id, user_id, task_type, total_images_count, created_at')
+        .select('id, user_id, user_email, task_type, total_images_count, created_at')
         .order('created_at', { ascending: false })
       
       // Apply date filters
@@ -35,7 +45,9 @@ export async function GET(request: NextRequest) {
       const { data: generations, error: genError } = await genQuery
       if (genError) throw genError
       
-      let favQuery = supabase
+      console.log('[Admin] Overview - generations fetched:', generations?.length || 0)
+      
+      let favQuery = adminClient
         .from('favorites')
         .select('id, user_id, created_at')
       
@@ -44,12 +56,6 @@ export async function GET(request: NextRequest) {
       
       const { data: favorites, error: favError } = await favQuery
       if (favError) throw favError
-      
-      // Get user emails
-      const userIds = Array.from(new Set(generations?.map(g => g.user_id) || []))
-      const { data: users } = await supabase
-        .from('auth.users')
-        .select('id, email')
       
       // Group by date
       const dailyStats: Record<string, {
@@ -101,7 +107,7 @@ export async function GET(request: NextRequest) {
     
     if (view === 'by-type') {
       // Statistics by task type
-      let genQuery = supabase
+      let genQuery = adminClient
         .from('generations')
         .select('id, user_id, task_type, total_images_count, created_at')
       
@@ -111,12 +117,14 @@ export async function GET(request: NextRequest) {
       const { data: generations, error } = await genQuery
       if (error) throw error
       
+      console.log('[Admin] By-type - generations fetched:', generations?.length || 0)
+      
       // Get generation IDs for favorites query
       const genIds = generations?.map(g => g.id) || []
       let favorites: { id: string; generation_id: string }[] = []
       
       if (genIds.length > 0) {
-        const { data: favData } = await supabase
+        const { data: favData } = await adminClient
           .from('favorites')
           .select('id, generation_id')
           .in('generation_id', genIds)
@@ -161,7 +169,7 @@ export async function GET(request: NextRequest) {
     
     if (view === 'by-user') {
       // Statistics by user
-      let genQuery = supabase
+      let genQuery = adminClient
         .from('generations')
         .select('id, user_id, user_email, task_type, total_images_count, created_at')
       
@@ -171,12 +179,14 @@ export async function GET(request: NextRequest) {
       const { data: generations, error } = await genQuery
       if (error) throw error
       
+      console.log('[Admin] By-user - generations fetched:', generations?.length || 0)
+      
       // Get generation IDs for favorites query
       const genIds = generations?.map(g => g.id) || []
       let favorites: { id: string; user_id: string; generation_id: string }[] = []
       
       if (genIds.length > 0) {
-        const { data: favData } = await supabase
+        const { data: favData } = await adminClient
           .from('favorites')
           .select('id, user_id, generation_id')
           .in('generation_id', genIds)
@@ -231,7 +241,7 @@ export async function GET(request: NextRequest) {
     
     if (view === 'details') {
       // Task details with filters
-      let query = supabase
+      let query = adminClient
         .from('generations')
         .select('*')
         .order('created_at', { ascending: false })
@@ -253,12 +263,14 @@ export async function GET(request: NextRequest) {
       const { data: generations, error } = await query
       if (error) throw error
       
+      console.log('[Admin] Details - generations fetched:', generations?.length || 0)
+      
       // Get favorites for these generations
       const genIds = generations?.map(g => g.id) || []
       let favByGen: Record<string, number[]> = {}
       
       if (genIds.length > 0) {
-        const { data: favorites } = await supabase
+        const { data: favorites } = await adminClient
           .from('favorites')
           .select('generation_id, image_index')
           .in('generation_id', genIds)

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 
 // Admin emails from environment variable (comma separated)
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
@@ -16,9 +16,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   
+  // Use service role client to bypass RLS
+  let adminClient
+  try {
+    adminClient = createServiceClient()
+  } catch (error) {
+    console.error('[Admin] Service client error:', error)
+    adminClient = supabase
+  }
+  
   try {
     // Get all generations grouped by user
-    const { data: generations, error: genError } = await supabase
+    const { data: generations, error: genError } = await adminClient
       .from('generations')
       .select('user_id, user_email, output_image_urls, total_images_count, created_at')
       .eq('status', 'completed')
@@ -30,7 +39,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Get custom quotas if any
-    const { data: customQuotas } = await supabase
+    const { data: customQuotas } = await adminClient
       .from('user_quotas')
       .select('user_id, user_email, total_quota, updated_at')
     
@@ -115,6 +124,15 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   
+  // Use service role client to bypass RLS
+  let adminClient
+  try {
+    adminClient = createServiceClient()
+  } catch (error) {
+    console.error('[Admin] Service client error:', error)
+    adminClient = supabase
+  }
+  
   try {
     const body = await request.json()
     const { userId, totalQuota, userEmail } = body
@@ -128,7 +146,7 @@ export async function PUT(request: NextRequest) {
     }
     
     // Upsert user_quotas (only stores total_quota limit, not used count)
-    const { data, error } = await supabase
+    const { data, error } = await adminClient
       .from('user_quotas')
       .upsert({
         user_id: userId,
@@ -146,7 +164,7 @@ export async function PUT(request: NextRequest) {
     }
     
     // Get actual used count from generations
-    const { data: generations } = await supabase
+    const { data: generations } = await adminClient
       .from('generations')
       .select('output_image_urls, total_images_count')
       .eq('user_id', userId)
