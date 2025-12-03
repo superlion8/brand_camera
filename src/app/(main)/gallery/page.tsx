@@ -1144,7 +1144,7 @@ function ImageSlotCard({ task, slot, slotIndex, onImageClick }: {
   
   // 检查当前图片是否已收藏
   const favoriteImageUrl = imageUrlInDb || slot.imageUrl
-  const isImageFavorited = favoriteImageUrl ? isFavorited(favoriteImageUrl) : false
+  const isImageFavorited = generationRecord ? isFavorited(generationRecord.id, slotIndex) : false
   
   // 收藏/取消收藏
   const handleFavorite = (e: React.MouseEvent) => {
