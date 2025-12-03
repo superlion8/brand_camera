@@ -822,27 +822,35 @@ export default function AdminDashboard() {
                             </div>
                             
                             {/* Per-image model and background */}
-                            <div className="flex gap-2 flex-1 min-w-0">
+                            <div className="flex gap-3 flex-1 min-w-0">
                               {modelUrl && (
                                 <div className="flex flex-col items-center">
-                                  <div className="w-12 h-12 rounded overflow-hidden bg-zinc-200">
-                                    <Image src={modelUrl} alt="Model" width={48} height={48} className="w-full h-full object-cover" />
+                                  <div className="w-16 h-20 rounded-lg overflow-hidden bg-zinc-200">
+                                    <Image src={modelUrl} alt="Model" width={64} height={80} className="w-full h-full object-cover" />
                                   </div>
-                                  <p className="text-[9px] text-zinc-500 mt-0.5 truncate max-w-[48px] text-center">{modelName}</p>
-                                  {modelIsRandom && (
-                                    <span className="px-1 py-0.5 bg-amber-100 text-amber-600 text-[8px] rounded">随机</span>
-                                  )}
+                                  <p className="text-[10px] text-zinc-600 mt-1 truncate max-w-[64px] text-center font-medium">{modelName}</p>
+                                  <span className={`mt-0.5 px-1.5 py-0.5 text-[9px] rounded font-medium ${
+                                    modelIsRandom 
+                                      ? 'bg-amber-100 text-amber-700' 
+                                      : 'bg-blue-100 text-blue-700'
+                                  }`}>
+                                    {modelIsRandom ? '随机' : '用户选择'}
+                                  </span>
                                 </div>
                               )}
                               {bgUrl && (
                                 <div className="flex flex-col items-center">
-                                  <div className="w-12 h-12 rounded overflow-hidden bg-zinc-200">
-                                    <Image src={bgUrl} alt="Background" width={48} height={48} className="w-full h-full object-cover" />
+                                  <div className="w-16 h-20 rounded-lg overflow-hidden bg-zinc-200">
+                                    <Image src={bgUrl} alt="Background" width={64} height={80} className="w-full h-full object-cover" />
                                   </div>
-                                  <p className="text-[9px] text-zinc-500 mt-0.5 truncate max-w-[48px] text-center">{bgName}</p>
-                                  {bgIsRandom && (
-                                    <span className="px-1 py-0.5 bg-amber-100 text-amber-600 text-[8px] rounded">随机</span>
-                                  )}
+                                  <p className="text-[10px] text-zinc-600 mt-1 truncate max-w-[64px] text-center font-medium">{bgName}</p>
+                                  <span className={`mt-0.5 px-1.5 py-0.5 text-[9px] rounded font-medium ${
+                                    bgIsRandom 
+                                      ? 'bg-amber-100 text-amber-700' 
+                                      : 'bg-blue-100 text-blue-700'
+                                  }`}>
+                                    {bgIsRandom ? '随机' : '用户选择'}
+                                  </span>
                                 </div>
                               )}
                             </div>
