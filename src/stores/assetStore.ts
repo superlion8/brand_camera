@@ -528,7 +528,7 @@ export const useAssetStore = create<AssetState>()(
           // For generations: keep recent local ones that might not be in cloud yet
           const { generations: localGenerations } = get()
           const now = Date.now()
-          const RECENT_THRESHOLD_MS = 60000 // 60 seconds
+          const RECENT_THRESHOLD_MS = 120000 // 2 minutes - increased for slower connections
           
           // Find local generations that are recent (might not be synced to cloud yet)
           const recentLocalGenerations = localGenerations.filter(localGen => {
@@ -543,11 +543,35 @@ export const useAssetStore = create<AssetState>()(
           const mergedGenerations = [...cloudData.generations, ...recentLocalGenerations]
             // Sort by createdAt descending
             .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            // Remove duplicates by ID
+            .filter((gen, index, self) => index === self.findIndex(g => g.id === gen.id))
           
           if (recentLocalGenerations.length > 0) {
             console.log('[Store] Preserving', recentLocalGenerations.length, 'recent local generations not yet in cloud')
           }
           
+          // Save merged generations to IndexedDB FIRST to prevent data loss
+          console.log('[Store] Saving', mergedGenerations.length, 'generations to IndexedDB...')
+          for (const gen of mergedGenerations) {
+            try {
+              await dbPut(STORES.GENERATIONS, gen)
+            } catch (e) {
+              console.warn('[Store] Failed to save generation to IndexedDB:', gen.id, e)
+            }
+          }
+          
+          // Save favorites to IndexedDB
+          for (const fav of cloudData.favorites) {
+            try {
+              await dbPut(STORES.FAVORITES, fav)
+            } catch (e) {
+              console.warn('[Store] Failed to save favorite to IndexedDB:', fav.id, e)
+            }
+          }
+          
+          console.log('[Store] IndexedDB sync complete, updating state...')
+          
+          // Now update memory state
           set({
             userModels: cloudData.userModels,
             userBackgrounds: cloudData.userBackgrounds,

@@ -297,14 +297,16 @@ export async function fetchGenerations(userId: string): Promise<Generation[]> {
   console.log('[Sync] Fetching generations for user_id:', userId)
   const supabase = getSupabase()
   
-  // Fetch only non-deleted generations (soft delete)
-  // is_deleted = false OR is_deleted IS NULL (for older records)
+  // Fetch only completed, non-deleted generations
+  // Filter out: is_deleted = true, status = 'failed', status = 'pending', status = 'processing'
   const { data, error } = await supabase
     .from('generations')
     .select('*')
     .eq('user_id', userId)
+    .eq('status', 'completed')
     .or('is_deleted.is.null,is_deleted.eq.false')
     .order('created_at', { ascending: false })
+    .limit(200) // Limit to most recent 200 for performance
 
   if (error) {
     console.error('[Sync] Error fetching generations:', error.message, error.code)
