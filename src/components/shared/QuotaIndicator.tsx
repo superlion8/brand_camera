@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { useQuota } from "@/hooks/useQuota"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { Sparkles } from "lucide-react"
@@ -8,15 +8,33 @@ import { Sparkles } from "lucide-react"
 export function QuotaIndicator() {
   const { user } = useAuth()
   const { quota, isLoading, refreshQuota } = useQuota()
+  const hasRefreshed = useRef(false)
 
-  // Refresh quota on mount
+  // Refresh quota only once per session, then use cached value
   useEffect(() => {
-    if (user) {
+    if (user && !hasRefreshed.current) {
+      hasRefreshed.current = true
+      // Refresh in background, don't block UI
       refreshQuota()
     }
   }, [user, refreshQuota])
 
-  if (!user || isLoading || !quota) {
+  // Show cached value immediately, don't wait for loading
+  if (!user) {
+    return null
+  }
+
+  // Show placeholder while first load
+  if (!quota && isLoading) {
+    return (
+      <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-400">
+        <Sparkles className="w-3 h-3" />
+        <span>--</span>
+      </div>
+    )
+  }
+
+  if (!quota) {
     return null
   }
 

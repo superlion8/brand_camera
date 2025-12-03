@@ -9,14 +9,63 @@ interface QuotaInfo {
   remainingQuota: number
 }
 
+const QUOTA_CACHE_KEY = 'brand_camera_quota_cache'
+
+// Get cached quota from localStorage
+function getCachedQuota(userId: string): QuotaInfo | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const cached = localStorage.getItem(QUOTA_CACHE_KEY)
+    if (cached) {
+      const { userId: cachedUserId, quota, timestamp } = JSON.parse(cached)
+      // Cache valid for 5 minutes
+      if (cachedUserId === userId && Date.now() - timestamp < 5 * 60 * 1000) {
+        return quota
+      }
+    }
+  } catch {}
+  return null
+}
+
+// Save quota to localStorage
+function setCachedQuota(userId: string, quota: QuotaInfo) {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(QUOTA_CACHE_KEY, JSON.stringify({
+      userId,
+      quota,
+      timestamp: Date.now()
+    }))
+  } catch {}
+}
+
 export function useQuota() {
   const { user } = useAuth()
-  const [quota, setQuota] = useState<QuotaInfo | null>(null)
+  
+  // Initialize from cache immediately
+  const [quota, setQuota] = useState<QuotaInfo | null>(() => {
+    if (user?.id) {
+      return getCachedQuota(user.id)
+    }
+    return null
+  })
   const [isLoading, setIsLoading] = useState(false)
   const [showExceededModal, setShowExceededModal] = useState(false)
   const [requiredCount, setRequiredCount] = useState<number | undefined>(undefined)
 
-  // Fetch quota on mount and when user changes
+  // Try to load from cache when user changes
+  useEffect(() => {
+    if (user?.id) {
+      const cached = getCachedQuota(user.id)
+      if (cached) {
+        setQuota(cached)
+      }
+    } else {
+      setQuota(null)
+    }
+  }, [user?.id])
+
+  // Fetch quota from API and update cache
   const fetchQuota = useCallback(async () => {
     if (!user) {
       setQuota(null)
@@ -29,6 +78,7 @@ export function useQuota() {
       if (response.ok) {
         const data = await response.json()
         setQuota(data)
+        setCachedQuota(user.id, data)
       }
     } catch (error) {
       console.error('Error fetching quota:', error)
@@ -37,9 +87,12 @@ export function useQuota() {
     }
   }, [user])
 
+  // Fetch on mount only if no cache
   useEffect(() => {
-    fetchQuota()
-  }, [fetchQuota])
+    if (user && !quota) {
+      fetchQuota()
+    }
+  }, [user, quota, fetchQuota])
 
   // Check if user has enough quota for the specified number of images
   // Uses local cache first for instant feedback, then verifies with server in background
