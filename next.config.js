@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Generate unique build ID to bust cache on each deploy
+  generateBuildId: async () => {
+    return `build-${Date.now()}`
+  },
   images: {
     remotePatterns: [
       {
