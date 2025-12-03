@@ -664,17 +664,18 @@ export default function AdminDashboard() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center"
+            className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4"
             onClick={() => setSelectedTask(null)}
           >
             <motion.div
-              initial={{ y: 100 }}
-              animate={{ y: 0 }}
-              exit={{ y: 100 }}
-              className="bg-white w-full max-w-lg max-h-[90vh] rounded-t-2xl sm:rounded-2xl overflow-hidden"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white w-full max-w-lg max-h-[80vh] rounded-2xl overflow-hidden flex flex-col shadow-xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-4 border-b border-zinc-100 flex items-center justify-between">
+              {/* Header - Fixed */}
+              <div className="p-4 border-b border-zinc-100 flex items-center justify-between flex-shrink-0">
                 <h3 className="font-semibold text-zinc-900">任务详情</h3>
                 <button
                   onClick={() => setSelectedTask(null)}
@@ -684,7 +685,8 @@ export default function AdminDashboard() {
                 </button>
               </div>
               
-              <div className="p-4 overflow-y-auto max-h-[70vh] space-y-4">
+              {/* Content - Scrollable */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {/* Basic Info */}
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
@@ -792,6 +794,16 @@ export default function AdminDashboard() {
                     <p className="text-sm text-zinc-400">无输出图片记录</p>
                   )}
                 </div>
+              </div>
+              
+              {/* Footer - Fixed */}
+              <div className="p-4 border-t border-zinc-100 flex-shrink-0">
+                <button
+                  onClick={() => setSelectedTask(null)}
+                  className="w-full h-10 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-medium rounded-lg transition-colors"
+                >
+                  关闭
+                </button>
               </div>
             </motion.div>
           </motion.div>
