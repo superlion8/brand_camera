@@ -329,6 +329,7 @@ export const en: Translations = {
     invalidCredentials: "Invalid email or password",
     emailNotConfirmed: "Please verify your email first",
     resourceBusy: "Resources are busy, please try again later",
+    networkError: "Network request failed, please check your connection and retry",
   },
   
   // Quota

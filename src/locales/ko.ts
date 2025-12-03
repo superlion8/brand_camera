@@ -329,6 +329,7 @@ export const ko: Translations = {
     invalidCredentials: "이메일 또는 비밀번호가 잘못되었습니다",
     emailNotConfirmed: "먼저 이메일을 확인하세요",
     resourceBusy: "리소스가 바쁩니다. 나중에 다시 시도하세요",
+    networkError: "네트워크 요청 실패, 연결을 확인하고 다시 시도하세요",
   },
   
   // Quota

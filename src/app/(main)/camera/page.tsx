@@ -553,8 +553,16 @@ export default function CameraPage() {
                 resolve({ index, success: false, error: errorMsg })
               }
             } catch (e: any) {
-              const errorMsg = e.message || '网络错误'
-              console.log(`Image ${index + 1}: ✗ (${errorMsg})`)
+              // 处理常见的网络错误
+              let errorMsg = e.message || '网络错误'
+              // Safari: "Load failed", Chrome: "Failed to fetch"
+              if (errorMsg.toLowerCase().includes('load failed') || 
+                  errorMsg.toLowerCase().includes('failed to fetch') ||
+                  errorMsg.toLowerCase().includes('network') ||
+                  errorMsg.toLowerCase().includes('abort')) {
+                errorMsg = t.errors.networkError || '网络请求失败，请重试'
+              }
+              console.log(`Image ${index + 1}: ✗ (${e.message} -> ${errorMsg})`)
               updateImageSlot(taskId, index, { 
                 status: 'failed', 
                 error: errorMsg 

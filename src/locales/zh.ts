@@ -327,6 +327,7 @@ export const zh = {
     invalidCredentials: "邮箱或密码错误",
     emailNotConfirmed: "请先验证您的邮箱",
     resourceBusy: "资源紧张，请稍后重试",
+    networkError: "网络请求失败，请检查网络后重试",
   },
   
   // Quota
