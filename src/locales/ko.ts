@@ -190,6 +190,42 @@ export const ko: Translations = {
     debugModeEnabledDesc: "이미지 상세에서 생성 파라미터와 프롬프트가 표시됩니다.",
     syncing: "동기화 중...",
     synced: "동기화됨",
+    noSettings: "설정 항목 없음",
+  },
+  
+  // Pull to refresh
+  pullRefresh: {
+    pull: "당겨서 새로고침",
+    release: "놓아서 새로고침",
+    refreshing: "새로고침 중...",
+  },
+  
+  // Image actions
+  imageActions: {
+    longPressSave: "길게 눌러 저장",
+    longPressSaveZoom: "길게 눌러 저장 · 두 손가락으로 확대 · 두 번 탭하여 초기화",
+  },
+  
+  // Empty states
+  empty: {
+    noData: "데이터 없음",
+    noImages: "이미지 없음",
+    noModelImages: "모델 이미지 없음",
+    noProductImages: "상품 이미지 없음",
+    noFavorites: "즐겨찾기 없음",
+    noAssets: "에셋 없음",
+    noMyProducts: "상품 없음",
+    noGalleryImages: "갤러리에 이미지 없음",
+    noGenerations: "생성 기록 없음",
+    noApplications: "신청 없음",
+    noUserData: "사용자 데이터 없음",
+    goUpload: "업로드",
+    goShoot: "촬영하기",
+  },
+  
+  // Beta tag
+  beta: {
+    tag: "베타",
   },
   
   // Login Page

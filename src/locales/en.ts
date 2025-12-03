@@ -190,6 +190,42 @@ export const en: Translations = {
     debugModeEnabledDesc: "Generation parameters and prompts will be shown in image details.",
     syncing: "Syncing...",
     synced: "Synced",
+    noSettings: "No settings available",
+  },
+  
+  // Pull to refresh
+  pullRefresh: {
+    pull: "Pull to refresh",
+    release: "Release to refresh",
+    refreshing: "Refreshing...",
+  },
+  
+  // Image actions
+  imageActions: {
+    longPressSave: "Long press to save",
+    longPressSaveZoom: "Long press to save · Pinch to zoom · Double tap to reset",
+  },
+  
+  // Empty states
+  empty: {
+    noData: "No data",
+    noImages: "No images",
+    noModelImages: "No model images",
+    noProductImages: "No product images",
+    noFavorites: "No favorites",
+    noAssets: "No assets",
+    noMyProducts: "No products yet",
+    noGalleryImages: "No images in gallery",
+    noGenerations: "No generations yet",
+    noApplications: "No applications",
+    noUserData: "No user data",
+    goUpload: "Upload",
+    goShoot: "Go shoot",
+  },
+  
+  // Beta tag
+  beta: {
+    tag: "Beta",
   },
   
   // Login Page

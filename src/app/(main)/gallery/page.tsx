@@ -7,6 +7,7 @@ import { useAssetStore } from "@/stores/assetStore"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useGenerationTaskStore, GenerationTask } from "@/stores/generationTaskStore"
 import { useSettingsStore } from "@/stores/settingsStore"
+import { useTranslation } from "@/stores/languageStore"
 import { Generation, Favorite, Asset } from "@/types"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
@@ -102,6 +103,7 @@ export default function GalleryPage() {
   const isSyncing = authSyncing || storeSyncing
   const { tasks, removeTask } = useGenerationTaskStore()
   const { debugMode } = useSettingsStore()
+  const { t } = useTranslation()
   
   // Get active tasks (pending/generating) - show loading cards for these
   const activeTasks = tasks.filter(t => t.status === 'pending' || t.status === 'generating')
@@ -427,17 +429,17 @@ export default function GalleryPage() {
             {isRefreshing ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
-                <span className="text-sm">刷新中...</span>
+                <span className="text-sm">{t.pullRefresh.refreshing}</span>
               </>
             ) : pullDistance >= PULL_THRESHOLD ? (
               <>
                 <RefreshCw className="w-5 h-5 text-blue-500" />
-                <span className="text-sm text-blue-500">松开刷新</span>
+                <span className="text-sm text-blue-500">{t.pullRefresh.release}</span>
               </>
             ) : (
               <>
                 <ChevronDown className="w-5 h-5" style={{ transform: `rotate(${Math.min(pullDistance / PULL_THRESHOLD * 180, 180)}deg)` }} />
-                <span className="text-sm">下拉刷新</span>
+                <span className="text-sm">{t.pullRefresh.pull}</span>
               </>
             )}
           </div>

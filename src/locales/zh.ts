@@ -188,6 +188,42 @@ export const zh = {
     debugModeEnabledDesc: "在图片详情页面将显示生成参数、Prompt 等技术信息。",
     syncing: "同步中...",
     synced: "已同步",
+    noSettings: "暂无可配置项",
+  },
+  
+  // Pull to refresh
+  pullRefresh: {
+    pull: "下拉刷新",
+    release: "松开刷新",
+    refreshing: "刷新中...",
+  },
+  
+  // Image actions
+  imageActions: {
+    longPressSave: "长按图片保存",
+    longPressSaveZoom: "长按保存 · 双指缩放 · 双击重置",
+  },
+  
+  // Empty states
+  empty: {
+    noData: "暂无数据",
+    noImages: "暂无图片",
+    noModelImages: "暂无模特图",
+    noProductImages: "暂无产品图",
+    noFavorites: "暂无收藏图片",
+    noAssets: "暂无资产",
+    noMyProducts: "暂无我的商品",
+    noGalleryImages: "图库暂无图片",
+    noGenerations: "暂无生成记录",
+    noApplications: "暂无申请",
+    noUserData: "暂无用户数据",
+    goUpload: "去上传",
+    goShoot: "去拍摄",
+  },
+  
+  // Beta tag
+  beta: {
+    tag: "内测",
   },
   
   // Login Page
