@@ -491,21 +491,24 @@ export default function GalleryPage() {
 
               {/* Content - Scrollable */}
               <div className="flex-1 min-h-0 overflow-y-auto bg-zinc-100 pb-20">
-                <div 
-                  className="relative aspect-[4/5] bg-zinc-900 cursor-pointer group shrink-0"
-                  onClick={() => setFullscreenImage(selectedItem.gen.outputImageUrls[selectedItem.index])}
-                >
-                  <Image 
-                    src={selectedItem.gen.outputImageUrls[selectedItem.index]} 
-                    alt="Detail" 
-                    fill 
-                    className="object-contain" 
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
-                    <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                      <ZoomIn className="w-6 h-6 text-zinc-700" />
+                <div className="bg-zinc-900">
+                  <div 
+                    className="relative aspect-[4/5] cursor-pointer group shrink-0"
+                    onClick={() => setFullscreenImage(selectedItem.gen.outputImageUrls[selectedItem.index])}
+                  >
+                    {/* Use img tag for native long-press save support */}
+                    <img 
+                      src={selectedItem.gen.outputImageUrls[selectedItem.index]} 
+                      alt="Detail" 
+                      className="w-full h-full object-contain" 
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 pointer-events-none">
+                      <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                        <ZoomIn className="w-6 h-6 text-zinc-700" />
+                      </div>
                     </div>
                   </div>
+                  <p className="text-center text-zinc-500 text-xs py-2">长按图片保存</p>
                 </div>
                 
                 <div className="p-4 bg-white pb-8">
@@ -844,14 +847,13 @@ export default function GalleryPage() {
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.9, opacity: 0 }}
                     transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                    className="relative w-full h-full"
+                    className="relative w-full h-full flex items-center justify-center"
                   >
-                    <Image
+                    {/* Use img tag for native long-press save support */}
+                    <img
                       src={fullscreenImage}
                       alt="Fullscreen"
-                      fill
-                      className="object-contain"
-                      quality={100}
+                      className="max-w-full max-h-full object-contain"
                       draggable={false}
                     />
                   </motion.div>
@@ -860,7 +862,7 @@ export default function GalleryPage() {
             </TransformWrapper>
             
             <div className="absolute bottom-8 left-0 right-0 text-center pointer-events-none">
-              <span className="text-white/60 text-sm">双指缩放 · 双击重置 · 点击 × 关闭</span>
+              <span className="text-white/60 text-sm">长按保存 · 双指缩放 · 双击重置</span>
             </div>
           </motion.div>
         )}
