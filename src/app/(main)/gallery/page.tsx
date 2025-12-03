@@ -267,16 +267,19 @@ export default function GalleryPage() {
       }),
     }).catch(() => {}) // Silently ignore tracking errors
     
+    // 检测是否是 iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+    
     try {
       const response = await fetch(url)
       const blob = await response.blob()
       const file = new File([blob], `brand-camera-${Date.now()}.png`, { type: 'image/png' })
       
-      // 优先使用系统分享（iOS 会显示"存储图像"选项）
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      // 只有 iOS 使用系统分享（会显示"存储图像"选项），Android 直接下载
+      if (isIOS && navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file] })
       } else {
-        // 回退到下载
+        // 直接下载
         const blobUrl = URL.createObjectURL(blob)
         const link = document.createElement("a")
         link.href = blobUrl
@@ -1037,18 +1040,20 @@ export default function GalleryPage() {
                 <button
                   onClick={async () => {
                     if (!fullscreenImage) return
+                    // 检测是否是 iOS
+                    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
                     try {
                       const response = await fetch(fullscreenImage)
                       const blob = await response.blob()
                       const file = new File([blob], `brand-camera-${Date.now()}.png`, { type: 'image/png' })
                       
-                      // 优先使用系统分享（iOS 会显示"存储图像"选项）
-                      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+                      // 只有 iOS 使用系统分享，Android 直接下载
+                      if (isIOS && navigator.share && navigator.canShare?.({ files: [file] })) {
                         await navigator.share({
                           files: [file],
                         })
                       } else {
-                        // 回退到下载
+                        // 直接下载
                         const url = URL.createObjectURL(blob)
                         const a = document.createElement('a')
                         a.href = url
