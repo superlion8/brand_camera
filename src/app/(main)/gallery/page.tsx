@@ -659,6 +659,29 @@ export default function GalleryPage() {
                         })()}
                       </div>
                       
+                      {/* Model Version (AI Model used) */}
+                      {selectedItem.gen.outputModelTypes?.[selectedItem.index] && (
+                        <div className="mb-3">
+                          <span className={`px-2 py-1 rounded text-[10px] font-medium ${
+                            selectedItem.gen.outputModelTypes[selectedItem.index] === 'pro' 
+                              ? 'bg-green-100 text-green-700' 
+                              : 'bg-amber-100 text-amber-700'
+                          }`}>
+                            模型: Gemini {selectedItem.gen.outputModelTypes[selectedItem.index] === 'pro' ? '3.0 Pro' : '2.5 Flash'}
+                            {selectedItem.gen.outputModelTypes[selectedItem.index] === 'flash' && ' (降级)'}
+                          </span>
+                          {selectedItem.gen.outputGenModes?.[selectedItem.index] && (
+                            <span className={`ml-2 px-2 py-1 rounded text-[10px] font-medium ${
+                              selectedItem.gen.outputGenModes[selectedItem.index] === 'simple'
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'bg-purple-100 text-purple-700'
+                            }`}>
+                              {selectedItem.gen.outputGenModes[selectedItem.index] === 'simple' ? '极简模式' : '扩展模式'}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      
                       {selectedItem.gen.params && (
                         <div className="flex gap-2 flex-wrap">
                           {selectedItem.gen.params.modelStyle && selectedItem.gen.params.modelStyle !== 'auto' && (

@@ -1849,6 +1849,29 @@ export default function CameraPage() {
                               
                             </div>
                             
+                            {/* Model Version (AI Model used) */}
+                            {(generatedModelTypes[selectedResultIndex] || generation?.outputModelTypes?.[selectedResultIndex]) && (
+                              <div className="mt-3 mb-3">
+                                <span className={`px-2 py-1 rounded text-[10px] font-medium ${
+                                  (generatedModelTypes[selectedResultIndex] || generation?.outputModelTypes?.[selectedResultIndex]) === 'pro' 
+                                    ? 'bg-green-100 text-green-700' 
+                                    : 'bg-amber-100 text-amber-700'
+                                }`}>
+                                  模型: Gemini {(generatedModelTypes[selectedResultIndex] || generation?.outputModelTypes?.[selectedResultIndex]) === 'pro' ? '3.0 Pro' : '2.5 Flash'}
+                                  {(generatedModelTypes[selectedResultIndex] || generation?.outputModelTypes?.[selectedResultIndex]) === 'flash' && ' (降级)'}
+                                </span>
+                                {(generatedGenModes[selectedResultIndex] || generation?.outputGenModes?.[selectedResultIndex]) && (
+                                  <span className={`ml-2 px-2 py-1 rounded text-[10px] font-medium ${
+                                    (generatedGenModes[selectedResultIndex] || generation?.outputGenModes?.[selectedResultIndex]) === 'simple'
+                                      ? 'bg-blue-100 text-blue-700'
+                                      : 'bg-purple-100 text-purple-700'
+                                  }`}>
+                                    {(generatedGenModes[selectedResultIndex] || generation?.outputGenModes?.[selectedResultIndex]) === 'simple' ? '极简模式' : '扩展模式'}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            
                             {/* Style params - prefer saved, fallback to current selection */}
                             {((savedParams?.modelStyle || selectedModelStyle) && (savedParams?.modelStyle || selectedModelStyle) !== 'auto') || 
                              (savedParams?.modelGender || selectedModelGender) ? (
