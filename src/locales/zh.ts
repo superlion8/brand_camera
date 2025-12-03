@@ -115,6 +115,7 @@ export const zh = {
   edit: {
     title: "AI 修图室",
     editRoom: "修图室",
+    describeEdit: "描述你想要的修改",
     editPlaceholder: "例如：把裤子换成蓝色牛仔裤、去掉图片背后的路人....",
     startGenerate: "开始生成",
     processing: "AI 正在处理...",

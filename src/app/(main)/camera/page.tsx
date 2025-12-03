@@ -1065,7 +1065,7 @@ export default function CameraPage() {
                     <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
                       <ImageIcon className="w-6 h-6" />
                     </div>
-                    <span className="text-[10px]">相册</span>
+                    <span className="text-[10px]">{t.camera.album}</span>
                   </button>
 
                   {/* Shutter */}
@@ -1085,7 +1085,7 @@ export default function CameraPage() {
                     <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
                       <FolderHeart className="w-6 h-6" />
                     </div>
-                    <span className="text-[10px]">资产库</span>
+                    <span className="text-[10px]">{t.camera.assetLibrary}</span>
                   </button>
                 </div>
               )}

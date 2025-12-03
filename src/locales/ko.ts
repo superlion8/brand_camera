@@ -117,6 +117,7 @@ export const ko: Translations = {
   edit: {
     title: "AI 편집실",
     editRoom: "편집실",
+    describeEdit: "원하는 수정 사항 설명",
     editPlaceholder: "예: 바지를 청바지로 변경, 배경의 사람 제거...",
     startGenerate: "생성 시작",
     processing: "AI 처리 중...",

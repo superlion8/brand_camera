@@ -117,6 +117,7 @@ export const en: Translations = {
   edit: {
     title: "AI Edit Room",
     editRoom: "Edit Room",
+    describeEdit: "Describe your edits",
     editPlaceholder: "e.g.: Change pants to blue jeans, remove people in background...",
     startGenerate: "Start Generate",
     processing: "AI is processing...",

@@ -363,7 +363,7 @@ export default function GeneralEditPage() {
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Wand2 className="w-5 h-5 text-purple-600" />
-              <label className="text-base font-semibold text-zinc-900">描述你想要的修改</label>
+              <label className="text-base font-semibold text-zinc-900">{t.edit.describeEdit}</label>
             </div>
             <textarea
               placeholder="例如：把裤子换成蓝色牛仔裤、去掉图片背后的路人...."
