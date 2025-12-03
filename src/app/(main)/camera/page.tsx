@@ -287,6 +287,10 @@ export default function CameraPage() {
     const currentProductFromPhone = productFromPhone
     const currentProduct2FromPhone = product2FromPhone
     
+    // Track if user selected or system randomly assigned
+    const modelIsUserSelected = !!activeModel
+    const bgIsUserSelected = !!activeBg
+    
     // If model not selected, randomly pick one from ALL presets (including non-visible)
     if (!currentModel) {
       const randomModel = getRandomModel()
@@ -308,6 +312,8 @@ export default function CameraPage() {
       model: currentModel?.name,
       background: currentBg?.name,
       hasProduct2: !!currentProduct2,
+      modelIsUserSelected, // Track if user selected or system random
+      bgIsUserSelected,    // Track if user selected or system random
     }
     
     const taskId = addTask('camera', capturedImage, params)
@@ -344,7 +350,9 @@ export default function CameraPage() {
       currentModel,
       currentBg,
       currentProductFromPhone,
-      currentProduct2FromPhone
+      currentProduct2FromPhone,
+      modelIsUserSelected,
+      bgIsUserSelected
     )
   }
   
@@ -359,7 +367,9 @@ export default function CameraPage() {
     model: Asset | undefined,
     background: Asset | undefined,
     fromPhone: boolean,
-    fromPhone2: boolean
+    fromPhone2: boolean,
+    modelIsUserSelected: boolean,
+    bgIsUserSelected: boolean
   ) => {
     try {
       // Compress and prepare images before sending
@@ -561,6 +571,8 @@ export default function CameraPage() {
             background: background?.name,
             modelImage: model?.imageUrl,
             backgroundImage: background?.imageUrl,
+            modelIsUserSelected, // true = user selected, false = system random
+            bgIsUserSelected,    // true = user selected, false = system random
           },
         })
         

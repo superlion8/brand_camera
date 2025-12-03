@@ -745,7 +745,16 @@ export default function AdminDashboard() {
                           height={80} 
                           className="w-20 h-20 object-cover rounded-lg"
                         />
-                        <span className="absolute bottom-1 left-1 px-1 py-0.5 bg-black/50 text-white text-[8px] rounded">模特</span>
+                        <div className="absolute bottom-1 left-1 right-1 flex flex-col gap-0.5">
+                          <span className="px-1 py-0.5 bg-black/50 text-white text-[8px] rounded text-center">模特</span>
+                          <span className={`px-1 py-0.5 text-[8px] rounded text-center ${
+                            selectedTask.inputParams?.modelIsUserSelected === false 
+                              ? 'bg-amber-500 text-white' 
+                              : 'bg-blue-500 text-white'
+                          }`}>
+                            {selectedTask.inputParams?.modelIsUserSelected === false ? '随机' : '用户'}
+                          </span>
+                        </div>
                       </div>
                     )}
                     {(selectedTask.backgroundImageUrl || selectedTask.inputParams?.backgroundImage) && (
@@ -757,7 +766,16 @@ export default function AdminDashboard() {
                           height={80} 
                           className="w-20 h-20 object-cover rounded-lg"
                         />
-                        <span className="absolute bottom-1 left-1 px-1 py-0.5 bg-black/50 text-white text-[8px] rounded">环境</span>
+                        <div className="absolute bottom-1 left-1 right-1 flex flex-col gap-0.5">
+                          <span className="px-1 py-0.5 bg-black/50 text-white text-[8px] rounded text-center">环境</span>
+                          <span className={`px-1 py-0.5 text-[8px] rounded text-center ${
+                            selectedTask.inputParams?.bgIsUserSelected === false 
+                              ? 'bg-amber-500 text-white' 
+                              : 'bg-blue-500 text-white'
+                          }`}>
+                            {selectedTask.inputParams?.bgIsUserSelected === false ? '随机' : '用户'}
+                          </span>
+                        </div>
                       </div>
                     )}
                     {/* Show message if no input images */}
