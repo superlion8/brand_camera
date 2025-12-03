@@ -753,11 +753,11 @@ export default function AdminDashboard() {
                   </div>
                 )}
                 
-                {/* Input Images */}
+                {/* Input Image (Product only - model/bg shown per output image) */}
                 <div>
-                  <p className="text-sm font-medium text-zinc-700 mb-2">输入图片</p>
+                  <p className="text-sm font-medium text-zinc-700 mb-2">输入商品图</p>
                   <div className="flex gap-2 flex-wrap">
-                    {(selectedTask.inputImageUrl || selectedTask.inputParams?.inputImage) && (
+                    {(selectedTask.inputImageUrl || selectedTask.inputParams?.inputImage) ? (
                       <div className="relative">
                         <Image 
                           src={selectedTask.inputImageUrl || selectedTask.inputParams?.inputImage} 
@@ -768,89 +768,83 @@ export default function AdminDashboard() {
                         />
                         <span className="absolute bottom-1 left-1 px-1 py-0.5 bg-black/50 text-white text-[8px] rounded">商品</span>
                       </div>
-                    )}
-                    {(selectedTask.modelImageUrl || selectedTask.inputParams?.modelImage) && (
-                      <div className="relative">
-                        <Image 
-                          src={selectedTask.modelImageUrl || selectedTask.inputParams?.modelImage} 
-                          alt="Model" 
-                          width={80} 
-                          height={80} 
-                          className="w-20 h-20 object-cover rounded-lg"
-                        />
-                        <div className="absolute bottom-1 left-1 right-1 flex flex-col gap-0.5">
-                          <span className="px-1 py-0.5 bg-black/50 text-white text-[8px] rounded text-center">模特</span>
-                          <span className={`px-1 py-0.5 text-[8px] rounded text-center ${
-                            selectedTask.inputParams?.modelIsUserSelected === false 
-                              ? 'bg-amber-500 text-white' 
-                              : 'bg-blue-500 text-white'
-                          }`}>
-                            {selectedTask.inputParams?.modelIsUserSelected === false ? '随机' : '用户'}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                    {(selectedTask.backgroundImageUrl || selectedTask.inputParams?.backgroundImage) && (
-                      <div className="relative">
-                        <Image 
-                          src={selectedTask.backgroundImageUrl || selectedTask.inputParams?.backgroundImage} 
-                          alt="Background" 
-                          width={80} 
-                          height={80} 
-                          className="w-20 h-20 object-cover rounded-lg"
-                        />
-                        <div className="absolute bottom-1 left-1 right-1 flex flex-col gap-0.5">
-                          <span className="px-1 py-0.5 bg-black/50 text-white text-[8px] rounded text-center">环境</span>
-                          <span className={`px-1 py-0.5 text-[8px] rounded text-center ${
-                            selectedTask.inputParams?.bgIsUserSelected === false 
-                              ? 'bg-amber-500 text-white' 
-                              : 'bg-blue-500 text-white'
-                          }`}>
-                            {selectedTask.inputParams?.bgIsUserSelected === false ? '随机' : '用户'}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                    {/* Show message if no input images */}
-                    {!selectedTask.inputImageUrl && !selectedTask.inputParams?.inputImage && 
-                     !selectedTask.modelImageUrl && !selectedTask.inputParams?.modelImage &&
-                     !selectedTask.backgroundImageUrl && !selectedTask.inputParams?.backgroundImage && (
+                    ) : (
                       <p className="text-sm text-zinc-400">无输入图片记录</p>
                     )}
                   </div>
                 </div>
                 
-                {/* Output Images */}
+                {/* Output Images with per-image model/background */}
                 <div>
                   <p className="text-sm font-medium text-zinc-700 mb-2">输出图片 ({selectedTask.outputImageUrls.length})</p>
                   {selectedTask.outputImageUrls.length > 0 ? (
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="space-y-3">
                       {selectedTask.outputImageUrls.map((url, i) => {
                         const downloadCount = selectedTask.downloadedIndices?.filter(idx => idx === i).length || 0
+                        // Get per-image model and background
+                        const perImageModel = selectedTask.inputParams?.perImageModels?.[i]
+                        const perImageBg = selectedTask.inputParams?.perImageBackgrounds?.[i]
+                        const modelUrl = perImageModel?.imageUrl || selectedTask.modelImageUrl || selectedTask.inputParams?.modelImage
+                        const bgUrl = perImageBg?.imageUrl || selectedTask.backgroundImageUrl || selectedTask.inputParams?.backgroundImage
+                        const modelName = perImageModel?.name || selectedTask.inputParams?.model || '模特'
+                        const bgName = perImageBg?.name || selectedTask.inputParams?.background || '环境'
+                        const modelIsRandom = perImageModel?.isRandom
+                        const bgIsRandom = perImageBg?.isRandom
+                        
                         return (
-                          <div key={i} className="relative aspect-[4/5] bg-zinc-100 rounded-lg overflow-hidden">
-                            <Image 
-                              src={url} 
-                              alt={`Output ${i + 1}`} 
-                              fill 
-                              className="object-cover"
-                            />
-                            {/* Badges */}
-                            <div className="absolute top-1 right-1 flex flex-col gap-1">
-                              {selectedTask.favoritedIndices.includes(i) && (
-                                <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
-                                  <Heart className="w-3 h-3 text-white fill-current" />
-                                </div>
-                              )}
-                              {downloadCount > 0 && (
-                                <div className="w-5 h-5 bg-cyan-500 rounded-full flex items-center justify-center">
-                                  <Download className="w-3 h-3 text-white" />
-                                </div>
-                              )}
+                          <div key={i} className="flex gap-2 p-2 bg-zinc-50 rounded-lg">
+                            {/* Output image */}
+                            <div className="relative w-24 h-30 bg-zinc-100 rounded-lg overflow-hidden shrink-0">
+                              <Image 
+                                src={url} 
+                                alt={`Output ${i + 1}`} 
+                                width={96}
+                                height={120}
+                                className="w-full h-full object-cover"
+                              />
+                              {/* Badges */}
+                              <div className="absolute top-1 right-1 flex flex-col gap-1">
+                                {selectedTask.favoritedIndices.includes(i) && (
+                                  <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                                    <Heart className="w-2.5 h-2.5 text-white fill-current" />
+                                  </div>
+                                )}
+                                {downloadCount > 0 && (
+                                  <div className="w-4 h-4 bg-cyan-500 rounded-full flex items-center justify-center">
+                                    <Download className="w-2.5 h-2.5 text-white" />
+                                  </div>
+                                )}
+                              </div>
+                              {/* Image number */}
+                              <div className="absolute bottom-1 left-1 px-1 py-0.5 bg-black/50 text-white text-[9px] rounded">
+                                #{i + 1}
+                              </div>
                             </div>
-                            {/* Image number */}
-                            <div className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-black/50 text-white text-[10px] rounded">
-                              #{i + 1}
+                            
+                            {/* Per-image model and background */}
+                            <div className="flex gap-2 flex-1 min-w-0">
+                              {modelUrl && (
+                                <div className="flex flex-col items-center">
+                                  <div className="w-12 h-12 rounded overflow-hidden bg-zinc-200">
+                                    <Image src={modelUrl} alt="Model" width={48} height={48} className="w-full h-full object-cover" />
+                                  </div>
+                                  <p className="text-[9px] text-zinc-500 mt-0.5 truncate max-w-[48px] text-center">{modelName}</p>
+                                  {modelIsRandom && (
+                                    <span className="px-1 py-0.5 bg-amber-100 text-amber-600 text-[8px] rounded">随机</span>
+                                  )}
+                                </div>
+                              )}
+                              {bgUrl && (
+                                <div className="flex flex-col items-center">
+                                  <div className="w-12 h-12 rounded overflow-hidden bg-zinc-200">
+                                    <Image src={bgUrl} alt="Background" width={48} height={48} className="w-full h-full object-cover" />
+                                  </div>
+                                  <p className="text-[9px] text-zinc-500 mt-0.5 truncate max-w-[48px] text-center">{bgName}</p>
+                                  {bgIsRandom && (
+                                    <span className="px-1 py-0.5 bg-amber-100 text-amber-600 text-[8px] rounded">随机</span>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
                         )
