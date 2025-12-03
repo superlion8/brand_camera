@@ -59,48 +59,6 @@ function FeatureCard({
   )
 }
 
-// Simple feature card (icon + title, no before-after)
-function SimpleFeatureCard({
-  href,
-  icon: Icon,
-  title,
-  subtitle,
-  gradient,
-  iconColor,
-}: {
-  href: string
-  icon: React.ElementType
-  title: string
-  subtitle: string
-  gradient: string
-  iconColor: string
-}) {
-  return (
-    <Link href={href} className="block">
-      <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-zinc-100 h-full">
-        {/* Gradient background with icon */}
-        <div className={`h-[180px] ${gradient} flex items-center justify-center`}>
-          <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-            <Icon className={`w-8 h-8 ${iconColor}`} />
-          </div>
-        </div>
-        {/* Title below */}
-        <div className="p-2.5">
-          <div className="flex items-center gap-1.5">
-            <div className="w-6 h-6 bg-zinc-100 rounded-full flex items-center justify-center shrink-0">
-              <Icon className="w-3 h-3 text-zinc-600" />
-            </div>
-            <div className="min-w-0">
-              <h3 className="font-bold text-zinc-900 text-sm truncate">{title}</h3>
-              <p className="text-zinc-500 text-[10px] truncate">{subtitle}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Link>
-  )
-}
-
 export default function HomePage() {
   const { generations, _hasHydrated } = useAssetStore()
   const { t } = useTranslation()
@@ -126,9 +84,9 @@ export default function HomePage() {
         </div>
       </div>
       
-      {/* Main Feature Cards - 3 columns */}
+      {/* Main Feature Cards - 2 columns */}
       <div className="px-4 mt-4">
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-3">
           {/* 模特影棚 */}
           <FeatureCard
             href="/camera"
@@ -137,7 +95,7 @@ export default function HomePage() {
             icon={Users}
             title={t.home.modelStudio}
             subtitle="AI真人穿拍"
-            height={180}
+            height={220}
           />
           
           {/* 商品影棚 */}
@@ -148,19 +106,25 @@ export default function HomePage() {
             icon={Lightbulb}
             title={t.home.productStudio}
             subtitle="静物场景合成"
-            height={180}
-          />
-          
-          {/* 修图室 */}
-          <SimpleFeatureCard
-            href="/edit/general"
-            icon={Wand2}
-            title="修图室"
-            subtitle="AI智能修图"
-            gradient="bg-gradient-to-br from-violet-400 to-purple-600"
-            iconColor="text-white"
+            height={220}
           />
         </div>
+        
+        {/* 修图室 - 第二排 */}
+        <Link href="/edit/general" className="block mt-3">
+          <div className="bg-gradient-to-r from-violet-500 to-purple-600 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                <Wand2 className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-base">修图室</h3>
+                <p className="text-white/80 text-xs">AI智能修图 · 自由描述你想要的效果</p>
+              </div>
+            </div>
+            <ArrowRight className="w-5 h-5 text-white/80" />
+          </div>
+        </Link>
       </div>
       
       {/* Navigation Cards */}
