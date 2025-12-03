@@ -484,6 +484,27 @@ export const useAssetStore = create<AssetState>()(
         
         try {
           console.log('[Store] loadFromDB: starting initial load')
+          
+          // 检查是否可能有登录用户（通过检查 localStorage 中的 supabase session）
+          // 如果有 session，syncWithCloud 会被调用，应该由它来一次性加载所有数据
+          // 避免"先显示缓存、再刷新云端"的闪烁问题
+          let hasSession = false
+          if (typeof window !== 'undefined') {
+            // Supabase 将 session 存储在 localStorage 中
+            const keys = Object.keys(localStorage)
+            hasSession = keys.some(key => key.startsWith('sb-') && key.includes('auth-token'))
+          }
+          
+          if (hasSession) {
+            console.log('[Store] loadFromDB: session detected, skipping UI update (will load in syncWithCloud)')
+            set({ _hasLoadedFromDB: true })
+            // 不更新 generations，保持 isInitialLoading = true
+            // syncWithCloud 会加载所有数据并更新 UI
+            return
+          }
+          
+          // 未登录用户：从 IndexedDB 加载数据
+          console.log('[Store] loadFromDB: no session, loading from IndexedDB')
           const [dbGenerations, dbFavorites, dbCollections] = await Promise.all([
             dbGetAll<Generation>(STORES.GENERATIONS),
             dbGetAll<Favorite>(STORES.FAVORITES),
@@ -522,16 +543,15 @@ export const useAssetStore = create<AssetState>()(
             console.log('[Store] loadFromDB: preserved', recentInMemory.length, 'recent in-memory generations')
           }
           
-          console.log('[Store] loadFromDB: loaded', uniqueGenerations.length, 'generations')
+          console.log('[Store] loadFromDB: loaded', uniqueGenerations.length, 'generations (not logged in)')
           
-          // 如果没有登录用户，直接显示 IndexedDB 数据并结束 loading
-          const { currentUserId } = get()
+          // 未登录用户：直接显示 IndexedDB 数据并结束 loading
           set({
             generations: uniqueGenerations,
             favorites: dbFavorites,
             collections: dbCollections,
             _hasLoadedFromDB: true,
-            isInitialLoading: !currentUserId, // 未登录时结束 loading，登录用户等云端
+            isInitialLoading: false,
           })
         } catch (error) {
           console.error('Error loading from IndexedDB:', error)

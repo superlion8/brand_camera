@@ -358,7 +358,9 @@ export async function fetchGenerations(userId: string, page: number = 0): Promis
       }
       
       return {
-        id: row.id,
+        // 优先使用 task_id 作为 ID，与前端 IndexedDB 保持一致
+        // task_id 是前端生成的，row.id 是数据库自动生成的 UUID
+        id: row.task_id || row.id,
         type: row.type || row.task_type,
         inputImageUrl: row.input_image_url || '',
         inputImage2Url: row.input_image2_url,
@@ -635,7 +637,8 @@ function mapGenerationRow(data: any): Generation {
   }
   
   return {
-    id: data.id,
+    // 优先使用 task_id 作为 ID，与前端 IndexedDB 保持一致
+    id: data.task_id || data.id,
     type: data.task_type || data.type,
     inputImageUrl: data.input_image_url || '',
     inputImage2Url: data.input_image2_url,
