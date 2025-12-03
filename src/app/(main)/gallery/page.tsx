@@ -70,26 +70,49 @@ export default function GalleryPage() {
   // Get completed tasks that might not yet be in generations store
   const completedTasks = tasks.filter(t => t.status === 'completed')
   
-  // Auto-remove completed tasks only after their images appear in generations
-  useEffect(() => {
-    completedTasks.forEach(task => {
-      // Check if task's generation is already in the store by matching input image
-      const existsInGenerations = generations.some(gen => 
-        gen.inputImageUrl === task.inputImageUrl && 
-        gen.outputImageUrls && 
-        gen.outputImageUrls.length > 0
+  // Track which completed tasks have their generations in the store
+  // We need to keep showing completed task cards until generation is definitely visible
+  const completedTasksWithImages = completedTasks.filter(task => 
+    task.outputImageUrls && task.outputImageUrls.length > 0
+  )
+  
+  // Check which completed tasks already have their generation in the store
+  const tasksToHide = completedTasksWithImages.filter(task => {
+    // Match by comparing output URLs (more reliable than input URL)
+    return generations.some(gen => {
+      if (!gen.outputImageUrls || gen.outputImageUrls.length === 0) return false
+      // Check if any output URL matches
+      return task.outputImageUrls.some(url => 
+        gen.outputImageUrls.includes(url)
       )
-      
-      if (existsInGenerations) {
-        // Generation is synced, safe to remove task
-        removeTask(task.id)
-      } else {
-        // Give it more time (up to 5 seconds) then remove anyway
-        const timer = setTimeout(() => removeTask(task.id), 5000)
-        return () => clearTimeout(timer)
-      }
     })
-  }, [completedTasks, generations, removeTask])
+  })
+  
+  // Only show completed tasks that DON'T have their generation in the store yet
+  const completedTasksToShow = completedTasksWithImages.filter(
+    task => !tasksToHide.some(t => t.id === task.id)
+  )
+  
+  // Auto-remove completed tasks after they're no longer needed
+  useEffect(() => {
+    tasksToHide.forEach(task => {
+      // Add a small delay to ensure smooth transition
+      const timer = setTimeout(() => removeTask(task.id), 500)
+      return () => clearTimeout(timer)
+    })
+    
+    // Also remove completed tasks that have been around too long (10 seconds)
+    completedTasks.forEach(task => {
+      const timer = setTimeout(() => {
+        // Only remove if still in completed state
+        const currentTask = tasks.find(t => t.id === task.id)
+        if (currentTask?.status === 'completed') {
+          removeTask(task.id)
+        }
+      }, 10000)
+      return () => clearTimeout(timer)
+    })
+  }, [tasksToHide, completedTasks, tasks, removeTask])
   
   // Clear save success message
   useEffect(() => {
@@ -295,8 +318,8 @@ export default function GalleryPage() {
             <GeneratingCard key={task.id} task={task} />
           ))}
           
-          {/* Show completed task images while waiting for sync */}
-          {activeTab === "all" && completedTasks.map((task) => (
+          {/* Show completed task images while waiting for sync to generations store */}
+          {activeTab === "all" && completedTasksToShow.map((task) => (
             task.outputImageUrls.map((url, idx) => (
               <div 
                 key={`completed-${task.id}-${idx}`}
@@ -368,7 +391,7 @@ export default function GalleryPage() {
           })}
         </div>
         
-        {displayedHistory.length === 0 && activeTasks.length === 0 && completedTasks.length === 0 && (
+        {displayedHistory.length === 0 && activeTasks.length === 0 && completedTasksToShow.length === 0 && (
           <div className="flex flex-col items-center justify-center h-64 text-zinc-400">
             {isSyncing ? (
               <>
