@@ -8,6 +8,91 @@ import { requireAuth } from '@/lib/auth'
 
 export const maxDuration = 120
 
+// Model names
+const PRIMARY_IMAGE_MODEL = 'gemini-3-pro-image-preview'
+const FALLBACK_IMAGE_MODEL = 'gemini-2.5-flash-image'
+
+// Retry config
+const PRIMARY_RETRY_COUNT = 2
+const PRIMARY_RETRY_DELAY_MS = 3000
+
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+function isRateLimitError(error: any): boolean {
+  const msg = error?.message?.toLowerCase() || ''
+  return msg.includes('429') || 
+         msg.includes('rate') || 
+         msg.includes('quota') ||
+         msg.includes('exhausted') ||
+         msg.includes('resource')
+}
+
+interface ImageResult {
+  image: string
+  model: 'pro' | 'flash'
+}
+
+async function generateImageWithFallback(
+  client: ReturnType<typeof getGenAIClient>,
+  parts: any[],
+  label: string
+): Promise<ImageResult | null> {
+  const startTime = Date.now()
+  
+  // Try primary model with retries
+  for (let attempt = 0; attempt <= PRIMARY_RETRY_COUNT; attempt++) {
+    try {
+      if (attempt > 0) {
+        console.log(`[${label}] Retry ${attempt}/${PRIMARY_RETRY_COUNT}...`)
+        await delay(PRIMARY_RETRY_DELAY_MS * attempt)
+      }
+      
+      console.log(`[${label}] Trying ${PRIMARY_IMAGE_MODEL}...`)
+      const response = await client.models.generateContent({
+        model: PRIMARY_IMAGE_MODEL,
+        contents: [{ role: 'user', parts }],
+        config: {
+          responseModalities: ['IMAGE'],
+          safetySettings,
+        },
+      })
+      
+      const result = extractImage(response)
+      if (result) {
+        console.log(`[${label}] Success with ${PRIMARY_IMAGE_MODEL} in ${Date.now() - startTime}ms`)
+        return { image: result, model: 'pro' }
+      }
+      throw new Error('No image in response')
+    } catch (err: any) {
+      console.log(`[${label}] ${PRIMARY_IMAGE_MODEL} failed: ${err?.message}`)
+      if (!isRateLimitError(err) || attempt === PRIMARY_RETRY_COUNT) break
+    }
+  }
+  
+  // Fallback to flash model
+  try {
+    console.log(`[${label}] Trying fallback ${FALLBACK_IMAGE_MODEL}...`)
+    const response = await client.models.generateContent({
+      model: FALLBACK_IMAGE_MODEL,
+      contents: [{ role: 'user', parts }],
+      config: {
+        responseModalities: ['IMAGE'],
+        safetySettings,
+      },
+    })
+    
+    const result = extractImage(response)
+    if (result) {
+      console.log(`[${label}] Success with fallback in ${Date.now() - startTime}ms`)
+      return { image: result, model: 'flash' }
+    }
+  } catch (err: any) {
+    console.error(`[${label}] Fallback also failed: ${err?.message}`)
+  }
+  
+  return null
+}
+
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
   
@@ -85,20 +170,11 @@ export async function POST(request: NextRequest) {
       })
     }
     
-    console.log('Editing image...')
-    const response = await client.models.generateContent({
-      model: 'gemini-3-pro-image-preview',
-      contents: [{ role: 'user', parts }],
-      config: {
-        responseModalities: ['IMAGE'],
-        safetySettings,
-      },
-    })
-    
-    const resultImage = extractImage(response)
+    console.log('[Edit] Generating edited image...')
+    const result = await generateImageWithFallback(client, parts, 'Edit')
     const duration = Date.now() - startTime
     
-    if (!resultImage) {
+    if (!result) {
       // Save failed edit record
       saveGenerationServer(
         userId,
@@ -107,32 +183,32 @@ export async function POST(request: NextRequest) {
         [],
         duration,
         'failed',
-        '图片编辑失败'
+        '资源紧张，请稍后重试'
       ).catch(console.error)
       
       return NextResponse.json({ 
         success: false, 
-        error: '图片编辑失败，请重试' 
-      }, { status: 500 })
+        error: 'RESOURCE_BUSY' 
+      }, { status: 503 })
     }
     
-    let outputUrl = `data:image/png;base64,${resultImage}`
+    let outputUrl = `data:image/png;base64,${result.image}`
     const generationId = generateId()
     
     // Upload to Supabase Storage
-    console.log('Uploading edited image to Supabase Storage...')
+    console.log('[Edit] Uploading to Supabase Storage...')
     
     // Upload output image
     const storageUrl = await uploadGeneratedImageServer(outputUrl, generationId, 0, userId)
     if (storageUrl) {
       outputUrl = storageUrl
-      console.log('Successfully uploaded to storage')
+      console.log('[Edit] Successfully uploaded to storage')
     }
     
     // Also upload input image
     uploadInputImageServer(inputImage, generationId, userId).catch(console.error)
     
-    // Save edit record with storage URL
+    // Save edit record with storage URL and model type
     saveGenerationServer(
       userId,
       'edit',
@@ -152,11 +228,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       image: outputUrl,
+      modelType: result.model,
       generationId,
     })
     
   } catch (error: any) {
-    console.error('Edit error:', error)
+    console.error('[Edit] Error:', error)
     return NextResponse.json({ 
       success: false, 
       error: error.message || '编辑失败' 

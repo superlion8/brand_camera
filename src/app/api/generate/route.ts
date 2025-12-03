@@ -467,13 +467,13 @@ export async function POST(request: NextRequest) {
         [],
         duration,
         'failed',
-        '图片生成失败'
+        '资源紧张，请稍后重试'
       ).catch(console.error)
       
       return NextResponse.json({ 
         success: false, 
-        error: '图片生成失败，请重试' 
-      }, { status: 500 })
+        error: 'RESOURCE_BUSY' 
+      }, { status: 503 })
     }
     
     // Upload images to Supabase Storage
@@ -536,7 +536,7 @@ export async function POST(request: NextRequest) {
     console.error('Generation error:', error)
     return NextResponse.json({ 
       success: false, 
-      error: error.message || '生成失败' 
+      error: error.message || 'RESOURCE_BUSY' 
     }, { status: 500 })
   }
 }

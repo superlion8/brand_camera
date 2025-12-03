@@ -20,6 +20,14 @@ import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
 
+// Helper to map API error codes to translated messages
+const getErrorMessage = (error: string, t: any): string => {
+  if (error === 'RESOURCE_BUSY') {
+    return t.errors?.resourceBusy || '资源紧张，请稍后重试'
+  }
+  return error
+}
+
 // Light types - IDs only, labels come from translations
 const LIGHT_TYPE_IDS = ['Softbox', 'Sunlight', 'Dramatic', 'Neon'] as const
 const LIGHT_TYPE_ICONS = { Softbox: Lightbulb, Sunlight: Sun, Dramatic: Sparkles, Neon: Zap }
@@ -350,7 +358,8 @@ export default function StudioPage() {
             // Check HTTP status first
             if (!httpResponse.ok) {
               const errorData = await httpResponse.json().catch(() => ({ error: `HTTP ${httpResponse.status}` }))
-              console.log(`Studio ${i + 1}: ✗ HTTP ${httpResponse.status} (${errorData.error || 'Unknown error'})`)
+              const errorMsg = getErrorMessage(errorData.error || 'Unknown error', t)
+              console.log(`Studio ${i + 1}: ✗ HTTP ${httpResponse.status} (${errorMsg})`)
               continue
             }
             
@@ -452,7 +461,8 @@ export default function StudioPage() {
       }
       
       if (modeRef.current === 'processing') {
-        alert(error.message || t.studio.generationFailed)
+        const errorMsg = getErrorMessage(error.message, t) || t.studio.generationFailed
+        alert(errorMsg)
         setMode('main')
       }
     }

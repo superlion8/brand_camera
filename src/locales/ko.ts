@@ -217,6 +217,25 @@ export const ko: Translations = {
     modelImages: "장 모델 이미지",
     processingImage: "AI가 이미지 처리 중",
     loadMore: "더 보기",
+    // AI 모델 관련
+    aiModel: "모델",
+    geminiPro: "Gemini 3.0 Pro",
+    geminiFlash: "Gemini 2.5 Flash",
+    fallback: "(폴백)",
+    simpleMode: "심플 모드",
+    extendedMode: "확장 모드",
+    // 생성 파라미터
+    styleLabel: "스타일",
+    styleKorean: "한국식",
+    styleWestern: "서양식",
+    genderLabel: "성별",
+    genderMale: "남성",
+    genderFemale: "여성",
+    genderBoy: "남아",
+    genderGirl: "여아",
+    lightType: "조명",
+    lightDirection: "방향",
+    bgColor: "배경색",
   },
   
   // Brand Assets Page
@@ -308,6 +327,7 @@ export const ko: Translations = {
     invalidCode: "유효하지 않은 코드",
     invalidCredentials: "이메일 또는 비밀번호가 잘못되었습니다",
     emailNotConfirmed: "먼저 이메일을 확인하세요",
+    resourceBusy: "리소스가 바쁩니다. 나중에 다시 시도하세요",
   },
   
   // Quota

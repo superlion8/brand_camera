@@ -215,6 +215,25 @@ export const zh = {
     modelImages: "张模特图",
     processingImage: "AI 正在处理您的图片",
     loadMore: "加载更多",
+    // AI 模型相关
+    aiModel: "模型",
+    geminiPro: "Gemini 3.0 Pro",
+    geminiFlash: "Gemini 2.5 Flash",
+    fallback: "(降级)",
+    simpleMode: "极简模式",
+    extendedMode: "扩展模式",
+    // 生成参数
+    styleLabel: "风格",
+    styleKorean: "韩系",
+    styleWestern: "欧美",
+    genderLabel: "性别",
+    genderMale: "男",
+    genderFemale: "女",
+    genderBoy: "男童",
+    genderGirl: "女童",
+    lightType: "光源",
+    lightDirection: "方向",
+    bgColor: "背景色",
   },
   
   // Brand Assets Page
@@ -306,6 +325,7 @@ export const zh = {
     invalidCode: "验证码错误",
     invalidCredentials: "邮箱或密码错误",
     emailNotConfirmed: "请先验证您的邮箱",
+    resourceBusy: "资源紧张，请稍后重试",
   },
   
   // Quota

@@ -797,8 +797,8 @@ export default function GalleryPage() {
                               ? 'bg-green-100 text-green-700' 
                               : 'bg-amber-100 text-amber-700'
                           }`}>
-                            模型: Gemini {selectedItem.gen.outputModelTypes[selectedItem.index] === 'pro' ? '3.0 Pro' : '2.5 Flash'}
-                            {selectedItem.gen.outputModelTypes[selectedItem.index] === 'flash' && ' (降级)'}
+                            {t.gallery.aiModel}: {selectedItem.gen.outputModelTypes[selectedItem.index] === 'pro' ? t.gallery.geminiPro : t.gallery.geminiFlash}
+                            {selectedItem.gen.outputModelTypes[selectedItem.index] === 'flash' && ` ${t.gallery.fallback}`}
                           </span>
                           {selectedItem.gen.outputGenModes?.[selectedItem.index] && (
                             <span className={`ml-2 px-2 py-1 rounded text-[10px] font-medium ${
@@ -806,7 +806,7 @@ export default function GalleryPage() {
                                 ? 'bg-blue-100 text-blue-700'
                                 : 'bg-purple-100 text-purple-700'
                             }`}>
-                              {selectedItem.gen.outputGenModes[selectedItem.index] === 'simple' ? '极简模式' : '扩展模式'}
+                              {selectedItem.gen.outputGenModes[selectedItem.index] === 'simple' ? t.gallery.simpleMode : t.gallery.extendedMode}
                             </span>
                           )}
                         </div>
@@ -816,30 +816,30 @@ export default function GalleryPage() {
                         <div className="flex gap-2 flex-wrap">
                           {selectedItem.gen.params.modelStyle && selectedItem.gen.params.modelStyle !== 'auto' && (
                             <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
-                              风格: {selectedItem.gen.params.modelStyle === 'korean' ? '韩系' : 
-                                     selectedItem.gen.params.modelStyle === 'western' ? '欧美' : selectedItem.gen.params.modelStyle}
+                              {t.gallery.styleLabel}: {selectedItem.gen.params.modelStyle === 'korean' ? t.gallery.styleKorean : 
+                                     selectedItem.gen.params.modelStyle === 'western' ? t.gallery.styleWestern : selectedItem.gen.params.modelStyle}
                             </span>
                           )}
                           {selectedItem.gen.params.modelGender && (
                             <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
-                              性别: {selectedItem.gen.params.modelGender === 'male' ? '男' : 
-                                     selectedItem.gen.params.modelGender === 'female' ? '女' : 
-                                     selectedItem.gen.params.modelGender === 'boy' ? '男童' : '女童'}
+                              {t.gallery.genderLabel}: {selectedItem.gen.params.modelGender === 'male' ? t.gallery.genderMale : 
+                                     selectedItem.gen.params.modelGender === 'female' ? t.gallery.genderFemale : 
+                                     selectedItem.gen.params.modelGender === 'boy' ? t.gallery.genderBoy : t.gallery.genderGirl}
                             </span>
                           )}
                           {selectedItem.gen.params.lightType && (
                             <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
-                              光源: {selectedItem.gen.params.lightType}
+                              {t.gallery.lightType}: {selectedItem.gen.params.lightType}
                             </span>
                           )}
                           {selectedItem.gen.params.lightDirection && (
                             <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
-                              方向: {selectedItem.gen.params.lightDirection}
+                              {t.gallery.lightDirection}: {selectedItem.gen.params.lightDirection}
                             </span>
                           )}
                           {selectedItem.gen.params.lightColor && selectedItem.gen.params.lightColor !== '#FFFFFF' && (
                             <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600 flex items-center gap-1">
-                              背景色: 
+                              {t.gallery.bgColor}: 
                               <span 
                                 className="w-3 h-3 rounded-full border border-zinc-300 inline-block" 
                                 style={{ backgroundColor: selectedItem.gen.params.lightColor }}

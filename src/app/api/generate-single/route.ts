@@ -254,11 +254,11 @@ export async function POST(request: NextRequest) {
       console.log(`[${label}] Failed in ${duration}ms`)
       return NextResponse.json({ 
         success: false, 
-        error: '生成失败',
+        error: 'RESOURCE_BUSY',
         type,
         index,
         duration,
-      }, { status: 500 })
+      }, { status: 503 })
     }
     
     console.log(`[${label}] Completed in ${duration}ms`)
@@ -278,7 +278,7 @@ export async function POST(request: NextRequest) {
     console.error('[Single] Error:', error)
     return NextResponse.json({ 
       success: false, 
-      error: error.message || '生成失败' 
+      error: error.message || 'RESOURCE_BUSY' 
     }, { status: 500 })
   }
 }

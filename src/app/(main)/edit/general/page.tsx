@@ -15,6 +15,14 @@ import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
 
+// Helper to map API error codes to translated messages
+const getErrorMessage = (error: string, t: any): string => {
+  if (error === 'RESOURCE_BUSY') {
+    return t.errors?.resourceBusy || '资源紧张，请稍后重试'
+  }
+  return error
+}
+
 export default function GeneralEditPage() {
   const router = useRouter()
   const { user } = useAuth()
@@ -219,7 +227,8 @@ export default function GeneralEditPage() {
         } catch (e) {
           console.warn('[Quota] Failed to refund:', e)
         }
-        throw new Error(data.error || "编辑失败")
+        const errorMsg = getErrorMessage(data.error || "编辑失败", t)
+        throw new Error(errorMsg)
       }
     } catch (error: any) {
       console.error("Edit error:", error)
@@ -236,9 +245,10 @@ export default function GeneralEditPage() {
       
       if (isGeneratingRef.current) {
         if (error.name === 'AbortError') {
-          alert("编辑超时，请重试。建议使用较小的图片。")
+          alert(t.edit?.timeout || "编辑超时，请重试。建议使用较小的图片。")
         } else {
-          alert(error.message || "编辑失败，请重试")
+          const errorMsg = getErrorMessage(error.message, t) || t.errors?.generateFailed || "编辑失败，请重试"
+          alert(errorMsg)
         }
         setIsGenerating(false)
       }

@@ -217,6 +217,25 @@ export const en: Translations = {
     modelImages: "model images",
     processingImage: "AI is processing your image",
     loadMore: "Load More",
+    // AI Model related
+    aiModel: "Model",
+    geminiPro: "Gemini 3.0 Pro",
+    geminiFlash: "Gemini 2.5 Flash",
+    fallback: "(Fallback)",
+    simpleMode: "Simple Mode",
+    extendedMode: "Extended Mode",
+    // Generation params
+    styleLabel: "Style",
+    styleKorean: "Korean",
+    styleWestern: "Western",
+    genderLabel: "Gender",
+    genderMale: "Male",
+    genderFemale: "Female",
+    genderBoy: "Boy",
+    genderGirl: "Girl",
+    lightType: "Light",
+    lightDirection: "Direction",
+    bgColor: "Background",
   },
   
   // Brand Assets Page
@@ -308,6 +327,7 @@ export const en: Translations = {
     invalidCode: "Invalid code",
     invalidCredentials: "Invalid email or password",
     emailNotConfirmed: "Please verify your email first",
+    resourceBusy: "Resources are busy, please try again later",
   },
   
   // Quota

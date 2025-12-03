@@ -23,6 +23,14 @@ import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
 
+// Helper to map API error codes to translated messages
+const getErrorMessage = (error: string, t: any): string => {
+  if (error === 'RESOURCE_BUSY') {
+    return t.errors?.resourceBusy || '资源紧张，请稍后重试'
+  }
+  return error
+}
+
 // Gender IDs - labels come from translations
 const MODEL_GENDER_IDS: ModelGender[] = ["female", "male", "girl", "boy"]
 
@@ -502,7 +510,8 @@ export default function CameraPage() {
             // Check HTTP status first
             if (!httpResponse.ok) {
               const errorData = await httpResponse.json().catch(() => ({ error: `HTTP ${httpResponse.status}` }))
-              console.log(`Task ${i + 1}: ✗ HTTP ${httpResponse.status} (${errorData.error || 'Unknown error'})`)
+              const errorMsg = getErrorMessage(errorData.error || 'Unknown error', t)
+              console.log(`Task ${i + 1}: ✗ HTTP ${httpResponse.status} (${errorMsg})`)
               continue
             }
             
@@ -695,7 +704,8 @@ export default function CameraPage() {
         if (error.name === 'AbortError') {
           alert(t.errors.generateFailed)
         } else {
-          alert(error.message || t.errors.generateFailed)
+          const errorMsg = getErrorMessage(error.message, t) || t.errors.generateFailed
+          alert(errorMsg)
         }
         setMode("review")
       }

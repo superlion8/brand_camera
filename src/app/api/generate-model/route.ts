@@ -293,7 +293,7 @@ export async function POST(request: NextRequest) {
     console.error('[Model] Error:', error)
     return NextResponse.json({ 
       success: false, 
-      error: error.message || '生成失败' 
+      error: error.message || 'RESOURCE_BUSY' 
     }, { status: 500 })
   }
 }
