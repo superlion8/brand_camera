@@ -13,8 +13,8 @@ const PRIMARY_IMAGE_MODEL = 'gemini-3-pro-image-preview'
 const FALLBACK_IMAGE_MODEL = 'gemini-2.5-flash-image'
 
 // Retry config - prioritize primary model
-const PRIMARY_RETRY_COUNT = 2       // Retry primary model up to 2 times on 429
-const PRIMARY_RETRY_DELAY_MS = 3000 // Wait 3 seconds before retry
+const PRIMARY_RETRY_COUNT = 0       // Pro 失败直接降级，不重试
+const PRIMARY_RETRY_DELAY_MS = 0
 const BATCH_DELAY_MS = 1500         // Delay between batches
 
 // Result type with model info
