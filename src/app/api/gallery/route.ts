@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
         if (!gen.output_image_urls || !Array.isArray(gen.output_image_urls)) {
           return []
         }
-        return gen.output_image_urls.map((url, index) => ({
+        return gen.output_image_urls.map((url: string, index: number) => ({
           id: `${gen.id}-${index}`,
           generationId: gen.id,
           imageIndex: index,

@@ -234,15 +234,26 @@ export default function GalleryPage() {
     idx: item.imageIndex
   }))
   
+  // 检查图片是否已收藏
+  const isFavorited = (generationId: string, imageIndex: number): boolean => {
+    // 在收藏页，所有图片都是已收藏的
+    if (activeTab === 'favorites') return true
+    // 检查 item ID 是否以 fav- 开头（收藏项）
+    const item = galleryItems.find(i => i.generationId === generationId && i.imageIndex === imageIndex)
+    return item?.id?.startsWith('fav-') || false
+  }
+  
   const handleFavoriteToggle = async (generationId: string, imageIndex: number) => {
     try {
       // 检查是否已收藏
       const item = galleryItems.find(i => i.generationId === generationId && i.imageIndex === imageIndex)
-      const isFavorited = activeTab === 'favorites' || item?.id?.startsWith('fav-')
+      // 在收藏页或ID以fav-开头的都是已收藏
+      const isOnFavoritesTab = activeTab === 'favorites'
+      const isItemFavorited = isOnFavoritesTab || item?.id?.startsWith('fav-')
       
-      if (isFavorited) {
+      if (isItemFavorited) {
         // 取消收藏
-        const response = await fetch(`/api/favorites/${item.id}`, { method: 'DELETE' })
+        const response = await fetch(`/api/favorites/${item?.id}`, { method: 'DELETE' })
         if (response.ok) {
           // 刷新列表
           fetchGalleryData(1, false)
@@ -255,8 +266,8 @@ export default function GalleryPage() {
           body: JSON.stringify({ generationId, imageIndex })
         })
         if (response.ok) {
-          // 如果在收藏页，刷新列表
-          if (activeTab === 'favorites') {
+          // 如果在收藏页，刷新列表（添加收藏后需要显示新的收藏项）
+          if (isOnFavoritesTab) {
             fetchGalleryData(1, false)
           }
         }
@@ -481,8 +492,8 @@ export default function GalleryPage() {
           </div>
         </div>
         
-        {/* 同步中状态条 - 显示在图片列表上方 */}
-        {isSyncing && (
+        {/* 加载中状态条 - 显示在图片列表上方 */}
+        {isRefreshing && (
           <div 
             className="flex items-center justify-center gap-2 py-2 mb-3 bg-blue-50 border border-blue-100 rounded-xl transition-transform duration-200"
             style={{ transform: `translateY(${pullDistance}px)` }}
@@ -614,9 +625,9 @@ export default function GalleryPage() {
         )}
         
         {/* 空状态 - 加载完成后没有数据时显示 */}
-        {!isInitialLoading && displayedHistory.length === 0 && activeTasks.length === 0 && completedTasksToShow.length === 0 && (
+        {!isLoading && displayedHistory.length === 0 && activeTasks.length === 0 && completedTasksToShow.length === 0 && (
           <div className="flex flex-col items-center justify-center h-64 text-zinc-400">
-            {isSyncing ? (
+            {isRefreshing ? (
               <>
                 <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mb-4">
                   <RefreshCw className="w-8 h-8 text-blue-400 animate-spin" />
