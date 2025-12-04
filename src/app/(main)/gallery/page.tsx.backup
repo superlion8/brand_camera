@@ -55,61 +55,28 @@ export default function GalleryPage() {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const PULL_THRESHOLD = 80
   
-  // 使用 API 获取数据，不再从 store 读取
-  const [galleryItems, setGalleryItems] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [hasMore, setHasMore] = useState(false)
-  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const { 
+    generations, 
+    favorites, 
+    _hasHydrated, 
+    addFavorite, 
+    removeFavorite, 
+    isFavorited, 
+    deleteGeneration,
+    deleteGenerationImage,
+    addUserAsset,
+    isSyncing: storeSyncing,
+    isInitialLoading,
+    syncWithCloud,
+    loadMoreGenerations,
+    hasMoreGenerations,
+  } = useAssetStore()
   
-  const { addUserAsset } = useAssetStore()
-  const { user } = useAuth()
+  const { isSyncing: authSyncing, user } = useAuth()
+  const isSyncing = authSyncing || storeSyncing
   const { tasks, removeTask } = useGenerationTaskStore()
   const { debugMode } = useSettingsStore()
   const { t } = useTranslation()
-  
-  // 从 API 获取图库数据
-  const fetchGalleryData = async (page: number = 1, append: boolean = false) => {
-    if (!user) return
-    
-    try {
-      if (!append) setIsLoading(true)
-      else setIsLoadingMore(true)
-      
-      const response = await fetch(`/api/gallery?type=${activeTab}&page=${page}`)
-      const result = await response.json()
-      
-      if (result.success) {
-        if (append) {
-          setGalleryItems(prev => [...prev, ...result.data.items])
-        } else {
-          setGalleryItems(result.data.items)
-        }
-        setHasMore(result.data.hasMore)
-        setCurrentPage(page)
-      }
-    } catch (error) {
-      console.error('Failed to fetch gallery data:', error)
-    } finally {
-      setIsLoading(false)
-      setIsLoadingMore(false)
-      setIsRefreshing(false)
-    }
-  }
-  
-  // 加载更多
-  const loadMore = () => {
-    if (!isLoadingMore && hasMore) {
-      fetchGalleryData(currentPage + 1, true)
-    }
-  }
-  
-  // 当 tab 切换或用户登录时重新加载
-  useEffect(() => {
-    if (user) {
-      fetchGalleryData(1, false)
-    }
-  }, [activeTab, user])
   
   // Helper to get display label for generation type
   // debugMode controls whether to show sub-labels (极简/扩展)
@@ -142,38 +109,43 @@ export default function GalleryPage() {
   }
   
   // Get tasks that need to show imageSlot cards
-  // Include: pending, generating, AND completed tasks that haven't been synced yet
+  // Include: pending, generating, AND completed tasks that haven't been synced to generations yet
   const activeTasks = tasks.filter(t => {
     // Always show pending/generating
     if (t.status === 'pending' || t.status === 'generating') return true
-    // For completed tasks with imageSlots, show until synced
+    // For completed tasks with imageSlots, show until synced to generations
     if (t.status === 'completed' && t.imageSlots && t.imageSlots.length > 0) {
-      // Check if this task's images are already in gallery items
-      const isSynced = galleryItems.some(item => 
-        t.outputImageUrls.some(url => url && item.imageUrl === url)
+      // Check if this task's images are already in generations
+      const isSynced = generations.some(gen => 
+        t.outputImageUrls.some(url => url && gen.outputImageUrls?.includes(url))
       )
       return !isSynced // Show if not yet synced
     }
     return false
   })
   
-  // Get completed tasks that might not yet be in gallery (legacy - no imageSlots)
+  // Get completed tasks that might not yet be in generations store (legacy - no imageSlots)
   const completedTasks = tasks.filter(t => t.status === 'completed' && !t.imageSlots)
   
-  // Track which completed tasks have their images in the gallery
+  // Track which completed tasks have their generations in the store
+  // We need to keep showing completed task cards until generation is definitely visible
   const completedTasksWithImages = completedTasks.filter(task => 
     task.outputImageUrls && task.outputImageUrls.length > 0
   )
   
-  // Check which completed tasks already have their images in gallery
+  // Check which completed tasks already have their generation in the store
   const tasksToHide = completedTasksWithImages.filter(task => {
-    // Match by comparing output URLs
-    return galleryItems.some(item => 
-      task.outputImageUrls.some(url => url && item.imageUrl === url)
-    )
+    // Match by comparing output URLs (more reliable than input URL)
+    return generations.some(gen => {
+      if (!gen.outputImageUrls || gen.outputImageUrls.length === 0) return false
+      // Check if any output URL matches
+      return task.outputImageUrls.some(url => 
+        gen.outputImageUrls.includes(url)
+      )
+    })
   })
   
-  // Only show completed tasks that DON'T have their images in gallery yet
+  // Only show completed tasks that DON'T have their generation in the store yet
   const completedTasksToShow = completedTasksWithImages.filter(
     task => !tasksToHide.some(t => t.id === task.id)
   )
@@ -182,7 +154,7 @@ export default function GalleryPage() {
   useEffect(() => {
     const timers: NodeJS.Timeout[] = []
     
-    // Remove tasks that already have their images in gallery
+    // Remove tasks that already have their generation in the store
     tasksToHide.forEach(task => {
       // Add a small delay to ensure smooth transition
       const timer = setTimeout(() => removeTask(task.id), 500)
@@ -205,7 +177,7 @@ export default function GalleryPage() {
     return () => {
       timers.forEach(timer => clearTimeout(timer))
     }
-  }, [tasksToHide, completedTasks, tasks, removeTask, galleryItems])
+  }, [tasksToHide, completedTasks, tasks, removeTask])
   
   // Clear save success message
   useEffect(() => {
@@ -215,8 +187,8 @@ export default function GalleryPage() {
     }
   }, [saveSuccess])
   
-  // Show loading state
-  if (isLoading && !user) {
+  // Show loading state until hydrated
+  if (!_hasHydrated) {
     return (
       <div className="h-full w-full bg-white flex items-center justify-center">
         <div className="text-center">
@@ -227,42 +199,58 @@ export default function GalleryPage() {
     )
   }
   
-  // 显示的图片列表（来自 API）
-  const displayedHistory = galleryItems.map(item => ({
-    gen: item.generation,
-    url: item.imageUrl,
-    idx: item.imageIndex
-  }))
+  // Filter images based on tab
+  const getDisplayedHistory = (): { gen: Generation; url: string; idx: number }[] => {
+    const validGenerations = generations.filter(
+      (gen: Generation) => gen.outputImageUrls && Array.isArray(gen.outputImageUrls) && gen.outputImageUrls.length > 0
+    )
+    
+    switch (activeTab) {
+      case "model":
+        return validGenerations
+          .filter((gen: Generation) => isModelType(gen))
+          .flatMap((gen: Generation) => 
+            (gen.outputImageUrls || []).map((url: string, idx: number) => ({ gen, url, idx }))
+          )
+      case "product":
+        return validGenerations
+          .filter((gen: Generation) => isProductType(gen))
+          .flatMap((gen: Generation) => 
+            (gen.outputImageUrls || []).map((url: string, idx: number) => ({ gen, url, idx }))
+          )
+      case "favorites":
+        return favorites.map((fav: Favorite) => {
+          const gen = validGenerations.find((g: Generation) => g.id === fav.generationId)
+          if (!gen) return null
+          const url = gen.outputImageUrls?.[fav.imageIndex]
+          if (!url) return null
+          return { gen, url, idx: fav.imageIndex }
+        }).filter((item): item is { gen: Generation; url: string; idx: number } => item !== null)
+      default:
+        return validGenerations.flatMap((gen: Generation) => 
+          (gen.outputImageUrls || []).map((url: string, idx: number) => ({ gen, url, idx }))
+        )
+    }
+  }
+  
+  const displayedHistory = getDisplayedHistory()
   
   const handleFavoriteToggle = async (generationId: string, imageIndex: number) => {
-    try {
-      // 检查是否已收藏
-      const item = galleryItems.find(i => i.generationId === generationId && i.imageIndex === imageIndex)
-      const isFavorited = activeTab === 'favorites' || item?.id?.startsWith('fav-')
-      
-      if (isFavorited) {
-        // 取消收藏
-        const response = await fetch(`/api/favorites/${item.id}`, { method: 'DELETE' })
-        if (response.ok) {
-          // 刷新列表
-          fetchGalleryData(1, false)
-        }
-      } else {
-        // 添加收藏
-        const response = await fetch('/api/favorites', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ generationId, imageIndex })
-        })
-        if (response.ok) {
-          // 如果在收藏页，刷新列表
-          if (activeTab === 'favorites') {
-            fetchGalleryData(1, false)
-          }
-        }
+    const currentlyFavorited = isFavorited(generationId, imageIndex)
+    
+    if (currentlyFavorited) {
+      const fav = favorites.find(
+        (f: Favorite) => f.generationId === generationId && f.imageIndex === imageIndex
+      )
+      if (fav) {
+        await removeFavorite(fav.id)
       }
-    } catch (error) {
-      console.error('Failed to toggle favorite:', error)
+    } else {
+      await addFavorite({
+        generationId,
+        imageIndex,
+        createdAt: new Date().toISOString(),
+      })
     }
   }
   
@@ -347,7 +335,7 @@ export default function GalleryPage() {
       setPullDistance(PULL_THRESHOLD) // Keep at threshold during refresh
       
       try {
-        await fetchGalleryData(1, false)
+        await syncWithCloud(user.id)
       } catch (error) {
         console.error('Refresh failed:', error)
       } finally {
@@ -363,17 +351,10 @@ export default function GalleryPage() {
     if (!selectedItem) return
     
     try {
-      // 软删除整个 generation
-      const response = await fetch(`/api/generations/${selectedItem.gen.id}`, {
-        method: 'DELETE'
-      })
-      
-      if (response.ok) {
-        // 刷新列表
-        fetchGalleryData(1, false)
-        setSelectedItem(null)
-        setShowDeleteConfirm(false)
-      }
+      // Delete only the selected image, not the entire generation
+      await deleteGenerationImage(selectedItem.gen.id, selectedItem.index)
+      setSelectedItem(null)
+      setShowDeleteConfirm(false)
     } catch (error) {
       console.error("Delete failed:", error)
     }
@@ -561,7 +542,7 @@ export default function GalleryPage() {
                 {/* Favorite button */}
                 <button 
                   className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-colors ${
-                    activeTab === 'favorites' 
+                    isFavorited(item.gen.id, item.idx) 
                       ? "bg-red-500 text-white" 
                       : "bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500"
                   }`}
@@ -570,7 +551,7 @@ export default function GalleryPage() {
                     handleFavoriteToggle(item.gen.id, item.idx)
                   }}
                 >
-                  <Heart className={`w-4 h-4 ${activeTab === 'favorites' ? "fill-current" : ""}`} />
+                  <Heart className={`w-4 h-4 ${isFavorited(item.gen.id, item.idx) ? "fill-current" : ""}`} />
                 </button>
                 
                 {/* Date overlay */}
@@ -585,14 +566,14 @@ export default function GalleryPage() {
         </div>
         
         {/* Load More Button - 所有tab都显示 */}
-        {hasMore && displayedHistory.length > 0 && (
+        {hasMoreGenerations && displayedHistory.length > 0 && (
           <div className="flex justify-center py-4">
             <button
-              onClick={loadMore}
-              disabled={isLoadingMore}
+              onClick={() => loadMoreGenerations()}
+              disabled={storeSyncing}
               className="px-6 py-2.5 bg-zinc-100 hover:bg-zinc-200 disabled:bg-zinc-50 text-zinc-700 disabled:text-zinc-400 rounded-full text-sm font-medium transition-colors flex items-center gap-2"
             >
-              {isLoadingMore ? (
+              {storeSyncing ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
                   {t.common.loading}
@@ -605,7 +586,7 @@ export default function GalleryPage() {
         )}
         
         {/* 骨架屏 - 首次加载时显示 */}
-        {isLoading && displayedHistory.length === 0 && (
+        {isInitialLoading && displayedHistory.length === 0 && (
           <div className="grid grid-cols-2 gap-3">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl animate-pulse" />
