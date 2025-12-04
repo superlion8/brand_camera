@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
       // Daily overview statistics
       let genQuery = adminClient
         .from('generations')
-        .select('id, user_id, user_email, task_type, total_images_count, created_at')
+        .select('id, user_id, user_email, task_type, total_images_count, status, output_image_urls, created_at')
         .order('created_at', { ascending: false })
       
       // Apply date filters
@@ -73,6 +73,9 @@ export async function GET(request: NextRequest) {
         uniqueUsers: Set<string>
         tasks: number
         images: number
+        successImages: number
+        failedImages: number
+        pendingImages: number
         favorites: number
         downloads: number
       }> = {}
@@ -80,11 +83,35 @@ export async function GET(request: NextRequest) {
       generations?.forEach(gen => {
         const date = gen.created_at.split('T')[0]
         if (!dailyStats[date]) {
-          dailyStats[date] = { date, uniqueUsers: new Set(), tasks: 0, images: 0, favorites: 0, downloads: 0 }
+          dailyStats[date] = { 
+            date, 
+            uniqueUsers: new Set(), 
+            tasks: 0, 
+            images: 0, 
+            successImages: 0,
+            failedImages: 0,
+            pendingImages: 0,
+            favorites: 0, 
+            downloads: 0 
+          }
         }
         dailyStats[date].uniqueUsers.add(gen.user_id)
         dailyStats[date].tasks++
-        dailyStats[date].images += gen.total_images_count || 0
+        
+        const totalCount = gen.total_images_count || 0
+        const successCount = gen.output_image_urls?.filter((url: string) => url && url.length > 0).length || 0
+        
+        dailyStats[date].images += totalCount
+        
+        if (gen.status === 'completed') {
+          dailyStats[date].successImages += successCount
+          dailyStats[date].failedImages += Math.max(0, totalCount - successCount)
+        } else if (gen.status === 'failed') {
+          dailyStats[date].failedImages += totalCount
+        } else {
+          // pending or processing
+          dailyStats[date].pendingImages += totalCount
+        }
       })
       
       favorites?.forEach(fav => {
@@ -97,7 +124,17 @@ export async function GET(request: NextRequest) {
       downloads?.forEach(dl => {
         const date = dl.created_at.split('T')[0]
         if (!dailyStats[date]) {
-          dailyStats[date] = { date, uniqueUsers: new Set(), tasks: 0, images: 0, favorites: 0, downloads: 0 }
+          dailyStats[date] = { 
+            date, 
+            uniqueUsers: new Set(), 
+            tasks: 0, 
+            images: 0, 
+            successImages: 0,
+            failedImages: 0,
+            pendingImages: 0,
+            favorites: 0, 
+            downloads: 0 
+          }
         }
         dailyStats[date].downloads++
       })
@@ -108,6 +145,9 @@ export async function GET(request: NextRequest) {
           uniqueUsers: d.uniqueUsers.size,
           tasks: d.tasks,
           images: d.images,
+          successImages: d.successImages,
+          failedImages: d.failedImages,
+          pendingImages: d.pendingImages,
           favorites: d.favorites,
           downloads: d.downloads,
         }))
@@ -115,10 +155,31 @@ export async function GET(request: NextRequest) {
         .slice(0, 30) // Last 30 days
       
       // Totals
+      let totalSuccessImages = 0
+      let totalFailedImages = 0
+      let totalPendingImages = 0
+      
+      generations?.forEach(gen => {
+        const totalCount = gen.total_images_count || 0
+        const successCount = gen.output_image_urls?.filter((url: string) => url && url.length > 0).length || 0
+        
+        if (gen.status === 'completed') {
+          totalSuccessImages += successCount
+          totalFailedImages += Math.max(0, totalCount - successCount)
+        } else if (gen.status === 'failed') {
+          totalFailedImages += totalCount
+        } else {
+          totalPendingImages += totalCount
+        }
+      })
+      
       const totals = {
         totalUsers: new Set(generations?.map(g => g.user_id) || []).size,
         totalTasks: generations?.length || 0,
         totalImages: generations?.reduce((sum, g) => sum + (g.total_images_count || 0), 0) || 0,
+        totalSuccessImages,
+        totalFailedImages,
+        totalPendingImages,
         totalFavorites: favorites?.length || 0,
         totalDownloads: downloads?.length || 0,
       }
@@ -130,7 +191,7 @@ export async function GET(request: NextRequest) {
       // Statistics by task type
       let genQuery = adminClient
         .from('generations')
-        .select('id, user_id, task_type, total_images_count, created_at')
+        .select('id, user_id, task_type, total_images_count, status, output_image_urls, created_at')
       
       if (dateFrom) genQuery = genQuery.gte('created_at', dateFrom)
       if (dateTo) genQuery = genQuery.lte('created_at', dateTo + 'T23:59:59')
@@ -187,6 +248,9 @@ export async function GET(request: NextRequest) {
         uniqueUsers: Set<string>
         tasks: number
         images: number
+        successImages: number
+        failedImages: number
+        pendingImages: number
         favorites: number
         downloads: number
       }> = {}
@@ -194,11 +258,35 @@ export async function GET(request: NextRequest) {
       generations?.forEach(gen => {
         const type = gen.task_type || 'unknown'
         if (!byType[type]) {
-          byType[type] = { type, uniqueUsers: new Set(), tasks: 0, images: 0, favorites: 0, downloads: 0 }
+          byType[type] = { 
+            type, 
+            uniqueUsers: new Set(), 
+            tasks: 0, 
+            images: 0, 
+            successImages: 0,
+            failedImages: 0,
+            pendingImages: 0,
+            favorites: 0, 
+            downloads: 0 
+          }
         }
         byType[type].uniqueUsers.add(gen.user_id)
         byType[type].tasks++
-        byType[type].images += gen.total_images_count || 0
+        
+        const totalCount = gen.total_images_count || 0
+        const successCount = gen.output_image_urls?.filter((url: string) => url && url.length > 0).length || 0
+        
+        byType[type].images += totalCount
+        
+        if (gen.status === 'completed') {
+          byType[type].successImages += successCount
+          byType[type].failedImages += Math.max(0, totalCount - successCount)
+        } else if (gen.status === 'failed') {
+          byType[type].failedImages += totalCount
+        } else {
+          byType[type].pendingImages += totalCount
+        }
+        
         byType[type].favorites += favCountByGen[gen.id] || 0
         byType[type].downloads += downloadCountByGen[gen.id] || 0
       })
@@ -210,6 +298,9 @@ export async function GET(request: NextRequest) {
         uniqueUsers: d.uniqueUsers.size,
         tasks: d.tasks,
         images: d.images,
+        successImages: d.successImages,
+        failedImages: d.failedImages,
+        pendingImages: d.pendingImages,
         favorites: d.favorites,
         downloads: d.downloads,
       }))
@@ -221,7 +312,7 @@ export async function GET(request: NextRequest) {
       // Statistics by user
       let genQuery = adminClient
         .from('generations')
-        .select('id, user_id, user_email, task_type, total_images_count, created_at')
+        .select('id, user_id, user_email, task_type, total_images_count, status, output_image_urls, created_at')
       
       if (dateFrom) genQuery = genQuery.gte('created_at', dateFrom)
       if (dateTo) genQuery = genQuery.lte('created_at', dateTo + 'T23:59:59')
@@ -279,9 +370,20 @@ export async function GET(request: NextRequest) {
         userId: string
         totalTasks: number
         totalImages: number
+        totalSuccessImages: number
+        totalFailedImages: number
+        totalPendingImages: number
         totalFavorites: number
         totalDownloads: number
-        byType: Record<string, { tasks: number; images: number; favorites: number; downloads: number }>
+        byType: Record<string, { 
+          tasks: number
+          images: number
+          successImages: number
+          failedImages: number
+          pendingImages: number
+          favorites: number
+          downloads: number 
+        }>
       }> = {}
       
       generations?.forEach(gen => {
@@ -292,20 +394,54 @@ export async function GET(request: NextRequest) {
             userId: gen.user_id,
             totalTasks: 0,
             totalImages: 0,
+            totalSuccessImages: 0,
+            totalFailedImages: 0,
+            totalPendingImages: 0,
             totalFavorites: favCountByUser[gen.user_id] || 0,
             totalDownloads: downloadCountByUser[gen.user_id] || 0,
             byType: {},
           }
         }
         byUser[gen.user_id].totalTasks++
-        byUser[gen.user_id].totalImages += gen.total_images_count || 0
+        
+        const totalCount = gen.total_images_count || 0
+        const successCount = gen.output_image_urls?.filter((url: string) => url && url.length > 0).length || 0
+        
+        byUser[gen.user_id].totalImages += totalCount
+        
+        if (gen.status === 'completed') {
+          byUser[gen.user_id].totalSuccessImages += successCount
+          byUser[gen.user_id].totalFailedImages += Math.max(0, totalCount - successCount)
+        } else if (gen.status === 'failed') {
+          byUser[gen.user_id].totalFailedImages += totalCount
+        } else {
+          byUser[gen.user_id].totalPendingImages += totalCount
+        }
         
         const type = gen.task_type || 'unknown'
         if (!byUser[gen.user_id].byType[type]) {
-          byUser[gen.user_id].byType[type] = { tasks: 0, images: 0, favorites: 0, downloads: 0 }
+          byUser[gen.user_id].byType[type] = { 
+            tasks: 0, 
+            images: 0, 
+            successImages: 0,
+            failedImages: 0,
+            pendingImages: 0,
+            favorites: 0, 
+            downloads: 0 
+          }
         }
         byUser[gen.user_id].byType[type].tasks++
-        byUser[gen.user_id].byType[type].images += gen.total_images_count || 0
+        byUser[gen.user_id].byType[type].images += totalCount
+        
+        if (gen.status === 'completed') {
+          byUser[gen.user_id].byType[type].successImages += successCount
+          byUser[gen.user_id].byType[type].failedImages += Math.max(0, totalCount - successCount)
+        } else if (gen.status === 'failed') {
+          byUser[gen.user_id].byType[type].failedImages += totalCount
+        } else {
+          byUser[gen.user_id].byType[type].pendingImages += totalCount
+        }
+        
         byUser[gen.user_id].byType[type].favorites += favCountByGen[gen.id] || 0
         byUser[gen.user_id].byType[type].downloads += downloadCountByGen[gen.id] || 0
       })
@@ -390,6 +526,11 @@ export async function GET(request: NextRequest) {
         const modelUrl = gen.model_image_url || inputParams.modelImage || inputParams.modelImageUrl || ''
         const bgUrl = gen.background_image_url || inputParams.backgroundImage || inputParams.backgroundImageUrl || ''
         
+        // Calculate success/failed counts
+        const totalCount = gen.total_images_count || 0
+        const successCount = outputUrls.filter((url: string) => url && url.length > 0).length
+        const failedCount = gen.status === 'failed' ? totalCount : Math.max(0, totalCount - successCount)
+        
         return {
           id: gen.id,
           taskId: gen.task_id,
@@ -401,7 +542,9 @@ export async function GET(request: NextRequest) {
           modelImageUrl: modelUrl,
           backgroundImageUrl: bgUrl,
           outputImageUrls: outputUrls,
-          totalImages: gen.total_images_count || outputUrls.length || 0,
+          totalImages: totalCount,
+          successImages: gen.status === 'failed' ? 0 : successCount,
+          failedImages: failedCount,
           simpleCount: gen.simple_mode_count || 0,
           extendedCount: gen.extended_mode_count || 0,
           favoritedIndices: favByGen[gen.id] || [],
@@ -424,4 +567,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
-

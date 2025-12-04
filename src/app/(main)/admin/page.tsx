@@ -16,6 +16,9 @@ interface DailyStat {
   uniqueUsers: number
   tasks: number
   images: number
+  successImages: number
+  failedImages: number
+  pendingImages: number
   favorites: number
   downloads: number
 }
@@ -25,6 +28,9 @@ interface TypeStat {
   uniqueUsers: number
   tasks: number
   images: number
+  successImages: number
+  failedImages: number
+  pendingImages: number
   favorites: number
   downloads: number
 }
@@ -34,9 +40,12 @@ interface UserStat {
   userId: string
   totalTasks: number
   totalImages: number
+  totalSuccessImages: number
+  totalFailedImages: number
+  totalPendingImages: number
   totalFavorites: number
   totalDownloads: number
-  byType: Record<string, { tasks: number; images: number; favorites: number; downloads: number }>
+  byType: Record<string, { tasks: number; images: number; successImages: number; failedImages: number; pendingImages: number; favorites: number; downloads: number }>
 }
 
 interface TaskDetail {
@@ -81,7 +90,7 @@ export default function AdminDashboard() {
   
   // Data states
   const [overview, setOverview] = useState<DailyStat[]>([])
-  const [totals, setTotals] = useState({ totalUsers: 0, totalTasks: 0, totalImages: 0, totalFavorites: 0, totalDownloads: 0 })
+  const [totals, setTotals] = useState({ totalUsers: 0, totalTasks: 0, totalImages: 0, totalSuccessImages: 0, totalFailedImages: 0, totalPendingImages: 0, totalFavorites: 0, totalDownloads: 0 })
   const [byType, setByType] = useState<TypeStat[]>([])
   const [byUser, setByUser] = useState<UserStat[]>([])
   const [details, setDetails] = useState<TaskDetail[]>([])
@@ -130,7 +139,7 @@ export default function AdminDashboard() {
       
       if (tab === 'overview') {
         setOverview(data.overview || [])
-        setTotals(data.totals || { totalUsers: 0, totalTasks: 0, totalImages: 0, totalFavorites: 0, totalDownloads: 0 })
+        setTotals(data.totals || { totalUsers: 0, totalTasks: 0, totalImages: 0, totalSuccessImages: 0, totalFailedImages: 0, totalPendingImages: 0, totalFavorites: 0, totalDownloads: 0 })
       } else if (tab === 'by-type') {
         setByType(data.byType || [])
       } else if (tab === 'by-user') {
@@ -362,6 +371,7 @@ export default function AdminDashboard() {
                 value={totals.totalImages} 
                 icon={ImageIcon}
                 color="bg-purple-500"
+                subValue={`✓${totals.totalSuccessImages} ✗${totals.totalFailedImages} ⏳${totals.totalPendingImages}`}
               />
               <StatCard 
                 label="总收藏数" 
@@ -390,6 +400,8 @@ export default function AdminDashboard() {
                       <th className="px-4 py-3 text-right font-medium text-zinc-500">用户数</th>
                       <th className="px-4 py-3 text-right font-medium text-zinc-500">任务数</th>
                       <th className="px-4 py-3 text-right font-medium text-zinc-500">图片数</th>
+                      <th className="px-4 py-3 text-right font-medium text-green-600">成功</th>
+                      <th className="px-4 py-3 text-right font-medium text-red-500">失败</th>
                       <th className="px-4 py-3 text-right font-medium text-zinc-500">收藏数</th>
                       <th className="px-4 py-3 text-right font-medium text-zinc-500">下载数</th>
                     </tr>
@@ -397,13 +409,13 @@ export default function AdminDashboard() {
                   <tbody>
                     {isLoading ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-zinc-400">
+                        <td colSpan={8} className="px-4 py-8 text-center text-zinc-400">
                           <Loader2 className="w-6 h-6 animate-spin mx-auto" />
                         </td>
                       </tr>
                     ) : overview.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-zinc-400">暂无数据</td>
+                        <td colSpan={8} className="px-4 py-8 text-center text-zinc-400">暂无数据</td>
                       </tr>
                     ) : overview.map(day => (
                       <tr key={day.date} className="border-t border-zinc-100 hover:bg-zinc-50">
@@ -411,6 +423,8 @@ export default function AdminDashboard() {
                         <td className="px-4 py-3 text-right text-zinc-600">{day.uniqueUsers}</td>
                         <td className="px-4 py-3 text-right text-zinc-600">{day.tasks}</td>
                         <td className="px-4 py-3 text-right text-zinc-600">{day.images}</td>
+                        <td className="px-4 py-3 text-right text-green-600 font-medium">{day.successImages || 0}</td>
+                        <td className="px-4 py-3 text-right text-red-500 font-medium">{day.failedImages || 0}</td>
                         <td className="px-4 py-3 text-right text-zinc-600">{day.favorites}</td>
                         <td className="px-4 py-3 text-right text-cyan-600 font-medium">{day.downloads || 0}</td>
                       </tr>
@@ -436,6 +450,8 @@ export default function AdminDashboard() {
                     <th className="px-4 py-3 text-right font-medium text-zinc-500">用户数</th>
                     <th className="px-4 py-3 text-right font-medium text-zinc-500">任务数</th>
                     <th className="px-4 py-3 text-right font-medium text-zinc-500">图片数</th>
+                    <th className="px-4 py-3 text-right font-medium text-green-600">成功</th>
+                    <th className="px-4 py-3 text-right font-medium text-red-500">失败</th>
                     <th className="px-4 py-3 text-right font-medium text-zinc-500">收藏数</th>
                     <th className="px-4 py-3 text-right font-medium text-zinc-500">下载数</th>
                   </tr>
@@ -443,13 +459,13 @@ export default function AdminDashboard() {
                 <tbody>
                   {isLoading ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-zinc-400">
+                      <td colSpan={8} className="px-4 py-8 text-center text-zinc-400">
                         <Loader2 className="w-6 h-6 animate-spin mx-auto" />
                       </td>
                     </tr>
                   ) : byType.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-zinc-400">暂无数据</td>
+                      <td colSpan={8} className="px-4 py-8 text-center text-zinc-400">暂无数据</td>
                     </tr>
                   ) : byType.map(item => {
                     const typeInfo = TASK_TYPE_LABELS[item.type] || TASK_TYPE_LABELS['unknown']
@@ -467,6 +483,8 @@ export default function AdminDashboard() {
                         <td className="px-4 py-3 text-right text-zinc-600">{item.uniqueUsers}</td>
                         <td className="px-4 py-3 text-right text-zinc-600">{item.tasks}</td>
                         <td className="px-4 py-3 text-right text-zinc-600">{item.images}</td>
+                        <td className="px-4 py-3 text-right text-green-600 font-medium">{item.successImages || 0}</td>
+                        <td className="px-4 py-3 text-right text-red-500 font-medium">{item.failedImages || 0}</td>
                         <td className="px-4 py-3 text-right text-zinc-600">{item.favorites}</td>
                         <td className="px-4 py-3 text-right text-cyan-600 font-medium">{item.downloads || 0}</td>
                       </tr>
@@ -513,6 +531,8 @@ export default function AdminDashboard() {
                         <div className="flex items-center gap-4 text-xs text-zinc-500">
                           <span>{user.totalTasks} 任务</span>
                           <span>{user.totalImages} 图片</span>
+                          <span className="text-green-600">✓{user.totalSuccessImages || 0}</span>
+                          <span className="text-red-500">✗{user.totalFailedImages || 0}</span>
                           <span>{user.totalFavorites} 收藏</span>
                           <span className="text-cyan-600">{user.totalDownloads || 0} 下载</span>
                         </div>
@@ -530,7 +550,7 @@ export default function AdminDashboard() {
                                   </span>
                                   <div className="text-zinc-600 space-y-0.5">
                                     <p>{stats.tasks} 任务</p>
-                                    <p>{stats.images} 图片</p>
+                                    <p>{stats.images} 图片 <span className="text-green-600">✓{stats.successImages || 0}</span> <span className="text-red-500">✗{stats.failedImages || 0}</span></p>
                                     <p>{stats.favorites} 收藏</p>
                                     <p className="text-cyan-600">{stats.downloads || 0} 下载</p>
                                   </div>
@@ -1039,12 +1059,14 @@ function StatCard({
   label, 
   value, 
   icon: Icon, 
-  color 
+  color,
+  subValue 
 }: { 
   label: string
   value: number
   icon: React.ElementType
   color: string
+  subValue?: string
 }) {
   return (
     <div className="bg-white rounded-xl border border-zinc-100 p-4">
@@ -1055,6 +1077,7 @@ function StatCard({
         <div>
           <p className="text-2xl font-bold text-zinc-900">{value.toLocaleString()}</p>
           <p className="text-xs text-zinc-500">{label}</p>
+          {subValue && <p className="text-[10px] text-zinc-400 mt-0.5">{subValue}</p>}
         </div>
       </div>
     </div>
