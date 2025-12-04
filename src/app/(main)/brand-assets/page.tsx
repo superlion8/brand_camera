@@ -55,9 +55,10 @@ export default function BrandAssetsPage() {
     isPresetPinned,
     _hasHydrated,
     isSyncing: storeSyncing,
+    isInitialLoading,
   } = useAssetStore()
   
-  const isSyncing = authSyncing || storeSyncing
+  const isSyncing = authSyncing || storeSyncing || isInitialLoading
   
   const getUserAssets = (type: AssetType): Asset[] => {
     switch (type) {
@@ -246,6 +247,14 @@ export default function BrandAssetsPage() {
       
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4 pb-24">
+        {/* 初始加载时显示同步中提示 */}
+        {isInitialLoading && activeSource === "user" && (
+          <div className="flex items-center justify-center gap-2 py-3 mb-4 bg-blue-50 border border-blue-100 rounded-lg">
+            <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
+            <span className="text-sm text-blue-600">{t.user.syncing}</span>
+          </div>
+        )}
+        
         {displayAssets.length > 0 ? (
           <div className="grid grid-cols-2 gap-3">
             {displayAssets.map((asset) => (
@@ -261,6 +270,13 @@ export default function BrandAssetsPage() {
                 }
                 onZoom={() => setZoomImage(asset.imageUrl)}
               />
+            ))}
+          </div>
+        ) : isInitialLoading && activeSource === "user" ? (
+          // 初始加载中显示骨架屏
+          <div className="grid grid-cols-2 gap-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="aspect-square bg-zinc-100 rounded-xl animate-pulse" />
             ))}
           </div>
         ) : (
