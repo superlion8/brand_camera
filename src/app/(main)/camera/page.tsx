@@ -20,6 +20,7 @@ import Image from "next/image"
 import { PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_PRODUCTS, getRandomModel, getRandomBackground } from "@/data/presets"
 import { useQuota } from "@/hooks/useQuota"
 import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
+import { BottomNav } from "@/components/shared/BottomNav"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
 
@@ -1681,6 +1682,9 @@ export default function CameraPage() {
                 {t.camera.returnHome}
               </button>
             </div>
+            
+            {/* Bottom Navigation */}
+            <BottomNav forceShow />
           </motion.div>
         )}
 
@@ -1702,7 +1706,7 @@ export default function CameraPage() {
               <span className="font-semibold ml-2">本次成片</span>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-24">
+            <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-8">
               {/* Simple Mode Images (极简模式) - indices 0, 1, 2 */}
               <div>
                 <div className="flex items-center justify-between mb-3">
@@ -1856,7 +1860,7 @@ export default function CameraPage() {
               </div>
             </div>
 
-            <div className="p-4 bg-white border-t shadow-up">
+            <div className="p-4 pb-20 bg-white border-t shadow-up">
               <button 
                 onClick={handleRetake}
                 className="w-full h-12 text-lg rounded-lg bg-zinc-900 text-white font-semibold hover:bg-zinc-800 transition-colors"
@@ -2109,6 +2113,9 @@ export default function CameraPage() {
               </div>
               )
             })()}
+            
+            {/* Bottom Navigation */}
+            <BottomNav forceShow />
           </motion.div>
         )}
       </AnimatePresence>

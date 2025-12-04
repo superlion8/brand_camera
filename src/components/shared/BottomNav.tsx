@@ -9,9 +9,10 @@ import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 
 interface BottomNavProps {
   forceHide?: boolean
+  forceShow?: boolean  // Override pathname-based hiding
 }
 
-export function BottomNav({ forceHide }: BottomNavProps = {}) {
+export function BottomNav({ forceHide, forceShow }: BottomNavProps = {}) {
   const pathname = usePathname()
   const router = useRouter()
   const { t } = useTranslation()
@@ -28,8 +29,11 @@ export function BottomNav({ forceHide }: BottomNavProps = {}) {
     { id: "gallery", href: "/gallery", label: t.nav.gallery, icon: ImageIcon },
   ]
   
-  // Hide on camera pages or when forceHide is true
-  if (pathname.startsWith("/camera") || forceHide) {
+  // Hide on camera pages or when forceHide is true (unless forceShow overrides)
+  if (forceHide) {
+    return null
+  }
+  if (pathname.startsWith("/camera") && !forceShow) {
     return null
   }
   
