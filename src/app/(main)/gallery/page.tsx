@@ -1433,14 +1433,16 @@ function GeneratingCard({ task }: { task: GenerationTask }) {
   
   return (
     <div className={`relative aspect-[4/5] bg-gradient-to-br ${bgGradient} rounded-xl overflow-hidden shadow-sm border-2 border-dashed ${borderColor}`}>
-      <div className="absolute inset-0 opacity-30">
-        <Image 
-          src={task.inputImageUrl} 
-          alt="Generating" 
-          fill 
-          className="object-cover blur-sm" 
-        />
-      </div>
+      {task.inputImageUrl && task.inputImageUrl !== '[base64]' && (
+        <div className="absolute inset-0 opacity-30">
+          <Image 
+            src={task.inputImageUrl} 
+            alt="Generating" 
+            fill 
+            className="object-cover blur-sm" 
+          />
+        </div>
+      )}
       
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <div className="relative mb-3">
