@@ -39,8 +39,6 @@ export async function GET(request: NextRequest) {
     
     // 处理收藏筛选
     if (type === 'favorites') {
-      console.log('[Gallery] Fetching favorites for user:', userId)
-      
       // 查询收藏 - 注意表名是 generations（带 s）
       const { data: favorites, error: favError, count: favCount } = await supabase
         .from('favorites')
@@ -48,12 +46,6 @@ export async function GET(request: NextRequest) {
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
-
-      console.log('[Gallery] Favorites query result:', { 
-        count: favCount, 
-        dataLength: favorites?.length,
-        error: favError?.message 
-      })
 
       if (favError) {
         console.error('[Gallery] Error fetching favorites:', favError)

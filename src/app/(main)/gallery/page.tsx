@@ -79,15 +79,8 @@ export default function GalleryPage() {
       if (!append) setIsLoading(true)
       else setIsLoadingMore(true)
       
-      console.log('[Gallery] Fetching data for tab:', activeTab, 'page:', page)
       const response = await fetch(`/api/gallery?type=${activeTab}&page=${page}`)
       const result = await response.json()
-      
-      console.log('[Gallery] API response:', { 
-        success: result.success, 
-        itemsCount: result.data?.items?.length,
-        hasMore: result.data?.hasMore 
-      })
       
       if (result.success) {
         if (append) {
@@ -291,9 +284,10 @@ export default function GalleryPage() {
         })
         if (response.ok) {
           const data = await response.json()
-          // 添加到本地 store
-          if (data.data) {
+          // 添加到本地 store - 需要包含 id
+          if (data.data?.id) {
             addFavorite({
+              id: data.data.id,
               generationId,
               imageIndex,
               createdAt: data.data.created_at || new Date().toISOString(),
@@ -602,7 +596,7 @@ export default function GalleryPage() {
                 {/* Favorite button */}
                 <button 
                   className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-colors ${
-                    activeTab === 'favorites' 
+                    isFavorited(item.gen.id, item.idx)
                       ? "bg-red-500 text-white" 
                       : "bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500"
                   }`}
@@ -611,7 +605,7 @@ export default function GalleryPage() {
                     handleFavoriteToggle(item.gen.id, item.idx)
                   }}
                 >
-                  <Heart className={`w-4 h-4 ${activeTab === 'favorites' ? "fill-current" : ""}`} />
+                  <Heart className={`w-4 h-4 ${isFavorited(item.gen.id, item.idx) ? "fill-current" : ""}`} />
                 </button>
                 
                 {/* Date overlay */}
