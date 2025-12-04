@@ -170,6 +170,16 @@ export async function appendImageToGeneration(params: {
     // 保存输入参数和图片（只在第一次更新时写入，避免覆盖）
     if (inputParams) {
       updateData.input_params = inputParams
+      
+      // 从 inputParams 中提取模特和背景图 URL 并单独保存
+      const modelUrl = inputParams.perImageModels?.[0]?.imageUrl || inputParams.modelImage
+      const bgUrl = inputParams.perImageBackgrounds?.[0]?.imageUrl || inputParams.backgroundImage
+      if (modelUrl) {
+        updateData.model_image_url = modelUrl
+      }
+      if (bgUrl) {
+        updateData.background_image_url = bgUrl
+      }
     }
     if (inputImageUrl) {
       updateData.input_image_url = inputImageUrl
@@ -228,6 +238,16 @@ export async function appendImageToGeneration(params: {
     }
     if (inputParams) {
       insertData.input_params = inputParams
+      
+      // 从 inputParams 中提取模特和背景图 URL 并单独保存
+      const modelUrl = inputParams.perImageModels?.[0]?.imageUrl || inputParams.modelImage
+      const bgUrl = inputParams.perImageBackgrounds?.[0]?.imageUrl || inputParams.backgroundImage
+      if (modelUrl) {
+        insertData.model_image_url = modelUrl
+      }
+      if (bgUrl) {
+        insertData.background_image_url = bgUrl
+      }
     }
     
     const { error: insertError } = await supabase
