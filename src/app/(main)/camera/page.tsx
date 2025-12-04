@@ -1866,7 +1866,16 @@ export default function CameraPage() {
             </div>
             
             {/* Result Detail Dialog */}
-            {selectedResultIndex !== null && generatedImages[selectedResultIndex] && (
+            {selectedResultIndex !== null && (() => {
+              // 获取当前选中图片的 URL（优先 imageSlots，回退 generatedImages）
+              const currentTask = tasks.find(t => t.id === currentTaskId)
+              const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+              const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
+              const selectedModelType = selectedSlot?.modelType || generatedModelTypes[selectedResultIndex]
+              
+              if (!selectedImageUrl) return null
+              
+              return (
               <div className="fixed inset-0 z-50 bg-white overflow-hidden">
                 <div className="h-full flex flex-col">
                   {/* Header */}
@@ -1886,11 +1895,11 @@ export default function CameraPage() {
                     <div className="bg-zinc-900">
                       <div 
                         className="relative aspect-[4/5] cursor-pointer group"
-                        onClick={() => setFullscreenImage(generatedImages[selectedResultIndex])}
+                        onClick={() => setFullscreenImage(selectedImageUrl)}
                       >
                         {/* Use img tag for native long-press save support */}
                         <img 
-                          src={generatedImages[selectedResultIndex]} 
+                          src={selectedImageUrl} 
                           alt="Detail" 
                           className="w-full h-full object-contain" 
                         />
@@ -1916,7 +1925,7 @@ export default function CameraPage() {
                             }`}>
                               {selectedResultIndex < 3 ? "极简模式" : "扩展模式"}
                             </span>
-                            {generatedModelTypes[selectedResultIndex] === 'flash' && (
+                            {selectedModelType === 'flash' && (
                               <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700">
                                 Gemini 2.5
                               </span>
@@ -1938,7 +1947,7 @@ export default function CameraPage() {
                             <Heart className={`w-4 h-4 ${currentGenerationId && isFavorited(currentGenerationId, selectedResultIndex) ? "fill-current" : ""}`} />
                           </button>
                           <button
-                            onClick={() => handleDownload(generatedImages[selectedResultIndex], currentGenerationId || undefined, selectedResultIndex)}
+                            onClick={() => handleDownload(selectedImageUrl, currentGenerationId || undefined, selectedResultIndex)}
                             className="w-10 h-10 rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-50 flex items-center justify-center transition-colors"
                           >
                             <Download className="w-4 h-4" />
@@ -2087,7 +2096,7 @@ export default function CameraPage() {
                       <button 
                         onClick={() => {
                           setSelectedResultIndex(null)
-                          handleGoToEdit(generatedImages[selectedResultIndex])
+                          handleGoToEdit(selectedImageUrl)
                         }}
                         className="w-full h-12 mt-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2 transition-colors"
                       >
@@ -2098,7 +2107,8 @@ export default function CameraPage() {
                   </div>
                 </div>
               </div>
-            )}
+              )
+            })()}
           </motion.div>
         )}
       </AnimatePresence>
