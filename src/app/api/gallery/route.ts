@@ -39,10 +39,10 @@ export async function GET(request: NextRequest) {
     
     // 处理收藏筛选
     if (type === 'favorites') {
-      // 查询收藏
+      // 查询收藏 - 注意表名是 generations（带 s）
       const { data: favorites, error: favError, count: favCount } = await supabase
         .from('favorites')
-        .select('*, generation:generation_id(*)', { count: 'exact' })
+        .select('*, generations:generation_id(*)', { count: 'exact' })
         .eq('user_id', userId)
         .is('deleted_at', null)
         .order('created_at', { ascending: false })
@@ -55,9 +55,9 @@ export async function GET(request: NextRequest) {
 
       // 展开收藏的图片
       const items = favorites
-        ?.filter(fav => fav.generation && !fav.generation.deleted_at)
+        ?.filter(fav => fav.generations && !fav.generations.deleted_at)
         .map(fav => {
-          const gen = fav.generation
+          const gen = fav.generations
           const imageUrl = gen.output_image_urls?.[fav.image_index]
           if (!imageUrl) return null
           
