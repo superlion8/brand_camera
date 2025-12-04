@@ -618,16 +618,16 @@ export default function GalleryPage() {
                 {/* Favorite button */}
                 <button 
                   className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-colors ${
-                    isFavorited(item.gen.id, item.idx)
+                    isFavorited(item.gen.dbId || item.gen.id, item.idx)
                       ? "bg-red-500 text-white" 
                       : "bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500"
                   }`}
                   onClick={(e) => {
                     e.stopPropagation()
-                    handleFavoriteToggle(item.gen.id, item.idx)
+                    handleFavoriteToggle(item.gen.dbId || item.gen.id, item.idx)
                   }}
                 >
-                  <Heart className={`w-4 h-4 ${isFavorited(item.gen.id, item.idx) ? "fill-current" : ""}`} />
+                  <Heart className={`w-4 h-4 ${isFavorited(item.gen.dbId || item.gen.id, item.idx) ? "fill-current" : ""}`} />
                 </button>
                 
                 {/* Date overlay */}
@@ -788,17 +788,17 @@ export default function GalleryPage() {
                     </div>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => handleFavoriteToggle(selectedItem.gen.id, selectedItem.index)}
+                        onClick={() => handleFavoriteToggle(selectedItem.gen.dbId || selectedItem.gen.id, selectedItem.index)}
                         className={`w-10 h-10 rounded-lg border flex items-center justify-center transition-colors ${
-                          isFavorited(selectedItem.gen.id, selectedItem.index)
+                          isFavorited(selectedItem.gen.dbId || selectedItem.gen.id, selectedItem.index)
                             ? "bg-red-50 border-red-200 text-red-500"
                             : "border-zinc-200 text-zinc-600 hover:bg-zinc-50"
                         }`}
                       >
-                        <Heart className={`w-4 h-4 ${isFavorited(selectedItem.gen.id, selectedItem.index) ? "fill-current" : ""}`} />
+                        <Heart className={`w-4 h-4 ${isFavorited(selectedItem.gen.dbId || selectedItem.gen.id, selectedItem.index) ? "fill-current" : ""}`} />
                       </button>
                       <button
-                        onClick={() => handleDownload(selectedItem.gen.outputImageUrls[selectedItem.index], selectedItem.gen.id, selectedItem.index)}
+                        onClick={() => handleDownload(selectedItem.gen.outputImageUrls[selectedItem.index], selectedItem.gen.dbId || selectedItem.gen.id, selectedItem.index)}
                         className="w-10 h-10 rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-50 flex items-center justify-center transition-colors"
                       >
                         <Download className="w-4 h-4" />

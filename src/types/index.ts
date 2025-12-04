@@ -20,6 +20,7 @@ export interface Asset {
 
 export interface Generation {
   id: string
+  dbId?: string // 数据库 UUID，用于收藏 API（id 可能是 task_id）
   type: GenerationType
   inputImageUrl: string
   inputImage2Url?: string // Second product image

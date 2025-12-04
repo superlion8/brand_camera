@@ -62,13 +62,14 @@ export async function GET(request: NextRequest) {
           
           return {
             id: fav.id,
-            generationId: gen.id,
+            generationId: gen.id, // 数据库 UUID，用于收藏 API
             imageIndex: fav.image_index,
             imageUrl,
             type: gen.task_type,
             createdAt: fav.created_at,
             generation: {
-              id: gen.id,
+              id: gen.task_id || gen.id, // 显示用 task_id，兼容旧数据
+              dbId: gen.id, // 数据库 UUID，用于收藏
               type: gen.task_type,
               outputImageUrls: gen.output_image_urls,
               outputGenModes: gen.output_gen_modes,
@@ -129,13 +130,14 @@ export async function GET(request: NextRequest) {
         }
         return gen.output_image_urls.map((url: string, index: number) => ({
           id: `${gen.id}-${index}`,
-          generationId: gen.id,
+          generationId: gen.id, // 数据库 UUID，用于收藏 API
           imageIndex: index,
           imageUrl: url,
-          type: gen.task_type, // 使用 task_type
+          type: gen.task_type,
           createdAt: gen.created_at,
           generation: {
-            id: gen.id,
+            id: gen.task_id || gen.id, // 显示用 task_id，兼容旧数据
+            dbId: gen.id, // 数据库 UUID，用于收藏
             type: gen.task_type,
             outputImageUrls: gen.output_image_urls,
             outputGenModes: gen.output_gen_modes,
