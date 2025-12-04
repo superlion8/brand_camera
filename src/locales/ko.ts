@@ -152,6 +152,11 @@ export const ko: Translations = {
   // Studio Page
   studio: {
     title: "상품 스튜디오",
+    photoType: "사진 유형",
+    studioShot: "스튜디오 촬영",
+    studioShotDesc: "전문 상품 촬영",
+    hangingShot: "플랫 레이",
+    hangingShotDesc: "의류 전시",
     lightType: "조명 유형",
     softbox: "소프트",
     sunlight: "자연광",

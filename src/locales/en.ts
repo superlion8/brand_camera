@@ -152,6 +152,11 @@ export const en: Translations = {
   // Studio Page
   studio: {
     title: "Product Studio",
+    photoType: "Photo Type",
+    studioShot: "Studio Shot",
+    studioShotDesc: "Professional photography",
+    hangingShot: "Flat Lay",
+    hangingShotDesc: "Clothing display",
     lightType: "Light Type",
     softbox: "Soft",
     sunlight: "Natural",

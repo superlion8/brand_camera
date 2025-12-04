@@ -30,39 +30,54 @@ interface ImageResult {
   model: 'pro' | 'flash'
 }
 
-// Light type descriptions
-const LIGHT_TYPE_DESC: Record<string, string> = {
-  'Softbox': 'soft, diffused studio softbox lighting with gentle shadows',
-  'Sunlight': 'natural sunlight with warm tones and natural shadows',
-  'Dramatic': 'dramatic high-contrast lighting with deep shadows and highlights',
-  'Neon': 'vibrant neon lighting with colorful reflections and glow effects',
+// Light type descriptions (Chinese for prompt)
+const LIGHT_TYPE_DESC_CN: Record<string, string> = {
+  'Softbox': '柔光箱',
+  'Sunlight': '自然光',
+  'Dramatic': '戏剧光',
+  'Neon': '霓虹光',
 }
 
-// Build studio prompt
+// Light direction descriptions (Chinese for prompt)
+const LIGHT_DIR_DESC_CN: Record<string, string> = {
+  'top-left': '左上方',
+  'top': '正上方',
+  'top-right': '右上方',
+  'left': '左侧',
+  'front': '正面',
+  'right': '右侧',
+  'bottom-left': '左下方',
+  'bottom': '正下方',
+  'bottom-right': '右下方',
+}
+
+// Build studio prompt based on photo type
 function buildStudioPrompt(
+  photoType: 'studio' | 'hanging',
   lightType: string,
   lightDirection: string,
   bgColor: string
 ): string {
-  const lightDesc = LIGHT_TYPE_DESC[lightType] || 'professional studio lighting'
+  const lightTypeDesc = LIGHT_TYPE_DESC_CN[lightType] || lightType
+  const lightDirDesc = LIGHT_DIR_DESC_CN[lightDirection] || lightDirection
   
-  let prompt = `Transform this product into a professional studio photography shot.
+  if (photoType === 'hanging') {
+    // 挂拍图 prompt
+    return `一张电商服装详情页用的专业挂拍照片，主体是图中的主要商品，挂在简约银色衣架上，用木质衣架撑起，正面平整展开，画面极简，高级买手店陈列风格，自然柔和室内光线，衣服细节清晰，有轻微自然阴影，高分辨率，无模特，无多余物体，无文字无水印。
 
-Setup:
-- Lighting: ${lightDesc}
-- Light Direction: coming from ${lightDirection}
-- Background: clean gradient background with ${bgColor} as the primary color tone
+背景放在${bgColor}的背景上，光源使用${lightTypeDesc}类型，光源从${lightDirDesc}方向。`
+  }
+  
+  // 棚拍图 prompt (default)
+  return `一张电商详情页用的专业产品摄影图，主体是图中的主要商品。
 
-Requirements:
-- Professional e-commerce quality product photography
-- Smooth gradient background using the specified color
-- Precise shadows and reflections based on lighting direction
-- Maintain 100% accuracy of product details, colors, and proportions
-- High-end commercial photography aesthetic
+背景放在${bgColor}的背景上，画面干净简约，产品居中摆放，正面展示。
 
-Negatives: distorted product, wrong colors, added elements, removed details, amateur lighting, harsh shadows, busy background, cluttered scene.`
+光源使用${lightTypeDesc}类型，光源从${lightDirDesc}方向，细腻高光和阴影。
 
-  return prompt
+真实质感，高分辨率，适合淘宝/天猫/京东/amazon商品详情页，无文字无水印。
+
+如果图中有人物要去掉图中的人物，其他和商品不相关的元素也都要去掉。`
 }
 
 async function generateImageWithFallback(
@@ -156,8 +171,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { 
       productImage, 
+      photoType = 'studio', // 'studio' 棚拍图 or 'hanging' 挂拍图
       lightType = 'Softbox',
-      lightDirection = 'front-top',
+      lightDirection = 'front',
       lightColor = '#FFFFFF',
       aspectRatio = 'original',
       index = 0,
@@ -170,7 +186,7 @@ export async function POST(request: NextRequest) {
     }
     
     const client = getGenAIClient()
-    const label = `Studio ${index + 1}`
+    const label = `Studio ${index + 1} (${photoType})`
     
     const productImageData = stripBase64Prefix(productImage)
     
@@ -178,8 +194,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: '商品图片格式无效' }, { status: 400 })
     }
     
-    // Build prompt
-    const prompt = buildStudioPrompt(lightType, lightDirection, lightColor)
+    // Build prompt based on photo type
+    const prompt = buildStudioPrompt(photoType, lightType, lightDirection, lightColor)
     console.log(`[${label}] Prompt:`, prompt.substring(0, 200) + '...')
     
     const parts: any[] = [
@@ -234,7 +250,7 @@ export async function POST(request: NextRequest) {
           genMode: 'extended', // Studio 总是 extended 模式
           prompt: prompt,
           taskType: 'product_studio',
-          inputParams: inputParams || { lightType, lightDirection, lightColor, aspectRatio },
+          inputParams: inputParams || { photoType, lightType, lightDirection, lightColor, aspectRatio },
         })
         
         if (dbSuccess) {

@@ -150,6 +150,11 @@ export const zh = {
   // Studio Page
   studio: {
     title: "商品影棚",
+    photoType: "商品图类型",
+    studioShot: "棚拍图",
+    studioShotDesc: "专业产品摄影",
+    hangingShot: "挂拍图",
+    hangingShotDesc: "服装平铺展示",
     lightType: "光源类型",
     softbox: "柔光",
     sunlight: "自然",

@@ -32,6 +32,9 @@ const getErrorMessage = (error: string, t: any): string => {
 const LIGHT_TYPE_IDS = ['Softbox', 'Sunlight', 'Dramatic', 'Neon'] as const
 const LIGHT_TYPE_ICONS = { Softbox: Lightbulb, Sunlight: Sun, Dramatic: Sparkles, Neon: Zap }
 
+// Photo types
+const PHOTO_TYPE_IDS = ['studio', 'hanging'] as const
+
 // Aspect ratios
 const ASPECT_RATIO_IDS = ['original', '1:1', '3:4', '4:3', '16:9', '9:16'] as const
 
@@ -148,6 +151,7 @@ export default function StudioPage() {
   const [cameraReady, setCameraReady] = useState(false)
   
   // Settings
+  const [photoType, setPhotoType] = useState<'studio' | 'hanging'>('studio')
   const [lightType, setLightType] = useState('Softbox')
   const [aspectRatio, setAspectRatio] = useState('original')
   const [lightDirection, setLightDirection] = useState('front')
@@ -265,6 +269,7 @@ export default function StudioPage() {
     }
     
     // Capture current settings before async operations
+    const currentPhotoType = photoType
     const currentLightType = lightType
     const currentLightDirection = lightDirection
     const currentBgColor = bgColor
@@ -272,7 +277,7 @@ export default function StudioPage() {
     const currentProductImage = productImage
     
     // Create task and switch to processing mode (studio generates 2 images)
-    const params = { lightType: currentLightType, lightDirection: currentLightDirection, lightColor: currentBgColor, aspectRatio: currentAspectRatio }
+    const params = { photoType: currentPhotoType, lightType: currentLightType, lightDirection: currentLightDirection, lightColor: currentBgColor, aspectRatio: currentAspectRatio }
     const taskId = addTask('studio', currentProductImage, params, 2)
     setCurrentTaskId(taskId)
     updateTaskStatus(taskId, 'generating')
@@ -299,13 +304,14 @@ export default function StudioPage() {
     }
     
     // Run generation in background
-    runBackgroundGeneration(taskId, currentProductImage, currentLightType, currentLightDirection, currentBgColor, currentAspectRatio)
+    runBackgroundGeneration(taskId, currentProductImage, currentPhotoType, currentLightType, currentLightDirection, currentBgColor, currentAspectRatio)
   }
   
   // Background generation function (runs async, doesn't block UI)
   const runBackgroundGeneration = async (
     taskId: string,
     inputImage: string,
+    photoTypeVal: 'studio' | 'hanging',
     lightTypeVal: string,
     lightDirectionVal: string,
     bgColorVal: string,
@@ -316,12 +322,14 @@ export default function StudioPage() {
       
       const basePayload = {
         productImage: compressedProduct,
+        photoType: photoTypeVal,
         lightType: lightTypeVal,
         lightDirection: lightDirectionVal,
         lightColor: bgColorVal,
         aspectRatio: aspectRatioVal,
         taskId, // 传递 taskId，让后端直接写入数据库
         inputParams: {
+          photoType: photoTypeVal,
           lightType: lightTypeVal,
           lightDirection: lightDirectionVal,
           lightColor: bgColorVal,
@@ -430,7 +438,7 @@ export default function StudioPage() {
           outputImageUrls: finalImages,
           prompt: usedPrompt || undefined,
           createdAt: new Date().toISOString(),
-          params: { lightType: lightTypeVal, lightDirection: lightDirectionVal, lightColor: bgColorVal, aspectRatio: aspectRatioVal },
+          params: { photoType: photoTypeVal, lightType: lightTypeVal, lightDirection: lightDirectionVal, lightColor: bgColorVal, aspectRatio: aspectRatioVal },
         }, allSavedToDb) // 后端已写入数据库时，跳过前端的云端同步
         
         // Refresh quota after successful generation
@@ -646,6 +654,41 @@ export default function StudioPage() {
             
             {/* Settings Panel */}
             <div className="p-4 bg-white rounded-t-2xl -mt-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] relative z-10 space-y-5">
+              {/* Photo Type */}
+              <div>
+                <h3 className="text-sm font-semibold text-zinc-700 mb-2">{t.studio.photoType}</h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPhotoType('studio')}
+                    className={`flex-1 py-3 px-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5 ${
+                      photoType === 'studio'
+                        ? 'border-amber-500 bg-amber-50'
+                        : 'border-zinc-200 bg-white hover:border-zinc-300'
+                    }`}
+                  >
+                    <span className="text-xl">📦</span>
+                    <span className={`text-xs font-medium ${photoType === 'studio' ? 'text-amber-700' : 'text-zinc-600'}`}>
+                      {t.studio.studioShot}
+                    </span>
+                    <span className="text-[10px] text-zinc-400">{t.studio.studioShotDesc}</span>
+                  </button>
+                  <button
+                    onClick={() => setPhotoType('hanging')}
+                    className={`flex-1 py-3 px-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5 ${
+                      photoType === 'hanging'
+                        ? 'border-amber-500 bg-amber-50'
+                        : 'border-zinc-200 bg-white hover:border-zinc-300'
+                    }`}
+                  >
+                    <span className="text-xl">👔</span>
+                    <span className={`text-xs font-medium ${photoType === 'hanging' ? 'text-amber-700' : 'text-zinc-600'}`}>
+                      {t.studio.hangingShot}
+                    </span>
+                    <span className="text-[10px] text-zinc-400">{t.studio.hangingShotDesc}</span>
+                  </button>
+                </div>
+              </div>
+              
               {/* Light Type */}
               <div>
                 <h3 className="text-sm font-semibold text-zinc-700 mb-2">{t.studio.lightType}</h3>
