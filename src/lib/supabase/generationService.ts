@@ -167,6 +167,17 @@ export async function appendImageToGeneration(params: {
       extended_mode_count: currentGenModes.filter((m: string | null) => m === 'extended').length,
     }
     
+    // 保存输入参数和图片（只在第一次更新时写入，避免覆盖）
+    if (inputParams) {
+      updateData.input_params = inputParams
+    }
+    if (inputImageUrl) {
+      updateData.input_image_url = inputImageUrl
+    }
+    if (inputImage2Url) {
+      updateData.input_image2_url = inputImage2Url
+    }
+    
     // 如果所有图片都完成了，更新状态为 completed
     // total_images_count 在 quota/reserve 时已设置
     if (existingRecord.total_images_count && completedCount >= existingRecord.total_images_count) {

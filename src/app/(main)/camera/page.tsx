@@ -530,6 +530,21 @@ export default function CameraPage() {
             background: bgNameForThis,
             modelIsUserSelected: !modelIsRandom,
             bgIsUserSelected: !bgIsRandom,
+            // 当前图片的模特/背景详细信息
+            perImageModels: [{ 
+              name: modelNameForThis, 
+              imageUrl: modelUrlForThis, 
+              isRandom: modelIsRandom,
+              isPreset: isPresetUrl(modelUrlForThis)
+            }],
+            perImageBackgrounds: [{ 
+              name: bgNameForThis, 
+              imageUrl: bgUrlForThis, 
+              isRandom: bgIsRandom,
+              isPreset: isPresetUrl(bgUrlForThis)
+            }],
+            modelImage: modelUrlForThis,
+            backgroundImage: bgUrlForThis,
           },
         }
         
