@@ -20,14 +20,8 @@ type TabType = "all" | "model" | "product" | "favorites"
 function isModelType(gen: Generation | null | undefined): boolean {
   if (!gen) return false
   const type = gen.type?.toLowerCase() || ''
-  if (type === 'camera_model' || type === 'model' || type === 'camera' || type === 'model_studio') {
-    return true
-  }
-  // Fallback: has generation modes = likely model generation
-  if (gen.outputGenModes && gen.outputGenModes.length > 0) {
-    return true
-  }
-  return false
+  // 只检查明确的模特类型，不再用 outputGenModes 作为 fallback
+  return type === 'camera_model' || type === 'model' || type === 'camera' || type === 'model_studio'
 }
 
 function isProductType(gen: Generation | null | undefined): boolean {

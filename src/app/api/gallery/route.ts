@@ -65,11 +65,11 @@ export async function GET(request: NextRequest) {
             generationId: gen.id,
             imageIndex: fav.image_index,
             imageUrl,
-            type: gen.type,
+            type: gen.task_type,
             createdAt: fav.created_at,
             generation: {
               id: gen.id,
-              type: gen.type,
+              type: gen.task_type,
               outputImageUrls: gen.output_image_urls,
               outputGenModes: gen.output_gen_modes,
               inputParams: gen.input_params,
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // 查询 generations
+    // 查询 generations - 注意数据库字段是 task_type 不是 type
     let query = supabase
       .from('generations')
       .select('*', { count: 'exact' })
@@ -99,11 +99,11 @@ export async function GET(request: NextRequest) {
       .is('deleted_at', null)
       .not('output_image_urls', 'is', null)
 
-    // 按类型筛选
+    // 按类型筛选 - 使用 task_type 字段
     if (type === 'model') {
-      query = query.or('type.eq.camera_model,type.eq.model,type.eq.camera,type.eq.model_studio,type.eq.edit,type.eq.editing')
+      query = query.or('task_type.eq.camera_model,task_type.eq.model,task_type.eq.camera,task_type.eq.model_studio,task_type.eq.edit,task_type.eq.editing')
     } else if (type === 'product') {
-      query = query.or('type.eq.studio,type.eq.camera_product,type.eq.product,type.eq.product_studio')
+      query = query.or('task_type.eq.studio,task_type.eq.camera_product,task_type.eq.product,task_type.eq.product_studio')
     }
 
     const { data: generations, error: genError, count: genCount } = await query
@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: '获取图片失败' }, { status: 500 })
     }
 
-    // 展开所有图片
+    // 展开所有图片 - 注意数据库字段是 task_type
     const items = generations
       ?.flatMap(gen => {
         if (!gen.output_image_urls || !Array.isArray(gen.output_image_urls)) {
@@ -126,11 +126,11 @@ export async function GET(request: NextRequest) {
           generationId: gen.id,
           imageIndex: index,
           imageUrl: url,
-          type: gen.type,
+          type: gen.task_type, // 使用 task_type
           createdAt: gen.created_at,
           generation: {
             id: gen.id,
-            type: gen.type,
+            type: gen.task_type, // 使用 task_type
             outputImageUrls: gen.output_image_urls,
             outputGenModes: gen.output_gen_modes,
             inputParams: gen.input_params,
