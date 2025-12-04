@@ -72,7 +72,10 @@ export async function GET(request: NextRequest) {
               type: gen.task_type,
               outputImageUrls: gen.output_image_urls,
               outputGenModes: gen.output_gen_modes,
-              inputParams: gen.input_params,
+              outputModelTypes: gen.output_model_types,
+              inputImageUrl: gen.input_image_url,
+              params: gen.input_params,
+              prompts: gen.prompts,
               createdAt: gen.created_at,
             }
           }
@@ -130,10 +133,13 @@ export async function GET(request: NextRequest) {
           createdAt: gen.created_at,
           generation: {
             id: gen.id,
-            type: gen.task_type, // 使用 task_type
+            type: gen.task_type,
             outputImageUrls: gen.output_image_urls,
             outputGenModes: gen.output_gen_modes,
-            inputParams: gen.input_params,
+            outputModelTypes: gen.output_model_types,
+            inputImageUrl: gen.input_image_url,
+            params: gen.input_params,
+            prompts: gen.prompts,
             createdAt: gen.created_at,
           }
         }))
