@@ -517,8 +517,8 @@ export default function GeneralEditPage() {
               </div>
             </div>
             
-            {/* Capture button */}
-            <div className="bg-black py-8 flex justify-center">
+            {/* Capture button - positioned above BottomNav */}
+            <div className="bg-black py-8 pb-24 flex justify-center">
               <button
                 onClick={handleCapture}
                 disabled={!cameraReady}

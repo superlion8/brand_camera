@@ -589,7 +589,7 @@ export default function StudioPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex-1 overflow-y-auto pb-24"
+            className="flex-1 overflow-y-auto pb-40"
           >
             {/* Image Upload Area */}
             <div className="bg-zinc-100 min-h-[200px] flex items-center justify-center relative p-4">
@@ -834,23 +834,26 @@ export default function StudioPage() {
                 </div>
               </div>
               
-              {/* Generate Button */}
-              <div className="pt-4 pb-20">
-                <button
-                  onClick={handleGenerate}
-                  disabled={!productImage}
-                  className={`w-full h-14 rounded-full text-base font-semibold gap-2 flex items-center justify-center transition-all ${
-                    !productImage
-                      ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
-                      : "bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-200"
-                  }`}
-                >
-                  <Sparkles className="w-5 h-5" />
-                  <span>{t.camera.startShoot}</span>
-                </button>
-              </div>
             </div>
           </motion.div>
+        )}
+        
+        {/* Fixed Generate Button for main mode */}
+        {mode === 'main' && (
+          <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-white via-white to-transparent max-w-md mx-auto z-40">
+            <button
+              onClick={handleGenerate}
+              disabled={!productImage}
+              className={`w-full h-14 rounded-full text-base font-semibold gap-2 flex items-center justify-center transition-all ${
+                !productImage
+                  ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
+                  : "bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-200"
+              }`}
+            >
+              <Sparkles className="w-5 h-5" />
+              <span>{t.camera.startShoot}</span>
+            </button>
+          </div>
         )}
         
         {/* Camera Mode */}
@@ -925,8 +928,8 @@ export default function StudioPage() {
               </div>
             </div>
             
-            {/* Capture button */}
-            <div className="bg-black py-8 flex justify-center">
+            {/* Capture button - positioned above BottomNav */}
+            <div className="bg-black py-8 pb-24 flex justify-center">
               <button
                 onClick={handleCapture}
                 disabled={!cameraReady}
@@ -945,7 +948,7 @@ export default function StudioPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex-1 flex flex-col items-center justify-center p-8"
+            className="flex-1 flex flex-col items-center justify-center p-8 pb-24"
           >
             <div className="relative mb-6">
               <div className="absolute inset-0 bg-amber-500/20 blur-xl rounded-full animate-pulse" />
@@ -984,7 +987,7 @@ export default function StudioPage() {
             exit={{ opacity: 0 }}
             className="flex-1 overflow-y-auto"
           >
-            <div className="p-4 pb-32">
+            <div className="p-4 pb-40">
               <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.studio.results}</h3>
               <div className="grid grid-cols-2 gap-3">
                 {generatedImages.map((url, i) => (
@@ -1026,8 +1029,8 @@ export default function StudioPage() {
               </div>
             </div>
             
-            {/* Actions */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t flex gap-3">
+            {/* Actions - positioned above BottomNav */}
+            <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t flex gap-3 max-w-md mx-auto z-40">
               <button
                 onClick={() => setMode('main')}
                 className="flex-1 h-12 border border-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 transition-colors"

@@ -7,7 +7,11 @@ import { cn } from "@/lib/utils"
 import { useTranslation } from "@/stores/languageStore"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 
-export function BottomNav() {
+interface BottomNavProps {
+  forceHide?: boolean
+}
+
+export function BottomNav({ forceHide }: BottomNavProps = {}) {
   const pathname = usePathname()
   const router = useRouter()
   const { t } = useTranslation()
@@ -24,8 +28,8 @@ export function BottomNav() {
     { id: "gallery", href: "/gallery", label: t.nav.gallery, icon: ImageIcon },
   ]
   
-  // Hide on camera pages
-  if (pathname.startsWith("/camera")) {
+  // Hide on camera pages or when forceHide is true
+  if (pathname.startsWith("/camera") || forceHide) {
     return null
   }
   
