@@ -70,7 +70,8 @@ interface AssetState {
   deleteCollection: (id: string) => void
   
   // Favorite actions with IndexedDB persistence
-  addFavorite: (favorite: Omit<Favorite, 'id'>) => Promise<void>
+  // id 可选：如果传入则使用（来自服务器），否则自动生成
+  addFavorite: (favorite: Omit<Favorite, 'id'> & { id?: string }, skipCloudSync?: boolean) => Promise<void>
   removeFavorite: (id: string) => Promise<void>
   setFavorites: (favorites: Favorite[]) => void
   isFavorited: (generationId: string, imageIndex: number) => boolean
@@ -423,15 +424,16 @@ export const useAssetStore = create<AssetState>()(
       })),
       
       // Favorite with IndexedDB and cloud sync
-      addFavorite: async (favoriteData) => {
+      addFavorite: async (favoriteData, skipCloudSync = false) => {
         const { currentUserId } = get()
         
-        console.log('[Store] Adding favorite, currentUserId:', currentUserId, 'data:', favoriteData)
+        console.log('[Store] Adding favorite, currentUserId:', currentUserId, 'data:', favoriteData, 'skipCloudSync:', skipCloudSync)
         
         const favorite: Favorite = {
-          ...favoriteData,
-          id: generateId(),
-          createdAt: new Date().toISOString(),
+          id: favoriteData.id || generateId(), // 使用传入的 id 或自动生成
+          generationId: favoriteData.generationId,
+          imageIndex: favoriteData.imageIndex,
+          createdAt: favoriteData.createdAt || new Date().toISOString(),
         }
         
         // Save to IndexedDB
@@ -441,13 +443,11 @@ export const useAssetStore = create<AssetState>()(
           favorites: [...state.favorites, favorite]
         }))
         
-        // Sync to cloud if logged in
-        if (currentUserId) {
+        // Sync to cloud if logged in and not skipped (API already saved)
+        if (currentUserId && !skipCloudSync) {
           console.log('[Store] Syncing favorite to cloud for user:', currentUserId)
           const result = await syncService.saveFavorite(currentUserId, favorite)
           console.log('[Store] Favorite sync result:', result ? 'success' : 'failed')
-        } else {
-          console.warn('[Store] Not syncing favorite - no currentUserId')
         }
       },
       

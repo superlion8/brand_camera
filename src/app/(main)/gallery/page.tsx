@@ -284,14 +284,14 @@ export default function GalleryPage() {
         })
         if (response.ok) {
           const data = await response.json()
-          // 添加到本地 store - 需要包含 id
+          // 添加到本地 store - API 已保存，跳过云端同步
           if (data.data?.id) {
             addFavorite({
               id: data.data.id,
               generationId,
               imageIndex,
               createdAt: data.data.created_at || new Date().toISOString(),
-            })
+            }, true) // skipCloudSync = true
           }
         }
       }
