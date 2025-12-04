@@ -318,6 +318,8 @@ export const zh = {
     codePlaceholder: "请输入6位验证码",
     sendingCode: "发送中...",
     verifying: "验证中...",
+    webViewWarning: "当前在App内打开",
+    webViewTip: "Google登录需要使用系统浏览器，请使用邮箱验证码登录，或点击右上角菜单选择「在浏览器中打开」",
   },
   
   // Errors

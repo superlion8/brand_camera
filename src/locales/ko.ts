@@ -320,6 +320,8 @@ export const ko: Translations = {
     codePlaceholder: "6자리 코드 입력",
     sendingCode: "전송 중...",
     verifying: "인증 중...",
+    webViewWarning: "앱 내에서 열림",
+    webViewTip: "Google 로그인은 시스템 브라우저가 필요합니다. 이메일 인증을 사용하거나 오른쪽 상단 메뉴에서 '브라우저에서 열기'를 선택하세요",
   },
   
   // Errors

@@ -320,6 +320,8 @@ export const en: Translations = {
     codePlaceholder: "Enter 6-digit code",
     sendingCode: "Sending...",
     verifying: "Verifying...",
+    webViewWarning: "Opening in App",
+    webViewTip: "Google login requires a system browser. Please use email verification, or tap the menu in the top right and select 'Open in Browser'",
   },
   
   // Errors
