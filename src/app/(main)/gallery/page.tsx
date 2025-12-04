@@ -1133,7 +1133,16 @@ function ImageSlotCard({ task, slot, slotIndex, onImageClick }: {
   onImageClick?: (imageUrl: string) => void;
 }) {
   const { t } = useTranslation()
-  const { generations, addFavorite, removeFavorite, isFavorited } = useAssetStore()
+  const { generations, favorites, addFavorite, removeFavorite, isFavorited } = useAssetStore()
+  
+  // 防御性检查：如果必要数据不存在，显示 loading 状态
+  if (!task || !slot) {
+    return (
+      <div className="aspect-[4/5] bg-zinc-100 rounded-xl flex items-center justify-center">
+        <Loader2 className="w-6 h-6 text-zinc-400 animate-spin" />
+      </div>
+    )
+  }
   const isStudio = task.type === 'studio'
   const isEdit = task.type === 'edit'
   
@@ -1157,7 +1166,13 @@ function ImageSlotCard({ task, slot, slotIndex, onImageClick }: {
     if (!canFavorite || !favoriteImageUrl || !generationRecord) return
     
     if (isImageFavorited) {
-      removeFavorite(favoriteImageUrl)
+      // 找到对应的 favorite 记录并删除
+      const fav = favorites.find(
+        f => f.generationId === generationRecord.id && f.imageIndex === slotIndex
+      )
+      if (fav) {
+        removeFavorite(fav.id)
+      }
     } else {
       addFavorite({
         generationId: generationRecord.id,
