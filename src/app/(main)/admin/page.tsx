@@ -614,11 +614,9 @@ export default function AdminDashboard() {
                           {/* Input thumbnail */}
                           <div className="w-16 h-16 bg-zinc-100 rounded-lg overflow-hidden shrink-0">
                             {task.inputImageUrl ? (
-                              <Image 
+                              <img 
                                 src={task.inputImageUrl} 
                                 alt="Input" 
-                                width={64} 
-                                height={64} 
                                 className="w-full h-full object-cover"
                               />
                             ) : (
@@ -654,17 +652,15 @@ export default function AdminDashboard() {
                           
                           {/* Output thumbnails */}
                           <div className="flex gap-1 shrink-0">
-                            {task.outputImageUrls.slice(0, 3).map((url, i) => (
+                            {task.outputImageUrls.slice(0, 3).map((url, i) => url ? (
                               <div key={i} className="w-10 h-10 bg-zinc-100 rounded overflow-hidden">
-                                <Image 
+                                <img 
                                   src={url} 
                                   alt={`Output ${i + 1}`} 
-                                  width={40} 
-                                  height={40} 
                                   className="w-full h-full object-cover"
                                 />
                               </div>
-                            ))}
+                            ) : null)}
                             {task.outputImageUrls.length > 3 && (
                               <div className="w-10 h-10 bg-zinc-200 rounded flex items-center justify-center text-[10px] text-zinc-500">
                                 +{task.outputImageUrls.length - 3}
@@ -813,13 +809,11 @@ export default function AdminDashboard() {
                     {(selectedTask.inputImageUrl || selectedTask.inputParams?.inputImage) ? (
                       <div 
                         className="relative cursor-pointer group"
-                        onClick={() => setFullscreenImage(selectedTask.inputImageUrl || selectedTask.inputParams?.inputImage)}
+                        onClick={() => setFullscreenImage(selectedTask.inputImageUrl || selectedTask.inputParams?.inputImage || '')}
                       >
-                        <Image 
-                          src={selectedTask.inputImageUrl || selectedTask.inputParams?.inputImage} 
+                        <img 
+                          src={selectedTask.inputImageUrl || selectedTask.inputParams?.inputImage || ''} 
                           alt="Input" 
-                          width={80} 
-                          height={80} 
                           className="w-20 h-20 object-cover rounded-lg"
                         />
                         <span className="absolute bottom-1 left-1 px-1 py-0.5 bg-black/50 text-white text-[8px] rounded">商品</span>
@@ -893,11 +887,9 @@ export default function AdminDashboard() {
                                 className="relative w-24 h-30 bg-zinc-100 rounded-lg overflow-hidden shrink-0 cursor-pointer group"
                                 onClick={() => setFullscreenImage(url)}
                               >
-                                <Image 
-                                  src={url} 
+                                <img 
+                                  src={url || ''} 
                                   alt={`Output ${i + 1}`} 
-                                  width={96}
-                                  height={120}
                                   className="w-full h-full object-cover"
                                 />
                                 {/* Badges */}
@@ -931,7 +923,7 @@ export default function AdminDashboard() {
                                       className="w-16 h-20 rounded-lg overflow-hidden bg-zinc-200 cursor-pointer group relative"
                                       onClick={() => setFullscreenImage(modelUrl)}
                                     >
-                                      <Image src={modelUrl} alt="Model" width={64} height={80} className="w-full h-full object-cover" />
+                                      <img src={modelUrl} alt="Model" className="w-full h-full object-cover" />
                                       <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                         <ZoomIn className="w-4 h-4 text-white" />
                                       </div>
@@ -961,7 +953,7 @@ export default function AdminDashboard() {
                                       className="w-16 h-20 rounded-lg overflow-hidden bg-zinc-200 cursor-pointer group relative"
                                       onClick={() => setFullscreenImage(bgUrl)}
                                     >
-                                      <Image src={bgUrl} alt="Background" width={64} height={80} className="w-full h-full object-cover" />
+                                      <img src={bgUrl} alt="Background" className="w-full h-full object-cover" />
                                       <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                         <ZoomIn className="w-4 h-4 text-white" />
                                       </div>
