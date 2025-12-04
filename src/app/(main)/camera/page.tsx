@@ -1990,12 +1990,18 @@ export default function CameraPage() {
                               {/* Input Product Image - from captured or saved */}
                               {(capturedImage || generation?.inputImageUrl) && (
                                 <div className="flex flex-col items-center">
-                                  <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
+                                  <div 
+                                    className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"
+                                    onClick={() => setFullscreenImage(capturedImage || generation?.inputImageUrl || '')}
+                                  >
                                     <img 
                                       src={capturedImage || generation?.inputImageUrl || ''} 
                                       alt={t.camera.productOriginal} 
                                       className="w-full h-full object-cover"
                                     />
+                                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                      <ZoomIn className="w-4 h-4 text-white" />
+                                    </div>
                                   </div>
                                   <p className="text-[10px] text-zinc-500 mt-1">{t.camera.productOriginal}</p>
                                 </div>
@@ -2009,7 +2015,10 @@ export default function CameraPage() {
                                 if (!modelUrl) return null
                                 return (
                                   <div className="flex flex-col items-center">
-                                    <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
+                                    <div 
+                                      className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"
+                                      onClick={() => setFullscreenImage(modelUrl)}
+                                    >
                                       <Image 
                                         src={modelUrl} 
                                         alt="模特" 
@@ -2017,6 +2026,9 @@ export default function CameraPage() {
                                         height={56}
                                         className="w-full h-full object-cover"
                                       />
+                                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <ZoomIn className="w-4 h-4 text-white" />
+                                      </div>
                                     </div>
                                     <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">
                                       {modelName || t.common.model}
@@ -2033,7 +2045,10 @@ export default function CameraPage() {
                                 if (!bgUrl) return null
                                 return (
                                   <div className="flex flex-col items-center">
-                                    <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
+                                    <div 
+                                      className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"
+                                      onClick={() => setFullscreenImage(bgUrl)}
+                                    >
                                       <Image 
                                         src={bgUrl} 
                                         alt="背景" 
@@ -2041,6 +2056,9 @@ export default function CameraPage() {
                                         height={56}
                                         className="w-full h-full object-cover"
                                       />
+                                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <ZoomIn className="w-4 h-4 text-white" />
+                                      </div>
                                     </div>
                                     <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">
                                       {bgName || t.common.background}

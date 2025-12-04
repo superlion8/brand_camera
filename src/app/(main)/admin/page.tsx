@@ -6,7 +6,7 @@ import Image from "next/image"
 import { 
   Home, Users, BarChart3, FileText, Calendar, Filter, 
   ChevronDown, ChevronRight, Heart, Loader2, RefreshCw,
-  ImageIcon, Sparkles, Lightbulb, Wand2, CalendarDays, Download
+  ImageIcon, Sparkles, Lightbulb, Wand2, CalendarDays, Download, X, ZoomIn
 } from "lucide-react"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { motion, AnimatePresence } from "framer-motion"
@@ -91,6 +91,7 @@ export default function AdminDashboard() {
   const [filterEmail, setFilterEmail] = useState<string>("")
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set())
   const [selectedTask, setSelectedTask] = useState<TaskDetail | null>(null)
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
   
   // Date filters
   const [dateFrom, setDateFrom] = useState<string>("")
@@ -810,7 +811,10 @@ export default function AdminDashboard() {
                   <p className="text-sm font-medium text-zinc-700 mb-2">输入商品图</p>
                   <div className="flex gap-2 flex-wrap">
                     {(selectedTask.inputImageUrl || selectedTask.inputParams?.inputImage) ? (
-                      <div className="relative">
+                      <div 
+                        className="relative cursor-pointer group"
+                        onClick={() => setFullscreenImage(selectedTask.inputImageUrl || selectedTask.inputParams?.inputImage)}
+                      >
                         <Image 
                           src={selectedTask.inputImageUrl || selectedTask.inputParams?.inputImage} 
                           alt="Input" 
@@ -819,6 +823,9 @@ export default function AdminDashboard() {
                           className="w-20 h-20 object-cover rounded-lg"
                         />
                         <span className="absolute bottom-1 left-1 px-1 py-0.5 bg-black/50 text-white text-[8px] rounded">商品</span>
+                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                          <ZoomIn className="w-5 h-5 text-white" />
+                        </div>
                       </div>
                     ) : (
                       <p className="text-sm text-zinc-400">无输入图片记录</p>
@@ -882,7 +889,10 @@ export default function AdminDashboard() {
                             
                             <div className="flex gap-2">
                               {/* Output image */}
-                              <div className="relative w-24 h-30 bg-zinc-100 rounded-lg overflow-hidden shrink-0">
+                              <div 
+                                className="relative w-24 h-30 bg-zinc-100 rounded-lg overflow-hidden shrink-0 cursor-pointer group"
+                                onClick={() => setFullscreenImage(url)}
+                              >
                                 <Image 
                                   src={url} 
                                   alt={`Output ${i + 1}`} 
@@ -907,14 +917,24 @@ export default function AdminDashboard() {
                                 <div className="absolute bottom-1 left-1 px-1 py-0.5 bg-black/50 text-white text-[9px] rounded">
                                   #{i + 1}
                                 </div>
+                                {/* Hover zoom icon */}
+                                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <ZoomIn className="w-5 h-5 text-white" />
+                                </div>
                               </div>
                               
                               {/* Per-image model and background */}
                               <div className="flex gap-3 flex-1 min-w-0">
                                 {modelUrl && (
                                   <div className="flex flex-col items-center">
-                                    <div className="w-16 h-20 rounded-lg overflow-hidden bg-zinc-200">
+                                    <div 
+                                      className="w-16 h-20 rounded-lg overflow-hidden bg-zinc-200 cursor-pointer group relative"
+                                      onClick={() => setFullscreenImage(modelUrl)}
+                                    >
                                       <Image src={modelUrl} alt="Model" width={64} height={80} className="w-full h-full object-cover" />
+                                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <ZoomIn className="w-4 h-4 text-white" />
+                                      </div>
                                     </div>
                                     <p className="text-[10px] text-zinc-600 mt-1 truncate max-w-[64px] text-center font-medium">{modelName}</p>
                                     <div className="flex flex-col gap-0.5 items-center">
@@ -937,8 +957,14 @@ export default function AdminDashboard() {
                                 )}
                                 {bgUrl && (
                                   <div className="flex flex-col items-center">
-                                    <div className="w-16 h-20 rounded-lg overflow-hidden bg-zinc-200">
+                                    <div 
+                                      className="w-16 h-20 rounded-lg overflow-hidden bg-zinc-200 cursor-pointer group relative"
+                                      onClick={() => setFullscreenImage(bgUrl)}
+                                    >
                                       <Image src={bgUrl} alt="Background" width={64} height={80} className="w-full h-full object-cover" />
+                                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <ZoomIn className="w-4 h-4 text-white" />
+                                      </div>
                                     </div>
                                     <p className="text-[10px] text-zinc-600 mt-1 truncate max-w-[64px] text-center font-medium">{bgName}</p>
                                     <div className="flex flex-col gap-0.5 items-center">
@@ -981,6 +1007,35 @@ export default function AdminDashboard() {
                 </button>
               </div>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Fullscreen Image Viewer */}
+      <AnimatePresence>
+        {fullscreenImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
+            onClick={() => setFullscreenImage(null)}
+          >
+            <button
+              onClick={() => setFullscreenImage(null)}
+              className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+            >
+              <X className="w-6 h-6 text-white" />
+            </button>
+            <motion.img
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              src={fullscreenImage}
+              alt="Fullscreen"
+              className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
           </motion.div>
         )}
       </AnimatePresence>

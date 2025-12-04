@@ -810,7 +810,10 @@ export default function GalleryPage() {
                       <div className="grid grid-cols-4 gap-2">
                         {selectedItem.gen.inputImageUrl && (
                           <div className="flex flex-col items-center">
-                            <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
+                            <div 
+                              className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"
+                              onClick={() => setFullscreenImage(selectedItem.gen.inputImageUrl)}
+                            >
                               <Image 
                                 src={selectedItem.gen.inputImageUrl} 
                                 alt={t.gallery.productOriginal} 
@@ -818,6 +821,9 @@ export default function GalleryPage() {
                                 height={56}
                                 className="w-full h-full object-cover"
                               />
+                              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <ZoomIn className="w-4 h-4 text-white" />
+                              </div>
                             </div>
                             <p className="text-[10px] text-zinc-500 mt-1">{t.gallery.productOriginal}</p>
                           </div>
@@ -833,12 +839,18 @@ export default function GalleryPage() {
                           if (!modelUrl) return null
                           return (
                             <div className="flex flex-col items-center">
-                              <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
+                              <div 
+                                className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"
+                                onClick={() => setFullscreenImage(modelUrl)}
+                              >
                                 <img 
                                   src={modelUrl} 
                                   alt={t.common.model} 
                                   className="w-full h-full object-cover"
                                 />
+                                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <ZoomIn className="w-4 h-4 text-white" />
+                                </div>
                               </div>
                               <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">
                                 {modelName}
@@ -860,12 +872,18 @@ export default function GalleryPage() {
                           if (!bgUrl) return null
                           return (
                             <div className="flex flex-col items-center">
-                              <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
+                              <div 
+                                className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"
+                                onClick={() => setFullscreenImage(bgUrl)}
+                              >
                                 <img 
                                   src={bgUrl} 
                                   alt="环境" 
                                   className="w-full h-full object-cover"
                                 />
+                                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <ZoomIn className="w-4 h-4 text-white" />
+                                </div>
                               </div>
                               <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">
                                 {bgName}
