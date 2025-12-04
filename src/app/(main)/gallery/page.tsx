@@ -79,8 +79,15 @@ export default function GalleryPage() {
       if (!append) setIsLoading(true)
       else setIsLoadingMore(true)
       
+      console.log('[Gallery] Fetching data for tab:', activeTab, 'page:', page)
       const response = await fetch(`/api/gallery?type=${activeTab}&page=${page}`)
       const result = await response.json()
+      
+      console.log('[Gallery] API response:', { 
+        success: result.success, 
+        itemsCount: result.data?.items?.length,
+        hasMore: result.data?.hasMore 
+      })
       
       if (result.success) {
         if (append) {
