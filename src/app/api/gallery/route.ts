@@ -122,6 +122,12 @@ export async function GET(request: NextRequest) {
     }
 
     // 展开所有图片 - 注意数据库字段是 task_type
+    // Debug: log first generation's input_params
+    if (generations && generations.length > 0) {
+      console.log('[Gallery] First gen input_params:', JSON.stringify(generations[0].input_params, null, 2))
+      console.log('[Gallery] First gen input_image_url:', generations[0].input_image_url)
+    }
+    
     const items = generations
       ?.flatMap(gen => {
         if (!gen.output_image_urls || !Array.isArray(gen.output_image_urls)) {
