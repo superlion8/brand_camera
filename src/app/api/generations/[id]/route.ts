@@ -18,14 +18,24 @@ export async function DELETE(
   try {
     const { id } = params
 
-    const supabase = await createServiceClient()
+    const supabase = createServiceClient()
 
-    // 软删除（设置 deleted_at）
-    const { error } = await supabase
+    // 判断 id 是 UUID 还是 task_id
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+
+    // 软删除（设置 deleted_at）- 支持 id 或 task_id
+    let query = supabase
       .from('generations')
       .update({ deleted_at: new Date().toISOString() })
-      .eq('id', id)
       .eq('user_id', userId)
+
+    if (isUUID) {
+      query = query.eq('id', id)
+    } else {
+      query = query.eq('task_id', id)
+    }
+
+    const { error } = await query
 
     if (error) {
       console.error('[Generations] Error deleting generation:', error)
