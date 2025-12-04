@@ -23,6 +23,8 @@ export interface Generation {
   type: GenerationType
   inputImageUrl: string
   inputImage2Url?: string // Second product image
+  modelImageUrl?: string // Model image URL from database
+  backgroundImageUrl?: string // Background image URL from database
   outputImageUrls: string[]
   outputModelTypes?: ('pro' | 'flash')[] // Model types for each output (Gemini Pro or Flash)
   outputGenModes?: ('simple' | 'extended')[] // Generation modes for each output (极简/扩展)
