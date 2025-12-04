@@ -18,7 +18,7 @@ export async function DELETE(
   try {
     const { id } = params
 
-    const supabase = await createServiceClient()
+    const supabase = createServiceClient()
 
     // 软删除（设置 deleted_at）
     const { error } = await supabase

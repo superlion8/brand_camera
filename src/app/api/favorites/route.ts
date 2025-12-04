@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = await createServiceClient()
+    const supabase = createServiceClient()
 
     // 检查是否已收藏
     const { data: existing } = await supabase
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       .eq('user_id', userId)
       .eq('generation_id', generationId)
       .eq('image_index', imageIndex)
-      .eq('deleted_at', null)
+      .is('deleted_at', null)
       .single()
 
     if (existing) {
