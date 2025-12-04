@@ -20,10 +20,10 @@ export async function DELETE(
 
     const supabase = createServiceClient()
 
-    // 软删除（设置 deleted_at）
+    // 直接删除（favorites 表没有 deleted_at 列）
     const { error } = await supabase
       .from('favorites')
-      .update({ deleted_at: new Date().toISOString() })
+      .delete()
       .eq('id', id)
       .eq('user_id', userId)
 
