@@ -474,9 +474,8 @@ export const useAssetStore = create<AssetState>()(
         )
       },
       
-      // Load from IndexedDB - only runs once at startup (for offline/not logged in users)
+      // 简化版：不再从 IndexedDB 加载 generations，全部依赖云端 API
       loadFromDB: async () => {
-        // Prevent duplicate loads - this should only run once at app startup
         if (get()._hasLoadedFromDB) {
           console.log('[Store] loadFromDB: already loaded, skipping')
           return
@@ -485,77 +484,29 @@ export const useAssetStore = create<AssetState>()(
         try {
           console.log('[Store] loadFromDB: starting initial load')
           
-          // 检查是否可能有登录用户（通过检查 localStorage 中的 supabase session）
-          // 如果有 session，syncWithCloud 会被调用，应该由它来一次性加载所有数据
-          // 避免"先显示缓存、再刷新云端"的闪烁问题
+          // 检查是否可能有登录用户
           let hasSession = false
           if (typeof window !== 'undefined') {
-            // Supabase 将 session 存储在 localStorage 中
             const keys = Object.keys(localStorage)
             hasSession = keys.some(key => key.startsWith('sb-') && key.includes('auth-token'))
           }
           
           if (hasSession) {
-            console.log('[Store] loadFromDB: session detected, skipping UI update (will load in syncWithCloud)')
+            console.log('[Store] loadFromDB: session detected, waiting for syncWithCloud')
             set({ _hasLoadedFromDB: true })
-            // 不更新 generations，保持 isInitialLoading = true
-            // syncWithCloud 会加载所有数据并更新 UI
+            // syncWithCloud 会处理所有数据加载
             return
           }
           
-          // 未登录用户：从 IndexedDB 加载数据
-          console.log('[Store] loadFromDB: no session, loading from IndexedDB')
-          const [dbGenerations, dbFavorites, dbCollections] = await Promise.all([
-            dbGetAll<Generation>(STORES.GENERATIONS),
-            dbGetAll<Favorite>(STORES.FAVORITES),
-            dbGetAll<Collection>(STORES.COLLECTIONS),
-          ])
-          
-          // Get current state to merge with (avoid losing recent in-memory data)
-          const { generations: currentGenerations } = get()
-          const now = Date.now()
-          const RECENT_THRESHOLD_MS = 30000 // 30 seconds
-          
-          // Find very recent generations in memory that might not be in DB yet
-          // (e.g., still being processed/saved)
-          const recentInMemory = currentGenerations.filter(gen => {
-            const createdAt = new Date(gen.createdAt).getTime()
-            const isRecent = (now - createdAt) < RECENT_THRESHOLD_MS
-            // Keep if recent AND not in DB (by ID)
-            const existsInDb = dbGenerations.some(dbGen => dbGen.id === gen.id)
-            return isRecent && !existsInDb
-          })
-          
-          // Merge: DB generations + recent in-memory ones
-          const mergedGenerations = [...dbGenerations, ...recentInMemory]
-          
-          // Sort by createdAt desc
-          mergedGenerations.sort((a, b) => 
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          )
-          
-          // Remove duplicates (by ID)
-          const uniqueGenerations = mergedGenerations.filter((gen, index, self) =>
-            index === self.findIndex(g => g.id === gen.id)
-          )
-          
-          if (recentInMemory.length > 0) {
-            console.log('[Store] loadFromDB: preserved', recentInMemory.length, 'recent in-memory generations')
-          }
-          
-          console.log('[Store] loadFromDB: loaded', uniqueGenerations.length, 'generations (not logged in)')
-          
-          // 未登录用户：直接显示 IndexedDB 数据并结束 loading
+          // 未登录用户：直接标记完成，不加载任何数据
+          // Gallery 页面会通过 API 获取数据，这里不需要预加载
+          console.log('[Store] loadFromDB: no session, skipping (not logged in)')
           set({
-            generations: uniqueGenerations,
-            favorites: dbFavorites,
-            collections: dbCollections,
             _hasLoadedFromDB: true,
             isInitialLoading: false,
           })
         } catch (error) {
-          console.error('Error loading from IndexedDB:', error)
-          // Still mark as loaded to prevent infinite retries
+          console.error('Error in loadFromDB:', error)
           set({ _hasLoadedFromDB: true, isInitialLoading: false })
         }
       },
@@ -605,6 +556,7 @@ export const useAssetStore = create<AssetState>()(
       },
       
       // Sync with cloud - fetch all data from Supabase
+      // 简化版：只从云端加载，不再混合 IndexedDB
       syncWithCloud: async (userId) => {
         // Always set currentUserId immediately, even if sync is skipped
         // This ensures subsequent operations can sync to cloud
@@ -616,38 +568,18 @@ export const useAssetStore = create<AssetState>()(
           return
         }
         
-        // 保存当前内存中的"刚生成"数据（可能还没保存到云端）
-        const { generations: currentGenerations } = get()
-        const now = Date.now()
-        const RECENT_THRESHOLD_MS = 60000 // 1 分钟内的数据视为"刚生成"
-        const recentLocalGenerations = currentGenerations.filter(gen => {
-          const createdAt = new Date(gen.createdAt).getTime()
-          return (now - createdAt) < RECENT_THRESHOLD_MS
-        })
-        
         set({ isSyncing: true })
         
         const startTime = Date.now()
         
         try {
-          console.log('[Store] Starting parallel load: IndexedDB + Cloud for user:', userId)
-          console.log('[Store] Preserving', recentLocalGenerations.length, 'recent local generations during sync')
+          console.log('[Sync] Starting sync for user:', userId)
           
-          // 并行加载 IndexedDB 和云端数据
-          const [indexedDBData, cloudData] = await Promise.all([
-            // IndexedDB 加载
-            Promise.all([
-              dbGetAll<Generation>(STORES.GENERATIONS),
-              dbGetAll<Favorite>(STORES.FAVORITES),
-            ]).then(([gens, favs]) => ({ generations: gens, favorites: favs })),
-            // 云端加载
-            syncService.syncAllData(userId),
-          ])
-          
-          console.log('[Store] IndexedDB loaded:', indexedDBData.generations.length, 'generations')
+          // 只从云端加载数据
+          const cloudData = await syncService.syncAllData(userId)
           
           const duration = Date.now() - startTime
-          console.log('[Store] Cloud data received in', duration, 'ms:', {
+          console.log('[Sync] Cloud data received in', duration, 'ms:', {
             models: cloudData.userModels.length,
             backgrounds: cloudData.userBackgrounds.length,
             products: cloudData.userProducts.length,
@@ -657,54 +589,14 @@ export const useAssetStore = create<AssetState>()(
             pinnedPresets: cloudData.pinnedPresetIds.size,
           })
           
-          // 合并三个数据源：云端 + IndexedDB + 内存中刚生成的
-          // 优先级：云端 > IndexedDB > 内存（刚生成的）
-          const allGenerations = [
-            ...cloudData.generations,
-            ...indexedDBData.generations,
-            ...recentLocalGenerations,
-          ]
-          
-          // 去重：相同 ID 只保留第一个（按上面的顺序，云端优先）
-          const mergedGenerations = allGenerations
-            .filter((gen, index, self) => index === self.findIndex(g => g.id === gen.id))
-            // Sort by createdAt descending
-            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-          
-          const cloudCount = cloudData.generations.length
-          const localOnlyCount = mergedGenerations.length - cloudCount
-          if (localOnlyCount > 0) {
-            console.log('[Store] Merged', localOnlyCount, 'local-only generations (IndexedDB + memory)')
-          }
-          
-          // Save merged generations to IndexedDB FIRST to prevent data loss
-          console.log('[Store] Saving', mergedGenerations.length, 'generations to IndexedDB...')
-          for (const gen of mergedGenerations) {
-            try {
-              await dbPut(STORES.GENERATIONS, gen)
-            } catch (e) {
-              console.warn('[Store] Failed to save generation to IndexedDB:', gen.id, e)
-            }
-          }
-          
-          // Save favorites to IndexedDB
-          for (const fav of cloudData.favorites) {
-            try {
-              await dbPut(STORES.FAVORITES, fav)
-            } catch (e) {
-              console.warn('[Store] Failed to save favorite to IndexedDB:', fav.id, e)
-            }
-          }
-          
-          console.log('[Store] IndexedDB sync complete, updating state...')
-          
-          // Now update memory state - 一次性更新所有数据，结束 loading
+          // 直接使用云端数据，不再混合 IndexedDB
+          // Gallery 页面现在使用 API 获取数据，这里只更新资产和收藏等
           set({
             userModels: cloudData.userModels,
             userBackgrounds: cloudData.userBackgrounds,
             userProducts: cloudData.userProducts,
             userVibes: cloudData.userVibes,
-            generations: mergedGenerations,
+            generations: cloudData.generations,
             favorites: cloudData.favorites,
             pinnedPresetIds: cloudData.pinnedPresetIds,
             lastSyncAt: new Date().toISOString(),
@@ -714,9 +606,9 @@ export const useAssetStore = create<AssetState>()(
             hasMoreGenerations: cloudData.hasMoreGenerations || false,
           })
           
-          console.log('[Store] Cloud sync completed successfully')
+          console.log('[Sync] Cloud sync completed successfully')
         } catch (error) {
-          console.error('[Store] Cloud sync failed after', Date.now() - startTime, 'ms:', error)
+          console.error('[Sync] Cloud sync failed after', Date.now() - startTime, 'ms:', error)
           // Always reset isSyncing on error, also end initial loading
           set({ isSyncing: false, isInitialLoading: false, lastSyncAt: new Date().toISOString() })
         }

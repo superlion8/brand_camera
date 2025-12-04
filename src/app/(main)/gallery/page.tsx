@@ -143,14 +143,15 @@ export default function GalleryPage() {
   
   // Get tasks that need to show imageSlot cards
   // Include: pending, generating, AND completed tasks that haven't been synced yet
-  const activeTasks = tasks.filter(t => {
+  const activeTasks = tasks.filter(task => {
     // Always show pending/generating
-    if (t.status === 'pending' || t.status === 'generating') return true
+    if (task.status === 'pending' || task.status === 'generating') return true
     // For completed tasks with imageSlots, show until synced
-    if (t.status === 'completed' && t.imageSlots && t.imageSlots.length > 0) {
+    if (task.status === 'completed' && task.imageSlots && task.imageSlots.length > 0) {
       // Check if this task's images are already in gallery items
-      const isSynced = galleryItems.some(item => 
-        t.outputImageUrls.some(url => url && item.imageUrl === url)
+      const outputUrls = task.outputImageUrls || []
+      const isSynced = outputUrls.length > 0 && galleryItems.some(item => 
+        outputUrls.some(url => url && item.imageUrl === url)
       )
       return !isSynced // Show if not yet synced
     }
@@ -158,7 +159,7 @@ export default function GalleryPage() {
   })
   
   // Get completed tasks that might not yet be in gallery (legacy - no imageSlots)
-  const completedTasks = tasks.filter(t => t.status === 'completed' && !t.imageSlots)
+  const completedTasks = tasks.filter(task => task.status === 'completed' && !task.imageSlots)
   
   // Track which completed tasks have their images in the gallery
   const completedTasksWithImages = completedTasks.filter(task => 
@@ -168,8 +169,9 @@ export default function GalleryPage() {
   // Check which completed tasks already have their images in gallery
   const tasksToHide = completedTasksWithImages.filter(task => {
     // Match by comparing output URLs
+    const outputUrls = task.outputImageUrls || []
     return galleryItems.some(item => 
-      task.outputImageUrls.some(url => url && item.imageUrl === url)
+      outputUrls.some(url => url && item.imageUrl === url)
     )
   })
   
