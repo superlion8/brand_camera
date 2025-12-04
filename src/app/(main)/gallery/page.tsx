@@ -16,8 +16,9 @@ import { generateId } from "@/lib/utils"
 
 type TabType = "all" | "model" | "product" | "favorites"
 
-// Helper functions for type classification
-function isModelType(gen: Generation): boolean {
+// Helper functions for type classification - with null safety
+function isModelType(gen: Generation | null | undefined): boolean {
+  if (!gen) return false
   const type = gen.type?.toLowerCase() || ''
   if (type === 'camera_model' || type === 'model' || type === 'camera' || type === 'model_studio') {
     return true
@@ -29,12 +30,14 @@ function isModelType(gen: Generation): boolean {
   return false
 }
 
-function isProductType(gen: Generation): boolean {
+function isProductType(gen: Generation | null | undefined): boolean {
+  if (!gen) return false
   const type = gen.type?.toLowerCase() || ''
   return type === 'studio' || type === 'camera_product' || type === 'product' || type === 'product_studio'
 }
 
-function isEditType(gen: Generation): boolean {
+function isEditType(gen: Generation | null | undefined): boolean {
+  if (!gen) return false
   const type = gen.type?.toLowerCase() || ''
   return type === 'edit' || type === 'editing'
 }
@@ -113,7 +116,12 @@ export default function GalleryPage() {
   
   // Helper to get display label for generation type
   // debugMode controls whether to show sub-labels (极简/扩展)
-  const getTypeLabel = (gen: Generation, imageIndex: number, isDebugMode: boolean = false): { label: string; color: string; subLabel?: string; subColor?: string } => {
+  const getTypeLabel = (gen: Generation | null | undefined, imageIndex: number, isDebugMode: boolean = false): { label: string; color: string; subLabel?: string; subColor?: string } => {
+    // Null safety check
+    if (!gen) {
+      return { label: t.gallery.model, color: 'bg-zinc-400' }
+    }
+    
     // Studio/product types
     if (isProductType(gen)) {
       return { label: t.gallery.product, color: 'bg-amber-500' }
@@ -230,11 +238,14 @@ export default function GalleryPage() {
   }
   
   // 显示的图片列表（来自 API）
-  const displayedHistory = galleryItems.map(item => ({
-    gen: item.generation,
-    url: item.imageUrl,
-    idx: item.imageIndex
-  }))
+  // 过滤掉无效的 items（generation 为 null 的情况）
+  const displayedHistory = galleryItems
+    .filter(item => item && item.generation && item.imageUrl)
+    .map(item => ({
+      gen: item.generation,
+      url: item.imageUrl,
+      idx: item.imageIndex
+    }))
   
   // 检查图片是否已收藏
   const isFavorited = (generationId: string, imageIndex: number): boolean => {
