@@ -256,47 +256,71 @@ export default function GalleryPage() {
   }
   
   const handleFavoriteToggle = async (generationId: string, imageIndex: number) => {
-    try {
-      // 检查 assetStore 中是否已收藏
-      const existingFavorite = favorites.find(f => f.generationId === generationId && f.imageIndex === imageIndex)
-      const isOnFavoritesTab = activeTab === 'favorites'
-      
-      if (existingFavorite || isOnFavoritesTab) {
-        // 取消收藏 - 使用收藏记录的 ID
-        const favoriteId = existingFavorite?.id || galleryItems.find(i => i.generationId === generationId && i.imageIndex === imageIndex)?.id
-        if (favoriteId) {
-          const response = await fetch(`/api/favorites/${favoriteId}`, { method: 'DELETE' })
-          if (response.ok) {
-            // 从本地 store 移除
-            removeFavorite(favoriteId)
-            // 如果在收藏页，刷新列表
-            if (isOnFavoritesTab) {
-              fetchGalleryData(1, false)
-            }
-          }
+    // 检查 assetStore 中是否已收藏
+    const existingFavorite = favorites.find(f => f.generationId === generationId && f.imageIndex === imageIndex)
+    const isOnFavoritesTab = activeTab === 'favorites'
+    
+    if (existingFavorite || isOnFavoritesTab) {
+      // 取消收藏
+      const favoriteId = existingFavorite?.id || galleryItems.find(i => i.generationId === generationId && i.imageIndex === imageIndex)?.id
+      if (favoriteId) {
+        // 乐观更新：立即从本地 store 移除
+        removeFavorite(favoriteId)
+        
+        // 如果在收藏页，立即从列表中移除该图片
+        if (isOnFavoritesTab) {
+          setGalleryItems(prev => prev.filter(item => 
+            !(item.generationId === generationId && item.imageIndex === imageIndex)
+          ))
         }
-      } else {
-        // 添加收藏
-        const response = await fetch('/api/favorites', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ generationId, imageIndex })
-        })
-        if (response.ok) {
-          const data = await response.json()
-          // 添加到本地 store - API 已保存，跳过云端同步
-          if (data.data?.id) {
-            addFavorite({
-              id: data.data.id,
-              generationId,
-              imageIndex,
-              createdAt: data.data.created_at || new Date().toISOString(),
-            }, true) // skipCloudSync = true
-          }
-        }
+        
+        // 异步调用 API（不阻塞 UI）
+        fetch(`/api/favorites/${favoriteId}`, { method: 'DELETE' })
+          .catch(err => {
+            console.error('Failed to delete favorite:', err)
+            // 失败时可以考虑回滚，但一般不需要
+          })
       }
-    } catch (error) {
-      console.error('Failed to toggle favorite:', error)
+    } else {
+      // 添加收藏
+      // 乐观更新：立即添加一个临时记录
+      const tempId = `temp-${Date.now()}`
+      addFavorite({
+        id: tempId,
+        generationId,
+        imageIndex,
+        createdAt: new Date().toISOString(),
+      }, true) // skipCloudSync = true
+      
+      // 异步调用 API
+      fetch('/api/favorites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ generationId, imageIndex })
+      })
+        .then(async response => {
+          if (response.ok) {
+            const data = await response.json()
+            // 用真实 ID 替换临时 ID
+            if (data.data?.id && data.data.id !== tempId) {
+              removeFavorite(tempId)
+              addFavorite({
+                id: data.data.id,
+                generationId,
+                imageIndex,
+                createdAt: data.data.created_at || new Date().toISOString(),
+              }, true)
+            }
+          } else {
+            // API 失败，回滚乐观更新
+            removeFavorite(tempId)
+          }
+        })
+        .catch(err => {
+          console.error('Failed to add favorite:', err)
+          // 回滚乐观更新
+          removeFavorite(tempId)
+        })
     }
   }
   
