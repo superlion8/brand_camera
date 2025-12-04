@@ -119,6 +119,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setIsSyncing(true)
           try {
             await syncWithCloud(session.user.id)
+            // 更新用户国家信息（静默，不阻塞）
+            fetch('/api/user/update-country', { method: 'POST' }).catch(() => {})
           } finally {
             if (isMounted) setIsSyncing(false)
           }
