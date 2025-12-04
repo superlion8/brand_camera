@@ -44,7 +44,6 @@ export async function GET(request: NextRequest) {
         .from('favorites')
         .select('*, generations:generation_id(*)', { count: 'exact' })
         .eq('user_id', userId)
-        .is('deleted_at', null)
         .order('created_at', { ascending: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
 
@@ -55,7 +54,7 @@ export async function GET(request: NextRequest) {
 
       // 展开收藏的图片
       const items = favorites
-        ?.filter(fav => fav.generations && !fav.generations.deleted_at)
+        ?.filter(fav => fav.generations)
         .map(fav => {
           const gen = fav.generations
           const imageUrl = gen.output_image_urls?.[fav.image_index]

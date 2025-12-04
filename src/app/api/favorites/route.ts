@@ -34,11 +34,14 @@ export async function POST(request: NextRequest) {
       .eq('user_id', userId)
       .eq('generation_id', generationId)
       .eq('image_index', imageIndex)
-      .is('deleted_at', null)
       .maybeSingle()
 
     if (checkError) {
       console.error('[Favorites] Error checking existing:', checkError)
+      return NextResponse.json(
+        { success: false, error: '检查收藏状态失败' },
+        { status: 500 }
+      )
     }
 
     if (existing) {
