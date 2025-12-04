@@ -153,10 +153,33 @@ export async function GET(request: NextRequest) {
         }))
       }) || []
 
+    // 第一页时，查询 pending 状态的任务（生成中但还没有结果的）
+    let pendingTasks: any[] = []
+    if (page === 1 && type === 'all') {
+      const { data: pendingGens } = await supabase
+        .from('generations')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('status', 'pending')
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false })
+        .limit(10) // 最多 10 个 pending 任务
+
+      pendingTasks = (pendingGens || []).map(gen => ({
+        id: gen.task_id || gen.id,
+        dbId: gen.id,
+        type: gen.task_type,
+        status: 'pending',
+        totalImages: gen.total_images_count || 4,
+        createdAt: gen.created_at,
+      }))
+    }
+
     return NextResponse.json({
       success: true,
       data: {
         items,
+        pendingTasks, // 返回 pending 状态的任务
         total: genCount || 0,
         page,
         pageSize: PAGE_SIZE,

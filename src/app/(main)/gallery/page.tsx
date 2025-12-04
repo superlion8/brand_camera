@@ -54,6 +54,7 @@ export default function GalleryPage() {
   
   // 使用 API 获取数据，不再从 store 读取
   const [galleryItems, setGalleryItems] = useState<any[]>([])
+  const [pendingTasksFromDb, setPendingTasksFromDb] = useState<any[]>([]) // 从数据库获取的 pending 任务
   const [isLoading, setIsLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [hasMore, setHasMore] = useState(false)
@@ -81,6 +82,10 @@ export default function GalleryPage() {
           setGalleryItems(prev => [...prev, ...result.data.items])
         } else {
           setGalleryItems(result.data.items)
+          // 第一页时更新 pending 任务
+          if (result.data.pendingTasks) {
+            setPendingTasksFromDb(result.data.pendingTasks)
+          }
         }
         setHasMore(result.data.hasMore)
         setCurrentPage(page)
@@ -576,6 +581,20 @@ export default function GalleryPage() {
           className="grid grid-cols-2 gap-3 transition-transform duration-200"
           style={{ transform: `translateY(${pullDistance}px)` }}
         >
+          {/* 显示从数据库获取的 pending 任务（刷新后恢复的生成中任务） */}
+          {activeTab === "all" && pendingTasksFromDb
+            .filter(pt => !tasks.some(t => t.id === pt.id)) // 排除已在本地 store 中的任务
+            .map((pendingTask) => (
+              Array.from({ length: pendingTask.totalImages || 4 }).map((_, idx) => (
+                <PendingTaskCard 
+                  key={`pending-db-${pendingTask.id}-${idx}`}
+                  taskType={pendingTask.type}
+                  index={idx}
+                  total={pendingTask.totalImages || 4}
+                />
+              ))
+            ))}
+          
           {/* Show cards for active tasks - each imageSlot gets its own card */}
           {activeTab === "all" && activeTasks.map((task) => (
             task.imageSlots && task.imageSlots.length > 0 
@@ -1515,6 +1534,52 @@ function ImageSlotCard({ task, slot, slotIndex, onImageClick, onOpenDetail }: {
         } text-white`}>
           #{slotIndex + 1}
         </span>
+      </div>
+    </div>
+  )
+}
+
+// Pending task card - for tasks from database that are still generating
+function PendingTaskCard({ taskType, index, total }: { taskType: string; index: number; total: number }) {
+  const { t } = useTranslation()
+  const isStudio = taskType === 'studio' || taskType === 'product_studio'
+  const isEdit = taskType === 'edit' || taskType === 'editing'
+  
+  const bgGradient = isStudio 
+    ? 'from-amber-100 to-orange-100' 
+    : isEdit 
+      ? 'from-purple-100 to-pink-100'
+      : 'from-blue-100 to-purple-100'
+  
+  const borderColor = isStudio 
+    ? 'border-amber-300' 
+    : isEdit 
+      ? 'border-purple-300'
+      : 'border-blue-300'
+  
+  const pulseColor = isStudio 
+    ? 'bg-amber-400' 
+    : isEdit 
+      ? 'bg-purple-400'
+      : 'bg-blue-400'
+  
+  const textColor = isStudio 
+    ? 'text-amber-600' 
+    : isEdit 
+      ? 'text-purple-600'
+      : 'text-blue-600'
+  
+  return (
+    <div className={`relative aspect-[4/5] bg-gradient-to-br ${bgGradient} rounded-xl overflow-hidden shadow-sm border-2 border-dashed ${borderColor}`}>
+      <div className="absolute top-2 left-2">
+        <span className={`px-2 py-0.5 ${pulseColor} text-white text-[10px] rounded-full`}>
+          #{index + 1}
+        </span>
+      </div>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <Loader2 className={`w-8 h-8 ${textColor} animate-spin mb-2`} />
+        <p className={`text-xs ${textColor} font-medium`}>{t.gallery.generating || '生成中...'}</p>
+        <p className={`text-[10px] ${textColor} opacity-70 mt-1`}>第 {index + 1} / {total} 张</p>
       </div>
     </div>
   )
