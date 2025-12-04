@@ -6,7 +6,7 @@ const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim
 const DEFAULT_QUOTA = 30
 
 // GET - Get all user quotas (admin only)
-// Calculates used count from generations table
+// 直接从 user_quotas 表读取，速度更快
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
   
@@ -26,87 +26,43 @@ export async function GET(request: NextRequest) {
   }
   
   try {
-    // Get all generations grouped by user
-    // IMPORTANT: Include pending, processing, and completed to match user-facing quota calculation
-    const { data: generations, error: genError } = await adminClient
-      .from('generations')
-      .select('user_id, user_email, output_image_urls, total_images_count, created_at, status')
-      .in('status', ['pending', 'processing', 'completed'])
-      .order('created_at', { ascending: false })
+    // 直接从 user_quotas 表读取
+    const { data: quotasData, error: quotaError } = await adminClient
+      .from('user_quotas')
+      .select('*')
+      .order('used_quota', { ascending: false })
     
-    if (genError) {
-      console.error('Error fetching generations:', genError)
+    if (quotaError) {
+      console.error('Error fetching quotas:', quotaError)
       return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 })
     }
     
-    // Get custom quotas if any
-    const { data: customQuotas } = await adminClient
-      .from('user_quotas')
-      .select('user_id, user_email, total_quota, updated_at')
+    // 获取最近活动时间
+    const userIds = (quotasData || []).map(q => q.user_id)
+    const { data: lastActivities } = await adminClient
+      .from('generations')
+      .select('user_id, created_at')
+      .in('user_id', userIds.length > 0 ? userIds : ['none'])
+      .order('created_at', { ascending: false })
     
-    const customQuotaMap = new Map(
-      (customQuotas || []).map(q => [q.user_id, q])
-    )
-    
-    // Calculate per-user stats
-    const userStats = new Map<string, {
-      userId: string
-      userEmail: string
-      usedCount: number
-      totalQuota: number
-      lastActivity: string
-    }>()
-    
-    for (const gen of generations || []) {
-      const userId = gen.user_id
-      let imageCount = 0
-      
-      if (gen.total_images_count) {
-        imageCount = gen.total_images_count
-      } else if (gen.output_image_urls && Array.isArray(gen.output_image_urls)) {
-        imageCount = gen.output_image_urls.length
+    // 构建最近活动时间 map
+    const lastActivityMap = new Map<string, string>()
+    for (const gen of lastActivities || []) {
+      if (!lastActivityMap.has(gen.user_id)) {
+        lastActivityMap.set(gen.user_id, gen.created_at)
       }
-      
-      if (!userStats.has(userId)) {
-        const customQuota = customQuotaMap.get(userId)
-        userStats.set(userId, {
-          userId,
-          userEmail: gen.user_email || customQuota?.user_email || userId,
-          usedCount: 0,
-          totalQuota: customQuota?.total_quota || DEFAULT_QUOTA,
-          lastActivity: gen.created_at,
-        })
-      }
-      
-      const stats = userStats.get(userId)!
-      stats.usedCount += imageCount
     }
     
-    // Also add users with custom quotas but no generations
-    Array.from(customQuotaMap.entries()).forEach(([userId, quota]) => {
-      if (!userStats.has(userId)) {
-        userStats.set(userId, {
-          userId,
-          userEmail: quota.user_email || userId,
-          usedCount: 0,
-          totalQuota: quota.total_quota,
-          lastActivity: quota.updated_at,
-        })
-      }
-    })
-    
     // Format response
-    const quotas = Array.from(userStats.values())
-      .map(s => ({
-        id: s.userId,
-        userId: s.userId,
-        userEmail: s.userEmail,
-        totalQuota: s.totalQuota,
-        usedCount: s.usedCount,
-        remainingQuota: Math.max(0, s.totalQuota - s.usedCount),
-        updatedAt: s.lastActivity,
-      }))
-      .sort((a, b) => b.usedCount - a.usedCount) // Sort by usage
+    const quotas = (quotasData || []).map(q => ({
+      id: q.user_id,
+      userId: q.user_id,
+      userEmail: q.user_email || q.user_id,
+      totalQuota: q.total_quota || DEFAULT_QUOTA,
+      usedCount: q.used_quota || 0,
+      remainingQuota: Math.max(0, (q.total_quota || DEFAULT_QUOTA) - (q.used_quota || 0)),
+      updatedAt: lastActivityMap.get(q.user_id) || q.updated_at,
+    }))
     
     return NextResponse.json({ quotas })
   } catch (error: any) {
@@ -146,13 +102,23 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'totalQuota is required' }, { status: 400 })
     }
     
-    // Upsert user_quotas (only stores total_quota limit, not used count)
+    // 先获取当前的 used_quota
+    const { data: existingQuota } = await adminClient
+      .from('user_quotas')
+      .select('used_quota')
+      .eq('user_id', userId)
+      .single()
+    
+    const currentUsed = existingQuota?.used_quota || 0
+    
+    // Upsert user_quotas
     const { data, error } = await adminClient
       .from('user_quotas')
       .upsert({
         user_id: userId,
         user_email: userEmail,
         total_quota: totalQuota,
+        used_quota: currentUsed, // 保留现有的 used_quota
       }, {
         onConflict: 'user_id'
       })
@@ -164,25 +130,6 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update quota' }, { status: 500 })
     }
     
-    // Get actual used count from generations
-    // IMPORTANT: Include pending, processing, and completed to match user-facing quota calculation
-    const { data: generations } = await adminClient
-      .from('generations')
-      .select('output_image_urls, total_images_count')
-      .eq('user_id', userId)
-      .in('status', ['pending', 'processing', 'completed'])
-    
-    let usedCount = 0
-    if (generations) {
-      for (const gen of generations) {
-        if (gen.total_images_count) {
-          usedCount += gen.total_images_count
-        } else if (gen.output_image_urls && Array.isArray(gen.output_image_urls)) {
-          usedCount += gen.output_image_urls.length
-        }
-      }
-    }
-    
     return NextResponse.json({
       success: true,
       quota: {
@@ -190,8 +137,8 @@ export async function PUT(request: NextRequest) {
         userId: data.user_id,
         userEmail: data.user_email,
         totalQuota: data.total_quota,
-        usedCount,
-        remainingQuota: Math.max(0, data.total_quota - usedCount),
+        usedCount: data.used_quota || 0,
+        remainingQuota: Math.max(0, data.total_quota - (data.used_quota || 0)),
       }
     })
   } catch (error: any) {
@@ -199,4 +146,3 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
-

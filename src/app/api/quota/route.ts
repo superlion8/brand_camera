@@ -3,57 +3,59 @@ import { createClient } from '@/lib/supabase/server'
 
 const DEFAULT_QUOTA = 30
 
-// GET - Get current user's quota (count from generations table)
-// Includes pending/processing tasks to deduct quota upfront
-// NOTE: Deleted generations (is_deleted=true) are still counted towards quota
-// This prevents users from hacking the quota system by deleting generations
+// 获取或创建用户额度记录
+async function getOrCreateUserQuota(supabase: any, userId: string, userEmail?: string) {
+  // 先尝试获取
+  const { data: existing } = await supabase
+    .from('user_quotas')
+    .select('*')
+    .eq('user_id', userId)
+    .single()
+  
+  if (existing) {
+    return existing
+  }
+  
+  // 不存在则创建
+  const { data: created, error } = await supabase
+    .from('user_quotas')
+    .insert({
+      user_id: userId,
+      user_email: userEmail,
+      total_quota: DEFAULT_QUOTA,
+      used_quota: 0,
+    })
+    .select()
+    .single()
+  
+  if (error) {
+    console.error('[Quota] Error creating user quota:', error)
+    // 可能是并发创建，再尝试获取一次
+    const { data: retry } = await supabase
+      .from('user_quotas')
+      .select('*')
+      .eq('user_id', userId)
+      .single()
+    return retry || { total_quota: DEFAULT_QUOTA, used_quota: 0 }
+  }
+  
+  return created
+}
+
+// GET - Get current user's quota (直接从 user_quotas 表读取)
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
   
-  // Check authentication
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   
   try {
-    // Count total images from generations table
-    // Include pending, processing, and completed tasks (deduct quota when task starts)
-    // Do NOT filter by is_deleted - deleted generations still count towards quota
-    const { data: generations, error: genError } = await supabase
-      .from('generations')
-      .select('output_image_urls, total_images_count, status')
-      .eq('user_id', user.id)
-      .in('status', ['pending', 'processing', 'completed'])
+    const quotaData = await getOrCreateUserQuota(supabase, user.id, user.email)
     
-    if (genError) {
-      console.error('Error fetching generations:', genError)
-      return NextResponse.json({ error: 'Failed to fetch quota' }, { status: 500 })
-    }
-    
-    // Calculate total images
-    let usedCount = 0
-    if (generations) {
-      for (const gen of generations) {
-        if (gen.total_images_count) {
-          usedCount += gen.total_images_count
-        } else if (gen.output_image_urls && Array.isArray(gen.output_image_urls)) {
-          usedCount += gen.output_image_urls.length
-        }
-      }
-    }
-    
-    // Check if user has custom quota in user_quotas table
-    let totalQuota = DEFAULT_QUOTA
-    const { data: quotaData } = await supabase
-      .from('user_quotas')
-      .select('total_quota')
-      .eq('user_id', user.id)
-      .single()
-    
-    if (quotaData?.total_quota) {
-      totalQuota = quotaData.total_quota
-    }
+    const totalQuota = quotaData.total_quota || DEFAULT_QUOTA
+    const usedCount = quotaData.used_quota || 0
     
     return NextResponse.json({
       totalQuota,
@@ -67,12 +69,9 @@ export async function GET(request: NextRequest) {
 }
 
 // POST - Check quota before generation
-// Includes pending/processing tasks to deduct quota upfront
-// NOTE: Deleted generations (is_deleted=true) are still counted towards quota
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
   
-  // Check authentication
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -82,48 +81,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { action, imageCount = 1 } = body
     
-    // Only support 'check' action now (increment is handled automatically when generation is saved)
     if (action !== 'check') {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
     
-    // Count total images from generations table
-    // Include pending, processing, and completed tasks
-    // Do NOT filter by is_deleted - deleted generations still count towards quota
-    const { data: generations, error: genError } = await supabase
-      .from('generations')
-      .select('output_image_urls, total_images_count, status')
-      .eq('user_id', user.id)
-      .in('status', ['pending', 'processing', 'completed'])
+    const quotaData = await getOrCreateUserQuota(supabase, user.id, user.email)
     
-    if (genError) {
-      console.error('Error fetching generations:', genError)
-      return NextResponse.json({ error: 'Failed to check quota' }, { status: 500 })
-    }
-    
-    let usedCount = 0
-    if (generations) {
-      for (const gen of generations) {
-        if (gen.total_images_count) {
-          usedCount += gen.total_images_count
-        } else if (gen.output_image_urls && Array.isArray(gen.output_image_urls)) {
-          usedCount += gen.output_image_urls.length
-        }
-      }
-    }
-    
-    // Check custom quota
-    let totalQuota = DEFAULT_QUOTA
-    const { data: quotaData } = await supabase
-      .from('user_quotas')
-      .select('total_quota')
-      .eq('user_id', user.id)
-      .single()
-    
-    if (quotaData?.total_quota) {
-      totalQuota = quotaData.total_quota
-    }
-    
+    const totalQuota = quotaData.total_quota || DEFAULT_QUOTA
+    const usedCount = quotaData.used_quota || 0
     const remainingQuota = Math.max(0, totalQuota - usedCount)
     
     return NextResponse.json({
@@ -137,4 +102,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
-
