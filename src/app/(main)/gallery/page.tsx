@@ -1245,14 +1245,11 @@ function ImageSlotCard({ task, slot, slotIndex, onImageClick, onOpenDetail }: {
     }
   }
   
-  // 已完成且有有效图片，直接显示结果
-  if (slot.status === 'completed' && hasValidImageUrl) {
-    // 如果已同步到数据库，点击打开详情页；否则打开全屏查看器
+  // 已完成且有有效图片且已同步到数据库，显示可点击的结果卡片
+  if (slot.status === 'completed' && hasValidImageUrl && generationRecord) {
     const handleClick = () => {
-      if (generationRecord && onOpenDetail) {
+      if (onOpenDetail) {
         onOpenDetail(generationRecord, slotIndex)
-      } else if (onImageClick) {
-        onImageClick(slot.imageUrl!)
       }
     }
     
@@ -1262,7 +1259,7 @@ function ImageSlotCard({ task, slot, slotIndex, onImageClick, onOpenDetail }: {
         onClick={handleClick}
       >
         <Image 
-          src={slot.imageUrl!} 
+          src={imageUrlInDb || slot.imageUrl!} 
           alt={`Generated ${slotIndex + 1}`}
           fill
           className="object-cover transition-transform group-hover:scale-105"
@@ -1288,33 +1285,87 @@ function ImageSlotCard({ task, slot, slotIndex, onImageClick, onOpenDetail }: {
             </span>
           )}
         </div>
-        {/* 收藏按钮 - 根据数据库状态显示 */}
-        {canFavorite ? (
-          <button 
-            className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-colors ${
-              isImageFavorited 
-                ? 'bg-red-500 text-white' 
-                : 'bg-white/70 backdrop-blur text-zinc-400 hover:text-red-500'
-            }`}
-            onClick={handleFavorite}
-          >
-            <Heart className={`w-4 h-4 ${isImageFavorited ? 'fill-current' : ''}`} />
-          </button>
-        ) : (
-          <button 
-            className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-sm bg-white/70 backdrop-blur text-zinc-400 cursor-not-allowed"
-            disabled
-            title={t.gallery.syncing || '同步中...'}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Loader2 className="w-4 h-4 animate-spin" />
-          </button>
-        )}
+        {/* 收藏按钮 */}
+        <button 
+          className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-colors ${
+            isImageFavorited 
+              ? 'bg-red-500 text-white' 
+              : 'bg-white/70 backdrop-blur text-zinc-400 hover:text-red-500'
+          }`}
+          onClick={handleFavorite}
+        >
+          <Heart className={`w-4 h-4 ${isImageFavorited ? 'fill-current' : ''}`} />
+        </button>
         {/* Date overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
           <p className="text-[10px] text-white truncate">
-            {canFavorite ? new Date(generationRecord.createdAt).toLocaleString() : (t.gallery.syncing || '同步中...')}
+            {new Date(generationRecord.createdAt).toLocaleString()}
           </p>
+        </div>
+      </div>
+    )
+  }
+  
+  // 已完成有图片但还没同步到数据库，显示"同步中"loading 卡片
+  if (slot.status === 'completed' && hasValidImageUrl && !generationRecord) {
+    const bgGradient = isStudio 
+      ? 'from-amber-50 to-orange-100' 
+      : isEdit 
+        ? 'from-purple-50 to-pink-100'
+        : 'from-green-50 to-emerald-100'
+    
+    const borderColor = isStudio 
+      ? 'border-amber-300' 
+      : isEdit 
+        ? 'border-purple-300'
+        : 'border-green-300'
+    
+    const spinnerColor = isStudio 
+      ? 'text-amber-600' 
+      : isEdit 
+        ? 'text-purple-600'
+        : 'text-green-600'
+    
+    const textColor = isStudio 
+      ? 'text-amber-700' 
+      : isEdit 
+        ? 'text-purple-700'
+        : 'text-green-700'
+    
+    return (
+      <div className={`relative aspect-[4/5] bg-gradient-to-br ${bgGradient} rounded-xl overflow-hidden shadow-sm border-2 border-dashed ${borderColor}`}>
+        {/* 背景模糊的已生成图 */}
+        <div className="absolute inset-0 opacity-40">
+          <Image 
+            src={slot.imageUrl!} 
+            alt="Syncing" 
+            fill 
+            className="object-cover blur-sm" 
+          />
+        </div>
+        
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <Loader2 className={`w-8 h-8 ${spinnerColor} animate-spin mb-2`} />
+          <p className={`text-xs ${textColor} font-medium`}>{t.gallery.syncing || '同步中...'}</p>
+          <p className={`text-[10px] ${textColor} opacity-70 mt-1`}>第 {slotIndex + 1} 张</p>
+        </div>
+        
+        {/* 标签 */}
+        <div className="absolute top-2 left-2 flex gap-1">
+          {slot.modelType && (
+            <span className={`px-1.5 py-0.5 text-[9px] rounded font-medium ${
+              slot.modelType === 'pro' ? 'bg-green-500 text-white' : 'bg-orange-500 text-white'
+            }`}>
+              {slot.modelType === 'pro' ? 'Pro' : 'Flash'}
+            </span>
+          )}
+          {slot.genMode && (
+            <span className={`px-1.5 py-0.5 text-[9px] rounded font-medium ${
+              slot.genMode === 'simple' ? 'bg-blue-500 text-white' : 'bg-purple-500 text-white'
+            }`}>
+              {slot.genMode === 'simple' ? '极简' : '扩展'}
+            </span>
+          )}
         </div>
       </div>
     )
