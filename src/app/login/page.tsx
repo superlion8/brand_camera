@@ -1,14 +1,14 @@
 "use client"
 
-import { useState, Suspense, useMemo, useEffect } from "react"
+import { useState, Suspense, useMemo, useEffect, useRef } from "react"
 import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { validateRedirectClient } from "@/lib/utils/redirect"
-import { Loader2, Mail, ArrowLeft, ExternalLink } from "lucide-react"
+import { Loader2, Mail, ArrowLeft, Phone, Smartphone } from "lucide-react"
 import { useLanguageStore } from "@/stores/languageStore"
 
-type AuthMode = "select" | "email-otp" | "verify-otp"
+type AuthMode = "select" | "email-otp" | "verify-otp" | "phone-sms" | "verify-sms"
 
 // 检测是否在 WebView 中（微信、微博、QQ 等 App 内置浏览器）
 function isWebView(): boolean {
@@ -44,16 +44,29 @@ function LoginContent() {
   
   const [mode, setMode] = useState<AuthMode>("select")
   const [email, setEmail] = useState("")
+  const [phone, setPhone] = useState("")
   const [otpCode, setOtpCode] = useState("")
+  const [smsCode, setSmsCode] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [inWebView, setInWebView] = useState(false)
+  const [smsCountdown, setSmsCountdown] = useState(0)
+  const countdownRef = useRef<NodeJS.Timeout | null>(null)
   
   // 检测 WebView
   useEffect(() => {
     setInWebView(isWebView())
+  }, [])
+
+  // 清理倒计时
+  useEffect(() => {
+    return () => {
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current)
+      }
+    }
   }, [])
 
   const handleGoogleLogin = async () => {
@@ -82,7 +95,7 @@ function LoginContent() {
     }
   }
 
-  // Send OTP verification code
+  // Send OTP verification code (Email)
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -113,7 +126,7 @@ function LoginContent() {
     }
   }
 
-  // Verify OTP code
+  // Verify OTP code (Email)
   const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -148,19 +161,110 @@ function LoginContent() {
     }
   }
 
+  // Send SMS verification code (Phone)
+  const handleSendSMS = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError(null)
+    setMessage(null)
+
+    try {
+      const response = await fetch('/api/sms/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || '发送失败')
+      }
+
+      setMessage(t.login.smsSent || '验证码已发送')
+      setMode("verify-sms")
+      
+      // 开始60秒倒计时
+      setSmsCountdown(60)
+      countdownRef.current = setInterval(() => {
+        setSmsCountdown(prev => {
+          if (prev <= 1) {
+            if (countdownRef.current) clearInterval(countdownRef.current)
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+
+    } catch (err: any) {
+      console.error("Send SMS error:", err)
+      setError(err.message || t.errors.smsSendFailed || '发送失败')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Verify SMS code and login (Phone)
+  const handleVerifySMS = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/sms/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, code: smsCode }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || '验证失败')
+      }
+
+      // 验证成功，刷新页面以同步登录状态
+      setMessage('登录成功，正在跳转...')
+      
+      // 短暂延迟后跳转
+      setTimeout(() => {
+        window.location.href = redirectTo
+      }, 500)
+
+    } catch (err: any) {
+      console.error("Verify SMS error:", err)
+      setError(err.message || t.errors.smsVerifyFailed || '验证失败')
+      setIsLoading(false)
+    }
+  }
+
   const resetState = () => {
     setError(null)
     setMessage(null)
     setOtpCode("")
+    setSmsCode("")
   }
 
   const goBack = () => {
     if (mode === "verify-otp") {
       setMode("email-otp")
+    } else if (mode === "verify-sms") {
+      setMode("phone-sms")
     } else {
       setMode("select")
     }
     resetState()
+  }
+
+  const getModeDescription = () => {
+    switch (mode) {
+      case "select": return t.login.selectMethod
+      case "email-otp": return t.login.emailOtp
+      case "verify-otp": return t.login.enterCode
+      case "phone-sms": return t.login.phoneSms || '手机号登录'
+      case "verify-sms": return t.login.enterSmsCode || '输入短信验证码'
+      default: return ''
+    }
   }
 
   return (
@@ -192,11 +296,7 @@ function LoginContent() {
             className="mb-3"
           />
           <h1 className="text-2xl font-bold text-zinc-900">{t.login.title}</h1>
-          <p className="text-sm text-zinc-500 mt-1">
-            {mode === "select" && t.login.selectMethod}
-            {mode === "email-otp" && t.login.emailOtp}
-            {mode === "verify-otp" && t.login.enterCode}
-          </p>
+          <p className="text-sm text-zinc-500 mt-1">{getModeDescription()}</p>
         </div>
 
         {/* Error Message */}
@@ -221,7 +321,7 @@ function LoginContent() {
               <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 text-sm">
                 <p className="font-medium mb-1">🔒 {t.login.webViewWarning || '当前在App内打开'}</p>
                 <p className="text-xs text-amber-600">
-                  {t.login.webViewTip || 'Google登录需要使用系统浏览器，请使用邮箱验证码登录，或点击右上角菜单选择"在浏览器中打开"'}
+                  {t.login.webViewTip || 'Google登录需要使用系统浏览器，请使用邮箱或手机号登录'}
                 </p>
               </div>
             )}
@@ -252,11 +352,20 @@ function LoginContent() {
                 {/* Divider */}
                 <div className="flex items-center gap-4 py-2">
                   <div className="flex-1 h-px bg-zinc-200" />
-                  <span className="text-sm text-zinc-400">{t.login.and}</span>
+                  <span className="text-sm text-zinc-400">{t.login.or || '或'}</span>
                   <div className="flex-1 h-px bg-zinc-200" />
                 </div>
               </>
             )}
+
+            {/* Phone SMS Login - 优先展示（中国用户常用） */}
+            <button
+              onClick={() => { setMode("phone-sms"); resetState(); }}
+              className="w-full h-12 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex items-center justify-center gap-3 transition-colors"
+            >
+              <Smartphone className="w-5 h-5" />
+              <span>{t.login.phoneSms || '手机号登录'}</span>
+            </button>
 
             {/* Email OTP Login */}
             <button
@@ -267,6 +376,95 @@ function LoginContent() {
               <span>{t.login.emailOtp}</span>
             </button>
           </div>
+        )}
+
+        {/* Phone SMS - Step 1: Enter Phone Number */}
+        {mode === "phone-sms" && (
+          <form onSubmit={handleSendSMS} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1.5">
+                {t.login.phone || '手机号'}
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+                <span className="absolute left-10 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">+86</span>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
+                  placeholder="请输入手机号"
+                  required
+                  autoFocus
+                  maxLength={11}
+                  className="w-full h-12 pl-20 pr-4 border border-zinc-200 rounded-lg text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                />
+              </div>
+              <p className="text-xs text-zinc-400 mt-1.5">
+                {t.login.phoneHint || '支持中国大陆手机号'}
+              </p>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading || phone.length !== 11}
+              className="w-full h-12 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                t.login.getSmsCode || '获取验证码'
+              )}
+            </button>
+          </form>
+        )}
+
+        {/* Phone SMS - Step 2: Enter SMS Code */}
+        {mode === "verify-sms" && (
+          <form onSubmit={handleVerifySMS} className="space-y-4">
+            <p className="text-sm text-zinc-600 text-center mb-4">
+              {t.login.smsSentTo || '验证码已发送至'}: <span className="font-medium text-zinc-900">+86 {phone}</span>
+            </p>
+
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1.5">
+                {t.login.enterSmsCode || '输入验证码'}
+              </label>
+              <input
+                type="text"
+                value={smsCode}
+                onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                placeholder={t.login.smsCodePlaceholder || '6位验证码'}
+                required
+                autoFocus
+                maxLength={6}
+                className="w-full h-14 text-center text-2xl font-mono tracking-[0.5em] border border-zinc-200 rounded-lg text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading || smsCode.length !== 6}
+              className="w-full h-12 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                t.login.verifyAndLogin || '验证并登录'
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSendSMS}
+              disabled={isLoading || smsCountdown > 0}
+              className="w-full text-sm text-green-600 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {smsCountdown > 0 
+                ? `${t.login.resendAfter || '重新发送'} (${smsCountdown}s)` 
+                : (t.login.resendSmsCode || '重新发送验证码')
+              }
+            </button>
+          </form>
         )}
 
         {/* Email OTP - Step 1: Enter Email */}
