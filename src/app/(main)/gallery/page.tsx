@@ -530,6 +530,7 @@ export default function GalleryPage() {
                     slot={slot}
                     slotIndex={slot.index}
                     onImageClick={(url) => setFullscreenImage(url)}
+                    onOpenDetail={(gen, index) => setSelectedItem({ gen, index })}
                   />
                 ))
               : <GeneratingCard key={task.id} task={task} />
@@ -1187,11 +1188,12 @@ export default function GalleryPage() {
 }
 
 // Single image slot card - shows individual image status
-function ImageSlotCard({ task, slot, slotIndex, onImageClick }: { 
+function ImageSlotCard({ task, slot, slotIndex, onImageClick, onOpenDetail }: { 
   task: GenerationTask; 
   slot: ImageSlot; 
   slotIndex: number;
   onImageClick?: (imageUrl: string) => void;
+  onOpenDetail?: (gen: Generation, index: number) => void;
 }) {
   const { t } = useTranslation()
   const { generations, favorites, addFavorite, removeFavorite, isFavorited } = useAssetStore()
@@ -1245,10 +1247,19 @@ function ImageSlotCard({ task, slot, slotIndex, onImageClick }: {
   
   // 已完成且有有效图片，直接显示结果
   if (slot.status === 'completed' && hasValidImageUrl) {
+    // 如果已同步到数据库，点击打开详情页；否则打开全屏查看器
+    const handleClick = () => {
+      if (generationRecord && onOpenDetail) {
+        onOpenDetail(generationRecord, slotIndex)
+      } else if (onImageClick) {
+        onImageClick(slot.imageUrl!)
+      }
+    }
+    
     return (
       <div 
         className="group relative aspect-[4/5] bg-zinc-100 rounded-xl overflow-hidden shadow-sm cursor-pointer"
-        onClick={() => onImageClick?.(slot.imageUrl!)}
+        onClick={handleClick}
       >
         <Image 
           src={slot.imageUrl!} 
