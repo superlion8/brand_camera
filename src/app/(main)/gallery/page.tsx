@@ -868,10 +868,10 @@ export default function GalleryPage() {
                           </div>
                         )}
                         
-                        {/* Model Image - use per-image data if available, fallback to params */}
+                        {/* Model Image - use per-image data if available, fallback to params or direct field */}
                         {(() => {
                           const perImageModel = selectedItem.gen.params?.perImageModels?.[selectedItem.index]
-                          const modelUrl = perImageModel?.imageUrl || selectedItem.gen.params?.modelImage
+                          const modelUrl = perImageModel?.imageUrl || selectedItem.gen.params?.modelImage || selectedItem.gen.modelImageUrl
                           const rawModelName = perImageModel?.name || selectedItem.gen.params?.model
                           const modelIsRandom = perImageModel?.isRandom === true || rawModelName?.includes('(随机)')
                           const modelName = rawModelName?.replace(' (随机)', '').replace('(随机)', '') || t.common.model
@@ -901,10 +901,10 @@ export default function GalleryPage() {
                           )
                         })()}
                         
-                        {/* Background Image - use per-image data if available, fallback to params */}
+                        {/* Background Image - use per-image data if available, fallback to params or direct field */}
                         {(() => {
                           const perImageBg = selectedItem.gen.params?.perImageBackgrounds?.[selectedItem.index]
-                          const bgUrl = perImageBg?.imageUrl || selectedItem.gen.params?.backgroundImage
+                          const bgUrl = perImageBg?.imageUrl || selectedItem.gen.params?.backgroundImage || selectedItem.gen.backgroundImageUrl
                           const rawBgName = perImageBg?.name || selectedItem.gen.params?.background
                           const bgIsRandom = perImageBg?.isRandom === true || rawBgName?.includes('(随机)')
                           const bgName = rawBgName?.replace(' (随机)', '').replace('(随机)', '') || t.common.background
