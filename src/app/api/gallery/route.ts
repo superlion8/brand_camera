@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const type = (searchParams.get('type') || 'all') as GalleryType
     
-    const supabase = await createServiceClient()
+    const supabase = createServiceClient()
     
     // 处理收藏筛选
     if (type === 'favorites') {
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
         .from('favorites')
         .select('*, generation:generation_id(*)', { count: 'exact' })
         .eq('user_id', userId)
-        .eq('deleted_at', null)
+        .is('deleted_at', null)
         .order('created_at', { ascending: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
 
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
       .from('generations')
       .select('*', { count: 'exact' })
       .eq('user_id', userId)
-      .eq('deleted_at', null)
+      .is('deleted_at', null)
       .not('output_image_urls', 'is', null)
 
     // 按类型筛选
