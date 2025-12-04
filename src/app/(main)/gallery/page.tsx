@@ -112,6 +112,25 @@ export default function GalleryPage() {
       fetchGalleryData(1, false)
     }
   }, [activeTab, user])
+  
+  // 当有完成但未同步的图片时，定期刷新数据
+  useEffect(() => {
+    const hasUnsyncedCompleted = tasks.some(task => 
+      task.imageSlots?.some(slot => 
+        slot.status === 'completed' && slot.imageUrl
+      )
+    )
+    
+    if (hasUnsyncedCompleted && user) {
+      const intervalId = setInterval(() => {
+        console.log('[Gallery] Refreshing data for unsynced images...')
+        fetchGalleryData(1, false)
+      }, 3000) // 每 3 秒刷新一次
+      
+      return () => clearInterval(intervalId)
+    }
+  }, [tasks, user])
+  
   // Helper to get display label for generation type
   // debugMode controls whether to show sub-labels (极简/扩展)
   const getTypeLabel = (gen: Generation | null | undefined, imageIndex: number, isDebugMode: boolean = false): { label: string; color: string; subLabel?: string; subColor?: string } => {
@@ -1349,51 +1368,20 @@ function ImageSlotCard({ task, slot, slotIndex, onImageClick, onOpenDetail }: {
     )
   }
   
-  // 已完成有图片但还没同步到数据库，显示"同步中"loading 卡片
+  // 已完成有图片但还没同步到数据库，直接显示结果卡片（收藏按钮显示加载状态）
   if (slot.status === 'completed' && hasValidImageUrl && !generationRecord) {
-    const bgGradient = isStudio 
-      ? 'from-amber-50 to-orange-100' 
-      : isEdit 
-        ? 'from-purple-50 to-pink-100'
-        : 'from-green-50 to-emerald-100'
-    
-    const borderColor = isStudio 
-      ? 'border-amber-300' 
-      : isEdit 
-        ? 'border-purple-300'
-        : 'border-green-300'
-    
-    const spinnerColor = isStudio 
-      ? 'text-amber-600' 
-      : isEdit 
-        ? 'text-purple-600'
-        : 'text-green-600'
-    
-    const textColor = isStudio 
-      ? 'text-amber-700' 
-      : isEdit 
-        ? 'text-purple-700'
-        : 'text-green-700'
-    
     return (
-      <div className={`relative aspect-[4/5] bg-gradient-to-br ${bgGradient} rounded-xl overflow-hidden shadow-sm border-2 border-dashed ${borderColor}`}>
-        {/* 背景模糊的已生成图 */}
-        <div className="absolute inset-0 opacity-40">
-          <Image 
-            src={slot.imageUrl!} 
-            alt="Syncing" 
-            fill 
-            className="object-cover blur-sm" 
-          />
-        </div>
-        
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <Loader2 className={`w-8 h-8 ${spinnerColor} animate-spin mb-2`} />
-          <p className={`text-xs ${textColor} font-medium`}>{t.gallery.syncing || '同步中...'}</p>
-          <p className={`text-[10px] ${textColor} opacity-70 mt-1`}>第 {slotIndex + 1} 张</p>
-        </div>
-        
-        {/* 标签 */}
+      <div 
+        className="group relative aspect-[4/5] bg-zinc-100 rounded-xl overflow-hidden shadow-sm cursor-pointer"
+        onClick={() => onImageClick?.(slot.imageUrl!)}
+      >
+        <Image 
+          src={slot.imageUrl!} 
+          alt={`Generated ${slotIndex + 1}`}
+          fill
+          className="object-cover transition-transform group-hover:scale-105"
+        />
+        {/* 显示模型类型和生成模式标签 */}
         <div className="absolute top-2 left-2 flex gap-1">
           {slot.modelType && (
             <span className={`px-1.5 py-0.5 text-[9px] rounded font-medium ${
@@ -1409,6 +1397,10 @@ function ImageSlotCard({ task, slot, slotIndex, onImageClick, onOpenDetail }: {
               {slot.genMode === 'simple' ? '极简' : '扩展'}
             </span>
           )}
+        </div>
+        {/* 收藏按钮 - 显示加载状态 */}
+        <div className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/70 backdrop-blur flex items-center justify-center">
+          <Loader2 className="w-4 h-4 text-zinc-400 animate-spin" />
         </div>
       </div>
     )
