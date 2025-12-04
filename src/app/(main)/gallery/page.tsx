@@ -272,11 +272,16 @@ export default function GalleryPage() {
           ))
         }
         
+        // 如果是临时 ID（乐观更新创建的），不需要调用 API
+        if (favoriteId.startsWith('temp-')) {
+          console.log('[Favorites] Skipping API call for temp favorite:', favoriteId)
+          return
+        }
+        
         // 异步调用 API（不阻塞 UI）
         fetch(`/api/favorites/${favoriteId}`, { method: 'DELETE' })
           .catch(err => {
             console.error('Failed to delete favorite:', err)
-            // 失败时可以考虑回滚，但一般不需要
           })
       }
     } else {
