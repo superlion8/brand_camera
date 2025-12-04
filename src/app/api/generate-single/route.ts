@@ -290,6 +290,17 @@ export async function POST(request: NextRequest) {
         uploadedUrl = uploaded
         console.log(`[${label}] Uploaded to storage`)
         
+        // 只在第一张图时上传商品图（避免重复上传）
+        let inputImageUrl: string | undefined
+        if (index === 0 && productImage) {
+          const productBase64 = productImage.startsWith('data:') ? productImage : `data:image/jpeg;base64,${productImage}`
+          const uploadedInput = await uploadImageToStorage(productBase64, userId, 'input_product')
+          if (uploadedInput) {
+            inputImageUrl = uploadedInput
+            console.log(`[${label}] Uploaded product image to storage`)
+          }
+        }
+        
         // 写入数据库
         const dbSuccess = await appendImageToGeneration({
           taskId,
@@ -301,6 +312,7 @@ export async function POST(request: NextRequest) {
           prompt: usedPrompt,
           taskType: type === 'product' ? 'product_studio' : 'model_studio',
           inputParams,
+          inputImageUrl, // 传递商品图 URL
         })
         
         if (dbSuccess) {
