@@ -65,11 +65,12 @@ function LoginContent() {
     try {
       const supabase = createClient()
       
+      // 注意：不要设置 emailRedirectTo，否则 Supabase 会发送 Magic Link 而不是 OTP 验证码
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
           shouldCreateUser: true, // Auto create user if not exists
-          emailRedirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`,
+          // 不设置 emailRedirectTo，确保发送 OTP 验证码
         },
       })
 
