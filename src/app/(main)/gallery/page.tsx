@@ -65,7 +65,7 @@ export default function GalleryPage() {
   const [hasMore, setHasMore] = useState(false)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   
-  const { addUserAsset } = useAssetStore()
+  const { addUserAsset, favorites, addFavorite, removeFavorite } = useAssetStore()
   const { user } = useAuth()
   const { tasks, removeTask } = useGenerationTaskStore()
   const { debugMode } = useSettingsStore()
@@ -247,29 +247,33 @@ export default function GalleryPage() {
       idx: item.imageIndex
     }))
   
-  // 检查图片是否已收藏
+  // 检查图片是否已收藏 - 使用 assetStore 的 favorites 列表
   const isFavorited = (generationId: string, imageIndex: number): boolean => {
     // 在收藏页，所有图片都是已收藏的
     if (activeTab === 'favorites') return true
-    // 检查 item ID 是否以 fav- 开头（收藏项）
-    const item = galleryItems.find(i => i.generationId === generationId && i.imageIndex === imageIndex)
-    return item?.id?.startsWith('fav-') || false
+    // 检查 assetStore 的 favorites 列表
+    return favorites.some(f => f.generationId === generationId && f.imageIndex === imageIndex)
   }
   
   const handleFavoriteToggle = async (generationId: string, imageIndex: number) => {
     try {
-      // 检查是否已收藏
-      const item = galleryItems.find(i => i.generationId === generationId && i.imageIndex === imageIndex)
-      // 在收藏页或ID以fav-开头的都是已收藏
+      // 检查 assetStore 中是否已收藏
+      const existingFavorite = favorites.find(f => f.generationId === generationId && f.imageIndex === imageIndex)
       const isOnFavoritesTab = activeTab === 'favorites'
-      const isItemFavorited = isOnFavoritesTab || item?.id?.startsWith('fav-')
       
-      if (isItemFavorited) {
-        // 取消收藏
-        const response = await fetch(`/api/favorites/${item?.id}`, { method: 'DELETE' })
-        if (response.ok) {
-          // 刷新列表
-          fetchGalleryData(1, false)
+      if (existingFavorite || isOnFavoritesTab) {
+        // 取消收藏 - 使用收藏记录的 ID
+        const favoriteId = existingFavorite?.id || galleryItems.find(i => i.generationId === generationId && i.imageIndex === imageIndex)?.id
+        if (favoriteId) {
+          const response = await fetch(`/api/favorites/${favoriteId}`, { method: 'DELETE' })
+          if (response.ok) {
+            // 从本地 store 移除
+            removeFavorite(favoriteId)
+            // 如果在收藏页，刷新列表
+            if (isOnFavoritesTab) {
+              fetchGalleryData(1, false)
+            }
+          }
         }
       } else {
         // 添加收藏
@@ -279,9 +283,14 @@ export default function GalleryPage() {
           body: JSON.stringify({ generationId, imageIndex })
         })
         if (response.ok) {
-          // 如果在收藏页，刷新列表（添加收藏后需要显示新的收藏项）
-          if (isOnFavoritesTab) {
-            fetchGalleryData(1, false)
+          const data = await response.json()
+          // 添加到本地 store
+          if (data.data) {
+            addFavorite({
+              generationId,
+              imageIndex,
+              createdAt: data.data.created_at || new Date().toISOString(),
+            })
           }
         }
       }
