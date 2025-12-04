@@ -104,10 +104,14 @@ export default function GalleryPage() {
   // 当 tab 切换或用户登录时重新加载
   useEffect(() => {
     if (user) {
+      // 切换 tab 时立即清空旧数据，显示骨架屏
+      setGalleryItems([])
+      setIsLoading(true)
+      setHasMore(false)
+      setCurrentPage(1)
       fetchGalleryData(1, false)
     }
   }, [activeTab, user])
-  
   // Helper to get display label for generation type
   // debugMode controls whether to show sub-labels (极简/扩展)
   const getTypeLabel = (gen: Generation | null | undefined, imageIndex: number, isDebugMode: boolean = false): { label: string; color: string; subLabel?: string; subColor?: string } => {
@@ -657,13 +661,19 @@ export default function GalleryPage() {
           </div>
         )}
         
-        {/* 骨架屏 - 首次加载时显示 */}
+        {/* 加载提示 + 骨架屏 */}
         {isLoading && displayedHistory.length === 0 && (
-          <div className="grid grid-cols-2 gap-3">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl animate-pulse" />
-            ))}
-          </div>
+          <>
+            <div className="flex items-center justify-center gap-2 py-3 mb-3 bg-blue-50 border border-blue-100 rounded-xl">
+              <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
+              <span className="text-sm text-blue-600">{t.common.syncing || '正在加载数据...'}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl animate-pulse" />
+              ))}
+            </div>
+          </>
         )}
         
         {/* 空状态 - 加载完成后没有数据时显示 */}
