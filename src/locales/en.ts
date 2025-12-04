@@ -244,6 +244,7 @@ export const en: Translations = {
     lightDirection: "Direction",
     bgColor: "Background",
     syncing: "Syncing...",
+    generating: "Generating...",
   },
   
   // Brand Assets Page

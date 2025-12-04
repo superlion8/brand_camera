@@ -244,6 +244,7 @@ export const ko: Translations = {
     lightDirection: "방향",
     bgColor: "배경색",
     syncing: "동기화 중...",
+    generating: "생성 중...",
   },
   
   // Brand Assets Page
