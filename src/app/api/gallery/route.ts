@@ -154,16 +154,20 @@ export async function GET(request: NextRequest) {
       }) || []
 
     // 第一页时，查询 pending 状态的任务（生成中但还没有结果的）
+    // 只显示最近 5 分钟内创建的，超过 5 分钟的认为已超时
     let pendingTasks: any[] = []
     if (page === 1 && type === 'all') {
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+      
       const { data: pendingGens } = await supabase
         .from('generations')
         .select('*')
         .eq('user_id', userId)
         .eq('status', 'pending')
         .is('deleted_at', null)
+        .gte('created_at', fiveMinutesAgo) // 只获取 5 分钟内的
         .order('created_at', { ascending: false })
-        .limit(10) // 最多 10 个 pending 任务
+        .limit(10)
 
       pendingTasks = (pendingGens || []).map(gen => ({
         id: gen.task_id || gen.id,
