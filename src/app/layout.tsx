@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { StoreProvider } from '@/components/providers/StoreProvider'
 import { AuthProvider } from '@/components/providers/AuthProvider'
+import { Analytics } from '@vercel/analytics/next'
 
 export const metadata: Metadata = {
   title: '品牌相机 - Brand Camera',
@@ -42,6 +43,7 @@ export default function RootLayout({
             {children}
           </StoreProvider>
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   )
