@@ -949,22 +949,15 @@ export default function AdminDashboard() {
                                       </div>
                                     </div>
                                     <p className="text-[10px] text-zinc-600 mt-1 truncate max-w-[64px] text-center font-medium">{modelName}</p>
-                                    <div className="flex flex-col gap-0.5 items-center">
-                                      <span className={`px-1.5 py-0.5 text-[9px] rounded font-medium ${
-                                        modelIsRandom 
-                                          ? 'bg-amber-100 text-amber-700' 
+                                    <span className={`px-1.5 py-0.5 text-[9px] rounded font-medium ${
+                                      modelIsRandom 
+                                        ? 'bg-amber-100 text-amber-700' 
+                                        : modelIsPreset
+                                          ? 'bg-purple-100 text-purple-700'
                                           : 'bg-blue-100 text-blue-700'
-                                      }`}>
-                                        {modelIsRandom ? '随机' : '指定'}
-                                      </span>
-                                      <span className={`px-1.5 py-0.5 text-[9px] rounded font-medium ${
-                                        modelIsPreset 
-                                          ? 'bg-zinc-200 text-zinc-600' 
-                                          : 'bg-pink-100 text-pink-700'
-                                      }`}>
-                                        {modelIsPreset ? '系统' : '上传'}
-                                      </span>
-                                    </div>
+                                    }`}>
+                                      {modelIsRandom ? '随机' : modelIsPreset ? '官方预设' : '用户上传'}
+                                    </span>
                                   </div>
                                 )}
                                 {bgUrl && (
@@ -979,22 +972,15 @@ export default function AdminDashboard() {
                                       </div>
                                     </div>
                                     <p className="text-[10px] text-zinc-600 mt-1 truncate max-w-[64px] text-center font-medium">{bgName}</p>
-                                    <div className="flex flex-col gap-0.5 items-center">
-                                      <span className={`px-1.5 py-0.5 text-[9px] rounded font-medium ${
-                                        bgIsRandom 
-                                          ? 'bg-amber-100 text-amber-700' 
+                                    <span className={`px-1.5 py-0.5 text-[9px] rounded font-medium ${
+                                      bgIsRandom 
+                                        ? 'bg-amber-100 text-amber-700' 
+                                        : bgIsPreset
+                                          ? 'bg-purple-100 text-purple-700'
                                           : 'bg-blue-100 text-blue-700'
-                                      }`}>
-                                        {bgIsRandom ? '随机' : '指定'}
-                                      </span>
-                                      <span className={`px-1.5 py-0.5 text-[9px] rounded font-medium ${
-                                        bgIsPreset 
-                                          ? 'bg-zinc-200 text-zinc-600' 
-                                          : 'bg-pink-100 text-pink-700'
-                                      }`}>
-                                        {bgIsPreset ? '系统' : '上传'}
-                                      </span>
-                                    </div>
+                                    }`}>
+                                      {bgIsRandom ? '随机' : bgIsPreset ? '官方预设' : '用户上传'}
+                                    </span>
                                   </div>
                                 )}
                               </div>

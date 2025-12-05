@@ -82,6 +82,8 @@ export async function POST(request: NextRequest) {
       bgName = '影棚背景',
       modelUrl,
       bgUrl,
+      modelIsPreset = true, // 随机时默认是预设
+      bgIsPreset = true,    // 随机时默认是预设
     } = body
 
     const supabase = await createClient()
@@ -347,11 +349,13 @@ export async function POST(request: NextRequest) {
           name: modelName,
           imageUrl: modelImageUrlToSave || modelUrl,
           isRandom: modelIsRandom,
+          isPreset: modelIsRandom ? true : modelIsPreset, // 随机=预设，用户选择根据传入值
         }],
         perImageBackgrounds: [{
           name: bgName,
           imageUrl: bgImageUrlToSave || bgUrl,
           isRandom: bgIsRandom,
+          isPreset: bgIsRandom ? true : bgIsPreset, // 随机=预设，用户选择根据传入值
         }],
       } : undefined,
     })

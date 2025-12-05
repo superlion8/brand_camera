@@ -1032,8 +1032,18 @@ export default function GalleryPage() {
                           const modelUrl = perImageModel?.imageUrl || selectedItem.gen.params?.modelImage || selectedItem.gen.modelImageUrl
                           const rawModelName = perImageModel?.name || selectedItem.gen.params?.model
                           const modelIsRandom = perImageModel?.isRandom === true || rawModelName?.includes('(随机)')
+                          const modelIsPreset = perImageModel?.isPreset === true || modelUrl?.includes('/presets/') || modelUrl?.includes('presets%2F')
                           const modelName = rawModelName?.replace(' (随机)', '').replace('(随机)', '') || t.common.model
                           if (!modelUrl) return null
+                          
+                          // 三种状态：随机 / 官方预设 / 用户上传
+                          const getSourceLabel = () => {
+                            if (modelIsRandom) return { text: t.common.random || '随机', color: 'bg-amber-100 text-amber-600' }
+                            if (modelIsPreset) return { text: '官方预设', color: 'bg-purple-100 text-purple-600' }
+                            return { text: '用户上传', color: 'bg-blue-100 text-blue-600' }
+                          }
+                          const sourceLabel = getSourceLabel()
+                          
                           return (
                             <div className="flex flex-col items-center">
                               <div 
@@ -1052,8 +1062,8 @@ export default function GalleryPage() {
                               <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">
                                 {modelName}
                               </p>
-                              <span className={`text-[8px] px-1 py-0.5 rounded ${modelIsRandom ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600'}`}>
-                                {modelIsRandom ? t.common.random : t.common.selected}
+                              <span className={`text-[8px] px-1 py-0.5 rounded ${sourceLabel.color}`}>
+                                {sourceLabel.text}
                               </span>
                             </div>
                           )
@@ -1065,8 +1075,18 @@ export default function GalleryPage() {
                           const bgUrl = perImageBg?.imageUrl || selectedItem.gen.params?.backgroundImage || selectedItem.gen.backgroundImageUrl
                           const rawBgName = perImageBg?.name || selectedItem.gen.params?.background
                           const bgIsRandom = perImageBg?.isRandom === true || rawBgName?.includes('(随机)')
+                          const bgIsPreset = perImageBg?.isPreset === true || bgUrl?.includes('/presets/') || bgUrl?.includes('presets%2F')
                           const bgName = rawBgName?.replace(' (随机)', '').replace('(随机)', '') || t.common.background
                           if (!bgUrl) return null
+                          
+                          // 三种状态：随机 / 官方预设 / 用户上传
+                          const getSourceLabel = () => {
+                            if (bgIsRandom) return { text: t.common.random || '随机', color: 'bg-amber-100 text-amber-600' }
+                            if (bgIsPreset) return { text: '官方预设', color: 'bg-purple-100 text-purple-600' }
+                            return { text: '用户上传', color: 'bg-blue-100 text-blue-600' }
+                          }
+                          const sourceLabel = getSourceLabel()
+                          
                           return (
                             <div className="flex flex-col items-center">
                               <div 
@@ -1085,8 +1105,8 @@ export default function GalleryPage() {
                               <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">
                                 {bgName}
                               </p>
-                              <span className={`text-[8px] px-1 py-0.5 rounded ${bgIsRandom ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600'}`}>
-                                {bgIsRandom ? t.common.random : t.common.selected}
+                              <span className={`text-[8px] px-1 py-0.5 rounded ${sourceLabel.color}`}>
+                                {sourceLabel.text}
                               </span>
                             </div>
                           )

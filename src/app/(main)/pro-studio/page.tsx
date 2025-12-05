@@ -436,11 +436,17 @@ export default function ProStudioPage() {
     const modelIsRandom = !selectedModel
     const bgIsRandom = !selectedBg
     
+    // 辅助函数：检查 URL 是否是官方预设
+    const isPresetUrl = (url?: string) => url?.includes('/presets/') || url?.includes('presets%2F')
+    
     // 模特/背景名称和URL（用于保存到数据库）
     const modelName = selectedModel?.name || '高级模特 (随机)'
     const modelUrl = selectedModel?.imageUrl
+    const modelIsPreset = isPresetUrl(modelUrl)
+    
     const bgName = selectedBg?.name || '影棚背景 (随机)'
     const bgUrl = selectedBg?.imageUrl
+    const bgIsPreset = isPresetUrl(bgUrl)
 
     // 生成任务配置：背景库模式2张 + 随机背景模式2张 + 扩展模式2张
     const taskConfigs = [
@@ -478,6 +484,8 @@ export default function ProStudioPage() {
             bgName,
             modelUrl,
             bgUrl,
+            modelIsPreset,
+            bgIsPreset,
           }),
         })
 
