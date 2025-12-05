@@ -889,7 +889,7 @@ export default function GalleryPage() {
               <div className="flex-1 min-h-0 overflow-y-auto bg-zinc-100 pb-20">
                 <div className="bg-zinc-900">
                   <div 
-                    className="relative aspect-[4/5] cursor-pointer group shrink-0"
+                    className="relative aspect-square max-h-[50vh] mx-auto cursor-pointer group shrink-0"
                     onClick={() => setFullscreenImage(selectedItem.gen.outputImageUrls[selectedItem.index])}
                   >
                     {/* Use img tag for native long-press save support */}
