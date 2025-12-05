@@ -253,119 +253,146 @@ export default function GroupShootPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto pb-40">
-              {/* Hero: 图片选择区域 - 视觉焦点 */}
-              <div className="bg-gradient-to-b from-zinc-900 to-zinc-800 p-6">
-                {!selectedImage ? (
-                  <div className="space-y-4">
-                    {/* 大按钮区域 */}
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="w-full aspect-square max-h-[40vh] border-2 border-dashed border-zinc-600 rounded-2xl flex flex-col items-center justify-center gap-4 hover:border-blue-400 hover:bg-zinc-700/50 transition-all group"
-                    >
-                      <div className="w-20 h-20 rounded-full bg-zinc-700 group-hover:bg-blue-500/20 flex items-center justify-center transition-colors">
-                        <ImageIcon className="w-10 h-10 text-zinc-400 group-hover:text-blue-400 transition-colors" />
-                      </div>
-                      <div className="text-center">
-                        <p className="text-white font-semibold text-lg">上传图片</p>
-                        <p className="text-zinc-400 text-sm mt-1">点击选择模特照片</p>
-                      </div>
-                    </button>
-                    
-                    {/* 从成片选择 */}
-                    <button
-                      onClick={() => setShowGalleryPicker(true)}
-                      className="w-full h-14 rounded-xl flex items-center justify-center gap-3 bg-white/10 hover:bg-white/20 transition-colors border border-white/10"
-                    >
-                      <Camera className="w-5 h-5 text-white/70" />
-                      <span className="text-white font-medium">从成片选择</span>
-                    </button>
-                  </div>
-                ) : (
-                  <div className="relative">
-                    <div className="aspect-[3/4] max-h-[45vh] mx-auto rounded-2xl overflow-hidden bg-zinc-700 relative shadow-2xl">
-                      <Image src={selectedImage} alt="Selected" fill className="object-cover" />
-                      {/* 渐变遮罩 */}
-                      <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/60 to-transparent" />
+              {/* 图片选择卡片 */}
+              <div className="p-4">
+                <div className={`rounded-2xl p-4 transition-colors ${
+                  styleMode === 'lifestyle' 
+                    ? 'bg-gradient-to-br from-blue-50 to-indigo-100' 
+                    : 'bg-gradient-to-br from-amber-50 to-orange-100'
+                }`}>
+                  {!selectedImage ? (
+                    <div className="flex gap-3">
+                      {/* 上传按钮 */}
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex-1 aspect-[4/5] max-h-48 border-2 border-dashed border-white/60 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-white hover:bg-white/30 transition-all bg-white/20 backdrop-blur-sm"
+                      >
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                          styleMode === 'lifestyle' ? 'bg-blue-500' : 'bg-amber-500'
+                        }`}>
+                          <ImageIcon className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="text-center">
+                          <p className={`font-semibold ${styleMode === 'lifestyle' ? 'text-blue-900' : 'text-amber-900'}`}>
+                            上传图片
+                          </p>
+                          <p className={`text-xs mt-0.5 ${styleMode === 'lifestyle' ? 'text-blue-600/70' : 'text-amber-600/70'}`}>
+                            从相册选择
+                          </p>
+                        </div>
+                      </button>
+                      
+                      {/* 从成片选择 */}
+                      <button
+                        onClick={() => setShowGalleryPicker(true)}
+                        className="flex-1 aspect-[4/5] max-h-48 border-2 border-dashed border-white/60 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-white hover:bg-white/30 transition-all bg-white/20 backdrop-blur-sm"
+                      >
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                          styleMode === 'lifestyle' ? 'bg-indigo-500' : 'bg-orange-500'
+                        }`}>
+                          <Camera className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="text-center">
+                          <p className={`font-semibold ${styleMode === 'lifestyle' ? 'text-indigo-900' : 'text-orange-900'}`}>
+                            从成片选择
+                          </p>
+                          <p className={`text-xs mt-0.5 ${styleMode === 'lifestyle' ? 'text-indigo-600/70' : 'text-orange-600/70'}`}>
+                            模特分类
+                          </p>
+                        </div>
+                      </button>
                     </div>
-                    <button
-                      onClick={() => setSelectedImage(null)}
-                      className="absolute top-3 right-3 w-10 h-10 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors"
-                    >
-                      <X className="w-5 h-5 text-white" />
-                    </button>
-                    <div className="absolute bottom-4 left-0 right-0 text-center">
-                      <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm">
-                        ✓ 图片已选择
-                      </span>
+                  ) : (
+                    <div className="flex items-center gap-4">
+                      {/* 已选图片预览 - 紧凑 */}
+                      <div className="relative w-24 h-32 shrink-0">
+                        <div className="w-full h-full rounded-xl overflow-hidden shadow-lg ring-2 ring-white">
+                          <Image src={selectedImage} alt="Selected" fill className="object-cover" />
+                        </div>
+                        <button
+                          onClick={() => setSelectedImage(null)}
+                          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center shadow-md transition-colors"
+                        >
+                          <X className="w-3 h-3 text-white" />
+                        </button>
+                      </div>
+                      {/* 状态信息 */}
+                      <div className="flex-1">
+                        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${
+                          styleMode === 'lifestyle' 
+                            ? 'bg-blue-500 text-white' 
+                            : 'bg-amber-500 text-white'
+                        }`}>
+                          <Check className="w-4 h-4" />
+                          图片已选择
+                        </div>
+                        <p className={`text-xs mt-2 ${styleMode === 'lifestyle' ? 'text-blue-700/70' : 'text-amber-700/70'}`}>
+                          点击右上角 × 可重新选择
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
-              {/* 设置区域 - 紧凑布局 */}
-              <div className="p-4 space-y-4 bg-white">
-                {/* 风格选择 - 横向紧凑 */}
-                <div>
-                  <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">风格</h3>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setStyleMode('lifestyle')}
-                      className={`flex-1 py-3 px-4 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${
-                        styleMode === 'lifestyle' 
-                          ? 'border-blue-500 bg-blue-50 text-blue-700' 
-                          : 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300'
-                      }`}
-                    >
-                      <Users className="w-4 h-4" />
-                      <span className="font-medium text-sm">生活</span>
-                    </button>
-                    <button
-                      onClick={() => setStyleMode('studio')}
-                      className={`flex-1 py-3 px-4 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${
-                        styleMode === 'studio' 
-                          ? 'border-amber-500 bg-amber-50 text-amber-700' 
-                          : 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300'
-                      }`}
-                    >
-                      <Sparkles className="w-4 h-4" />
-                      <span className="font-medium text-sm">棚拍</span>
-                    </button>
-                  </div>
+              {/* 设置区域 */}
+              <div className="px-4 space-y-3">
+                {/* 风格选择 */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setStyleMode('lifestyle')}
+                    className={`flex-1 py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2 ${
+                      styleMode === 'lifestyle' 
+                        ? 'bg-blue-500 text-white shadow-md shadow-blue-200' 
+                        : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                    }`}
+                  >
+                    <Users className="w-4 h-4" />
+                    <span className="font-medium text-sm">生活风格</span>
+                  </button>
+                  <button
+                    onClick={() => setStyleMode('studio')}
+                    className={`flex-1 py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2 ${
+                      styleMode === 'studio' 
+                        ? 'bg-amber-500 text-white shadow-md shadow-amber-200' 
+                        : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                    }`}
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span className="font-medium text-sm">棚拍风格</span>
+                  </button>
                 </div>
 
-                {/* 拍摄类型 - 横向紧凑 */}
-                <div>
-                  <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">拍摄类型</h3>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setShootMode('random')}
-                      className={`flex-1 py-3 px-4 rounded-xl border-2 transition-all ${
-                        shootMode === 'random' 
-                          ? (styleMode === 'lifestyle' ? 'border-blue-500 bg-blue-50' : 'border-amber-500 bg-amber-50')
-                          : 'border-zinc-200 bg-white hover:border-zinc-300'
-                      }`}
-                    >
-                      <div className="flex items-center justify-center gap-2">
-                        <Shuffle className={`w-4 h-4 ${shootMode === 'random' ? (styleMode === 'lifestyle' ? 'text-blue-600' : 'text-amber-600') : 'text-zinc-500'}`} />
-                        <span className={`font-medium text-sm ${shootMode === 'random' ? (styleMode === 'lifestyle' ? 'text-blue-700' : 'text-amber-700') : 'text-zinc-600'}`}>随意拍</span>
-                      </div>
-                      <p className="text-[10px] text-zinc-400 mt-1">5张·AI设计pose</p>
-                    </button>
-                    <button
-                      onClick={() => setShootMode('multiangle')}
-                      className={`flex-1 py-3 px-4 rounded-xl border-2 transition-all ${
-                        shootMode === 'multiangle' 
-                          ? (styleMode === 'lifestyle' ? 'border-blue-500 bg-blue-50' : 'border-amber-500 bg-amber-50')
-                          : 'border-zinc-200 bg-white hover:border-zinc-300'
-                      }`}
-                    >
-                      <div className="flex items-center justify-center gap-2">
-                        <Grid3X3 className={`w-4 h-4 ${shootMode === 'multiangle' ? (styleMode === 'lifestyle' ? 'text-blue-600' : 'text-amber-600') : 'text-zinc-500'}`} />
-                        <span className={`font-medium text-sm ${shootMode === 'multiangle' ? (styleMode === 'lifestyle' ? 'text-blue-700' : 'text-amber-700') : 'text-zinc-600'}`}>多角度</span>
-                      </div>
-                      <p className="text-[10px] text-zinc-400 mt-1">4张·前后左右</p>
-                    </button>
-                  </div>
+                {/* 拍摄类型 */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShootMode('random')}
+                    className={`flex-1 py-2.5 px-4 rounded-xl transition-all ${
+                      shootMode === 'random' 
+                        ? (styleMode === 'lifestyle' ? 'bg-indigo-100 text-indigo-700 ring-2 ring-indigo-300' : 'bg-orange-100 text-orange-700 ring-2 ring-orange-300')
+                        : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <Shuffle className="w-4 h-4" />
+                      <span className="font-medium text-sm">随意拍</span>
+                    </div>
+                    <p className="text-[10px] opacity-60 mt-0.5">5张·AI设计pose</p>
+                  </button>
+                  <button
+                    onClick={() => setShootMode('multiangle')}
+                    className={`flex-1 py-2.5 px-4 rounded-xl transition-all ${
+                      shootMode === 'multiangle' 
+                        ? (styleMode === 'lifestyle' ? 'bg-indigo-100 text-indigo-700 ring-2 ring-indigo-300' : 'bg-orange-100 text-orange-700 ring-2 ring-orange-300')
+                        : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <Grid3X3 className="w-4 h-4" />
+                      <span className="font-medium text-sm">多角度</span>
+                    </div>
+                    <p className="text-[10px] opacity-60 mt-0.5">4张·前后左右</p>
+                  </button>
                 </div>
               </div>
             </div>
