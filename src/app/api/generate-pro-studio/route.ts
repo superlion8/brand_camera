@@ -89,6 +89,9 @@ export async function POST(request: NextRequest) {
     const label = `[ProStudio-${mode}-${index}]`
 
     console.log(`${label} Starting generation...`)
+    console.log(`${label} productImage: ${productImage ? `${productImage.substring(0, 50)}...` : 'null/undefined'}`)
+    console.log(`${label} modelImage: ${modelImage ? `${modelImage.substring(0, 50)}...` : 'null/undefined'}`)
+    console.log(`${label} backgroundImage: ${backgroundImage ? `${backgroundImage.substring(0, 50)}...` : 'null/undefined'}`)
 
     const genai = getGenAIClient()
     let result: { image: string; model: 'pro' | 'flash' } | null = null
@@ -108,6 +111,37 @@ export async function POST(request: NextRequest) {
       ? backgroundImage.split(',')[1]
       : backgroundImage
 
+    // 验证必需的图片数据
+    if (!productImageData) {
+      console.error(`${label} Missing productImageData`)
+      return NextResponse.json({ 
+        success: false, 
+        error: '缺少商品图片数据',
+        index,
+        modelType: null,
+      }, { status: 400 })
+    }
+
+    if (!modelImageData) {
+      console.error(`${label} Missing modelImageData`)
+      return NextResponse.json({ 
+        success: false, 
+        error: '缺少模特图片数据',
+        index,
+        modelType: null,
+      }, { status: 400 })
+    }
+
+    if (mode === 'background-lib' && !bgImageData) {
+      console.error(`${label} Missing bgImageData for background-lib mode`)
+      return NextResponse.json({ 
+        success: false, 
+        error: '缺少背景图片数据',
+        index,
+        modelType: null,
+      }, { status: 400 })
+    }
+
     // Helper function to generate with fallback
     const generateWithFallback = async (contents: any[]): Promise<{ image: string; model: 'pro' | 'flash' } | null> => {
       // Try primary model
@@ -119,9 +153,7 @@ export async function POST(request: NextRequest) {
           config: {
             responseModalities: ['IMAGE'],
             safetySettings,
-            imageConfig: {
-              imageSize: '2K',
-            },
+            imageSize: '2K',
           } as any,
         })
 
