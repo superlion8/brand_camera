@@ -11,42 +11,68 @@ const VLM_MODEL = 'gemini-3-pro-preview'
 const PRIMARY_IMAGE_MODEL = 'gemini-3-pro-image-preview'
 const FALLBACK_IMAGE_MODEL = 'gemini-2.5-flash-image'
 
+// Pose instruction interface
+interface PoseInstruction {
+  id: number
+  product_focus: string
+  pose_instruction: string
+  camera_position: string
+  composition: string
+}
+
 // Prompts
 const PROMPTS = {
-  // 随意拍 - 生成5个pose指令
+  // 随意拍 - 生成5个pose指令（JSON格式）
   randomPoseGen: `
-你现在是一个专门拍摄电商商品棚拍图的职业摄影师，请你分析一下这个模特所展示的商品、模特所在的环境、模特的特征还有她现在在做的动作，让她换5个不同的展示商品的pose，适合作为电商平台或品牌官网展示的模特棚拍图，请你给出这5个pose的指令。
+# Role
 
-尽量避免指令过于复杂，导致在一张图片里传达了过多的信息、或者让模特做出过于dramatic的姿势，不要改变光影。
+You are an expert e-commerce fashion photographer specializing in studio photography. Your goal is to direct models to showcase products (clothing, accessories, etc.) in the most appealing and commercial way, suitable for a brand's official website or online store.
 
-请你严格用英文按照下面这个格式来写，不需要输出其他额外的东西：
+# Input Analysis
 
-- Pose1:
-- Camera Position1:
-- Composition1:
+Analyze the provided image. Identify:
 
-- Pose2:
-- Camera Position2:
-- Composition2:
+1. The main product being sold.
+2. The model's features and current vibe.
+3. The lighting and environment (keep these consistent).
 
-- Pose3:
-- Camera Position3:
-- Composition3:
+# Task
 
-- Pose4:
-- Camera Position4:
-- Composition4:
+Based on your analysis, generate **5 distinct photography directives** to showcase the product from different angles or in different ways.
 
-- Pose5:
-- Camera Position5:
-- Composition5:
+# Constraints
+
+- **Product First:** Every pose must intentionally highlight the product details.
+- **Consistency:** Maintain the original lighting, environment, and model styling. Do not introduce new props or change the background.
+- **Natural & Professional:** Directives should be simple and achievable. Avoid overly dramatic, artistic, or weird poses that distract from the product.
+- **Quantity:** Strictly output 5 variations.
+
+# Output Format
+
+Output **ONLY** a standard JSON array containing 5 objects. Do not wrap the JSON in markdown code blocks. Do not add conversational text.
+
+Use this exact JSON schema:
+
+[
+  {
+    "id": 1,
+    "product_focus": "Briefly describe which part of the product is highlighted (e.g., 'Side profile of the dress', 'Texture of the bag')",
+    "pose_instruction": "Specific, clear instruction for the model (e.g., 'Turn 45 degrees to the right, place left hand gently on the waist to reveal the sleeve detail.')",
+    "camera_position": "Camera angle and distance (e.g., 'Eye-level, Frontal view')",
+    "composition": "Framing details (e.g., 'Medium shot, center composed')"
+  }
+]
 `,
 
   // 随意拍 - 根据pose生成图片
-  randomPoseExec: (poseInstruct: string) => `
+  randomPoseExec: (poseInstruct: PoseInstruction) => `
 请为这个模特拍摄一张专业影棚商品棚拍图。保持商品的质感、颜色、纹理细节、版型严格一致。
 
-拍摄指令：${poseInstruct}
+拍摄指令：
+- 产品重点: ${poseInstruct.product_focus}
+- 姿势: ${poseInstruct.pose_instruction}
+- 相机位置: ${poseInstruct.camera_position}
+- 构图: ${poseInstruct.composition}
 `,
 
   // 多角度 - 正面
@@ -82,69 +108,66 @@ const PROMPTS = {
 `,
 }
 
-// Parse pose instructions from VLM response
-function parsePoseInstructions(text: string): string[] {
-  const poses: string[] = []
-  
-  // Try to parse structured format
-  const poseRegex = /[-•]\s*Pose(\d+):\s*([^\n-•]+(?:\n(?![-•]\s*(?:Pose|Camera|Composition))[^\n-•]+)*)/gi
-  const cameraRegex = /[-•]\s*Camera Position(\d+):\s*([^\n-•]+(?:\n(?![-•]\s*(?:Pose|Camera|Composition))[^\n-•]+)*)/gi
-  const compositionRegex = /[-•]\s*Composition(\d+):\s*([^\n-•]+(?:\n(?![-•]\s*(?:Pose|Camera|Composition))[^\n-•]+)*)/gi
-  
-  const poseMap: { [key: number]: { pose?: string; camera?: string; composition?: string } } = {}
-  
-  let match
-  while ((match = poseRegex.exec(text)) !== null) {
-    const idx = parseInt(match[1])
-    if (!poseMap[idx]) poseMap[idx] = {}
-    poseMap[idx].pose = match[2].trim()
-  }
-  
-  while ((match = cameraRegex.exec(text)) !== null) {
-    const idx = parseInt(match[1])
-    if (!poseMap[idx]) poseMap[idx] = {}
-    poseMap[idx].camera = match[2].trim()
-  }
-  
-  while ((match = compositionRegex.exec(text)) !== null) {
-    const idx = parseInt(match[1])
-    if (!poseMap[idx]) poseMap[idx] = {}
-    poseMap[idx].composition = match[2].trim()
-  }
-  
-  // Combine into pose instructions
-  for (let i = 1; i <= 5; i++) {
-    const p = poseMap[i]
-    if (p && (p.pose || p.camera || p.composition)) {
-      const parts: string[] = []
-      if (p.pose) parts.push(`Pose: ${p.pose}`)
-      if (p.camera) parts.push(`Camera Position: ${p.camera}`)
-      if (p.composition) parts.push(`Composition: ${p.composition}`)
-      poses.push(parts.join('\n'))
+// Parse pose instructions from VLM response (JSON format)
+function parsePoseInstructions(text: string): PoseInstruction[] {
+  const defaultPoses: PoseInstruction[] = [
+    { id: 1, product_focus: 'Front view of the product', pose_instruction: 'Face the camera directly with a natural stance', camera_position: 'Eye-level, frontal view', composition: 'Full body shot, center composed' },
+    { id: 2, product_focus: 'Side profile of the product', pose_instruction: 'Turn 45 degrees to the right, hands relaxed', camera_position: 'Eye-level, 3/4 view', composition: 'Medium shot, rule of thirds' },
+    { id: 3, product_focus: 'Back detail of the product', pose_instruction: 'Turn to show back, look over shoulder', camera_position: 'Eye-level, back view', composition: 'Full body shot, center composed' },
+    { id: 4, product_focus: 'Detail shot', pose_instruction: 'Slight lean forward to highlight texture', camera_position: 'Slightly elevated angle', composition: 'Medium close-up shot' },
+    { id: 5, product_focus: 'Dynamic angle', pose_instruction: 'Walking pose with natural movement', camera_position: 'Eye-level, slight angle', composition: 'Full body shot with movement' },
+  ]
+
+  try {
+    // Clean up the text - remove markdown code blocks if present
+    let jsonText = text.trim()
+    
+    // Remove markdown code block wrapper if present
+    if (jsonText.startsWith('```')) {
+      jsonText = jsonText.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '')
     }
-  }
-  
-  // Fallback: if parsing failed, split by numbered sections
-  if (poses.length < 5) {
-    const fallbackPoses: string[] = []
-    const sections = text.split(/(?:^|\n)(?:[-•]?\s*)?(?:\d+[\.\):]|Pose\s*\d+)/i)
-    for (const section of sections) {
-      const trimmed = section.trim()
-      if (trimmed && trimmed.length > 20) {
-        fallbackPoses.push(trimmed)
+    
+    // Try to find JSON array in the text
+    const jsonMatch = jsonText.match(/\[[\s\S]*\]/)
+    if (jsonMatch) {
+      jsonText = jsonMatch[0]
+    }
+    
+    const parsed = JSON.parse(jsonText) as PoseInstruction[]
+    
+    // Validate the parsed result
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      // Ensure each item has required fields
+      const validPoses = parsed.filter(p => 
+        p && typeof p === 'object' && 
+        (p.pose_instruction || p.product_focus)
+      ).map((p, idx) => ({
+        id: p.id || idx + 1,
+        product_focus: p.product_focus || 'Product highlight',
+        pose_instruction: p.pose_instruction || 'Natural pose',
+        camera_position: p.camera_position || 'Eye-level view',
+        composition: p.composition || 'Center composed',
+      }))
+      
+      if (validPoses.length >= 5) {
+        console.log('[GroupShoot] Successfully parsed JSON poses:', validPoses.length)
+        return validPoses.slice(0, 5)
       }
+      
+      // Fill with defaults if we have some but not enough
+      while (validPoses.length < 5) {
+        validPoses.push(defaultPoses[validPoses.length])
+      }
+      return validPoses
     }
-    if (fallbackPoses.length >= poses.length) {
-      return fallbackPoses.slice(0, 5)
-    }
+  } catch (error: any) {
+    console.error('[GroupShoot] JSON parse error:', error.message)
+    console.log('[GroupShoot] Raw text:', text.substring(0, 500))
   }
   
-  // Fill missing poses with defaults
-  while (poses.length < 5) {
-    poses.push(`Pose ${poses.length + 1}: Natural standing pose with slight variation, looking at camera`)
-  }
-  
-  return poses.slice(0, 5)
+  // Return default poses if parsing failed
+  console.log('[GroupShoot] Using default poses')
+  return defaultPoses
 }
 
 // Generate image with fallback
@@ -233,12 +256,12 @@ export async function POST(request: NextRequest) {
           // ========== 随意拍模式 ==========
           console.log('[GroupShoot] Starting random mode...')
           
-          // Step 1: Generate pose instructions using VLM
+          // Step 1: Generate pose instructions using VLM (JSON format)
           send({ type: 'status', message: '正在分析图片生成pose指令...' })
           
-          let poseInstructions: string[] = []
+          let poseInstructions: PoseInstruction[] = []
           try {
-            console.log('[GroupShoot] Generating pose instructions...')
+            console.log('[GroupShoot] Generating pose instructions with JSON format...')
             const instructResponse = await genai.models.generateContent({
               model: VLM_MODEL,
               contents: [{ role: 'user', parts: [
@@ -249,27 +272,25 @@ export async function POST(request: NextRequest) {
             })
             
             const instructText = extractText(instructResponse) || ''
-            console.log('[GroupShoot] VLM response:', instructText.substring(0, 500))
+            console.log('[GroupShoot] VLM response (first 800 chars):', instructText.substring(0, 800))
             
             poseInstructions = parsePoseInstructions(instructText)
-            console.log('[GroupShoot] Parsed poses:', poseInstructions.length)
+            console.log('[GroupShoot] Parsed poses:', poseInstructions.length, 'First:', JSON.stringify(poseInstructions[0]))
           } catch (error: any) {
             console.error('[GroupShoot] Failed to generate poses:', error.message)
-            // Use default poses
-            poseInstructions = [
-              'Pose: Natural standing with hands on hips, Camera: Front view, eye level',
-              'Pose: Walking pose with one foot forward, Camera: Slight angle from left',
-              'Pose: Casual lean with weight on one leg, Camera: Front view',
-              'Pose: Looking over shoulder, Camera: 3/4 view from right',
-              'Pose: Dynamic pose with slight movement, Camera: Full body shot',
-            ]
+            // Use default poses (already returned by parsePoseInstructions on error)
+            poseInstructions = parsePoseInstructions('')
           }
 
           // Step 2: Generate 5 images based on pose instructions
           for (let i = 0; i < 5; i++) {
             send({ type: 'progress', index: i })
             
-            const posePrompt = PROMPTS.randomPoseExec(poseInstructions[i])
+            const poseInstruct = poseInstructions[i]
+            const posePrompt = PROMPTS.randomPoseExec(poseInstruct)
+            
+            console.log(`[GroupShoot-Random-${i}] Pose: ${poseInstruct.pose_instruction.substring(0, 100)}...`)
+            
             const contents = [
               { text: posePrompt },
               { inlineData: { mimeType: 'image/jpeg', data: imageData } },
@@ -287,6 +308,9 @@ export async function POST(request: NextRequest) {
                 if (uploaded) {
                   uploadedUrl = uploaded
                   
+                  // Store the structured pose instruction as prompt
+                  const promptForDb = `产品重点: ${poseInstruct.product_focus}\n姿势: ${poseInstruct.pose_instruction}\n相机位置: ${poseInstruct.camera_position}\n构图: ${poseInstruct.composition}`
+                  
                   await appendImageToGeneration({
                     taskId,
                     userId,
@@ -294,7 +318,7 @@ export async function POST(request: NextRequest) {
                     imageUrl: uploaded,
                     modelType: result.model,
                     genMode: 'simple',
-                    prompt: posePrompt,
+                    prompt: promptForDb,
                     taskType: 'group_shoot',
                   })
                 }
