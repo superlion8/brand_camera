@@ -429,6 +429,13 @@ export async function POST(request: NextRequest) {
                   if (uploaded) {
                     uploadedUrl = uploaded
                     
+                    // 只在第一张图时上传输入图片
+                    let inputImageUrlToSave: string | undefined
+                    if (i === 0 && startImage) {
+                      const inputUploaded = await uploadImageToStorage(startImage, userId, `group_${taskId}_input`)
+                      if (inputUploaded) inputImageUrlToSave = inputUploaded
+                    }
+                    
                     const promptForDb = `Shot Type: ${poseInstruct.shot_type}\nPose: ${poseInstruct.pose_instruction}\nExpression: ${poseInstruct.facial_expression}\nCamera: ${poseInstruct.camera_position}\nComposition: ${poseInstruct.composition}`
                     
                     await appendImageToGeneration({
@@ -440,6 +447,8 @@ export async function POST(request: NextRequest) {
                       genMode: 'simple',
                       prompt: promptForDb,
                       taskType: 'group_shoot',
+                      inputImageUrl: inputImageUrlToSave,
+                      inputParams: i === 0 ? { styleMode: 'lifestyle', mode: 'random' } : undefined,
                     })
                   }
                 }
@@ -498,6 +507,13 @@ export async function POST(request: NextRequest) {
                   if (uploaded) {
                     uploadedUrl = uploaded
                     
+                    // 只在第一张图时上传输入图片
+                    let inputImageUrlToSave: string | undefined
+                    if (i === 0 && startImage) {
+                      const inputUploaded = await uploadImageToStorage(startImage, userId, `group_${taskId}_input`)
+                      if (inputUploaded) inputImageUrlToSave = inputUploaded
+                    }
+                    
                     const promptForDb = `产品重点: ${poseInstruct.product_focus}\n姿势: ${poseInstruct.pose_instruction}\n相机位置: ${poseInstruct.camera_position}\n构图: ${poseInstruct.composition}`
                     
                     await appendImageToGeneration({
@@ -509,6 +525,8 @@ export async function POST(request: NextRequest) {
                       genMode: 'simple',
                       prompt: promptForDb,
                       taskType: 'group_shoot',
+                      inputImageUrl: inputImageUrlToSave,
+                      inputParams: i === 0 ? { styleMode: 'studio', mode: 'random' } : undefined,
                     })
                   }
                 }
@@ -562,6 +580,13 @@ export async function POST(request: NextRequest) {
                 if (uploaded) {
                   uploadedUrl = uploaded
                   
+                  // 只在第一张图时上传输入图片
+                  let inputImageUrlToSave: string | undefined
+                  if (i === 0 && startImage) {
+                    const inputUploaded = await uploadImageToStorage(startImage, userId, `group_${taskId}_input`)
+                    if (inputUploaded) inputImageUrlToSave = inputUploaded
+                  }
+                  
                   await appendImageToGeneration({
                     taskId,
                     userId,
@@ -571,6 +596,8 @@ export async function POST(request: NextRequest) {
                     genMode: 'simple',
                     prompt: prompt,
                     taskType: 'group_shoot',
+                    inputImageUrl: inputImageUrlToSave,
+                    inputParams: i === 0 ? { styleMode, mode: 'multiangle' } : undefined,
                   })
                 }
               }

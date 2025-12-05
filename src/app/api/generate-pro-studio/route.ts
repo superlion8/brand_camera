@@ -277,6 +277,29 @@ export async function POST(request: NextRequest) {
       if (uploaded) {
         uploadedUrl = uploaded
         
+        // 只在第一张图时上传输入图片（避免重复上传）
+        let inputImageUrlToSave: string | undefined
+        let modelImageUrlToSave: string | undefined
+        let bgImageUrlToSave: string | undefined
+        
+        if (index === 0) {
+          // 上传商品图
+          if (productImage) {
+            const productUrl = await uploadImageToStorage(productImage, userId, `prostudio_${taskId}_product`)
+            if (productUrl) inputImageUrlToSave = productUrl
+          }
+          // 上传模特图
+          if (modelImage) {
+            const modelUrl = await uploadImageToStorage(modelImage, userId, `prostudio_${taskId}_model`)
+            if (modelUrl) modelImageUrlToSave = modelUrl
+          }
+          // 上传背景图
+          if (backgroundImage) {
+            const bgUrl = await uploadImageToStorage(backgroundImage, userId, `prostudio_${taskId}_bg`)
+            if (bgUrl) bgImageUrlToSave = bgUrl
+          }
+        }
+        
         // 保存到数据库
         await appendImageToGeneration({
           taskId,
@@ -287,6 +310,12 @@ export async function POST(request: NextRequest) {
           genMode: generationMode,
           prompt: usedPrompt,
           taskType: 'pro_studio',
+          inputImageUrl: inputImageUrlToSave,
+          inputParams: index === 0 ? {
+            modelImage: modelImageUrlToSave,
+            backgroundImage: bgImageUrlToSave,
+            mode,
+          } : undefined,
         })
       }
     }

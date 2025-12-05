@@ -426,6 +426,24 @@ export default function CameraPage() {
           // Pass model/bg info for logging
           modelName: modelNameForThis,
           bgName: bgNameForThis,
+          // Pass input params for database storage
+          inputParams: {
+            modelStyle,
+            modelGender,
+            model: modelNameForThis,
+            background: bgNameForThis,
+            // 标记每张图的模特/背景（用于详情页显示）
+            perImageModels: [{
+              name: modelNameForThis,
+              imageUrl: model?.imageUrl, // 用户选择的 URL（随机时为 undefined）
+              isRandom: !model,
+            }],
+            perImageBackgrounds: [{
+              name: bgNameForThis,
+              imageUrl: background?.imageUrl, // 用户选择的 URL（随机时为 undefined）
+              isRandom: !background,
+            }],
+          },
         }
         
         return new Promise<Response>((resolve, reject) => {
