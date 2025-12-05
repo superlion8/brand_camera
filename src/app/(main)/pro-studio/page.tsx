@@ -30,6 +30,7 @@ import { useLanguageStore } from "@/stores/languageStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { useAssetStore } from "@/stores/assetStore"
+import { useSettingsStore } from "@/stores/settingsStore"
 
 type PageMode = "camera" | "review" | "processing" | "results"
 
@@ -177,6 +178,7 @@ export default function ProStudioPage() {
   const { checkQuota, showExceededModal, requiredCount, closeExceededModal, quota } = useQuota()
   const { addTask, updateTaskStatus, updateImageSlot, initImageSlots, tasks } = useGenerationTaskStore()
   const { userProducts, userModels, userBackgrounds } = useAssetStore()
+  const { debugMode } = useSettingsStore()
   
   const webcamRef = useRef<Webcam>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -1254,6 +1256,129 @@ export default function ProStudioPage() {
                             下载
                           </button>
                         </div>
+                        
+                        {/* Debug Parameters - 只在调试模式显示 */}
+                        {debugMode && (
+                          <div className="mt-4 pt-4 border-t border-zinc-100">
+                            <h3 className="text-sm font-semibold text-zinc-700 mb-3">生成参数 (调试模式)</h3>
+                            <div className="grid grid-cols-3 gap-2">
+                              {/* 商品图 */}
+                              {capturedImage && (
+                                <div className="flex flex-col items-center">
+                                  <div 
+                                    className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"
+                                    onClick={() => setFullscreenImage(capturedImage)}
+                                  >
+                                    <img 
+                                      src={capturedImage} 
+                                      alt="商品" 
+                                      className="w-full h-full object-cover"
+                                    />
+                                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                      <ZoomIn className="w-4 h-4 text-white" />
+                                    </div>
+                                  </div>
+                                  <p className="text-[10px] text-zinc-500 mt-1">商品</p>
+                                  <span className="text-[8px] px-1 py-0.5 rounded bg-zinc-100 text-zinc-600">
+                                    输入图
+                                  </span>
+                                </div>
+                              )}
+                              
+                              {/* 模特图 */}
+                              {selectedModel && (
+                                <div className="flex flex-col items-center">
+                                  <div 
+                                    className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"
+                                    onClick={() => setFullscreenImage(selectedModel.imageUrl)}
+                                  >
+                                    <img 
+                                      src={selectedModel.imageUrl} 
+                                      alt="模特" 
+                                      className="w-full h-full object-cover"
+                                    />
+                                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                      <ZoomIn className="w-4 h-4 text-white" />
+                                    </div>
+                                  </div>
+                                  <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{selectedModel.name}</p>
+                                  <span className="text-[8px] px-1 py-0.5 rounded bg-blue-100 text-blue-600">
+                                    用户选择
+                                  </span>
+                                  <span className="text-[8px] px-1 py-0.5 rounded bg-purple-100 text-purple-600 mt-0.5">
+                                    {(selectedModel as any).category === 'studio' ? '高级模特' : '普通模特'}
+                                  </span>
+                                </div>
+                              )}
+                              {!selectedModel && (
+                                <div className="flex flex-col items-center">
+                                  <div className="w-14 h-14 rounded-lg bg-zinc-100 flex items-center justify-center">
+                                    <span className="text-xs text-zinc-400">随机</span>
+                                  </div>
+                                  <p className="text-[10px] text-zinc-500 mt-1">模特</p>
+                                  <span className="text-[8px] px-1 py-0.5 rounded bg-amber-100 text-amber-600">
+                                    随机
+                                  </span>
+                                  <span className="text-[8px] px-1 py-0.5 rounded bg-purple-100 text-purple-600 mt-0.5">
+                                    高级模特
+                                  </span>
+                                </div>
+                              )}
+                              
+                              {/* 背景图 */}
+                              {selectedBg && (
+                                <div className="flex flex-col items-center">
+                                  <div 
+                                    className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"
+                                    onClick={() => setFullscreenImage(selectedBg.imageUrl)}
+                                  >
+                                    <img 
+                                      src={selectedBg.imageUrl} 
+                                      alt="背景" 
+                                      className="w-full h-full object-cover"
+                                    />
+                                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                      <ZoomIn className="w-4 h-4 text-white" />
+                                    </div>
+                                  </div>
+                                  <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{selectedBg.name}</p>
+                                  <span className="text-[8px] px-1 py-0.5 rounded bg-blue-100 text-blue-600">
+                                    用户选择
+                                  </span>
+                                  <span className="text-[8px] px-1 py-0.5 rounded bg-green-100 text-green-600 mt-0.5">
+                                    {(selectedBg as any).category === 'studio-light' ? '打光背景' : 
+                                     (selectedBg as any).category === 'studio-solid' ? '纯色背景' : 
+                                     (selectedBg as any).category === 'studio-pattern' ? '花色背景' : '影棚背景'}
+                                  </span>
+                                </div>
+                              )}
+                              {!selectedBg && (
+                                <div className="flex flex-col items-center">
+                                  <div className="w-14 h-14 rounded-lg bg-zinc-100 flex items-center justify-center">
+                                    <span className="text-xs text-zinc-400">随机</span>
+                                  </div>
+                                  <p className="text-[10px] text-zinc-500 mt-1">背景</p>
+                                  <span className="text-[8px] px-1 py-0.5 rounded bg-amber-100 text-amber-600">
+                                    随机
+                                  </span>
+                                  <span className="text-[8px] px-1 py-0.5 rounded bg-green-100 text-green-600 mt-0.5">
+                                    影棚背景
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* 生成模式信息 */}
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <span className="text-[10px] px-2 py-1 rounded bg-zinc-100 text-zinc-600">
+                                模式: 专业棚拍
+                              </span>
+                              <span className="text-[10px] px-2 py-1 rounded bg-zinc-100 text-zinc-600">
+                                生成: 6张 (背景库2 + AI背景2 + 扩展2)
+                              </span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -18,6 +18,7 @@ import { useLanguageStore } from "@/stores/languageStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { useAssetStore } from "@/stores/assetStore"
+import { useSettingsStore } from "@/stores/settingsStore"
 
 type PageMode = "main" | "processing" | "results"
 type StyleMode = "lifestyle" | "studio"  // 生活模式 / 棚拍模式
@@ -34,6 +35,7 @@ export default function GroupShootPage() {
   const { checkQuota, showExceededModal, requiredCount, closeExceededModal, quota } = useQuota()
   const { addTask, updateTaskStatus, updateImageSlot, initImageSlots, tasks } = useGenerationTaskStore()
   const { generations } = useAssetStore()
+  const { debugMode } = useSettingsStore()
   
   const fileInputRef = useRef<HTMLInputElement>(null)
   
@@ -568,6 +570,71 @@ export default function GroupShootPage() {
               </div>
             </div>
 
+            {/* Debug Parameters - 只在调试模式显示 */}
+            {debugMode && (
+              <div className="mx-4 mb-4 p-4 bg-white rounded-xl border border-zinc-100">
+                <h3 className="text-sm font-semibold text-zinc-700 mb-3">生成参数 (调试模式)</h3>
+                <div className="flex items-start gap-4">
+                  {/* 输入图 */}
+                  {selectedImage && (
+                    <div className="flex flex-col items-center">
+                      <div 
+                        className="w-16 h-16 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"
+                        onClick={() => setFullscreenImage(selectedImage)}
+                      >
+                        <img 
+                          src={selectedImage} 
+                          alt="输入图" 
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <ZoomIn className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-zinc-500 mt-1">输入图</p>
+                      <span className="text-[8px] px-1 py-0.5 rounded bg-zinc-100 text-zinc-600 mt-0.5">
+                        模特成片
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* 模式信息 */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-zinc-500">风格模式:</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                        styleMode === 'lifestyle' 
+                          ? 'bg-blue-100 text-blue-700' 
+                          : 'bg-amber-100 text-amber-700'
+                      }`}>
+                        {styleMode === 'lifestyle' ? '生活风格' : '棚拍风格'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-zinc-500">拍摄模式:</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                        shootMode === 'random' 
+                          ? 'bg-purple-100 text-purple-700' 
+                          : 'bg-green-100 text-green-700'
+                      }`}>
+                        {shootMode === 'random' ? '随意拍' : '多角度'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-zinc-500">生成数量:</span>
+                      <span className="text-[10px] font-medium text-zinc-700">{numImages} 张</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-zinc-500">输入来源:</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-cyan-100 text-cyan-700">
+                        从成片选择
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t max-w-md mx-auto">
               <button 
                 onClick={handleReselect}
