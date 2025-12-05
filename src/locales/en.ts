@@ -214,6 +214,7 @@ export const en: Translations = {
     goEdit: "Edit",
     debugParams: "Generation Params (Debug)",
     modelStudio: "Buyer Show",
+    buyerShow: "Buyer Show",
     proStudio: "Pro Studio",
     editRoom: "Edit Room",
     productStudio: "Product Studio",
@@ -262,6 +263,11 @@ export const en: Translations = {
     noProducts: "No product assets",
     clickUpload: "Click to upload",
     noAssets: "No assets",
+    // Sub-categories
+    normalModels: "Regular Models",
+    studioModels: "Pro Models",
+    normalBackgrounds: "Regular Backgrounds",
+    studioBackgrounds: "Studio Backgrounds",
   },
   
   // User Menu

@@ -107,9 +107,20 @@ export async function GET(request: NextRequest) {
       .not('output_image_urls', 'is', null)
 
     // 按类型筛选 - 使用 task_type 字段
+    const subType = searchParams.get('subType') || ''
+    
     // model 包含：买家秀(camera/camera_model/model/model_studio)、专业棚拍(pro_studio)、修图(edit/editing)
     if (type === 'model') {
-      query = query.or('task_type.eq.camera_model,task_type.eq.model,task_type.eq.camera,task_type.eq.model_studio,task_type.eq.edit,task_type.eq.editing,task_type.eq.pro_studio,task_type.eq.prostudio')
+      if (subType === 'buyer') {
+        // 只显示买家秀：camera, camera_model, model, model_studio, edit, editing
+        query = query.or('task_type.eq.camera_model,task_type.eq.model,task_type.eq.camera,task_type.eq.model_studio,task_type.eq.edit,task_type.eq.editing')
+      } else if (subType === 'prostudio') {
+        // 只显示专业棚拍
+        query = query.or('task_type.eq.pro_studio,task_type.eq.prostudio')
+      } else {
+        // 全部：买家秀 + 专业棚拍
+        query = query.or('task_type.eq.camera_model,task_type.eq.model,task_type.eq.camera,task_type.eq.model_studio,task_type.eq.edit,task_type.eq.editing,task_type.eq.pro_studio,task_type.eq.prostudio')
+      }
     } else if (type === 'product') {
       query = query.or('task_type.eq.studio,task_type.eq.camera_product,task_type.eq.product,task_type.eq.product_studio')
     }

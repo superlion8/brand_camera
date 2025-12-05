@@ -212,6 +212,7 @@ export const zh = {
     goEdit: "去修图",
     debugParams: "生成参数 (调试模式)",
     modelStudio: "买家秀",
+    buyerShow: "买家秀",
     proStudio: "专业棚拍",
     editRoom: "修图室",
     productStudio: "商品影棚",
@@ -260,6 +261,11 @@ export const zh = {
     noProducts: "暂无商品资产",
     clickUpload: "点击上传",
     noAssets: "暂无资产",
+    // 二级分类
+    normalModels: "普通模特",
+    studioModels: "高级模特",
+    normalBackgrounds: "普通背景",
+    studioBackgrounds: "棚拍背景",
   },
   
   // User Menu

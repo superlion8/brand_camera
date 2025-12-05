@@ -214,6 +214,7 @@ export const ko: Translations = {
     goEdit: "편집",
     debugParams: "생성 파라미터 (디버그)",
     modelStudio: "구매후기",
+    buyerShow: "구매후기",
     proStudio: "프로 스튜디오",
     editRoom: "편집실",
     productStudio: "상품 스튜디오",
@@ -262,6 +263,11 @@ export const ko: Translations = {
     noProducts: "상품 자산 없음",
     clickUpload: "클릭하여 업로드",
     noAssets: "자산 없음",
+    // 하위 카테고리
+    normalModels: "일반 모델",
+    studioModels: "프로 모델",
+    normalBackgrounds: "일반 배경",
+    studioBackgrounds: "스튜디오 배경",
   },
   
   // User Menu

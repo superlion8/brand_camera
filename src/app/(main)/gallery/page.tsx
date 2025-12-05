@@ -15,6 +15,7 @@ import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
 import { generateId } from "@/lib/utils"
 
 type TabType = "all" | "model" | "product" | "favorites"
+type ModelSubType = "all" | "buyer" | "prostudio"  // 买家秀 / 专业棚拍
 
 // Helper functions for type classification - with null safety
 function isModelType(gen: Generation | null | undefined): boolean {
@@ -46,6 +47,7 @@ function isEditType(gen: Generation | null | undefined): boolean {
 export default function GalleryPage() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<TabType>("all")
+  const [modelSubType, setModelSubType] = useState<ModelSubType>("all")  // 模特二级分类
   const [selectedItem, setSelectedItem] = useState<{ gen: Generation; index: number } | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -81,7 +83,9 @@ export default function GalleryPage() {
       if (!append) setIsLoading(true)
       else setIsLoadingMore(true)
       
-      const response = await fetch(`/api/gallery?type=${activeTab}&page=${page}`)
+      // 模特 tab 下传递二级分类参数
+      const subType = activeTab === 'model' ? modelSubType : ''
+      const response = await fetch(`/api/gallery?type=${activeTab}&page=${page}&subType=${subType}`)
       const result = await response.json()
       
       if (result.success) {
@@ -113,7 +117,7 @@ export default function GalleryPage() {
     }
   }
   
-  // 当 tab 切换或用户登录时重新加载
+  // 当 tab 切换、二级分类切换或用户登录时重新加载
   useEffect(() => {
     if (user) {
       // 切换 tab 时立即清空旧数据，显示骨架屏
@@ -123,7 +127,7 @@ export default function GalleryPage() {
       setCurrentPage(1)
       fetchGalleryData(1, false)
     }
-  }, [activeTab, user])
+  }, [activeTab, modelSubType, user])
   
   // 当有完成但未同步的图片时，定期刷新数据
   useEffect(() => {
@@ -560,6 +564,42 @@ export default function GalleryPage() {
             </button>
           ))}
         </div>
+        
+        {/* 模特二级分类 - 买家秀 / 专业棚拍 */}
+        {activeTab === "model" && (
+          <div className="px-4 pb-3 flex gap-2">
+            <button
+              onClick={() => setModelSubType("all")}
+              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                modelSubType === "all"
+                  ? "bg-zinc-700 text-white"
+                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+              }`}
+            >
+              {t.common.all || '全部'}
+            </button>
+            <button
+              onClick={() => setModelSubType("buyer")}
+              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                modelSubType === "buyer"
+                  ? "bg-blue-500 text-white"
+                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+              }`}
+            >
+              {t.gallery.buyerShow || '买家秀'}
+            </button>
+            <button
+              onClick={() => setModelSubType("prostudio")}
+              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                modelSubType === "prostudio"
+                  ? "bg-amber-500 text-white"
+                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+              }`}
+            >
+              {t.gallery.proStudio || '专业棚拍'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Grid with Pull to Refresh */}

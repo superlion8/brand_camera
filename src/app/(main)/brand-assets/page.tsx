@@ -14,8 +14,18 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useLanguageStore } from "@/stores/languageStore"
 
 // System presets from centralized data
-// 模特包含：可见模特 + 专业模特
-// 环境包含：可见背景 + 棚拍背景
+// 模特二级分类：普通模特 / 高级模特
+// 环境二级分类：普通背景 / 棚拍背景
+const modelPresets = {
+  normal: PRESET_MODELS,
+  studio: STUDIO_MODELS,
+}
+
+const backgroundPresets = {
+  normal: PRESET_BACKGROUNDS,
+  studio: ALL_STUDIO_BACKGROUNDS,
+}
+
 const systemPresets: Record<AssetType, Asset[]> = {
   model: [...PRESET_MODELS, ...STUDIO_MODELS],
   background: [...PRESET_BACKGROUNDS, ...ALL_STUDIO_BACKGROUNDS],
@@ -24,6 +34,8 @@ const systemPresets: Record<AssetType, Asset[]> = {
 }
 
 type SourceTab = "user" | "preset"
+type ModelSubTab = "normal" | "studio"
+type BackgroundSubTab = "normal" | "studio"
 
 export default function BrandAssetsPage() {
   const router = useRouter()
@@ -40,6 +52,9 @@ export default function BrandAssetsPage() {
   const [activeSource, setActiveSource] = useState<SourceTab>("user")
   const [uploadType, setUploadType] = useState<AssetType>("product")
   const [zoomImage, setZoomImage] = useState<string | null>(null)
+  // 二级分类状态
+  const [modelSubTab, setModelSubTab] = useState<ModelSubTab>("normal")
+  const [backgroundSubTab, setBackgroundSubTab] = useState<BackgroundSubTab>("normal")
   
   // Auth and sync state
   const { isSyncing: authSyncing } = useAuth()
@@ -110,7 +125,18 @@ export default function BrandAssetsPage() {
   }
   
   const userAssets = getUserAssets(activeType)
-  const presetAssets = systemPresets[activeType] || []
+  
+  // 获取预设资产，模特和环境使用二级分类
+  const getPresetAssets = () => {
+    if (activeType === 'model') {
+      return modelPresets[modelSubTab] || []
+    }
+    if (activeType === 'background') {
+      return backgroundPresets[backgroundSubTab] || []
+    }
+    return systemPresets[activeType] || []
+  }
+  const presetAssets = getPresetAssets()
   
   // Sort user assets: pinned first
   const sortedUserAssets = [...userAssets].sort((a, b) => {
@@ -245,6 +271,62 @@ export default function BrandAssetsPage() {
             )}
           </button>
         </div>
+        
+        {/* 二级分类 - 模特 */}
+        {activeSource === "preset" && activeType === "model" && (
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={() => setModelSubTab("normal")}
+              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                modelSubTab === "normal"
+                  ? "bg-blue-600 text-white"
+                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+              }`}
+            >
+              {t.assets.normalModels || '普通模特'}
+              <span className="ml-1 opacity-70">({modelPresets.normal.length})</span>
+            </button>
+            <button
+              onClick={() => setModelSubTab("studio")}
+              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                modelSubTab === "studio"
+                  ? "bg-amber-500 text-white"
+                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+              }`}
+            >
+              {t.assets.studioModels || '高级模特'}
+              <span className="ml-1 opacity-70">({modelPresets.studio.length})</span>
+            </button>
+          </div>
+        )}
+        
+        {/* 二级分类 - 环境 */}
+        {activeSource === "preset" && activeType === "background" && (
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={() => setBackgroundSubTab("normal")}
+              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                backgroundSubTab === "normal"
+                  ? "bg-blue-600 text-white"
+                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+              }`}
+            >
+              {t.assets.normalBackgrounds || '普通背景'}
+              <span className="ml-1 opacity-70">({backgroundPresets.normal.length})</span>
+            </button>
+            <button
+              onClick={() => setBackgroundSubTab("studio")}
+              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                backgroundSubTab === "studio"
+                  ? "bg-amber-500 text-white"
+                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+              }`}
+            >
+              {t.assets.studioBackgrounds || '棚拍背景'}
+              <span className="ml-1 opacity-70">({backgroundPresets.studio.length})</span>
+            </button>
+          </div>
+        )}
       </div>
       
       {/* Content */}
