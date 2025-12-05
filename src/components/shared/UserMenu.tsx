@@ -229,96 +229,96 @@ export function UserMenu() {
         )}
       </div>
 
-      {/* Settings Modal */}
-      <AnimatePresence>
-        {showSettings && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 z-[100] backdrop-blur-sm"
-              onClick={() => setShowSettings(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, translateY: "100%" }}
-              animate={{ opacity: 1, translateY: 0 }}
-              exit={{ opacity: 0, translateY: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              style={{ position: 'fixed', left: 0, right: 0, bottom: 0, top: 'auto' }}
-              className="bg-white rounded-t-2xl shadow-2xl z-[101] max-h-[80vh] overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div className="h-14 flex items-center justify-between px-4 border-b shrink-0">
-                <h2 className="font-semibold text-zinc-900">{t.user.settings}</h2>
-                <button
-                  onClick={() => setShowSettings(false)}
-                  className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center transition-colors"
-                >
-                  <X className="w-4 h-4 text-zinc-500" />
-                </button>
-              </div>
+      {/* Settings Modal - 使用 Portal 渲染到 body */}
+      {showSettings && typeof document !== 'undefined' && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/50 z-[9998] backdrop-blur-sm"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+            onClick={() => setShowSettings(false)}
+          />
+          {/* Modal */}
+          <div 
+            className="fixed z-[9999] bg-white rounded-t-2xl shadow-2xl overflow-hidden"
+            style={{ 
+              position: 'fixed',
+              left: 0, 
+              right: 0, 
+              bottom: 0,
+              maxHeight: '80vh',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="h-14 flex items-center justify-between px-4 border-b bg-white">
+              <h2 className="font-semibold text-zinc-900">{t.user.settings}</h2>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center transition-colors"
+              >
+                <X className="w-4 h-4 text-zinc-500" />
+              </button>
+            </div>
 
-              {/* Settings Content */}
-              <div className="p-4 space-y-4 overflow-y-auto" style={{ maxHeight: 'calc(80vh - 14rem)' }}>
-                {/* Debug Mode Toggle - Only visible to admins */}
-                {isAdmin ? (
-                  <>
-                    <div className="flex items-center justify-between p-4 bg-zinc-50 rounded-xl">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${debugMode ? 'bg-amber-100' : 'bg-zinc-200'}`}>
-                          <Bug className={`w-5 h-5 ${debugMode ? 'text-amber-600' : 'text-zinc-400'}`} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-zinc-900 text-sm">{t.user.debugMode}</p>
-                          <p className="text-xs text-zinc-500">{t.user.debugModeDesc}</p>
-                        </div>
+            {/* Settings Content */}
+            <div className="p-4 space-y-4 overflow-y-auto" style={{ maxHeight: 'calc(80vh - 10rem)' }}>
+              {/* Debug Mode Toggle - Only visible to admins */}
+              {isAdmin ? (
+                <>
+                  <div className="flex items-center justify-between p-4 bg-zinc-50 rounded-xl">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${debugMode ? 'bg-amber-100' : 'bg-zinc-200'}`}>
+                        <Bug className={`w-5 h-5 ${debugMode ? 'text-amber-600' : 'text-zinc-400'}`} />
                       </div>
-                      <button
-                        onClick={toggleDebugMode}
-                        className={`relative w-14 h-8 rounded-full transition-colors shrink-0 ml-3 ${
-                          debugMode ? 'bg-amber-500' : 'bg-zinc-300'
-                        }`}
-                      >
-                        <div
-                          className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow-sm transition-transform ${
-                            debugMode ? 'translate-x-7' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
+                      <div className="min-w-0">
+                        <p className="font-medium text-zinc-900 text-sm">{t.user.debugMode}</p>
+                        <p className="text-xs text-zinc-500">{t.user.debugModeDesc}</p>
+                      </div>
                     </div>
-
-                    {/* Debug Mode Description */}
-                    {debugMode && (
-                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                        <p className="text-xs text-amber-700">
-                          <strong>{t.user.debugModeEnabled}</strong><br />
-                          {t.user.debugModeEnabledDesc}
-                        </p>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="p-4 bg-zinc-50 rounded-xl text-center">
-                    <p className="text-sm text-zinc-500">{t.user.noSettings}</p>
+                    <button
+                      onClick={toggleDebugMode}
+                      className={`relative w-14 h-8 rounded-full transition-colors shrink-0 ml-3 ${
+                        debugMode ? 'bg-amber-500' : 'bg-zinc-300'
+                      }`}
+                    >
+                      <div
+                        className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow-sm transition-transform ${
+                          debugMode ? 'translate-x-7' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
                   </div>
-                )}
-              </div>
 
-              {/* Footer */}
-              <div className="p-4 border-t bg-zinc-50 shrink-0" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 2rem)' }}>
-                <button
-                  onClick={() => setShowSettings(false)}
-                  className="w-full h-12 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl font-medium text-sm transition-colors"
-                >
-                  {t.common.done}
-                </button>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+                  {/* Debug Mode Description */}
+                  {debugMode && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                      <p className="text-xs text-amber-700">
+                        <strong>{t.user.debugModeEnabled}</strong><br />
+                        {t.user.debugModeEnabledDesc}
+                      </p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="p-4 bg-zinc-50 rounded-xl text-center">
+                  <p className="text-sm text-zinc-500">{t.user.noSettings}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t bg-zinc-50" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 2rem)' }}>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="w-full h-12 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl font-medium text-sm transition-colors"
+              >
+                {t.common.done}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </>
   )
 }
