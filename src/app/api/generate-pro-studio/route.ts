@@ -75,6 +75,13 @@ export async function POST(request: NextRequest) {
       mode, // 'background-lib' | 'random-bg' | 'extended'
       index = 0,
       taskId,
+      // 模特/背景信息（用于保存到数据库）
+      modelIsRandom = true,
+      bgIsRandom = true,
+      modelName = '高级模特',
+      bgName = '影棚背景',
+      modelUrl,
+      bgUrl,
     } = body
 
     const supabase = await createClient()
@@ -328,9 +335,24 @@ export async function POST(request: NextRequest) {
       taskType: 'pro_studio',
       inputImageUrl: inputImageUrlToSave,
       inputParams: index === 0 ? {
-        modelImage: modelImageUrlToSave,
-        backgroundImage: bgImageUrlToSave,
+        modelImage: modelImageUrlToSave || modelUrl,
+        backgroundImage: bgImageUrlToSave || bgUrl,
         mode,
+        // 保存模特/背景选择信息
+        model: modelName,
+        background: bgName,
+        modelIsUserSelected: !modelIsRandom,
+        bgIsUserSelected: !bgIsRandom,
+        perImageModels: [{
+          name: modelName,
+          imageUrl: modelImageUrlToSave || modelUrl,
+          isRandom: modelIsRandom,
+        }],
+        perImageBackgrounds: [{
+          name: bgName,
+          imageUrl: bgImageUrlToSave || bgUrl,
+          isRandom: bgIsRandom,
+        }],
       } : undefined,
     })
 

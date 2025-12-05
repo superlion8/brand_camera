@@ -432,6 +432,16 @@ export default function ProStudioPage() {
     // 扩展模式：随机选择一个模特（2张图共用）
     const extendedModelBase64 = userSelectedModelBase64 || (!selectedModel ? await loadRandomModelWithRetry() : null)
 
+    // 是否用户选择的标志
+    const modelIsRandom = !selectedModel
+    const bgIsRandom = !selectedBg
+    
+    // 模特/背景名称和URL（用于保存到数据库）
+    const modelName = selectedModel?.name || '高级模特 (随机)'
+    const modelUrl = selectedModel?.imageUrl
+    const bgName = selectedBg?.name || '影棚背景 (随机)'
+    const bgUrl = selectedBg?.imageUrl
+
     // 生成任务配置：背景库模式2张 + 随机背景模式2张 + 扩展模式2张
     const taskConfigs = [
       { mode: 'background-lib', index: 0, model: bgLibModelBase64, bg: bgLibBgBase64 },
@@ -461,6 +471,13 @@ export default function ProStudioPage() {
             mode: task.mode,
             index: task.index,
             taskId,
+            // 传递模特/背景信息用于数据库保存
+            modelIsRandom,
+            bgIsRandom,
+            modelName,
+            bgName,
+            modelUrl,
+            bgUrl,
           }),
         })
 
