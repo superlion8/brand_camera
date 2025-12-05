@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServiceClient()
 
-    // 查询验证码记录
+    // ========== 第一步：验证短信验证码（快速） ==========
     const { data: smsCode, error: queryError } = await supabase
       .from('sms_codes')
       .select('*')
@@ -44,7 +44,6 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (queryError || !smsCode) {
-      console.error('[SMS] Query error:', queryError)
       return NextResponse.json(
         { success: false, error: '请先获取验证码' },
         { status: 400 }
@@ -68,8 +67,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 检查是否过期
-    const expiresAt = new Date(smsCode.expires_at)
-    if (new Date() > expiresAt) {
+    if (new Date() > new Date(smsCode.expires_at)) {
       return NextResponse.json(
         { success: false, error: '验证码已过期，请重新获取' },
         { status: 400 }
@@ -102,104 +100,79 @@ export async function POST(request: NextRequest) {
       .update({ verified: true })
       .eq('phone', phone)
 
-    // 使用手机号作为虚拟邮箱
+    console.log(`[SMS] Code verified for: ${phone}`)
+
+    // ========== 第二步：创建或获取用户 ==========
     const virtualEmail = `sms_${phone}@brandcam.app`
     const virtualPassword = `sms_${phone}_${process.env.SMS_SECRET_SALT || 'brandcam'}`
+
+    // 尝试创建用户（如果已存在会失败）
+    const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+      email: virtualEmail,
+      password: virtualPassword,
+      email_confirm: true,
+      user_metadata: {
+        phone,
+        login_type: 'sms',
+      },
+    })
 
     let userId: string
     let isNewUser = false
 
-    // 尝试通过 listUsers 查找用户（按邮箱过滤）
-    // Supabase Admin API 没有 getUserByEmail，需要 listUsers 然后过滤
-    let existingUser: { id: string; email?: string } | null = null
-    
-    try {
-      const { data: listData } = await supabase.auth.admin.listUsers({
-        page: 1,
-        perPage: 1000, // 获取足够多的用户来查找
-      })
-      
-      if (listData?.users) {
-        existingUser = listData.users.find(u => u.email === virtualEmail) || null
-      }
-    } catch (e) {
-      console.log('[SMS] listUsers error:', e)
-    }
-
-    if (existingUser) {
-      // 用户已存在
-      userId = existingUser.id
-      console.log(`[SMS] Existing user found: ${phone}, id: ${userId}`)
-    } else {
-      // 创建新用户
-      isNewUser = true
-      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-        email: virtualEmail,
-        password: virtualPassword,
-        email_confirm: true,
-        user_metadata: {
-          phone,
-          login_type: 'sms',
-        },
-      })
-
-      if (createError || !newUser?.user) {
+    if (createError) {
+      // 用户已存在，更新密码确保一致
+      if (createError.message?.includes('already been registered') || 
+          createError.message?.includes('already exists')) {
+        console.log(`[SMS] User exists, updating password: ${phone}`)
+        
+        // 通过邮箱查找用户 ID（从 users 视图）
+        const { data: userData } = await supabase
+          .from('users_view')
+          .select('id')
+          .eq('email', virtualEmail)
+          .single()
+        
+        if (userData?.id) {
+          userId = userData.id
+          // 更新密码
+          await supabase.auth.admin.updateUserById(userId, {
+            password: virtualPassword,
+          })
+        } else {
+          // 备用：直接返回登录凭证让前端处理
+          console.log(`[SMS] Cannot find user, returning credentials`)
+          return NextResponse.json({
+            success: true,
+            message: '验证成功',
+            email: virtualEmail,
+            password: virtualPassword,
+          })
+        }
+      } else {
         console.error('[SMS] Create user error:', createError)
         return NextResponse.json(
           { success: false, error: '创建用户失败，请稍后重试' },
           { status: 500 }
         )
       }
-
-      userId = newUser.user.id
+    } else {
+      // 新用户创建成功
+      isNewUser = true
+      userId = newUser.user!.id
       console.log(`[SMS] New user created: ${phone}, id: ${userId}`)
     }
 
-    // 生成 Magic Link 用于自动登录
-    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-      type: 'magiclink',
-      email: virtualEmail,
-      options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://brandcam.app'}/auth/callback`,
-      },
-    })
-
-    if (linkError || !linkData?.properties?.action_link) {
-      console.error('[SMS] Generate magic link error:', linkError)
-      
-      // 如果 magic link 失败，返回需要前端处理的信息
-      return NextResponse.json({
-        success: true,
-        message: isNewUser ? '注册成功' : '验证成功',
-        needsManualLogin: true,
-        email: virtualEmail,
-        password: virtualPassword,
-        user: {
-          id: userId,
-          phone,
-          email: virtualEmail,
-        },
-      })
-    }
-
-    // 从 action_link 中提取 token
-    const actionLink = linkData.properties.action_link
-    const url = new URL(actionLink)
-    const token = url.searchParams.get('token')
-    const type = url.searchParams.get('type')
-
-    console.log(`[SMS] Magic link generated for: ${phone}`)
-
+    // ========== 第三步：返回登录凭证 ==========
+    // 直接返回 email 和 password，让前端用 signInWithPassword 登录
+    // 这是最简单可靠的方式
     return NextResponse.json({
       success: true,
       message: isNewUser ? '注册成功' : '登录成功',
-      // 返回验证信息给前端
-      verifyToken: token,
-      verifyType: type || 'magiclink',
       email: virtualEmail,
-      actionLink: actionLink, // 完整链接（备用）
+      password: virtualPassword,
       user: {
-        id: userId,
+        id: userId!,
         phone,
         email: virtualEmail,
       },

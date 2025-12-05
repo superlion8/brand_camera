@@ -211,6 +211,7 @@ function LoginContent() {
     setError(null)
 
     try {
+      // 第一步：验证短信验证码
       const response = await fetch('/api/sms/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -223,53 +224,27 @@ function LoginContent() {
         throw new Error(data.error || '验证失败')
       }
 
-      const supabase = createClient()
-
-      // 方式1: 使用 magic link token 验证
-      if (data.verifyToken && data.email) {
-        const { error: verifyError } = await supabase.auth.verifyOtp({
-          email: data.email,
-          token: data.verifyToken,
-          type: 'magiclink',
-        })
-
-        if (!verifyError) {
-          setMessage('登录成功，正在跳转...')
-          setTimeout(() => {
-            window.location.href = redirectTo
-          }, 500)
-          return
-        }
-        
-        console.log('[SMS] Magic link verify failed, trying password login:', verifyError.message)
-      }
-
-      // 方式2: 使用邮箱密码登录（备用）
+      // 第二步：使用返回的凭证登录
       if (data.email && data.password) {
+        const supabase = createClient()
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email: data.email,
           password: data.password,
         })
 
-        if (!signInError) {
-          setMessage('登录成功，正在跳转...')
-          setTimeout(() => {
-            window.location.href = redirectTo
-          }, 500)
-          return
+        if (signInError) {
+          console.error('[SMS] signInWithPassword failed:', signInError.message)
+          throw new Error('登录失败，请重试')
         }
 
-        console.log('[SMS] Password login failed:', signInError.message)
-      }
-
-      // 方式3: 直接跳转到 action link（最后手段）
-      if (data.actionLink) {
+        // 登录成功
         setMessage('登录成功，正在跳转...')
-        window.location.href = data.actionLink
+        setTimeout(() => {
+          window.location.href = redirectTo
+        }, 500)
         return
       }
 
-      // 都失败了
       throw new Error('登录失败，请重试')
 
     } catch (err: any) {
