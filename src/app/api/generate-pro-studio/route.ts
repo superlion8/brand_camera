@@ -119,7 +119,10 @@ export async function POST(request: NextRequest) {
           config: {
             responseModalities: ['IMAGE'],
             safetySettings,
-          },
+            imageConfig: {
+              imageSize: '2K',
+            },
+          } as any,
         })
 
         const imageData = extractImage(response)

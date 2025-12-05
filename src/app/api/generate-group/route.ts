@@ -185,7 +185,10 @@ async function generateImageWithFallback(
       config: {
         responseModalities: ['IMAGE'],
         safetySettings,
-      },
+        imageConfig: {
+          imageSize: '2K',
+        },
+      } as any,
     })
 
     const imageData = extractImage(response)
