@@ -79,13 +79,13 @@ export const PRESET_PRODUCTS: Asset[] = Array.from({ length: 15 }, (_, i) => ({
 // STUDIO (专业棚拍) ASSETS
 // ============================================================
 
-// Studio Models (专业模特/高级模特) - 10 total
-// 文件位于 presets/studio-models/01.png ~ 10.png
-export const STUDIO_MODELS: Asset[] = Array.from({ length: 10 }, (_, i) => ({
+// Studio Models (专业模特/高级模特) - 21 total
+// 文件位于 presets/studio-models/01.jpg ~ 21.jpg
+export const STUDIO_MODELS: Asset[] = Array.from({ length: 21 }, (_, i) => ({
   id: `studio-model-${i + 1}`,
   type: 'model' as AssetType,
   name: `高级模特 ${i + 1}`,
-  imageUrl: `${STORAGE_URL}/studio-models/${String(i + 1).padStart(2, '0')}.png?${CACHE_VERSION}`,
+  imageUrl: `${STORAGE_URL}/studio-models/${String(i + 1).padStart(2, '0')}.jpg?${CACHE_VERSION}`,
   isSystem: true,
   category: 'studio', // 标记为专业棚拍类型
 }))
@@ -100,12 +100,13 @@ export const STUDIO_BG_LIGHT: Asset[] = Array.from({ length: 15 }, (_, i) => ({
   category: 'studio-light',
 }))
 
-// Studio Backgrounds - Solid (纯色背景) - 28 total
-export const STUDIO_BG_SOLID: Asset[] = Array.from({ length: 28 }, (_, i) => ({
-  id: `studio-bg-solid-${i + 1}`,
+// Studio Backgrounds - Solid (纯色背景) - 3 files: 01.jpg, 02.jpg, 12.jpg
+const SOLID_BG_FILES = ['01', '02', '12']
+export const STUDIO_BG_SOLID: Asset[] = SOLID_BG_FILES.map((num, i) => ({
+  id: `studio-bg-solid-${num}`,
   type: 'background' as AssetType,
-  name: `纯色背景 ${String(i + 1).padStart(2, '0')}`,
-  imageUrl: `${STORAGE_URL}/studio-backgrounds/solid/${String(i + 1).padStart(2, '0')}.jpg?${CACHE_VERSION}`,
+  name: `纯色背景 ${num}`,
+  imageUrl: `${STORAGE_URL}/studio-backgrounds/solid/${num}.jpg?${CACHE_VERSION}`,
   isSystem: true,
   category: 'studio-solid',
 }))
