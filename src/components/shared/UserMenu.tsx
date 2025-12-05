@@ -241,11 +241,12 @@ export function UserMenu() {
               onClick={() => setShowSettings(false)}
             />
             <motion.div
-              initial={{ opacity: 0, y: "100%" }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: "100%" }}
+              initial={{ opacity: 0, translateY: "100%" }}
+              animate={{ opacity: 1, translateY: 0 }}
+              exit={{ opacity: 0, translateY: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="fixed inset-x-0 bottom-0 bg-white rounded-t-2xl shadow-2xl z-[101] max-h-[80vh] overflow-hidden"
+              style={{ position: 'fixed', left: 0, right: 0, bottom: 0, top: 'auto' }}
+              className="bg-white rounded-t-2xl shadow-2xl z-[101] max-h-[80vh] overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
