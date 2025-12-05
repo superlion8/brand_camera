@@ -20,8 +20,8 @@ type TabType = "all" | "model" | "product" | "favorites"
 function isModelType(gen: Generation | null | undefined): boolean {
   if (!gen) return false
   const type = gen.type?.toLowerCase() || ''
-  // 买家秀类型
-  return type === 'camera_model' || type === 'model' || type === 'camera' || type === 'model_studio'
+  // 模特类型：买家秀 + 专业棚拍
+  return type === 'camera_model' || type === 'model' || type === 'camera' || type === 'model_studio' || type === 'pro_studio' || type === 'prostudio'
 }
 
 function isProStudioType(gen: Generation | null | undefined): boolean {
@@ -154,12 +154,26 @@ export default function GalleryPage() {
     // Pro Studio types (专业棚拍)
     if (isProStudioType(gen)) {
       const mode = gen.outputGenModes?.[imageIndex]
-      const subLabel = isDebugMode && mode ? (mode === 'simple' ? '背景库' : '扩展') : undefined
+      // 0,1 = 背景库模式, 2,3 = AI背景模式, 4,5 = 扩展模式
+      let subLabel = undefined
+      let subColor = 'bg-amber-600'
+      if (isDebugMode) {
+        if (imageIndex < 2) {
+          subLabel = '背景库'
+          subColor = 'bg-green-500'
+        } else if (imageIndex < 4) {
+          subLabel = 'AI背景'
+          subColor = 'bg-blue-500'
+        } else {
+          subLabel = '扩展'
+          subColor = 'bg-purple-500'
+        }
+      }
       return { 
         label: t.gallery.proStudio || '专业棚拍', 
         color: 'bg-gradient-to-r from-amber-500 to-orange-500',
         subLabel,
-        subColor: 'bg-amber-600'
+        subColor
       }
     }
     

@@ -107,8 +107,9 @@ export async function GET(request: NextRequest) {
       .not('output_image_urls', 'is', null)
 
     // 按类型筛选 - 使用 task_type 字段
+    // model 包含：买家秀(camera/camera_model/model/model_studio)、专业棚拍(pro_studio)、修图(edit/editing)
     if (type === 'model') {
-      query = query.or('task_type.eq.camera_model,task_type.eq.model,task_type.eq.camera,task_type.eq.model_studio,task_type.eq.edit,task_type.eq.editing')
+      query = query.or('task_type.eq.camera_model,task_type.eq.model,task_type.eq.camera,task_type.eq.model_studio,task_type.eq.edit,task_type.eq.editing,task_type.eq.pro_studio,task_type.eq.prostudio')
     } else if (type === 'product') {
       query = query.or('task_type.eq.studio,task_type.eq.camera_product,task_type.eq.product,task_type.eq.product_studio')
     }

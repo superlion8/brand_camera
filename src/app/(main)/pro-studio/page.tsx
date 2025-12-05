@@ -274,18 +274,41 @@ export default function ProStudioPage() {
     // 压缩商品图
     const compressedProduct = await compressBase64Image(capturedImage, 1024)
 
-    // 准备模特和背景
-    const isModelRandom = !selectedModelId
-    const isBgRandom = !selectedBgId
+    // ========== 预先确定每个模式使用的模特和背景 ==========
+    // 如果用户选择了，使用用户选择的；否则随机选择一个，同模式的2张图共用
+    
+    // 用户选择的模特（如果有）
+    const userSelectedModelBase64 = selectedModel 
+      ? await ensureBase64(selectedModel.imageUrl) 
+      : null
+    
+    // 用户选择的背景（如果有）
+    const userSelectedBgBase64 = selectedBg 
+      ? await ensureBase64(selectedBg.imageUrl) 
+      : null
+
+    // 背景库模式：随机选择一个模特和背景（2张图共用）
+    const bgLibRandomModel = !selectedModel ? getRandomStudioModel() : null
+    const bgLibRandomBg = !selectedBg ? getRandomStudioBackground() : null
+    const bgLibModelBase64 = userSelectedModelBase64 || (bgLibRandomModel ? await ensureBase64(bgLibRandomModel.imageUrl) : null)
+    const bgLibBgBase64 = userSelectedBgBase64 || (bgLibRandomBg ? await ensureBase64(bgLibRandomBg.imageUrl) : null)
+
+    // 随机背景模式：随机选择一个模特（2张图共用），背景由AI生成
+    const randomBgRandomModel = !selectedModel ? getRandomStudioModel() : null
+    const randomBgModelBase64 = userSelectedModelBase64 || (randomBgRandomModel ? await ensureBase64(randomBgRandomModel.imageUrl) : null)
+
+    // 扩展模式：随机选择一个模特（2张图共用）
+    const extendedRandomModel = !selectedModel ? getRandomStudioModel() : null
+    const extendedModelBase64 = userSelectedModelBase64 || (extendedRandomModel ? await ensureBase64(extendedRandomModel.imageUrl) : null)
 
     // 生成任务配置：背景库模式2张 + 随机背景模式2张 + 扩展模式2张
     const taskConfigs = [
-      { mode: 'background-lib', index: 0 },
-      { mode: 'background-lib', index: 1 },
-      { mode: 'random-bg', index: 2 },
-      { mode: 'random-bg', index: 3 },
-      { mode: 'extended', index: 4 },
-      { mode: 'extended', index: 5 },
+      { mode: 'background-lib', index: 0, model: bgLibModelBase64, bg: bgLibBgBase64 },
+      { mode: 'background-lib', index: 1, model: bgLibModelBase64, bg: bgLibBgBase64 },
+      { mode: 'random-bg', index: 2, model: randomBgModelBase64, bg: null },
+      { mode: 'random-bg', index: 3, model: randomBgModelBase64, bg: null },
+      { mode: 'extended', index: 4, model: extendedModelBase64, bg: null },
+      { mode: 'extended', index: 5, model: extendedModelBase64, bg: null },
     ]
 
     const results: string[] = []
@@ -294,26 +317,6 @@ export default function ProStudioPage() {
 
     // 并行生成所有图片
     const promises = taskConfigs.map(async (task) => {
-      // 每张图获取模特和背景
-      let taskModel: string | null = null
-      let taskBg: string | null = null
-
-      if (isModelRandom) {
-        const randomModel = getRandomStudioModel()
-        taskModel = await ensureBase64(randomModel.imageUrl)
-      } else if (selectedModel) {
-        taskModel = await ensureBase64(selectedModel.imageUrl)
-      }
-
-      if (task.mode === 'background-lib') {
-        if (isBgRandom) {
-          const randomBg = getRandomStudioBackground()
-          taskBg = await ensureBase64(randomBg.imageUrl)
-        } else if (selectedBg) {
-          taskBg = await ensureBase64(selectedBg.imageUrl)
-        }
-      }
-
       updateImageSlot(taskId, task.index, { status: 'generating' })
 
       try {
@@ -322,8 +325,8 @@ export default function ProStudioPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             productImage: compressedProduct,
-            modelImage: taskModel,
-            backgroundImage: taskBg,
+            modelImage: task.model,
+            backgroundImage: task.bg,
             mode: task.mode,
             index: task.index,
             taskId,
