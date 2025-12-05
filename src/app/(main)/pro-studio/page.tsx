@@ -43,49 +43,67 @@ function AssetGrid({
   selectedId, 
   onSelect,
   onUpload,
+  onZoom,
   emptyText = "暂无资源"
 }: { 
   items: Asset[]
   selectedId: string | null
   onSelect: (id: string) => void
   onUpload?: () => void
+  onZoom?: (url: string) => void
   emptyText?: string
 }) {
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div className="grid grid-cols-2 gap-3">
       {/* Upload Button as first cell */}
       {onUpload && (
         <button
           onClick={onUpload}
-          className="aspect-[3/4] rounded-lg overflow-hidden relative border-2 border-dashed border-zinc-300 hover:border-blue-400 transition-all flex flex-col items-center justify-center bg-zinc-50 hover:bg-blue-50"
+          className="aspect-[3/4] rounded-xl overflow-hidden relative border-2 border-dashed border-zinc-300 hover:border-blue-400 transition-all flex flex-col items-center justify-center bg-zinc-50 hover:bg-blue-50"
         >
-          <Plus className="w-8 h-8 text-zinc-400" />
-          <span className="text-xs text-zinc-500 mt-1">上传</span>
+          <Plus className="w-10 h-10 text-zinc-400" />
+          <span className="text-sm text-zinc-500 mt-2">上传</span>
         </button>
       )}
       {items.map(item => (
-        <button
+        <div
           key={item.id}
-          onClick={() => onSelect(item.id)}
-          className={`aspect-[3/4] rounded-lg overflow-hidden relative border-2 transition-all ${
+          className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
             selectedId === item.id 
               ? "border-blue-500 ring-2 ring-blue-500/30" 
               : "border-transparent hover:border-blue-300"
           }`}
         >
-          <Image src={item.imageUrl} alt={item.name || ""} fill className="object-cover" />
+          <button
+            onClick={() => onSelect(item.id)}
+            className="absolute inset-0"
+          >
+            <Image src={item.imageUrl} alt={item.name || ""} fill className="object-cover" />
+          </button>
           {selectedId === item.id && (
-            <div className="absolute top-1 right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-              <Check className="w-3 h-3 text-white" />
+            <div className="absolute top-2 left-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+              <Check className="w-4 h-4 text-white" />
             </div>
           )}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-3">
-            <p className="text-[9px] text-white truncate text-center">{item.name}</p>
+          {/* Zoom button */}
+          {onZoom && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onZoom(item.imageUrl)
+              }}
+              className="absolute bottom-2 right-2 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors"
+            >
+              <ZoomIn className="w-4 h-4 text-white" />
+            </button>
+          )}
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 pt-6 pointer-events-none">
+            <p className="text-xs text-white truncate text-center">{item.name}</p>
           </div>
-        </button>
+        </div>
       ))}
       {items.length === 0 && !onUpload && (
-        <div className="col-span-3 flex flex-col items-center justify-center py-12 text-zinc-400">
+        <div className="col-span-2 flex flex-col items-center justify-center py-12 text-zinc-400">
           <p className="text-sm">{emptyText}</p>
         </div>
       )}
@@ -98,10 +116,12 @@ function BackgroundGrid({
   selectedId,
   onSelect,
   onUpload,
+  onZoom,
 }: {
   selectedId: string | null
   onSelect: (id: string) => void
   onUpload?: () => void
+  onZoom?: (url: string) => void
 }) {
   const [activeTab, setActiveTab] = useState<'all' | 'light' | 'solid' | 'pattern'>('all')
   
@@ -126,7 +146,7 @@ function BackgroundGrid({
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
               activeTab === tab.id
                 ? "bg-zinc-900 text-white"
                 : "bg-white text-zinc-600 border border-zinc-200"
@@ -137,34 +157,50 @@ function BackgroundGrid({
           </button>
         ))}
       </div>
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-3 gap-3">
         {/* Upload Button as first cell */}
         {onUpload && (
           <button
             onClick={onUpload}
-            className="aspect-square rounded-lg overflow-hidden relative border-2 border-dashed border-zinc-300 hover:border-blue-400 transition-all flex flex-col items-center justify-center bg-zinc-50 hover:bg-blue-50"
+            className="aspect-square rounded-xl overflow-hidden relative border-2 border-dashed border-zinc-300 hover:border-blue-400 transition-all flex flex-col items-center justify-center bg-zinc-50 hover:bg-blue-50"
           >
-            <Plus className="w-6 h-6 text-zinc-400" />
-            <span className="text-[10px] text-zinc-500 mt-0.5">上传</span>
+            <Plus className="w-8 h-8 text-zinc-400" />
+            <span className="text-xs text-zinc-500 mt-1">上传</span>
           </button>
         )}
         {bgMap[activeTab].map(item => (
-          <button
+          <div
             key={item.id}
-            onClick={() => onSelect(item.id)}
-            className={`aspect-square rounded-lg overflow-hidden relative border-2 transition-all ${
+            className={`aspect-square rounded-xl overflow-hidden relative border-2 transition-all ${
               selectedId === item.id 
                 ? "border-blue-500 ring-2 ring-blue-500/30" 
                 : "border-transparent hover:border-blue-300"
             }`}
           >
-            <Image src={item.imageUrl} alt={item.name || ""} fill className="object-cover" />
+            <button
+              onClick={() => onSelect(item.id)}
+              className="absolute inset-0"
+            >
+              <Image src={item.imageUrl} alt={item.name || ""} fill className="object-cover" />
+            </button>
             {selectedId === item.id && (
-              <div className="absolute top-1 right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                <Check className="w-2.5 h-2.5 text-white" />
+              <div className="absolute top-2 left-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                <Check className="w-4 h-4 text-white" />
               </div>
             )}
-          </button>
+            {/* Zoom button */}
+            {onZoom && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onZoom(item.imageUrl)
+                }}
+                className="absolute bottom-2 right-2 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors"
+              >
+                <ZoomIn className="w-4 h-4 text-white" />
+              </button>
+            )}
+          </div>
         ))}
       </div>
     </div>
@@ -716,7 +752,7 @@ export default function ProStudioPage() {
                     animate={{ y: 0 }} 
                     exit={{ y: "100%" }}
                     transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className="absolute bottom-0 left-0 right-0 h-[60%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
+                    className="absolute bottom-0 left-0 right-0 h-[80%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
                   >
                     <div className="h-14 border-b flex items-center justify-between px-4 shrink-0">
                       <span className="font-semibold text-lg">自定义配置</span>
@@ -765,6 +801,7 @@ export default function ProStudioPage() {
                             selectedId={selectedModelId} 
                             onSelect={(id) => setSelectedModelId(selectedModelId === id ? null : id)}
                             onUpload={() => modelUploadRef.current?.click()}
+                            onZoom={(url) => setFullscreenImage(url)}
                           />
                         </div>
                       )}
@@ -785,6 +822,7 @@ export default function ProStudioPage() {
                             selectedId={selectedBgId} 
                             onSelect={(id) => setSelectedBgId(selectedBgId === id ? null : id)}
                             onUpload={() => bgUploadRef.current?.click()}
+                            onZoom={(url) => setFullscreenImage(url)}
                           />
                         </div>
                       )}

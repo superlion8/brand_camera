@@ -746,52 +746,70 @@ export default function CameraPage() {
     selectedId, 
     onSelect,
     onUpload,
-    uploadLabel = t.common.upload
+    uploadLabel = t.common.upload,
+    onZoom
   }: { 
     items: Asset[]
     selectedId: string | null
     onSelect: (id: string) => void
     onUpload?: () => void
     uploadLabel?: string
+    onZoom?: (url: string) => void
   }) => (
-    <div className="grid grid-cols-3 gap-3 p-1 pb-20">
+    <div className="grid grid-cols-2 gap-3 p-1 pb-20">
       {/* Upload card as first item */}
       {onUpload && (
         <button
           onClick={onUpload}
-          className="aspect-square rounded-lg overflow-hidden relative border-2 border-dashed border-zinc-300 hover:border-blue-500 transition-all flex flex-col items-center justify-center bg-zinc-100 hover:bg-zinc-50"
+          className="aspect-square rounded-xl overflow-hidden relative border-2 border-dashed border-zinc-300 hover:border-blue-500 transition-all flex flex-col items-center justify-center bg-zinc-100 hover:bg-zinc-50"
         >
-          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mb-2">
-            <Upload className="w-5 h-5 text-blue-600" />
+          <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-2">
+            <Upload className="w-6 h-6 text-blue-600" />
           </div>
-          <span className="text-xs text-zinc-600 font-medium">{uploadLabel}</span>
+          <span className="text-sm text-zinc-600 font-medium">{uploadLabel}</span>
         </button>
       )}
       {items.map(asset => (
-        <button
+        <div
           key={asset.id}
-          onClick={() => onSelect(asset.id)}
-          className={`aspect-square rounded-lg overflow-hidden relative border-2 transition-all group ${
+          className={`aspect-square rounded-xl overflow-hidden relative border-2 transition-all group ${
             selectedId === asset.id 
               ? "border-blue-600 ring-2 ring-blue-200" 
               : "border-transparent hover:border-zinc-200"
           }`}
         >
-          <Image src={asset.imageUrl} alt={asset.name || ""} fill className="object-cover" />
+          <button
+            onClick={() => onSelect(asset.id)}
+            className="absolute inset-0"
+          >
+            <Image src={asset.imageUrl} alt={asset.name || ""} fill className="object-cover" />
+          </button>
           {selectedId === asset.id && (
-            <div className="absolute inset-0 bg-blue-600/20 flex items-center justify-center">
-              <Check className="w-6 h-6 text-white drop-shadow-md" />
+            <div className="absolute top-2 left-2 w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center">
+              <Check className="w-4 h-4 text-white" />
             </div>
           )}
           {asset.isPinned && (
-            <span className="absolute top-1 right-1 w-5 h-5 bg-amber-500 text-white rounded-full flex items-center justify-center shadow-sm z-10">
-              <Pin className="w-2.5 h-2.5" />
+            <span className="absolute top-2 right-2 w-6 h-6 bg-amber-500 text-white rounded-full flex items-center justify-center shadow-sm z-10">
+              <Pin className="w-3 h-3" />
             </span>
           )}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-4">
-            <p className="text-[10px] text-white truncate text-center">{asset.name}</p>
+          {/* Zoom button */}
+          {onZoom && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onZoom(asset.imageUrl)
+              }}
+              className="absolute bottom-2 right-2 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors z-10"
+            >
+              <ZoomIn className="w-4 h-4 text-white" />
+            </button>
+          )}
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 pt-6 pointer-events-none">
+            <p className="text-xs text-white truncate text-center">{asset.name}</p>
           </div>
-        </button>
+        </div>
       ))}
     </div>
   )
@@ -1050,7 +1068,7 @@ export default function CameraPage() {
                     animate={{ y: 0 }} 
                     exit={{ y: "100%" }}
                     transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className="absolute bottom-0 left-0 right-0 h-[60%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
+                    className="absolute bottom-0 left-0 right-0 h-[80%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
                   >
                     <div className="h-14 border-b flex items-center justify-between px-4 shrink-0">
                       <span className="font-semibold text-lg">自定义配置</span>
@@ -1070,7 +1088,7 @@ export default function CameraPage() {
                         <button 
                           key={tab.id}
                           onClick={() => setActiveCustomTab(tab.id)}
-                          className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${
+                          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
                             activeCustomTab === tab.id 
                               ? "bg-black text-white" 
                               : "bg-zinc-100 text-zinc-600"
@@ -1115,6 +1133,7 @@ export default function CameraPage() {
                             }}
                             onUpload={() => modelUploadRef.current?.click()}
                             uploadLabel={t.camera.uploadModel}
+                            onZoom={(url) => setFullscreenImage(url)}
                           />
                         </div>
                       )}
@@ -1150,6 +1169,7 @@ export default function CameraPage() {
                             onSelect={(id) => setSelectedBg(selectedBg === id ? null : id)}
                             onUpload={() => bgUploadRef.current?.click()}
                             uploadLabel={t.camera.uploadBackground}
+                            onZoom={(url) => setFullscreenImage(url)}
                           />
                         </div>
                       )}
