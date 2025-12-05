@@ -11,7 +11,7 @@ import {
 } from "lucide-react"
 import { useCameraStore } from "@/stores/cameraStore"
 import { useAssetStore } from "@/stores/assetStore"
-import { useGenerationTaskStore } from "@/stores/generationTaskStore"
+import { useGenerationTaskStore, base64ToBlobUrl } from "@/stores/generationTaskStore"
 import { useSettingsStore } from "@/stores/settingsStore"
 import { useRouter } from "next/navigation"
 import { fileToBase64, generateId, compressBase64Image, fetchWithTimeout, ensureBase64 } from "@/lib/utils"
@@ -20,8 +20,18 @@ import Image from "next/image"
 import { PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_PRODUCTS, getRandomModel, getRandomBackground } from "@/data/presets"
 import { useQuota } from "@/hooks/useQuota"
 import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
+import { BottomNav } from "@/components/shared/BottomNav"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
+import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
+
+// Helper to map API error codes to translated messages
+const getErrorMessage = (error: string, t: any): string => {
+  if (error === 'RESOURCE_BUSY') {
+    return t.errors?.resourceBusy || '资源紧张，请稍后重试'
+  }
+  return error
+}
 
 // Gender IDs - labels come from translations
 const MODEL_GENDER_IDS: ModelGender[] = ["female", "male", "girl", "boy"]
@@ -42,7 +52,6 @@ export default function CameraPage() {
     id,
     label: t.common[id as keyof typeof t.common] || id,
   }))
-  
   const webcamRef = useRef<Webcam>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef2 = useRef<HTMLInputElement>(null) // For second product image
@@ -145,8 +154,8 @@ export default function CameraPage() {
   const [productFromPhone, setProductFromPhone] = useState(false)
   const [product2FromPhone, setProduct2FromPhone] = useState(false)
   
-  const { addGeneration, addUserAsset, userModels, userBackgrounds, userProducts, addFavorite, removeFavorite, isFavorited, favorites } = useAssetStore()
-  const { addTask, updateTaskStatus, tasks } = useGenerationTaskStore()
+  const { addGeneration, addUserAsset, userModels, userBackgrounds, userProducts, addFavorite, removeFavorite, isFavorited, favorites, generations } = useAssetStore()
+  const { addTask, updateTaskStatus, updateImageSlot, initImageSlots, tasks } = useGenerationTaskStore()
   const { debugMode } = useSettingsStore()
   
   // Quota management
@@ -309,9 +318,10 @@ export default function CameraPage() {
       bgIsUserSelected,    // Track if user selected or system random
     }
     
-    const taskId = addTask('camera', capturedImage, params)
+    const taskId = addTask('camera', capturedImage, params, CAMERA_NUM_IMAGES)
     setCurrentTaskId(taskId)
-    updateTaskStatus(taskId, 'generating')
+    // 初始化 imageSlots - 每张图一个独立状态
+    initImageSlots(taskId, CAMERA_NUM_IMAGES)
     setMode("processing")
     
     // IMMEDIATELY reserve quota - deduct before generation starts
@@ -379,6 +389,24 @@ export default function CameraPage() {
       const userModelBase64 = model ? await ensureBase64(model.imageUrl) : null
       const userBgBase64 = background ? await ensureBase64(background.imageUrl) : null
       
+      // For saving purposes, if user didn't select model/background, 
+      // pick a random one as "representative" for the generation record
+      let representativeModelUrl = model?.imageUrl
+      let representativeModelName = model?.name
+      let representativeBgUrl = background?.imageUrl
+      let representativeBgName = background?.name
+      
+      if (!model) {
+        const randomModelForSave = getRandomModel()
+        representativeModelUrl = randomModelForSave.imageUrl
+        representativeModelName = randomModelForSave.name
+      }
+      if (!background) {
+        const randomBgForSave = getRandomBackground()
+        representativeBgUrl = randomBgForSave.imageUrl
+        representativeBgName = randomBgForSave.name
+      }
+      
       // Use the constants defined at module level
       const NUM_IMAGES = CAMERA_NUM_IMAGES
       const NUM_SIMPLE = CAMERA_NUM_SIMPLE
@@ -388,29 +416,97 @@ export default function CameraPage() {
       
       const staggerDelay = 1000 // 1 second between each request
       
+      // Track per-image model/background for saving later
+      const perImageModels: { name: string; imageUrl: string; isRandom: boolean; isPreset: boolean }[] = Array(NUM_IMAGES).fill(null)
+      const perImageBackgrounds: { name: string; imageUrl: string; isRandom: boolean; isPreset: boolean }[] = Array(NUM_IMAGES).fill(null)
+      
+      // Helper to check if URL is from preset storage
+      const isPresetUrl = (url: string) => url?.includes('/presets/') || url?.includes('presets%2F')
+      
+      // Result type for image generation
+      interface ImageResult {
+        index: number
+        success: boolean
+        image?: string
+        modelType?: 'pro' | 'flash'
+        genMode?: 'simple' | 'extended'
+        prompt?: string
+        duration?: number
+        error?: string
+        savedToDb?: boolean // 后端是否已写入数据库
+      }
+      
       // Helper to create a delayed request for model images
       // Each request gets its own model/background (random if not user-selected)
-      const createModelRequest = async (index: number, delayMs: number, simpleMode: boolean) => {
+      const createModelRequest = async (index: number, delayMs: number, simpleMode: boolean): Promise<ImageResult> => {
         // For each image, use user's selection or pick random
         let modelForThisImage = userModelBase64
         let bgForThisImage = userBgBase64
         let modelNameForThis = model?.name || ''
         let bgNameForThis = background?.name || ''
+        let modelUrlForThis = model?.imageUrl || ''
+        let bgUrlForThis = background?.imageUrl || ''
+        let modelIsRandom = false
+        let bgIsRandom = false
         
-        // If user didn't select model, pick a random one for this image
+        // If user didn't select model, pick a random one for this image (with retry)
         if (!modelForThisImage) {
-          const randomModel = getRandomModel()
-          modelForThisImage = await ensureBase64(randomModel.imageUrl)
-          modelNameForThis = `${randomModel.name} (随机)`
-          console.log(`Image ${index + 1}: Random model = ${randomModel.name}`)
+          const MAX_RETRIES = 3
+          for (let retry = 0; retry < MAX_RETRIES; retry++) {
+            const randomModel = getRandomModel()
+            const modelBase64 = await ensureBase64(randomModel.imageUrl)
+            if (modelBase64) {
+              modelForThisImage = modelBase64
+              modelNameForThis = randomModel.name || t.common.model
+              modelUrlForThis = randomModel.imageUrl || ''
+              modelIsRandom = true
+              console.log(`Image ${index + 1}: Random model = ${randomModel.name}${retry > 0 ? ` (retry ${retry})` : ''}`)
+              break
+            }
+            console.warn(`Image ${index + 1}: Failed to load model ${randomModel.name}, retrying...`)
+          }
+          if (!modelForThisImage) {
+            console.error(`Image ${index + 1}: Failed to load model after ${MAX_RETRIES} retries`)
+            updateImageSlot(taskId, index, { status: 'failed', error: '模特图片加载失败' })
+            return { index, success: false, error: '模特图片加载失败' }
+          }
         }
         
-        // If user didn't select background, pick a random one for this image
+        // If user didn't select background, pick a random one for this image (with retry)
         if (!bgForThisImage) {
-          const randomBg = getRandomBackground()
-          bgForThisImage = await ensureBase64(randomBg.imageUrl)
-          bgNameForThis = `${randomBg.name} (随机)`
-          console.log(`Image ${index + 1}: Random background = ${randomBg.name}`)
+          const MAX_RETRIES = 3
+          for (let retry = 0; retry < MAX_RETRIES; retry++) {
+            const randomBg = getRandomBackground()
+            const bgBase64 = await ensureBase64(randomBg.imageUrl)
+            if (bgBase64) {
+              bgForThisImage = bgBase64
+              bgNameForThis = randomBg.name || t.common.background
+              bgUrlForThis = randomBg.imageUrl || ''
+              bgIsRandom = true
+              console.log(`Image ${index + 1}: Random background = ${randomBg.name}${retry > 0 ? ` (retry ${retry})` : ''}`)
+              break
+            }
+            console.warn(`Image ${index + 1}: Failed to load background ${randomBg.name}, retrying...`)
+          }
+          if (!bgForThisImage) {
+            console.error(`Image ${index + 1}: Failed to load background after ${MAX_RETRIES} retries`)
+            updateImageSlot(taskId, index, { status: 'failed', error: '背景图片加载失败' })
+            return { index, success: false, error: '背景图片加载失败' }
+          }
+        }
+        
+        // Save per-image model/background info with isRandom and isPreset flags
+        perImageModels[index] = { 
+          name: modelNameForThis, 
+          imageUrl: modelUrlForThis, 
+          isRandom: modelIsRandom,
+          isPreset: isPresetUrl(modelUrlForThis)
+        }
+        perImageBackgrounds[index] = { 
+          name: bgNameForThis, 
+          imageUrl: bgUrlForThis, 
+          isRandom: bgIsRandom,
+          isPreset: isPresetUrl(bgUrlForThis)
         }
         
         const payload = {
@@ -426,36 +522,121 @@ export default function CameraPage() {
           // Pass model/bg info for logging
           modelName: modelNameForThis,
           bgName: bgNameForThis,
-          // Pass input params for database storage
+          // 传递 taskId，让后端直接写入数据库
+          taskId,
           inputParams: {
             modelStyle,
             modelGender,
             model: modelNameForThis,
             background: bgNameForThis,
-            // 标记每张图的模特/背景（用于详情页显示）
-            perImageModels: [{
-              name: modelNameForThis,
-              imageUrl: model?.imageUrl, // 用户选择的 URL（随机时为 undefined）
-              isRandom: !model,
+            modelIsUserSelected: !modelIsRandom,
+            bgIsUserSelected: !bgIsRandom,
+            // 当前图片的模特/背景详细信息
+            perImageModels: [{ 
+              name: modelNameForThis, 
+              imageUrl: modelUrlForThis, 
+              isRandom: modelIsRandom,
+              isPreset: isPresetUrl(modelUrlForThis)
             }],
-            perImageBackgrounds: [{
-              name: bgNameForThis,
-              imageUrl: background?.imageUrl, // 用户选择的 URL（随机时为 undefined）
-              isRandom: !background,
+            perImageBackgrounds: [{ 
+              name: bgNameForThis, 
+              imageUrl: bgUrlForThis, 
+              isRandom: bgIsRandom,
+              isPreset: isPresetUrl(bgUrlForThis)
             }],
+            modelImage: modelUrlForThis,
+            backgroundImage: bgUrlForThis,
           },
         }
         
-        return new Promise<Response>((resolve, reject) => {
-          setTimeout(() => {
+        // 返回处理结果而不是 Response（因为我们需要在这里解析并实时更新状态）
+        return new Promise<ImageResult>((resolve) => {
+          setTimeout(async () => {
             const mode = simpleMode ? '极简模式' : '扩展模式'
             console.log(`Starting Image ${index + 1} (${mode}) - Model: ${modelNameForThis}, Bg: ${bgNameForThis}`)
-            fetch("/api/generate-single", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              credentials: 'include',
-              body: JSON.stringify(payload),
-            }).then(resolve).catch(reject)
+            
+            // 更新状态为 generating
+            updateImageSlot(taskId, index, { status: 'generating' })
+            
+            try {
+              const response = await fetch("/api/generate-single", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: 'include',
+                body: JSON.stringify(payload),
+              })
+              
+              // 处理响应并立即更新状态
+              if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }))
+                const errorMsg = getErrorMessage(errorData.error || 'Unknown error', t)
+                console.log(`Image ${index + 1}: ✗ HTTP ${response.status} (${errorMsg})`)
+                updateImageSlot(taskId, index, { 
+                  status: 'failed', 
+                  error: errorMsg 
+                })
+                resolve({ index, success: false, error: errorMsg })
+                return
+              }
+              
+              const result = await response.json()
+              if (result.success && result.image) {
+                const genMode = result.generationMode || (simpleMode ? 'simple' : 'extended')
+                // 如果是 Storage URL 直接用，如果是 base64 转换为 Blob URL
+                const imageUrl = result.image.startsWith('data:') 
+                  ? base64ToBlobUrl(result.image) 
+                  : result.image
+                console.log(`Image ${index + 1}: ✓ (${result.modelType}, ${mode}, ${result.duration}ms, savedToDb: ${result.savedToDb})`)
+                updateImageSlot(taskId, index, {
+                  status: 'completed',
+                  imageUrl: imageUrl,
+                  modelType: result.modelType,
+                  genMode: genMode,
+                })
+                
+                // 第一张图片完成时，立即切换到 results 模式
+                // 用户可以边看结果边等待其他图片
+                if (modeRef.current === "processing") {
+                  console.log(`[Camera] First image ready, switching to results mode`)
+                  setMode("results")
+                }
+                
+                resolve({ 
+                  index, 
+                  success: true, 
+                  image: result.image, // Storage URL 或 base64
+                  modelType: result.modelType,
+                  genMode: genMode,
+                  prompt: result.prompt,
+                  duration: result.duration,
+                  savedToDb: result.savedToDb, // 后端是否已写入数据库
+                })
+              } else {
+                const errorMsg = result.error || '生成失败'
+                console.log(`Image ${index + 1}: ✗ (${errorMsg})`)
+                updateImageSlot(taskId, index, { 
+                  status: 'failed', 
+                  error: errorMsg 
+                })
+                resolve({ index, success: false, error: errorMsg })
+              }
+            } catch (e: any) {
+              // 处理常见的网络错误
+              let errorMsg = e.message || '网络错误'
+              // Safari: "Load failed", Chrome: "Failed to fetch"
+              if (errorMsg.toLowerCase().includes('load failed') || 
+                  errorMsg.toLowerCase().includes('failed to fetch') ||
+                  errorMsg.toLowerCase().includes('network') ||
+                  errorMsg.toLowerCase().includes('abort')) {
+                errorMsg = t.errors.networkError || '网络请求失败，请重试'
+              }
+              console.log(`Image ${index + 1}: ✗ (${e.message} -> ${errorMsg})`)
+              updateImageSlot(taskId, index, { 
+                status: 'failed', 
+                error: errorMsg 
+              })
+              resolve({ index, success: false, error: errorMsg })
+            }
           }, delayMs)
         })
       }
@@ -469,51 +650,27 @@ export default function CameraPage() {
         requests.push(createModelRequest(i, staggerDelay * i, isSimple))
       }
       
-      // Wait for all to complete (don't fail if some fail)
-      const responses = await Promise.allSettled(requests)
+      // Wait for all to complete (UI already updated in real-time via updateImageSlot)
+      const results = await Promise.all(requests)
       
-      // Process results - all are model images
+      // Collect results for saving to assetStore
       const allImages: (string | null)[] = Array(NUM_IMAGES).fill(null)
       const allModelTypes: (('pro' | 'flash') | null)[] = Array(NUM_IMAGES).fill(null)
       const allPrompts: (string | null)[] = Array(NUM_IMAGES).fill(null)
       const allGenModes: (('extended' | 'simple') | null)[] = Array(NUM_IMAGES).fill(null)
       let maxDuration = 0
+      let allSavedToDb = true // 检查是否所有成功的图片都已被后端保存
       
-      for (let i = 0; i < responses.length; i++) {
-        const response = responses[i]
-        if (response.status === 'fulfilled') {
-          const httpResponse = response.value
-          try {
-            // Check HTTP status first
-            if (!httpResponse.ok) {
-              const errorData = await httpResponse.json().catch(() => ({ error: `HTTP ${httpResponse.status}` }))
-              console.log(`Task ${i + 1}: ✗ HTTP ${httpResponse.status} (${errorData.error || 'Unknown error'})`)
-              continue
-            }
-            
-            const result = await httpResponse.json()
-            if (result.success && result.image) {
-              // Direct mapping: index maps to position
-              const targetIndex = result.index
-              if (targetIndex !== undefined && targetIndex >= 0 && targetIndex < NUM_IMAGES) {
-                allImages[targetIndex] = result.image
-                allModelTypes[targetIndex] = result.modelType
-                allPrompts[targetIndex] = result.prompt || null
-                allGenModes[targetIndex] = result.generationMode || 'extended'
-                maxDuration = Math.max(maxDuration, result.duration || 0)
-                const modeLabel = result.generationMode === 'simple' ? '极简模式' : '扩展模式'
-                console.log(`Model ${targetIndex + 1}: ✓ (${result.modelType}, ${modeLabel}, ${result.duration}ms)`)
-              } else {
-                console.log(`Task ${i + 1}: ✗ (invalid index: ${targetIndex})`)
-              }
-            } else {
-              console.log(`Task ${i + 1}: ✗ (${result.error || 'No image in response'})`)
-            }
-          } catch (e: any) {
-            console.log(`Task ${i + 1}: ✗ (parse error: ${e.message})`)
+      for (const result of results) {
+        if (result.success && result.image) {
+          allImages[result.index] = result.image
+          allModelTypes[result.index] = result.modelType || 'pro'
+          allPrompts[result.index] = result.prompt || null
+          allGenModes[result.index] = result.genMode || 'extended'
+          maxDuration = Math.max(maxDuration, result.duration || 0)
+          if (!result.savedToDb) {
+            allSavedToDb = false
           }
-        } else {
-          console.log(`Task ${i + 1}: ✗ (promise rejected: ${response.reason})`)
         }
       }
       
@@ -599,6 +756,18 @@ export default function CameraPage() {
           }
         })
         
+        // Filter per-image info to match saved images (only successful ones)
+        const savedPerImageModels: { name: string; imageUrl: string }[] = []
+        const savedPerImageBgs: { name: string; imageUrl: string }[] = []
+        data.images.forEach((img, i) => {
+          if (img) {
+            savedPerImageModels.push(perImageModels[i])
+            savedPerImageBgs.push(perImageBackgrounds[i])
+          }
+        })
+        
+        // 如果后端已经写入数据库，跳过云端同步（避免重复写入）
+        // addGeneration 仍会更新本地 store 和 IndexedDB
         await addGeneration({
           id,
           type: "camera_model",
@@ -612,14 +781,16 @@ export default function CameraPage() {
           params: { 
             modelStyle: modelStyle || undefined,
             modelGender: modelGender || undefined,
-            model: model?.name,
-            background: background?.name,
-            modelImage: model?.imageUrl,
-            backgroundImage: background?.imageUrl,
+            model: representativeModelName,
+            background: representativeBgName,
+            modelImage: representativeModelUrl,
+            backgroundImage: representativeBgUrl,
             modelIsUserSelected, // true = user selected, false = system random
             bgIsUserSelected,    // true = user selected, false = system random
+            perImageModels: savedPerImageModels,
+            perImageBackgrounds: savedPerImageBgs,
           },
-        })
+        }, allSavedToDb) // 后端已写入数据库时，跳过前端的云端同步
         
         // Refresh quota after successful generation
         await refreshQuota()
@@ -644,10 +815,9 @@ export default function CameraPage() {
         }
         
         // Log more details
-        const failedCount = responses.filter(r => r.status === 'rejected').length
-        const httpErrorCount = responses.filter(r => r.status === 'fulfilled' && !r.value.ok).length
-        console.error(`All tasks failed. Rejected: ${failedCount}, HTTP errors: ${httpErrorCount}`)
-        throw new Error(t.camera.generationFailed || `Generation failed (${failedCount} requests failed, ${httpErrorCount} HTTP errors)`)
+        const failedCount = results.filter(r => !r.success).length
+        console.error(`All tasks failed. Failed: ${failedCount}/${results.length}`)
+        throw new Error(t.camera.generationFailed)
       }
     } catch (error: any) {
       console.error("Generation error:", error)
@@ -666,9 +836,10 @@ export default function CameraPage() {
       // Use modeRef.current to get the latest mode value
       if (modeRef.current === "processing") {
         if (error.name === 'AbortError') {
-          alert("生成超时，请重试。建议使用较小的图片。")
+          alert(t.errors.generateFailed)
         } else {
-          alert(error.message || t.errors?.generateFailed || "Generation failed")
+          const errorMsg = getErrorMessage(error.message, t) || t.errors.generateFailed
+          alert(errorMsg)
         }
         setMode("review")
       }
@@ -719,11 +890,23 @@ export default function CameraPage() {
   // Handle go to edit with image
   const handleGoToEdit = (imageUrl: string) => {
     sessionStorage.setItem('editImage', imageUrl)
-    router.push("/edit")
+    router.push("/edit/general")
   }
   
   // Handle download
-  const handleDownload = async (url: string) => {
+  const handleDownload = async (url: string, generationId?: string, imageIndex?: number) => {
+    // Track download event (don't await, fire and forget)
+    fetch('/api/track/download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        imageUrl: url,
+        generationId,
+        imageIndex,
+        source: 'camera',
+      }),
+    }).catch(() => {}) // Silently ignore tracking errors
+    
     try {
       let blob: Blob
       
@@ -764,70 +947,52 @@ export default function CameraPage() {
     selectedId, 
     onSelect,
     onUpload,
-    uploadLabel = t.common.upload,
-    onZoom
+    uploadLabel = t.common.upload
   }: { 
     items: Asset[]
     selectedId: string | null
     onSelect: (id: string) => void
     onUpload?: () => void
     uploadLabel?: string
-    onZoom?: (url: string) => void
   }) => (
-    <div className="grid grid-cols-2 gap-3 p-1 pb-20">
+    <div className="grid grid-cols-3 gap-3 p-1 pb-20">
       {/* Upload card as first item */}
       {onUpload && (
         <button
           onClick={onUpload}
-          className="aspect-square rounded-xl overflow-hidden relative border-2 border-dashed border-zinc-300 hover:border-blue-500 transition-all flex flex-col items-center justify-center bg-zinc-100 hover:bg-zinc-50"
+          className="aspect-square rounded-lg overflow-hidden relative border-2 border-dashed border-zinc-300 hover:border-blue-500 transition-all flex flex-col items-center justify-center bg-zinc-100 hover:bg-zinc-50"
         >
-          <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-2">
-            <Upload className="w-6 h-6 text-blue-600" />
+          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mb-2">
+            <Upload className="w-5 h-5 text-blue-600" />
           </div>
-          <span className="text-sm text-zinc-600 font-medium">{uploadLabel}</span>
+          <span className="text-xs text-zinc-600 font-medium">{uploadLabel}</span>
         </button>
       )}
       {items.map(asset => (
-        <div
+        <button
           key={asset.id}
-          className={`aspect-square rounded-xl overflow-hidden relative border-2 transition-all group ${
+          onClick={() => onSelect(asset.id)}
+          className={`aspect-square rounded-lg overflow-hidden relative border-2 transition-all group ${
             selectedId === asset.id 
               ? "border-blue-600 ring-2 ring-blue-200" 
               : "border-transparent hover:border-zinc-200"
           }`}
         >
-          <button
-            onClick={() => onSelect(asset.id)}
-            className="absolute inset-0"
-          >
-            <Image src={asset.imageUrl} alt={asset.name || ""} fill className="object-cover" />
-          </button>
+          <Image src={asset.imageUrl} alt={asset.name || ""} fill className="object-cover" />
           {selectedId === asset.id && (
-            <div className="absolute top-2 left-2 w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center">
-              <Check className="w-4 h-4 text-white" />
+            <div className="absolute inset-0 bg-blue-600/20 flex items-center justify-center">
+              <Check className="w-6 h-6 text-white drop-shadow-md" />
             </div>
           )}
           {asset.isPinned && (
-            <span className="absolute top-2 right-2 w-6 h-6 bg-amber-500 text-white rounded-full flex items-center justify-center shadow-sm z-10">
-              <Pin className="w-3 h-3" />
+            <span className="absolute top-1 right-1 w-5 h-5 bg-amber-500 text-white rounded-full flex items-center justify-center shadow-sm z-10">
+              <Pin className="w-2.5 h-2.5" />
             </span>
           )}
-          {/* Zoom button */}
-          {onZoom && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                onZoom(asset.imageUrl)
-              }}
-              className="absolute bottom-2 right-2 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors z-10"
-            >
-              <ZoomIn className="w-4 h-4 text-white" />
-            </button>
-          )}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 pt-6 pointer-events-none">
-            <p className="text-xs text-white truncate text-center">{asset.name}</p>
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-4">
+            <p className="text-[10px] text-white truncate text-center">{asset.name}</p>
           </div>
-        </div>
+        </button>
       ))}
     </div>
   )
@@ -958,7 +1123,7 @@ export default function CameraPage() {
               <div className="absolute top-16 left-0 right-0 flex justify-center gap-2 z-10 px-4 flex-wrap pointer-events-none">
                 {selectedModelGender && (
                   <span className="px-2 py-1 bg-black/50 text-white text-xs rounded-full backdrop-blur-md">
-                    性别: {MODEL_GENDERS.find(g => g.id === selectedModelGender)?.label}
+                    {t.common.gender}: {MODEL_GENDERS.find(g => g.id === selectedModelGender)?.label}
                   </span>
                 )}
                 {selectedModelStyle && selectedModelStyle !== 'auto' && (
@@ -1026,7 +1191,10 @@ export default function CameraPage() {
                     <motion.button
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      onClick={handleShootIt}
+                      onClick={(e) => {
+                        triggerFlyToGallery(e)
+                        handleShootIt()
+                      }}
                       className="w-full max-w-xs h-14 rounded-full text-lg font-semibold gap-2 bg-white text-black hover:bg-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.3)] flex items-center justify-center transition-colors"
                     >
                       <Wand2 className="w-5 h-5" />
@@ -1044,7 +1212,7 @@ export default function CameraPage() {
                     <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
                       <ImageIcon className="w-6 h-6" />
                     </div>
-                    <span className="text-[10px]">相册</span>
+                    <span className="text-[10px]">{t.camera.album}</span>
                   </button>
 
                   {/* Shutter */}
@@ -1064,7 +1232,7 @@ export default function CameraPage() {
                     <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
                       <FolderHeart className="w-6 h-6" />
                     </div>
-                    <span className="text-[10px]">资产库</span>
+                    <span className="text-[10px]">{t.camera.assetLibrary}</span>
                   </button>
                 </div>
               )}
@@ -1086,7 +1254,7 @@ export default function CameraPage() {
                     animate={{ y: 0 }} 
                     exit={{ y: "100%" }}
                     transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className="absolute bottom-0 left-0 right-0 h-[80%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
+                    className="absolute bottom-0 left-0 right-0 h-[60%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
                   >
                     <div className="h-14 border-b flex items-center justify-between px-4 shrink-0">
                       <span className="font-semibold text-lg">自定义配置</span>
@@ -1106,7 +1274,7 @@ export default function CameraPage() {
                         <button 
                           key={tab.id}
                           onClick={() => setActiveCustomTab(tab.id)}
-                          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
+                          className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${
                             activeCustomTab === tab.id 
                               ? "bg-black text-white" 
                               : "bg-zinc-100 text-zinc-600"
@@ -1151,7 +1319,6 @@ export default function CameraPage() {
                             }}
                             onUpload={() => modelUploadRef.current?.click()}
                             uploadLabel={t.camera.uploadModel}
-                            onZoom={(url) => setFullscreenImage(url)}
                           />
                         </div>
                       )}
@@ -1187,7 +1354,6 @@ export default function CameraPage() {
                             onSelect={(id) => setSelectedBg(selectedBg === id ? null : id)}
                             onUpload={() => bgUploadRef.current?.click()}
                             uploadLabel={t.camera.uploadBackground}
-                            onZoom={(url) => setFullscreenImage(url)}
                           />
                         </div>
                       )}
@@ -1237,7 +1403,7 @@ export default function CameraPage() {
                               : "text-zinc-500 hover:text-zinc-700"
                           }`}
                         >
-                          官方示例
+                          {t.camera.officialExamples}
                           <span className="ml-1 text-zinc-400">({PRESET_PRODUCTS.length})</span>
                         </button>
                         <button
@@ -1289,7 +1455,7 @@ export default function CameraPage() {
                             >
                               <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
                               <span className="absolute top-1 left-1 bg-blue-600 text-white text-[8px] px-1 py-0.5 rounded font-medium">
-                                官方
+                                {t.common.official}
                               </span>
                               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-4">
                                 <p className="text-[10px] text-white truncate text-center">{product.name}</p>
@@ -1392,7 +1558,7 @@ export default function CameraPage() {
                               : "text-zinc-500 hover:text-zinc-700"
                           }`}
                         >
-                          官方示例
+                          {t.camera.officialExamples}
                           <span className="ml-1 text-zinc-400">({PRESET_PRODUCTS.length})</span>
                         </button>
                         <button
@@ -1443,7 +1609,7 @@ export default function CameraPage() {
                             >
                               <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
                               <span className="absolute top-1 left-1 bg-blue-600 text-white text-[8px] px-1 py-0.5 rounded font-medium">
-                                官方
+                                {t.common.official}
                               </span>
                               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-4">
                                 <p className="text-[10px] text-white truncate text-center">{product.name}</p>
@@ -1507,19 +1673,19 @@ export default function CameraPage() {
               <Loader2 className="w-16 h-16 text-blue-500 animate-spin relative z-10" />
             </div>
             
-            <h3 className="text-white text-2xl font-bold mb-2">AI 正在拍摄...</h3>
+            <h3 className="text-white text-2xl font-bold mb-2">{t.camera.generating}</h3>
             <div className="text-zinc-400 space-y-1 text-sm mb-8">
               <p>{t.camera.analyzeProduct}</p>
               {activeModel && <p>{t.camera.generateModel} {activeModel.name} ...</p>}
               {selectedModelStyle && selectedModelStyle !== 'auto' && !activeModel && (
                 <p>匹配{selectedModelStyle === 'korean' ? '韩系' : selectedModelStyle === 'western' ? '欧美' : selectedModelStyle}风格...</p>
               )}
-              {activeBg && <p>渲染场景背景...</p>}
+              {activeBg && <p>{t.camera.renderScene}</p>}
             </div>
             
             {/* Action buttons during processing */}
             <div className="space-y-3 w-full max-w-xs">
-              <p className="text-zinc-500 text-xs mb-4">生成将在后台继续，您可以：</p>
+              <p className="text-zinc-500 text-xs mb-4">{t.camera.continueInBackground}</p>
               <button
                 onClick={handleNewPhotoDuringProcessing}
                 className="w-full h-12 rounded-full bg-white text-black font-medium flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors"
@@ -1532,9 +1698,12 @@ export default function CameraPage() {
                 className="w-full h-12 rounded-full bg-white/10 text-white font-medium flex items-center justify-center gap-2 hover:bg-white/20 transition-colors border border-white/20"
               >
                 <Home className="w-5 h-5" />
-                返回主页
+                {t.camera.returnHome}
               </button>
             </div>
+            
+            {/* Bottom Navigation */}
+            <BottomNav forceShow />
           </motion.div>
         )}
 
@@ -1556,7 +1725,7 @@ export default function CameraPage() {
               <span className="font-semibold ml-2">本次成片</span>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-24">
+            <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-8">
               {/* Simple Mode Images (极简模式) - indices 0, 1, 2 */}
               <div>
                 <div className="flex items-center justify-between mb-3">
@@ -1564,16 +1733,37 @@ export default function CameraPage() {
                     <span className="w-1 h-4 bg-green-500 rounded-full" />
                     极简模式
                   </h3>
-                  <span className="text-[10px] text-zinc-400">直接生成</span>
+                  <span className="text-[10px] text-zinc-400">{t.camera.simpleModeDesc}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   {[0, 1, 2].map((i) => {
-                    const url = generatedImages[i]
-                    if (!url) return (
-                      <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
-                        {t.camera.generationFailed}
-                      </div>
-                    )
+                    // 优先使用实时 imageSlots，回退到 generatedImages
+                    const currentTask = tasks.find(t => t.id === currentTaskId)
+                    const slot = currentTask?.imageSlots?.[i]
+                    const url = slot?.imageUrl || generatedImages[i]
+                    const status = slot?.status || (url ? 'completed' : 'failed')
+                    const modelType = slot?.modelType || generatedModelTypes[i]
+                    
+                    // Loading 状态
+                    if (status === 'pending' || status === 'generating') {
+                      return (
+                        <div key={i} className="aspect-[4/5] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
+                          <Loader2 className="w-6 h-6 text-zinc-400 animate-spin mb-2" />
+                          <span className="text-[10px] text-zinc-400">生成中...</span>
+                        </div>
+                      )
+                    }
+                    
+                    // 失败状态
+                    if (status === 'failed' || !url) {
+                      return (
+                        <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
+                          {slot?.error || t.camera.generationFailed}
+                        </div>
+                      )
+                    }
+                    
+                    // 成功状态
                     return (
                       <div 
                         key={i} 
@@ -1600,7 +1790,7 @@ export default function CameraPage() {
                           <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-500 text-white">
                             极简
                           </span>
-                          {generatedModelTypes[i] === 'flash' && (
+                          {modelType === 'flash' && (
                             <span className="px-1 py-0.5 rounded text-[8px] font-medium bg-amber-500 text-white">
                               2.5
                             </span>
@@ -1619,16 +1809,37 @@ export default function CameraPage() {
                     <span className="w-1 h-4 bg-blue-600 rounded-full" />
                     扩展模式
                   </h3>
-                  <span className="text-[10px] text-zinc-400">摄影指令 + 生成</span>
+                  <span className="text-[10px] text-zinc-400">{t.camera.extendedModeDesc}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   {[3, 4, 5].map((actualIndex) => {
-                    const url = generatedImages[actualIndex]
-                    if (!url) return (
-                      <div key={actualIndex} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
-                        {t.camera.generationFailed}
-                      </div>
-                    )
+                    // 优先使用实时 imageSlots，回退到 generatedImages
+                    const currentTask = tasks.find(t => t.id === currentTaskId)
+                    const slot = currentTask?.imageSlots?.[actualIndex]
+                    const url = slot?.imageUrl || generatedImages[actualIndex]
+                    const status = slot?.status || (url ? 'completed' : 'failed')
+                    const modelType = slot?.modelType || generatedModelTypes[actualIndex]
+                    
+                    // Loading 状态
+                    if (status === 'pending' || status === 'generating') {
+                      return (
+                        <div key={actualIndex} className="aspect-[4/5] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
+                          <Loader2 className="w-6 h-6 text-zinc-400 animate-spin mb-2" />
+                          <span className="text-[10px] text-zinc-400">生成中...</span>
+                        </div>
+                      )
+                    }
+                    
+                    // 失败状态
+                    if (status === 'failed' || !url) {
+                      return (
+                        <div key={actualIndex} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
+                          {slot?.error || t.camera.generationFailed}
+                        </div>
+                      )
+                    }
+                    
+                    // 成功状态
                     return (
                       <div 
                         key={actualIndex} 
@@ -1655,7 +1866,7 @@ export default function CameraPage() {
                           <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-blue-500 text-white">
                             扩展
                           </span>
-                          {generatedModelTypes[actualIndex] === 'flash' && (
+                          {modelType === 'flash' && (
                             <span className="px-1 py-0.5 rounded text-[8px] font-medium bg-amber-500 text-white">
                               2.5
                             </span>
@@ -1668,17 +1879,26 @@ export default function CameraPage() {
               </div>
             </div>
 
-            <div className="p-4 bg-white border-t shadow-up">
+            <div className="p-4 pb-20 bg-white border-t shadow-up">
               <button 
                 onClick={handleRetake}
                 className="w-full h-12 text-lg rounded-lg bg-zinc-900 text-white font-semibold hover:bg-zinc-800 transition-colors"
               >
-                拍摄下一组
+                {t.camera.shootNextSet}
               </button>
             </div>
             
             {/* Result Detail Dialog */}
-            {selectedResultIndex !== null && generatedImages[selectedResultIndex] && (
+            {selectedResultIndex !== null && (() => {
+              // 获取当前选中图片的 URL（优先 imageSlots，回退 generatedImages）
+              const currentTask = tasks.find(t => t.id === currentTaskId)
+              const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+              const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
+              const selectedModelType = selectedSlot?.modelType || generatedModelTypes[selectedResultIndex]
+              
+              if (!selectedImageUrl) return null
+              
+              return (
               <div className="fixed inset-0 z-50 bg-white overflow-hidden">
                 <div className="h-full flex flex-col">
                   {/* Header */}
@@ -1689,28 +1909,31 @@ export default function CameraPage() {
                     >
                       <X className="w-5 h-5 text-zinc-700" />
                     </button>
-                    <span className="font-semibold text-zinc-900">详情</span>
+                    <span className="font-semibold text-zinc-900">{t.common.detail}</span>
                     <div className="w-10" />
                   </div>
 
                   {/* Content */}
                   <div className="flex-1 overflow-y-auto bg-zinc-100 pb-24">
-                    <div 
-                      className="relative aspect-[4/5] bg-zinc-900 cursor-pointer group"
-                      onClick={() => setFullscreenImage(generatedImages[selectedResultIndex])}
-                    >
-                      <Image 
-                        src={generatedImages[selectedResultIndex]} 
-                        alt="Detail" 
-                        fill 
-                        className="object-contain" 
-                      />
-                      {/* Zoom hint */}
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
-                        <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                          <ZoomIn className="w-6 h-6 text-zinc-700" />
+                    <div className="bg-zinc-900">
+                      <div 
+                        className="relative aspect-[4/5] cursor-pointer group"
+                        onClick={() => setFullscreenImage(selectedImageUrl)}
+                      >
+                        {/* Use img tag for native long-press save support */}
+                        <img 
+                          src={selectedImageUrl} 
+                          alt="Detail" 
+                          className="w-full h-full object-contain" 
+                        />
+                        {/* Zoom hint */}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 pointer-events-none">
+                          <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                            <ZoomIn className="w-6 h-6 text-zinc-700" />
+                          </div>
                         </div>
                       </div>
+                      <p className="text-center text-zinc-500 text-xs py-2">{t.imageActions.longPressSave}</p>
                     </div>
                     
                     <div className="p-4 pb-8 bg-white">
@@ -1725,14 +1948,14 @@ export default function CameraPage() {
                             }`}>
                               {selectedResultIndex < 3 ? "极简模式" : "扩展模式"}
                             </span>
-                            {generatedModelTypes[selectedResultIndex] === 'flash' && (
+                            {selectedModelType === 'flash' && (
                               <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700">
                                 Gemini 2.5
                               </span>
                             )}
                           </div>
                           <p className="text-xs text-zinc-400">
-                            刚刚生成
+                            {t.common.justNow}
                           </p>
                         </div>
                         <div className="flex gap-2">
@@ -1747,7 +1970,7 @@ export default function CameraPage() {
                             <Heart className={`w-4 h-4 ${currentGenerationId && isFavorited(currentGenerationId, selectedResultIndex) ? "fill-current" : ""}`} />
                           </button>
                           <button
-                            onClick={() => handleDownload(generatedImages[selectedResultIndex])}
+                            onClick={() => handleDownload(selectedImageUrl, currentGenerationId || undefined, selectedResultIndex)}
                             className="w-10 h-10 rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-50 flex items-center justify-center transition-colors"
                           >
                             <Download className="w-4 h-4" />
@@ -1756,97 +1979,165 @@ export default function CameraPage() {
                       </div>
 
                       {/* Generation Parameters - Only show in debug mode */}
-                      {debugMode && (
-                      <div className="mt-4 pt-4 border-t border-zinc-100">
-                        <h3 className="text-sm font-semibold text-zinc-700 mb-3">生成参数 (调试模式)</h3>
+                      {debugMode && (() => {
+                        // Get generation record from store to display saved params
+                        const generation = currentGenerationId 
+                          ? generations.find(g => g.id === currentGenerationId)
+                          : null
+                        const savedParams = generation?.params
                         
-                        {/* This image's prompt */}
-                        {generatedPrompts[selectedResultIndex] && (
-                          <div className="mb-4">
-                            <p className="text-xs font-medium text-zinc-500 mb-2">Prompt</p>
-                            <div className="bg-zinc-50 rounded-lg p-3 max-h-32 overflow-y-auto">
-                              <pre className="text-[11px] text-zinc-600 whitespace-pre-wrap font-mono leading-relaxed">
-                                {generatedPrompts[selectedResultIndex]}
-                              </pre>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Reference images */}
-                        <div className="space-y-3">
-                          {/* Reference images grid */}
-                          <div className="grid grid-cols-4 gap-2">
-                            {/* Input Product Image */}
-                            {capturedImage && (
-                              <div className="flex flex-col items-center">
-                                <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
-                                  <img 
-                                    src={capturedImage} 
-                                    alt={t.common.product} 
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                                <p className="text-[10px] text-zinc-500 mt-1">{t.common.product}</p>
-                              </div>
-                            )}
-                            
-                            {/* Model Image */}
-                            {activeModel?.imageUrl && (
-                              <div className="flex flex-col items-center">
-                                <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
-                                  <Image 
-                                    src={activeModel.imageUrl} 
-                                    alt={t.common.model} 
-                                    width={56}
-                                    height={56}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                                <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{activeModel.name || t.common.model}</p>
-                              </div>
-                            )}
-                            
-                            {/* Background Image */}
-                            {activeBg?.imageUrl && (
-                              <div className="flex flex-col items-center">
-                                <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
-                                  <Image 
-                                    src={activeBg.imageUrl} 
-                                    alt="背景" 
-                                    width={56}
-                                    height={56}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                                <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{activeBg.name || '背景'}</p>
-                              </div>
-                            )}
-                            
-                          </div>
+                        return (
+                        <div className="mt-4 pt-4 border-t border-zinc-100">
+                          <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.camera.debugParams}</h3>
                           
-                          {/* Style params */}
-                          {(selectedModelStyle && selectedModelStyle !== 'auto') || selectedModelGender ? (
-                            <div className="flex gap-2 flex-wrap">
-                              {selectedModelStyle && selectedModelStyle !== 'auto' && (
-                                <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
-                                  风格: {selectedModelStyle === 'korean' ? '韩系' : selectedModelStyle === 'western' ? '欧美' : selectedModelStyle}
-                                </span>
-                              )}
-                              {selectedModelGender && (
-                                <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
-                                  性别: {selectedModelGender === 'male' ? '男' : selectedModelGender === 'female' ? '女' : selectedModelGender === 'boy' ? '男童' : '女童'}
-                                </span>
-                              )}
+                          {/* This image's prompt */}
+                          {generatedPrompts[selectedResultIndex] && (
+                            <div className="mb-4">
+                              <p className="text-xs font-medium text-zinc-500 mb-2">Prompt</p>
+                              <div className="bg-zinc-50 rounded-lg p-3 max-h-32 overflow-y-auto">
+                                <pre className="text-[11px] text-zinc-600 whitespace-pre-wrap font-mono leading-relaxed">
+                                  {generatedPrompts[selectedResultIndex]}
+                                </pre>
+                              </div>
                             </div>
-                          ) : null}
+                          )}
+                          
+                          {/* Reference images */}
+                          <div className="space-y-3">
+                            {/* Reference images grid */}
+                            <div className="grid grid-cols-4 gap-2">
+                              {/* Input Product Image - from captured or saved */}
+                              {(capturedImage || generation?.inputImageUrl) && (
+                                <div className="flex flex-col items-center">
+                                  <div 
+                                    className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"
+                                    onClick={() => setFullscreenImage(capturedImage || generation?.inputImageUrl || '')}
+                                  >
+                                    <img 
+                                      src={capturedImage || generation?.inputImageUrl || ''} 
+                                      alt={t.camera.productOriginal} 
+                                      className="w-full h-full object-cover"
+                                    />
+                                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                      <ZoomIn className="w-4 h-4 text-white" />
+                                    </div>
+                                  </div>
+                                  <p className="text-[10px] text-zinc-500 mt-1">{t.camera.productOriginal}</p>
+                                </div>
+                              )}
+                              
+                              {/* Model Image - use per-image data if available */}
+                              {(() => {
+                                const perImageModel = savedParams?.perImageModels?.[selectedResultIndex]
+                                const modelUrl = perImageModel?.imageUrl || savedParams?.modelImage || activeModel?.imageUrl
+                                const modelName = perImageModel?.name || savedParams?.model || activeModel?.name
+                                if (!modelUrl) return null
+                                return (
+                                  <div className="flex flex-col items-center">
+                                    <div 
+                                      className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"
+                                      onClick={() => setFullscreenImage(modelUrl)}
+                                    >
+                                      <Image 
+                                        src={modelUrl} 
+                                        alt="模特" 
+                                        width={56}
+                                        height={56}
+                                        className="w-full h-full object-cover"
+                                      />
+                                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <ZoomIn className="w-4 h-4 text-white" />
+                                      </div>
+                                    </div>
+                                    <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">
+                                      {modelName || t.common.model}
+                                    </p>
+                                  </div>
+                                )
+                              })()}
+                              
+                              {/* Background Image - use per-image data if available */}
+                              {(() => {
+                                const perImageBg = savedParams?.perImageBackgrounds?.[selectedResultIndex]
+                                const bgUrl = perImageBg?.imageUrl || savedParams?.backgroundImage || activeBg?.imageUrl
+                                const bgName = perImageBg?.name || savedParams?.background || activeBg?.name
+                                if (!bgUrl) return null
+                                return (
+                                  <div className="flex flex-col items-center">
+                                    <div 
+                                      className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"
+                                      onClick={() => setFullscreenImage(bgUrl)}
+                                    >
+                                      <Image 
+                                        src={bgUrl} 
+                                        alt="背景" 
+                                        width={56}
+                                        height={56}
+                                        className="w-full h-full object-cover"
+                                      />
+                                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <ZoomIn className="w-4 h-4 text-white" />
+                                      </div>
+                                    </div>
+                                    <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">
+                                      {bgName || t.common.background}
+                                    </p>
+                                  </div>
+                                )
+                              })()}
+                              
+                            </div>
+                            
+                            {/* Model Version (AI Model used) */}
+                            {(generatedModelTypes[selectedResultIndex] || generation?.outputModelTypes?.[selectedResultIndex]) && (
+                              <div className="mt-3 mb-3">
+                                <span className={`px-2 py-1 rounded text-[10px] font-medium ${
+                                  (generatedModelTypes[selectedResultIndex] || generation?.outputModelTypes?.[selectedResultIndex]) === 'pro' 
+                                    ? 'bg-green-100 text-green-700' 
+                                    : 'bg-amber-100 text-amber-700'
+                                }`}>
+                                  模型: Gemini {(generatedModelTypes[selectedResultIndex] || generation?.outputModelTypes?.[selectedResultIndex]) === 'pro' ? '3.0 Pro' : '2.5 Flash'}
+                                  {(generatedModelTypes[selectedResultIndex] || generation?.outputModelTypes?.[selectedResultIndex]) === 'flash' && ' (降级)'}
+                                </span>
+                                {(generatedGenModes[selectedResultIndex] || generation?.outputGenModes?.[selectedResultIndex]) && (
+                                  <span className={`ml-2 px-2 py-1 rounded text-[10px] font-medium ${
+                                    (generatedGenModes[selectedResultIndex] || generation?.outputGenModes?.[selectedResultIndex]) === 'simple'
+                                      ? 'bg-blue-100 text-blue-700'
+                                      : 'bg-purple-100 text-purple-700'
+                                  }`}>
+                                    {(generatedGenModes[selectedResultIndex] || generation?.outputGenModes?.[selectedResultIndex]) === 'simple' ? '极简模式' : '扩展模式'}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            
+                            {/* Style params - prefer saved, fallback to current selection */}
+                            {((savedParams?.modelStyle || selectedModelStyle) && (savedParams?.modelStyle || selectedModelStyle) !== 'auto') || 
+                             (savedParams?.modelGender || selectedModelGender) ? (
+                              <div className="flex gap-2 flex-wrap">
+                                {(savedParams?.modelStyle || selectedModelStyle) && (savedParams?.modelStyle || selectedModelStyle) !== 'auto' && (
+                                  <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
+                                    {t.common.style}: {(savedParams?.modelStyle || selectedModelStyle) === 'korean' ? t.common.korean : 
+                                           (savedParams?.modelStyle || selectedModelStyle) === 'western' ? t.common.western : 
+                                           (savedParams?.modelStyle || selectedModelStyle)}
+                                  </span>
+                                )}
+                                {(savedParams?.modelGender || selectedModelGender) && (
+                                  <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
+                                    {t.common.gender}: {MODEL_GENDERS.find(g => g.id === (savedParams?.modelGender || selectedModelGender))?.label}
+                                  </span>
+                                )}
+                              </div>
+                            ) : null}
+                          </div>
                         </div>
-                      </div>
-                      )}
+                        )
+                      })()}
 
                       <button 
                         onClick={() => {
                           setSelectedResultIndex(null)
-                          handleGoToEdit(generatedImages[selectedResultIndex])
+                          handleGoToEdit(selectedImageUrl)
                         }}
                         className="w-full h-12 mt-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2 transition-colors"
                       >
@@ -1857,7 +2148,11 @@ export default function CameraPage() {
                   </div>
                 </div>
               </div>
-            )}
+              )
+            })()}
+            
+            {/* Bottom Navigation */}
+            <BottomNav forceShow />
           </motion.div>
         )}
       </AnimatePresence>
@@ -1904,14 +2199,13 @@ export default function CameraPage() {
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.9, opacity: 0 }}
                     transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                    className="relative w-full h-full"
+                    className="relative w-full h-full flex items-center justify-center"
                   >
-                    <Image
+                    {/* Use img tag for native long-press save support */}
+                    <img
                       src={fullscreenImage}
                       alt="Fullscreen"
-                      fill
-                      className="object-contain"
-                      quality={100}
+                      className="max-w-full max-h-full object-contain"
                       draggable={false}
                     />
                   </motion.div>
@@ -1921,7 +2215,7 @@ export default function CameraPage() {
             
             {/* Tap to close hint */}
             <div className="absolute bottom-8 left-0 right-0 text-center pointer-events-none">
-              <span className="text-white/60 text-sm">双指缩放 · 双击重置 · 点击 × 关闭</span>
+              <span className="text-white/60 text-sm">{t.imageActions.longPressSaveZoom}</span>
             </div>
           </motion.div>
         )}
