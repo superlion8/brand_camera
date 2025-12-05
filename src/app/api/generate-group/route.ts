@@ -55,7 +55,8 @@ Based on your analysis, generate **5 distinct photography directives** to showca
 # Constraints
 
 - **Product First:** Every pose must intentionally highlight the product details.
-- **Consistency:** Maintain the original lighting, environment, and model styling. Do not introduce new props or change the background.
+- **Inventory Consistency:** Work ONLY with the items present in the source image. **Do NOT introduce any new accessories or props.** For example, if the model is not holding a bag in the original image, do NOT write instructions like "holding a bag" or "clutching a purse". If there is no chair, do not ask them to "sit on a chair".
+- **Environment Consistency:** Maintain the original lighting, environment, and background.
 - **Natural & Professional:** Directives should be simple and achievable. Avoid overly dramatic, artistic, or weird poses that distract from the product.
 - **Quantity:** Strictly output 5 variations.
 
