@@ -6,7 +6,7 @@ import Webcam from "react-webcam"
 import { 
   ArrowLeft, ArrowRight, Loader2, Image as ImageIcon, 
   SlidersHorizontal, X, Wand2, Camera, Home,
-  Heart, Download, FolderHeart, Check, ZoomIn, Plus
+  Heart, Download, FolderHeart, Check, ZoomIn, Plus, Grid3X3
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { fileToBase64, generateId, compressBase64Image, ensureBase64 } from "@/lib/utils"
@@ -1252,7 +1252,7 @@ export default function ProStudioPage() {
                     <div className="flex-1 overflow-y-auto bg-zinc-100 pb-24">
                       <div className="bg-zinc-900">
                         <div 
-                          className="relative aspect-[4/5] cursor-pointer group"
+                          className="relative aspect-square max-h-[50vh] mx-auto cursor-pointer group"
                           onClick={() => setFullscreenImage(selectedImageUrl)}
                         >
                           <img 
@@ -1270,28 +1270,57 @@ export default function ProStudioPage() {
                       </div>
                       
                       <div className="p-4 pb-8 bg-white">
-                        <div className="flex items-center gap-2 mb-4 flex-wrap">
-                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${getModeColor(selectedResultIndex)} text-white`}>
-                            {getModeLabel(selectedResultIndex)}
-                          </span>
-                          {selectedModelType === 'flash' && (
-                            <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">
-                              Gemini 2.5
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${getModeColor(selectedResultIndex)} text-white`}>
+                              {getModeLabel(selectedResultIndex)}
                             </span>
-                          )}
+                            {selectedModelType === 'flash' && (
+                              <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">
+                                Gemini 2.5
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button className="w-10 h-10 rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-50 flex items-center justify-center transition-colors">
+                              <Heart className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => selectedImageUrl && handleDownload(selectedImageUrl)}
+                              className="w-10 h-10 rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-50 flex items-center justify-center transition-colors"
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                         
+                        {/* Action buttons - 去修图 & 拍组图 */}
                         <div className="flex gap-3">
-                          <button className="flex-1 h-12 rounded-lg bg-zinc-100 text-zinc-700 font-medium flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors">
-                            <Heart className="w-5 h-5" />
-                            收藏
+                          <button 
+                            onClick={() => {
+                              if (selectedImageUrl) {
+                                sessionStorage.setItem('editImage', selectedImageUrl)
+                                setSelectedResultIndex(null)
+                                router.push("/edit/general")
+                              }
+                            }}
+                            className="flex-1 h-12 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2 transition-colors"
+                          >
+                            <Wand2 className="w-4 h-4" />
+                            去修图
                           </button>
                           <button 
-                            onClick={() => selectedImageUrl && handleDownload(selectedImageUrl)}
-                            className="flex-1 h-12 rounded-lg bg-zinc-900 text-white font-medium flex items-center justify-center gap-2 hover:bg-zinc-800 transition-colors"
+                            onClick={() => {
+                              if (selectedImageUrl) {
+                                sessionStorage.setItem('groupShootImage', selectedImageUrl)
+                                setSelectedResultIndex(null)
+                                router.push("/camera/group")
+                              }
+                            }}
+                            className="flex-1 h-12 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-medium flex items-center justify-center gap-2 transition-colors"
                           >
-                            <Download className="w-5 h-5" />
-                            下载
+                            <Grid3X3 className="w-4 h-4" />
+                            拍组图
                           </button>
                         </div>
                         
