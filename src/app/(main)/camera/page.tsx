@@ -23,6 +23,7 @@ import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { BottomNav } from "@/components/shared/BottomNav"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
+import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 
 // Helper to map API error codes to translated messages
 const getErrorMessage = (error: string, t: any): string => {
@@ -1190,7 +1191,10 @@ export default function CameraPage() {
                     <motion.button
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      onClick={handleShootIt}
+                      onClick={(e) => {
+                        triggerFlyToGallery(e)
+                        handleShootIt()
+                      }}
                       className="w-full max-w-xs h-14 rounded-full text-lg font-semibold gap-2 bg-white text-black hover:bg-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.3)] flex items-center justify-center transition-colors"
                     >
                       <Wand2 className="w-5 h-5" />

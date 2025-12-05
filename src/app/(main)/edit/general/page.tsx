@@ -14,6 +14,7 @@ import { useQuota } from "@/hooks/useQuota"
 import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
+import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 
 // Helper to map API error codes to translated messages
 const getErrorMessage = (error: string, t: any): string => {
@@ -394,7 +395,10 @@ export default function GeneralEditPage() {
           {/* Generate Button */}
           <div className="pt-6 pb-24">
             <button
-              onClick={handleGenerate}
+              onClick={(e) => {
+                triggerFlyToGallery(e)
+                handleGenerate()
+              }}
               disabled={!inputImage || !customPrompt.trim() || isGenerating}
               className={`w-full h-14 rounded-full text-base font-semibold gap-2 flex items-center justify-center transition-all ${
                 !inputImage || !customPrompt.trim() || isGenerating

@@ -1,5 +1,6 @@
 import { BottomNav } from "@/components/shared/BottomNav"
 import { VersionChecker } from "@/components/shared/VersionChecker"
+import { FlyToGallery } from "@/components/shared/FlyToGallery"
 
 export default function MainLayout({
   children,
@@ -14,6 +15,8 @@ export default function MainLayout({
       </div>
       <BottomNav />
       <VersionChecker />
+      {/* Fly to gallery animation */}
+      <FlyToGallery />
     </div>
   )
 }
