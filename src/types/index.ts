@@ -62,6 +62,8 @@ export interface GenerationParams {
   bgIsUserSelected?: boolean     // true = user selected, false = system random
   // Edit params
   customPrompt?: string
+  // Group shoot params
+  shootMode?: 'random' | 'multiangle'
 }
 
 export interface Collection {

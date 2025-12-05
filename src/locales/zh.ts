@@ -68,6 +68,8 @@ export const zh = {
     modelStudioSubtitle: "AI买家秀生成",
     proStudio: "专业棚拍",
     proStudioSubtitle: "高级质感棚拍图",
+    groupShoot: "组图拍摄",
+    groupShootSubtitle: "一键生成多角度/多姿势展示图",
     editRoom: "修图室",
     editRoomDesc: "AI智能修图 · 自由描述你想要的效果",
     productStudio: "商品影棚",

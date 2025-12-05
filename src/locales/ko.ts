@@ -70,6 +70,8 @@ export const ko: Translations = {
     modelStudioSubtitle: "AI 구매후기 생성",
     proStudio: "프로 스튜디오",
     proStudioSubtitle: "고급 스튜디오 촬영",
+    groupShoot: "그룹 촬영",
+    groupShootSubtitle: "다각도/다양한 포즈 사진 생성",
     editRoom: "편집실",
     editRoomDesc: "AI 스마트 편집 · 원하는 것을 설명하세요",
     productStudio: "상품 스튜디오",

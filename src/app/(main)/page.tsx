@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight, FolderHeart, Images, Wand2, Users, Lightbulb, Sparkles } from "lucide-react"
+import { ArrowRight, FolderHeart, Images, Wand2, Users, Lightbulb, Sparkles, Grid3X3 } from "lucide-react"
 import { motion } from "framer-motion"
 import { useAssetStore } from "@/stores/assetStore"
 import { useTranslation } from "@/stores/languageStore"
@@ -138,6 +138,29 @@ export default function HomePage() {
             />
           </motion.div>
         </div>
+        
+        {/* 组图拍摄 */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+        >
+          <Link 
+            href="/camera/group"
+            className="block bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+                <Grid3X3 className="w-7 h-7 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-white text-base">{t.home.groupShoot || '组图拍摄'}</h3>
+                <p className="text-white/80 text-xs mt-0.5">{t.home.groupShootSubtitle || '一键生成多角度/多姿势展示图'}</p>
+              </div>
+              <ArrowRight className="w-5 h-5 text-white/60" />
+            </div>
+          </Link>
+        </motion.div>
         
         {/* Second Row: 商品影棚 full width */}
         <motion.div

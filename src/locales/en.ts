@@ -70,6 +70,8 @@ export const en: Translations = {
     modelStudioSubtitle: "AI Buyer Show",
     proStudio: "Pro Studio",
     proStudioSubtitle: "High-end Studio Shot",
+    groupShoot: "Group Shoot",
+    groupShootSubtitle: "Generate multi-angle/multi-pose shots",
     editRoom: "Edit Room",
     editRoomDesc: "AI Smart Edit · Describe what you want",
     productStudio: "Product Studio",
