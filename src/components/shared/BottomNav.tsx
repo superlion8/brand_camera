@@ -29,11 +29,12 @@ export function BottomNav({ forceHide, forceShow }: BottomNavProps = {}) {
     { id: "gallery", href: "/gallery", label: t.nav.gallery, icon: ImageIcon },
   ]
   
-  // Hide on camera pages or when forceHide is true (unless forceShow overrides)
+  // Hide on camera/studio pages or when forceHide is true (unless forceShow overrides)
   if (forceHide) {
     return null
   }
-  if (pathname.startsWith("/camera") && !forceShow) {
+  // 在相机和专业棚拍页面默认隐藏底部导航栏
+  if ((pathname.startsWith("/camera") || pathname.startsWith("/pro-studio")) && !forceShow) {
     return null
   }
   

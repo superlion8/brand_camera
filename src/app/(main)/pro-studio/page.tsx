@@ -6,7 +6,7 @@ import Webcam from "react-webcam"
 import { 
   ArrowLeft, ArrowRight, Loader2, Image as ImageIcon, 
   SlidersHorizontal, X, Wand2, Camera, Home,
-  Heart, Download, FolderHeart, Check, ZoomIn
+  Heart, Download, FolderHeart, Check, ZoomIn, Plus
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { fileToBase64, generateId, compressBase64Image, ensureBase64 } from "@/lib/utils"
@@ -36,28 +36,32 @@ type PageMode = "camera" | "review" | "processing" | "results"
 // 专业棚拍生成6张图
 const PRO_STUDIO_NUM_IMAGES = 6
 
-// Asset Grid Component
+// Asset Grid Component with Upload Button
 function AssetGrid({ 
   items, 
   selectedId, 
   onSelect,
+  onUpload,
   emptyText = "暂无资源"
 }: { 
   items: Asset[]
   selectedId: string | null
   onSelect: (id: string) => void
+  onUpload?: () => void
   emptyText?: string
 }) {
-  if (items.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 text-zinc-400">
-        <p className="text-sm">{emptyText}</p>
-      </div>
-    )
-  }
-  
   return (
     <div className="grid grid-cols-3 gap-2">
+      {/* Upload Button as first cell */}
+      {onUpload && (
+        <button
+          onClick={onUpload}
+          className="aspect-[3/4] rounded-lg overflow-hidden relative border-2 border-dashed border-zinc-300 hover:border-blue-400 transition-all flex flex-col items-center justify-center bg-zinc-50 hover:bg-blue-50"
+        >
+          <Plus className="w-8 h-8 text-zinc-400" />
+          <span className="text-xs text-zinc-500 mt-1">上传</span>
+        </button>
+      )}
       {items.map(item => (
         <button
           key={item.id}
@@ -79,17 +83,24 @@ function AssetGrid({
           </div>
         </button>
       ))}
+      {items.length === 0 && !onUpload && (
+        <div className="col-span-3 flex flex-col items-center justify-center py-12 text-zinc-400">
+          <p className="text-sm">{emptyText}</p>
+        </div>
+      )}
     </div>
   )
 }
 
-// Background Grid with categories
+// Background Grid with categories and Upload Button
 function BackgroundGrid({
   selectedId,
   onSelect,
+  onUpload,
 }: {
   selectedId: string | null
   onSelect: (id: string) => void
+  onUpload?: () => void
 }) {
   const [activeTab, setActiveTab] = useState<'all' | 'light' | 'solid' | 'pattern'>('all')
   
@@ -126,6 +137,16 @@ function BackgroundGrid({
         ))}
       </div>
       <div className="grid grid-cols-4 gap-2">
+        {/* Upload Button as first cell */}
+        {onUpload && (
+          <button
+            onClick={onUpload}
+            className="aspect-square rounded-lg overflow-hidden relative border-2 border-dashed border-zinc-300 hover:border-blue-400 transition-all flex flex-col items-center justify-center bg-zinc-50 hover:bg-blue-50"
+          >
+            <Plus className="w-6 h-6 text-zinc-400" />
+            <span className="text-[10px] text-zinc-500 mt-0.5">上传</span>
+          </button>
+        )}
         {bgMap[activeTab].map(item => (
           <button
             key={item.id}
@@ -155,10 +176,12 @@ export default function ProStudioPage() {
   const t = useLanguageStore(state => state.t)
   const { checkQuota, showExceededModal, requiredCount, closeExceededModal, quota } = useQuota()
   const { addTask, updateTaskStatus, updateImageSlot, initImageSlots, tasks } = useGenerationTaskStore()
-  const { userProducts } = useAssetStore()
+  const { userProducts, userModels, userBackgrounds } = useAssetStore()
   
   const webcamRef = useRef<Webcam>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const modelUploadRef = useRef<HTMLInputElement>(null)
+  const bgUploadRef = useRef<HTMLInputElement>(null)
   
   // State
   const [mode, setMode] = useState<PageMode>("camera")
@@ -170,6 +193,10 @@ export default function ProStudioPage() {
   // Selection state
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null)
   const [selectedBgId, setSelectedBgId] = useState<string | null>(null)
+  
+  // Custom uploaded assets (临时存储在本地)
+  const [customModels, setCustomModels] = useState<Asset[]>([])
+  const [customBgs, setCustomBgs] = useState<Asset[]>([])
   
   // Panel state
   const [showCustomPanel, setShowCustomPanel] = useState(false)
@@ -185,9 +212,47 @@ export default function ProStudioPage() {
   const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
 
-  // Get selected assets
-  const selectedModel = selectedModelId ? STUDIO_MODELS.find(m => m.id === selectedModelId) : null
-  const selectedBg = selectedBgId ? ALL_STUDIO_BACKGROUNDS.find(b => b.id === selectedBgId) : null
+  // Combine preset + user + custom assets for selection
+  const allModels = [...customModels, ...userModels, ...STUDIO_MODELS]
+  const allBgs = [...customBgs, ...userBackgrounds, ...ALL_STUDIO_BACKGROUNDS]
+  
+  // Get selected assets from combined list
+  const selectedModel = selectedModelId ? allModels.find(m => m.id === selectedModelId) : null
+  const selectedBg = selectedBgId ? allBgs.find(b => b.id === selectedBgId) : null
+  
+  // Handle model upload
+  const handleModelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const base64 = await fileToBase64(file)
+      const newModel: Asset = {
+        id: `custom-model-${Date.now()}`,
+        type: 'model',
+        name: `自定义模特`,
+        imageUrl: base64,
+      }
+      setCustomModels(prev => [newModel, ...prev])
+      setSelectedModelId(newModel.id)
+    }
+    e.target.value = ''
+  }
+  
+  // Handle background upload
+  const handleBgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const base64 = await fileToBase64(file)
+      const newBg: Asset = {
+        id: `custom-bg-${Date.now()}`,
+        type: 'background',
+        name: `自定义背景`,
+        imageUrl: base64,
+      }
+      setCustomBgs(prev => [newBg, ...prev])
+      setSelectedBgId(newBg.id)
+    }
+    e.target.value = ''
+  }
 
   // Camera permission check
   useEffect(() => {
@@ -395,6 +460,20 @@ export default function ProStudioPage() {
         className="hidden" 
         accept="image/*" 
         onChange={handleFileUpload}
+      />
+      <input 
+        type="file" 
+        ref={modelUploadRef} 
+        className="hidden" 
+        accept="image/*" 
+        onChange={handleModelUpload}
+      />
+      <input 
+        type="file" 
+        ref={bgUploadRef} 
+        className="hidden" 
+        accept="image/*" 
+        onChange={handleBgUpload}
       />
 
       <AnimatePresence mode="wait">
@@ -622,9 +701,10 @@ export default function ProStudioPage() {
                             )}
                           </div>
                           <AssetGrid 
-                            items={STUDIO_MODELS} 
+                            items={[...customModels, ...userModels, ...STUDIO_MODELS]} 
                             selectedId={selectedModelId} 
                             onSelect={(id) => setSelectedModelId(selectedModelId === id ? null : id)}
+                            onUpload={() => modelUploadRef.current?.click()}
                           />
                         </div>
                       )}
@@ -644,6 +724,7 @@ export default function ProStudioPage() {
                           <BackgroundGrid 
                             selectedId={selectedBgId} 
                             onSelect={(id) => setSelectedBgId(selectedBgId === id ? null : id)}
+                            onUpload={() => bgUploadRef.current?.click()}
                           />
                         </div>
                       )}

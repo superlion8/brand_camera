@@ -8,15 +8,17 @@ import { useAuth } from "@/components/providers/AuthProvider"
 import { Asset, AssetType } from "@/types"
 import { fileToBase64, generateId } from "@/lib/utils"
 import { useRouter } from "next/navigation"
-import { PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_VIBES, PRESET_PRODUCTS } from "@/data/presets"
+import { PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_VIBES, PRESET_PRODUCTS, STUDIO_MODELS, ALL_STUDIO_BACKGROUNDS } from "@/data/presets"
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
 import { motion, AnimatePresence } from "framer-motion"
 import { useLanguageStore } from "@/stores/languageStore"
 
 // System presets from centralized data
+// 模特包含：可见模特 + 专业模特
+// 环境包含：可见背景 + 棚拍背景
 const systemPresets: Record<AssetType, Asset[]> = {
-  model: PRESET_MODELS,
-  background: PRESET_BACKGROUNDS,
+  model: [...PRESET_MODELS, ...STUDIO_MODELS],
+  background: [...PRESET_BACKGROUNDS, ...ALL_STUDIO_BACKGROUNDS],
   product: PRESET_PRODUCTS,
   vibe: PRESET_VIBES,
 }
