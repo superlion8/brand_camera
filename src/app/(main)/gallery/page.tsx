@@ -634,8 +634,11 @@ export default function GalleryPage() {
           {displayedHistory.map((item, i) => {
             const typeInfo = getTypeLabel(item.gen, item.idx, debugMode)
             return (
-              <div 
+              <motion.div 
                 key={`${item.gen.id}-${item.idx}-${i}`}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3, delay: Math.min(i * 0.03, 0.2) }}
                 className="group relative aspect-[4/5] bg-zinc-200 rounded-xl overflow-hidden cursor-pointer shadow-sm"
                 onClick={() => setSelectedItem({ gen: item.gen, index: item.idx })}
               >
@@ -679,7 +682,7 @@ export default function GalleryPage() {
                     {new Date(item.gen.createdAt).toLocaleString()}
                   </p>
                 </div>
-              </div>
+              </motion.div>
             )
           })}
         </div>

@@ -256,22 +256,33 @@ export default function BrandAssetsPage() {
         )}
         
         {displayAssets.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3">
-            {displayAssets.map((asset) => (
-              <AssetCard
+          <motion.div 
+            className="grid grid-cols-2 gap-3"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            {displayAssets.map((asset, index) => (
+              <motion.div
                 key={asset.id}
-                asset={asset}
-                isPreset={activeSource === "preset"}
-                isPinned={activeSource === "preset" ? isPresetPinned(asset.id) : asset.isPinned}
-                onDelete={activeSource === "user" ? () => handleDelete(activeType, asset.id) : undefined}
-                onPin={activeSource === "user" 
-                  ? () => togglePin(activeType, asset.id) 
-                  : () => togglePresetPin(asset.id)
-                }
-                onZoom={() => setZoomImage(asset.imageUrl)}
-              />
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.3) }}
+              >
+                <AssetCard
+                  asset={asset}
+                  isPreset={activeSource === "preset"}
+                  isPinned={activeSource === "preset" ? isPresetPinned(asset.id) : asset.isPinned}
+                  onDelete={activeSource === "user" ? () => handleDelete(activeType, asset.id) : undefined}
+                  onPin={activeSource === "user" 
+                    ? () => togglePin(activeType, asset.id) 
+                    : () => togglePresetPin(asset.id)
+                  }
+                  onZoom={() => setZoomImage(asset.imageUrl)}
+                />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         ) : isInitialLoading && activeSource === "user" ? (
           // 初始加载中显示骨架屏
           <div className="grid grid-cols-2 gap-3">
