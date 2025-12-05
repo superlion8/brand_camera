@@ -195,8 +195,13 @@ export default function GroupShootPage() {
   // 获取模特分类的图库图片（按类型分组）
   const modelGenerations = (generations || [])
     .filter(g => {
-      if (!g || !g.outputImageUrls || g.outputImageUrls.length === 0) return false
-      const type = g.type?.toLowerCase() || ''
+      if (!g) return false
+      // 确保 outputImageUrls 是有效数组且有有效的 URL
+      if (!Array.isArray(g.outputImageUrls)) return false
+      const hasValidUrls = g.outputImageUrls.some(url => typeof url === 'string' && url.length > 0)
+      if (!hasValidUrls) return false
+      
+      const type = (g.type || '').toLowerCase()
       // 只显示模特相关的分类
       return type === 'camera' || type === 'camera_model' || type === 'model' || 
              type === 'pro_studio' || type === 'prostudio' || type === 'group_shoot'
@@ -621,29 +626,31 @@ export default function GroupShootPage() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-3 gap-2">
-                    {modelGenerations.map((gen, gi) => (
-                      gen.outputImageUrls?.map((url, ui) => (
-                        <button
-                          key={`${gi}-${ui}`}
-                          onClick={() => handleSelectFromGallery(url, gen.type)}
-                          className="aspect-square rounded-lg overflow-hidden relative hover:ring-2 hover:ring-blue-500 transition-all"
-                        >
-                          <Image src={url} alt="" fill className="object-cover" />
-                          {/* 类型标签 */}
-                          <div className="absolute bottom-1 left-1">
-                            <span className={`px-1 py-0.5 rounded text-[8px] font-medium text-white ${
-                              gen.type === 'pro_studio' 
-                                ? 'bg-amber-500' 
-                                : gen.type === 'group_shoot'
-                                  ? 'bg-cyan-500'
-                                  : 'bg-blue-500'
-                            }`}>
-                              {gen.type === 'pro_studio' ? '专业棚拍' : gen.type === 'group_shoot' ? '组图' : '买家秀'}
-                            </span>
-                          </div>
-                        </button>
-                      ))
-                    ))}
+                    {modelGenerations.flatMap((gen, gi) => 
+                      (gen.outputImageUrls || [])
+                        .filter((url): url is string => typeof url === 'string' && url.length > 0)
+                        .map((url, ui) => (
+                          <button
+                            key={`${gen.id || gi}-${ui}`}
+                            onClick={() => handleSelectFromGallery(url, gen.type)}
+                            className="aspect-square rounded-lg overflow-hidden relative hover:ring-2 hover:ring-blue-500 transition-all"
+                          >
+                            <Image src={url} alt="" fill className="object-cover" />
+                            {/* 类型标签 */}
+                            <div className="absolute bottom-1 left-1">
+                              <span className={`px-1 py-0.5 rounded text-[8px] font-medium text-white ${
+                                gen.type === 'pro_studio' 
+                                  ? 'bg-amber-500' 
+                                  : gen.type === 'group_shoot'
+                                    ? 'bg-cyan-500'
+                                    : 'bg-blue-500'
+                              }`}>
+                                {gen.type === 'pro_studio' ? '专业棚拍' : gen.type === 'group_shoot' ? '组图' : '买家秀'}
+                              </span>
+                            </div>
+                          </button>
+                        ))
+                    )}
                   </div>
                 )}
               </div>
