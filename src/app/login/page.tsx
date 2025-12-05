@@ -366,10 +366,26 @@ function LoginContent() {
                 </p>
               </div>
             )}
+
+            {/* Phone SMS Login - 第一位（中国用户最常用） */}
+            <button
+              onClick={() => { setMode("phone-sms"); resetState(); }}
+              className="w-full h-12 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex items-center justify-center gap-3 transition-colors"
+            >
+              <Smartphone className="w-5 h-5" />
+              <span>{t.login.phoneSms || '手机号登录'}</span>
+            </button>
             
             {/* Google Login - Hide in WebView */}
             {!inWebView && (
               <>
+                {/* Divider */}
+                <div className="flex items-center gap-4 py-2">
+                  <div className="flex-1 h-px bg-zinc-200" />
+                  <span className="text-sm text-zinc-400">{t.login.or || '或'}</span>
+                  <div className="flex-1 h-px bg-zinc-200" />
+                </div>
+
                 <button
                   onClick={handleGoogleLogin}
                   disabled={isGoogleLoading}
@@ -389,24 +405,8 @@ function LoginContent() {
                     </>
                   )}
                 </button>
-
-                {/* Divider */}
-                <div className="flex items-center gap-4 py-2">
-                  <div className="flex-1 h-px bg-zinc-200" />
-                  <span className="text-sm text-zinc-400">{t.login.or || '或'}</span>
-                  <div className="flex-1 h-px bg-zinc-200" />
-                </div>
               </>
             )}
-
-            {/* Phone SMS Login - 优先展示（中国用户常用） */}
-            <button
-              onClick={() => { setMode("phone-sms"); resetState(); }}
-              className="w-full h-12 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex items-center justify-center gap-3 transition-colors"
-            >
-              <Smartphone className="w-5 h-5" />
-              <span>{t.login.phoneSms || '手机号登录'}</span>
-            </button>
 
             {/* Email OTP Login */}
             <button
