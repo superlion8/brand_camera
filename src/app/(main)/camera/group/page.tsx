@@ -195,6 +195,26 @@ export default function GroupShootPage() {
     }
   }
 
+  // 辅助函数：判断是否是买家秀类型（与 gallery API 保持一致）
+  const isBuyerShowType = (type: string | undefined) => {
+    if (!type) return false
+    const t = type.toLowerCase()
+    return t === 'camera_model' || t === 'model' || t === 'camera' || t === 'model_studio' || t === 'edit' || t === 'editing'
+  }
+  
+  // 辅助函数：判断是否是专业棚拍类型
+  const isProStudioType = (type: string | undefined) => {
+    if (!type) return false
+    const t = type.toLowerCase()
+    return t === 'pro_studio' || t === 'prostudio'
+  }
+  
+  // 辅助函数：判断是否是组图类型
+  const isGroupShootType = (type: string | undefined) => {
+    if (!type) return false
+    return type.toLowerCase() === 'group_shoot'
+  }
+
   // 获取模特分类的图库图片（买家秀+专业棚拍+组图）
   const modelGenerations = (generations || [])
     .filter(g => {
@@ -204,9 +224,8 @@ export default function GroupShootPage() {
       const hasValidUrls = g.outputImageUrls.some(url => typeof url === 'string' && url.length > 0)
       if (!hasValidUrls) return false
       
-      const type = g.type
-      // 只显示模特相关的分类: 买家秀(camera_model) + 专业棚拍(pro_studio) + 组图(group_shoot)
-      return type === 'camera_model' || type === 'pro_studio' || type === 'group_shoot'
+      // 只显示模特相关的分类: 买家秀 + 专业棚拍 + 组图
+      return isBuyerShowType(g.type) || isProStudioType(g.type) || isGroupShootType(g.type)
     })
     .slice(0, 50) // 增加到50个
 
@@ -688,13 +707,12 @@ export default function GroupShootPage() {
               
               <div className="flex-1 overflow-y-auto p-4">
                 {(() => {
-                  // 根据子分类过滤
+                  // 根据子分类过滤（与成片页面 API 逻辑保持一致）
                   const filteredGenerations = modelGenerations.filter(gen => {
-                    const type = gen.type
                     if (gallerySubType === 'all') return true
-                    if (gallerySubType === 'buyer') return type === 'camera_model' // 买家秀
-                    if (gallerySubType === 'pro') return type === 'pro_studio' // 专业棚拍
-                    if (gallerySubType === 'group') return type === 'group_shoot' // 组图
+                    if (gallerySubType === 'buyer') return isBuyerShowType(gen.type) // 买家秀
+                    if (gallerySubType === 'pro') return isProStudioType(gen.type) // 专业棚拍
+                    if (gallerySubType === 'group') return isGroupShootType(gen.type) // 组图
                     return true
                   })
                   
@@ -741,13 +759,13 @@ export default function GroupShootPage() {
                               {/* 类型标签 */}
                               <div className="absolute bottom-1 left-1">
                                 <span className={`px-1 py-0.5 rounded text-[8px] font-medium text-white ${
-                                  gen.type === 'pro_studio'
+                                  isProStudioType(gen.type)
                                     ? 'bg-amber-500' 
-                                    : gen.type === 'group_shoot'
+                                    : isGroupShootType(gen.type)
                                       ? 'bg-cyan-500'
                                       : 'bg-blue-500'
                                 }`}>
-                                  {gen.type === 'pro_studio' ? '棚拍' : gen.type === 'group_shoot' ? '组图' : '买家秀'}
+                                  {isProStudioType(gen.type) ? (t.groupShootPage?.proStudio || '棚拍') : isGroupShootType(gen.type) ? (t.groupShootPage?.groupPhoto || '组图') : (t.groupShootPage?.buyerShow || '买家秀')}
                                 </span>
                               </div>
                             </button>
