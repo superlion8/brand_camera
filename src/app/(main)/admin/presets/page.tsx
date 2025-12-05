@@ -16,12 +16,16 @@ const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map
 
 // Asset categories
 const CATEGORIES = [
-  { id: 'models', label: '模特（不可见）', folder: 'models', icon: Users, color: 'bg-blue-500', excludeSubfolders: true },
-  { id: 'backgrounds', label: '背景（不可见）', folder: 'backgrounds', icon: ImageIcon, color: 'bg-green-500', excludeSubfolders: true },
-  { id: 'visible-models', label: '模特（展示）', folder: 'models/visible', icon: Users, color: 'bg-blue-400' },
-  { id: 'visible-backgrounds', label: '背景（展示）', folder: 'backgrounds/visible', icon: ImageIcon, color: 'bg-green-400' },
+  { id: 'models', label: '普通模特（不可见）', folder: 'models', icon: Users, color: 'bg-blue-500', excludeSubfolders: true },
+  { id: 'backgrounds', label: '普通背景（不可见）', folder: 'backgrounds', icon: ImageIcon, color: 'bg-green-500', excludeSubfolders: true },
+  { id: 'visible-models', label: '普通模特（展示）', folder: 'models/visible', icon: Users, color: 'bg-blue-400' },
+  { id: 'visible-backgrounds', label: '普通背景（展示）', folder: 'backgrounds/visible', icon: ImageIcon, color: 'bg-green-400' },
+  { id: 'studio-models', label: '影棚模特', folder: 'studio-models', icon: Users, color: 'bg-amber-500' },
+  { id: 'studio-bg-light', label: '影棚背景（打光）', folder: 'studio-backgrounds/light', icon: ImageIcon, color: 'bg-amber-400' },
+  { id: 'studio-bg-solid', label: '影棚背景（纯色）', folder: 'studio-backgrounds/solid', icon: ImageIcon, color: 'bg-amber-300' },
+  { id: 'studio-bg-pattern', label: '影棚背景（花色）', folder: 'studio-backgrounds/pattern', icon: ImageIcon, color: 'bg-amber-200' },
   { id: 'vibes', label: '氛围图', folder: 'vibes', icon: Palette, color: 'bg-purple-500' },
-  { id: 'products', label: '商品示例', folder: 'products', icon: Package, color: 'bg-amber-500' },
+  { id: 'products', label: '商品示例', folder: 'products', icon: Package, color: 'bg-zinc-500' },
 ]
 
 interface StorageFile {

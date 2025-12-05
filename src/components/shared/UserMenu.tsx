@@ -245,7 +245,7 @@ export function UserMenu() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 100 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="fixed left-0 right-0 bottom-0 bg-white rounded-t-2xl shadow-2xl z-[101] overflow-hidden safe-bottom"
+              className="fixed left-0 right-0 bottom-0 bg-white rounded-t-2xl shadow-2xl z-[101] overflow-hidden safe-bottom max-h-[85vh] flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
@@ -260,7 +260,7 @@ export function UserMenu() {
               </div>
 
               {/* Settings Content */}
-              <div className="p-4 space-y-4">
+              <div className="p-4 space-y-4 flex-1 overflow-y-auto">
                 {/* Debug Mode Toggle - Only visible to admins */}
                 {isAdmin ? (
                   <>

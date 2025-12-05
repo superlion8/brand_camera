@@ -59,11 +59,11 @@ function BeforeAfterCard({
           className="absolute inset-y-0 left-0 overflow-hidden border-r border-white/50"
           animate={{ width: ["0%", "100%", "100%"] }}
           transition={{
-            duration: 3,
+            duration: 6,
             ease: "easeInOut",
             times: [0, 0.8, 1],
             repeat: Infinity,
-            repeatDelay: 1,
+            repeatDelay: 2,
           }}
         >
           <div className="absolute inset-0 w-[160px] h-full">

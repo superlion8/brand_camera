@@ -53,11 +53,23 @@ export async function GET(request: NextRequest) {
       }
     }
     
+    // 获取 auth.users 的真实标识（email 或 phone）
+    const { data: authUsers } = await adminClient.auth.admin.listUsers()
+    const userIdentityMap = new Map<string, string>()
+    for (const authUser of authUsers?.users || []) {
+      // 优先使用手机号（如果有），否则使用 email
+      const phone = authUser.phone
+      const email = authUser.email
+      const identity = phone || email || authUser.id
+      userIdentityMap.set(authUser.id, identity)
+    }
+    
     // Format response
     const quotas = (quotasData || []).map(q => ({
       id: q.user_id,
       userId: q.user_id,
-      userEmail: q.user_email || q.user_id,
+      // 优先使用 auth.users 中的真实标识，其次是 user_quotas 中的 user_email，最后是 user_id
+      userEmail: userIdentityMap.get(q.user_id) || q.user_email || q.user_id,
       totalQuota: q.total_quota || DEFAULT_QUOTA,
       usedCount: q.used_quota || 0,
       remainingQuota: Math.max(0, (q.total_quota || DEFAULT_QUOTA) - (q.used_quota || 0)),
