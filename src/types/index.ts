@@ -64,6 +64,7 @@ export interface GenerationParams {
   customPrompt?: string
   // Group shoot params
   shootMode?: 'random' | 'multiangle'
+  styleMode?: 'lifestyle' | 'studio'
 }
 
 export interface Collection {

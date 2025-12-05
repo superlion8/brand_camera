@@ -11,8 +11,8 @@ const VLM_MODEL = 'gemini-3-pro-preview'
 const PRIMARY_IMAGE_MODEL = 'gemini-3-pro-image-preview'
 const FALLBACK_IMAGE_MODEL = 'gemini-2.5-flash-image'
 
-// Pose instruction interface
-interface PoseInstruction {
+// Pose instruction interface - Studio mode
+interface StudioPoseInstruction {
   id: number
   product_focus: string
   pose_instruction: string
@@ -20,10 +20,22 @@ interface PoseInstruction {
   composition: string
 }
 
+// Pose instruction interface - Lifestyle mode (Instagram style)
+interface LifestylePoseInstruction {
+  slide_number: number
+  shot_type: string
+  pose_instruction: string
+  facial_expression: string
+  camera_position: string
+  composition: string
+}
+
 // Prompts
 const PROMPTS = {
-  // 随意拍 - 生成5个pose指令（JSON格式）
-  randomPoseGen: `
+  // ========== 棚拍模式 (Studio) ==========
+  
+  // 棚拍-随意拍 - 生成5个pose指令（JSON格式）
+  studioRandomPoseGen: `
 # Role
 
 You are an expert e-commerce fashion photographer specializing in studio photography. Your goal is to direct models to showcase products (clothing, accessories, etc.) in the most appealing and commercial way, suitable for a brand's official website or online store.
@@ -64,8 +76,8 @@ Use this exact JSON schema:
 ]
 `,
 
-  // 随意拍 - 根据pose生成图片
-  randomPoseExec: (poseInstruct: PoseInstruction) => `
+  // 棚拍-随意拍 - 根据pose生成图片
+  studioRandomPoseExec: (poseInstruct: StudioPoseInstruction) => `
 请为这个模特拍摄一张专业影棚商品棚拍图。保持商品的质感、颜色、纹理细节、版型严格一致。
 
 拍摄指令：
@@ -73,6 +85,67 @@ Use this exact JSON schema:
 - 姿势: ${poseInstruct.pose_instruction}
 - 相机位置: ${poseInstruct.camera_position}
 - 构图: ${poseInstruct.composition}
+`,
+
+  // ========== 生活模式 (Lifestyle / Instagram) ==========
+  
+  // 生活-随意拍 - 生成5个pose指令（JSON格式）
+  lifestyleRandomPoseGen: `
+# Role
+
+You are a top-tier Social Media Photographer and Art Director specializing in the "Instagram Aesthetic" (Ins style). You excel at capturing candid, mood-driven, and engaging lifestyle portraits.
+
+# Input Analysis
+
+Analyze the provided image. Identify:
+
+1. The model's styling, mood, and current action.
+2. The environment's atmosphere (lighting, background).
+3. The potential "story" or "vibe" suitable for this setting.
+
+# Task
+
+Design a cohesive **5-photo Instagram Carousel (Slide)** sequence based on the original image's context.
+
+The sequence should offer visual variety (mixing wide shots, close-ups, and different angles) to keep the viewer engaged, while maintaining the same lighting and location.
+
+# Constraints
+
+- **Vibe:** Focus on "natural," "effortless," and "candid" aesthetics. Avoid stiff, studio-like commercial posing.
+- **Variety:** Do not repeat the same composition 5 times. Mix detail shots, body shots, and dynamic movement.
+- **Consistency:** Keep the lighting and environment fixed.
+- **Quantity:** Strictly output 5 variations.
+
+# Output Format
+
+Output **ONLY** a standard JSON array containing 5 objects. Do not use markdown code blocks.
+
+Use this exact JSON schema:
+
+[
+  {
+    "slide_number": 1,
+    "shot_type": "The type of shot (e.g., 'Cover Shot - Eye Contact', 'Candid Laugh', 'Detail/Texture', 'Motion/Walking')",
+    "pose_instruction": "Specific instruction for the model. Focus on natural movement and interaction with the environment.",
+    "facial_expression": "Description of the model's expression (e.g., 'Looking away softly', 'Big genuine smile', 'Neutral chic')",
+    "camera_position": "Angle and framing (e.g., 'Low angle, wide lens', 'Close-up on face, shallow depth of field')",
+    "composition": "Framing details (e.g., 'Rule of thirds, negative space on the left')"
+  }
+]
+`,
+
+  // 生活-随意拍 - 根据pose生成图片
+  lifestyleRandomPoseExec: (poseInstruct: LifestylePoseInstruction) => `
+Take an authentic photo of the character, use instagram friendly composition. The character should have identical face, features, skin tone, hairstyle, body proportions, clothing and vibe.
+
+拍摄指令：
+- Shot Type: ${poseInstruct.shot_type}
+- Pose: ${poseInstruct.pose_instruction}
+- Expression: ${poseInstruct.facial_expression}
+- Camera Position: ${poseInstruct.camera_position}
+- Composition: ${poseInstruct.composition}
+
+Negatives: beauty-filter/airbrushed skin; poreless look, exaggerated or distorted anatomy, fake portrait-mode blur, CGI/illustration look
 `,
 
   // 多角度 - 正面
@@ -108,9 +181,9 @@ Use this exact JSON schema:
 `,
 }
 
-// Parse pose instructions from VLM response (JSON format)
-function parsePoseInstructions(text: string): PoseInstruction[] {
-  const defaultPoses: PoseInstruction[] = [
+// Parse studio pose instructions from VLM response (JSON format)
+function parseStudioPoseInstructions(text: string): StudioPoseInstruction[] {
+  const defaultPoses: StudioPoseInstruction[] = [
     { id: 1, product_focus: 'Front view of the product', pose_instruction: 'Face the camera directly with a natural stance', camera_position: 'Eye-level, frontal view', composition: 'Full body shot, center composed' },
     { id: 2, product_focus: 'Side profile of the product', pose_instruction: 'Turn 45 degrees to the right, hands relaxed', camera_position: 'Eye-level, 3/4 view', composition: 'Medium shot, rule of thirds' },
     { id: 3, product_focus: 'Back detail of the product', pose_instruction: 'Turn to show back, look over shoulder', camera_position: 'Eye-level, back view', composition: 'Full body shot, center composed' },
@@ -119,28 +192,20 @@ function parsePoseInstructions(text: string): PoseInstruction[] {
   ]
 
   try {
-    // Clean up the text - remove markdown code blocks if present
     let jsonText = text.trim()
-    
-    // Remove markdown code block wrapper if present
     if (jsonText.startsWith('```')) {
       jsonText = jsonText.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '')
     }
-    
-    // Try to find JSON array in the text
     const jsonMatch = jsonText.match(/\[[\s\S]*\]/)
     if (jsonMatch) {
       jsonText = jsonMatch[0]
     }
     
-    const parsed = JSON.parse(jsonText) as PoseInstruction[]
+    const parsed = JSON.parse(jsonText) as StudioPoseInstruction[]
     
-    // Validate the parsed result
     if (Array.isArray(parsed) && parsed.length > 0) {
-      // Ensure each item has required fields
       const validPoses = parsed.filter(p => 
-        p && typeof p === 'object' && 
-        (p.pose_instruction || p.product_focus)
+        p && typeof p === 'object' && (p.pose_instruction || p.product_focus)
       ).map((p, idx) => ({
         id: p.id || idx + 1,
         product_focus: p.product_focus || 'Product highlight',
@@ -150,23 +215,74 @@ function parsePoseInstructions(text: string): PoseInstruction[] {
       }))
       
       if (validPoses.length >= 5) {
-        console.log('[GroupShoot] Successfully parsed JSON poses:', validPoses.length)
+        console.log('[GroupShoot-Studio] Successfully parsed JSON poses:', validPoses.length)
         return validPoses.slice(0, 5)
       }
       
-      // Fill with defaults if we have some but not enough
       while (validPoses.length < 5) {
         validPoses.push(defaultPoses[validPoses.length])
       }
       return validPoses
     }
   } catch (error: any) {
-    console.error('[GroupShoot] JSON parse error:', error.message)
-    console.log('[GroupShoot] Raw text:', text.substring(0, 500))
+    console.error('[GroupShoot-Studio] JSON parse error:', error.message)
+    console.log('[GroupShoot-Studio] Raw text:', text.substring(0, 500))
   }
   
-  // Return default poses if parsing failed
-  console.log('[GroupShoot] Using default poses')
+  console.log('[GroupShoot-Studio] Using default poses')
+  return defaultPoses
+}
+
+// Parse lifestyle pose instructions from VLM response (JSON format)
+function parseLifestylePoseInstructions(text: string): LifestylePoseInstruction[] {
+  const defaultPoses: LifestylePoseInstruction[] = [
+    { slide_number: 1, shot_type: 'Cover Shot - Eye Contact', pose_instruction: 'Look directly at camera with a soft smile', facial_expression: 'Confident yet approachable', camera_position: 'Eye-level, medium shot', composition: 'Center composed, negative space on sides' },
+    { slide_number: 2, shot_type: 'Candid Laugh', pose_instruction: 'Natural laugh, looking slightly away', facial_expression: 'Big genuine smile', camera_position: 'Slightly low angle', composition: 'Rule of thirds' },
+    { slide_number: 3, shot_type: 'Walking Motion', pose_instruction: 'Mid-stride walking pose', facial_expression: 'Neutral chic', camera_position: 'Side angle, wide shot', composition: 'Leading lines, full body' },
+    { slide_number: 4, shot_type: 'Detail/Texture', pose_instruction: 'Close-up focusing on outfit details', facial_expression: 'Looking away softly', camera_position: 'Close-up, shallow depth', composition: 'Tight crop on detail' },
+    { slide_number: 5, shot_type: 'Lifestyle Context', pose_instruction: 'Interact with environment naturally', facial_expression: 'Relaxed, genuine', camera_position: 'Medium wide shot', composition: 'Environmental context visible' },
+  ]
+
+  try {
+    let jsonText = text.trim()
+    if (jsonText.startsWith('```')) {
+      jsonText = jsonText.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '')
+    }
+    const jsonMatch = jsonText.match(/\[[\s\S]*\]/)
+    if (jsonMatch) {
+      jsonText = jsonMatch[0]
+    }
+    
+    const parsed = JSON.parse(jsonText) as LifestylePoseInstruction[]
+    
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      const validPoses = parsed.filter(p => 
+        p && typeof p === 'object' && (p.pose_instruction || p.shot_type)
+      ).map((p, idx) => ({
+        slide_number: p.slide_number || idx + 1,
+        shot_type: p.shot_type || 'Lifestyle shot',
+        pose_instruction: p.pose_instruction || 'Natural pose',
+        facial_expression: p.facial_expression || 'Natural expression',
+        camera_position: p.camera_position || 'Eye-level',
+        composition: p.composition || 'Center composed',
+      }))
+      
+      if (validPoses.length >= 5) {
+        console.log('[GroupShoot-Lifestyle] Successfully parsed JSON poses:', validPoses.length)
+        return validPoses.slice(0, 5)
+      }
+      
+      while (validPoses.length < 5) {
+        validPoses.push(defaultPoses[validPoses.length])
+      }
+      return validPoses
+    }
+  } catch (error: any) {
+    console.error('[GroupShoot-Lifestyle] JSON parse error:', error.message)
+    console.log('[GroupShoot-Lifestyle] Raw text:', text.substring(0, 500))
+  }
+  
+  console.log('[GroupShoot-Lifestyle] Using default poses')
   return defaultPoses
 }
 
@@ -236,7 +352,7 @@ export async function POST(request: NextRequest) {
 
       try {
         const body = await request.json()
-        const { startImage, mode, taskId } = body
+        const { startImage, mode, styleMode = 'studio', taskId } = body
 
         const supabase = await createClient()
         const { data: { user } } = await supabase.auth.getUser()
@@ -249,6 +365,9 @@ export async function POST(request: NextRequest) {
 
         const userId = user.id
         const genai = getGenAIClient()
+        const isLifestyle = styleMode === 'lifestyle'
+
+        console.log(`[GroupShoot] Starting ${isLifestyle ? 'lifestyle' : 'studio'} mode, shoot mode: ${mode}`)
 
         // Prepare image data
         const imageData = startImage?.startsWith('data:') 
@@ -257,92 +376,172 @@ export async function POST(request: NextRequest) {
 
         if (mode === 'random') {
           // ========== 随意拍模式 ==========
-          console.log('[GroupShoot] Starting random mode...')
+          console.log(`[GroupShoot] Starting random mode (${isLifestyle ? 'lifestyle' : 'studio'})...`)
           
           // Step 1: Generate pose instructions using VLM (JSON format)
-          send({ type: 'status', message: '正在分析图片生成pose指令...' })
+          send({ type: 'status', message: isLifestyle ? '正在设计ins风格pose...' : '正在分析图片生成pose指令...' })
           
-          let poseInstructions: PoseInstruction[] = []
-          try {
-            console.log('[GroupShoot] Generating pose instructions with JSON format...')
-            const instructResponse = await genai.models.generateContent({
-              model: VLM_MODEL,
-              contents: [{ role: 'user', parts: [
-                { text: PROMPTS.randomPoseGen },
+          if (isLifestyle) {
+            // ===== 生活模式 =====
+            let lifestylePoses: LifestylePoseInstruction[] = []
+            try {
+              console.log('[GroupShoot-Lifestyle] Generating lifestyle poses...')
+              const instructResponse = await genai.models.generateContent({
+                model: VLM_MODEL,
+                contents: [{ role: 'user', parts: [
+                  { text: PROMPTS.lifestyleRandomPoseGen },
+                  { inlineData: { mimeType: 'image/jpeg', data: imageData } },
+                ] }],
+                config: { safetySettings },
+              })
+              
+              const instructText = extractText(instructResponse) || ''
+              console.log('[GroupShoot-Lifestyle] VLM response (first 800 chars):', instructText.substring(0, 800))
+              
+              lifestylePoses = parseLifestylePoseInstructions(instructText)
+              console.log('[GroupShoot-Lifestyle] Parsed poses:', lifestylePoses.length)
+            } catch (error: any) {
+              console.error('[GroupShoot-Lifestyle] Failed to generate poses:', error.message)
+              lifestylePoses = parseLifestylePoseInstructions('')
+            }
+
+            // Generate 5 images
+            for (let i = 0; i < 5; i++) {
+              send({ type: 'progress', index: i })
+              
+              const poseInstruct = lifestylePoses[i]
+              const posePrompt = PROMPTS.lifestyleRandomPoseExec(poseInstruct)
+              
+              console.log(`[GroupShoot-Lifestyle-${i}] Shot: ${poseInstruct.shot_type}`)
+              
+              const contents = [
+                { text: posePrompt },
                 { inlineData: { mimeType: 'image/jpeg', data: imageData } },
-              ] }],
-              config: { safetySettings },
-            })
-            
-            const instructText = extractText(instructResponse) || ''
-            console.log('[GroupShoot] VLM response (first 800 chars):', instructText.substring(0, 800))
-            
-            poseInstructions = parsePoseInstructions(instructText)
-            console.log('[GroupShoot] Parsed poses:', poseInstructions.length, 'First:', JSON.stringify(poseInstructions[0]))
-          } catch (error: any) {
-            console.error('[GroupShoot] Failed to generate poses:', error.message)
-            // Use default poses (already returned by parsePoseInstructions on error)
-            poseInstructions = parsePoseInstructions('')
-          }
+              ]
 
-          // Step 2: Generate 5 images based on pose instructions
-          for (let i = 0; i < 5; i++) {
-            send({ type: 'progress', index: i })
-            
-            const poseInstruct = poseInstructions[i]
-            const posePrompt = PROMPTS.randomPoseExec(poseInstruct)
-            
-            console.log(`[GroupShoot-Random-${i}] Pose: ${poseInstruct.pose_instruction.substring(0, 100)}...`)
-            
-            const contents = [
-              { text: posePrompt },
-              { inlineData: { mimeType: 'image/jpeg', data: imageData } },
-            ]
-
-            const result = await generateImageWithFallback(genai, contents, `[GroupShoot-Random-${i}]`)
-            
-            if (result) {
-              const base64Image = `data:image/png;base64,${result.image}`
+              const result = await generateImageWithFallback(genai, contents, `[GroupShoot-Lifestyle-${i}]`)
               
-              // Upload to storage
-              let uploadedUrl = base64Image
-              if (taskId) {
-                const uploaded = await uploadImageToStorage(base64Image, userId, `group_${taskId}_${i}`)
-                if (uploaded) {
-                  uploadedUrl = uploaded
-                  
-                  // Store the structured pose instruction as prompt
-                  const promptForDb = `产品重点: ${poseInstruct.product_focus}\n姿势: ${poseInstruct.pose_instruction}\n相机位置: ${poseInstruct.camera_position}\n构图: ${poseInstruct.composition}`
-                  
-                  await appendImageToGeneration({
-                    taskId,
-                    userId,
-                    imageIndex: i,
-                    imageUrl: uploaded,
-                    modelType: result.model,
-                    genMode: 'simple',
-                    prompt: promptForDb,
-                    taskType: 'group_shoot',
-                  })
+              if (result) {
+                const base64Image = `data:image/png;base64,${result.image}`
+                
+                let uploadedUrl = base64Image
+                if (taskId) {
+                  const uploaded = await uploadImageToStorage(base64Image, userId, `group_${taskId}_${i}`)
+                  if (uploaded) {
+                    uploadedUrl = uploaded
+                    
+                    const promptForDb = `Shot Type: ${poseInstruct.shot_type}\nPose: ${poseInstruct.pose_instruction}\nExpression: ${poseInstruct.facial_expression}\nCamera: ${poseInstruct.camera_position}\nComposition: ${poseInstruct.composition}`
+                    
+                    await appendImageToGeneration({
+                      taskId,
+                      userId,
+                      imageIndex: i,
+                      imageUrl: uploaded,
+                      modelType: result.model,
+                      genMode: 'simple',
+                      prompt: promptForDb,
+                      taskType: 'group_shoot',
+                    })
+                  }
                 }
+                
+                send({ type: 'image', index: i, image: uploadedUrl, modelType: result.model })
+              } else {
+                send({ type: 'error', index: i, error: '生成失败' })
               }
+            }
+          } else {
+            // ===== 棚拍模式 =====
+            let studioPoses: StudioPoseInstruction[] = []
+            try {
+              console.log('[GroupShoot-Studio] Generating studio poses...')
+              const instructResponse = await genai.models.generateContent({
+                model: VLM_MODEL,
+                contents: [{ role: 'user', parts: [
+                  { text: PROMPTS.studioRandomPoseGen },
+                  { inlineData: { mimeType: 'image/jpeg', data: imageData } },
+                ] }],
+                config: { safetySettings },
+              })
               
-              send({ type: 'image', index: i, image: uploadedUrl, modelType: result.model })
-            } else {
-              send({ type: 'error', index: i, error: '生成失败' })
+              const instructText = extractText(instructResponse) || ''
+              console.log('[GroupShoot-Studio] VLM response (first 800 chars):', instructText.substring(0, 800))
+              
+              studioPoses = parseStudioPoseInstructions(instructText)
+              console.log('[GroupShoot-Studio] Parsed poses:', studioPoses.length)
+            } catch (error: any) {
+              console.error('[GroupShoot-Studio] Failed to generate poses:', error.message)
+              studioPoses = parseStudioPoseInstructions('')
+            }
+
+            // Generate 5 images
+            for (let i = 0; i < 5; i++) {
+              send({ type: 'progress', index: i })
+              
+              const poseInstruct = studioPoses[i]
+              const posePrompt = PROMPTS.studioRandomPoseExec(poseInstruct)
+              
+              console.log(`[GroupShoot-Studio-${i}] Focus: ${poseInstruct.product_focus}`)
+              
+              const contents = [
+                { text: posePrompt },
+                { inlineData: { mimeType: 'image/jpeg', data: imageData } },
+              ]
+
+              const result = await generateImageWithFallback(genai, contents, `[GroupShoot-Studio-${i}]`)
+              
+              if (result) {
+                const base64Image = `data:image/png;base64,${result.image}`
+                
+                let uploadedUrl = base64Image
+                if (taskId) {
+                  const uploaded = await uploadImageToStorage(base64Image, userId, `group_${taskId}_${i}`)
+                  if (uploaded) {
+                    uploadedUrl = uploaded
+                    
+                    const promptForDb = `产品重点: ${poseInstruct.product_focus}\n姿势: ${poseInstruct.pose_instruction}\n相机位置: ${poseInstruct.camera_position}\n构图: ${poseInstruct.composition}`
+                    
+                    await appendImageToGeneration({
+                      taskId,
+                      userId,
+                      imageIndex: i,
+                      imageUrl: uploaded,
+                      modelType: result.model,
+                      genMode: 'simple',
+                      prompt: promptForDb,
+                      taskType: 'group_shoot',
+                    })
+                  }
+                }
+                
+                send({ type: 'image', index: i, image: uploadedUrl, modelType: result.model })
+              } else {
+                send({ type: 'error', index: i, error: '生成失败' })
+              }
             }
           }
 
         } else if (mode === 'multiangle') {
           // ========== 多角度模式 ==========
-          console.log('[GroupShoot] Starting multiangle mode...')
+          console.log(`[GroupShoot] Starting multiangle mode (${isLifestyle ? 'lifestyle' : 'studio'})...`)
           
-          const anglePrompts = [
+          // 生活模式多角度 prompts
+          const lifestyleAnglePrompts = [
+            { prompt: `Take an authentic instagram-style photo of the character from the front. Natural, candid vibe. Character should have identical face, features, skin tone, hairstyle, body proportions, clothing. Keep same lighting and environment.\n\nNegatives: beauty-filter, CGI look, fake blur`, label: '正面' },
+            { prompt: `Take an authentic instagram-style photo of the character from the left side (3/4 view). Natural, candid vibe. Character should have identical face, features, skin tone, hairstyle, body proportions, clothing. Keep same lighting and environment.\n\nNegatives: beauty-filter, CGI look, fake blur`, label: '左侧' },
+            { prompt: `Take an authentic instagram-style photo of the character from the right side (3/4 view). Natural, candid vibe. Character should have identical face, features, skin tone, hairstyle, body proportions, clothing. Keep same lighting and environment.\n\nNegatives: beauty-filter, CGI look, fake blur`, label: '右侧' },
+            { prompt: `Take an authentic instagram-style photo of the character from behind (back view). Natural, candid vibe. Character should have identical hairstyle, body proportions, clothing. Keep same lighting and environment.\n\nNegatives: beauty-filter, CGI look, fake blur`, label: '背面' },
+          ]
+          
+          // 棚拍模式多角度 prompts
+          const studioAnglePrompts = [
             { prompt: PROMPTS.multiFront, label: '正面' },
             { prompt: PROMPTS.multiLeft, label: '左侧' },
             { prompt: PROMPTS.multiRight, label: '右侧' },
             { prompt: PROMPTS.multiBack, label: '背面' },
           ]
+          
+          const anglePrompts = isLifestyle ? lifestyleAnglePrompts : studioAnglePrompts
 
           for (let i = 0; i < anglePrompts.length; i++) {
             send({ type: 'progress', index: i })
@@ -358,7 +557,6 @@ export async function POST(request: NextRequest) {
             if (result) {
               const base64Image = `data:image/png;base64,${result.image}`
               
-              // Upload to storage
               let uploadedUrl = base64Image
               if (taskId) {
                 const uploaded = await uploadImageToStorage(base64Image, userId, `group_${taskId}_${i}`)
