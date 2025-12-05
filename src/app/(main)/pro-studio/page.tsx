@@ -480,6 +480,36 @@ export default function ProStudioPage() {
     return 'bg-purple-500'
   }
 
+  // Download handler with iOS share support
+  const handleDownload = async (url: string) => {
+    try {
+      const response = await fetch(url)
+      const blob = await response.blob()
+      
+      // Check if iOS and navigator.share is available
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+      if (isIOS && navigator.share && navigator.canShare) {
+        const file = new File([blob], `pro-studio-${Date.now()}.jpg`, { type: 'image/jpeg' })
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file] })
+          return
+        }
+      }
+      
+      // Fallback to download link
+      const blobUrl = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = blobUrl
+      link.download = `pro-studio-${Date.now()}.jpg`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(blobUrl)
+    } catch (error) {
+      console.error("Download failed:", error)
+    }
+  }
+
   return (
     <div className="h-full relative flex flex-col bg-black">
       <input 
@@ -1216,7 +1246,10 @@ export default function ProStudioPage() {
                             <Heart className="w-5 h-5" />
                             收藏
                           </button>
-                          <button className="flex-1 h-12 rounded-lg bg-zinc-900 text-white font-medium flex items-center justify-center gap-2 hover:bg-zinc-800 transition-colors">
+                          <button 
+                            onClick={() => selectedImageUrl && handleDownload(selectedImageUrl)}
+                            className="flex-1 h-12 rounded-lg bg-zinc-900 text-white font-medium flex items-center justify-center gap-2 hover:bg-zinc-800 transition-colors"
+                          >
                             <Download className="w-5 h-5" />
                             下载
                           </button>
