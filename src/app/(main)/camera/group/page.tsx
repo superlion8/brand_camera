@@ -60,7 +60,7 @@ export default function GroupShootPage() {
     e.target.value = ''
   }
 
-  // 从图库选择 - 根据类型自动设置模式
+  // 从成片选择 - 根据类型自动设置模式
   const handleSelectFromGallery = async (imageUrl: string, genType?: string) => {
     setIsLoadingAssets(true)
     setShowGalleryPicker(false)
@@ -264,13 +264,13 @@ export default function GroupShootPage() {
                       <span className="text-sm text-zinc-500">点击上传图片</span>
                     </button>
                     
-                    {/* 从图库选择 */}
+                    {/* 从成片选择 */}
                     <button
                       onClick={() => setShowGalleryPicker(true)}
                       className="w-full h-12 border border-zinc-200 rounded-xl flex items-center justify-center gap-2 bg-white hover:bg-zinc-50 transition-colors"
                     >
                       <Camera className="w-4 h-4 text-zinc-500" />
-                      <span className="text-sm text-zinc-600">从模特图库选择</span>
+                      <span className="text-sm text-zinc-600">从成片选择（模特分类）</span>
                     </button>
                   </div>
                 ) : (
@@ -581,7 +581,7 @@ export default function GroupShootPage() {
         )}
       </AnimatePresence>
 
-      {/* Gallery Picker Modal */}
+      {/* Gallery Picker Modal - 只显示模特分类的成片 */}
       <AnimatePresence>
         {showGalleryPicker && (
           <motion.div
@@ -600,7 +600,10 @@ export default function GroupShootPage() {
               onClick={e => e.stopPropagation()}
             >
               <div className="p-4 border-b flex items-center justify-between">
-                <h3 className="font-semibold">选择模特图片</h3>
+                <div>
+                  <h3 className="font-semibold">从成片选择</h3>
+                  <p className="text-xs text-zinc-400 mt-0.5">仅显示模特分类的成片</p>
+                </div>
                 <button onClick={() => setShowGalleryPicker(false)}>
                   <X className="w-5 h-5 text-zinc-400" />
                 </button>
@@ -612,8 +615,9 @@ export default function GroupShootPage() {
                     <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
                   </div>
                 ) : modelGenerations.length === 0 ? (
-                  <div className="h-40 flex items-center justify-center text-zinc-400 text-sm">
-                    暂无模特图片
+                  <div className="h-40 flex flex-col items-center justify-center text-zinc-400 text-sm gap-2">
+                    <p>暂无模特成片</p>
+                    <p className="text-xs">先去拍摄一些模特照片吧</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-3 gap-2">
@@ -630,9 +634,11 @@ export default function GroupShootPage() {
                             <span className={`px-1 py-0.5 rounded text-[8px] font-medium text-white ${
                               gen.type === 'pro_studio' 
                                 ? 'bg-amber-500' 
-                                : 'bg-blue-500'
+                                : gen.type === 'group_shoot'
+                                  ? 'bg-cyan-500'
+                                  : 'bg-blue-500'
                             }`}>
-                              {gen.type === 'pro_studio' ? '棚拍' : '买家秀'}
+                              {gen.type === 'pro_studio' ? '专业棚拍' : gen.type === 'group_shoot' ? '组图' : '买家秀'}
                             </span>
                           </div>
                         </button>
