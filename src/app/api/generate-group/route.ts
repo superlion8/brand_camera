@@ -423,37 +423,41 @@ export async function POST(request: NextRequest) {
               if (result) {
                 const base64Image = `data:image/png;base64,${result.image}`
                 
-                let uploadedUrl = base64Image
-                if (taskId) {
-                  const uploaded = await uploadImageToStorage(base64Image, userId, `group_${taskId}_${i}`)
-                  if (uploaded) {
-                    uploadedUrl = uploaded
-                    
-                    // 只在第一张图时上传输入图片
-                    let inputImageUrlToSave: string | undefined
-                    if (i === 0 && startImage) {
-                      const inputUploaded = await uploadImageToStorage(startImage, userId, `group_${taskId}_input`)
-                      if (inputUploaded) inputImageUrlToSave = inputUploaded
-                    }
-                    
-                    const promptForDb = `Shot Type: ${poseInstruct.shot_type}\nPose: ${poseInstruct.pose_instruction}\nExpression: ${poseInstruct.facial_expression}\nCamera: ${poseInstruct.camera_position}\nComposition: ${poseInstruct.composition}`
-                    
-                    await appendImageToGeneration({
-                      taskId,
-                      userId,
-                      imageIndex: i,
-                      imageUrl: uploaded,
-                      modelType: result.model,
-                      genMode: 'simple',
-                      prompt: promptForDb,
-                      taskType: 'group_shoot',
-                      inputImageUrl: inputImageUrlToSave,
-                      inputParams: i === 0 ? { styleMode: 'lifestyle', mode: 'random' } : undefined,
-                    })
-                  }
+                // 必须上传成功才返回
+                if (!taskId) {
+                  send({ type: 'error', index: i, error: '缺少任务ID' })
+                  continue
                 }
                 
-                send({ type: 'image', index: i, image: uploadedUrl, modelType: result.model })
+                const uploaded = await uploadImageToStorage(base64Image, userId, `group_${taskId}_${i}`)
+                if (!uploaded) {
+                  send({ type: 'error', index: i, error: '图片上传失败' })
+                  continue
+                }
+                
+                // 只在第一张图时上传输入图片
+                let inputImageUrlToSave: string | undefined
+                if (i === 0 && startImage) {
+                  const inputUploaded = await uploadImageToStorage(startImage, userId, `group_${taskId}_input`)
+                  if (inputUploaded) inputImageUrlToSave = inputUploaded
+                }
+                
+                const promptForDb = `Shot Type: ${poseInstruct.shot_type}\nPose: ${poseInstruct.pose_instruction}\nExpression: ${poseInstruct.facial_expression}\nCamera: ${poseInstruct.camera_position}\nComposition: ${poseInstruct.composition}`
+                
+                await appendImageToGeneration({
+                  taskId,
+                  userId,
+                  imageIndex: i,
+                  imageUrl: uploaded,
+                  modelType: result.model,
+                  genMode: 'simple',
+                  prompt: promptForDb,
+                  taskType: 'group_shoot',
+                  inputImageUrl: inputImageUrlToSave,
+                  inputParams: i === 0 ? { styleMode: 'lifestyle', mode: 'random' } : undefined,
+                })
+                
+                send({ type: 'image', index: i, image: uploaded, modelType: result.model })
               } else {
                 send({ type: 'error', index: i, error: '生成失败' })
               }
@@ -501,37 +505,41 @@ export async function POST(request: NextRequest) {
               if (result) {
                 const base64Image = `data:image/png;base64,${result.image}`
                 
-                let uploadedUrl = base64Image
-                if (taskId) {
-                  const uploaded = await uploadImageToStorage(base64Image, userId, `group_${taskId}_${i}`)
-                  if (uploaded) {
-                    uploadedUrl = uploaded
-                    
-                    // 只在第一张图时上传输入图片
-                    let inputImageUrlToSave: string | undefined
-                    if (i === 0 && startImage) {
-                      const inputUploaded = await uploadImageToStorage(startImage, userId, `group_${taskId}_input`)
-                      if (inputUploaded) inputImageUrlToSave = inputUploaded
-                    }
-                    
-                    const promptForDb = `产品重点: ${poseInstruct.product_focus}\n姿势: ${poseInstruct.pose_instruction}\n相机位置: ${poseInstruct.camera_position}\n构图: ${poseInstruct.composition}`
-                    
-                    await appendImageToGeneration({
-                      taskId,
-                      userId,
-                      imageIndex: i,
-                      imageUrl: uploaded,
-                      modelType: result.model,
-                      genMode: 'simple',
-                      prompt: promptForDb,
-                      taskType: 'group_shoot',
-                      inputImageUrl: inputImageUrlToSave,
-                      inputParams: i === 0 ? { styleMode: 'studio', mode: 'random' } : undefined,
-                    })
-                  }
+                // 必须上传成功才返回
+                if (!taskId) {
+                  send({ type: 'error', index: i, error: '缺少任务ID' })
+                  continue
                 }
                 
-                send({ type: 'image', index: i, image: uploadedUrl, modelType: result.model })
+                const uploaded = await uploadImageToStorage(base64Image, userId, `group_${taskId}_${i}`)
+                if (!uploaded) {
+                  send({ type: 'error', index: i, error: '图片上传失败' })
+                  continue
+                }
+                
+                // 只在第一张图时上传输入图片
+                let inputImageUrlToSave: string | undefined
+                if (i === 0 && startImage) {
+                  const inputUploaded = await uploadImageToStorage(startImage, userId, `group_${taskId}_input`)
+                  if (inputUploaded) inputImageUrlToSave = inputUploaded
+                }
+                
+                const promptForDb = `产品重点: ${poseInstruct.product_focus}\n姿势: ${poseInstruct.pose_instruction}\n相机位置: ${poseInstruct.camera_position}\n构图: ${poseInstruct.composition}`
+                
+                await appendImageToGeneration({
+                  taskId,
+                  userId,
+                  imageIndex: i,
+                  imageUrl: uploaded,
+                  modelType: result.model,
+                  genMode: 'simple',
+                  prompt: promptForDb,
+                  taskType: 'group_shoot',
+                  inputImageUrl: inputImageUrlToSave,
+                  inputParams: i === 0 ? { styleMode: 'studio', mode: 'random' } : undefined,
+                })
+                
+                send({ type: 'image', index: i, image: uploaded, modelType: result.model })
               } else {
                 send({ type: 'error', index: i, error: '生成失败' })
               }
@@ -574,35 +582,39 @@ export async function POST(request: NextRequest) {
             if (result) {
               const base64Image = `data:image/png;base64,${result.image}`
               
-              let uploadedUrl = base64Image
-              if (taskId) {
-                const uploaded = await uploadImageToStorage(base64Image, userId, `group_${taskId}_${i}`)
-                if (uploaded) {
-                  uploadedUrl = uploaded
-                  
-                  // 只在第一张图时上传输入图片
-                  let inputImageUrlToSave: string | undefined
-                  if (i === 0 && startImage) {
-                    const inputUploaded = await uploadImageToStorage(startImage, userId, `group_${taskId}_input`)
-                    if (inputUploaded) inputImageUrlToSave = inputUploaded
-                  }
-                  
-                  await appendImageToGeneration({
-                    taskId,
-                    userId,
-                    imageIndex: i,
-                    imageUrl: uploaded,
-                    modelType: result.model,
-                    genMode: 'simple',
-                    prompt: prompt,
-                    taskType: 'group_shoot',
-                    inputImageUrl: inputImageUrlToSave,
-                    inputParams: i === 0 ? { styleMode, mode: 'multiangle' } : undefined,
-                  })
-                }
+              // 必须上传成功才返回
+              if (!taskId) {
+                send({ type: 'error', index: i, error: '缺少任务ID' })
+                continue
               }
               
-              send({ type: 'image', index: i, image: uploadedUrl, modelType: result.model })
+              const uploaded = await uploadImageToStorage(base64Image, userId, `group_${taskId}_${i}`)
+              if (!uploaded) {
+                send({ type: 'error', index: i, error: '图片上传失败' })
+                continue
+              }
+              
+              // 只在第一张图时上传输入图片
+              let inputImageUrlToSave: string | undefined
+              if (i === 0 && startImage) {
+                const inputUploaded = await uploadImageToStorage(startImage, userId, `group_${taskId}_input`)
+                if (inputUploaded) inputImageUrlToSave = inputUploaded
+              }
+              
+              await appendImageToGeneration({
+                taskId,
+                userId,
+                imageIndex: i,
+                imageUrl: uploaded,
+                modelType: result.model,
+                genMode: 'simple',
+                prompt: prompt,
+                taskType: 'group_shoot',
+                inputImageUrl: inputImageUrlToSave,
+                inputParams: i === 0 ? { styleMode, mode: 'multiangle' } : undefined,
+              })
+              
+              send({ type: 'image', index: i, image: uploaded, modelType: result.model })
             } else {
               send({ type: 'error', index: i, error: '生成失败' })
             }

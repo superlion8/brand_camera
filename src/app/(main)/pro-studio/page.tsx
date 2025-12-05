@@ -1299,23 +1299,10 @@ export default function ProStudioPage() {
                           <button 
                             type="button"
                             onClick={() => {
-                              console.log('[ProStudio] Go to edit clicked, imageUrl:', selectedImageUrl?.substring(0, 100))
                               if (selectedImageUrl) {
-                                try {
-                                  // 检查是否是 base64（太长可能导致 sessionStorage 失败）
-                                  if (selectedImageUrl.startsWith('data:') && selectedImageUrl.length > 1000000) {
-                                    console.warn('[ProStudio] Image is base64 and too large, may fail')
-                                  }
-                                  sessionStorage.setItem('editImage', selectedImageUrl)
-                                  console.log('[ProStudio] Saved to sessionStorage, navigating...')
-                                  setSelectedResultIndex(null)
-                                  router.push("/edit/general")
-                                } catch (err) {
-                                  console.error('[ProStudio] Failed to save to sessionStorage:', err)
-                                  alert('图片数据过大，请先下载图片后从相册上传')
-                                }
-                              } else {
-                                console.error('[ProStudio] No selectedImageUrl')
+                                sessionStorage.setItem('editImage', selectedImageUrl)
+                                setSelectedResultIndex(null)
+                                router.push("/edit/general")
                               }
                             }}
                             className="flex-1 h-12 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2 transition-colors"
@@ -1326,22 +1313,10 @@ export default function ProStudioPage() {
                           <button 
                             type="button"
                             onClick={() => {
-                              console.log('[ProStudio] Go to group shoot clicked, imageUrl:', selectedImageUrl?.substring(0, 100))
                               if (selectedImageUrl) {
-                                try {
-                                  if (selectedImageUrl.startsWith('data:') && selectedImageUrl.length > 1000000) {
-                                    console.warn('[ProStudio] Image is base64 and too large, may fail')
-                                  }
-                                  sessionStorage.setItem('groupShootImage', selectedImageUrl)
-                                  console.log('[ProStudio] Saved to sessionStorage, navigating...')
-                                  setSelectedResultIndex(null)
-                                  router.push("/camera/group")
-                                } catch (err) {
-                                  console.error('[ProStudio] Failed to save to sessionStorage:', err)
-                                  alert('图片数据过大，请先下载图片后从相册上传')
-                                }
-                              } else {
-                                console.error('[ProStudio] No selectedImageUrl')
+                                sessionStorage.setItem('groupShootImage', selectedImageUrl)
+                                setSelectedResultIndex(null)
+                                router.push("/camera/group")
                               }
                             }}
                             className="flex-1 h-12 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-medium flex items-center justify-center gap-2 transition-colors"

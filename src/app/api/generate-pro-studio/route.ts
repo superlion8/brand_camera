@@ -268,61 +268,75 @@ export async function POST(request: NextRequest) {
 
     console.log(`${label} Generated in ${duration}ms using ${result.model}`)
 
-    // 上传到 Storage 并保存到数据库
-    const base64Image = `data:image/png;base64,${result.image}`
-    let uploadedUrl = base64Image
+    // 必须有 taskId 才能上传
+    if (!taskId) {
+      console.error(`${label} No taskId provided, cannot upload`)
+      return NextResponse.json({
+        success: false,
+        error: '缺少任务ID',
+        index,
+      }, { status: 400 })
+    }
 
-    if (taskId) {
-      const uploaded = await uploadImageToStorage(base64Image, userId, `prostudio_${taskId}_${index}`)
-      if (uploaded) {
-        uploadedUrl = uploaded
-        
-        // 只在第一张图时上传输入图片（避免重复上传）
-        let inputImageUrlToSave: string | undefined
-        let modelImageUrlToSave: string | undefined
-        let bgImageUrlToSave: string | undefined
-        
-        if (index === 0) {
-          // 上传商品图
-          if (productImage) {
-            const productUrl = await uploadImageToStorage(productImage, userId, `prostudio_${taskId}_product`)
-            if (productUrl) inputImageUrlToSave = productUrl
-          }
-          // 上传模特图
-          if (modelImage) {
-            const modelUrl = await uploadImageToStorage(modelImage, userId, `prostudio_${taskId}_model`)
-            if (modelUrl) modelImageUrlToSave = modelUrl
-          }
-          // 上传背景图
-          if (backgroundImage) {
-            const bgUrl = await uploadImageToStorage(backgroundImage, userId, `prostudio_${taskId}_bg`)
-            if (bgUrl) bgImageUrlToSave = bgUrl
-          }
-        }
-        
-        // 保存到数据库
-        await appendImageToGeneration({
-          taskId,
-          userId,
-          imageIndex: index,
-          imageUrl: uploaded,
-          modelType: result.model,
-          genMode: generationMode,
-          prompt: usedPrompt,
-          taskType: 'pro_studio',
-          inputImageUrl: inputImageUrlToSave,
-          inputParams: index === 0 ? {
-            modelImage: modelImageUrlToSave,
-            backgroundImage: bgImageUrlToSave,
-            mode,
-          } : undefined,
-        })
+    // 上传到 Storage（必须成功）
+    const base64Image = `data:image/png;base64,${result.image}`
+    const uploaded = await uploadImageToStorage(base64Image, userId, `prostudio_${taskId}_${index}`)
+    
+    if (!uploaded) {
+      console.error(`${label} Failed to upload image to storage`)
+      return NextResponse.json({
+        success: false,
+        error: '图片上传失败，请重试',
+        index,
+      }, { status: 500 })
+    }
+
+    console.log(`${label} Uploaded to storage: ${uploaded.substring(0, 80)}...`)
+    
+    // 只在第一张图时上传输入图片（避免重复上传）
+    let inputImageUrlToSave: string | undefined
+    let modelImageUrlToSave: string | undefined
+    let bgImageUrlToSave: string | undefined
+    
+    if (index === 0) {
+      // 上传商品图
+      if (productImage) {
+        const productUrl = await uploadImageToStorage(productImage, userId, `prostudio_${taskId}_product`)
+        if (productUrl) inputImageUrlToSave = productUrl
+      }
+      // 上传模特图
+      if (modelImage) {
+        const modelUrl = await uploadImageToStorage(modelImage, userId, `prostudio_${taskId}_model`)
+        if (modelUrl) modelImageUrlToSave = modelUrl
+      }
+      // 上传背景图
+      if (backgroundImage) {
+        const bgUrl = await uploadImageToStorage(backgroundImage, userId, `prostudio_${taskId}_bg`)
+        if (bgUrl) bgImageUrlToSave = bgUrl
       }
     }
+    
+    // 保存到数据库
+    await appendImageToGeneration({
+      taskId,
+      userId,
+      imageIndex: index,
+      imageUrl: uploaded,
+      modelType: result.model,
+      genMode: generationMode,
+      prompt: usedPrompt,
+      taskType: 'pro_studio',
+      inputImageUrl: inputImageUrlToSave,
+      inputParams: index === 0 ? {
+        modelImage: modelImageUrlToSave,
+        backgroundImage: bgImageUrlToSave,
+        mode,
+      } : undefined,
+    })
 
     return NextResponse.json({
       success: true,
-      image: uploadedUrl,
+      image: uploaded, // 只返回 URL，不返回 base64
       index,
       modelType: result.model,
       genMode: generationMode,

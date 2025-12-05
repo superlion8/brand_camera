@@ -280,49 +280,62 @@ export async function POST(request: NextRequest) {
     
     console.log(`[${label}] Generated in ${duration}ms, uploading to storage...`)
     
-    // 上传图片到 Storage
-    const base64Image = `data:image/png;base64,${result.image}`
-    let uploadedUrl = base64Image // 默认返回 base64
+    // 必须有 taskId 才能上传
+    if (!taskId) {
+      console.error(`[${label}] No taskId provided, cannot upload`)
+      return NextResponse.json({
+        success: false,
+        error: '缺少任务ID',
+        type,
+        index,
+      }, { status: 400 })
+    }
     
-    if (taskId) {
-      const uploaded = await uploadImageToStorage(base64Image, userId, `output_${index || 0}`)
-      if (uploaded) {
-        uploadedUrl = uploaded
-        console.log(`[${label}] Uploaded to storage`)
-        
-        // 只在第一张图时上传商品图（避免重复上传）
-        let inputImageUrl: string | undefined
-        if (index === 0 && productImage) {
-          const productBase64 = productImage.startsWith('data:') ? productImage : `data:image/jpeg;base64,${productImage}`
-          const uploadedInput = await uploadImageToStorage(productBase64, userId, 'input_product')
-          if (uploadedInput) {
-            inputImageUrl = uploadedInput
-            console.log(`[${label}] Uploaded product image to storage`)
-          }
-        }
-        
-        // 写入数据库
-        const dbSuccess = await appendImageToGeneration({
-          taskId,
-          userId,
-          imageIndex: index || 0,
-          imageUrl: uploaded,
-          modelType: result.model,
-          genMode: generationMode,
-          prompt: usedPrompt,
-          taskType: type === 'product' ? 'product_studio' : 'model_studio',
-          inputParams,
-          inputImageUrl, // 传递商品图 URL
-        })
-        
-        if (dbSuccess) {
-          console.log(`[${label}] Saved to database`)
-        } else {
-          console.warn(`[${label}] Failed to save to database, but image is uploaded`)
-        }
-      } else {
-        console.warn(`[${label}] Upload failed, returning base64`)
+    // 上传图片到 Storage（必须成功）
+    const base64Image = `data:image/png;base64,${result.image}`
+    const uploaded = await uploadImageToStorage(base64Image, userId, `output_${index || 0}`)
+    
+    if (!uploaded) {
+      console.error(`[${label}] Failed to upload image to storage`)
+      return NextResponse.json({
+        success: false,
+        error: '图片上传失败，请重试',
+        type,
+        index,
+      }, { status: 500 })
+    }
+    
+    console.log(`[${label}] Uploaded to storage: ${uploaded.substring(0, 80)}...`)
+    
+    // 只在第一张图时上传商品图（避免重复上传）
+    let inputImageUrl: string | undefined
+    if (index === 0 && productImage) {
+      const productBase64 = productImage.startsWith('data:') ? productImage : `data:image/jpeg;base64,${productImage}`
+      const uploadedInput = await uploadImageToStorage(productBase64, userId, 'input_product')
+      if (uploadedInput) {
+        inputImageUrl = uploadedInput
+        console.log(`[${label}] Uploaded product image to storage`)
       }
+    }
+    
+    // 写入数据库
+    const dbSuccess = await appendImageToGeneration({
+      taskId,
+      userId,
+      imageIndex: index || 0,
+      imageUrl: uploaded,
+      modelType: result.model,
+      genMode: generationMode,
+      prompt: usedPrompt,
+      taskType: type === 'product' ? 'product_studio' : 'model_studio',
+      inputParams,
+      inputImageUrl, // 传递商品图 URL
+    })
+    
+    if (dbSuccess) {
+      console.log(`[${label}] Saved to database`)
+    } else {
+      console.warn(`[${label}] Failed to save to database, but image is uploaded`)
     }
     
     const totalDuration = Date.now() - startTime
@@ -332,7 +345,7 @@ export async function POST(request: NextRequest) {
       success: true,
       type,
       index,
-      image: uploadedUrl, // 返回 Storage URL 或 base64
+      image: uploaded, // 只返回 Storage URL，不返回 base64
       modelType: result.model,
       generationMode, // 'extended' or 'simple'
       prompt: usedPrompt,
