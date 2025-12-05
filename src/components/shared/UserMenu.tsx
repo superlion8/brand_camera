@@ -71,7 +71,16 @@ export function UserMenu() {
   }
 
   const avatarUrl = user.user_metadata?.avatar_url
-  const displayName = user.user_metadata?.full_name || user.email?.split("@")[0] || "用户"
+  const phone = user.user_metadata?.phone as string | undefined
+  const isPhoneUser = !!phone || user.email?.startsWith('sms_')
+  
+  // 手机用户显示手机号，其他用户显示名字或邮箱前缀
+  const displayName = phone 
+    ? phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') // 隐藏中间4位
+    : user.user_metadata?.full_name || user.email?.split("@")[0] || "用户"
+  
+  // 副标题：手机用户显示"手机号登录"，其他显示邮箱
+  const subtitle = isPhoneUser ? (phone || '手机号登录') : user.email
 
   return (
     <>
@@ -116,7 +125,7 @@ export function UserMenu() {
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-zinc-900 truncate">{displayName}</p>
-                  <p className="text-xs text-zinc-500 truncate">{user.email}</p>
+                  <p className="text-xs text-zinc-500 truncate">{subtitle}</p>
                 </div>
               </div>
               {/* Sync Status */}
