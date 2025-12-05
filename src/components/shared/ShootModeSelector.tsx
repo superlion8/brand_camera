@@ -21,7 +21,6 @@ export function ShootModeSelector({ isOpen, onClose }: ShootModeSelectorProps) {
       icon: <Aperture className="w-6 h-6 text-white" />, 
       href: "/pro-studio",
       position: "bottom-[130px] left-[15%]",
-      color: "from-amber-500 to-orange-500"
     },
     { 
       id: "buyer-show", 
@@ -29,7 +28,6 @@ export function ShootModeSelector({ isOpen, onClose }: ShootModeSelectorProps) {
       icon: <Users className="w-6 h-6 text-white" />, 
       href: "/camera",
       position: "bottom-[180px] left-1/2 -translate-x-1/2",
-      color: "from-purple-500 to-violet-500"
     },
     { 
       id: "product-studio", 
@@ -37,7 +35,6 @@ export function ShootModeSelector({ isOpen, onClose }: ShootModeSelectorProps) {
       icon: <Box className="w-6 h-6 text-white" />, 
       href: "/studio",
       position: "bottom-[130px] right-[15%]",
-      color: "from-blue-500 to-cyan-500"
     },
   ]
 
@@ -74,7 +71,7 @@ export function ShootModeSelector({ isOpen, onClose }: ShootModeSelectorProps) {
                 <motion.div 
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
-                  className={`w-16 h-16 rounded-full bg-gradient-to-br ${m.color} backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-lg shadow-black/30`}
+                  className="w-16 h-16 rounded-full bg-zinc-800/80 backdrop-blur-sm border border-white/10 flex items-center justify-center shadow-lg transition-colors group-hover:bg-zinc-700/80"
                 >
                   {m.icon}
                 </motion.div>
