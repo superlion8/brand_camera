@@ -130,6 +130,29 @@ function RetouchRow({
   )
 }
 
+// 页面进入动效配置
+const pageVariants = {
+  initial: { opacity: 0, y: 20 },
+  animate: { 
+    opacity: 1, 
+    y: 0,
+    transition: {
+      duration: 0.4,
+      ease: "easeOut",
+      staggerChildren: 0.1,
+    }
+  },
+}
+
+const sectionVariants = {
+  initial: { opacity: 0, y: 15 },
+  animate: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.35, ease: "easeOut" }
+  },
+}
+
 export default function HomePage() {
   const { generations, _hasHydrated } = useAssetStore()
   const { t } = useTranslation()
@@ -138,7 +161,12 @@ export default function HomePage() {
   const recentGenerations = generations.slice(0, 4)
 
   return (
-    <div className="min-h-full bg-zinc-50/50 pb-32">
+    <motion.div 
+      className="min-h-full bg-zinc-50/50 pb-32"
+      initial="initial"
+      animate="animate"
+      variants={pageVariants}
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3 bg-white/90 backdrop-blur-md sticky top-0 z-30 border-b border-zinc-100/50">
         <div className="flex items-center gap-2.5">
@@ -161,7 +189,7 @@ export default function HomePage() {
       {/* Content */}
       <div className="pt-2 pb-24">
         {/* Section 1: 拍模特 */}
-        <div className="px-4">
+        <motion.div className="px-4" variants={sectionVariants}>
           <SectionHeader
             title={t.home.shootModel || "拍模特"}
             icon={<ScanFace className="w-4 h-4 text-purple-600" />}
@@ -190,10 +218,10 @@ export default function HomePage() {
               href="/camera/group"
             />
           </div>
-        </div>
+        </motion.div>
 
         {/* Section 2: 拍商品 */}
-        <div className="px-4 mt-2">
+        <motion.div className="px-4 mt-2" variants={sectionVariants}>
           <SectionHeader
             title={t.home.shootProduct || "拍商品"}
             icon={<Box className="w-4 h-4 text-orange-600" />}
@@ -207,10 +235,10 @@ export default function HomePage() {
               href="/studio"
             />
           </div>
-        </div>
+        </motion.div>
 
         {/* Section 3: 修图室 */}
-        <div className="px-4 mt-2">
+        <motion.div className="px-4 mt-2" variants={sectionVariants}>
           <SectionHeader
             title={t.home.retouchRoom || "修图室"}
             icon={<Wand2 className="w-4 h-4 text-blue-600" />}
@@ -224,16 +252,12 @@ export default function HomePage() {
               href="/edit/general"
             />
           </div>
-        </div>
+        </motion.div>
 
         {/* Section 4: Quick Links */}
-        <div className="px-4 mt-4">
+        <motion.div className="px-4 mt-4" variants={sectionVariants}>
           <div className="space-y-2">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, delay: 0.3 }}
-            >
+            <div>
               <Link
                 href="/brand-assets"
                 className="flex items-center justify-between bg-white rounded-xl p-3 border border-zinc-100 active:bg-zinc-50"
@@ -251,13 +275,9 @@ export default function HomePage() {
                 </div>
                 <ChevronRight className="w-4 h-4 text-zinc-400" />
               </Link>
-            </motion.div>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, delay: 0.35 }}
-            >
+            <div>
               <Link
                 href="/gallery"
                 className="flex items-center justify-between bg-white rounded-xl p-3 border border-zinc-100 active:bg-zinc-50"
@@ -273,13 +293,13 @@ export default function HomePage() {
                 </div>
                 <ChevronRight className="w-4 h-4 text-zinc-400" />
               </Link>
-            </motion.div>
+            </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* My Gallery */}
         {_hasHydrated && recentGenerations.length > 0 && (
-          <div className="px-4 mt-6">
+          <motion.div className="px-4 mt-6" variants={sectionVariants}>
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-zinc-500 uppercase">{t.home.myGallery}</h2>
               <Link href="/gallery" className="text-xs text-blue-600 font-medium">
@@ -307,9 +327,9 @@ export default function HomePage() {
                 )
               })}
             </div>
-          </div>
+          </motion.div>
         )}
       </div>
-    </div>
+    </motion.div>
   )
 }

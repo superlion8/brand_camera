@@ -46,6 +46,7 @@ export default function GroupShootPage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [isLoadingAssets, setIsLoadingAssets] = useState(false)
   const [showGalleryPicker, setShowGalleryPicker] = useState(false)
+  const [gallerySubType, setGallerySubType] = useState<'all' | 'buyer' | 'pro' | 'group'>('all')
   
   // Results state
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
@@ -208,7 +209,7 @@ export default function GroupShootPage() {
       return type === 'camera' || type === 'camera_model' || type === 'model' || 
              type === 'pro_studio' || type === 'prostudio' || type === 'group_shoot'
     })
-    .slice(0, 20)
+    .slice(0, 50) // 增加到50个
 
   // 从 sessionStorage 加载传入的图片
   useEffect(() => {
@@ -649,58 +650,106 @@ export default function GroupShootPage() {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25 }}
-              className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl max-h-[70vh] flex flex-col"
+              className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl max-h-[75vh] flex flex-col"
               onClick={e => e.stopPropagation()}
             >
-              <div className="p-4 border-b flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold">从成片选择</h3>
-                  <p className="text-xs text-zinc-400 mt-0.5">仅显示模特分类的成片</p>
+              <div className="p-4 border-b">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h3 className="font-semibold">从成片选择</h3>
+                    <p className="text-xs text-zinc-400 mt-0.5">选择模特成片作为输入</p>
+                  </div>
+                  <button onClick={() => setShowGalleryPicker(false)}>
+                    <X className="w-5 h-5 text-zinc-400" />
+                  </button>
                 </div>
-                <button onClick={() => setShowGalleryPicker(false)}>
-                  <X className="w-5 h-5 text-zinc-400" />
-                </button>
+                
+                {/* 子分类 Tabs */}
+                <div className="flex gap-2">
+                  {[
+                    { id: 'all', label: '全部' },
+                    { id: 'buyer', label: '买家秀' },
+                    { id: 'pro', label: '专业棚拍' },
+                    { id: 'group', label: '组图' },
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setGallerySubType(tab.id as typeof gallerySubType)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                        gallerySubType === tab.id
+                          ? 'bg-zinc-900 text-white'
+                          : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
               </div>
               
               <div className="flex-1 overflow-y-auto p-4">
-                {isLoadingAssets ? (
-                  <div className="h-40 flex items-center justify-center">
-                    <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-                  </div>
-                ) : modelGenerations.length === 0 ? (
-                  <div className="h-40 flex flex-col items-center justify-center text-zinc-400 text-sm gap-2">
-                    <p>暂无模特成片</p>
-                    <p className="text-xs">先去拍摄一些模特照片吧</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-3 gap-2">
-                    {modelGenerations.flatMap((gen, gi) => 
-                      (gen.outputImageUrls || [])
-                        .filter((url): url is string => typeof url === 'string' && url.length > 0)
-                        .map((url, ui) => (
-                          <button
-                            key={`${gen.id || gi}-${ui}`}
-                            onClick={() => handleSelectFromGallery(url, gen.type)}
-                            className="aspect-square rounded-lg overflow-hidden relative hover:ring-2 hover:ring-blue-500 transition-all"
-                          >
-                            <Image src={url} alt="" fill className="object-cover" />
-                            {/* 类型标签 */}
-                            <div className="absolute bottom-1 left-1">
-                              <span className={`px-1 py-0.5 rounded text-[8px] font-medium text-white ${
-                                gen.type === 'pro_studio' 
-                                  ? 'bg-amber-500' 
-                                  : gen.type === 'group_shoot'
-                                    ? 'bg-cyan-500'
-                                    : 'bg-blue-500'
-                              }`}>
-                                {gen.type === 'pro_studio' ? '专业棚拍' : gen.type === 'group_shoot' ? '组图' : '买家秀'}
-                              </span>
-                            </div>
-                          </button>
-                        ))
-                    )}
-                  </div>
-                )}
+                {(() => {
+                  // 根据子分类过滤
+                  const filteredGenerations = modelGenerations.filter(gen => {
+                    const type = gen.type
+                    if (gallerySubType === 'all') return true
+                    if (gallerySubType === 'buyer') return type === 'camera_model' || type === 'edit'
+                    if (gallerySubType === 'pro') return type === 'pro_studio'
+                    if (gallerySubType === 'group') return type === 'group_shoot'
+                    return true
+                  })
+                  
+                  // 检查是否有数据在加载
+                  const isLoading = !generations || generations.length === 0
+                  
+                  if (isLoading) {
+                    return (
+                      <div className="h-40 flex flex-col items-center justify-center gap-3">
+                        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                        <p className="text-sm text-zinc-400">加载成片中...</p>
+                      </div>
+                    )
+                  }
+                  
+                  if (filteredGenerations.length === 0) {
+                    return (
+                      <div className="h-40 flex flex-col items-center justify-center text-zinc-400 text-sm gap-2">
+                        <p>暂无{gallerySubType === 'buyer' ? '买家秀' : gallerySubType === 'pro' ? '专业棚拍' : gallerySubType === 'group' ? '组图' : '模特'}成片</p>
+                        <p className="text-xs">先去拍摄一些照片吧</p>
+                      </div>
+                    )
+                  }
+                  
+                  return (
+                    <div className="grid grid-cols-3 gap-2">
+                      {filteredGenerations.flatMap((gen, gi) => 
+                        (gen.outputImageUrls || [])
+                          .filter((url): url is string => typeof url === 'string' && url.length > 0)
+                          .map((url, ui) => (
+                            <button
+                              key={`${gen.id || gi}-${ui}`}
+                              onClick={() => handleSelectFromGallery(url, gen.type)}
+                              className="aspect-square rounded-lg overflow-hidden relative hover:ring-2 hover:ring-blue-500 transition-all"
+                            >
+                              <Image src={url} alt="" fill className="object-cover" />
+                              {/* 类型标签 */}
+                              <div className="absolute bottom-1 left-1">
+                                <span className={`px-1 py-0.5 rounded text-[8px] font-medium text-white ${
+                                  gen.type === 'pro_studio'
+                                    ? 'bg-amber-500' 
+                                    : gen.type === 'group_shoot'
+                                      ? 'bg-cyan-500'
+                                      : 'bg-blue-500'
+                                }`}>
+                                  {gen.type === 'pro_studio' ? '棚拍' : gen.type === 'group_shoot' ? '组图' : '买家秀'}
+                                </span>
+                              </div>
+                            </button>
+                          ))
+                      )}
+                    </div>
+                  )
+                })()}
               </div>
             </motion.div>
           </motion.div>
