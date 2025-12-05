@@ -21,13 +21,10 @@ import { PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_PRODUCTS, getRandomModel, get
 import { useQuota } from "@/hooks/useQuota"
 import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { useAuth } from "@/components/providers/AuthProvider"
+import { useLanguageStore } from "@/stores/languageStore"
 
-const MODEL_GENDERS: { id: ModelGender; label: string }[] = [
-  { id: "female", label: "女" },
-  { id: "male", label: "男" },
-  { id: "girl", label: "女童" },
-  { id: "boy", label: "男童" },
-]
+// Gender IDs - labels come from translations
+const MODEL_GENDER_IDS: ModelGender[] = ["female", "male", "girl", "boy"]
 
 type CameraMode = "camera" | "review" | "processing" | "results"
 
@@ -38,6 +35,14 @@ const CAMERA_NUM_SIMPLE = 3
 export default function CameraPage() {
   const router = useRouter()
   const { user } = useAuth()
+  const t = useLanguageStore(state => state.t)
+  
+  // Build gender options with translations
+  const MODEL_GENDERS = MODEL_GENDER_IDS.map(id => ({
+    id,
+    label: t.common[id as keyof typeof t.common] || id,
+  }))
+  
   const webcamRef = useRef<Webcam>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef2 = useRef<HTMLInputElement>(null) // For second product image
@@ -217,7 +222,7 @@ export default function CameraPage() {
       const newAsset = {
         id: generateId(),
         type: 'model' as const,
-        name: `模特 ${new Date().toLocaleDateString('zh-CN')}`,
+        name: `${t.common.model} ${new Date().toLocaleDateString()}`,
         imageUrl: base64,
       }
       addUserAsset(newAsset)
@@ -235,7 +240,7 @@ export default function CameraPage() {
       const newAsset = {
         id: generateId(),
         type: 'background' as const,
-        name: `环境 ${new Date().toLocaleDateString('zh-CN')}`,
+        name: `${t.common.background} ${new Date().toLocaleDateString()}`,
         imageUrl: base64,
       }
       addUserAsset(newAsset)
@@ -546,7 +551,7 @@ export default function CameraPage() {
           addUserAsset({
             id: generateId(),
             type: 'product',
-            name: `商品 ${new Date().toLocaleDateString('zh-CN')}`,
+            name: `${t.common.product} ${new Date().toLocaleDateString()}`,
             imageUrl: inputImage,
           })
         }
@@ -555,7 +560,7 @@ export default function CameraPage() {
           addUserAsset({
             id: generateId(),
             type: 'product',
-            name: `商品 ${new Date().toLocaleDateString('zh-CN')}`,
+            name: `${t.common.product} ${new Date().toLocaleDateString()}`,
             imageUrl: inputImage2,
           })
         }
@@ -624,11 +629,11 @@ export default function CameraPage() {
         const failedCount = responses.filter(r => r.status === 'rejected').length
         const httpErrorCount = responses.filter(r => r.status === 'fulfilled' && !r.value.ok).length
         console.error(`All tasks failed. Rejected: ${failedCount}, HTTP errors: ${httpErrorCount}`)
-        throw new Error(`生成失败 (${failedCount}个请求失败, ${httpErrorCount}个HTTP错误)，请重试`)
+        throw new Error(t.camera.generationFailed || `Generation failed (${failedCount} requests failed, ${httpErrorCount} HTTP errors)`)
       }
     } catch (error: any) {
       console.error("Generation error:", error)
-      updateTaskStatus(taskId, 'failed', undefined, error.message || "生成失败")
+      updateTaskStatus(taskId, 'failed', undefined, error.message || t.camera.generationFailed)
       
       // Refund quota on error
       console.log('[Quota] Error occurred, refunding reserved quota')
@@ -645,7 +650,7 @@ export default function CameraPage() {
         if (error.name === 'AbortError') {
           alert("生成超时，请重试。建议使用较小的图片。")
         } else {
-          alert(error.message || "生成失败，请重试")
+          alert(error.message || t.errors?.generateFailed || "Generation failed")
         }
         setMode("review")
       }
@@ -741,7 +746,7 @@ export default function CameraPage() {
     selectedId, 
     onSelect,
     onUpload,
-    uploadLabel = "上传"
+    uploadLabel = t.common.upload
   }: { 
     items: Asset[]
     selectedId: string | null
@@ -866,7 +871,7 @@ export default function CameraPage() {
                   <div className="text-center text-zinc-400">
                     <Camera className="w-12 h-12 mx-auto mb-4 opacity-30" />
                     <p className="text-sm">相机不可用</p>
-                    <p className="text-xs mt-1">请使用下方上传按钮</p>
+                    <p className="text-xs mt-1">{t.camera.productPlaceholder}</p>
                   </div>
                 </div>
               ) : (
@@ -875,11 +880,11 @@ export default function CameraPage() {
                   <div className={`relative ${capturedImage2 ? 'w-1/2' : 'w-full'} h-full`}>
                     <img 
                       src={capturedImage || ""} 
-                      alt="商品 1" 
+                      alt={t.camera.product1} 
                       className="w-full h-full object-cover"
                     />
                     <span className="absolute top-2 left-2 px-2 py-1 bg-black/50 text-white text-xs rounded backdrop-blur-md">
-                      商品 1
+                      {t.camera.product1}
                     </span>
                   </div>
                   
@@ -888,11 +893,11 @@ export default function CameraPage() {
                     <div className="relative w-1/2 h-full border-l-2 border-white/30">
                       <img 
                         src={capturedImage2} 
-                        alt="商品 2" 
+                        alt={t.camera.product2} 
                         className="w-full h-full object-cover"
                       />
                       <span className="absolute top-2 left-2 px-2 py-1 bg-black/50 text-white text-xs rounded backdrop-blur-md">
-                        商品 2
+                        {t.camera.product2}
                       </span>
                       <button
                         onClick={() => setCapturedImage2(null)}
@@ -907,7 +912,7 @@ export default function CameraPage() {
                       className="absolute bottom-4 right-4 px-3 py-2 bg-white/90 text-zinc-800 rounded-lg text-sm font-medium flex items-center gap-2 shadow-lg backdrop-blur-md"
                     >
                       <Plus className="w-4 h-4" />
-                      添加商品 2
+                      {t.camera.addProduct2}
                     </button>
                   )}
                 </div>
@@ -927,12 +932,12 @@ export default function CameraPage() {
                 )}
                 {activeModel && (
                   <span className="px-2 py-1 bg-black/50 text-white text-xs rounded-full backdrop-blur-md">
-                    模特: {activeModel.name}
+                    {t.common.model}: {activeModel.name}
                   </span>
                 )}
                 {activeBg && (
                   <span className="px-2 py-1 bg-black/50 text-white text-xs rounded-full backdrop-blur-md">
-                    环境: {activeBg.name}
+                    {t.common.background}: {activeBg.name}
                   </span>
                 )}
               </div>
@@ -959,7 +964,7 @@ export default function CameraPage() {
                   </div>
                   
                   <div className="absolute top-8 left-0 right-0 text-center text-white/80 text-sm font-medium px-4 drop-shadow-md">
-                    拍摄您的商品
+                    {t.camera.shootYourProduct}
                   </div>
                 </>
               )}
@@ -976,7 +981,7 @@ export default function CameraPage() {
                       className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 text-white/90 hover:bg-white/20 transition-colors border border-white/20"
                     >
                       <SlidersHorizontal className="w-4 h-4" />
-                      <span className="text-sm font-medium">自定义模特和背景</span>
+                      <span className="text-sm font-medium">{t.camera.customizeModelBg}</span>
                     </button>
                   </div>
                   
@@ -1059,8 +1064,8 @@ export default function CameraPage() {
                     </div>
                     <div className="p-2 flex gap-2 border-b overflow-x-auto shrink-0">
                       {[
-                        { id: "model", label: "模特" },
-                        { id: "bg", label: "环境" }
+                        { id: "model", label: t.common.model },
+                        { id: "bg", label: t.common.background }
                       ].map(tab => (
                         <button 
                           key={tab.id}
@@ -1109,7 +1114,7 @@ export default function CameraPage() {
                               setSelectedModel(selectedModel === id ? null : id)
                             }}
                             onUpload={() => modelUploadRef.current?.click()}
-                            uploadLabel="上传模特"
+                            uploadLabel={t.camera.uploadModel}
                           />
                         </div>
                       )}
@@ -1144,7 +1149,7 @@ export default function CameraPage() {
                             selectedId={selectedBg} 
                             onSelect={(id) => setSelectedBg(selectedBg === id ? null : id)}
                             onUpload={() => bgUploadRef.current?.click()}
-                            uploadLabel="上传环境"
+                            uploadLabel={t.camera.uploadBackground}
                           />
                         </div>
                       )}
@@ -1174,7 +1179,7 @@ export default function CameraPage() {
                     className="absolute bottom-0 left-0 right-0 h-[60%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
                   >
                     <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
-                      <span className="font-semibold">选择商品</span>
+                      <span className="font-semibold">{t.camera.selectProduct}</span>
                       <button 
                         onClick={() => setShowProductPanel(false)} 
                         className="h-8 w-8 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center"
@@ -1205,7 +1210,7 @@ export default function CameraPage() {
                               : "text-zinc-500 hover:text-zinc-700"
                           }`}
                         >
-                          我的商品
+                          {t.camera.myProducts}
                           {userProducts.length > 0 && (
                             <span className="ml-1 text-zinc-400">({userProducts.length})</span>
                           )}
@@ -1277,8 +1282,8 @@ export default function CameraPage() {
                       ) : (
                         <div className="flex flex-col items-center justify-center h-full text-zinc-400">
                           <FolderHeart className="w-12 h-12 mb-3 opacity-30" />
-                          <p className="text-sm">暂无我的商品</p>
-                          <p className="text-xs mt-1">在品牌资产中上传商品图片</p>
+                          <p className="text-sm">{t.camera.noMyProducts}</p>
+                          <p className="text-xs mt-1">{t.camera.uploadInAssets}</p>
                           <button 
                             onClick={() => {
                               setShowProductPanel(false)
@@ -1286,7 +1291,7 @@ export default function CameraPage() {
                             }}
                             className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
                           >
-                            去上传
+                            {t.camera.goUpload}
                           </button>
                         </div>
                       )}
@@ -1315,7 +1320,7 @@ export default function CameraPage() {
                     className="absolute bottom-0 left-0 right-0 h-[60%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
                   >
                     <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
-                      <span className="font-semibold">添加商品 2</span>
+                      <span className="font-semibold">{t.camera.addProduct2}</span>
                       <button 
                         onClick={() => setShowProduct2Panel(false)} 
                         className="h-8 w-8 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center"
@@ -1334,7 +1339,7 @@ export default function CameraPage() {
                         className="w-full h-12 bg-blue-600 text-white rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors"
                       >
                         <ImageIcon className="w-5 h-5" />
-                        从相册上传
+                        {t.camera.fromAlbum}
                       </button>
                     </div>
                     
@@ -1360,7 +1365,7 @@ export default function CameraPage() {
                               : "text-zinc-500 hover:text-zinc-700"
                           }`}
                         >
-                          我的商品
+                          {t.camera.myProducts}
                           {userProducts.length > 0 && (
                             <span className="ml-1 text-zinc-400">({userProducts.length})</span>
                           )}
@@ -1430,8 +1435,8 @@ export default function CameraPage() {
                       ) : (
                         <div className="flex flex-col items-center justify-center h-full text-zinc-400">
                           <FolderHeart className="w-12 h-12 mb-3 opacity-30" />
-                          <p className="text-sm">暂无我的商品</p>
-                          <p className="text-xs mt-1">在品牌资产中上传商品图片</p>
+                          <p className="text-sm">{t.camera.noMyProducts}</p>
+                          <p className="text-xs mt-1">{t.camera.uploadInAssets}</p>
                           <button 
                             onClick={() => {
                               setShowProduct2Panel(false)
@@ -1439,7 +1444,7 @@ export default function CameraPage() {
                             }}
                             className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
                           >
-                            去上传
+                            {t.camera.goUpload}
                           </button>
                         </div>
                       )}
@@ -1466,8 +1471,8 @@ export default function CameraPage() {
             
             <h3 className="text-white text-2xl font-bold mb-2">AI 正在拍摄...</h3>
             <div className="text-zinc-400 space-y-1 text-sm mb-8">
-              <p>分析商品光影...</p>
-              {activeModel && <p>生成模特 {activeModel.name} ...</p>}
+              <p>{t.camera.analyzeProduct}</p>
+              {activeModel && <p>{t.camera.generateModel} {activeModel.name} ...</p>}
               {selectedModelStyle && selectedModelStyle !== 'auto' && !activeModel && (
                 <p>匹配{selectedModelStyle === 'korean' ? '韩系' : selectedModelStyle === 'western' ? '欧美' : selectedModelStyle}风格...</p>
               )}
@@ -1482,7 +1487,7 @@ export default function CameraPage() {
                 className="w-full h-12 rounded-full bg-white text-black font-medium flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors"
               >
                 <Camera className="w-5 h-5" />
-                拍摄新商品
+                {t.camera.shootNew}
               </button>
               <button
                 onClick={handleReturnDuringProcessing}
@@ -1528,7 +1533,7 @@ export default function CameraPage() {
                     const url = generatedImages[i]
                     if (!url) return (
                       <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
-                        生成失败
+                        {t.camera.generationFailed}
                       </div>
                     )
                     return (
@@ -1583,7 +1588,7 @@ export default function CameraPage() {
                     const url = generatedImages[actualIndex]
                     if (!url) return (
                       <div key={actualIndex} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
-                        生成失败
+                        {t.camera.generationFailed}
                       </div>
                     )
                     return (
@@ -1739,11 +1744,11 @@ export default function CameraPage() {
                                 <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
                                   <img 
                                     src={capturedImage} 
-                                    alt="商品" 
+                                    alt={t.common.product} 
                                     className="w-full h-full object-cover"
                                   />
                                 </div>
-                                <p className="text-[10px] text-zinc-500 mt-1">商品</p>
+                                <p className="text-[10px] text-zinc-500 mt-1">{t.common.product}</p>
                               </div>
                             )}
                             
@@ -1753,13 +1758,13 @@ export default function CameraPage() {
                                 <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
                                   <Image 
                                     src={activeModel.imageUrl} 
-                                    alt="模特" 
+                                    alt={t.common.model} 
                                     width={56}
                                     height={56}
                                     className="w-full h-full object-cover"
                                   />
                                 </div>
-                                <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{activeModel.name || '模特'}</p>
+                                <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{activeModel.name || t.common.model}</p>
                               </div>
                             )}
                             
