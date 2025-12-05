@@ -53,8 +53,8 @@ export function ShootModeSelector({ isOpen, onClose }: ShootModeSelectorProps) {
           {/* 底部渐变 */}
           <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-purple-900/30 to-transparent pointer-events-none" />
 
-          {/* 弧形排列的三个按钮 - 居中对称 */}
-          <div className="absolute bottom-32 left-1/2 -translate-x-1/2 flex items-end justify-center gap-6">
+          {/* 弧形排列的三个按钮 - 居中对称，左右拉开 */}
+          <div className="absolute bottom-32 left-1/2 -translate-x-1/2 flex items-end justify-center gap-12">
             {/* 左边按钮 - 专业棚拍 */}
             <motion.div
               initial={{ opacity: 0, scale: 0.5, y: 30 }}
