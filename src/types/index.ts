@@ -4,7 +4,7 @@ export type ModelGender = 'male' | 'female' | 'boy' | 'girl'
 
 export type AssetType = 'model' | 'background' | 'product' | 'vibe'
 
-export type GenerationType = 'camera_product' | 'camera_model' | 'edit' | 'studio' | 'pro_studio'
+export type GenerationType = 'camera_product' | 'camera_model' | 'edit' | 'studio' | 'pro_studio' | 'group_shoot'
 
 export interface Asset {
   id: string

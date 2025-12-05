@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
-import { Download, Heart, X, Wand2, Camera, Users, Home, ZoomIn, Loader2, Lightbulb, RefreshCw, Trash2, Package, FolderPlus, ChevronDown, Check } from "lucide-react"
+import { Download, Heart, X, Wand2, Camera, Users, Home, ZoomIn, Loader2, Lightbulb, RefreshCw, Trash2, Package, FolderPlus, ChevronDown, Check, Grid3X3 } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useGenerationTaskStore, GenerationTask, ImageSlot } from "@/stores/generationTaskStore"
@@ -15,14 +15,14 @@ import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
 import { generateId } from "@/lib/utils"
 
 type TabType = "all" | "model" | "product" | "favorites"
-type ModelSubType = "all" | "buyer" | "prostudio"  // 买家秀 / 专业棚拍
+type ModelSubType = "all" | "buyer" | "prostudio" | "group"  // 买家秀 / 专业棚拍 / 组图
 
 // Helper functions for type classification - with null safety
 function isModelType(gen: Generation | null | undefined): boolean {
   if (!gen) return false
   const type = gen.type?.toLowerCase() || ''
-  // 模特类型：买家秀 + 专业棚拍
-  return type === 'camera_model' || type === 'model' || type === 'camera' || type === 'model_studio' || type === 'pro_studio' || type === 'prostudio'
+  // 模特类型：买家秀 + 专业棚拍 + 组图拍摄
+  return type === 'camera_model' || type === 'model' || type === 'camera' || type === 'model_studio' || type === 'pro_studio' || type === 'prostudio' || type === 'group_shoot'
 }
 
 function isProStudioType(gen: Generation | null | undefined): boolean {
@@ -30,6 +30,13 @@ function isProStudioType(gen: Generation | null | undefined): boolean {
   const type = gen.type?.toLowerCase() || ''
   // 专业棚拍类型
   return type === 'pro_studio' || type === 'prostudio'
+}
+
+function isGroupShootType(gen: Generation | null | undefined): boolean {
+  if (!gen) return false
+  const type = gen.type?.toLowerCase() || ''
+  // 组图拍摄类型
+  return type === 'group_shoot'
 }
 
 function isProductType(gen: Generation | null | undefined): boolean {
@@ -153,6 +160,14 @@ export default function GalleryPage() {
     // Null safety check
     if (!gen) {
       return { label: t.gallery.model, color: 'bg-zinc-400' }
+    }
+    
+    // Group Shoot types (组图拍摄)
+    if (isGroupShootType(gen)) {
+      return { 
+        label: t.gallery.groupShoot || '组图', 
+        color: 'bg-gradient-to-r from-blue-500 to-cyan-500',
+      }
     }
     
     // Pro Studio types (专业棚拍)
@@ -565,12 +580,12 @@ export default function GalleryPage() {
           ))}
         </div>
         
-        {/* 模特二级分类 - 买家秀 / 专业棚拍 */}
+        {/* 模特二级分类 - 买家秀 / 专业棚拍 / 组图 */}
         {activeTab === "model" && (
-          <div className="px-4 pb-3 flex gap-2">
+          <div className="px-4 pb-3 flex gap-2 overflow-x-auto hide-scrollbar">
             <button
               onClick={() => setModelSubType("all")}
-              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${
                 modelSubType === "all"
                   ? "bg-zinc-700 text-white"
                   : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
@@ -580,7 +595,7 @@ export default function GalleryPage() {
             </button>
             <button
               onClick={() => setModelSubType("buyer")}
-              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${
                 modelSubType === "buyer"
                   ? "bg-blue-500 text-white"
                   : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
@@ -590,13 +605,23 @@ export default function GalleryPage() {
             </button>
             <button
               onClick={() => setModelSubType("prostudio")}
-              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${
                 modelSubType === "prostudio"
                   ? "bg-amber-500 text-white"
                   : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
               }`}
             >
               {t.gallery.proStudio || '专业棚拍'}
+            </button>
+            <button
+              onClick={() => setModelSubType("group")}
+              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${
+                modelSubType === "group"
+                  ? "bg-cyan-500 text-white"
+                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+              }`}
+            >
+              {t.gallery.groupShoot || '组图'}
             </button>
           </div>
         )}
@@ -940,11 +965,25 @@ export default function GalleryPage() {
                       {t.gallery.goEdit}
                     </button>
                     <button 
+                      onClick={() => {
+                        const imageUrl = selectedItem.gen.outputImageUrls[selectedItem.index]
+                        sessionStorage.setItem('groupShootImage', imageUrl)
+                        setSelectedItem(null)
+                        router.push("/camera/group")
+                      }}
+                      className="flex-1 h-12 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-medium flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <Grid3X3 className="w-4 h-4" />
+                      {t.gallery.goGroupShoot || '拍组图'}
+                    </button>
+                  </div>
+                  <div className="flex gap-3 mt-3">
+                    <button 
                       onClick={() => setShowSaveMenu(true)}
-                      className="h-12 px-4 rounded-lg border border-zinc-200 hover:bg-zinc-50 text-zinc-700 font-medium flex items-center justify-center gap-2 transition-colors"
+                      className="flex-1 h-12 rounded-lg border border-zinc-200 hover:bg-zinc-50 text-zinc-700 font-medium flex items-center justify-center gap-2 transition-colors"
                     >
                       <FolderPlus className="w-4 h-4" />
-                      存为素材
+                      {t.gallery.saveAsAsset || '存为素材'}
                     </button>
                   </div>
                   

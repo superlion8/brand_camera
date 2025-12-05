@@ -95,8 +95,8 @@ export default function GroupShootPage() {
     triggerFlyToGallery()
     setMode("processing")
 
-    // 创建任务
-    const taskId = addTask('camera', selectedImage, { shootMode }, numImages)
+    // 创建任务（使用 group_shoot 类型）
+    const taskId = addTask('group_shoot', selectedImage, { shootMode }, numImages)
     setCurrentTaskId(taskId)
     initImageSlots(taskId, numImages)
 
@@ -185,11 +185,22 @@ export default function GroupShootPage() {
     }
   }
 
-  // 获取最近的图库图片
-  const recentGalleryImages = generations
-    .filter(g => g.outputImageUrls && g.outputImageUrls.length > 0)
-    .flatMap(g => g.outputImageUrls)
+  // 获取最近的图库图片（添加空值检查）
+  const recentGalleryImages = (generations || [])
+    .filter(g => g && g.outputImageUrls && g.outputImageUrls.length > 0)
+    .flatMap(g => g.outputImageUrls || [])
+    .filter(url => url)
     .slice(0, 12)
+
+  // 从 sessionStorage 加载传入的图片
+  useEffect(() => {
+    const storedImage = sessionStorage.getItem('groupShootImage')
+    if (storedImage) {
+      sessionStorage.removeItem('groupShootImage')
+      setSelectedImage(storedImage)
+      setMode("mode")
+    }
+  }, [])
 
   return (
     <div className="h-full relative flex flex-col bg-black">

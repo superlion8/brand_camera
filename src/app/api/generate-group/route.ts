@@ -295,7 +295,7 @@ export async function POST(request: NextRequest) {
                     modelType: result.model,
                     genMode: 'simple',
                     prompt: posePrompt,
-                    taskType: 'camera',
+                    taskType: 'group_shoot',
                   })
                 }
               }
@@ -346,7 +346,7 @@ export async function POST(request: NextRequest) {
                     modelType: result.model,
                     genMode: 'simple',
                     prompt: prompt,
-                    taskType: 'camera',
+                    taskType: 'group_shoot',
                   })
                 }
               }

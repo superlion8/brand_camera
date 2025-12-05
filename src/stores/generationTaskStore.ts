@@ -31,7 +31,7 @@ export function base64ToBlobUrl(base64: string): string {
   }
 }
 
-export type TaskType = 'camera' | 'studio' | 'edit' | 'pro_studio'
+export type TaskType = 'camera' | 'studio' | 'edit' | 'pro_studio' | 'group_shoot'
 export type ImageStatus = 'pending' | 'generating' | 'completed' | 'failed'
 
 // 每张图的独立状态

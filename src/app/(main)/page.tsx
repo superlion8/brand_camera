@@ -33,12 +33,14 @@ function FeatureCard({
   title: string
   subtitle: string
   height?: number
-  accent?: 'purple' | 'amber'
+  accent?: 'purple' | 'amber' | 'blue'
 }) {
   const accentStyles = accent === 'purple' 
     ? { bg: 'bg-purple-500', iconBg: 'bg-purple-100', iconColor: 'text-purple-600', textColor: 'text-white', subColor: 'text-purple-100' }
     : accent === 'amber'
     ? { bg: 'bg-amber-500', iconBg: 'bg-amber-100', iconColor: 'text-amber-600', textColor: 'text-white', subColor: 'text-amber-100' }
+    : accent === 'blue'
+    ? { bg: 'bg-gradient-to-r from-blue-500 to-cyan-500', iconBg: 'bg-blue-100', iconColor: 'text-blue-600', textColor: 'text-white', subColor: 'text-blue-100' }
     : { bg: 'bg-white', iconBg: 'bg-zinc-100', iconColor: 'text-zinc-600', textColor: 'text-zinc-900', subColor: 'text-zinc-500' }
   
   return (
@@ -145,21 +147,16 @@ export default function HomePage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.2 }}
         >
-          <Link 
+          <FeatureCard
             href="/camera/group"
-            className="block bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
-                <Grid3X3 className="w-7 h-7 text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-bold text-white text-base">{t.home.groupShoot || '组图拍摄'}</h3>
-                <p className="text-white/80 text-xs mt-0.5">{t.home.groupShootSubtitle || '一键生成多角度/多姿势展示图'}</p>
-              </div>
-              <ArrowRight className="w-5 h-5 text-white/60" />
-            </div>
-          </Link>
+            beforeImage={`${HOMEPAGE_STORAGE_URL}/model-before.jpg`}
+            afterImage={`${HOMEPAGE_STORAGE_URL}/model-after.png`}
+            icon={Grid3X3}
+            title={t.home.groupShoot || '组图拍摄'}
+            subtitle={t.home.groupShootSubtitle || '一键生成多角度/多姿势展示图'}
+            height={120}
+            accent="blue"
+          />
         </motion.div>
         
         {/* Second Row: 商品影棚 full width */}
