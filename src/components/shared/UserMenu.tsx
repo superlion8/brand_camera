@@ -241,15 +241,15 @@ export function UserMenu() {
               onClick={() => setShowSettings(false)}
             />
             <motion.div
-              initial={{ opacity: 0, y: 100 }}
+              initial={{ opacity: 0, y: "100%" }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 100 }}
+              exit={{ opacity: 0, y: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="fixed left-0 right-0 bottom-0 bg-white rounded-t-2xl shadow-2xl z-[101] overflow-hidden safe-bottom max-h-[85vh] flex flex-col"
+              className="fixed inset-x-0 bottom-0 bg-white rounded-t-2xl shadow-2xl z-[101] max-h-[80vh] overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="h-14 flex items-center justify-between px-4 border-b">
+              <div className="h-14 flex items-center justify-between px-4 border-b shrink-0">
                 <h2 className="font-semibold text-zinc-900">{t.user.settings}</h2>
                 <button
                   onClick={() => setShowSettings(false)}
@@ -260,7 +260,7 @@ export function UserMenu() {
               </div>
 
               {/* Settings Content */}
-              <div className="p-4 space-y-4 flex-1 overflow-y-auto">
+              <div className="p-4 space-y-4 overflow-y-auto" style={{ maxHeight: 'calc(80vh - 14rem)' }}>
                 {/* Debug Mode Toggle - Only visible to admins */}
                 {isAdmin ? (
                   <>
@@ -306,7 +306,7 @@ export function UserMenu() {
               </div>
 
               {/* Footer */}
-              <div className="p-4 pb-8 border-t bg-zinc-50">
+              <div className="p-4 border-t bg-zinc-50 shrink-0" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 2rem)' }}>
                 <button
                   onClick={() => setShowSettings(false)}
                   className="w-full h-12 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl font-medium text-sm transition-colors"
