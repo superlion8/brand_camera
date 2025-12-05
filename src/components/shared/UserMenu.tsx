@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import { createPortal } from "react-dom"
 import Image from "next/image"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useSettingsStore } from "@/stores/settingsStore"
@@ -229,26 +230,39 @@ export function UserMenu() {
         )}
       </div>
 
-      {/* Settings Modal - 使用 Portal 渲染到 body */}
-      {showSettings && typeof document !== 'undefined' && (
+      {/* Settings Modal - 使用 Portal 渲染到 document.body，完全脱离组件树 */}
+      {showSettings && typeof document !== 'undefined' && createPortal(
         <>
           {/* Backdrop */}
           <div 
-            className="fixed inset-0 bg-black/50 z-[9998] backdrop-blur-sm"
-            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
             onClick={() => setShowSettings(false)}
+            style={{ 
+              position: 'fixed',
+              top: 0, 
+              left: 0, 
+              right: 0, 
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              backdropFilter: 'blur(4px)',
+              zIndex: 99998,
+            }}
           />
-          {/* Modal */}
+          {/* Modal - 从底部弹出 */}
           <div 
-            className="fixed z-[9999] bg-white rounded-t-2xl shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
             style={{ 
               position: 'fixed',
               left: 0, 
               right: 0, 
               bottom: 0,
+              backgroundColor: 'white',
+              borderTopLeftRadius: '16px',
+              borderTopRightRadius: '16px',
+              boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.15)',
               maxHeight: '80vh',
+              overflow: 'hidden',
+              zIndex: 99999,
             }}
-            onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
             <div className="h-14 flex items-center justify-between px-4 border-b bg-white">
@@ -317,7 +331,8 @@ export function UserMenu() {
               </button>
             </div>
           </div>
-        </>
+        </>,
+        document.body
       )}
     </>
   )
