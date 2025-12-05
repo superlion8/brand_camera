@@ -170,8 +170,8 @@ export default function HomePage() {
             <BeforeAfterCard
               title={t.home.proStudio || "专业棚拍"}
               subtitle={t.home.proStudioSubtitle || "纯色背景质感"}
-              beforeImage={`${HOMEPAGE_STORAGE_URL}/model-before.jpg`}
-              afterImage={`${HOMEPAGE_STORAGE_URL}/model-after.png`}
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/pro-studio-before.jpg`}
+              afterImage={`${HOMEPAGE_STORAGE_URL}/pro-studio-after.png`}
               href="/pro-studio"
             />
             <BeforeAfterCard
@@ -184,8 +184,8 @@ export default function HomePage() {
             <BeforeAfterCard
               title={t.home.groupShoot || "组图拍摄"}
               subtitle={t.home.groupShootSubtitle || "多角度套图"}
-              beforeImage={`${HOMEPAGE_STORAGE_URL}/model-before.jpg`}
-              afterImage={`${HOMEPAGE_STORAGE_URL}/model-after.png`}
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/group-shoot-before.png`}
+              afterImage={`${HOMEPAGE_STORAGE_URL}/group-shoot-after.png`}
               badge="NEW"
               href="/camera/group"
             />
