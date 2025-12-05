@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight, FolderHeart, Images, Wand2, Users, Lightbulb } from "lucide-react"
+import { ArrowRight, FolderHeart, Images, Wand2, Users, Lightbulb, Sparkles } from "lucide-react"
 import { motion } from "framer-motion"
 import { useAssetStore } from "@/stores/assetStore"
 import { useTranslation } from "@/stores/languageStore"
@@ -98,10 +98,11 @@ export default function HomePage() {
         </div>
       </div>
       
-      {/* Main Feature Cards - 2 columns */}
-      <div className="px-4 mt-4">
+      {/* Main Feature Cards - 2 columns for first row, 1 for second */}
+      <div className="px-4 mt-4 space-y-3">
+        {/* First Row: 买家秀 + 专业棚拍 */}
         <div className="grid grid-cols-2 gap-3">
-          {/* Model Studio */}
+          {/* 买家秀 (原模特影棚) */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -114,30 +115,46 @@ export default function HomePage() {
               icon={Users}
               title={t.home.modelStudio}
               subtitle={t.home.modelStudioSubtitle}
-              height={220}
+              height={180}
               accent="purple"
             />
           </motion.div>
           
-          {/* Product Studio */}
+          {/* 专业棚拍 (新功能) */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
+            transition={{ duration: 0.4, delay: 0.15 }}
           >
             <FeatureCard
-              href="/studio"
-              beforeImage={`${HOMEPAGE_STORAGE_URL}/product-before.jpg`}
-              afterImage={`${HOMEPAGE_STORAGE_URL}/product-after.jpg`}
-              icon={Lightbulb}
-              title={t.home.productStudio}
-              subtitle={t.home.productStudioSubtitle}
-              height={220}
+              href="/pro-studio"
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/model-before.jpg`}
+              afterImage={`${HOMEPAGE_STORAGE_URL}/model-after.png`}
+              icon={Sparkles}
+              title={t.home.proStudio}
+              subtitle={t.home.proStudioSubtitle}
+              height={180}
               accent="amber"
             />
           </motion.div>
         </div>
         
+        {/* Second Row: 商品影棚 full width */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+        >
+          <FeatureCard
+            href="/studio"
+            beforeImage={`${HOMEPAGE_STORAGE_URL}/product-before.jpg`}
+            afterImage={`${HOMEPAGE_STORAGE_URL}/product-after.jpg`}
+            icon={Lightbulb}
+            title={t.home.productStudio}
+            subtitle={t.home.productStudioSubtitle}
+            height={140}
+          />
+        </motion.div>
       </div>
       
       {/* Navigation Cards */}

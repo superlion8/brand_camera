@@ -64,8 +64,10 @@ export const zh = {
   // Home Page
   home: {
     description: "一键生成专业的商品图和模特展示图",
-    modelStudio: "模特影棚",
-    modelStudioSubtitle: "AI真人穿拍",
+    modelStudio: "买家秀",
+    modelStudioSubtitle: "AI买家秀生成",
+    proStudio: "专业棚拍",
+    proStudioSubtitle: "高级质感棚拍图",
     editRoom: "修图室",
     editRoomDesc: "AI智能修图 · 自由描述你想要的效果",
     productStudio: "商品影棚",
@@ -76,7 +78,7 @@ export const zh = {
   
   // Camera Page
   camera: {
-    title: "模特影棚",
+    title: "买家秀",
     takePhoto: "拍摄",
     album: "相册",
     assetLibrary: "资产库",
@@ -209,7 +211,8 @@ export const zh = {
     detail: "详情",
     goEdit: "去修图",
     debugParams: "生成参数 (调试模式)",
-    modelStudio: "模特影棚",
+    modelStudio: "买家秀",
+    proStudio: "专业棚拍",
     editRoom: "修图室",
     productStudio: "商品影棚",
     productOriginal: "商品原图",

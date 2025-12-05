@@ -76,17 +76,80 @@ export const PRESET_PRODUCTS: Asset[] = Array.from({ length: 15 }, (_, i) => ({
 }))
 
 // ============================================================
+// STUDIO (专业棚拍) ASSETS
+// ============================================================
+
+// Studio Models (专业模特) - 10 total
+export const STUDIO_MODELS: Asset[] = Array.from({ length: 10 }, (_, i) => ({
+  id: `studio-model-${i + 1}`,
+  type: 'model' as AssetType,
+  name: `专业模特 ${i + 1}`,
+  imageUrl: `${STORAGE_URL}/studio-models/model-${i + 1}.png?${CACHE_VERSION}`,
+  isSystem: true,
+  category: 'studio', // 标记为专业棚拍类型
+}))
+
+// Studio Backgrounds - Light (打光背景) - 15 total
+export const STUDIO_BG_LIGHT: Asset[] = Array.from({ length: 15 }, (_, i) => ({
+  id: `studio-bg-light-${i + 1}`,
+  type: 'background' as AssetType,
+  name: `打光背景 ${String(i + 1).padStart(2, '0')}`,
+  imageUrl: `${STORAGE_URL}/studio-backgrounds/打光背景/${String(i + 1).padStart(2, '0')}.jpg?${CACHE_VERSION}`,
+  isSystem: true,
+  category: 'studio-light',
+}))
+
+// Studio Backgrounds - Solid (纯色背景) - 28 total
+export const STUDIO_BG_SOLID: Asset[] = Array.from({ length: 28 }, (_, i) => ({
+  id: `studio-bg-solid-${i + 1}`,
+  type: 'background' as AssetType,
+  name: `纯色背景 ${String(i + 1).padStart(2, '0')}`,
+  imageUrl: `${STORAGE_URL}/studio-backgrounds/纯色背景/${String(i + 1).padStart(2, '0')}.jpg?${CACHE_VERSION}`,
+  isSystem: true,
+  category: 'studio-solid',
+}))
+
+// Studio Backgrounds - Pattern (花色背景) - 15 total
+export const STUDIO_BG_PATTERN: Asset[] = Array.from({ length: 15 }, (_, i) => ({
+  id: `studio-bg-pattern-${i + 1}`,
+  type: 'background' as AssetType,
+  name: `花色背景 ${String(i + 1).padStart(2, '0')}`,
+  imageUrl: `${STORAGE_URL}/studio-backgrounds/花色背景/${String(i + 1).padStart(2, '0')}.jpg?${CACHE_VERSION}`,
+  isSystem: true,
+  category: 'studio-pattern',
+}))
+
+// All Studio Backgrounds combined
+export const ALL_STUDIO_BACKGROUNDS: Asset[] = [
+  ...STUDIO_BG_LIGHT,
+  ...STUDIO_BG_SOLID,
+  ...STUDIO_BG_PATTERN,
+]
+
+// ============================================================
 // HELPER FUNCTIONS
 // ============================================================
 
-// Get a random model from ALL presets (for generation when user doesn't select)
+// Get a random model from ALL presets (for 买家秀 when user doesn't select)
 export function getRandomModel(): Asset {
   const index = Math.floor(Math.random() * ALL_PRESET_MODELS.length)
   return ALL_PRESET_MODELS[index]
 }
 
-// Get a random background from ALL presets (for generation when user doesn't select)
+// Get a random background from ALL presets (for 买家秀 when user doesn't select)
 export function getRandomBackground(): Asset {
   const index = Math.floor(Math.random() * ALL_PRESET_BACKGROUNDS.length)
   return ALL_PRESET_BACKGROUNDS[index]
+}
+
+// Get a random studio model (for 专业棚拍 when user doesn't select)
+export function getRandomStudioModel(): Asset {
+  const index = Math.floor(Math.random() * STUDIO_MODELS.length)
+  return STUDIO_MODELS[index]
+}
+
+// Get a random studio background (for 专业棚拍 when user doesn't select)
+export function getRandomStudioBackground(): Asset {
+  const index = Math.floor(Math.random() * ALL_STUDIO_BACKGROUNDS.length)
+  return ALL_STUDIO_BACKGROUNDS[index]
 }

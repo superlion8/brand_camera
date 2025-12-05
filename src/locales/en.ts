@@ -66,8 +66,10 @@ export const en: Translations = {
   // Home Page
   home: {
     description: "Generate professional product and model photos with one click",
-    modelStudio: "Model Studio",
-    modelStudioSubtitle: "AI Model Try-on",
+    modelStudio: "Buyer Show",
+    modelStudioSubtitle: "AI Buyer Show",
+    proStudio: "Pro Studio",
+    proStudioSubtitle: "High-end Studio Shot",
     editRoom: "Edit Room",
     editRoomDesc: "AI Smart Edit · Describe what you want",
     productStudio: "Product Studio",
@@ -78,7 +80,7 @@ export const en: Translations = {
   
   // Camera Page
   camera: {
-    title: "Model Studio",
+    title: "Buyer Show",
     takePhoto: "Photo",
     album: "Album",
     assetLibrary: "Library",
@@ -211,7 +213,8 @@ export const en: Translations = {
     detail: "Details",
     goEdit: "Edit",
     debugParams: "Generation Params (Debug)",
-    modelStudio: "Model Studio",
+    modelStudio: "Buyer Show",
+    proStudio: "Pro Studio",
     editRoom: "Edit Room",
     productStudio: "Product Studio",
     productOriginal: "Original Product",

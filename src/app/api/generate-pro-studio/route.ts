@@ -1,0 +1,264 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getGenAIClient, extractImage, extractText, safetySettings } from '@/lib/genai'
+import { createClient } from '@/lib/supabase/server'
+import { appendImageToGeneration, uploadImageToStorage } from '@/lib/supabase/generationService'
+
+export const maxDuration = 300 // 5 minutes
+
+// 专业棚拍 Prompts
+const PROMPTS = {
+  // 背景库模式
+  backgroundLib: () => `
+为这个商品生成高级质感全身棚拍图。模特使用提供的模特图片，背景使用提供的背景图片。
+
+如果服饰是半身，请你作为一个高端奢侈品品牌设计师，为模特做全身的造型搭配，你需要关注包括款式，颜色，版型的和谐和设计感。要突出高级质感。
+`,
+  
+  // 随机背景模式
+  randomBg: () => `
+为这个商品生成高级质感全身棚拍图。模特使用提供的模特图片。
+
+背景请你参考商品适合的风格，使用一个棚拍常用的背景。
+
+如果服饰是半身，请你作为一个高端奢侈品品牌设计师，为模特做全身的造型搭配，你需要关注包括款式，颜色，版型的和谐和设计感。要突出高级质感。
+`,
+
+  // 扩展模式 - 生成拍摄指令
+  instructGen: () => `
+你现在是一个专门拍摄电商商品棚拍图的职业摄影师，请你基于你要拍摄的商品，和展示这个商品的模特，为这个模特选择一身合适商品风格的服装造型搭配，搭配要和谐、有风格、有高级感，再为这个模特和这身装扮选择一个合适的影棚拍摄背景，和拍摄pose，输出1段拍摄指令。请你严格用英文按照这个格式来输出：
+
+{{clothing}}：
+
+{{background}}：
+
+{{model_pose}}：
+
+{{Camera Position}}:
+
+{{Composition}}：
+
+{{Camera Setting}}：
+`,
+
+  // 扩展模式 - 根据指令生成图片
+  instructExec: (instructPrompt: string) => `
+请为这个模特拍摄一张身穿商品的专业影棚商品棚拍图。
+
+拍摄指令：${instructPrompt}
+`,
+}
+
+// 模型配置
+const PRIMARY_IMAGE_MODEL = 'gemini-3-pro-image-preview'
+const FALLBACK_IMAGE_MODEL = 'gemini-2.5-flash-image'
+const VLM_MODEL = 'gemini-3-pro-preview' // 用于生成拍摄指令
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const {
+      productImage,
+      modelImage,
+      backgroundImage,
+      mode, // 'background-lib' | 'random-bg' | 'extended'
+      index = 0,
+      taskId,
+    } = body
+
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const userId = user.id
+    const startTime = Date.now()
+    const label = `[ProStudio-${mode}-${index}]`
+
+    console.log(`${label} Starting generation...`)
+
+    const genai = getGenAIClient()
+    let result: { image: string; model: 'pro' | 'flash' } | null = null
+    let usedPrompt = ''
+    let generationMode: 'simple' | 'extended' = mode === 'extended' ? 'extended' : 'simple'
+
+    // 准备图片数据
+    const productImageData = productImage?.startsWith('data:') 
+      ? productImage.split(',')[1] 
+      : productImage
+
+    const modelImageData = modelImage?.startsWith('data:')
+      ? modelImage.split(',')[1]
+      : modelImage
+
+    const bgImageData = backgroundImage?.startsWith('data:')
+      ? backgroundImage.split(',')[1]
+      : backgroundImage
+
+    // Helper function to generate with fallback
+    const generateWithFallback = async (contents: any[]): Promise<{ image: string; model: 'pro' | 'flash' } | null> => {
+      // Try primary model
+      try {
+        console.log(`${label} Trying ${PRIMARY_IMAGE_MODEL}...`)
+        const response = await genai.models.generateContent({
+          model: PRIMARY_IMAGE_MODEL,
+          contents: [{ role: 'user', parts: contents }],
+          config: {
+            responseModalities: ['IMAGE'],
+            safetySettings,
+          },
+        })
+
+        const imageData = extractImage(response)
+        if (imageData) {
+          console.log(`${label} Success with ${PRIMARY_IMAGE_MODEL}`)
+          return { image: imageData, model: 'pro' }
+        }
+        throw new Error('No image in response')
+      } catch (error: any) {
+        console.error(`${label} Primary model failed:`, error.message)
+      }
+
+      // Fallback
+      try {
+        console.log(`${label} Trying fallback ${FALLBACK_IMAGE_MODEL}...`)
+        const response = await genai.models.generateContent({
+          model: FALLBACK_IMAGE_MODEL,
+          contents: [{ role: 'user', parts: contents }],
+          config: {
+            responseModalities: ['IMAGE'],
+            safetySettings,
+          },
+        })
+        
+        const imageData = extractImage(response)
+        if (imageData) {
+          console.log(`${label} Success with fallback`)
+          return { image: imageData, model: 'flash' }
+        }
+      } catch (fallbackError: any) {
+        console.error(`${label} Fallback model also failed:`, fallbackError.message)
+      }
+
+      return null
+    }
+
+    if (mode === 'background-lib') {
+      // 背景库模式：使用用户选择/随机的模特+背景
+      usedPrompt = PROMPTS.backgroundLib()
+      
+      const contents = [
+        { text: usedPrompt },
+        { inlineData: { mimeType: 'image/jpeg', data: productImageData } },
+        { inlineData: { mimeType: 'image/jpeg', data: modelImageData } },
+        { inlineData: { mimeType: 'image/jpeg', data: bgImageData } },
+      ]
+
+      result = await generateWithFallback(contents)
+
+    } else if (mode === 'random-bg') {
+      // 随机背景模式：模特 + AI生成背景
+      usedPrompt = PROMPTS.randomBg()
+      
+      const contents = [
+        { text: usedPrompt },
+        { inlineData: { mimeType: 'image/jpeg', data: productImageData } },
+        { inlineData: { mimeType: 'image/jpeg', data: modelImageData } },
+      ]
+
+      result = await generateWithFallback(contents)
+
+    } else if (mode === 'extended') {
+      // 扩展模式：先生成拍摄指令，再生成图片
+      generationMode = 'extended'
+      
+      // Step 1: 生成拍摄指令
+      const instructContents = [
+        { text: PROMPTS.instructGen() },
+        { inlineData: { mimeType: 'image/jpeg', data: productImageData } },
+        { inlineData: { mimeType: 'image/jpeg', data: modelImageData } },
+      ]
+
+      let instructPrompt = ''
+      try {
+        console.log(`${label} Generating instruct prompt with ${VLM_MODEL}...`)
+        const instructResponse = await genai.models.generateContent({
+          model: VLM_MODEL,
+          contents: [{ role: 'user', parts: instructContents }],
+          config: {
+            safetySettings,
+          },
+        })
+        instructPrompt = extractText(instructResponse) || ''
+        console.log(`${label} Generated instruct prompt:`, instructPrompt.substring(0, 200))
+      } catch (error: any) {
+        console.error(`${label} Failed to generate instruct:`, error.message)
+        instructPrompt = 'Professional studio shot with elegant pose and soft lighting.'
+      }
+
+      // Step 2: 根据指令生成图片
+      usedPrompt = PROMPTS.instructExec(instructPrompt)
+      
+      const execContents = [
+        { text: usedPrompt },
+        { inlineData: { mimeType: 'image/jpeg', data: productImageData } },
+        { inlineData: { mimeType: 'image/jpeg', data: modelImageData } },
+      ]
+
+      result = await generateWithFallback(execContents)
+    }
+
+    const duration = Date.now() - startTime
+
+    if (!result) {
+      console.error(`${label} Generation failed after ${duration}ms`)
+      return NextResponse.json(
+        { success: false, error: 'RESOURCE_BUSY', index },
+        { status: 503 }
+      )
+    }
+
+    console.log(`${label} Generated in ${duration}ms using ${result.model}`)
+
+    // 上传到 Storage 并保存到数据库
+    const base64Image = `data:image/png;base64,${result.image}`
+    let uploadedUrl = base64Image
+
+    if (taskId) {
+      const uploaded = await uploadImageToStorage(base64Image, userId, `prostudio_${taskId}_${index}`)
+      if (uploaded) {
+        uploadedUrl = uploaded
+        
+        // 保存到数据库
+        await appendImageToGeneration({
+          taskId,
+          userId,
+          imageIndex: index,
+          imageUrl: uploaded,
+          modelType: result.model,
+          genMode: generationMode,
+          prompt: usedPrompt,
+          taskType: 'pro_studio',
+        })
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      image: uploadedUrl,
+      index,
+      modelType: result.model,
+      genMode: generationMode,
+      prompt: usedPrompt,
+      duration,
+    })
+
+  } catch (error: any) {
+    console.error('[ProStudio] Error:', error)
+    return NextResponse.json(
+      { success: false, error: error.message || 'Generation failed' },
+      { status: 500 }
+    )
+  }
+}

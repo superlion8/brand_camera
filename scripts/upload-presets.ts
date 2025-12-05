@@ -1,186 +1,135 @@
 /**
- * Script to upload preset images to Supabase Storage
- * Run with: npx ts-node scripts/upload-presets.ts
- * 
- * Make sure to set environment variables:
- * - NEXT_PUBLIC_SUPABASE_URL
- * - SUPABASE_SERVICE_ROLE_KEY (needs service role for bucket operations)
+ * 上传棚拍资源到 Supabase Storage
+ * 运行方式: npx ts-node scripts/upload-presets.ts
  */
 
 import { createClient } from '@supabase/supabase-js'
 import * as fs from 'fs'
 import * as path from 'path'
-import * as dotenv from 'dotenv'
 
-// Load environment variables
-dotenv.config({ path: '.env.local' })
+// Supabase 配置
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('Missing environment variables. Please set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY')
+if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+  console.error('请设置 NEXT_PUBLIC_SUPABASE_URL 和 SUPABASE_SERVICE_ROLE_KEY 环境变量')
   process.exit(1)
 }
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: { persistSession: false }
-})
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
-const BUCKET_NAME = 'presets'
-const PRESETS_DIR = path.join(__dirname, '../public/presets')
+// 资源路径
+const BASE_PATH = process.env.HOME + '/Desktop/brand_cam资源/V2'
+const BUCKET = 'presets'
 
-interface UploadResult {
-  path: string
-  publicUrl: string
+interface UploadTask {
+  localPath: string
+  remotePath: string
 }
 
-async function ensureBucketExists() {
-  const { data: buckets } = await supabase.storage.listBuckets()
-  const bucketExists = buckets?.some(b => b.name === BUCKET_NAME)
-  
-  if (!bucketExists) {
-    const { error } = await supabase.storage.createBucket(BUCKET_NAME, {
-      public: true,
-      fileSizeLimit: 5242880, // 5MB
-      allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp']
-    })
-    if (error) {
-      console.error('Error creating bucket:', error)
-      throw error
-    }
-    console.log(`Created bucket: ${BUCKET_NAME}`)
-  } else {
-    console.log(`Bucket ${BUCKET_NAME} already exists`)
-  }
-}
-
-async function uploadFile(localPath: string, storagePath: string): Promise<UploadResult | null> {
+async function uploadFile(localPath: string, remotePath: string): Promise<boolean> {
   try {
     const fileBuffer = fs.readFileSync(localPath)
-    const ext = path.extname(localPath).toLowerCase()
-    const contentType = ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : 'image/jpeg'
+    const contentType = localPath.endsWith('.png') ? 'image/png' : 'image/jpeg'
     
-    const { data, error } = await supabase.storage
-      .from(BUCKET_NAME)
-      .upload(storagePath, fileBuffer, {
+    const { error } = await supabase.storage
+      .from(BUCKET)
+      .upload(remotePath, fileBuffer, {
         contentType,
-        upsert: true
+        upsert: true, // 覆盖已存在的文件
       })
     
     if (error) {
-      console.error(`Error uploading ${storagePath}:`, error)
-      return null
+      console.error(`❌ 上传失败: ${remotePath}`, error.message)
+      return false
     }
     
-    const { data: urlData } = supabase.storage
-      .from(BUCKET_NAME)
-      .getPublicUrl(storagePath)
-    
-    return {
-      path: storagePath,
-      publicUrl: urlData.publicUrl
-    }
-  } catch (err) {
-    console.error(`Error reading file ${localPath}:`, err)
-    return null
+    console.log(`✅ ${remotePath}`)
+    return true
+  } catch (err: any) {
+    console.error(`❌ 上传失败: ${remotePath}`, err.message)
+    return false
   }
 }
 
-async function uploadDirectory(dirPath: string, storagePrefix: string = ''): Promise<UploadResult[]> {
-  const results: UploadResult[] = []
-  const items = fs.readdirSync(dirPath)
+async function getAllFiles(dir: string, baseDir: string = dir): Promise<UploadTask[]> {
+  const tasks: UploadTask[] = []
+  const files = fs.readdirSync(dir)
   
-  for (const item of items) {
-    const fullPath = path.join(dirPath, item)
-    const storagePath = storagePrefix ? `${storagePrefix}/${item}` : item
+  for (const file of files) {
+    if (file.startsWith('.')) continue // 跳过隐藏文件
+    
+    const fullPath = path.join(dir, file)
     const stat = fs.statSync(fullPath)
     
     if (stat.isDirectory()) {
-      const subResults = await uploadDirectory(fullPath, storagePath)
-      results.push(...subResults)
-    } else if (stat.isFile() && /\.(jpg|jpeg|png|webp)$/i.test(item)) {
-      console.log(`Uploading: ${storagePath}`)
-      const result = await uploadFile(fullPath, storagePath)
-      if (result) {
-        results.push(result)
-      }
+      const subTasks = await getAllFiles(fullPath, baseDir)
+      tasks.push(...subTasks)
+    } else if (/\.(png|jpg|jpeg)$/i.test(file)) {
+      const relativePath = path.relative(baseDir, fullPath)
+      tasks.push({
+        localPath: fullPath,
+        remotePath: relativePath.replace(/\\/g, '/'), // Windows 兼容
+      })
     }
   }
   
-  return results
+  return tasks
 }
 
-async function generatePresetsData(results: UploadResult[]) {
-  // Group by category
-  const models: any[] = []
-  const backgrounds: any[] = []
-  const vibes: any[] = []
+async function uploadStudioBackgrounds() {
+  console.log('\n📸 上传棚拍背景...\n')
   
-  for (const result of results) {
-    const parts = result.path.split('/')
-    
-    if (parts[0] === 'models') {
-      const subcategory = parts[1] // chinese, korean, western
-      const name = parts[2].replace(/\.[^.]+$/, '').replace(/-/g, ' ')
-      models.push({
-        id: `pm-${subcategory.substring(0, 2)}-${models.filter(m => m.subcategory === subcategory).length + 1}`,
-        type: 'model',
-        name: `${subcategory === 'chinese' ? '中式' : subcategory === 'korean' ? '韩系' : '欧美'} ${models.filter(m => m.subcategory === subcategory).length + 1}`,
-        imageUrl: result.publicUrl,
-        isSystem: true,
-        styleCategory: subcategory,
-        subcategory: subcategory
-      })
-    } else if (parts[0] === 'backgrounds') {
-      const subcategory = parts[1] // indoor, outdoor, street
-      const subcategoryLabel = subcategory === 'indoor' ? '室内' : subcategory === 'outdoor' ? '自然' : '街头'
-      backgrounds.push({
-        id: `pb-${subcategory.substring(0, 2)}-${backgrounds.filter(b => b.subcategory === subcategory).length + 1}`,
-        type: 'background',
-        name: `${subcategoryLabel} ${backgrounds.filter(b => b.subcategory === subcategory).length + 1}`,
-        imageUrl: result.publicUrl,
-        isSystem: true,
-        subcategory: subcategory
-      })
-    } else if (parts[0] === 'vibes') {
-      vibes.push({
-        id: `pv-${vibes.length + 1}`,
-        type: 'vibe',
-        name: `氛围 ${vibes.length + 1}`,
-        imageUrl: result.publicUrl,
-        isSystem: true
-      })
-    }
+  const bgPath = path.join(BASE_PATH, '棚拍背景')
+  const tasks = await getAllFiles(bgPath)
+  
+  let success = 0
+  let failed = 0
+  
+  for (const task of tasks) {
+    // 上传到 studio-backgrounds 文件夹
+    const remotePath = `studio-backgrounds/${task.remotePath}`
+    const result = await uploadFile(task.localPath, remotePath)
+    if (result) success++
+    else failed++
   }
   
-  console.log('\n=== Generated Presets Data ===\n')
-  console.log('PRESET_MODELS:', JSON.stringify(models, null, 2))
-  console.log('\nPRESET_BACKGROUNDS:', JSON.stringify(backgrounds, null, 2))
-  console.log('\nPRESET_VIBES:', JSON.stringify(vibes, null, 2))
+  console.log(`\n棚拍背景: 成功 ${success}, 失败 ${failed}`)
+  return { success, failed }
+}
+
+async function uploadStudioModels() {
+  console.log('\n👤 上传棚拍模特...\n')
   
-  return { models, backgrounds, vibes }
+  const modelPath = path.join(BASE_PATH, '棚拍模特')
+  const tasks = await getAllFiles(modelPath)
+  
+  let success = 0
+  let failed = 0
+  
+  for (const task of tasks) {
+    // 上传到 studio-models 文件夹
+    const remotePath = `studio-models/${task.remotePath}`
+    const result = await uploadFile(task.localPath, remotePath)
+    if (result) success++
+    else failed++
+  }
+  
+  console.log(`\n棚拍模特: 成功 ${success}, 失败 ${failed}`)
+  return { success, failed }
 }
 
 async function main() {
-  console.log('Starting preset upload...\n')
+  console.log('🚀 开始上传棚拍资源到 Supabase Storage\n')
+  console.log(`Bucket: ${BUCKET}`)
+  console.log(`资源路径: ${BASE_PATH}\n`)
   
-  try {
-    await ensureBucketExists()
-    
-    console.log(`\nUploading files from: ${PRESETS_DIR}\n`)
-    const results = await uploadDirectory(PRESETS_DIR)
-    
-    console.log(`\nUploaded ${results.length} files successfully!\n`)
-    
-    // Generate the presets data for updating the code
-    await generatePresetsData(results)
-    
-  } catch (error) {
-    console.error('Upload failed:', error)
-    process.exit(1)
-  }
+  const bg = await uploadStudioBackgrounds()
+  const model = await uploadStudioModels()
+  
+  console.log('\n' + '='.repeat(50))
+  console.log(`📊 总计: 成功 ${bg.success + model.success}, 失败 ${bg.failed + model.failed}`)
+  console.log('='.repeat(50))
 }
 
-main()
-
+main().catch(console.error)

@@ -20,8 +20,15 @@ type TabType = "all" | "model" | "product" | "favorites"
 function isModelType(gen: Generation | null | undefined): boolean {
   if (!gen) return false
   const type = gen.type?.toLowerCase() || ''
-  // 只检查明确的模特类型，不再用 outputGenModes 作为 fallback
+  // 买家秀类型
   return type === 'camera_model' || type === 'model' || type === 'camera' || type === 'model_studio'
+}
+
+function isProStudioType(gen: Generation | null | undefined): boolean {
+  if (!gen) return false
+  const type = gen.type?.toLowerCase() || ''
+  // 专业棚拍类型
+  return type === 'pro_studio' || type === 'prostudio'
 }
 
 function isProductType(gen: Generation | null | undefined): boolean {
@@ -144,9 +151,21 @@ export default function GalleryPage() {
       return { label: t.gallery.model, color: 'bg-zinc-400' }
     }
     
+    // Pro Studio types (专业棚拍)
+    if (isProStudioType(gen)) {
+      const mode = gen.outputGenModes?.[imageIndex]
+      const subLabel = isDebugMode && mode ? (mode === 'simple' ? '背景库' : '扩展') : undefined
+      return { 
+        label: t.gallery.proStudio || '专业棚拍', 
+        color: 'bg-gradient-to-r from-amber-500 to-orange-500',
+        subLabel,
+        subColor: 'bg-amber-600'
+      }
+    }
+    
     // Studio/product types
     if (isProductType(gen)) {
-      return { label: t.gallery.product, color: 'bg-amber-500' }
+      return { label: t.gallery.productStudio || t.gallery.product, color: 'bg-amber-500' }
     }
     
     // Edit types
@@ -154,13 +173,13 @@ export default function GalleryPage() {
       return { label: t.gallery.editRoom, color: 'bg-purple-500' }
     }
     
-    // Model/camera types (most common)
+    // Model/camera types (买家秀)
     if (isModelType(gen)) {
       const mode = gen.outputGenModes?.[imageIndex]
       // Only show sub-labels in debug mode
       const subLabel = isDebugMode && mode ? (mode === 'simple' ? t.common.simple : t.common.extended) : undefined
       return { 
-        label: t.gallery.model, 
+        label: t.gallery.modelStudio || '买家秀', 
         color: 'bg-blue-500',
         subLabel,
         subColor: mode === 'simple' ? 'bg-green-500' : 'bg-purple-500'
