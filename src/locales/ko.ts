@@ -124,6 +124,32 @@ export const ko: Translations = {
     goUpload: "업로드하기",
   },
   
+  // Group Shoot Page
+  groupShootPage: {
+    title: "그룹 촬영",
+    uploadImage: "이미지 업로드",
+    fromAlbum: "앨범에서",
+    selectFromPhotos: "사진에서 선택",
+    modelCategory: "모델 카테고리",
+    imageSelected: "이미지 선택됨",
+    clickToReselect: "× 클릭하여 다시 선택",
+    lifestyleMode: "라이프스타일",
+    studioMode: "스튜디오",
+    randomShoot: "랜덤",
+    multiAngle: "멀티 앵글",
+    aiDesignPose: "AI 포즈 설계",
+    frontBackLeftRight: "앞/뒤/좌/우",
+    designingPose: "포즈 설계 중",
+    lifestylePose: "라이프스타일",
+    commercialPose: "상업용",
+    all: "전체",
+    buyerShow: "구매자 쇼",
+    proStudio: "프로 스튜디오",
+    groupPhoto: "그룹",
+    noPhotos: "사진 없음",
+    goShootFirst: "먼저 사진을 촬영하세요",
+  },
+  
   // Edit Page
   edit: {
     title: "AI 편집실",

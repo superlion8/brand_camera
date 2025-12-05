@@ -195,7 +195,7 @@ export default function GroupShootPage() {
     }
   }
 
-  // 获取模特分类的图库图片（按类型分组）
+  // 获取模特分类的图库图片（买家秀+专业棚拍+组图）
   const modelGenerations = (generations || [])
     .filter(g => {
       if (!g) return false
@@ -204,10 +204,9 @@ export default function GroupShootPage() {
       const hasValidUrls = g.outputImageUrls.some(url => typeof url === 'string' && url.length > 0)
       if (!hasValidUrls) return false
       
-      const type = (g.type || '').toLowerCase()
-      // 只显示模特相关的分类
-      return type === 'camera' || type === 'camera_model' || type === 'model' || 
-             type === 'pro_studio' || type === 'prostudio' || type === 'group_shoot'
+      const type = g.type
+      // 只显示模特相关的分类: 买家秀(camera_model) + 专业棚拍(pro_studio) + 组图(group_shoot)
+      return type === 'camera_model' || type === 'pro_studio' || type === 'group_shoot'
     })
     .slice(0, 50) // 增加到50个
 
@@ -275,10 +274,10 @@ export default function GroupShootPage() {
                         </div>
                         <div className="text-center">
                           <p className={`font-semibold ${styleMode === 'lifestyle' ? 'text-blue-900' : 'text-amber-900'}`}>
-                            上传图片
+                            {t.groupShootPage?.uploadImage || '上传图片'}
                           </p>
                           <p className={`text-xs mt-0.5 ${styleMode === 'lifestyle' ? 'text-blue-600/70' : 'text-amber-600/70'}`}>
-                            从相册选择
+                            {t.groupShootPage?.fromAlbum || '从相册选择'}
                           </p>
                         </div>
                       </button>
@@ -295,10 +294,10 @@ export default function GroupShootPage() {
                         </div>
                         <div className="text-center">
                           <p className={`font-semibold ${styleMode === 'lifestyle' ? 'text-indigo-900' : 'text-orange-900'}`}>
-                            从成片选择
+                            {t.groupShootPage?.selectFromPhotos || '从成片选择'}
                           </p>
                           <p className={`text-xs mt-0.5 ${styleMode === 'lifestyle' ? 'text-indigo-600/70' : 'text-orange-600/70'}`}>
-                            模特分类
+                            {t.groupShootPage?.modelCategory || '模特分类'}
                           </p>
                         </div>
                       </button>
@@ -325,10 +324,10 @@ export default function GroupShootPage() {
                             : 'bg-amber-500 text-white'
                         }`}>
                           <Check className="w-4 h-4" />
-                          图片已选择
+                          {t.groupShootPage?.imageSelected || '图片已选择'}
                         </div>
                         <p className={`text-xs mt-2 ${styleMode === 'lifestyle' ? 'text-blue-700/70' : 'text-amber-700/70'}`}>
-                          点击右上角 × 可重新选择
+                          {t.groupShootPage?.clickToReselect || '点击右上角 × 可重新选择'}
                         </p>
                       </div>
                     </div>
@@ -349,7 +348,7 @@ export default function GroupShootPage() {
                     }`}
                   >
                     <Users className="w-4 h-4" />
-                    <span className="font-medium text-sm">生活风格</span>
+                    <span className="font-medium text-sm">{t.groupShootPage?.lifestyleMode || '生活风格'}</span>
                   </button>
                   <button
                     onClick={() => setStyleMode('studio')}
@@ -360,7 +359,7 @@ export default function GroupShootPage() {
                     }`}
                   >
                     <Sparkles className="w-4 h-4" />
-                    <span className="font-medium text-sm">棚拍风格</span>
+                    <span className="font-medium text-sm">{t.groupShootPage?.studioMode || '棚拍风格'}</span>
                   </button>
                 </div>
 
@@ -376,9 +375,9 @@ export default function GroupShootPage() {
                   >
                     <div className="flex items-center justify-center gap-2">
                       <Shuffle className="w-4 h-4" />
-                      <span className="font-medium text-sm">随意拍</span>
+                      <span className="font-medium text-sm">{t.groupShootPage?.randomShoot || '随意拍'}</span>
                     </div>
-                    <p className="text-[10px] opacity-60 mt-0.5">5张·AI设计pose</p>
+                    <p className="text-[10px] opacity-60 mt-0.5">5·{t.groupShootPage?.aiDesignPose || 'AI design pose'}</p>
                   </button>
                   <button
                     onClick={() => setShootMode('multiangle')}
@@ -390,29 +389,29 @@ export default function GroupShootPage() {
                   >
                     <div className="flex items-center justify-center gap-2">
                       <Grid3X3 className="w-4 h-4" />
-                      <span className="font-medium text-sm">多角度</span>
+                      <span className="font-medium text-sm">{t.groupShootPage?.multiAngle || '多角度'}</span>
                     </div>
-                    <p className="text-[10px] opacity-60 mt-0.5">4张·前后左右</p>
+                    <p className="text-[10px] opacity-60 mt-0.5">4·{t.groupShootPage?.frontBackLeftRight || 'Front/Back/L/R'}</p>
                   </button>
                 </div>
               </div>
             </div>
 
-            {/* Fixed Bottom Button */}
-            <div className="fixed bottom-16 left-0 right-0 p-4 bg-white border-t max-w-md mx-auto">
+            {/* Fixed Bottom Button - 参考商品影棚样式 */}
+            <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-white via-white to-transparent max-w-md mx-auto z-40">
               <button
                 onClick={handleStartGeneration}
                 disabled={!selectedImage}
-                className={`w-full h-14 rounded-xl text-lg font-semibold transition-colors flex items-center justify-center gap-2 ${
+                className={`w-full h-12 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 ${
                   selectedImage 
                     ? (styleMode === 'lifestyle' 
-                        ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600 shadow-lg shadow-blue-500/30' 
-                        : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 shadow-lg shadow-amber-500/30')
+                        ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-200' 
+                        : 'bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-200')
                     : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
                 }`}
               >
-                <Camera className="w-5 h-5" />
-                开始拍摄 ({numImages}张)
+                <Sparkles className="w-5 h-5" />
+                <span>{t.camera.startShoot} ({numImages})</span>
               </button>
             </div>
 
@@ -656,8 +655,8 @@ export default function GroupShootPage() {
               <div className="p-4 border-b">
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <h3 className="font-semibold">从成片选择</h3>
-                    <p className="text-xs text-zinc-400 mt-0.5">选择模特成片作为输入</p>
+                    <h3 className="font-semibold">{t.groupShootPage?.selectFromPhotos || '从成片选择'}</h3>
+                    <p className="text-xs text-zinc-400 mt-0.5">{t.groupShootPage?.modelCategory || '选择模特成片'}</p>
                   </div>
                   <button onClick={() => setShowGalleryPicker(false)}>
                     <X className="w-5 h-5 text-zinc-400" />
@@ -667,10 +666,10 @@ export default function GroupShootPage() {
                 {/* 子分类 Tabs */}
                 <div className="flex gap-2">
                   {[
-                    { id: 'all', label: '全部' },
-                    { id: 'buyer', label: '买家秀' },
-                    { id: 'pro', label: '专业棚拍' },
-                    { id: 'group', label: '组图' },
+                    { id: 'all', label: t.groupShootPage?.all || '全部' },
+                    { id: 'buyer', label: t.groupShootPage?.buyerShow || '买家秀' },
+                    { id: 'pro', label: t.groupShootPage?.proStudio || '专业棚拍' },
+                    { id: 'group', label: t.groupShootPage?.groupPhoto || '组图' },
                   ].map(tab => (
                     <button
                       key={tab.id}
@@ -693,9 +692,9 @@ export default function GroupShootPage() {
                   const filteredGenerations = modelGenerations.filter(gen => {
                     const type = gen.type
                     if (gallerySubType === 'all') return true
-                    if (gallerySubType === 'buyer') return type === 'camera_model' || type === 'edit'
-                    if (gallerySubType === 'pro') return type === 'pro_studio'
-                    if (gallerySubType === 'group') return type === 'group_shoot'
+                    if (gallerySubType === 'buyer') return type === 'camera_model' // 买家秀
+                    if (gallerySubType === 'pro') return type === 'pro_studio' // 专业棚拍
+                    if (gallerySubType === 'group') return type === 'group_shoot' // 组图
                     return true
                   })
                   
@@ -712,10 +711,17 @@ export default function GroupShootPage() {
                   }
                   
                   if (filteredGenerations.length === 0) {
+                    const subTypeLabel = gallerySubType === 'buyer' 
+                      ? (t.groupShootPage?.buyerShow || '买家秀')
+                      : gallerySubType === 'pro' 
+                        ? (t.groupShootPage?.proStudio || '专业棚拍')
+                        : gallerySubType === 'group' 
+                          ? (t.groupShootPage?.groupPhoto || '组图')
+                          : ''
                     return (
                       <div className="h-40 flex flex-col items-center justify-center text-zinc-400 text-sm gap-2">
-                        <p>暂无{gallerySubType === 'buyer' ? '买家秀' : gallerySubType === 'pro' ? '专业棚拍' : gallerySubType === 'group' ? '组图' : '模特'}成片</p>
-                        <p className="text-xs">先去拍摄一些照片吧</p>
+                        <p>{t.groupShootPage?.noPhotos || '暂无成片'}{subTypeLabel && ` (${subTypeLabel})`}</p>
+                        <p className="text-xs">{t.groupShootPage?.goShootFirst || '先去拍摄一些照片吧'}</p>
                       </div>
                     )
                   }

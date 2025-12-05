@@ -124,6 +124,32 @@ export const en: Translations = {
     goUpload: "Go Upload",
   },
   
+  // Group Shoot Page
+  groupShootPage: {
+    title: "Group Shoot",
+    uploadImage: "Upload Image",
+    fromAlbum: "From Album",
+    selectFromPhotos: "Select from Photos",
+    modelCategory: "Model Category",
+    imageSelected: "Image Selected",
+    clickToReselect: "Click × to reselect",
+    lifestyleMode: "Lifestyle",
+    studioMode: "Studio",
+    randomShoot: "Random",
+    multiAngle: "Multi-angle",
+    aiDesignPose: "AI Design Pose",
+    frontBackLeftRight: "Front/Back/L/R",
+    designingPose: "Designing pose",
+    lifestylePose: "lifestyle",
+    commercialPose: "commercial",
+    all: "All",
+    buyerShow: "Buyer Show",
+    proStudio: "Pro Studio",
+    groupPhoto: "Group",
+    noPhotos: "No photos",
+    goShootFirst: "Go take some photos first",
+  },
+  
   // Edit Page
   edit: {
     title: "AI Edit Room",

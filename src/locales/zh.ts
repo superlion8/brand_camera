@@ -122,6 +122,32 @@ export const zh = {
     goUpload: "去上传",
   },
   
+  // Group Shoot Page
+  groupShootPage: {
+    title: "组图拍摄",
+    uploadImage: "上传图片",
+    fromAlbum: "从相册选择",
+    selectFromPhotos: "从成片选择",
+    modelCategory: "模特分类",
+    imageSelected: "图片已选择",
+    clickToReselect: "点击右上角 × 可重新选择",
+    lifestyleMode: "生活风格",
+    studioMode: "棚拍风格",
+    randomShoot: "随意拍",
+    multiAngle: "多角度",
+    aiDesignPose: "AI设计pose",
+    frontBackLeftRight: "前后左右",
+    designingPose: "设计pose中",
+    lifestylePose: "生活化",
+    commercialPose: "电商展示",
+    all: "全部",
+    buyerShow: "买家秀",
+    proStudio: "专业棚拍",
+    groupPhoto: "组图",
+    noPhotos: "暂无成片",
+    goShootFirst: "先去拍摄一些照片吧",
+  },
+  
   // Edit Page
   edit: {
     title: "AI 修图室",
