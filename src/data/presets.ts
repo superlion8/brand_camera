@@ -94,7 +94,7 @@ export const STUDIO_BG_LIGHT: Asset[] = Array.from({ length: 15 }, (_, i) => ({
   id: `studio-bg-light-${i + 1}`,
   type: 'background' as AssetType,
   name: `打光背景 ${String(i + 1).padStart(2, '0')}`,
-  imageUrl: `${STORAGE_URL}/studio-backgrounds/打光背景/${String(i + 1).padStart(2, '0')}.jpg?${CACHE_VERSION}`,
+  imageUrl: `${STORAGE_URL}/studio-backgrounds/light/${String(i + 1).padStart(2, '0')}.jpg?${CACHE_VERSION}`,
   isSystem: true,
   category: 'studio-light',
 }))
@@ -104,7 +104,7 @@ export const STUDIO_BG_SOLID: Asset[] = Array.from({ length: 28 }, (_, i) => ({
   id: `studio-bg-solid-${i + 1}`,
   type: 'background' as AssetType,
   name: `纯色背景 ${String(i + 1).padStart(2, '0')}`,
-  imageUrl: `${STORAGE_URL}/studio-backgrounds/纯色背景/${String(i + 1).padStart(2, '0')}.jpg?${CACHE_VERSION}`,
+  imageUrl: `${STORAGE_URL}/studio-backgrounds/solid/${String(i + 1).padStart(2, '0')}.jpg?${CACHE_VERSION}`,
   isSystem: true,
   category: 'studio-solid',
 }))
@@ -114,7 +114,7 @@ export const STUDIO_BG_PATTERN: Asset[] = Array.from({ length: 15 }, (_, i) => (
   id: `studio-bg-pattern-${i + 1}`,
   type: 'background' as AssetType,
   name: `花色背景 ${String(i + 1).padStart(2, '0')}`,
-  imageUrl: `${STORAGE_URL}/studio-backgrounds/花色背景/${String(i + 1).padStart(2, '0')}.jpg?${CACHE_VERSION}`,
+  imageUrl: `${STORAGE_URL}/studio-backgrounds/pattern/${String(i + 1).padStart(2, '0')}.jpg?${CACHE_VERSION}`,
   isSystem: true,
   category: 'studio-pattern',
 }))
