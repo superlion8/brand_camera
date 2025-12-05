@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { ImageIcon, Sparkles } from "lucide-react"
+import { Camera, Sparkles } from "lucide-react"
 import { create } from "zustand"
 
 // Store for triggering the fly animation
@@ -86,8 +86,8 @@ export function FlyToGallery() {
             onAnimationComplete={endFly}
             className="fixed z-[100] pointer-events-none"
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg shadow-purple-500/30 flex items-center justify-center">
-              <ImageIcon className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full shadow-lg shadow-purple-500/30 flex items-center justify-center">
+              <Camera className="w-5 h-5 text-white" />
             </div>
           </motion.div>
 
