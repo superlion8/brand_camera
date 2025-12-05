@@ -79,12 +79,13 @@ export const PRESET_PRODUCTS: Asset[] = Array.from({ length: 15 }, (_, i) => ({
 // STUDIO (专业棚拍) ASSETS
 // ============================================================
 
-// Studio Models (专业模特) - 10 total
+// Studio Models (专业模特/高级模特) - 10 total
+// 文件位于 presets/studio-models/01.png ~ 10.png
 export const STUDIO_MODELS: Asset[] = Array.from({ length: 10 }, (_, i) => ({
   id: `studio-model-${i + 1}`,
   type: 'model' as AssetType,
-  name: `专业模特 ${i + 1}`,
-  imageUrl: `${STORAGE_URL}/studio-models/model-${i + 1}.png?${CACHE_VERSION}`,
+  name: `高级模特 ${i + 1}`,
+  imageUrl: `${STORAGE_URL}/studio-models/${String(i + 1).padStart(2, '0')}.png?${CACHE_VERSION}`,
   isSystem: true,
   category: 'studio', // 标记为专业棚拍类型
 }))

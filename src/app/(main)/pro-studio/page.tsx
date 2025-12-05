@@ -352,19 +352,47 @@ export default function ProStudioPage() {
       ? await ensureBase64(selectedBg.imageUrl) 
       : null
 
+    // 辅助函数：带重试的随机模特加载
+    const loadRandomModelWithRetry = async (maxRetries = 3): Promise<string | null> => {
+      for (let i = 0; i < maxRetries; i++) {
+        const randomModel = getRandomStudioModel()
+        console.log(`[ProStudio] Trying random model ${i + 1}/${maxRetries}:`, randomModel.imageUrl)
+        const base64 = await ensureBase64(randomModel.imageUrl)
+        if (base64) {
+          console.log(`[ProStudio] Successfully loaded random model on attempt ${i + 1}`)
+          return base64
+        }
+        console.warn(`[ProStudio] Failed to load random model on attempt ${i + 1}`)
+      }
+      console.error(`[ProStudio] All ${maxRetries} attempts to load random model failed`)
+      return null
+    }
+
+    // 辅助函数：带重试的随机背景加载
+    const loadRandomBgWithRetry = async (maxRetries = 3): Promise<string | null> => {
+      for (let i = 0; i < maxRetries; i++) {
+        const randomBg = getRandomStudioBackground()
+        console.log(`[ProStudio] Trying random bg ${i + 1}/${maxRetries}:`, randomBg.imageUrl)
+        const base64 = await ensureBase64(randomBg.imageUrl)
+        if (base64) {
+          console.log(`[ProStudio] Successfully loaded random bg on attempt ${i + 1}`)
+          return base64
+        }
+        console.warn(`[ProStudio] Failed to load random bg on attempt ${i + 1}`)
+      }
+      console.error(`[ProStudio] All ${maxRetries} attempts to load random bg failed`)
+      return null
+    }
+
     // 背景库模式：随机选择一个模特和背景（2张图共用）
-    const bgLibRandomModel = !selectedModel ? getRandomStudioModel() : null
-    const bgLibRandomBg = !selectedBg ? getRandomStudioBackground() : null
-    const bgLibModelBase64 = userSelectedModelBase64 || (bgLibRandomModel ? await ensureBase64(bgLibRandomModel.imageUrl) : null)
-    const bgLibBgBase64 = userSelectedBgBase64 || (bgLibRandomBg ? await ensureBase64(bgLibRandomBg.imageUrl) : null)
+    const bgLibModelBase64 = userSelectedModelBase64 || (!selectedModel ? await loadRandomModelWithRetry() : null)
+    const bgLibBgBase64 = userSelectedBgBase64 || (!selectedBg ? await loadRandomBgWithRetry() : null)
 
     // 随机背景模式：随机选择一个模特（2张图共用），背景由AI生成
-    const randomBgRandomModel = !selectedModel ? getRandomStudioModel() : null
-    const randomBgModelBase64 = userSelectedModelBase64 || (randomBgRandomModel ? await ensureBase64(randomBgRandomModel.imageUrl) : null)
+    const randomBgModelBase64 = userSelectedModelBase64 || (!selectedModel ? await loadRandomModelWithRetry() : null)
 
     // 扩展模式：随机选择一个模特（2张图共用）
-    const extendedRandomModel = !selectedModel ? getRandomStudioModel() : null
-    const extendedModelBase64 = userSelectedModelBase64 || (extendedRandomModel ? await ensureBase64(extendedRandomModel.imageUrl) : null)
+    const extendedModelBase64 = userSelectedModelBase64 || (!selectedModel ? await loadRandomModelWithRetry() : null)
 
     // 生成任务配置：背景库模式2张 + 随机背景模式2张 + 扩展模式2张
     const taskConfigs = [
