@@ -41,6 +41,7 @@ export const zh = {
     custom: "自定义",
     simple: "极简",
     extended: "扩展",
+    or: "或",
     detail: "详情",
     justNow: "刚刚生成",
     random: "随机",
@@ -135,6 +136,7 @@ export const zh = {
   // Group Shoot Page
   groupShootPage: {
     title: "组图拍摄",
+    chooseOneMethod: "选择一种方式添加图片",
     uploadImage: "上传图片",
     fromAlbum: "从相册选择",
     selectFromPhotos: "从成片选择",

@@ -43,6 +43,7 @@ export const ko: Translations = {
     custom: "사용자 정의",
     simple: "심플",
     extended: "확장",
+    or: "또는",
     detail: "상세",
     justNow: "방금 생성",
     random: "랜덤",
@@ -137,6 +138,7 @@ export const ko: Translations = {
   // Group Shoot Page
   groupShootPage: {
     title: "그룹 촬영",
+    chooseOneMethod: "이미지 추가 방법을 선택하세요",
     uploadImage: "이미지 업로드",
     fromAlbum: "앨범에서",
     selectFromPhotos: "사진에서 선택",

@@ -276,6 +276,9 @@ export default function GroupShootPage() {
               <div className="p-4 space-y-3">
                 {!selectedImage ? (
                   <>
+                    {/* 选择提示标题 */}
+                    <p className="text-center text-zinc-500 text-sm mb-1">{t.groupShootPage?.chooseOneMethod || '选择一种方式添加图片'}</p>
+                    
                     {/* 上传图片卡片 */}
                     <button
                       onClick={() => fileInputRef.current?.click()}
@@ -291,6 +294,13 @@ export default function GroupShootPage() {
                         </div>
                       </div>
                     </button>
+                    
+                    {/* "或" 分隔符 */}
+                    <div className="flex items-center gap-3 py-1">
+                      <div className="flex-1 h-px bg-zinc-300"></div>
+                      <span className="text-zinc-400 text-sm font-medium">{t.common.or || '或'}</span>
+                      <div className="flex-1 h-px bg-zinc-300"></div>
+                    </div>
                     
                     {/* 从成片选择卡片 */}
                     <button

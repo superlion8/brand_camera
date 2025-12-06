@@ -43,6 +43,7 @@ export const en: Translations = {
     custom: "Custom",
     simple: "Simple",
     extended: "Extended",
+    or: "or",
     detail: "Details",
     justNow: "Just now",
     random: "Random",
@@ -137,6 +138,7 @@ export const en: Translations = {
   // Group Shoot Page
   groupShootPage: {
     title: "Group Shoot",
+    chooseOneMethod: "Choose one method to add image",
     uploadImage: "Upload Image",
     fromAlbum: "From Album",
     selectFromPhotos: "Select from Photos",
