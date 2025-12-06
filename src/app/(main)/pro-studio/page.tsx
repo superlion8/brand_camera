@@ -216,12 +216,19 @@ function BackgroundGrid({
 
 export default function ProStudioPage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   const t = useLanguageStore(state => state.t)
   const { checkQuota, showExceededModal, requiredCount, closeExceededModal, quota } = useQuota()
   const { addTask, updateTaskStatus, updateImageSlot, initImageSlots, tasks } = useGenerationTaskStore()
   const { userProducts, userModels, userBackgrounds } = useAssetStore()
   const { debugMode } = useSettingsStore()
+  
+  // 未登录时重定向到登录页
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace('/login')
+    }
+  }, [user, authLoading, router])
   
   const webcamRef = useRef<Webcam>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -584,6 +591,18 @@ export default function ProStudioPage() {
     } catch (error) {
       console.error("Download failed:", error)
     }
+  }
+
+  // 登录状态检查中或未登录时显示加载
+  if (authLoading || !user) {
+    return (
+      <div className="h-full w-full bg-black flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-white animate-spin mx-auto mb-4" />
+          <p className="text-zinc-400">{t.common.loading}</p>
+        </div>
+      </div>
+    )
   }
 
   return (

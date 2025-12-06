@@ -45,8 +45,15 @@ const CAMERA_NUM_SIMPLE = 3
 
 export default function CameraPage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   const t = useLanguageStore(state => state.t)
+  
+  // 未登录时重定向到登录页
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace('/login')
+    }
+  }, [user, authLoading, router])
   
   // Build gender options with translations
   const MODEL_GENDERS = MODEL_GENDER_IDS.map(id => ({
@@ -1033,6 +1040,18 @@ export default function CameraPage() {
       ))}
     </div>
   )
+  
+  // 登录状态检查中或未登录时显示加载
+  if (authLoading || !user) {
+    return (
+      <div className="h-full w-full bg-black flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-white animate-spin mx-auto mb-4" />
+          <p className="text-zinc-400">{t.common.loading}</p>
+        </div>
+      </div>
+    )
+  }
   
   return (
     <div className="h-full relative flex flex-col bg-black">
