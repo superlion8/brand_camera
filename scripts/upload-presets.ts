@@ -126,7 +126,7 @@ async function main() {
   
   const bg = await uploadStudioBackgrounds()
   const model = await uploadStudioModels()
-  
+    
   console.log('\n' + '='.repeat(50))
   console.log(`📊 总计: 成功 ${bg.success + model.success}, 失败 ${bg.failed + model.failed}`)
   console.log('='.repeat(50))

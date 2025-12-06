@@ -232,12 +232,14 @@ export default function ProStudioPage() {
   
   const webcamRef = useRef<Webcam>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef2 = useRef<HTMLInputElement>(null) // 第二张商品图片上传
   const modelUploadRef = useRef<HTMLInputElement>(null)
   const bgUploadRef = useRef<HTMLInputElement>(null)
   
   // State
   const [mode, setMode] = useState<PageMode>("camera")
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
+  const [capturedImage2, setCapturedImage2] = useState<string | null>(null) // 第二张商品图片
   const [hasCamera, setHasCamera] = useState(true)
   const [cameraReady, setCameraReady] = useState(false)
   const [permissionChecked, setPermissionChecked] = useState(false)
@@ -380,8 +382,48 @@ export default function ProStudioPage() {
     const file = e.target.files?.[0]
     if (file) {
       const base64 = await fileToBase64(file)
-      setCapturedImage(base64)
-      setMode("review")
+      if (!capturedImage) {
+        setCapturedImage(base64)
+        setMode("review")
+      } else {
+        // 第二张商品图片，需要分析类型
+        setCapturedImage2(base64)
+        analyzeProduct2(base64)
+      }
+    }
+  }
+  
+  // 上传第二张商品图片
+  const handleFileUpload2 = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const base64 = await fileToBase64(file)
+      setCapturedImage2(base64)
+      analyzeProduct2(base64)
+    }
+  }
+  
+  // 分析第二张商品类型
+  const analyzeProduct2 = async (imageBase64: string) => {
+    try {
+      const response = await fetch('/api/analyze-product', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: imageBase64 })
+      })
+      const result = await response.json()
+      if (result.success) {
+        // 保存分析结果到 sessionStorage，供搭配页面使用
+        const analysisData = {
+          imageUrl: imageBase64,
+          type: result.data.type
+        }
+        sessionStorage.setItem('product2Analysis', JSON.stringify(analysisData))
+        // 跳转到搭配页面
+        router.push('/pro-studio/outfit')
+      }
+    } catch (error) {
+      console.error('Failed to analyze product 2:', error)
     }
   }
 
@@ -399,6 +441,15 @@ export default function ProStudioPage() {
   // 开始生成
   const handleShootIt = async () => {
     if (!capturedImage) return
+
+    // 如果有第二张商品，跳转到搭配页面
+    if (capturedImage2) {
+      // 保存第一张商品到 sessionStorage
+      sessionStorage.setItem('product1Image', capturedImage)
+      // 跳转到搭配页面
+      router.push('/pro-studio/outfit')
+      return
+    }
 
     const hasQuota = await checkQuota(PRO_STUDIO_NUM_IMAGES)
     if (!hasQuota) return
@@ -616,6 +667,13 @@ export default function ProStudioPage() {
       />
       <input 
         type="file" 
+        ref={fileInputRef2} 
+        className="hidden" 
+        accept="image/*" 
+        onChange={handleFileUpload2}
+      />
+      <input 
+        type="file" 
         ref={modelUploadRef} 
         className="hidden" 
         accept="image/*" 
@@ -680,12 +738,44 @@ export default function ProStudioPage() {
                   </div>
                 </div>
               ) : (
-                <div className="absolute inset-0">
-                  <img 
-                    src={capturedImage || ""} 
-                    alt="商品" 
-                    className="w-full h-full object-cover"
-                  />
+                <div className="absolute inset-0 flex">
+                  {/* 第一张商品图片 */}
+                  <div className={`relative ${capturedImage2 ? 'w-1/2' : 'w-full'} h-full`}>
+                    <img 
+                      src={capturedImage || ""} 
+                      alt="商品1" 
+                      className="w-full h-full object-cover"
+                    />
+                    <span className="absolute top-2 left-2 px-2 py-1 bg-black/50 text-white text-xs rounded backdrop-blur-md">
+                      商品1
+                    </span>
+                  </div>
+                  
+                  {/* 第二张商品图片或添加按钮 */}
+                  {capturedImage2 ? (
+                    <div className="relative w-1/2 h-full border-l-2 border-white/30">
+                      <img 
+                        src={capturedImage2} 
+                        alt="商品2" 
+                        className="w-full h-full object-cover"
+                      />
+                      <span className="absolute top-2 left-2 px-2 py-1 bg-black/50 text-white text-xs rounded backdrop-blur-md">
+                        商品2
+                      </span>
+                    </div>
+                  ) : mode === "review" ? (
+                    <div className="relative w-1/2 h-full border-l-2 border-white/30 flex items-center justify-center bg-black/20">
+                      <button
+                        onClick={() => fileInputRef2.current?.click()}
+                        className="flex flex-col items-center gap-2 text-white/80 hover:text-white transition-colors"
+                      >
+                        <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center border-2 border-dashed border-white/30">
+                          <Plus className="w-8 h-8" />
+                        </div>
+                        <span className="text-xs">添加商品</span>
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               )}
 
@@ -751,13 +841,19 @@ export default function ProStudioPage() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       onClick={(e) => {
-                        triggerFlyToGallery(e)
-                        handleShootIt()
+                        if (capturedImage2) {
+                          // 有第二张商品，跳转到搭配页面
+                          sessionStorage.setItem('product1Image', capturedImage || '')
+                          router.push('/pro-studio/outfit')
+                        } else {
+                          triggerFlyToGallery(e)
+                          handleShootIt()
+                        }
                       }}
                       className="w-full max-w-xs h-14 rounded-full text-lg font-semibold gap-2 bg-white text-black hover:bg-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.3)] flex items-center justify-center transition-colors"
                     >
                       <Wand2 className="w-5 h-5" />
-                      Shoot It
+                      {capturedImage2 ? '下一步' : 'Shoot It'}
                     </motion.button>
                   </div>
                 </div>
