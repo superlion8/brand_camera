@@ -454,7 +454,11 @@ export async function POST(request: NextRequest) {
                   prompt: promptForDb,
                   taskType: 'group_shoot',
                   inputImageUrl: inputImageUrlToSave,
-                  inputParams: i === 0 ? { styleMode: 'lifestyle', mode: 'random' } : undefined,
+                  inputParams: i === 0 ? { 
+                    styleMode: 'lifestyle', 
+                    mode: 'random',
+                    startImage: inputImageUrlToSave, // 保存输入图到 inputParams
+                  } : undefined,
                 })
                 
                 send({ type: 'image', index: i, image: uploaded, modelType: result.model })
@@ -536,7 +540,11 @@ export async function POST(request: NextRequest) {
                   prompt: promptForDb,
                   taskType: 'group_shoot',
                   inputImageUrl: inputImageUrlToSave,
-                  inputParams: i === 0 ? { styleMode: 'studio', mode: 'random' } : undefined,
+                  inputParams: i === 0 ? { 
+                    styleMode: 'studio', 
+                    mode: 'random',
+                    startImage: inputImageUrlToSave, // 保存输入图到 inputParams
+                  } : undefined,
                 })
                 
                 send({ type: 'image', index: i, image: uploaded, modelType: result.model })
@@ -611,7 +619,11 @@ export async function POST(request: NextRequest) {
                 prompt: prompt,
                 taskType: 'group_shoot',
                 inputImageUrl: inputImageUrlToSave,
-                inputParams: i === 0 ? { styleMode, mode: 'multiangle' } : undefined,
+                inputParams: i === 0 ? { 
+                  styleMode, 
+                  mode: 'multiangle',
+                  startImage: inputImageUrlToSave, // 保存输入图到 inputParams
+                } : undefined,
               })
               
               send({ type: 'image', index: i, image: uploaded, modelType: result.model })

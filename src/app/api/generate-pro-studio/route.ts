@@ -337,6 +337,8 @@ export async function POST(request: NextRequest) {
       taskType: 'pro_studio',
       inputImageUrl: inputImageUrlToSave,
       inputParams: index === 0 ? {
+        // 商品原图也保存到 inputParams（与 input_image_url 字段一致）
+        productImage: inputImageUrlToSave,
         modelImage: modelImageUrlToSave || modelUrl,
         backgroundImage: bgImageUrlToSave || bgUrl,
         mode,
