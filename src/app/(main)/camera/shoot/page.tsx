@@ -87,7 +87,7 @@ export default function ShootPage() {
     
     try {
       const base64 = await fileToBase64(file)
-      const compressed = await compressBase64Image(base64, 1024, 0.85)
+      const compressed = await compressBase64Image(base64, 1024)
       analyzeProduct(compressed)
     } catch (error) {
       console.error('File upload failed:', error)

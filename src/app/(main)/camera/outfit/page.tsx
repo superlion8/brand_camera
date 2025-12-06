@@ -82,7 +82,7 @@ export default function OutfitPage() {
     
     try {
       const base64 = await fileToBase64(file)
-      const compressed = await compressBase64Image(base64, 1024, 0.85)
+      const compressed = await compressBase64Image(base64, 1024)
       
       // 调用分析 API
       const response = await fetch('/api/analyze-product', {
