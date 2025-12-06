@@ -423,6 +423,18 @@ export const en: Translations = {
     generatingProPhoto: "Generating pro studio photo...",
     modeLabel: "Mode",
     proStudioMode: "Pro Studio",
+    customizeModelBg: "Customize Model/Background",
+    analyzeProduct: "Analyzing product",
+    matchingModel: "Matching model",
+    bgLibMode: "Background Library",
+    usePresetBg: "Use preset backgrounds",
+    aiBgMode: "AI Background",
+    aiGenerateBg: "AI generated background",
+    extendedMode: "Extended Mode",
+    aiDesignScene: "AI designed scene",
+    shootNextSet: "Shoot Next Set",
+    album: "Album",
+    assetLibrary: "Assets",
   },
   
   // Quota

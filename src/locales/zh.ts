@@ -421,6 +421,18 @@ export const zh = {
     generatingProPhoto: "生成专业棚拍图...",
     modeLabel: "模式",
     proStudioMode: "专业棚拍",
+    customizeModelBg: "自定义模特/背景",
+    analyzeProduct: "分析商品特征",
+    matchingModel: "匹配模特",
+    bgLibMode: "背景库模式",
+    usePresetBg: "使用预设背景",
+    aiBgMode: "AI背景模式",
+    aiGenerateBg: "AI生成背景",
+    extendedMode: "扩展模式",
+    aiDesignScene: "AI设计场景",
+    shootNextSet: "拍摄下一组",
+    album: "相册",
+    assetLibrary: "资源库",
   },
   
   // Quota

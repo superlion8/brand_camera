@@ -515,7 +515,7 @@ export default function ProStudioPage() {
         } else {
           updateImageSlot(taskId, task.index, {
             status: 'failed',
-            error: data.error || '生成失败',
+            error: data.error || t.camera.generationFailed || '生成失败',
           })
         }
       } catch (error: any) {
@@ -532,9 +532,9 @@ export default function ProStudioPage() {
 
   // 获取模式标签
   const getModeLabel = (index: number) => {
-    if (index < 2) return '背景库'
-    if (index < 4) return 'AI背景'
-    return '扩展'
+    if (index < 2) return t.proStudio?.bgLibMode || '背景库'
+    if (index < 4) return t.proStudio?.aiBgMode || 'AI背景'
+    return t.proStudio?.extendedMode || '扩展'
   }
 
   const getModeColor = (index: number) => {
@@ -688,7 +688,7 @@ export default function ProStudioPage() {
                     </div>
                   </div>
                   <div className="absolute top-8 left-0 right-0 text-center text-white/80 text-sm font-medium px-4 drop-shadow-md">
-                    拍摄商品进行专业棚拍
+                    {t.proStudio?.shootProduct || '拍摄商品进行专业棚拍'}
                   </div>
                 </>
               )}
@@ -705,7 +705,7 @@ export default function ProStudioPage() {
                       className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 text-white/90 hover:bg-white/20 transition-colors border border-white/20"
                     >
                       <SlidersHorizontal className="w-4 h-4" />
-                      <span className="text-sm font-medium">自定义模特/背景</span>
+                      <span className="text-sm font-medium">{t.proStudio?.customizeModelBg || '自定义模特/背景'}</span>
                     </button>
                   </div>
                   
@@ -735,7 +735,7 @@ export default function ProStudioPage() {
                     <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
                       <ImageIcon className="w-6 h-6" />
                     </div>
-                    <span className="text-[10px]">相册</span>
+                    <span className="text-[10px]">{t.proStudio?.album || '相册'}</span>
                   </button>
 
                   {/* Shutter */}
@@ -755,7 +755,7 @@ export default function ProStudioPage() {
                     <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
                       <FolderHeart className="w-6 h-6" />
                     </div>
-                    <span className="text-[10px]">资源库</span>
+                    <span className="text-[10px]">{t.proStudio?.assetLibrary || '资源库'}</span>
                   </button>
                 </div>
               )}
@@ -791,8 +791,8 @@ export default function ProStudioPage() {
                     </div>
                     <div className="p-2 flex gap-2 border-b overflow-x-auto shrink-0">
                       {[
-                        { id: "model", label: "专业模特" },
-                        { id: "bg", label: "棚拍背景" }
+                        { id: "model", label: t.proStudio?.proModel || "专业模特" },
+                        { id: "bg", label: t.proStudio?.studioBg || "棚拍背景" }
                       ].map(tab => (
                         <button 
                           key={tab.id}
@@ -1010,30 +1010,30 @@ export default function ProStudioPage() {
               <Loader2 className="w-16 h-16 text-blue-500 animate-spin relative z-10" />
             </div>
             
-            <h3 className="text-white text-2xl font-bold mb-2">AI 正在创作...</h3>
+            <h3 className="text-white text-2xl font-bold mb-2">{t.proStudio?.creating || 'AI 正在创作...'}</h3>
             <div className="text-zinc-400 space-y-1 text-sm mb-8">
-              <p>分析商品特征</p>
-              {selectedModel && <p>匹配模特 {selectedModel.name} ...</p>}
-              {selectedBg && <p>渲染棚拍背景...</p>}
-              <p>生成专业棚拍图...</p>
+              <p>{t.proStudio?.analyzeProduct || '分析商品特征'}</p>
+              {selectedModel && <p>{t.proStudio?.matchingModel || '匹配模特'} {selectedModel.name} ...</p>}
+              {selectedBg && <p>{t.proStudio?.renderingBg || '渲染棚拍背景...'}</p>}
+              <p>{t.proStudio?.generatingProPhoto || '生成专业棚拍图...'}</p>
             </div>
             
             {/* Action buttons */}
             <div className="space-y-3 w-full max-w-xs">
-              <p className="text-zinc-500 text-xs mb-4">生成将在后台继续，您可以：</p>
+              <p className="text-zinc-500 text-xs mb-4">{t.camera.continueInBackground}</p>
               <button
                 onClick={handleRetake}
                 className="w-full h-12 rounded-full bg-white text-black font-medium flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors"
               >
                 <Camera className="w-5 h-5" />
-                拍摄新商品
+                {t.camera.shootNew}
               </button>
               <button
                 onClick={() => router.push("/")}
                 className="w-full h-12 rounded-full bg-white/10 text-white font-medium flex items-center justify-center gap-2 hover:bg-white/20 transition-colors border border-white/20"
               >
                 <Home className="w-5 h-5" />
-                返回首页
+                {t.camera.returnHome}
               </button>
             </div>
             
@@ -1057,7 +1057,7 @@ export default function ProStudioPage() {
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <span className="font-semibold ml-2">本次成片</span>
+              <span className="font-semibold ml-2">{t.camera.results}</span>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-8">
@@ -1066,9 +1066,9 @@ export default function ProStudioPage() {
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
                     <span className="w-1 h-4 bg-green-500 rounded-full" />
-                    背景库模式
+                    {t.proStudio?.bgLibMode || '背景库模式'}
                   </h3>
-                  <span className="text-[10px] text-zinc-400">使用预设背景</span>
+                  <span className="text-[10px] text-zinc-400">{t.proStudio?.usePresetBg || '使用预设背景'}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {[0, 1].map((i) => {
@@ -1082,7 +1082,7 @@ export default function ProStudioPage() {
                       return (
                         <div key={i} className="aspect-[4/5] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
                           <Loader2 className="w-6 h-6 text-zinc-400 animate-spin mb-2" />
-                          <span className="text-[10px] text-zinc-400">生成中...</span>
+                          <span className="text-[10px] text-zinc-400">{t.gallery.generating}</span>
                         </div>
                       )
                     }
@@ -1090,7 +1090,7 @@ export default function ProStudioPage() {
                     if (status === 'failed' || !url) {
                       return (
                         <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
-                          {slot?.error || '生成失败'}
+                          {slot?.error || t.camera.generationFailed}
                         </div>
                       )
                     }
@@ -1107,7 +1107,7 @@ export default function ProStudioPage() {
                         </button>
                         <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
                           <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-500 text-white">
-                            背景库
+                            {t.proStudio?.bgLibMode || '背景库'}
                           </span>
                           {modelType === 'flash' && (
                             <span className="px-1 py-0.5 rounded text-[8px] font-medium bg-amber-500 text-white">
@@ -1126,9 +1126,9 @@ export default function ProStudioPage() {
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
                     <span className="w-1 h-4 bg-blue-600 rounded-full" />
-                    AI背景模式
+                    {t.proStudio?.aiBgMode || 'AI背景模式'}
                   </h3>
-                  <span className="text-[10px] text-zinc-400">AI生成背景</span>
+                  <span className="text-[10px] text-zinc-400">{t.proStudio?.aiGenerateBg || 'AI生成背景'}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {[2, 3].map((i) => {
@@ -1142,7 +1142,7 @@ export default function ProStudioPage() {
                       return (
                         <div key={i} className="aspect-[4/5] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
                           <Loader2 className="w-6 h-6 text-zinc-400 animate-spin mb-2" />
-                          <span className="text-[10px] text-zinc-400">生成中...</span>
+                          <span className="text-[10px] text-zinc-400">{t.gallery.generating}</span>
                         </div>
                       )
                     }
@@ -1150,7 +1150,7 @@ export default function ProStudioPage() {
                     if (status === 'failed' || !url) {
                       return (
                         <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
-                          {slot?.error || '生成失败'}
+                          {slot?.error || t.camera.generationFailed}
                         </div>
                       )
                     }
@@ -1167,7 +1167,7 @@ export default function ProStudioPage() {
                         </button>
                         <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
                           <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-blue-500 text-white">
-                            AI背景
+                            {t.proStudio?.aiBgMode || 'AI背景'}
                           </span>
                           {modelType === 'flash' && (
                             <span className="px-1 py-0.5 rounded text-[8px] font-medium bg-amber-500 text-white">
@@ -1186,9 +1186,9 @@ export default function ProStudioPage() {
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
                     <span className="w-1 h-4 bg-purple-600 rounded-full" />
-                    扩展模式
+                    {t.proStudio?.extendedMode || '扩展模式'}
                   </h3>
-                  <span className="text-[10px] text-zinc-400">AI生成拍摄指令</span>
+                  <span className="text-[10px] text-zinc-400">{t.proStudio?.aiDesignScene || 'AI设计场景'}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {[4, 5].map((i) => {
@@ -1202,7 +1202,7 @@ export default function ProStudioPage() {
                       return (
                         <div key={i} className="aspect-[4/5] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
                           <Loader2 className="w-6 h-6 text-zinc-400 animate-spin mb-2" />
-                          <span className="text-[10px] text-zinc-400">生成中...</span>
+                          <span className="text-[10px] text-zinc-400">{t.gallery.generating}</span>
                         </div>
                       )
                     }
@@ -1210,7 +1210,7 @@ export default function ProStudioPage() {
                     if (status === 'failed' || !url) {
                       return (
                         <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
-                          {slot?.error || '生成失败'}
+                          {slot?.error || t.camera.generationFailed}
                         </div>
                       )
                     }
@@ -1227,7 +1227,7 @@ export default function ProStudioPage() {
                         </button>
                         <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
                           <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-purple-500 text-white">
-                            扩展
+                            {t.proStudio?.extendedMode || '扩展'}
                           </span>
                           {modelType === 'flash' && (
                             <span className="px-1 py-0.5 rounded text-[8px] font-medium bg-amber-500 text-white">
@@ -1247,7 +1247,7 @@ export default function ProStudioPage() {
                 onClick={handleRetake}
                 className="w-full h-12 text-lg rounded-lg bg-zinc-900 text-white font-semibold hover:bg-zinc-800 transition-colors"
               >
-                拍摄下一组
+                {t.proStudio?.shootNextSet || t.camera.shootNextSet}
               </button>
             </div>
             

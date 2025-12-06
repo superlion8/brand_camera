@@ -423,6 +423,18 @@ export const ko: Translations = {
     generatingProPhoto: "프로 스튜디오 사진 생성 중...",
     modeLabel: "모드",
     proStudioMode: "프로 스튜디오",
+    customizeModelBg: "모델/배경 사용자 정의",
+    analyzeProduct: "상품 분석 중",
+    matchingModel: "모델 매칭 중",
+    bgLibMode: "배경 라이브러리",
+    usePresetBg: "프리셋 배경 사용",
+    aiBgMode: "AI 배경",
+    aiGenerateBg: "AI 생성 배경",
+    extendedMode: "확장 모드",
+    aiDesignScene: "AI 설계 장면",
+    shootNextSet: "다음 세트 촬영",
+    album: "앨범",
+    assetLibrary: "자산",
   },
   
   // Quota
