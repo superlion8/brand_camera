@@ -321,6 +321,18 @@ export default function GalleryPage() {
       idx: item.imageIndex
     }))
   
+  // 构建 galleryItemsMap：按 generation ID 分组，用于 ImageSlotCard 查找
+  // 这样 ImageSlotCard 可以在 generations store 没有数据时，从 API 返回的 galleryItems 中获取
+  const galleryItemsMap = galleryItems.reduce((acc, item) => {
+    if (item && item.generation) {
+      const genId = item.generation.dbId || item.generation.id
+      if (!acc[genId]) {
+        acc[genId] = item.generation
+      }
+    }
+    return acc
+  }, {} as Record<string, Generation>)
+  
   // 检查图片是否已收藏 - 使用 assetStore 的 favorites 列表
   const isFavorited = (generationId: string, imageIndex: number): boolean => {
     // 在收藏页，所有图片都是已收藏的
@@ -702,6 +714,7 @@ export default function GalleryPage() {
                     task={task} 
                     slot={slot}
                     slotIndex={slot.index}
+                    galleryItemsMap={galleryItemsMap}
                     onImageClick={(url) => setFullscreenImage(url)}
                     onOpenDetail={(gen, index) => setSelectedItem({ gen, index })}
                   />
@@ -1408,10 +1421,11 @@ export default function GalleryPage() {
 }
 
 // Single image slot card - shows individual image status
-function ImageSlotCard({ task, slot, slotIndex, onImageClick, onOpenDetail }: { 
+function ImageSlotCard({ task, slot, slotIndex, galleryItemsMap, onImageClick, onOpenDetail }: { 
   task: GenerationTask; 
   slot: ImageSlot; 
   slotIndex: number;
+  galleryItemsMap?: Record<string, Generation>;
   onImageClick?: (imageUrl: string) => void;
   onOpenDetail?: (gen: Generation, index: number) => void;
 }) {
@@ -1434,10 +1448,30 @@ function ImageSlotCard({ task, slot, slotIndex, onImageClick, onOpenDetail }: {
     !slot.imageUrl.startsWith('[') && 
     (slot.imageUrl.startsWith('http') || slot.imageUrl.startsWith('blob:') || slot.imageUrl.startsWith('data:'))
   
-  // 检查 generations store 是否已有这个任务的记录（后端已写入数据库）
-  const generationRecord = generations.find(g => g.id === task.id)
+  // 【方案 E】多数据源查找 Generation 记录
+  // 1. 优先从 generations store 查找（最权威）
+  const generationFromStore = generations.find(g => g.id === task.id)
+  // 2. 其次从 galleryItems 查找（API 返回的数据，3 秒刷新）
+  const generationFromApi = galleryItemsMap?.[task.id]
+  // 3. 如果都没有，构建临时对象（让用户能立即点击）
+  const tempGeneration: Generation | null = (!generationFromStore && !generationFromApi && slot.status === 'completed' && hasValidImageUrl) ? {
+    id: task.id,
+    dbId: task.id,
+    type: task.type,
+    outputImageUrls: task.imageSlots?.map(s => s.imageUrl || '').filter(Boolean) || [slot.imageUrl!],
+    outputModelTypes: task.imageSlots?.map(s => s.modelType).filter(Boolean) || (slot.modelType ? [slot.modelType] : []),
+    outputGenModes: task.imageSlots?.map(s => s.genMode).filter(Boolean) || (slot.genMode ? [slot.genMode] : []),
+    createdAt: task.createdAt || new Date().toISOString(),
+    params: task.params,
+    inputImageUrl: task.inputImageUrl,
+    // 标记这是临时对象，详情页可能数据不完整
+    _isTemp: true,
+  } as Generation : null
+  
+  // 合并使用：优先级 store > api > temp
+  const generationRecord = generationFromStore || generationFromApi || tempGeneration
   const imageUrlInDb = generationRecord?.outputImageUrls?.[slotIndex]
-  const canFavorite = !!generationRecord && !!imageUrlInDb
+  const canFavorite = !!(generationFromStore || generationFromApi) && !!imageUrlInDb // 临时对象不能收藏
   
   // 检查当前图片是否已收藏
   const favoriteImageUrl = imageUrlInDb || slot.imageUrl
@@ -1465,13 +1499,17 @@ function ImageSlotCard({ task, slot, slotIndex, onImageClick, onOpenDetail }: {
     }
   }
   
-  // 已完成且有有效图片且已同步到数据库，显示可点击的结果卡片
+  // 已完成且有有效图片，显示可点击的结果卡片
+  // 现在包括：store 数据、API 数据、临时对象
   if (slot.status === 'completed' && hasValidImageUrl && generationRecord) {
     const handleClick = () => {
       if (onOpenDetail) {
         onOpenDetail(generationRecord, slotIndex)
       }
     }
+    
+    // 判断是否是临时对象（还没有真实数据库记录）
+    const isTempRecord = !generationFromStore && !generationFromApi
     
     return (
       <div 
@@ -1505,17 +1543,23 @@ function ImageSlotCard({ task, slot, slotIndex, onImageClick, onOpenDetail }: {
             </span>
           )}
         </div>
-        {/* 收藏按钮 */}
-        <button 
-          className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-colors ${
-            isImageFavorited 
-              ? 'bg-red-500 text-white' 
-              : 'bg-white/70 backdrop-blur text-zinc-400 hover:text-red-500'
-          }`}
-          onClick={handleFavorite}
-        >
-          <Heart className={`w-4 h-4 ${isImageFavorited ? 'fill-current' : ''}`} />
-        </button>
+        {/* 收藏按钮 - 临时对象显示加载状态 */}
+        {isTempRecord ? (
+          <div className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/70 backdrop-blur flex items-center justify-center">
+            <Loader2 className="w-4 h-4 text-zinc-400 animate-spin" />
+          </div>
+        ) : (
+          <button 
+            className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-colors ${
+              isImageFavorited 
+                ? 'bg-red-500 text-white' 
+                : 'bg-white/70 backdrop-blur text-zinc-400 hover:text-red-500'
+            }`}
+            onClick={handleFavorite}
+          >
+            <Heart className={`w-4 h-4 ${isImageFavorited ? 'fill-current' : ''}`} />
+          </button>
+        )}
         {/* Date overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
           <p className="text-[10px] text-white truncate">
