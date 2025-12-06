@@ -399,12 +399,13 @@ function ProStudioPageContent() {
     if (file) {
       const base64 = await fileToBase64(file)
       setCapturedImage2(base64)
-      analyzeProduct2(base64)
+      // 立即分析并保存，但不跳转（让用户在review模式下点击"下一步"时跳转）
+      analyzeProduct2(base64, false)
     }
   }
   
   // 分析第二张商品类型
-  const analyzeProduct2 = async (imageBase64: string) => {
+  const analyzeProduct2 = async (imageBase64: string, shouldNavigate: boolean = true) => {
     try {
       const response = await fetch('/api/analyze-product', {
         method: 'POST',
@@ -419,8 +420,10 @@ function ProStudioPageContent() {
           type: result.data.type
         }
         sessionStorage.setItem('product2Analysis', JSON.stringify(analysisData))
-        // 跳转到搭配页面
-        router.push('/pro-studio/outfit')
+        // 如果需要跳转，则跳转到搭配页面
+        if (shouldNavigate) {
+          router.push('/pro-studio/outfit')
+        }
       }
     } catch (error) {
       console.error('Failed to analyze product 2:', error)
@@ -840,10 +843,16 @@ function ProStudioPageContent() {
                     <motion.button
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      onClick={(e) => {
+                      onClick={async (e) => {
                         if (capturedImage2) {
                           // 有第二张商品，跳转到搭配页面
                           sessionStorage.setItem('product1Image', capturedImage || '')
+                          // 确保第二张商品的分析结果已保存
+                          const existingAnalysis = sessionStorage.getItem('product2Analysis')
+                          if (!existingAnalysis && capturedImage2) {
+                            // 如果还没有分析结果，先分析再跳转
+                            await analyzeProduct2(capturedImage2, false)
+                          }
                           router.push('/pro-studio/outfit')
                         } else {
                           triggerFlyToGallery(e)

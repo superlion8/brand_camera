@@ -562,7 +562,104 @@ export default function ProStudioOutfitPage() {
       <div className="p-4 pb-32">
         {/* 人体模型和槽位 */}
         <div className="flex flex-col items-center gap-6 mb-6">
-          {/* 这里可以放一个人体模型图 */}
+          {/* 人体模型图 */}
+          <div className="relative w-48 h-64 mb-4">
+            {/* 人体轮廓 SVG */}
+            <svg
+              viewBox="0 0 200 300"
+              className="w-full h-full"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              {/* 头部 */}
+              <ellipse cx="100" cy="30" rx="25" ry="30" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
+              {/* 身体 */}
+              <rect x="75" y="60" width="50" height="120" rx="10" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
+              {/* 左臂 */}
+              <rect x="40" y="70" width="35" height="100" rx="8" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
+              {/* 右臂 */}
+              <rect x="125" y="70" width="35" height="100" rx="8" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
+              {/* 左腿 */}
+              <rect x="80" y="180" width="30" height="100" rx="8" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
+              {/* 右腿 */}
+              <rect x="90" y="180" width="30" height="100" rx="8" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
+            </svg>
+            {/* 槽位覆盖层 */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              {/* 帽子位置 */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2">
+                {slots.find(s => s.id === '帽子')?.product && (
+                  <div className="w-16 h-16 rounded-lg overflow-hidden border-2 border-white/50">
+                    <Image
+                      src={slots.find(s => s.id === '帽子')!.product!.imageUrl}
+                      alt="帽子"
+                      width={64}
+                      height={64}
+                      className="object-cover"
+                    />
+                  </div>
+                )}
+              </div>
+              {/* 上衣位置 */}
+              <div className="absolute top-16 left-1/2 -translate-x-1/2">
+                {slots.find(s => s.id === '上衣')?.product && (
+                  <div className="w-20 h-24 rounded-lg overflow-hidden border-2 border-white/50">
+                    <Image
+                      src={slots.find(s => s.id === '上衣')!.product!.imageUrl}
+                      alt="上衣"
+                      width={80}
+                      height={96}
+                      className="object-cover"
+                    />
+                  </div>
+                )}
+              </div>
+              {/* 内衬位置（在上衣下方） */}
+              <div className="absolute top-28 left-1/2 -translate-x-1/2">
+                {slots.find(s => s.id === '内衬')?.product && (
+                  <div className="w-18 h-20 rounded-lg overflow-hidden border-2 border-white/50 opacity-80">
+                    <Image
+                      src={slots.find(s => s.id === '内衬')!.product!.imageUrl}
+                      alt="内衬"
+                      width={72}
+                      height={80}
+                      className="object-cover"
+                    />
+                  </div>
+                )}
+              </div>
+              {/* 裤子位置 */}
+              <div className="absolute top-40 left-1/2 -translate-x-1/2">
+                {slots.find(s => s.id === '裤子')?.product && (
+                  <div className="w-16 h-32 rounded-lg overflow-hidden border-2 border-white/50">
+                    <Image
+                      src={slots.find(s => s.id === '裤子')!.product!.imageUrl}
+                      alt="裤子"
+                      width={64}
+                      height={128}
+                      className="object-cover"
+                    />
+                  </div>
+                )}
+              </div>
+              {/* 鞋子位置 */}
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-2">
+                {slots.find(s => s.id === '鞋子')?.product && (
+                  <div className="w-20 h-16 rounded-lg overflow-hidden border-2 border-white/50">
+                    <Image
+                      src={slots.find(s => s.id === '鞋子')!.product!.imageUrl}
+                      alt="鞋子"
+                      width={80}
+                      height={64}
+                      className="object-cover"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* 槽位网格 */}
           <div className="grid grid-cols-3 gap-4 w-full max-w-md">
             {slots.map(slot => {
               const isDragging = draggedSlotId === slot.id
