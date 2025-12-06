@@ -369,12 +369,14 @@ function LoginContent() {
             {/* Google Login - Hide in WebView */}
             {!inWebView && (
               <>
-                {/* Divider */}
-                <div className="flex items-center gap-4 py-2">
-                  <div className="flex-1 h-px bg-zinc-200" />
-                  <span className="text-sm text-zinc-400">{t.login.or || '或'}</span>
-                  <div className="flex-1 h-px bg-zinc-200" />
-                </div>
+                {/* Divider - 只在有手机登录按钮时显示 */}
+                {isChina && (
+                  <div className="flex items-center gap-4 py-2">
+                    <div className="flex-1 h-px bg-zinc-200" />
+                    <span className="text-sm text-zinc-400">{t.login.or || '或'}</span>
+                    <div className="flex-1 h-px bg-zinc-200" />
+                  </div>
+                )}
 
                 <button
                   onClick={handleGoogleLogin}
