@@ -354,7 +354,7 @@ export default function GroupShootPage() {
                           {t.groupShootPage?.lifestyleMode || '生活风格'}
                         </span>
                       </div>
-                      <p className="text-xs text-zinc-500 mb-3">真实感ins风格生活照</p>
+                      <p className="text-xs text-zinc-500 mb-3">{t.groupShootPage?.lifestyleDesc || '真实感ins风格生活照'}</p>
                     </div>
                     <div className="aspect-[4/3] relative">
                       <Image 
@@ -382,7 +382,7 @@ export default function GroupShootPage() {
                           {t.groupShootPage?.studioMode || '棚拍风格'}
                         </span>
                       </div>
-                      <p className="text-xs text-zinc-500 mb-3">专业影棚pose</p>
+                      <p className="text-xs text-zinc-500 mb-3">{t.groupShootPage?.studioDesc || '专业影棚pose'}</p>
                     </div>
                     <div className="aspect-[4/3] relative bg-zinc-100">
                       <Image 
@@ -414,7 +414,7 @@ export default function GroupShootPage() {
                       </span>
                     </div>
                     <p className={`text-xs mt-1 ${shootMode === 'random' ? 'text-zinc-600' : 'text-zinc-400'}`}>
-                      5·AI设计pose
+                      {t.groupShootPage?.randomDesc || '5·AI设计pose'}
                     </p>
                   </button>
                   <button
@@ -432,7 +432,7 @@ export default function GroupShootPage() {
                       </span>
                     </div>
                     <p className={`text-xs mt-1 ${shootMode === 'multiangle' ? 'text-zinc-600' : 'text-zinc-400'}`}>
-                      4·前后左右
+                      {t.groupShootPage?.multiAngleDesc || '4·前后左右'}
                     </p>
                   </button>
                 </div>
@@ -478,7 +478,9 @@ export default function GroupShootPage() {
             </div>
             
             <h3 className="text-white text-2xl font-bold mb-2">
-              {styleMode === 'lifestyle' ? 'AI 正在创作ins风格组图...' : 'AI 正在创作专业展示图...'}
+              {styleMode === 'lifestyle' 
+                ? (t.groupShootPage?.creatingLifestyle || 'AI 正在创作ins风格组图...')
+                : (t.groupShootPage?.creatingStudio || 'AI 正在创作专业展示图...')}
             </h3>
             <div className="text-zinc-400 space-y-1 text-sm mb-8">
               {shootMode === 'random' ? (
@@ -536,7 +538,7 @@ export default function GroupShootPage() {
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <span className="font-semibold ml-2">
-                {styleMode === 'lifestyle' ? '生活风格' : '棚拍风格'} · {shootMode === 'random' ? '随意拍' : '多角度'}
+                {styleMode === 'lifestyle' ? (t.groupShootPage?.lifestyleMode || '生活风格') : (t.groupShootPage?.studioMode || '棚拍风格')} · {shootMode === 'random' ? (t.groupShootPage?.randomShoot || '随意拍') : (t.groupShootPage?.multiAngle || '多角度')}
               </span>
             </div>
 
@@ -622,13 +624,13 @@ export default function GroupShootPage() {
                   {/* 模式信息 */}
                   <div className="flex flex-col gap-1.5">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-zinc-500">风格模式:</span>
+                      <span className="text-[10px] text-zinc-500">{t.groupShootPage?.styleMode || '风格模式'}:</span>
                       <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                        styleMode === 'lifestyle' 
-                          ? 'bg-blue-100 text-blue-700' 
+                        styleMode === 'lifestyle'
+                          ? 'bg-blue-100 text-blue-700'
                           : 'bg-amber-100 text-amber-700'
                       }`}>
-                        {styleMode === 'lifestyle' ? '生活风格' : '棚拍风格'}
+                        {styleMode === 'lifestyle' ? (t.groupShootPage?.lifestyleMode || '生活风格') : (t.groupShootPage?.studioMode || '棚拍风格')}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">

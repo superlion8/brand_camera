@@ -120,6 +120,10 @@ export const zh = {
     noMyProducts: "暂无我的商品",
     uploadInAssets: "在品牌资产中上传商品图片",
     goUpload: "去上传",
+    styleKorean: "韩系",
+    styleWestern: "欧美",
+    styleLabel: "风格",
+    matchingStyle: "匹配风格...",
   },
   
   // Group Shoot Page
@@ -146,6 +150,13 @@ export const zh = {
     groupPhoto: "组图",
     noPhotos: "暂无成片",
     goShootFirst: "先去拍摄一些照片吧",
+    lifestyleDesc: "真实感ins风格生活照",
+    studioDesc: "专业影棚pose",
+    randomDesc: "5·AI设计pose",
+    multiAngleDesc: "4·前后左右",
+    creatingLifestyle: "AI 正在创作ins风格组图...",
+    creatingStudio: "AI 正在创作专业展示图...",
+    styleMode: "风格模式",
   },
   
   // Edit Page
@@ -157,7 +168,7 @@ export const zh = {
     editPlaceholder: "例如：把裤子换成蓝色牛仔裤、去掉图片背后的路人....",
     startGenerate: "开始生成",
     processing: "AI 正在处理...",
-    processingDesc: "正在应用您的指令",
+    processingDesc: "根据您的描述修改图片",
     editNew: "重选",
     generalEdit: "通用修图",
     generalEditDesc: "AI智能修图 · 描述即可实现",
@@ -400,12 +411,26 @@ export const zh = {
     networkError: "网络请求失败，请检查网络后重试",
   },
   
+  // Pro Studio Page
+  proStudio: {
+    shootProduct: "拍摄商品进行专业棚拍",
+    proModel: "专业模特",
+    studioBg: "棚拍背景",
+    creating: "AI 正在创作...",
+    renderingBg: "渲染棚拍背景...",
+    generatingProPhoto: "生成专业棚拍图...",
+    modeLabel: "模式",
+    proStudioMode: "专业棚拍",
+  },
+  
   // Quota
   quota: {
     exceeded: "配额已用完",
     exceededDesc: "您的免费配额已用完，请申请更多配额或稍后再试。",
     applyMore: "申请更多配额",
     close: "关闭",
+    needQuota: "本次操作需要 {required} 张额度，您仅剩 {remaining} 张",
+    usedQuota: "您已使用 {used}/{total} 张图片额度",
   },
 
   // Generation task

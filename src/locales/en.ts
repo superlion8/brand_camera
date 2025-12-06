@@ -122,6 +122,10 @@ export const en: Translations = {
     noMyProducts: "No products yet",
     uploadInAssets: "Upload products in Brand Assets",
     goUpload: "Go Upload",
+    styleKorean: "Korean",
+    styleWestern: "Western",
+    styleLabel: "Style",
+    matchingStyle: "Matching style...",
   },
   
   // Group Shoot Page
@@ -148,6 +152,13 @@ export const en: Translations = {
     groupPhoto: "Group",
     noPhotos: "No photos",
     goShootFirst: "Go take some photos first",
+    lifestyleDesc: "Authentic Instagram-style photos",
+    studioDesc: "Professional studio poses",
+    randomDesc: "5 · AI Designed Poses",
+    multiAngleDesc: "4 · Front/Back/Left/Right",
+    creatingLifestyle: "AI creating Instagram-style photos...",
+    creatingStudio: "AI creating professional photos...",
+    styleMode: "Style Mode",
   },
   
   // Edit Page
@@ -402,12 +413,26 @@ export const en: Translations = {
     networkError: "Network request failed, please check your connection and retry",
   },
   
+  // Pro Studio Page
+  proStudio: {
+    shootProduct: "Shoot product for pro studio",
+    proModel: "Pro Model",
+    studioBg: "Studio Background",
+    creating: "AI is creating...",
+    renderingBg: "Rendering studio background...",
+    generatingProPhoto: "Generating pro studio photo...",
+    modeLabel: "Mode",
+    proStudioMode: "Pro Studio",
+  },
+  
   // Quota
   quota: {
     exceeded: "Quota Exceeded",
     exceededDesc: "Your free quota is used up. Please apply for more or try again later.",
     applyMore: "Apply for More",
     close: "Close",
+    needQuota: "This operation needs {required} credits, you only have {remaining} left",
+    usedQuota: "You have used {used}/{total} image credits",
   },
 
   // Generation task

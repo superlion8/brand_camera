@@ -3,7 +3,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 
 // Admin emails from environment variable (comma separated)
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
-const DEFAULT_QUOTA = 30
+const DEFAULT_QUOTA = 100
 
 // GET - Get all user quotas (admin only)
 // 直接从 user_quotas 表读取，速度更快

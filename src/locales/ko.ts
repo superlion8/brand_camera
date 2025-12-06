@@ -122,6 +122,10 @@ export const ko: Translations = {
     noMyProducts: "상품이 없습니다",
     uploadInAssets: "브랜드 자산에서 상품 업로드",
     goUpload: "업로드하기",
+    styleKorean: "한국식",
+    styleWestern: "서양식",
+    styleLabel: "스타일",
+    matchingStyle: "스타일 매칭 중...",
   },
   
   // Group Shoot Page
@@ -148,6 +152,13 @@ export const ko: Translations = {
     groupPhoto: "그룹",
     noPhotos: "사진 없음",
     goShootFirst: "먼저 사진을 촬영하세요",
+    lifestyleDesc: "진정한 인스타그램 스타일 사진",
+    studioDesc: "프로 스튜디오 포즈",
+    randomDesc: "5 · AI 설계 포즈",
+    multiAngleDesc: "4 · 앞/뒤/좌/우",
+    creatingLifestyle: "AI가 인스타 스타일 사진 제작 중...",
+    creatingStudio: "AI가 전문 사진 제작 중...",
+    styleMode: "스타일 모드",
   },
   
   // Edit Page
@@ -402,12 +413,26 @@ export const ko: Translations = {
     networkError: "네트워크 요청 실패, 연결을 확인하고 다시 시도하세요",
   },
   
+  // Pro Studio Page
+  proStudio: {
+    shootProduct: "프로 스튜디오 촬영",
+    proModel: "프로 모델",
+    studioBg: "스튜디오 배경",
+    creating: "AI 제작 중...",
+    renderingBg: "스튜디오 배경 렌더링 중...",
+    generatingProPhoto: "프로 스튜디오 사진 생성 중...",
+    modeLabel: "모드",
+    proStudioMode: "프로 스튜디오",
+  },
+  
   // Quota
   quota: {
     exceeded: "할당량 초과",
     exceededDesc: "무료 할당량이 소진되었습니다. 더 신청하거나 나중에 다시 시도하세요.",
     applyMore: "추가 신청",
     close: "닫기",
+    needQuota: "이 작업에는 {required}개의 크레딧이 필요하며 {remaining}개만 남아 있습니다",
+    usedQuota: "{used}/{total} 이미지 크레딧을 사용했습니다",
   },
 
   // Generation task
