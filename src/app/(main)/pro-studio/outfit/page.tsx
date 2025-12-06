@@ -297,19 +297,22 @@ export default function ProStudioOutfitPage() {
     e.target.value = ''
   }
   
-  // 从 sessionStorage 读取第一张和第二张商品
+  // 从 sessionStorage 读取商品分析结果
   useEffect(() => {
-    // 读取第一张商品
-    const product1Image = sessionStorage.getItem('product1Image')
-    if (product1Image) {
-      // 第一张商品需要分析类型（调用API）
-      analyzeProduct(product1Image, (type) => {
+    // 读取第一张商品分析结果
+    const product1AnalysisStr = sessionStorage.getItem('product1Analysis')
+    if (product1AnalysisStr) {
+      try {
+        const analysis = JSON.parse(product1AnalysisStr)
         setSlots(prev => prev.map(slot => 
-          slot.id === type
-            ? { ...slot, product: { imageUrl: product1Image } }
+          slot.id === analysis.type
+            ? { ...slot, product: { imageUrl: analysis.imageUrl } }
             : slot
         ))
-      })
+        sessionStorage.removeItem('product1Analysis')
+      } catch (e) {
+        console.error('Failed to parse product1Analysis:', e)
+      }
     }
     
     // 读取第二张商品分析结果
@@ -322,6 +325,7 @@ export default function ProStudioOutfitPage() {
             ? { ...slot, product: { imageUrl: analysis.imageUrl } }
             : slot
         ))
+        sessionStorage.removeItem('product2Analysis')
       } catch (e) {
         console.error('Failed to parse product2Analysis:', e)
       }
@@ -621,67 +625,64 @@ export default function ProStudioOutfitPage() {
       
       {/* 内容区域 */}
       <div className="p-4 pb-32">
-        {/* 人体模型和槽位 */}
-        <div className="flex flex-col items-center gap-6 mb-6">
-          {/* 人体骨架图 - 参考图片设计 */}
-          <div className="relative w-full max-w-sm mb-6">
-            {/* 背景 - 浅色背景 */}
-            <div className="relative bg-white/5 rounded-2xl p-8">
-              {/* 人体轮廓 SVG - 更简洁的骨架图 */}
-              <svg
-                viewBox="0 0 200 320"
-                className="w-full h-auto opacity-30"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                {/* 头部 - 圆形 */}
-                <circle cx="100" cy="25" r="20" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
-                {/* 脖子 */}
-                <line x1="100" y1="45" x2="100" y2="60" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
-                {/* 身体 - 梯形 */}
-                <path d="M 75 60 L 125 60 L 120 180 L 80 180 Z" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" fill="none" />
-                {/* 左臂 */}
-                <path d="M 75 80 L 50 100 L 45 180 L 70 160 Z" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" fill="none" />
-                {/* 右臂 */}
-                <path d="M 125 80 L 150 100 L 155 180 L 130 160 Z" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" fill="none" />
-                {/* 左腿 */}
-                <path d="M 85 180 L 75 200 L 70 280 L 85 280 Z" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" fill="none" />
-                {/* 右腿 */}
-                <path d="M 115 180 L 125 200 L 130 280 L 115 280 Z" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" fill="none" />
-              </svg>
-              
-              {/* 商品卡片 - 围绕人形放置 */}
-              <div className="absolute inset-0">
-                {/* 帽子 - 顶部 */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-4">
-                  {renderSlotCard(slots.find(s => s.id === '帽子')!, 'small')}
-                </div>
-                
-                {/* 内衬 - 左侧 */}
-                <div className="absolute top-24 left-0 -translate-x-4">
-                  {renderSlotCard(slots.find(s => s.id === '内衬')!, 'small')}
-                </div>
-                
-                {/* 上衣 - 中间 */}
-                <div className="absolute top-20 left-1/2 -translate-x-1/2">
-                  {renderSlotCard(slots.find(s => s.id === '上衣')!, 'medium')}
-                </div>
-                
-                {/* 裤子 - 左下 */}
-                <div className="absolute bottom-16 left-4 -translate-x-2">
-                  {renderSlotCard(slots.find(s => s.id === '裤子')!, 'small')}
-                </div>
-                
-                {/* 鞋子 - 右下 */}
-                <div className="absolute bottom-0 right-4 translate-x-2">
-                  {renderSlotCard(slots.find(s => s.id === '鞋子')!, 'small')}
-                </div>
-              </div>
-            </div>
+        {/* 人体模型和槽位 - 参考图片重新设计 */}
+        <div className="relative w-full max-w-md mx-auto bg-zinc-800/50 rounded-2xl p-6 min-h-[500px]">
+          {/* 人体轮廓 SVG - 居中放置 */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <svg
+              viewBox="0 0 200 340"
+              className="w-40 h-auto opacity-20"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              {/* 头部 */}
+              <circle cx="100" cy="25" r="18" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
+              {/* 脖子 */}
+              <line x1="100" y1="43" x2="100" y2="55" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
+              {/* 肩膀 */}
+              <line x1="60" y1="65" x2="140" y2="65" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
+              {/* 身体 */}
+              <path d="M 75 55 L 125 55 L 125 160 L 75 160 Z" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" fill="none" />
+              {/* 左臂 */}
+              <line x1="60" y1="65" x2="45" y2="140" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
+              {/* 右臂 */}
+              <line x1="140" y1="65" x2="155" y2="140" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
+              {/* 左腿 */}
+              <line x1="85" y1="160" x2="75" y2="280" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
+              {/* 右腿 */}
+              <line x1="115" y1="160" x2="125" y2="280" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
+            </svg>
           </div>
           
-          {/* 槽位网格 - 备用显示（如果人形图太拥挤） */}
-          <div className="grid grid-cols-3 gap-4 w-full max-w-md hidden">
+          {/* 商品槽位 - 绝对定位在人形周围 */}
+          {/* 帽子 - 顶部中间 */}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2">
+            {renderSlotCard(slots.find(s => s.id === '帽子')!, 'small')}
+          </div>
+          
+          {/* 内衬 - 左上 */}
+          <div className="absolute top-28 left-2">
+            {renderSlotCard(slots.find(s => s.id === '内衬')!, 'small')}
+          </div>
+          
+          {/* 上衣 - 中间偏上 */}
+          <div className="absolute top-24 left-1/2 -translate-x-1/2">
+            {renderSlotCard(slots.find(s => s.id === '上衣')!, 'medium')}
+          </div>
+          
+          {/* 裤子 - 左下 */}
+          <div className="absolute bottom-24 left-2">
+            {renderSlotCard(slots.find(s => s.id === '裤子')!, 'medium')}
+          </div>
+          
+          {/* 鞋子 - 右下 */}
+          <div className="absolute bottom-4 right-2">
+            {renderSlotCard(slots.find(s => s.id === '鞋子')!, 'small')}
+          </div>
+        </div>
+        
+        {/* 备用网格视图（隐藏） */}
+        <div className="grid grid-cols-3 gap-4 w-full max-w-md mx-auto mt-6 hidden">
             {slots.map(slot => {
               const isDragging = draggedSlotId === slot.id
               return (

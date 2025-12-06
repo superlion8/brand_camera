@@ -265,6 +265,7 @@ function ProStudioPageContent() {
   const [generatedModes, setGeneratedModes] = useState<string[]>([])
   const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
+  const [isAnalyzingProducts, setIsAnalyzingProducts] = useState(false) // 分析商品中
   
   // Preset Store - 动态从云端加载
   const { 
@@ -386,9 +387,9 @@ function ProStudioPageContent() {
         setCapturedImage(base64)
         setMode("review")
       } else {
-        // 第二张商品图片，需要分析类型
+        // 第二张商品图片
         setCapturedImage2(base64)
-        analyzeProduct2(base64)
+        // 不立即分析，等用户点击"下一步"时再分析
       }
     }
   }
@@ -399,13 +400,12 @@ function ProStudioPageContent() {
     if (file) {
       const base64 = await fileToBase64(file)
       setCapturedImage2(base64)
-      // 立即分析并保存，但不跳转（让用户在review模式下点击"下一步"时跳转）
-      analyzeProduct2(base64, false)
+      // 不立即分析，等用户点击"下一步"时再分析
     }
   }
   
-  // 分析第二张商品类型
-  const analyzeProduct2 = async (imageBase64: string, shouldNavigate: boolean = true) => {
+  // 分析商品类型（用于搭配页面）
+  const analyzeProductForOutfit = async (imageBase64: string): Promise<{ type: string } | null> => {
     try {
       const response = await fetch('/api/analyze-product', {
         method: 'POST',
@@ -414,19 +414,12 @@ function ProStudioPageContent() {
       })
       const result = await response.json()
       if (result.success) {
-        // 保存分析结果到 sessionStorage，供搭配页面使用
-        const analysisData = {
-          imageUrl: imageBase64,
-          type: result.data.type
-        }
-        sessionStorage.setItem('product2Analysis', JSON.stringify(analysisData))
-        // 如果需要跳转，则跳转到搭配页面
-        if (shouldNavigate) {
-          router.push('/pro-studio/outfit')
-        }
+        return { type: result.data.type }
       }
+      return null
     } catch (error) {
-      console.error('Failed to analyze product 2:', error)
+      console.error('Failed to analyze product:', error)
+      return null
     }
   }
 
@@ -845,24 +838,56 @@ function ProStudioPageContent() {
                       animate={{ opacity: 1, y: 0 }}
                       onClick={async (e) => {
                         if (capturedImage2) {
-                          // 有第二张商品，跳转到搭配页面
-                          sessionStorage.setItem('product1Image', capturedImage || '')
-                          // 确保第二张商品的分析结果已保存
-                          const existingAnalysis = sessionStorage.getItem('product2Analysis')
-                          if (!existingAnalysis && capturedImage2) {
-                            // 如果还没有分析结果，先分析再跳转
-                            await analyzeProduct2(capturedImage2, false)
+                          // 有第二张商品，显示loading并分析两件商品
+                          setIsAnalyzingProducts(true)
+                          try {
+                            // 并行分析两件商品
+                            const [result1, result2] = await Promise.all([
+                              analyzeProductForOutfit(capturedImage!),
+                              analyzeProductForOutfit(capturedImage2)
+                            ])
+                            
+                            // 保存分析结果到 sessionStorage
+                            if (result1) {
+                              sessionStorage.setItem('product1Analysis', JSON.stringify({
+                                imageUrl: capturedImage,
+                                type: result1.type
+                              }))
+                            }
+                            if (result2) {
+                              sessionStorage.setItem('product2Analysis', JSON.stringify({
+                                imageUrl: capturedImage2,
+                                type: result2.type
+                              }))
+                            }
+                            
+                            // 跳转到搭配页面
+                            router.push('/pro-studio/outfit')
+                          } catch (error) {
+                            console.error('Failed to analyze products:', error)
+                            alert('商品识别失败，请重试')
+                          } finally {
+                            setIsAnalyzingProducts(false)
                           }
-                          router.push('/pro-studio/outfit')
                         } else {
                           triggerFlyToGallery(e)
                           handleShootIt()
                         }
                       }}
-                      className="w-full max-w-xs h-14 rounded-full text-lg font-semibold gap-2 bg-white text-black hover:bg-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.3)] flex items-center justify-center transition-colors"
+                      disabled={isAnalyzingProducts}
+                      className="w-full max-w-xs h-14 rounded-full text-lg font-semibold gap-2 bg-white text-black hover:bg-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.3)] flex items-center justify-center transition-colors disabled:opacity-70"
                     >
-                      <Wand2 className="w-5 h-5" />
-                      {capturedImage2 ? '下一步' : 'Shoot It'}
+                      {isAnalyzingProducts ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          识别中...
+                        </>
+                      ) : (
+                        <>
+                          <Wand2 className="w-5 h-5" />
+                          {capturedImage2 ? '下一步' : 'Shoot It'}
+                        </>
+                      )}
                     </motion.button>
                   </div>
                 </div>
