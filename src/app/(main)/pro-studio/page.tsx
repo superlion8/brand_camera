@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, Suspense } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import Webcam from "react-webcam"
 import { 
@@ -214,7 +214,7 @@ function BackgroundGrid({
   )
 }
 
-export default function ProStudioPage() {
+function ProStudioPageContent() {
   const router = useRouter()
   const { user, isLoading: authLoading } = useAuth()
   const t = useLanguageStore(state => state.t)
@@ -265,20 +265,6 @@ export default function ProStudioPage() {
   const [generatedModes, setGeneratedModes] = useState<string[]>([])
   const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
-  
-  // 检查URL参数，如果有mode=results，切换到results模式
-  const searchParams = useSearchParams()
-  useEffect(() => {
-    const modeParam = searchParams.get('mode')
-    if (modeParam === 'results') {
-      const taskIdFromStorage = sessionStorage.getItem('proStudioTaskId')
-      if (taskIdFromStorage) {
-        setCurrentTaskId(taskIdFromStorage)
-        setMode('results')
-        sessionStorage.removeItem('proStudioTaskId')
-      }
-    }
-  }, [searchParams])
   
   // Preset Store - 动态从云端加载
   const { 
@@ -1608,5 +1594,13 @@ export default function ProStudioPage() {
         totalQuota={quota?.totalQuota || 0}
       />
     </div>
+  )
+}
+
+export default function ProStudioPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center"><Loader2 className="w-8 h-8 text-white animate-spin" /></div>}>
+      <ProStudioPageContent />
+    </Suspense>
   )
 }
