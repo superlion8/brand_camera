@@ -17,7 +17,8 @@ import { useRouter } from "next/navigation"
 import { fileToBase64, generateId, compressBase64Image, fetchWithTimeout, ensureBase64 } from "@/lib/utils"
 import { Asset, ModelStyle, ModelGender } from "@/types"
 import Image from "next/image"
-import { PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_PRODUCTS, getRandomModel, getRandomBackground } from "@/data/presets"
+import { PRESET_PRODUCTS } from "@/data/presets"
+import { usePresetStore } from "@/stores/presetStore"
 import { useQuota } from "@/hooks/useQuota"
 import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { BottomNav } from "@/components/shared/BottomNav"
@@ -158,6 +159,21 @@ export default function CameraPage() {
   const { addTask, updateTaskStatus, updateImageSlot, initImageSlots, tasks } = useGenerationTaskStore()
   const { debugMode } = useSettingsStore()
   
+  // Preset Store - 动态从云端加载
+  const { 
+    visibleModels, 
+    visibleBackgrounds,
+    isLoaded: presetsLoaded,
+    loadPresets,
+    getRandomModel,
+    getRandomBackground,
+  } = usePresetStore()
+  
+  // 组件加载时获取预设
+  useEffect(() => {
+    loadPresets()
+  }, [loadPresets])
+  
   // Quota management
   const { quota, checkQuota, refreshQuota, showExceededModal, requiredCount, closeExceededModal } = useQuota()
   
@@ -172,11 +188,11 @@ export default function CameraPage() {
   // Filter assets by category - 'mine' shows only user assets
   const filteredModels = modelSubcategory === 'mine'
     ? sortByPinned(userModels)
-    : [...sortByPinned(userModels), ...PRESET_MODELS]
+    : [...sortByPinned(userModels), ...visibleModels]
   
   const filteredBackgrounds = bgSubcategory === 'mine'
     ? sortByPinned(userBackgrounds)
-    : [...sortByPinned(userBackgrounds), ...PRESET_BACKGROUNDS]
+    : [...sortByPinned(userBackgrounds), ...visibleBackgrounds]
   
   // Aliases for compatibility
   const allModels = filteredModels
@@ -398,13 +414,17 @@ export default function CameraPage() {
       
       if (!model) {
         const randomModelForSave = getRandomModel()
-        representativeModelUrl = randomModelForSave.imageUrl
-        representativeModelName = randomModelForSave.name
+        if (randomModelForSave) {
+          representativeModelUrl = randomModelForSave.imageUrl
+          representativeModelName = randomModelForSave.name
+        }
       }
       if (!background) {
         const randomBgForSave = getRandomBackground()
-        representativeBgUrl = randomBgForSave.imageUrl
-        representativeBgName = randomBgForSave.name
+        if (randomBgForSave) {
+          representativeBgUrl = randomBgForSave.imageUrl
+          representativeBgName = randomBgForSave.name
+        }
       }
       
       // Use the constants defined at module level
@@ -454,6 +474,10 @@ export default function CameraPage() {
           const MAX_RETRIES = 3
           for (let retry = 0; retry < MAX_RETRIES; retry++) {
             const randomModel = getRandomModel()
+            if (!randomModel) {
+              console.error(`Image ${index + 1}: No models available`)
+              break
+            }
             const modelBase64 = await ensureBase64(randomModel.imageUrl)
             if (modelBase64) {
               modelForThisImage = modelBase64
@@ -463,7 +487,7 @@ export default function CameraPage() {
               console.log(`Image ${index + 1}: Random model = ${randomModel.name}${retry > 0 ? ` (retry ${retry})` : ''}`)
               break
             }
-            console.warn(`Image ${index + 1}: Failed to load model ${randomModel.name}, retrying...`)
+            console.warn(`Image ${index + 1}: Failed to load model ${randomModel.name}, trying another...`)
           }
           if (!modelForThisImage) {
             console.error(`Image ${index + 1}: Failed to load model after ${MAX_RETRIES} retries`)
@@ -477,6 +501,10 @@ export default function CameraPage() {
           const MAX_RETRIES = 3
           for (let retry = 0; retry < MAX_RETRIES; retry++) {
             const randomBg = getRandomBackground()
+            if (!randomBg) {
+              console.error(`Image ${index + 1}: No backgrounds available`)
+              break
+            }
             const bgBase64 = await ensureBase64(randomBg.imageUrl)
             if (bgBase64) {
               bgForThisImage = bgBase64
@@ -486,7 +514,7 @@ export default function CameraPage() {
               console.log(`Image ${index + 1}: Random background = ${randomBg.name}${retry > 0 ? ` (retry ${retry})` : ''}`)
               break
             }
-            console.warn(`Image ${index + 1}: Failed to load background ${randomBg.name}, retrying...`)
+            console.warn(`Image ${index + 1}: Failed to load background ${randomBg.name}, trying another...`)
           }
           if (!bgForThisImage) {
             console.error(`Image ${index + 1}: Failed to load background after ${MAX_RETRIES} retries`)

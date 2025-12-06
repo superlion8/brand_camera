@@ -16,6 +16,7 @@ export interface Asset {
   isSystem?: boolean
   styleCategory?: ModelStyle
   isPinned?: boolean
+  category?: string // e.g., 'studio', 'studio-light', 'studio-solid', 'studio-pattern'
 }
 
 export interface Generation {

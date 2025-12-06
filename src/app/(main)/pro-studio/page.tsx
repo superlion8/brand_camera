@@ -12,16 +12,8 @@ import { useRouter } from "next/navigation"
 import { fileToBase64, generateId, compressBase64Image, ensureBase64 } from "@/lib/utils"
 import { Asset } from "@/types"
 import Image from "next/image"
-import { 
-  STUDIO_MODELS, 
-  ALL_STUDIO_BACKGROUNDS, 
-  STUDIO_BG_LIGHT,
-  STUDIO_BG_SOLID,
-  STUDIO_BG_PATTERN,
-  getRandomStudioModel, 
-  getRandomStudioBackground,
-  PRESET_PRODUCTS 
-} from "@/data/presets"
+import { PRESET_PRODUCTS } from "@/data/presets"
+import { usePresetStore } from "@/stores/presetStore"
 import { useQuota } from "@/hooks/useQuota"
 import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { BottomNav } from "@/components/shared/BottomNav"
@@ -121,6 +113,10 @@ function BackgroundGrid({
   onZoom,
   uploadLabel = "Upload",
   labels,
+  // 动态传入背景数据
+  bgLight = [],
+  bgSolid = [],
+  bgPattern = [],
 }: {
   selectedId: string | null
   onSelect: (id: string) => void
@@ -128,21 +124,26 @@ function BackgroundGrid({
   onZoom?: (url: string) => void
   uploadLabel?: string
   labels?: { all: string; light: string; solid: string; pattern: string }
+  bgLight?: Asset[]
+  bgSolid?: Asset[]
+  bgPattern?: Asset[]
 }) {
   const [activeTab, setActiveTab] = useState<'all' | 'light' | 'solid' | 'pattern'>('all')
   
+  const allBgs = [...bgLight, ...bgSolid, ...bgPattern]
+  
   const bgMap = {
-    all: ALL_STUDIO_BACKGROUNDS,
-    light: STUDIO_BG_LIGHT,
-    solid: STUDIO_BG_SOLID,
-    pattern: STUDIO_BG_PATTERN,
+    all: allBgs,
+    light: bgLight,
+    solid: bgSolid,
+    pattern: bgPattern,
   }
   
   const tabs = [
-    { id: 'all', label: labels?.all || 'All', count: ALL_STUDIO_BACKGROUNDS.length },
-    { id: 'light', label: labels?.light || 'Light', count: STUDIO_BG_LIGHT.length },
-    { id: 'solid', label: labels?.solid || 'Solid', count: STUDIO_BG_SOLID.length },
-    { id: 'pattern', label: labels?.pattern || 'Pattern', count: STUDIO_BG_PATTERN.length },
+    { id: 'all', label: labels?.all || 'All', count: allBgs.length },
+    { id: 'light', label: labels?.light || 'Light', count: bgLight.length },
+    { id: 'solid', label: labels?.solid || 'Solid', count: bgSolid.length },
+    { id: 'pattern', label: labels?.pattern || 'Pattern', count: bgPattern.length },
   ]
   
   return (
@@ -255,10 +256,28 @@ export default function ProStudioPage() {
   const [generatedModes, setGeneratedModes] = useState<string[]>([])
   const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
+  
+  // Preset Store - 动态从云端加载
+  const { 
+    studioModels, 
+    studioBackgroundsLight,
+    studioBackgroundsSolid,
+    studioBackgroundsPattern,
+    isLoaded: presetsLoaded,
+    isLoading: presetsLoading,
+    loadPresets,
+    getRandomStudioModel,
+  } = usePresetStore()
+  
+  // 组件加载时获取预设
+  useEffect(() => {
+    loadPresets()
+  }, [loadPresets])
 
   // Combine preset + user + custom assets for selection
-  const allModels = [...customModels, ...userModels, ...STUDIO_MODELS]
-  const allBgs = [...customBgs, ...userBackgrounds, ...ALL_STUDIO_BACKGROUNDS]
+  const allStudioBackgrounds = [...studioBackgroundsLight, ...studioBackgroundsSolid, ...studioBackgroundsPattern]
+  const allModels = [...customModels, ...userModels, ...studioModels]
+  const allBgs = [...customBgs, ...userBackgrounds, ...allStudioBackgrounds]
   
   // Get selected assets from combined list
   const selectedModel = selectedModelId ? allModels.find(m => m.id === selectedModelId) : null
@@ -396,17 +415,21 @@ export default function ProStudioPage() {
       ? await ensureBase64(selectedBg.imageUrl) 
       : null
 
-    // 辅助函数：带重试的随机模特加载
+    // 辅助函数：带重试的随机模特加载（每次重试换一个不同的模特）
     const loadRandomModelWithRetry = async (maxRetries = 3): Promise<string | null> => {
       for (let i = 0; i < maxRetries; i++) {
         const randomModel = getRandomStudioModel()
+        if (!randomModel) {
+          console.error(`[ProStudio] No studio models available`)
+          return null
+        }
         console.log(`[ProStudio] Trying random model ${i + 1}/${maxRetries}:`, randomModel.imageUrl)
         const base64 = await ensureBase64(randomModel.imageUrl)
         if (base64) {
           console.log(`[ProStudio] Successfully loaded random model on attempt ${i + 1}`)
           return base64
         }
-        console.warn(`[ProStudio] Failed to load random model on attempt ${i + 1}`)
+        console.warn(`[ProStudio] Failed to load random model on attempt ${i + 1}, trying another...`)
       }
       console.error(`[ProStudio] All ${maxRetries} attempts to load random model failed`)
       return null
@@ -807,7 +830,7 @@ export default function ProStudioPage() {
                             )}
                           </div>
                           <AssetGrid 
-                            items={[...customModels, ...userModels, ...STUDIO_MODELS]} 
+                            items={[...customModels, ...userModels, ...studioModels]} 
                             selectedId={selectedModelId} 
                             onSelect={(id) => setSelectedModelId(selectedModelId === id ? null : id)}
                             onUpload={() => modelUploadRef.current?.click()}
@@ -841,6 +864,9 @@ export default function ProStudioPage() {
                               solid: t.proStudio?.bgSolid || 'Solid', 
                               pattern: t.proStudio?.bgPattern || 'Pattern' 
                             }}
+                            bgLight={studioBackgroundsLight}
+                            bgSolid={studioBackgroundsSolid}
+                            bgPattern={studioBackgroundsPattern}
                           />
                         </div>
                       )}
