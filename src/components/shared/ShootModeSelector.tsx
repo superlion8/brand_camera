@@ -53,67 +53,69 @@ export function ShootModeSelector({ isOpen, onClose }: ShootModeSelectorProps) {
           {/* 底部渐变 */}
           <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-purple-900/30 to-transparent pointer-events-none" />
 
-          {/* 弧形排列的三个按钮 - 使用绝对定位确保对称 */}
-          <div className="absolute bottom-32 left-0 right-0 flex justify-center">
-            {/* 左边按钮 - 专业棚拍 */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.5, y: 30 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.5, y: 30 }}
-              transition={{ delay: 0, type: "spring", stiffness: 300, damping: 20 }}
-              className="absolute left-[15%] bottom-0 flex flex-col items-center gap-2 cursor-pointer w-20"
-              onClick={(e) => { e.stopPropagation(); handleSelect(modes[0].href); }}
-            >
-              <motion.div 
-                whileTap={{ scale: 0.95 }}
-                className="w-16 h-16 rounded-full bg-zinc-800/90 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-xl"
+          {/* 弧形排列的三个按钮 */}
+          <div className="absolute bottom-28 left-0 right-0 px-8">
+            <div className="flex justify-between items-end max-w-sm mx-auto">
+              {/* 左边按钮 - 专业棚拍 */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.5, y: 30 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.5, y: 30 }}
+                transition={{ delay: 0, type: "spring", stiffness: 300, damping: 20 }}
+                className="flex flex-col items-center gap-2 cursor-pointer"
+                onClick={(e) => { e.stopPropagation(); handleSelect(modes[0].href); }}
               >
-                {modes[0].icon}
+                <motion.div 
+                  whileTap={{ scale: 0.95 }}
+                  className="w-16 h-16 rounded-full bg-zinc-800/90 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-xl"
+                >
+                  {modes[0].icon}
+                </motion.div>
+                <span className="text-white text-xs font-medium drop-shadow-lg text-center">
+                  {modes[0].label}
+                </span>
               </motion.div>
-              <span className="text-white text-xs font-medium drop-shadow-lg text-center whitespace-nowrap">
-                {modes[0].label}
-              </span>
-            </motion.div>
 
-            {/* 中间按钮 - 买家秀 (最高) */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.5, y: 30 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.5, y: 30 }}
-              transition={{ delay: 0.05, type: "spring", stiffness: 300, damping: 20 }}
-              className="absolute left-1/2 -translate-x-1/2 bottom-16 flex flex-col items-center gap-2 cursor-pointer w-20"
-              onClick={(e) => { e.stopPropagation(); handleSelect(modes[1].href); }}
-            >
-              <motion.div 
-                whileTap={{ scale: 0.95 }}
-                className="w-16 h-16 rounded-full bg-zinc-800/90 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-xl"
+              {/* 中间按钮 - 买家秀 (向上偏移形成弧形) */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.5, y: 30 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.5, y: 30 }}
+                transition={{ delay: 0.05, type: "spring", stiffness: 300, damping: 20 }}
+                className="flex flex-col items-center gap-2 cursor-pointer -translate-y-12"
+                onClick={(e) => { e.stopPropagation(); handleSelect(modes[1].href); }}
               >
-                {modes[1].icon}
+                <motion.div 
+                  whileTap={{ scale: 0.95 }}
+                  className="w-16 h-16 rounded-full bg-zinc-800/90 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-xl"
+                >
+                  {modes[1].icon}
+                </motion.div>
+                <span className="text-white text-xs font-medium drop-shadow-lg text-center">
+                  {modes[1].label}
+                </span>
               </motion.div>
-              <span className="text-white text-xs font-medium drop-shadow-lg text-center whitespace-nowrap">
-                {modes[1].label}
-              </span>
-            </motion.div>
 
-            {/* 右边按钮 - 商品棚拍 */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.5, y: 30 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.5, y: 30 }}
-              transition={{ delay: 0.1, type: "spring", stiffness: 300, damping: 20 }}
-              className="absolute right-[15%] bottom-0 flex flex-col items-center gap-2 cursor-pointer w-20"
-              onClick={(e) => { e.stopPropagation(); handleSelect(modes[2].href); }}
-            >
-              <motion.div 
-                whileTap={{ scale: 0.95 }}
-                className="w-16 h-16 rounded-full bg-zinc-800/90 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-xl"
+              {/* 右边按钮 - 商品棚拍 */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.5, y: 30 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.5, y: 30 }}
+                transition={{ delay: 0.1, type: "spring", stiffness: 300, damping: 20 }}
+                className="flex flex-col items-center gap-2 cursor-pointer"
+                onClick={(e) => { e.stopPropagation(); handleSelect(modes[2].href); }}
               >
-                {modes[2].icon}
+                <motion.div 
+                  whileTap={{ scale: 0.95 }}
+                  className="w-16 h-16 rounded-full bg-zinc-800/90 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-xl"
+                >
+                  {modes[2].icon}
+                </motion.div>
+                <span className="text-white text-xs font-medium drop-shadow-lg text-center">
+                  {modes[2].label}
+                </span>
               </motion.div>
-              <span className="text-white text-xs font-medium drop-shadow-lg text-center whitespace-nowrap">
-                {modes[2].label}
-              </span>
-            </motion.div>
+            </div>
           </div>
         </motion.div>
       )}
