@@ -43,7 +43,7 @@ export default function OutfitSelectPage() {
   
   // 加载预设资源
   useEffect(() => {
-    presetStore.fetchPresets()
+    presetStore.loadPresets()
   }, [])
   
   // 从 sessionStorage 读取搭配数据
@@ -65,11 +65,11 @@ export default function OutfitSelectPage() {
   // 获取可用的模特和背景列表
   const availableModels = shootMode === 'pro_studio' 
     ? presetStore.studioModels 
-    : [...presetStore.models, ...userModels.filter(m => m.type === 'model')]
+    : [...presetStore.visibleModels, ...userModels.filter(m => m.type === 'model')]
   
   const availableBackgrounds = shootMode === 'pro_studio'
-    ? presetStore.studioBackgrounds
-    : [...presetStore.backgrounds, ...userBackgrounds.filter(b => b.type === 'background')]
+    ? presetStore.getAllStudioBackgrounds()
+    : [...presetStore.visibleBackgrounds, ...userBackgrounds.filter(b => b.type === 'background')]
   
   // 开始生成
   const handleGenerate = async () => {
