@@ -74,7 +74,12 @@ export default function ShootPage() {
   // 拍照
   const handleCapture = () => {
     if (webcamRef.current) {
-      const imageSrc = webcamRef.current.getScreenshot()
+      // 获取视频的实际分辨率，保持正确的宽高比
+      const video = webcamRef.current.video
+      const videoWidth = video?.videoWidth || 1920
+      const videoHeight = video?.videoHeight || 1080
+      
+      const imageSrc = webcamRef.current.getScreenshot({ width: videoWidth, height: videoHeight })
       if (imageSrc) {
         analyzeProduct(imageSrc)
       }

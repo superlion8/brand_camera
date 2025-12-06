@@ -70,8 +70,12 @@ export default function GeneralEditPage() {
   // Camera handlers
   const handleCapture = useCallback(() => {
     if (webcamRef.current) {
-      // 传入实际视频分辨率，避免使用 CSS 显示尺寸导致清晰度下降
-      const imageSrc = webcamRef.current.getScreenshot({ width: 1920, height: 1080 })
+      // 获取视频的实际分辨率，保持正确的宽高比
+      const video = webcamRef.current.video
+      const videoWidth = video?.videoWidth || 1920
+      const videoHeight = video?.videoHeight || 1080
+      
+      const imageSrc = webcamRef.current.getScreenshot({ width: videoWidth, height: videoHeight })
       if (imageSrc) {
         setInputImage(imageSrc)
         setShowCamera(false)
