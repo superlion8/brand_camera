@@ -1,13 +1,11 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Camera, Briefcase, Image as ImageIcon, Home, Wand2, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "@/stores/languageStore"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
-import { ShootModeSelector } from "./ShootModeSelector"
 
 interface BottomNavProps {
   forceHide?: boolean
@@ -16,9 +14,9 @@ interface BottomNavProps {
 
 export function BottomNav({ forceHide, forceShow }: BottomNavProps = {}) {
   const pathname = usePathname()
+  const router = useRouter()
   const { t } = useTranslation()
   const { tasks } = useGenerationTaskStore()
-  const [showShootMenu, setShowShootMenu] = useState(false)
   
   // Check if there are any active (pending/generating) tasks
   const hasActiveTasks = tasks.some(task => task.status === 'pending' || task.status === 'generating')
@@ -42,12 +40,6 @@ export function BottomNav({ forceHide, forceShow }: BottomNavProps = {}) {
   
   return (
     <>
-      {/* Shoot Mode Selector */}
-      <ShootModeSelector 
-        isOpen={showShootMenu} 
-        onClose={() => setShowShootMenu(false)} 
-      />
-      
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-zinc-200 pb-safe">
         <div className="grid grid-cols-5 h-16 max-w-lg mx-auto relative">
           {tabs.map((tab) => {
@@ -59,12 +51,10 @@ export function BottomNav({ forceHide, forceShow }: BottomNavProps = {}) {
               return (
                 <div key={tab.id} className="relative flex items-center justify-center -mt-6 pointer-events-none">
                   <button
-                    onClick={() => setShowShootMenu(true)}
+                    onClick={() => router.push("/camera/shoot")}
                     className={cn(
                       "w-16 h-16 rounded-full shadow-lg flex items-center justify-center transition-all pointer-events-auto",
-                      showShootMenu 
-                        ? "bg-purple-600 shadow-purple-500/30 scale-105" 
-                        : "bg-zinc-900 shadow-black/20 hover:scale-105 active:scale-95"
+                      "bg-zinc-900 shadow-black/20 hover:scale-105 active:scale-95"
                     )}
                   >
                     <Camera size={28} className="text-white" />
