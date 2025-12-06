@@ -25,7 +25,7 @@ export default function OutfitSelectPage() {
   const router = useRouter()
   const t = useLanguageStore(state => state.t)
   const { user } = useAuth()
-  const { checkAndUseQuota, showQuotaModal, setShowQuotaModal } = useQuota()
+  const { checkQuota, showExceededModal, closeExceededModal } = useQuota()
   const presetStore = usePresetStore()
   const { models: userModels, backgrounds: userBackgrounds } = useAssetStore()
   const { addTask, updateTaskStatus, updateImageSlot } = useGenerationTaskStore()
@@ -77,7 +77,7 @@ export default function OutfitSelectPage() {
     
     // 检查配额
     const numImages = shootMode === 'pro_studio' ? 6 : 6
-    const hasQuota = await checkAndUseQuota(numImages)
+    const hasQuota = await checkQuota(numImages)
     if (!hasQuota) return
     
     setIsGenerating(true)
@@ -530,8 +530,8 @@ export default function OutfitSelectPage() {
       
       {/* 配额不足弹窗 */}
       <QuotaExceededModal 
-        isOpen={showQuotaModal} 
-        onClose={() => setShowQuotaModal(false)} 
+        isOpen={showExceededModal} 
+        onClose={closeExceededModal} 
       />
     </div>
   )
