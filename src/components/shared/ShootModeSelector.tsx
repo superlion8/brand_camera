@@ -53,16 +53,17 @@ export function ShootModeSelector({ isOpen, onClose }: ShootModeSelectorProps) {
           {/* 底部渐变 */}
           <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-purple-900/30 to-transparent pointer-events-none" />
 
-          {/* 弧形排列的三个按钮 */}
-          <div className="absolute bottom-28 left-0 right-0 px-8">
-            <div className="flex justify-between items-end max-w-sm mx-auto">
+          {/* 弧形排列的三个按钮 - 精确计算位置 */}
+          <div className="absolute bottom-24 left-0 right-0">
+            {/* 容器相对定位，子元素绝对定位 */}
+            <div className="relative h-40 max-w-xs mx-auto">
               {/* 左边按钮 - 专业棚拍 */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.5, y: 30 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.5, y: 30 }}
                 transition={{ delay: 0, type: "spring", stiffness: 300, damping: 20 }}
-                className="flex flex-col items-center gap-2 cursor-pointer"
+                className="absolute bottom-0 left-4 flex flex-col items-center gap-2 cursor-pointer"
                 onClick={(e) => { e.stopPropagation(); handleSelect(modes[0].href); }}
               >
                 <motion.div 
@@ -76,13 +77,13 @@ export function ShootModeSelector({ isOpen, onClose }: ShootModeSelectorProps) {
                 </span>
               </motion.div>
 
-              {/* 中间按钮 - 买家秀 (向上偏移形成弧形) */}
+              {/* 中间按钮 - 买家秀 (顶部，形成弧形最高点) */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.5, y: 30 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.5, y: 30 }}
                 transition={{ delay: 0.05, type: "spring", stiffness: 300, damping: 20 }}
-                className="flex flex-col items-center gap-2 cursor-pointer -translate-y-12"
+                className="absolute top-0 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 cursor-pointer"
                 onClick={(e) => { e.stopPropagation(); handleSelect(modes[1].href); }}
               >
                 <motion.div 
@@ -102,7 +103,7 @@ export function ShootModeSelector({ isOpen, onClose }: ShootModeSelectorProps) {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.5, y: 30 }}
                 transition={{ delay: 0.1, type: "spring", stiffness: 300, damping: 20 }}
-                className="flex flex-col items-center gap-2 cursor-pointer"
+                className="absolute bottom-0 right-4 flex flex-col items-center gap-2 cursor-pointer"
                 onClick={(e) => { e.stopPropagation(); handleSelect(modes[2].href); }}
               >
                 <motion.div 
