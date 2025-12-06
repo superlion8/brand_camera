@@ -657,7 +657,11 @@ export default function ProStudioPage() {
                   audio={false}
                   screenshotFormat="image/jpeg"
                   screenshotQuality={0.95}
-                  videoConstraints={{ facingMode: "environment" }}
+                  videoConstraints={{
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 },
+                    facingMode: "environment"
+                  }}
                   className="absolute inset-0 w-full h-full object-cover"
                 />
               ) : mode === "camera" && !permissionChecked ? (
