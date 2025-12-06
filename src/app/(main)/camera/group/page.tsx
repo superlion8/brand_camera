@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { 
   ArrowLeft, Loader2, Image as ImageIcon, 
   X, Home, Check, ZoomIn,
-  Shuffle, Grid3X3, Camera, Sparkles, Users
+  Camera, Sparkles, Users
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { fileToBase64, compressBase64Image, ensureBase64 } from "@/lib/utils"
@@ -22,7 +22,7 @@ import { useSettingsStore } from "@/stores/settingsStore"
 
 type PageMode = "main" | "processing" | "results"
 type StyleMode = "lifestyle" | "studio"  // 生活模式 / 棚拍模式
-type ShootMode = "random" | "multiangle"
+type ShootMode = "random"  // 只保留随意拍模式
 
 // 生成图片数量
 const RANDOM_NUM_IMAGES = 5
@@ -101,7 +101,7 @@ export default function GroupShootPage() {
   const handleStartGeneration = async () => {
     if (!selectedImage) return
 
-    const numImages = shootMode === 'random' ? RANDOM_NUM_IMAGES : MULTIANGLE_NUM_IMAGES
+    const numImages = RANDOM_NUM_IMAGES  // 固定5张图
     const hasQuota = await checkQuota(numImages)
     if (!hasQuota) return
 
@@ -238,7 +238,7 @@ export default function GroupShootPage() {
     }
   }, [])
 
-  const numImages = shootMode === 'random' ? RANDOM_NUM_IMAGES : MULTIANGLE_NUM_IMAGES
+  const numImages = RANDOM_NUM_IMAGES  // 固定5张图
 
   return (
     <div className="h-full relative flex flex-col bg-zinc-50">
@@ -341,24 +341,27 @@ export default function GroupShootPage() {
                   {/* 生活风格卡片 */}
                   <button
                     onClick={() => setStyleMode('lifestyle')}
-                    className={`flex-1 rounded-2xl overflow-hidden transition-all ${
+                    className={`flex-1 rounded-2xl overflow-hidden transition-all duration-200 ${
                       styleMode === 'lifestyle' 
-                        ? 'ring-3 ring-blue-500 ring-offset-2' 
-                        : 'ring-1 ring-zinc-200'
+                        ? 'ring-4 ring-blue-500 shadow-xl shadow-blue-500/30 scale-[1.02]' 
+                        : 'ring-1 ring-zinc-200 opacity-60 hover:opacity-80'
                     }`}
                   >
-                    <div className="p-3 bg-gradient-to-b from-blue-50 to-white">
+                    <div className={`p-3 transition-colors ${styleMode === 'lifestyle' ? 'bg-gradient-to-b from-blue-100 to-blue-50' : 'bg-gradient-to-b from-zinc-100 to-white'}`}>
                       <div className="flex items-center gap-2 mb-2">
-                        <Users className={`w-5 h-5 ${styleMode === 'lifestyle' ? 'text-blue-600' : 'text-zinc-500'}`} />
-                        <span className={`font-bold ${styleMode === 'lifestyle' ? 'text-blue-900' : 'text-zinc-700'}`}>
+                        <Users className={`w-5 h-5 ${styleMode === 'lifestyle' ? 'text-blue-600' : 'text-zinc-400'}`} />
+                        <span className={`font-bold ${styleMode === 'lifestyle' ? 'text-blue-900' : 'text-zinc-500'}`}>
                           {t.groupShootPage?.lifestyleMode || '生活风格'}
                         </span>
+                        {styleMode === 'lifestyle' && (
+                          <span className="ml-auto bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded-full font-medium">✓</span>
+                        )}
                       </div>
-                      <p className="text-xs text-zinc-500 mb-3">{t.groupShootPage?.lifestyleDesc || '真实感ins风格生活照'}</p>
+                      <p className={`text-xs ${styleMode === 'lifestyle' ? 'text-blue-700' : 'text-zinc-400'}`}>{t.groupShootPage?.lifestyleDesc || '真实感ins风格生活照'}</p>
                     </div>
                     <div className="aspect-[4/3] relative">
                       <Image 
-                        src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=400&h=300&fit=crop" 
+                        src="/group-lifestyle-style.png" 
                         alt="Lifestyle" 
                         fill 
                         className="object-cover"
@@ -369,71 +372,32 @@ export default function GroupShootPage() {
                   {/* 棚拍风格卡片 */}
                   <button
                     onClick={() => setStyleMode('studio')}
-                    className={`flex-1 rounded-2xl overflow-hidden transition-all ${
+                    className={`flex-1 rounded-2xl overflow-hidden transition-all duration-200 ${
                       styleMode === 'studio' 
-                        ? 'ring-3 ring-amber-500 ring-offset-2' 
-                        : 'ring-1 ring-zinc-200'
+                        ? 'ring-4 ring-amber-500 shadow-xl shadow-amber-500/30 scale-[1.02]' 
+                        : 'ring-1 ring-zinc-200 opacity-60 hover:opacity-80'
                     }`}
                   >
-                    <div className="p-3 bg-gradient-to-b from-amber-50 to-white">
+                    <div className={`p-3 transition-colors ${styleMode === 'studio' ? 'bg-gradient-to-b from-amber-100 to-amber-50' : 'bg-gradient-to-b from-zinc-100 to-white'}`}>
                       <div className="flex items-center gap-2 mb-2">
-                        <Sparkles className={`w-5 h-5 ${styleMode === 'studio' ? 'text-amber-600' : 'text-zinc-500'}`} />
-                        <span className={`font-bold ${styleMode === 'studio' ? 'text-amber-900' : 'text-zinc-700'}`}>
+                        <Sparkles className={`w-5 h-5 ${styleMode === 'studio' ? 'text-amber-600' : 'text-zinc-400'}`} />
+                        <span className={`font-bold ${styleMode === 'studio' ? 'text-amber-900' : 'text-zinc-500'}`}>
                           {t.groupShootPage?.studioMode || '棚拍风格'}
                         </span>
+                        {styleMode === 'studio' && (
+                          <span className="ml-auto bg-amber-500 text-white text-[10px] px-2 py-0.5 rounded-full font-medium">✓</span>
+                        )}
                       </div>
-                      <p className="text-xs text-zinc-500 mb-3">{t.groupShootPage?.studioDesc || '专业影棚pose'}</p>
+                      <p className={`text-xs ${styleMode === 'studio' ? 'text-amber-700' : 'text-zinc-400'}`}>{t.groupShootPage?.studioDesc || '专业影棚pose'}</p>
                     </div>
                     <div className="aspect-[4/3] relative bg-zinc-100">
                       <Image 
-                        src="https://images.unsplash.com/photo-1576085898274-069be5a26c58?w=400&h=300&fit=crop" 
+                        src="/group-studio-style.png" 
                         alt="Studio" 
                         fill 
                         className="object-cover"
                       />
                     </div>
-                  </button>
-                </div>
-              </div>
-
-              {/* 拍摄类型 - 简洁按钮 */}
-              <div className="px-4">
-                <div className="flex gap-3 bg-white rounded-2xl p-1.5 shadow-sm border border-zinc-100">
-                  <button
-                    onClick={() => setShootMode('random')}
-                    className={`flex-1 py-3 px-4 rounded-xl transition-all ${
-                      shootMode === 'random' 
-                        ? 'bg-zinc-100 shadow-sm' 
-                        : 'hover:bg-zinc-50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      <Shuffle className={`w-5 h-5 ${shootMode === 'random' ? 'text-zinc-900' : 'text-zinc-400'}`} />
-                      <span className={`font-semibold ${shootMode === 'random' ? 'text-zinc-900' : 'text-zinc-500'}`}>
-                        {t.groupShootPage?.randomShoot || '随意拍'}
-                      </span>
-                    </div>
-                    <p className={`text-xs mt-1 ${shootMode === 'random' ? 'text-zinc-600' : 'text-zinc-400'}`}>
-                      {t.groupShootPage?.randomDesc || '5·AI设计pose'}
-                    </p>
-                  </button>
-                  <button
-                    onClick={() => setShootMode('multiangle')}
-                    className={`flex-1 py-3 px-4 rounded-xl transition-all ${
-                      shootMode === 'multiangle' 
-                        ? 'bg-zinc-100 shadow-sm' 
-                        : 'hover:bg-zinc-50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      <Grid3X3 className={`w-5 h-5 ${shootMode === 'multiangle' ? 'text-zinc-900' : 'text-zinc-400'}`} />
-                      <span className={`font-semibold ${shootMode === 'multiangle' ? 'text-zinc-900' : 'text-zinc-500'}`}>
-                        {t.groupShootPage?.multiAngle || '多角度'}
-                      </span>
-                    </div>
-                    <p className={`text-xs mt-1 ${shootMode === 'multiangle' ? 'text-zinc-600' : 'text-zinc-400'}`}>
-                      {t.groupShootPage?.multiAngleDesc || '4·前后左右'}
-                    </p>
                   </button>
                 </div>
               </div>
@@ -483,18 +447,9 @@ export default function GroupShootPage() {
                 : (t.groupShootPage?.creatingStudio || 'AI 正在创作专业展示图...')}
             </h3>
             <div className="text-zinc-400 space-y-1 text-sm mb-8">
-              {shootMode === 'random' ? (
-                <>
-                  <p>分析图片特征</p>
-                  <p>设计{styleMode === 'lifestyle' ? '生活化' : '电商展示'}pose</p>
-                  <p>生成5张多样化图片...</p>
-                </>
-              ) : (
-                <>
-                  <p>分析模特姿态</p>
-                  <p>生成正面、侧面、背面...</p>
-                </>
-              )}
+              <p>分析图片特征</p>
+              <p>设计{styleMode === 'lifestyle' ? '生活化' : '电商展示'}pose</p>
+              <p>生成5张多样化图片...</p>
             </div>
             
             {/* Progress dots */}
@@ -538,7 +493,7 @@ export default function GroupShootPage() {
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <span className="font-semibold ml-2">
-                {styleMode === 'lifestyle' ? (t.groupShootPage?.lifestyleMode || '生活风格') : (t.groupShootPage?.studioMode || '棚拍风格')} · {shootMode === 'random' ? (t.groupShootPage?.randomShoot || '随意拍') : (t.groupShootPage?.multiAngle || '多角度')}
+                {styleMode === 'lifestyle' ? (t.groupShootPage?.lifestyleMode || '生活风格') : (t.groupShootPage?.studioMode || '棚拍风格')}
               </span>
             </div>
 
@@ -550,9 +505,7 @@ export default function GroupShootPage() {
                   const url = slot?.imageUrl || generatedImages[i]
                   const status = slot?.status || (url ? 'completed' : 'pending')
                   
-                  const labels = shootMode === 'random' 
-                    ? [`Pose ${i + 1}`]
-                    : ['正面', '左侧', '右侧', '背面']
+                  const labels = [`Pose ${i + 1}`]
                   
                   if (status === 'pending' || status === 'generating') {
                     return (
@@ -635,12 +588,8 @@ export default function GroupShootPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] text-zinc-500">拍摄模式:</span>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                        shootMode === 'random' 
-                          ? 'bg-purple-100 text-purple-700' 
-                          : 'bg-green-100 text-green-700'
-                      }`}>
-                        {shootMode === 'random' ? '随意拍' : '多角度'}
+                      <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-purple-100 text-purple-700">
+                        {t.groupShootPage?.randomShoot || '随意拍'}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
