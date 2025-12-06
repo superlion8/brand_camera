@@ -4,11 +4,12 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { motion, AnimatePresence, Reorder } from "framer-motion"
 import { 
   ArrowLeft, ArrowRight, Plus, X, Upload, Camera, 
-  Shirt, HardHat, Footprints, Loader2, AlertCircle, Wand2, SlidersHorizontal
+  Shirt, HardHat, Footprints, Loader2, AlertCircle, Wand2, SlidersHorizontal,
+  Check, ZoomIn
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
-import { fileToBase64 } from "@/lib/utils"
+import { fileToBase64, generateId, ensureBase64 } from "@/lib/utils"
 import { useLanguageStore } from "@/stores/languageStore"
 import { ProductCategory } from "@/types/outfit"
 import { usePresetStore } from "@/stores/presetStore"
@@ -33,7 +34,7 @@ interface OutfitSlot {
 }
 
 // 初始部位配置
-const getInitialSlots = (t: any): OutfitSlot[] => [
+const getInitialSlots = (): OutfitSlot[] => [
   { id: "帽子", label: "帽子", icon: <HardHat className="w-5 h-5" /> },
   { id: "上衣", label: "上衣", icon: <Shirt className="w-5 h-5" /> },
   { id: "内衬", label: "内衬", icon: <Shirt className="w-5 h-5 opacity-60" /> },
@@ -41,12 +42,192 @@ const getInitialSlots = (t: any): OutfitSlot[] => [
   { id: "鞋子", label: "鞋子", icon: <Footprints className="w-5 h-5" /> },
 ]
 
+// Asset Grid Component with Upload Button
+function AssetGrid({ 
+  items, 
+  selectedId, 
+  onSelect,
+  onUpload,
+  onZoom,
+  emptyText = "暂无资源",
+  uploadLabel = "Upload"
+}: { 
+  items: Asset[]
+  selectedId: string | null
+  onSelect: (id: string) => void
+  onUpload?: () => void
+  onZoom?: (url: string) => void
+  emptyText?: string
+  uploadLabel?: string
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      {onUpload && (
+        <button
+          onClick={onUpload}
+          className="aspect-[3/4] rounded-xl overflow-hidden relative border-2 border-dashed border-zinc-300 hover:border-blue-400 transition-all flex flex-col items-center justify-center bg-zinc-50 hover:bg-blue-50"
+        >
+          <Plus className="w-10 h-10 text-zinc-400" />
+          <span className="text-sm text-zinc-500 mt-2">{uploadLabel || 'Upload'}</span>
+        </button>
+      )}
+      {items.map(item => (
+        <div
+          key={item.id}
+          className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
+            selectedId === item.id 
+              ? "border-blue-500 ring-2 ring-blue-500/30" 
+              : "border-transparent hover:border-blue-300"
+          }`}
+        >
+          <button
+            onClick={() => onSelect(item.id)}
+            className="absolute inset-0"
+          >
+            <Image src={item.imageUrl} alt={item.name || ""} fill className="object-cover" />
+          </button>
+          {selectedId === item.id && (
+            <div className="absolute top-2 left-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+              <Check className="w-4 h-4 text-white" />
+            </div>
+          )}
+          {onZoom && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onZoom(item.imageUrl)
+              }}
+              className="absolute bottom-2 right-2 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors"
+            >
+              <ZoomIn className="w-4 h-4 text-white" />
+            </button>
+          )}
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 pt-6 pointer-events-none">
+            <p className="text-xs text-white truncate text-center">{item.name}</p>
+          </div>
+        </div>
+      ))}
+      {items.length === 0 && !onUpload && (
+        <div className="col-span-2 flex flex-col items-center justify-center py-12 text-zinc-400">
+          <p className="text-sm">{emptyText}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Background Grid with categories and Upload Button
+function BackgroundGrid({
+  selectedId,
+  onSelect,
+  onUpload,
+  onZoom,
+  uploadLabel = "Upload",
+  labels,
+  bgLight = [],
+  bgSolid = [],
+  bgPattern = [],
+}: {
+  selectedId: string | null
+  onSelect: (id: string) => void
+  onUpload?: () => void
+  onZoom?: (url: string) => void
+  uploadLabel?: string
+  labels?: { all: string; light: string; solid: string; pattern: string }
+  bgLight?: Asset[]
+  bgSolid?: Asset[]
+  bgPattern?: Asset[]
+}) {
+  const [activeTab, setActiveTab] = useState<'all' | 'light' | 'solid' | 'pattern'>('all')
+  
+  const allBgs = [...bgLight, ...bgSolid, ...bgPattern]
+  
+  const bgMap = {
+    all: allBgs,
+    light: bgLight,
+    solid: bgSolid,
+    pattern: bgPattern,
+  }
+  
+  const tabs = [
+    { id: 'all', label: labels?.all || 'All', count: allBgs.length },
+    { id: 'light', label: labels?.light || 'Light', count: bgLight.length },
+    { id: 'solid', label: labels?.solid || 'Solid', count: bgSolid.length },
+    { id: 'pattern', label: labels?.pattern || 'Pattern', count: bgPattern.length },
+  ]
+  
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-2 flex-wrap">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              activeTab === tab.id
+                ? "bg-zinc-900 text-white"
+                : "bg-white text-zinc-600 border border-zinc-200"
+            }`}
+          >
+            {tab.label}
+            <span className="ml-1 opacity-60">({tab.count})</span>
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        {onUpload && (
+          <button
+            onClick={onUpload}
+            className="aspect-square rounded-xl overflow-hidden relative border-2 border-dashed border-zinc-300 hover:border-blue-400 transition-all flex flex-col items-center justify-center bg-zinc-50 hover:bg-blue-50"
+          >
+            <Plus className="w-8 h-8 text-zinc-400" />
+            <span className="text-xs text-zinc-500 mt-1">{uploadLabel || 'Upload'}</span>
+          </button>
+        )}
+        {bgMap[activeTab].map(item => (
+          <div
+            key={item.id}
+            className={`aspect-square rounded-xl overflow-hidden relative border-2 transition-all ${
+              selectedId === item.id 
+                ? "border-blue-500 ring-2 ring-blue-500/30" 
+                : "border-transparent hover:border-blue-300"
+            }`}
+          >
+            <button
+              onClick={() => onSelect(item.id)}
+              className="absolute inset-0"
+            >
+              <Image src={item.imageUrl} alt={item.name || ""} fill className="object-cover" />
+            </button>
+            {selectedId === item.id && (
+              <div className="absolute top-2 left-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                <Check className="w-4 h-4 text-white" />
+              </div>
+            )}
+            {onZoom && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onZoom(item.imageUrl)
+                }}
+                className="absolute bottom-2 right-2 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors"
+              >
+                <ZoomIn className="w-4 h-4 text-white" />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function ProStudioOutfitPage() {
   const router = useRouter()
   const t = useLanguageStore(state => state.t)
   const { checkQuota, showExceededModal, requiredCount, closeExceededModal } = useQuota()
   const { addTask, initImageSlots } = useGenerationTaskStore()
-  const { userModels, userBackgrounds } = useAssetStore()
+  const { userModels, userBackgrounds, addUserAsset } = useAssetStore()
   const presetStore = usePresetStore()
   
   const [slots, setSlots] = useState<OutfitSlot[]>(() => getInitialSlots())
@@ -54,13 +235,67 @@ export default function ProStudioOutfitPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analyzeError, setAnalyzeError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const modelUploadRef = useRef<HTMLInputElement>(null)
+  const bgUploadRef = useRef<HTMLInputElement>(null)
   const [uploadTargetSlot, setUploadTargetSlot] = useState<ProductCategory | null>(null)
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
   
   // 模特和背景选择
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null)
   const [selectedBgId, setSelectedBgId] = useState<string | null>(null)
   const [showCustomPanel, setShowCustomPanel] = useState(false)
   const [activeCustomTab, setActiveCustomTab] = useState<'model' | 'bg'>('model')
+  
+  // 自定义上传的资产
+  const [customModels, setCustomModels] = useState<Asset[]>([])
+  const [customBgs, setCustomBgs] = useState<Asset[]>([])
+  
+  // 加载预设资源
+  useEffect(() => {
+    presetStore.loadPresets()
+  }, [presetStore])
+  
+  // 获取所有模特和背景
+  const studioModels = presetStore.visibleModels || []
+  const studioBackgroundsLight = presetStore.getAllStudioBackgrounds().filter(bg => bg.name?.includes('Light') || bg.name?.includes('light'))
+  const studioBackgroundsSolid = presetStore.getAllStudioBackgrounds().filter(bg => bg.name?.includes('Solid') || bg.name?.includes('solid'))
+  const studioBackgroundsPattern = presetStore.getAllStudioBackgrounds().filter(bg => bg.name?.includes('Pattern') || bg.name?.includes('pattern'))
+  
+  // 处理模特上传
+  const handleModelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const base64 = await fileToBase64(file)
+      const newModel: Asset = {
+        id: `custom-model-${Date.now()}`,
+        type: 'model',
+        name: `自定义模特`,
+        imageUrl: base64,
+      }
+      setCustomModels(prev => [newModel, ...prev])
+      setSelectedModelId(newModel.id)
+      addUserAsset(newModel)
+    }
+    e.target.value = ''
+  }
+  
+  // 处理背景上传
+  const handleBgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const base64 = await fileToBase64(file)
+      const newBg: Asset = {
+        id: `custom-bg-${Date.now()}`,
+        type: 'background',
+        name: `自定义背景`,
+        imageUrl: base64,
+      }
+      setCustomBgs(prev => [newBg, ...prev])
+      setSelectedBgId(newBg.id)
+      addUserAsset(newBg)
+    }
+    e.target.value = ''
+  }
   
   // 从 sessionStorage 读取第一张和第二张商品
   useEffect(() => {
@@ -211,9 +446,92 @@ export default function ProStudioOutfitPage() {
     const taskId = addTask('pro_studio', products[0], {}, 6)
     initImageSlots(taskId, 6)
     
-    // TODO: 调用生成API，传入所有商品图片
-    // 这里需要修改生成API支持多商品
-    router.push('/pro-studio')
+    // 获取选中的模特和背景
+    const selectedModel = selectedModelId 
+      ? [...customModels, ...studioModels, ...userModels].find(m => m.id === selectedModelId)
+      : null
+    const selectedBg = selectedBgId
+      ? [...customBgs, ...studioBackgroundsLight, ...studioBackgroundsSolid, ...studioBackgroundsPattern, ...userBackgrounds].find(b => b.id === selectedBgId)
+      : null
+    
+    // 准备模特和背景数据
+    const modelImageData = selectedModel ? await ensureBase64(selectedModel.imageUrl) : null
+    const bgImageData = selectedBg ? await ensureBase64(selectedBg.imageUrl) : null
+    
+    // 调用生成API，传入所有商品图片
+    try {
+      // 简单模式：3张图
+      const simplePromises = []
+      for (let i = 0; i < 3; i++) {
+        simplePromises.push(
+          fetch('/api/generate-pro-studio', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              productImages: products, // 传入所有商品图片
+              modelImage: modelImageData,
+              backgroundImage: bgImageData,
+              mode: 'simple',
+              index: i,
+              taskId,
+              modelIsRandom: !selectedModel,
+              bgIsRandom: !selectedBg,
+              modelName: selectedModel?.name || '专业模特',
+              bgName: selectedBg?.name || '影棚背景',
+              modelUrl: selectedModel?.imageUrl,
+              bgUrl: selectedBg?.imageUrl,
+              modelIsPreset: selectedModel ? !customModels.find(m => m.id === selectedModel.id) : true,
+              bgIsPreset: selectedBg ? !customBgs.find(b => b.id === selectedBg.id) : true,
+            })
+          })
+        )
+      }
+      
+      // 扩展模式：3张图
+      const extendedPromises = []
+      for (let i = 0; i < 3; i++) {
+        extendedPromises.push(
+          fetch('/api/generate-pro-studio', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              productImages: products, // 传入所有商品图片
+              modelImage: modelImageData,
+              backgroundImage: bgImageData,
+              mode: 'extended',
+              index: i + 3,
+              taskId,
+              modelIsRandom: !selectedModel,
+              bgIsRandom: !selectedBg,
+              modelName: selectedModel?.name || '专业模特',
+              bgName: selectedBg?.name || '影棚背景',
+              modelUrl: selectedModel?.imageUrl,
+              bgUrl: selectedBg?.imageUrl,
+              modelIsPreset: selectedModel ? !customModels.find(m => m.id === selectedModel.id) : true,
+              bgIsPreset: selectedBg ? !customBgs.find(b => b.id === selectedBg.id) : true,
+            })
+          })
+        )
+      }
+      
+      // 等待所有请求完成
+      const results = await Promise.allSettled([...simplePromises, ...extendedPromises])
+      
+      // 检查是否有失败
+      const failures = results.filter(r => r.status === 'rejected')
+      if (failures.length > 0) {
+        console.error('Some generations failed:', failures)
+        alert(`有 ${failures.length} 张图片生成失败，请重试`)
+        return
+      }
+      
+      // 跳转到pro-studio页面，并设置模式为results
+      sessionStorage.setItem('proStudioTaskId', taskId)
+      router.push('/pro-studio?mode=results')
+    } catch (error) {
+      console.error('Generation failed:', error)
+      alert('生成失败，请重试')
+    }
   }
   
   // 获取选中的模特和背景
@@ -323,6 +641,134 @@ export default function ProStudioOutfitPage() {
         </motion.button>
       </div>
       
+      {/* 自定义配置面板 */}
+      <AnimatePresence>
+        {showCustomPanel && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
+              onClick={() => setShowCustomPanel(false)}
+            />
+            <motion.div 
+              initial={{ y: "100%" }} 
+              animate={{ y: 0 }} 
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed bottom-0 left-0 right-0 h-[80%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
+            >
+              <div className="h-14 border-b flex items-center justify-between px-4 shrink-0">
+                <span className="font-semibold text-lg">自定义配置</span>
+                <button 
+                  onClick={() => setShowCustomPanel(false)} 
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors"
+                >
+                  完成
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="p-2 flex gap-2 border-b overflow-x-auto shrink-0">
+                {[
+                  { id: "model", label: "专业模特" },
+                  { id: "bg", label: "棚拍背景" }
+                ].map(tab => (
+                  <button 
+                    key={tab.id}
+                    onClick={() => setActiveCustomTab(tab.id as any)}
+                    className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${
+                      activeCustomTab === tab.id 
+                        ? "bg-black text-white" 
+                        : "bg-zinc-100 text-zinc-600"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4">
+                {activeCustomTab === "model" && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-zinc-600">选择模特（不选则随机）</span>
+                      {selectedModelId && (
+                        <button 
+                          onClick={() => setSelectedModelId(null)}
+                          className="text-xs text-blue-600"
+                        >
+                          清除选择
+                        </button>
+                      )}
+                    </div>
+                    <AssetGrid 
+                      items={[...customModels, ...userModels, ...studioModels]} 
+                      selectedId={selectedModelId} 
+                      onSelect={(id) => setSelectedModelId(selectedModelId === id ? null : id)}
+                      onUpload={() => modelUploadRef.current?.click()}
+                      onZoom={(url) => setFullscreenImage(url)}
+                      uploadLabel="上传"
+                    />
+                  </div>
+                )}
+                {activeCustomTab === "bg" && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-zinc-600">选择背景（不选则随机）</span>
+                      {selectedBgId && (
+                        <button 
+                          onClick={() => setSelectedBgId(null)}
+                          className="text-xs text-blue-600"
+                        >
+                          清除选择
+                        </button>
+                      )}
+                    </div>
+                    <BackgroundGrid 
+                      selectedId={selectedBgId} 
+                      onSelect={(id) => setSelectedBgId(selectedBgId === id ? null : id)}
+                      onUpload={() => bgUploadRef.current?.click()}
+                      onZoom={(url) => setFullscreenImage(url)}
+                      uploadLabel="上传"
+                      labels={{ 
+                        all: "全部", 
+                        light: "Light", 
+                        solid: "Solid", 
+                        pattern: "Pattern" 
+                      }}
+                      bgLight={studioBackgroundsLight}
+                      bgSolid={studioBackgroundsSolid}
+                      bgPattern={studioBackgroundsPattern}
+                    />
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+      
+      {/* 全屏图片预览 */}
+      <AnimatePresence>
+        {fullscreenImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black flex items-center justify-center"
+            onClick={() => setFullscreenImage(null)}
+          >
+            <img src={fullscreenImage} alt="Preview" className="max-w-full max-h-full object-contain" />
+            <button
+              onClick={() => setFullscreenImage(null)}
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
       {/* 文件上传 */}
       <input 
         type="file" 
@@ -330,6 +776,20 @@ export default function ProStudioOutfitPage() {
         className="hidden" 
         accept="image/*" 
         onChange={handleFileUpload}
+      />
+      <input 
+        type="file" 
+        ref={modelUploadRef} 
+        className="hidden" 
+        accept="image/*" 
+        onChange={handleModelUpload}
+      />
+      <input 
+        type="file" 
+        ref={bgUploadRef} 
+        className="hidden" 
+        accept="image/*" 
+        onChange={handleBgUpload}
       />
       
       {/* Quota Exceeded Modal */}

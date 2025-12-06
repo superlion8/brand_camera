@@ -25,8 +25,8 @@ export const maxDuration = 300 // 5 minutes
 // 专业棚拍 Prompts
 const PROMPTS = {
   // 简单模式 - 有背景
-  simpleWithBg: () => `
-为这个商品生成高级质感全身棚拍图。模特使用提供的模特图片，背景使用提供的背景图片。
+  simpleWithBg: (productPlaceholder: string) => `
+为${productPlaceholder}生成高级质感全身棚拍图。模特使用提供的模特图片，背景使用提供的背景图片。
 
 商品的质感、颜色、纹理细节、版型等必须保持严格一致。
 
@@ -34,8 +34,8 @@ const PROMPTS = {
 `,
   
   // 简单模式 - 无背景（AI生成背景）
-  simpleNoBg: () => `
-为这个商品生成高级质感全身棚拍图。模特使用提供的模特图片。
+  simpleNoBg: (productPlaceholder: string) => `
+为${productPlaceholder}生成高级质感全身棚拍图。模特使用提供的模特图片。
 
 背景请你参考商品适合的风格，使用一个棚拍常用的背景。
 
@@ -45,8 +45,8 @@ const PROMPTS = {
 `,
 
   // 扩展模式 - 生成拍摄指令
-  instructGen: () => `
-你现在是一个专门拍摄电商商品棚拍图的职业摄影师，请你基于你要拍摄的商品，和展示这个商品的模特，为这个模特选择一身合适商品风格的服装造型搭配，搭配要和谐、有风格、有高级感；
+  instructGen: (productPlaceholder: string) => `
+你现在是一个专门拍摄电商商品棚拍图的职业摄影师，请你基于你要拍摄的${productPlaceholder}，和展示这个商品的模特，为这个模特选择一身合适商品风格的服装造型搭配，搭配要和谐、有风格、有高级感；
 
 再为这个模特和这身装扮选择一个合适的影棚拍摄背景和拍摄pose，输出1段拍摄指令。
 
@@ -68,8 +68,8 @@ const PROMPTS = {
 `,
 
   // 扩展模式 - 根据指令生成图片（有背景）
-  instructExecWithBg: (instructPrompt: string) => `
-请为这个模特拍摄一张身穿商品的专业影棚商品棚拍图。背景使用提供的背景图片。
+  instructExecWithBg: (instructPrompt: string, productPlaceholder: string) => `
+请为这个模特拍摄一张身穿${productPlaceholder}的专业影棚商品棚拍图。背景使用提供的背景图片。
 
 商品的质感、颜色、纹理细节、版型等必须保持严格一致。
 
@@ -77,8 +77,8 @@ const PROMPTS = {
 `,
 
   // 扩展模式 - 根据指令生成图片（无背景）
-  instructExecNoBg: (instructPrompt: string) => `
-请为这个模特拍摄一张身穿商品的专业影棚商品棚拍图。
+  instructExecNoBg: (instructPrompt: string, productPlaceholder: string) => `
+请为这个模特拍摄一张身穿${productPlaceholder}的专业影棚商品棚拍图。
 
 商品的质感、颜色、纹理细节、版型等必须保持严格一致。
 
@@ -95,7 +95,8 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const {
-      productImage,
+      productImage, // 单个商品（向后兼容）
+      productImages, // 多个商品数组
       modelImage,
       backgroundImage, // 可选，用户选择了才有
       mode, // 'simple' | 'extended'
@@ -111,6 +112,27 @@ export async function POST(request: NextRequest) {
       modelIsPreset = true,
       bgIsPreset = true,
     } = body
+    
+    // 支持多商品：优先使用 productImages，如果没有则使用 productImage
+    const products = productImages && Array.isArray(productImages) && productImages.length > 0 
+      ? productImages 
+      : productImage 
+        ? [productImage] 
+        : []
+    
+    if (products.length === 0) {
+      return NextResponse.json({ 
+        success: false, 
+        error: '缺少商品图片数据',
+        index,
+        modelType: null,
+      }, { status: 400 })
+    }
+    
+    // 生成商品占位符：{{product1}}/{{product2}}/.../{{productn}}
+    const productPlaceholder = products.length === 1 
+      ? '这个商品' 
+      : products.map((_, i) => `{{product${i + 1}}}`).join('/')
 
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -125,7 +147,7 @@ export async function POST(request: NextRequest) {
     const label = `[ProStudio-${mode}${hasBg ? '+bg' : ''}-${index}]`
 
     console.log(`${label} Starting generation...`)
-    console.log(`${label} productImage: ${productImage ? `${productImage.substring(0, 50)}...` : 'null/undefined'}`)
+    console.log(`${label} products count: ${products.length}`)
     console.log(`${label} modelImage: ${modelImage ? `${modelImage.substring(0, 50)}...` : 'null/undefined'}`)
     console.log(`${label} backgroundImage: ${backgroundImage ? `${backgroundImage.substring(0, 50)}...` : 'none (AI will generate)'}`)
 
@@ -134,18 +156,29 @@ export async function POST(request: NextRequest) {
     let usedPrompt = ''
     let generationMode: 'simple' | 'extended' = mode === 'extended' ? 'extended' : 'simple'
 
-    // 准备图片数据 - 如果是 URL，先转换为 base64
-    let productImageData: string
-    if (productImage?.startsWith('http://') || productImage?.startsWith('https://')) {
-      // URL，需要转换为 base64
-      const base64Data = await urlToBase64(productImage)
-      productImageData = base64Data.split(',')[1]
-    } else if (productImage?.startsWith('data:')) {
-      // 已经是 base64 data URL
-      productImageData = productImage.split(',')[1]
-    } else {
-      // 假设是纯 base64（无 data: 前缀）
-      productImageData = productImage
+    // 准备所有商品图片数据 - 如果是 URL，先转换为 base64
+    const productImagesData: string[] = []
+    for (const product of products) {
+      let productImageData: string
+      if (product?.startsWith('http://') || product?.startsWith('https://')) {
+        const base64Data = await urlToBase64(product)
+        productImageData = base64Data.split(',')[1]
+      } else if (product?.startsWith('data:')) {
+        productImageData = product.split(',')[1]
+      } else {
+        productImageData = product
+      }
+      productImagesData.push(productImageData)
+    }
+    
+    if (productImagesData.length === 0) {
+      console.error(`${label} Missing productImagesData`)
+      return NextResponse.json({ 
+        success: false, 
+        error: '缺少商品图片数据',
+        index,
+        modelType: null,
+      }, { status: 400 })
     }
 
     let modelImageData: string
@@ -171,8 +204,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证必需的图片数据
-    if (!productImageData) {
-      console.error(`${label} Missing productImageData`)
+    if (productImagesData.length === 0) {
+      console.error(`${label} Missing productImagesData`)
       return NextResponse.json({ 
         success: false, 
         error: '缺少商品图片数据',
@@ -242,11 +275,12 @@ export async function POST(request: NextRequest) {
 
     if (mode === 'simple') {
       // 简单模式：根据是否有背景选择不同的 prompt
-      usedPrompt = hasBg ? PROMPTS.simpleWithBg() : PROMPTS.simpleNoBg()
+      usedPrompt = hasBg ? PROMPTS.simpleWithBg(productPlaceholder) : PROMPTS.simpleNoBg(productPlaceholder)
       
       const contents = [
         { text: usedPrompt },
-        { inlineData: { mimeType: 'image/jpeg', data: productImageData } },
+        // 添加所有商品图片
+        ...productImagesData.map(data => ({ inlineData: { mimeType: 'image/jpeg', data } })),
         { inlineData: { mimeType: 'image/jpeg', data: modelImageData } },
       ]
       
@@ -263,8 +297,9 @@ export async function POST(request: NextRequest) {
       
       // Step 1: 生成拍摄指令
       const instructContents = [
-        { text: PROMPTS.instructGen() },
-        { inlineData: { mimeType: 'image/jpeg', data: productImageData } },
+        { text: PROMPTS.instructGen(productPlaceholder) },
+        // 添加所有商品图片
+        ...productImagesData.map(data => ({ inlineData: { mimeType: 'image/jpeg', data } })),
         { inlineData: { mimeType: 'image/jpeg', data: modelImageData } },
       ]
 
@@ -286,11 +321,12 @@ export async function POST(request: NextRequest) {
       }
 
       // Step 2: 根据指令生成图片
-      usedPrompt = hasBg ? PROMPTS.instructExecWithBg(instructPrompt) : PROMPTS.instructExecNoBg(instructPrompt)
+      usedPrompt = hasBg ? PROMPTS.instructExecWithBg(instructPrompt, productPlaceholder) : PROMPTS.instructExecNoBg(instructPrompt, productPlaceholder)
       
       const execContents = [
         { text: usedPrompt },
-        { inlineData: { mimeType: 'image/jpeg', data: productImageData } },
+        // 添加所有商品图片
+        ...productImagesData.map(data => ({ inlineData: { mimeType: 'image/jpeg', data } })),
         { inlineData: { mimeType: 'image/jpeg', data: modelImageData } },
       ]
       
@@ -341,14 +377,22 @@ export async function POST(request: NextRequest) {
     
     // 只在第一张图时上传输入图片（避免重复上传）
     let inputImageUrlToSave: string | undefined
+    let productImageUrlsToSave: string[] = []
     let modelImageUrlToSave: string | undefined
     let bgImageUrlToSave: string | undefined
     
     if (index === 0) {
-      // 上传商品图
-      if (productImage) {
-        const productUrl = await uploadImageToStorage(productImage, userId, `prostudio_${taskId}_product`)
-        if (productUrl) inputImageUrlToSave = productUrl
+      // 上传所有商品图
+      for (let i = 0; i < products.length; i++) {
+        const product = products[i]
+        if (product) {
+          const productUrl = await uploadImageToStorage(product, userId, `prostudio_${taskId}_product${i + 1}`)
+          if (productUrl) {
+            productImageUrlsToSave.push(productUrl)
+            // 第一张商品图作为主输入图
+            if (i === 0) inputImageUrlToSave = productUrl
+          }
+        }
       }
       // 上传模特图
       if (modelImage) {
@@ -374,8 +418,9 @@ export async function POST(request: NextRequest) {
       taskType: 'pro_studio',
       inputImageUrl: inputImageUrlToSave,
       inputParams: index === 0 ? {
-        // 商品原图也保存到 inputParams
-        productImage: inputImageUrlToSave,
+        // 商品原图也保存到 inputParams（支持多商品）
+        productImage: inputImageUrlToSave, // 第一张商品图作为主图
+        productImages: productImageUrlsToSave, // 所有商品图
         modelImage: modelImageUrlToSave || modelUrl,
         backgroundImage: bgImageUrlToSave || bgUrl,
         hasBg,

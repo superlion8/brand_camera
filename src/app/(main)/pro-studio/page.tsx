@@ -8,7 +8,7 @@ import {
   SlidersHorizontal, X, Wand2, Camera, Home,
   Heart, Download, FolderHeart, Check, ZoomIn, Plus, Grid3X3
 } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { fileToBase64, generateId, compressBase64Image, ensureBase64 } from "@/lib/utils"
 import { Asset } from "@/types"
 import Image from "next/image"
@@ -265,6 +265,20 @@ export default function ProStudioPage() {
   const [generatedModes, setGeneratedModes] = useState<string[]>([])
   const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
+  
+  // 检查URL参数，如果有mode=results，切换到results模式
+  const searchParams = useSearchParams()
+  useEffect(() => {
+    const modeParam = searchParams.get('mode')
+    if (modeParam === 'results') {
+      const taskIdFromStorage = sessionStorage.getItem('proStudioTaskId')
+      if (taskIdFromStorage) {
+        setCurrentTaskId(taskIdFromStorage)
+        setMode('results')
+        sessionStorage.removeItem('proStudioTaskId')
+      }
+    }
+  }, [searchParams])
   
   // Preset Store - 动态从云端加载
   const { 
