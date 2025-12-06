@@ -1257,12 +1257,12 @@ export default function CameraPage() {
                     className="absolute bottom-0 left-0 right-0 h-[60%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
                   >
                     <div className="h-14 border-b flex items-center justify-between px-4 shrink-0">
-                      <span className="font-semibold text-lg">自定义配置</span>
+                      <span className="font-semibold text-lg">{t.camera?.customConfig || '自定义配置'}</span>
                       <button 
                         onClick={() => setShowCustomPanel(false)} 
                         className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors"
                       >
-                        下一步
+                        {t.camera?.nextStep || '下一步'}
                         <ArrowRight className="w-4 h-4" />
                       </button>
                     </div>
@@ -1297,7 +1297,7 @@ export default function CameraPage() {
                                   : "bg-white text-zinc-600 border border-zinc-200"
                               }`}
                             >
-                              全部
+                              {t.camera?.allModels || '全部'}
                             </button>
                             <button
                               onClick={() => setModelSubcategory(modelSubcategory === 'mine' ? null : 'mine')}
@@ -1307,7 +1307,7 @@ export default function CameraPage() {
                                   : "bg-white text-zinc-600 border border-zinc-200"
                               }`}
                             >
-                              我的
+                              {t.camera?.myModels || '我的'}
                               {userModels.length > 0 && <span className="ml-1 text-zinc-400">({userModels.length})</span>}
                             </button>
                           </div>
@@ -1334,7 +1334,7 @@ export default function CameraPage() {
                                   : "bg-white text-zinc-600 border border-zinc-200"
                               }`}
                             >
-                              全部
+                              {t.camera?.allBackgrounds || '全部'}
                             </button>
                             <button
                               onClick={() => setBgSubcategory(bgSubcategory === 'mine' ? null : 'mine')}
@@ -1344,7 +1344,7 @@ export default function CameraPage() {
                                   : "bg-white text-zinc-600 border border-zinc-200"
                               }`}
                             >
-                              我的
+                              {t.camera?.myBackgrounds || '我的'}
                               {userBackgrounds.length > 0 && <span className="ml-1 text-zinc-400">({userBackgrounds.length})</span>}
                             </button>
                           </div>

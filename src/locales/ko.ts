@@ -126,6 +126,12 @@ export const ko: Translations = {
     styleWestern: "서양식",
     styleLabel: "스타일",
     matchingStyle: "스타일 매칭 중...",
+    customConfig: "사용자 정의 설정",
+    nextStep: "다음",
+    allModels: "전체",
+    myModels: "내 것",
+    allBackgrounds: "전체",
+    myBackgrounds: "내 것",
   },
   
   // Group Shoot Page

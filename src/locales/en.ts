@@ -126,6 +126,12 @@ export const en: Translations = {
     styleWestern: "Western",
     styleLabel: "Style",
     matchingStyle: "Matching style...",
+    customConfig: "Custom Settings",
+    nextStep: "Next",
+    allModels: "All",
+    myModels: "My",
+    allBackgrounds: "All",
+    myBackgrounds: "My",
   },
   
   // Group Shoot Page

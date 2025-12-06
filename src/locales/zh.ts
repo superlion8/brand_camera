@@ -124,6 +124,12 @@ export const zh = {
     styleWestern: "欧美",
     styleLabel: "风格",
     matchingStyle: "匹配风格...",
+    customConfig: "自定义配置",
+    nextStep: "下一步",
+    allModels: "全部",
+    myModels: "我的",
+    allBackgrounds: "全部",
+    myBackgrounds: "我的",
   },
   
   // Group Shoot Page
