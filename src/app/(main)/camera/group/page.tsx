@@ -272,48 +272,48 @@ export default function GroupShootPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto pb-32 bg-zinc-50">
-              {/* 图片上传区域 - 两个蓝色渐变卡片 */}
-              <div className="p-4 space-y-3">
+              {/* 图片上传区域 - 紧凑布局 */}
+              <div className="p-4 space-y-2">
                 {!selectedImage ? (
                   <>
                     {/* 选择提示标题 */}
-                    <p className="text-center text-zinc-500 text-sm mb-1">{t.groupShootPage?.chooseOneMethod || '选择一种方式添加图片'}</p>
+                    <p className="text-center text-zinc-500 text-xs">{t.groupShootPage?.chooseOneMethod || '选择一种方式添加图片'}</p>
                     
-                    {/* 上传图片卡片 */}
+                    {/* 上传图片卡片 - 紧凑版 */}
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="w-full p-5 rounded-2xl bg-gradient-to-r from-blue-400 to-blue-500 hover:from-blue-500 hover:to-blue-600 transition-all shadow-lg shadow-blue-200 active:scale-[0.98]"
+                      className="w-full p-3 rounded-xl bg-gradient-to-r from-blue-400 to-blue-500 hover:from-blue-500 hover:to-blue-600 transition-all shadow-md shadow-blue-200 active:scale-[0.98]"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
-                          <ImageIcon className="w-7 h-7 text-white" />
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                          <ImageIcon className="w-5 h-5 text-white" />
                         </div>
                         <div className="text-left">
-                          <p className="text-white font-bold text-lg">{t.groupShootPage?.uploadImage || '上传图片'}</p>
-                          <p className="text-white/70 text-sm">{t.groupShootPage?.fromAlbum || '从相册选择'}</p>
+                          <p className="text-white font-semibold">{t.groupShootPage?.uploadImage || '上传图片'}</p>
+                          <p className="text-white/70 text-xs">{t.groupShootPage?.fromAlbum || '从相册选择'}</p>
                         </div>
                       </div>
                     </button>
                     
                     {/* "或" 分隔符 */}
-                    <div className="flex items-center gap-3 py-1">
-                      <div className="flex-1 h-px bg-zinc-300"></div>
-                      <span className="text-zinc-400 text-sm font-medium">{t.common.or || '或'}</span>
-                      <div className="flex-1 h-px bg-zinc-300"></div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-px bg-zinc-200"></div>
+                      <span className="text-zinc-400 text-xs">{t.common.or || '或'}</span>
+                      <div className="flex-1 h-px bg-zinc-200"></div>
                     </div>
                     
-                    {/* 从成片选择卡片 */}
+                    {/* 从成片选择卡片 - 紧凑版 */}
                     <button
                       onClick={() => setShowGalleryPicker(true)}
-                      className="w-full p-5 rounded-2xl bg-gradient-to-r from-sky-400 to-cyan-500 hover:from-sky-500 hover:to-cyan-600 transition-all shadow-lg shadow-cyan-200 active:scale-[0.98]"
+                      className="w-full p-3 rounded-xl bg-gradient-to-r from-sky-400 to-cyan-500 hover:from-sky-500 hover:to-cyan-600 transition-all shadow-md shadow-cyan-200 active:scale-[0.98]"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
-                          <Camera className="w-7 h-7 text-white" />
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                          <Camera className="w-5 h-5 text-white" />
                         </div>
                         <div className="text-left">
-                          <p className="text-white font-bold text-lg">{t.groupShootPage?.selectFromPhotos || '从成片选择'}</p>
-                          <p className="text-white/70 text-sm">{t.groupShootPage?.modelCategory || '模特分类'}</p>
+                          <p className="text-white font-semibold">{t.groupShootPage?.selectFromPhotos || '从成片选择'}</p>
+                          <p className="text-white/70 text-xs">{t.groupShootPage?.modelCategory || '模特分类'}</p>
                         </div>
                       </div>
                     </button>
@@ -345,31 +345,31 @@ export default function GroupShootPage() {
                 )}
               </div>
 
-              {/* 风格选择 - 两个带图片的大卡片 */}
-              <div className="px-4 pb-4">
-                <div className="flex gap-3">
+              {/* 风格选择 - 紧凑卡片 */}
+              <div className="px-4 pb-2">
+                <div className="flex gap-2">
                   {/* 生活风格卡片 */}
                   <button
                     onClick={() => setStyleMode('lifestyle')}
-                    className={`flex-1 rounded-2xl overflow-hidden transition-all duration-200 ${
+                    className={`flex-1 rounded-xl overflow-hidden transition-all duration-200 ${
                       styleMode === 'lifestyle' 
-                        ? 'ring-4 ring-blue-500 shadow-xl shadow-blue-500/30 scale-[1.02]' 
-                        : 'ring-1 ring-zinc-200 opacity-60 hover:opacity-80'
+                        ? 'ring-3 ring-blue-500 shadow-lg shadow-blue-500/20 scale-[1.01]' 
+                        : 'ring-1 ring-zinc-200 opacity-50 hover:opacity-70'
                     }`}
                   >
-                    <div className={`p-3 transition-colors ${styleMode === 'lifestyle' ? 'bg-gradient-to-b from-blue-100 to-blue-50' : 'bg-gradient-to-b from-zinc-100 to-white'}`}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Users className={`w-5 h-5 ${styleMode === 'lifestyle' ? 'text-blue-600' : 'text-zinc-400'}`} />
-                        <span className={`font-bold ${styleMode === 'lifestyle' ? 'text-blue-900' : 'text-zinc-500'}`}>
+                    <div className={`p-2.5 transition-colors ${styleMode === 'lifestyle' ? 'bg-gradient-to-b from-blue-100 to-blue-50' : 'bg-gradient-to-b from-zinc-100 to-white'}`}>
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <Users className={`w-4 h-4 ${styleMode === 'lifestyle' ? 'text-blue-600' : 'text-zinc-400'}`} />
+                        <span className={`font-bold text-sm ${styleMode === 'lifestyle' ? 'text-blue-900' : 'text-zinc-500'}`}>
                           {t.groupShootPage?.lifestyleMode || '生活风格'}
                         </span>
                         {styleMode === 'lifestyle' && (
-                          <span className="ml-auto bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded-full font-medium">✓</span>
+                          <span className="ml-auto bg-blue-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-medium">✓</span>
                         )}
                       </div>
-                      <p className={`text-xs ${styleMode === 'lifestyle' ? 'text-blue-700' : 'text-zinc-400'}`}>{t.groupShootPage?.lifestyleDesc || '真实感ins风格生活照'}</p>
+                      <p className={`text-[10px] leading-tight ${styleMode === 'lifestyle' ? 'text-blue-600' : 'text-zinc-400'}`}>{t.groupShootPage?.lifestyleDesc || 'ins风格生活照'}</p>
                     </div>
-                    <div className="aspect-[4/3] relative">
+                    <div className="aspect-[5/4] relative">
                       <Image 
                         src="/group-lifestyle-style.png" 
                         alt="Lifestyle" 
@@ -382,25 +382,25 @@ export default function GroupShootPage() {
                   {/* 棚拍风格卡片 */}
                   <button
                     onClick={() => setStyleMode('studio')}
-                    className={`flex-1 rounded-2xl overflow-hidden transition-all duration-200 ${
+                    className={`flex-1 rounded-xl overflow-hidden transition-all duration-200 ${
                       styleMode === 'studio' 
-                        ? 'ring-4 ring-amber-500 shadow-xl shadow-amber-500/30 scale-[1.02]' 
-                        : 'ring-1 ring-zinc-200 opacity-60 hover:opacity-80'
+                        ? 'ring-3 ring-amber-500 shadow-lg shadow-amber-500/20 scale-[1.01]' 
+                        : 'ring-1 ring-zinc-200 opacity-50 hover:opacity-70'
                     }`}
                   >
-                    <div className={`p-3 transition-colors ${styleMode === 'studio' ? 'bg-gradient-to-b from-amber-100 to-amber-50' : 'bg-gradient-to-b from-zinc-100 to-white'}`}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Sparkles className={`w-5 h-5 ${styleMode === 'studio' ? 'text-amber-600' : 'text-zinc-400'}`} />
-                        <span className={`font-bold ${styleMode === 'studio' ? 'text-amber-900' : 'text-zinc-500'}`}>
+                    <div className={`p-2.5 transition-colors ${styleMode === 'studio' ? 'bg-gradient-to-b from-amber-100 to-amber-50' : 'bg-gradient-to-b from-zinc-100 to-white'}`}>
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <Sparkles className={`w-4 h-4 ${styleMode === 'studio' ? 'text-amber-600' : 'text-zinc-400'}`} />
+                        <span className={`font-bold text-sm ${styleMode === 'studio' ? 'text-amber-900' : 'text-zinc-500'}`}>
                           {t.groupShootPage?.studioMode || '棚拍风格'}
                         </span>
                         {styleMode === 'studio' && (
-                          <span className="ml-auto bg-amber-500 text-white text-[10px] px-2 py-0.5 rounded-full font-medium">✓</span>
+                          <span className="ml-auto bg-amber-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-medium">✓</span>
                         )}
                       </div>
-                      <p className={`text-xs ${styleMode === 'studio' ? 'text-amber-700' : 'text-zinc-400'}`}>{t.groupShootPage?.studioDesc || '专业影棚pose'}</p>
+                      <p className={`text-[10px] leading-tight ${styleMode === 'studio' ? 'text-amber-600' : 'text-zinc-400'}`}>{t.groupShootPage?.studioDesc || '专业影棚pose'}</p>
                     </div>
-                    <div className="aspect-[4/3] relative bg-zinc-100">
+                    <div className="aspect-[5/4] relative bg-zinc-100">
                       <Image 
                         src="/group-studio-style.png" 
                         alt="Studio" 
