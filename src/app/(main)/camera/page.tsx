@@ -58,6 +58,7 @@ export default function CameraPage() {
   const fileInputRef2 = useRef<HTMLInputElement>(null) // For second product image
   const modelUploadRef = useRef<HTMLInputElement>(null) // For model upload
   const bgUploadRef = useRef<HTMLInputElement>(null) // For background/environment upload
+  const systemCameraRef = useRef<HTMLInputElement>(null) // For system camera capture
   
   // Mode and state
   const [mode, setMode] = useState<CameraMode>("camera")
@@ -208,21 +209,23 @@ export default function CameraPage() {
     facingMode: "environment",
   }
   
-  const handleCapture = useCallback(() => {
-    if (webcamRef.current) {
-      // 获取视频的实际分辨率，保持正确的宽高比
-      const video = webcamRef.current.video
-      const videoWidth = video?.videoWidth || 1920
-      const videoHeight = video?.videoHeight || 1080
-      
-      // 使用视频的实际分辨率进行截图，避免变形
-      const imageSrc = webcamRef.current.getScreenshot({ width: videoWidth, height: videoHeight })
-      if (imageSrc) {
-        setCapturedImage(imageSrc)
-        setProductFromPhone(true) // Mark as captured from camera (phone)
-        setMode("review")
-      }
+  // 使用系统相机拍照（更高质量）
+  const handleSystemCameraCapture = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const base64 = await fileToBase64(file)
+      setCapturedImage(base64)
+      setProductFromPhone(true) // Mark as captured from camera (phone)
+      setMode("review")
     }
+    // Reset input so same file can be selected again
+    if (e.target) e.target.value = ''
+  }, [])
+  
+  // 点击快门按钮时调用系统相机
+  const handleCapture = useCallback(() => {
+    // 使用系统相机（更高质量）
+    systemCameraRef.current?.click()
   }, [])
   
   const handleUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1033,6 +1036,15 @@ export default function CameraPage() {
   
   return (
     <div className="h-full relative flex flex-col bg-black">
+      {/* 系统相机 - 使用 capture="environment" 调用后置摄像头 */}
+      <input 
+        type="file" 
+        ref={systemCameraRef} 
+        className="hidden" 
+        accept="image/*" 
+        capture="environment"
+        onChange={handleSystemCameraCapture}
+      />
       <input 
         type="file" 
         ref={fileInputRef} 
@@ -1083,30 +1095,15 @@ export default function CameraPage() {
 
             {/* Viewfinder / Captured Image */}
             <div className="flex-1 relative">
-              {mode === "camera" && hasCamera && permissionChecked ? (
-                <Webcam
-                  ref={webcamRef}
-                  audio={false}
-                  screenshotFormat="image/jpeg"
-                  screenshotQuality={0.95}
-                  videoConstraints={videoConstraints}
-                  onUserMedia={handleCameraReady}
-                  onUserMediaError={handleCameraError}
-                  className="absolute inset-0 w-full h-full object-cover opacity-60"
-                />
-              ) : mode === "camera" && !permissionChecked ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
-                  <div className="text-center text-zinc-400">
-                    <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin opacity-50" />
-                    <p className="text-sm">正在初始化相机...</p>
-                  </div>
-                </div>
-              ) : mode === "camera" && !hasCamera ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
-                  <div className="text-center text-zinc-400">
-                    <Camera className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                    <p className="text-sm">相机不可用</p>
-                    <p className="text-xs mt-1">{t.camera.productPlaceholder}</p>
+              {mode === "camera" ? (
+                // 使用系统相机，显示提示界面
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-zinc-800 to-zinc-900">
+                  <div className="text-center text-zinc-300 px-8">
+                    <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-white/10 flex items-center justify-center">
+                      <Camera className="w-12 h-12 text-white/80" />
+                    </div>
+                    <p className="text-lg font-medium mb-2">{t.camera.shootYourProduct}</p>
+                    <p className="text-sm text-zinc-500">{t.camera.productPlaceholder}</p>
                   </div>
                 </div>
               ) : (
@@ -1249,11 +1246,10 @@ export default function CameraPage() {
                     <span className="text-[10px]">{t.camera.album}</span>
                   </button>
 
-                  {/* Shutter */}
+                  {/* Shutter - 调用系统相机 */}
                   <button 
                     onClick={handleCapture}
-                    disabled={!hasCamera}
-                    className="w-20 h-20 rounded-full border-4 border-white/30 flex items-center justify-center relative group active:scale-95 transition-transform disabled:opacity-50"
+                    className="w-20 h-20 rounded-full border-4 border-white/30 flex items-center justify-center relative group active:scale-95 transition-transform"
                   >
                     <div className="w-[72px] h-[72px] bg-white rounded-full group-active:bg-gray-200 transition-colors border-2 border-black" />
                   </button>
