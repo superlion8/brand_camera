@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getGenAIClient, safetySettings } from '@/lib/genai'
-import { SchemaType } from '@google/genai'
 
 export const maxDuration = 60 // 1 minute timeout
 
@@ -29,23 +28,24 @@ export async function POST(request: NextRequest) {
     const genAI = getGenAIClient()
 
     // 定义 JSON Schema 强制输出格式
+    // 使用字符串字面量而非 SchemaType 枚举
     const generationConfig = {
       temperature: 0.2, // 降低随机性，分析任务越低越好
       responseMimeType: "application/json",
       responseSchema: {
-        type: SchemaType.OBJECT,
+        type: "OBJECT" as const,
         properties: {
           material: {
-            type: SchemaType.STRING,
+            type: "STRING" as const,
             description: "The primary material of the product in Chinese (e.g., 棉, 麻, 丝, 涤纶, 皮革, 羊毛)"
           },
           fit: {
-            type: SchemaType.STRING,
+            type: "STRING" as const,
             description: "The silhouette or fit of the product in Chinese (e.g., 宽松, 修身, 直筒, 阔腿)"
           },
           type: {
-            type: SchemaType.STRING,
-            enum: VALID_CATEGORIES as unknown as string[],
+            type: "STRING" as const,
+            enum: [...VALID_CATEGORIES],
             description: "The category of the item, must be one of: 内衬, 上衣, 裤子, 帽子, 鞋子, 配饰"
           }
         },

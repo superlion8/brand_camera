@@ -17,15 +17,9 @@ import { useQuota } from "@/hooks/useQuota"
 import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { generateId } from "@/lib/utils"
-import { ProductCategory } from "../../shoot/page"
+import { ProductCategory, OutfitItem } from "@/types/outfit"
 
 type ShootMode = "pro_studio" | "buyer_show"
-
-interface OutfitItem {
-  imageUrl: string
-  material?: string
-  fit?: string
-}
 
 export default function OutfitSelectPage() {
   const router = useRouter()

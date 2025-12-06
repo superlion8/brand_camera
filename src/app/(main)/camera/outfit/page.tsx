@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { fileToBase64, compressBase64Image } from "@/lib/utils"
 import { useLanguageStore } from "@/stores/languageStore"
-import { ProductAnalysis, ProductCategory, VALID_CATEGORIES } from "../shoot/page"
+import { ProductAnalysis, ProductCategory } from "@/types/outfit"
 
 // 部位定义
 interface OutfitSlot {

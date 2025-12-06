@@ -12,18 +12,7 @@ import { fileToBase64, compressBase64Image } from "@/lib/utils"
 import Image from "next/image"
 import { useAssetStore } from "@/stores/assetStore"
 import { useLanguageStore } from "@/stores/languageStore"
-
-// 商品类型定义
-export type ProductCategory = "内衬" | "上衣" | "裤子" | "帽子" | "鞋子" | "配饰"
-export const VALID_CATEGORIES: ProductCategory[] = ["内衬", "上衣", "裤子", "帽子", "鞋子", "配饰"]
-
-// 分析结果类型
-export interface ProductAnalysis {
-  type: ProductCategory
-  material: string
-  fit: string
-  imageUrl: string
-}
+import { ProductAnalysis } from "@/types/outfit"
 
 export default function ShootPage() {
   const router = useRouter()
