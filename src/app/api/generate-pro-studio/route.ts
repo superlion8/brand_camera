@@ -7,8 +7,8 @@ export const maxDuration = 300 // 5 minutes
 
 // 专业棚拍 Prompts
 const PROMPTS = {
-  // 背景库模式
-  backgroundLib: () => `
+  // 简单模式 - 有背景
+  simpleWithBg: () => `
 为这个商品生成高级质感全身棚拍图。模特使用提供的模特图片，背景使用提供的背景图片。
 
 商品的质感、颜色、纹理细节、版型等必须保持严格一致。
@@ -16,8 +16,8 @@ const PROMPTS = {
 如果服饰是半身，请你作为一个高端奢侈品品牌设计师，为模特做全身的造型搭配，你需要关注包括款式，颜色，版型的和谐和设计感。要突出高级质感。
 `,
   
-  // 随机背景模式
-  randomBg: () => `
+  // 简单模式 - 无背景（AI生成背景）
+  simpleNoBg: () => `
 为这个商品生成高级质感全身棚拍图。模特使用提供的模特图片。
 
 背景请你参考商品适合的风格，使用一个棚拍常用的背景。
@@ -35,7 +35,7 @@ const PROMPTS = {
 
 拍摄背景不要出现打光灯等拍摄设施，按成片图的标准来塑造。
 
-请你严格用英文按照这个格式来输出：
+请你严格用英文按照下面这个格式来写，不需要输出其他额外的东西：
 
 {{clothing}}：
 
@@ -50,8 +50,17 @@ const PROMPTS = {
 {{Camera Setting}}：
 `,
 
-  // 扩展模式 - 根据指令生成图片
-  instructExec: (instructPrompt: string) => `
+  // 扩展模式 - 根据指令生成图片（有背景）
+  instructExecWithBg: (instructPrompt: string) => `
+请为这个模特拍摄一张身穿商品的专业影棚商品棚拍图。背景使用提供的背景图片。
+
+商品的质感、颜色、纹理细节、版型等必须保持严格一致。
+
+拍摄指令：${instructPrompt}
+`,
+
+  // 扩展模式 - 根据指令生成图片（无背景）
+  instructExecNoBg: (instructPrompt: string) => `
 请为这个模特拍摄一张身穿商品的专业影棚商品棚拍图。
 
 商品的质感、颜色、纹理细节、版型等必须保持严格一致。
@@ -71,19 +80,19 @@ export async function POST(request: NextRequest) {
     const {
       productImage,
       modelImage,
-      backgroundImage,
-      mode, // 'background-lib' | 'random-bg' | 'extended'
+      backgroundImage, // 可选，用户选择了才有
+      mode, // 'simple' | 'extended'
       index = 0,
       taskId,
       // 模特/背景信息（用于保存到数据库）
       modelIsRandom = true,
       bgIsRandom = true,
-      modelName = '高级模特',
+      modelName = '专业模特',
       bgName = '影棚背景',
       modelUrl,
       bgUrl,
-      modelIsPreset = true, // 随机时默认是预设
-      bgIsPreset = true,    // 随机时默认是预设
+      modelIsPreset = true,
+      bgIsPreset = true,
     } = body
 
     const supabase = await createClient()
@@ -95,12 +104,13 @@ export async function POST(request: NextRequest) {
 
     const userId = user.id
     const startTime = Date.now()
-    const label = `[ProStudio-${mode}-${index}]`
+    const hasBg = !!backgroundImage
+    const label = `[ProStudio-${mode}${hasBg ? '+bg' : ''}-${index}]`
 
     console.log(`${label} Starting generation...`)
     console.log(`${label} productImage: ${productImage ? `${productImage.substring(0, 50)}...` : 'null/undefined'}`)
     console.log(`${label} modelImage: ${modelImage ? `${modelImage.substring(0, 50)}...` : 'null/undefined'}`)
-    console.log(`${label} backgroundImage: ${backgroundImage ? `${backgroundImage.substring(0, 50)}...` : 'null/undefined'}`)
+    console.log(`${label} backgroundImage: ${backgroundImage ? `${backgroundImage.substring(0, 50)}...` : 'none (AI will generate)'}`)
 
     const genai = getGenAIClient()
     let result: { image: string; model: 'pro' | 'flash' } | null = null
@@ -136,16 +146,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         success: false, 
         error: '缺少模特图片数据',
-        index,
-        modelType: null,
-      }, { status: 400 })
-    }
-
-    if (mode === 'background-lib' && !bgImageData) {
-      console.error(`${label} Missing bgImageData for background-lib mode`)
-      return NextResponse.json({ 
-        success: false, 
-        error: '缺少背景图片数据',
         index,
         modelType: null,
       }, { status: 400 })
@@ -200,28 +200,20 @@ export async function POST(request: NextRequest) {
       return null
     }
 
-    if (mode === 'background-lib') {
-      // 背景库模式：使用用户选择/随机的模特+背景
-      usedPrompt = PROMPTS.backgroundLib()
-      
-      const contents = [
-        { text: usedPrompt },
-        { inlineData: { mimeType: 'image/jpeg', data: productImageData } },
-        { inlineData: { mimeType: 'image/jpeg', data: modelImageData } },
-        { inlineData: { mimeType: 'image/jpeg', data: bgImageData } },
-      ]
-
-      result = await generateWithFallback(contents)
-
-    } else if (mode === 'random-bg') {
-      // 随机背景模式：模特 + AI生成背景
-      usedPrompt = PROMPTS.randomBg()
+    if (mode === 'simple') {
+      // 简单模式：根据是否有背景选择不同的 prompt
+      usedPrompt = hasBg ? PROMPTS.simpleWithBg() : PROMPTS.simpleNoBg()
       
       const contents = [
         { text: usedPrompt },
         { inlineData: { mimeType: 'image/jpeg', data: productImageData } },
         { inlineData: { mimeType: 'image/jpeg', data: modelImageData } },
       ]
+      
+      // 如果有背景图，添加到 contents
+      if (bgImageData) {
+        contents.push({ inlineData: { mimeType: 'image/jpeg', data: bgImageData } })
+      }
 
       result = await generateWithFallback(contents)
 
@@ -254,13 +246,18 @@ export async function POST(request: NextRequest) {
       }
 
       // Step 2: 根据指令生成图片
-      usedPrompt = PROMPTS.instructExec(instructPrompt)
+      usedPrompt = hasBg ? PROMPTS.instructExecWithBg(instructPrompt) : PROMPTS.instructExecNoBg(instructPrompt)
       
       const execContents = [
         { text: usedPrompt },
         { inlineData: { mimeType: 'image/jpeg', data: productImageData } },
         { inlineData: { mimeType: 'image/jpeg', data: modelImageData } },
       ]
+      
+      // 如果有背景图，添加到 contents
+      if (bgImageData) {
+        execContents.push({ inlineData: { mimeType: 'image/jpeg', data: bgImageData } })
+      }
 
       result = await generateWithFallback(execContents)
     }
@@ -315,13 +312,13 @@ export async function POST(request: NextRequest) {
       }
       // 上传模特图
       if (modelImage) {
-        const modelUrl = await uploadImageToStorage(modelImage, userId, `prostudio_${taskId}_model`)
-        if (modelUrl) modelImageUrlToSave = modelUrl
+        const uploadedModelUrl = await uploadImageToStorage(modelImage, userId, `prostudio_${taskId}_model`)
+        if (uploadedModelUrl) modelImageUrlToSave = uploadedModelUrl
       }
-      // 上传背景图
+      // 上传背景图（如果有）
       if (backgroundImage) {
-        const bgUrl = await uploadImageToStorage(backgroundImage, userId, `prostudio_${taskId}_bg`)
-        if (bgUrl) bgImageUrlToSave = bgUrl
+        const uploadedBgUrl = await uploadImageToStorage(backgroundImage, userId, `prostudio_${taskId}_bg`)
+        if (uploadedBgUrl) bgImageUrlToSave = uploadedBgUrl
       }
     }
     
@@ -337,10 +334,11 @@ export async function POST(request: NextRequest) {
       taskType: 'pro_studio',
       inputImageUrl: inputImageUrlToSave,
       inputParams: index === 0 ? {
-        // 商品原图也保存到 inputParams（与 input_image_url 字段一致）
+        // 商品原图也保存到 inputParams
         productImage: inputImageUrlToSave,
         modelImage: modelImageUrlToSave || modelUrl,
         backgroundImage: bgImageUrlToSave || bgUrl,
+        hasBg,
         mode,
         // 保存模特/背景选择信息
         model: modelName,
@@ -351,20 +349,20 @@ export async function POST(request: NextRequest) {
           name: modelName,
           imageUrl: modelImageUrlToSave || modelUrl,
           isRandom: modelIsRandom,
-          isPreset: modelIsRandom ? true : modelIsPreset, // 随机=预设，用户选择根据传入值
+          isPreset: modelIsRandom ? true : modelIsPreset,
         }],
-        perImageBackgrounds: [{
+        perImageBackgrounds: hasBg ? [{
           name: bgName,
           imageUrl: bgImageUrlToSave || bgUrl,
           isRandom: bgIsRandom,
-          isPreset: bgIsRandom ? true : bgIsPreset, // 随机=预设，用户选择根据传入值
-        }],
+          isPreset: bgIsRandom ? true : bgIsPreset,
+        }] : [],
       } : undefined,
     })
 
     return NextResponse.json({
       success: true,
-      image: uploaded, // 只返回 URL，不返回 base64
+      image: uploaded,
       index,
       modelType: result.model,
       genMode: generationMode,

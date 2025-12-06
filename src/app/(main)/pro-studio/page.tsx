@@ -412,30 +412,10 @@ export default function ProStudioPage() {
       return null
     }
 
-    // 辅助函数：带重试的随机背景加载
-    const loadRandomBgWithRetry = async (maxRetries = 3): Promise<string | null> => {
-      for (let i = 0; i < maxRetries; i++) {
-        const randomBg = getRandomStudioBackground()
-        console.log(`[ProStudio] Trying random bg ${i + 1}/${maxRetries}:`, randomBg.imageUrl)
-        const base64 = await ensureBase64(randomBg.imageUrl)
-        if (base64) {
-          console.log(`[ProStudio] Successfully loaded random bg on attempt ${i + 1}`)
-          return base64
-        }
-        console.warn(`[ProStudio] Failed to load random bg on attempt ${i + 1}`)
-      }
-      console.error(`[ProStudio] All ${maxRetries} attempts to load random bg failed`)
-      return null
-    }
+    // 简单模式：随机选择一个模特（3张图共用）
+    const simpleModelBase64 = userSelectedModelBase64 || (!selectedModel ? await loadRandomModelWithRetry() : null)
 
-    // 背景库模式：随机选择一个模特和背景（2张图共用）
-    const bgLibModelBase64 = userSelectedModelBase64 || (!selectedModel ? await loadRandomModelWithRetry() : null)
-    const bgLibBgBase64 = userSelectedBgBase64 || (!selectedBg ? await loadRandomBgWithRetry() : null)
-
-    // 随机背景模式：随机选择一个模特（2张图共用），背景由AI生成
-    const randomBgModelBase64 = userSelectedModelBase64 || (!selectedModel ? await loadRandomModelWithRetry() : null)
-
-    // 扩展模式：随机选择一个模特（2张图共用）
+    // 扩展模式：随机选择一个模特（3张图共用）
     const extendedModelBase64 = userSelectedModelBase64 || (!selectedModel ? await loadRandomModelWithRetry() : null)
 
     // 是否用户选择的标志
@@ -446,22 +426,23 @@ export default function ProStudioPage() {
     const isPresetUrl = (url?: string) => url?.includes('/presets/') || url?.includes('presets%2F')
     
     // 模特/背景名称和URL（用于保存到数据库）
-    const modelName = selectedModel?.name || '高级模特 (随机)'
+    const modelName = selectedModel?.name || '专业模特 (随机)'
     const modelUrl = selectedModel?.imageUrl
     const modelIsPreset = isPresetUrl(modelUrl)
     
-    const bgName = selectedBg?.name || '影棚背景 (随机)'
+    const bgName = selectedBg?.name || '影棚背景'
     const bgUrl = selectedBg?.imageUrl
     const bgIsPreset = isPresetUrl(bgUrl)
 
-    // 生成任务配置：背景库模式2张 + 随机背景模式2张 + 扩展模式2张
+    // 生成任务配置：简单模式3张 + 扩展模式3张
+    // 背景：如果用户选择了就用，没选择就不传（AI生成背景）
     const taskConfigs = [
-      { mode: 'background-lib', index: 0, model: bgLibModelBase64, bg: bgLibBgBase64 },
-      { mode: 'background-lib', index: 1, model: bgLibModelBase64, bg: bgLibBgBase64 },
-      { mode: 'random-bg', index: 2, model: randomBgModelBase64, bg: null },
-      { mode: 'random-bg', index: 3, model: randomBgModelBase64, bg: null },
-      { mode: 'extended', index: 4, model: extendedModelBase64, bg: null },
-      { mode: 'extended', index: 5, model: extendedModelBase64, bg: null },
+      { mode: 'simple', index: 0, model: simpleModelBase64, bg: userSelectedBgBase64 },
+      { mode: 'simple', index: 1, model: simpleModelBase64, bg: userSelectedBgBase64 },
+      { mode: 'simple', index: 2, model: simpleModelBase64, bg: userSelectedBgBase64 },
+      { mode: 'extended', index: 3, model: extendedModelBase64, bg: userSelectedBgBase64 },
+      { mode: 'extended', index: 4, model: extendedModelBase64, bg: userSelectedBgBase64 },
+      { mode: 'extended', index: 5, model: extendedModelBase64, bg: userSelectedBgBase64 },
     ]
 
     const results: string[] = []
@@ -538,14 +519,12 @@ export default function ProStudioPage() {
 
   // 获取模式标签
   const getModeLabel = (index: number) => {
-    if (index < 2) return t.proStudio?.bgLibMode || '背景库'
-    if (index < 4) return t.proStudio?.aiBgMode || 'AI背景'
+    if (index < 3) return t.proStudio?.simpleMode || '简单'
     return t.proStudio?.extendedMode || '扩展'
   }
 
   const getModeColor = (index: number) => {
-    if (index < 2) return 'bg-green-500'
-    if (index < 4) return 'bg-blue-500'
+    if (index < 3) return 'bg-blue-500'
     return 'bg-purple-500'
   }
 
@@ -1075,77 +1054,17 @@ export default function ProStudioPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-8">
-              {/* 背景库模式 - indices 0, 1 */}
+              {/* 简单模式 - indices 0, 1, 2 */}
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-1 h-4 bg-green-500 rounded-full" />
-                    {t.proStudio?.bgLibMode || '背景库模式'}
+                    <span className="w-1 h-4 bg-blue-500 rounded-full" />
+                    {t.proStudio?.simpleMode || '简单模式'}
                   </h3>
-                  <span className="text-[10px] text-zinc-400">{t.proStudio?.usePresetBg || '使用预设背景'}</span>
+                  <span className="text-[10px] text-zinc-400">{t.proStudio?.simpleDesc || '直接生成棚拍图'}</span>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {[0, 1].map((i) => {
-                    const currentTask = tasks.find(t => t.id === currentTaskId)
-                    const slot = currentTask?.imageSlots?.[i]
-                    const url = slot?.imageUrl || generatedImages[i]
-                    const status = slot?.status || (url ? 'completed' : 'failed')
-                    const modelType = slot?.modelType
-                    
-                    if (status === 'pending' || status === 'generating') {
-                      return (
-                        <div key={i} className="aspect-[4/5] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
-                          <Loader2 className="w-6 h-6 text-zinc-400 animate-spin mb-2" />
-                          <span className="text-[10px] text-zinc-400">{t.gallery.generating}</span>
-                        </div>
-                      )
-                    }
-                    
-                    if (status === 'failed' || !url) {
-                      return (
-                        <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
-                          {slot?.error || t.camera.generationFailed}
-                        </div>
-                      )
-                    }
-                    
-                    return (
-                      <div 
-                        key={i} 
-                        className="group relative aspect-[4/5] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer"
-                        onClick={() => setSelectedResultIndex(i)}
-                      >
-                        <Image src={url} alt="Result" fill className="object-cover" />
-                        <button className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm">
-                          <Heart className="w-3.5 h-3.5 text-zinc-500" />
-                        </button>
-                        <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-500 text-white">
-                            {t.proStudio?.bgLibMode || '背景库'}
-                          </span>
-                          {modelType === 'flash' && (
-                            <span className="px-1 py-0.5 rounded text-[8px] font-medium bg-amber-500 text-white">
-                              2.5
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-
-              {/* AI背景模式 - indices 2, 3 */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-1 h-4 bg-blue-600 rounded-full" />
-                    {t.proStudio?.aiBgMode || 'AI背景模式'}
-                  </h3>
-                  <span className="text-[10px] text-zinc-400">{t.proStudio?.aiGenerateBg || 'AI生成背景'}</span>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {[2, 3].map((i) => {
+                <div className="grid grid-cols-3 gap-3">
+                  {[0, 1, 2].map((i) => {
                     const currentTask = tasks.find(t => t.id === currentTaskId)
                     const slot = currentTask?.imageSlots?.[i]
                     const url = slot?.imageUrl || generatedImages[i]
@@ -1181,7 +1100,7 @@ export default function ProStudioPage() {
                         </button>
                         <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
                           <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-blue-500 text-white">
-                            {t.proStudio?.aiBgMode || 'AI背景'}
+                            {t.proStudio?.simpleMode || '简单'}
                           </span>
                           {modelType === 'flash' && (
                             <span className="px-1 py-0.5 rounded text-[8px] font-medium bg-amber-500 text-white">
@@ -1195,7 +1114,7 @@ export default function ProStudioPage() {
                 </div>
               </div>
 
-              {/* 扩展模式 - indices 4, 5 */}
+              {/* 扩展模式 - indices 3, 4, 5 */}
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
@@ -1204,8 +1123,8 @@ export default function ProStudioPage() {
                   </h3>
                   <span className="text-[10px] text-zinc-400">{t.proStudio?.aiDesignScene || 'AI设计场景'}</span>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {[4, 5].map((i) => {
+                <div className="grid grid-cols-3 gap-3">
+                  {[3, 4, 5].map((i) => {
                     const currentTask = tasks.find(t => t.id === currentTaskId)
                     const slot = currentTask?.imageSlots?.[i]
                     const url = slot?.imageUrl || generatedImages[i]
