@@ -13,6 +13,7 @@ import Image from "next/image"
 import { useAssetStore } from "@/stores/assetStore"
 import { useLanguageStore } from "@/stores/languageStore"
 import { ProductAnalysis } from "@/types/outfit"
+import { Asset } from "@/types"
 
 export default function ShootPage() {
   const router = useRouter()
@@ -31,7 +32,7 @@ export default function ShootPage() {
   const [showAssetPicker, setShowAssetPicker] = useState(false)
   
   // 资产库数据
-  const { products } = useAssetStore()
+  const { userProducts: products } = useAssetStore()
   
   // 检查摄像头权限
   useEffect(() => {
@@ -115,7 +116,7 @@ export default function ShootPage() {
       reader.readAsDataURL(blob)
     } catch (error) {
       console.error('Failed to load asset:', error)
-      setAnalyzeError(t.errors?.loadFailed || '加载失败，请重试')
+      setAnalyzeError(t.errors?.uploadFailed || '加载失败，请重试')
     }
   }
   

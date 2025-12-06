@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getGenAIClient, safetySettings } from '@/lib/genai'
+import { getGenAIClient, safetySettings, extractText } from '@/lib/genai'
 
 export const maxDuration = 60 // 1 minute timeout
 
@@ -27,34 +27,8 @@ export async function POST(request: NextRequest) {
 
     const genAI = getGenAIClient()
 
-    // 定义 JSON Schema 强制输出格式
-    // 使用字符串字面量而非 SchemaType 枚举
-    const generationConfig = {
-      temperature: 0.2, // 降低随机性，分析任务越低越好
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: "OBJECT" as const,
-        properties: {
-          material: {
-            type: "STRING" as const,
-            description: "The primary material of the product in Chinese (e.g., 棉, 麻, 丝, 涤纶, 皮革, 羊毛)"
-          },
-          fit: {
-            type: "STRING" as const,
-            description: "The silhouette or fit of the product in Chinese (e.g., 宽松, 修身, 直筒, 阔腿)"
-          },
-          type: {
-            type: "STRING" as const,
-            enum: [...VALID_CATEGORIES],
-            description: "The category of the item, must be one of: 内衬, 上衣, 裤子, 帽子, 鞋子, 配饰"
-          }
-        },
-        required: ["material", "fit", "type"]
-      }
-    }
-
     // 调用 Gemini 模型分析商品
-    const model = genAI.models.generateContent({
+    const response = await genAI.models.generateContent({
       model: VLM_MODEL,
       contents: [
         {
@@ -66,7 +40,10 @@ export async function POST(request: NextRequest) {
 2. 主要材质（material）：用中文描述，如棉、麻、丝、涤纶、皮革等
 3. 版型（fit）：用中文描述，如宽松、修身、直筒等
 
-请仔细分析图片中最显眼的商品。`
+请以 JSON 格式返回，格式如下：
+{"type": "上衣", "material": "棉", "fit": "宽松"}
+
+只返回 JSON，不要返回其他内容。`
             },
             {
               inlineData: {
@@ -78,30 +55,36 @@ export async function POST(request: NextRequest) {
         }
       ],
       config: {
-        ...generationConfig,
+        temperature: 0.2,
         safetySettings,
       }
     })
 
-    const response = await model
-
     // 解析 JSON 响应
-    const candidate = response.candidates?.[0]
-    if (!candidate?.content?.parts?.[0]) {
+    const text = extractText(response)
+    if (!text) {
       throw new Error('No response from model')
     }
 
-    const textPart = candidate.content.parts[0]
-    if (!('text' in textPart) || !textPart.text) {
-      throw new Error('Invalid response format')
-    }
-
+    // 尝试从响应中提取 JSON
     let analysisResult
     try {
-      analysisResult = JSON.parse(textPart.text)
+      // 尝试直接解析
+      analysisResult = JSON.parse(text)
     } catch (e) {
-      console.error('Failed to parse JSON response:', textPart.text)
-      throw new Error('Failed to parse analysis result')
+      // 尝试从 markdown 代码块中提取
+      const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) || text.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        try {
+          analysisResult = JSON.parse(jsonMatch[1] || jsonMatch[0])
+        } catch {
+          console.error('Failed to parse JSON response:', text)
+          throw new Error('Failed to parse analysis result')
+        }
+      } else {
+        console.error('Failed to parse JSON response:', text)
+        throw new Error('Failed to parse analysis result')
+      }
     }
 
     // 验证返回的类型是否有效

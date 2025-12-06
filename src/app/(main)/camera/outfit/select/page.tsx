@@ -111,19 +111,17 @@ export default function OutfitSelectPage() {
       }))
       
       // 创建任务
-      const taskType = shootMode === 'pro_studio' ? 'pro_studio' : 'camera_model'
+      const taskType = shootMode === 'pro_studio' ? 'pro_studio' : 'camera'
       
       // 添加任务 - addTask 返回 taskId
       const taskId = addTask(
         taskType,
         productImages[0]?.imageUrl || '[products]',
         {
-          products: productImages,
-          modelImage,
-          backgroundImage: bgImage,
-          modelIsRandom,
-          bgIsRandom,
-          shootMode
+          modelImage: modelImage || undefined,
+          backgroundImage: bgImage || undefined,
+          modelIsUserSelected: !modelIsRandom,
+          bgIsUserSelected: !bgIsRandom,
         },
         numImages
       )
