@@ -172,20 +172,20 @@ export default function GalleryPage() {
     
     // Pro Studio types (专业棚拍)
     if (isProStudioType(gen)) {
+      // 优先使用 outputGenModes 中的实际模式，如果没有则用位置判断
+      // 新版：0,1,2 = 简单模式, 3,4,5 = 扩展模式
       const mode = gen.outputGenModes?.[imageIndex]
-      // 0,1 = 背景库模式, 2,3 = AI背景模式, 4,5 = 扩展模式
       let subLabel = undefined
       let subColor = 'bg-amber-600'
       if (isDebugMode) {
-        if (imageIndex < 2) {
-          subLabel = '背景库'
-          subColor = 'bg-green-500'
-        } else if (imageIndex < 4) {
-          subLabel = 'AI背景'
-          subColor = 'bg-blue-500'
+        if (mode) {
+          // 使用实际记录的模式
+          subLabel = mode === 'simple' ? t.common.simple : t.common.extended
+          subColor = mode === 'simple' ? 'bg-green-500' : 'bg-purple-500'
         } else {
-          subLabel = '扩展'
-          subColor = 'bg-purple-500'
+          // fallback: 用位置判断
+          subLabel = imageIndex < 3 ? t.common.simple : t.common.extended
+          subColor = imageIndex < 3 ? 'bg-green-500' : 'bg-purple-500'
         }
       }
       return { 
