@@ -1026,9 +1026,11 @@ export default function GalleryPage() {
                           </div>
                         )}
                         
-                        {/* Model Image - use per-image data if available, fallback to params or direct field */}
+                        {/* Model Image - use per-image data if available, fallback to first element or params or direct field */}
                         {(() => {
-                          const perImageModel = selectedItem.gen.params?.perImageModels?.[selectedItem.index]
+                          // 优先使用当前 index 的数据，如果没有则 fallback 到 index 0（所有图片共用同一个模特信息）
+                          const perImageModel = selectedItem.gen.params?.perImageModels?.[selectedItem.index] 
+                            || selectedItem.gen.params?.perImageModels?.[0]
                           const modelUrl = perImageModel?.imageUrl || selectedItem.gen.params?.modelImage || selectedItem.gen.modelImageUrl
                           const rawModelName = perImageModel?.name || selectedItem.gen.params?.model
                           const modelIsRandom = perImageModel?.isRandom === true || rawModelName?.includes('(随机)')
@@ -1069,9 +1071,11 @@ export default function GalleryPage() {
                           )
                         })()}
                         
-                        {/* Background Image - use per-image data if available, fallback to params or direct field */}
+                        {/* Background Image - use per-image data if available, fallback to first element or params or direct field */}
                         {(() => {
+                          // 优先使用当前 index 的数据，如果没有则 fallback 到 index 0（所有图片共用同一个背景信息）
                           const perImageBg = selectedItem.gen.params?.perImageBackgrounds?.[selectedItem.index]
+                            || selectedItem.gen.params?.perImageBackgrounds?.[0]
                           const bgUrl = perImageBg?.imageUrl || selectedItem.gen.params?.backgroundImage || selectedItem.gen.backgroundImageUrl
                           const rawBgName = perImageBg?.name || selectedItem.gen.params?.background
                           const bgIsRandom = perImageBg?.isRandom === true || rawBgName?.includes('(随机)')
