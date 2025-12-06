@@ -289,6 +289,8 @@ export const ko: Translations = {
     geminiFlash: "Gemini 2.5 Flash",
     fallback: "(폴백)",
     simpleMode: "심플 모드",
+    officialPreset: "공식 프리셋",
+    userUploaded: "사용자 업로드",
     extendedMode: "확장 모드",
     // 생성 파라미터
     styleLabel: "스타일",

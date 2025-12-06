@@ -289,6 +289,8 @@ export const en: Translations = {
     geminiFlash: "Gemini 2.5 Flash",
     fallback: "(Fallback)",
     simpleMode: "Simple Mode",
+    officialPreset: "Official Preset",
+    userUploaded: "User Uploaded",
     extendedMode: "Extended Mode",
     // Generation params
     styleLabel: "Style",

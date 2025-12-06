@@ -287,6 +287,8 @@ export const zh = {
     geminiFlash: "Gemini 2.5 Flash",
     fallback: "(降级)",
     simpleMode: "极简模式",
+    officialPreset: "官方预设",
+    userUploaded: "用户上传",
     extendedMode: "扩展模式",
     // 生成参数
     styleLabel: "风格",
