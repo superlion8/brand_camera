@@ -44,7 +44,8 @@ function AssetGrid({
   onSelect,
   onUpload,
   onZoom,
-  emptyText = "暂无资源"
+  emptyText = "暂无资源",
+  uploadLabel = "Upload"
 }: { 
   items: Asset[]
   selectedId: string | null
@@ -52,6 +53,7 @@ function AssetGrid({
   onUpload?: () => void
   onZoom?: (url: string) => void
   emptyText?: string
+  uploadLabel?: string
 }) {
   return (
     <div className="grid grid-cols-2 gap-3">
@@ -62,7 +64,7 @@ function AssetGrid({
           className="aspect-[3/4] rounded-xl overflow-hidden relative border-2 border-dashed border-zinc-300 hover:border-blue-400 transition-all flex flex-col items-center justify-center bg-zinc-50 hover:bg-blue-50"
         >
           <Plus className="w-10 h-10 text-zinc-400" />
-          <span className="text-sm text-zinc-500 mt-2">上传</span>
+          <span className="text-sm text-zinc-500 mt-2">{uploadLabel || 'Upload'}</span>
         </button>
       )}
       {items.map(item => (
@@ -117,11 +119,15 @@ function BackgroundGrid({
   onSelect,
   onUpload,
   onZoom,
+  uploadLabel = "Upload",
+  labels,
 }: {
   selectedId: string | null
   onSelect: (id: string) => void
   onUpload?: () => void
   onZoom?: (url: string) => void
+  uploadLabel?: string
+  labels?: { all: string; light: string; solid: string; pattern: string }
 }) {
   const [activeTab, setActiveTab] = useState<'all' | 'light' | 'solid' | 'pattern'>('all')
   
@@ -133,10 +139,10 @@ function BackgroundGrid({
   }
   
   const tabs = [
-    { id: 'all', label: '全部', count: ALL_STUDIO_BACKGROUNDS.length },
-    { id: 'light', label: '打光', count: STUDIO_BG_LIGHT.length },
-    { id: 'solid', label: '纯色', count: STUDIO_BG_SOLID.length },
-    { id: 'pattern', label: '花色', count: STUDIO_BG_PATTERN.length },
+    { id: 'all', label: labels?.all || 'All', count: ALL_STUDIO_BACKGROUNDS.length },
+    { id: 'light', label: labels?.light || 'Light', count: STUDIO_BG_LIGHT.length },
+    { id: 'solid', label: labels?.solid || 'Solid', count: STUDIO_BG_SOLID.length },
+    { id: 'pattern', label: labels?.pattern || 'Pattern', count: STUDIO_BG_PATTERN.length },
   ]
   
   return (
@@ -165,7 +171,7 @@ function BackgroundGrid({
             className="aspect-square rounded-xl overflow-hidden relative border-2 border-dashed border-zinc-300 hover:border-blue-400 transition-all flex flex-col items-center justify-center bg-zinc-50 hover:bg-blue-50"
           >
             <Plus className="w-8 h-8 text-zinc-400" />
-            <span className="text-xs text-zinc-500 mt-1">上传</span>
+            <span className="text-xs text-zinc-500 mt-1">{uploadLabel || 'Upload'}</span>
           </button>
         )}
         {bgMap[activeTab].map(item => (
@@ -639,8 +645,8 @@ export default function ProStudioPage() {
                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
                   <div className="text-center text-zinc-400">
                     <Camera className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                    <p className="text-sm">相机不可用</p>
-                    <p className="text-xs mt-1">请上传商品图片</p>
+                    <p className="text-sm">{t.proStudio?.cameraUnavailable || '相机不可用'}</p>
+                    <p className="text-xs mt-1">{t.proStudio?.pleaseUploadProduct || '请上传商品图片'}</p>
                   </div>
                 </div>
               ) : (
@@ -780,12 +786,12 @@ export default function ProStudioPage() {
                     className="absolute bottom-0 left-0 right-0 h-[80%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
                   >
                     <div className="h-14 border-b flex items-center justify-between px-4 shrink-0">
-                      <span className="font-semibold text-lg">自定义配置</span>
+                      <span className="font-semibold text-lg">{t.proStudio?.customConfig || '自定义配置'}</span>
                       <button 
                         onClick={() => setShowCustomPanel(false)} 
                         className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors"
                       >
-                        下一步
+                        {t.proStudio?.nextStep || '下一步'}
                         <ArrowRight className="w-4 h-4" />
                       </button>
                     </div>
@@ -811,13 +817,13 @@ export default function ProStudioPage() {
                       {activeCustomTab === "model" && (
                         <div className="space-y-4">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm text-zinc-600">选择模特（不选则随机）</span>
+                            <span className="text-sm text-zinc-600">{t.proStudio?.selectModel || '选择模特（不选则随机）'}</span>
                             {selectedModelId && (
                               <button 
                                 onClick={() => setSelectedModelId(null)}
                                 className="text-xs text-blue-600"
                               >
-                                清除选择
+                                {t.proStudio?.clearSelection || '清除选择'}
                               </button>
                             )}
                           </div>
@@ -827,19 +833,20 @@ export default function ProStudioPage() {
                             onSelect={(id) => setSelectedModelId(selectedModelId === id ? null : id)}
                             onUpload={() => modelUploadRef.current?.click()}
                             onZoom={(url) => setFullscreenImage(url)}
+                            uploadLabel={t.common.upload}
                           />
                         </div>
                       )}
                       {activeCustomTab === "bg" && (
                         <div className="space-y-4">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm text-zinc-600">选择背景（不选则随机）</span>
+                            <span className="text-sm text-zinc-600">{t.proStudio?.selectBg || '选择背景（不选则随机）'}</span>
                             {selectedBgId && (
                               <button 
                                 onClick={() => setSelectedBgId(null)}
                                 className="text-xs text-blue-600"
                               >
-                                清除选择
+                                {t.proStudio?.clearSelection || '清除选择'}
                               </button>
                             )}
                           </div>
@@ -848,6 +855,13 @@ export default function ProStudioPage() {
                             onSelect={(id) => setSelectedBgId(selectedBgId === id ? null : id)}
                             onUpload={() => bgUploadRef.current?.click()}
                             onZoom={(url) => setFullscreenImage(url)}
+                            uploadLabel={t.common.upload}
+                            labels={{ 
+                              all: t.common.all, 
+                              light: t.proStudio?.bgLight || 'Light', 
+                              solid: t.proStudio?.bgSolid || 'Solid', 
+                              pattern: t.proStudio?.bgPattern || 'Pattern' 
+                            }}
                           />
                         </div>
                       )}
@@ -975,8 +989,8 @@ export default function ProStudioPage() {
                       ) : (
                         <div className="flex flex-col items-center justify-center h-full text-zinc-400">
                           <FolderHeart className="w-12 h-12 mb-3 opacity-30" />
-                          <p className="text-sm">暂无我的商品</p>
-                          <p className="text-xs mt-1">请先在资源库上传商品</p>
+                          <p className="text-sm">{t.proStudio?.noMyProducts || '暂无我的商品'}</p>
+                          <p className="text-xs mt-1">{t.proStudio?.uploadInAssets || '请先在资源库上传商品'}</p>
                           <button 
                             onClick={() => {
                               setShowProductPanel(false)
@@ -984,7 +998,7 @@ export default function ProStudioPage() {
                             }}
                             className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
                           >
-                            去上传
+                            {t.proStudio?.goUpload || '去上传'}
                           </button>
                         </div>
                       )}
