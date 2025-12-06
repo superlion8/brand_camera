@@ -82,13 +82,13 @@ export default function OutfitPage() {
     
     try {
       const base64 = await fileToBase64(file)
-      const compressed = await compressBase64Image(base64, 1024)
+      // 不压缩，直接使用原图
       
       // 调用分析 API
       const response = await fetch('/api/analyze-product', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: compressed })
+        body: JSON.stringify({ image: base64 })
       })
       
       const result = await response.json()

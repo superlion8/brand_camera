@@ -113,8 +113,8 @@ export default function GroupShootPage() {
     setCurrentTaskId(taskId)
     initImageSlots(taskId, numImages)
 
-    // 压缩图片
-    const compressedImage = await compressBase64Image(selectedImage, 1024)
+    // 不压缩，直接使用原图
+    const compressedImage = selectedImage
 
     try {
       const response = await fetch('/api/generate-group', {

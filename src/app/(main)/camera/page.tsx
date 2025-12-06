@@ -411,8 +411,9 @@ export default function CameraPage() {
       console.log("User selected background:", background?.name || 'none (will use random per image)')
       console.log("Has second product:", !!inputImage2)
       
-      const compressedProduct = await compressBase64Image(inputImage, 1024)
-      const compressedProduct2 = inputImage2 ? await compressBase64Image(inputImage2, 1024) : null
+      // 不压缩，直接使用原图
+      const compressedProduct = inputImage
+      const compressedProduct2 = inputImage2 || null
       
       // If user selected model/background, convert to base64 once
       // Otherwise, will pick random for each image

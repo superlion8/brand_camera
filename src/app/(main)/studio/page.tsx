@@ -324,7 +324,8 @@ export default function StudioPage() {
     aspectRatioVal: string
   ) => {
     try {
-      const compressedProduct = await compressBase64Image(inputImage, 1024)
+      // 不压缩，直接使用原图
+      const compressedProduct = inputImage
       
       const basePayload = {
         productImage: compressedProduct,

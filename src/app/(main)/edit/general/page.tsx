@@ -187,7 +187,8 @@ export default function GeneralEditPage() {
     prompt: string
   ) => {
     try {
-      const compressedInput = await compressBase64Image(inputImg, 1024)
+      // 不压缩，直接使用原图
+      const compressedInput = inputImg
       
       console.log("Sending general edit request...")
       const response = await fetchWithTimeout("/api/edit", {

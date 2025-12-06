@@ -411,8 +411,8 @@ export default function ProStudioPage() {
     setCurrentTaskId(taskId)
     initImageSlots(taskId, PRO_STUDIO_NUM_IMAGES)
 
-    // 压缩商品图
-    const compressedProduct = await compressBase64Image(capturedImage, 1024)
+    // 不压缩，直接使用原图
+    const compressedProduct = capturedImage
 
     // ========== 预先确定每个模式使用的模特和背景 ==========
     // 如果用户选择了，使用用户选择的；否则随机选择一个，同模式的2张图共用
