@@ -107,7 +107,7 @@ export default function OutfitPage() {
           ? {
               ...slot,
               product: {
-                imageUrl: compressed,
+                imageUrl: base64,
                 material: result.data.material,
                 fit: result.data.fit
               }
