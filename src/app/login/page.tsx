@@ -52,12 +52,25 @@ function LoginContent() {
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [inWebView, setInWebView] = useState(false)
+  const [isChina, setIsChina] = useState(false) // 是否中国大陆用户
   const [smsCountdown, setSmsCountdown] = useState(0)
   const countdownRef = useRef<NodeJS.Timeout | null>(null)
   
-  // 检测 WebView
+  // 检测 WebView 和地区
   useEffect(() => {
     setInWebView(isWebView())
+    
+    // 检测用户地区
+    fetch('/api/geo')
+      .then(res => res.json())
+      .then(data => {
+        setIsChina(data.isChina === true)
+      })
+      .catch(() => {
+        // 如果 API 失败，尝试通过浏览器语言判断
+        const lang = navigator.language || ''
+        setIsChina(lang.toLowerCase().includes('zh-cn'))
+      })
   }, [])
 
   // 清理倒计时
@@ -342,14 +355,16 @@ function LoginContent() {
               </div>
             )}
 
-            {/* Phone SMS Login - 第一位（中国用户最常用） */}
-            <button
-              onClick={() => { setMode("phone-sms"); resetState(); }}
-              className="w-full h-12 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex items-center justify-center gap-3 transition-colors"
-            >
-              <Smartphone className="w-5 h-5" />
-              <span>{t.login.phoneSms || '手机号登录'}</span>
-            </button>
+            {/* Phone SMS Login - 仅中国大陆用户可见 */}
+            {isChina && (
+              <button
+                onClick={() => { setMode("phone-sms"); resetState(); }}
+                className="w-full h-12 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex items-center justify-center gap-3 transition-colors"
+              >
+                <Smartphone className="w-5 h-5" />
+                <span>{t.login.phoneSms || '手机号登录'}</span>
+              </button>
+            )}
             
             {/* Google Login - Hide in WebView */}
             {!inWebView && (
