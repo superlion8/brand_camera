@@ -3,6 +3,23 @@ import { getGenAIClient, extractImage, extractText, safetySettings } from '@/lib
 import { createClient } from '@/lib/supabase/server'
 import { appendImageToGeneration, uploadImageToStorage } from '@/lib/supabase/generationService'
 
+// 将 URL 转换为 base64（服务端版本）
+async function urlToBase64(url: string): Promise<string> {
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image: ${response.statusText}`)
+    }
+    const arrayBuffer = await response.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+    const base64 = buffer.toString('base64')
+    return `data:image/jpeg;base64,${base64}`
+  } catch (error: any) {
+    console.error('[urlToBase64] Error:', error.message)
+    throw error
+  }
+}
+
 export const maxDuration = 300 // 5 minutes
 
 // 专业棚拍 Prompts
@@ -117,18 +134,41 @@ export async function POST(request: NextRequest) {
     let usedPrompt = ''
     let generationMode: 'simple' | 'extended' = mode === 'extended' ? 'extended' : 'simple'
 
-    // 准备图片数据
-    const productImageData = productImage?.startsWith('data:') 
-      ? productImage.split(',')[1] 
-      : productImage
+    // 准备图片数据 - 如果是 URL，先转换为 base64
+    let productImageData: string
+    if (productImage?.startsWith('http://') || productImage?.startsWith('https://')) {
+      // URL，需要转换为 base64
+      const base64Data = await urlToBase64(productImage)
+      productImageData = base64Data.split(',')[1]
+    } else if (productImage?.startsWith('data:')) {
+      // 已经是 base64 data URL
+      productImageData = productImage.split(',')[1]
+    } else {
+      // 假设是纯 base64（无 data: 前缀）
+      productImageData = productImage
+    }
 
-    const modelImageData = modelImage?.startsWith('data:')
-      ? modelImage.split(',')[1]
-      : modelImage
+    let modelImageData: string
+    if (modelImage?.startsWith('http://') || modelImage?.startsWith('https://')) {
+      const base64Data = await urlToBase64(modelImage)
+      modelImageData = base64Data.split(',')[1]
+    } else if (modelImage?.startsWith('data:')) {
+      modelImageData = modelImage.split(',')[1]
+    } else {
+      modelImageData = modelImage
+    }
 
-    const bgImageData = backgroundImage?.startsWith('data:')
-      ? backgroundImage.split(',')[1]
-      : backgroundImage
+    let bgImageData: string | undefined
+    if (backgroundImage) {
+      if (backgroundImage.startsWith('http://') || backgroundImage.startsWith('https://')) {
+        const base64Data = await urlToBase64(backgroundImage)
+        bgImageData = base64Data.split(',')[1]
+      } else if (backgroundImage.startsWith('data:')) {
+        bgImageData = backgroundImage.split(',')[1]
+      } else {
+        bgImageData = backgroundImage
+      }
+    }
 
     // 验证必需的图片数据
     if (!productImageData) {
