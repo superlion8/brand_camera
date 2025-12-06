@@ -16,7 +16,6 @@ import { useAuth } from "@/components/providers/AuthProvider"
 import { useQuota } from "@/hooks/useQuota"
 import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
-import { generateId } from "@/lib/utils"
 import { ProductCategory, OutfitItem } from "@/types/outfit"
 
 type ShootMode = "pro_studio" | "buyer_show"
@@ -28,7 +27,7 @@ export default function OutfitSelectPage() {
   const { checkQuota, showExceededModal, closeExceededModal } = useQuota()
   const presetStore = usePresetStore()
   const { userModels, userBackgrounds } = useAssetStore()
-  const { addTask, updateTaskStatus, updateImageSlot } = useGenerationTaskStore()
+  const { addTask, updateTaskStatus, updateImageSlot, initImageSlots } = useGenerationTaskStore()
   
   // 状态
   const [shootMode, setShootMode] = useState<ShootMode | null>(null)
@@ -112,34 +111,28 @@ export default function OutfitSelectPage() {
       }))
       
       // 创建任务
-      const taskId = generateId()
       const taskType = shootMode === 'pro_studio' ? 'pro_studio' : 'camera_model'
       
-      // 初始化图片槽位
-      const imageSlots = Array.from({ length: numImages }, (_, i) => ({
-        index: i,
-        status: 'pending' as const,
-        imageUrl: null,
-        modelType: null,
-        genMode: i < 3 ? 'simple' : 'extended'
-      }))
-      
-      addTask({
-        id: taskId,
-        type: taskType,
-        status: 'generating',
-        inputImageUrl: productImages[0]?.imageUrl || '[products]',
-        expectedImageCount: numImages,
-        imageSlots,
-        params: {
+      // 添加任务 - addTask 返回 taskId
+      const taskId = addTask(
+        taskType,
+        productImages[0]?.imageUrl || '[products]',
+        {
           products: productImages,
           modelImage,
           backgroundImage: bgImage,
           modelIsRandom,
           bgIsRandom,
           shootMode
-        }
-      })
+        },
+        numImages
+      )
+      
+      // 初始化图片槽位
+      initImageSlots(taskId, numImages)
+      
+      // 更新任务状态为生成中
+      updateTaskStatus(taskId, 'generating')
       
       // 触发飞到图库动画
       triggerFlyToGallery()
