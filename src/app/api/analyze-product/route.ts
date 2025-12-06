@@ -50,16 +50,16 @@ export async function POST(request: NextRequest) {
         temperature: 0.2,
         responseMimeType: "application/json",
         responseSchema: {
-          type: "OBJECT" as const,
+          type: "OBJECT",
           properties: {
             type: {
-              type: "STRING" as const,
+              type: "STRING",
               enum: [...VALID_CATEGORIES],
               description: "The category of the item"
             }
           },
           required: ["type"]
-        },
+        } as any,
         safetySettings,
       }
     })
