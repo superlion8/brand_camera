@@ -237,7 +237,8 @@ export default function StudioPage() {
   // Camera handlers
   const handleCapture = useCallback(() => {
     if (webcamRef.current) {
-      const imageSrc = webcamRef.current.getScreenshot()
+      // 传入实际视频分辨率，避免使用 CSS 显示尺寸导致清晰度下降
+      const imageSrc = webcamRef.current.getScreenshot({ width: 1920, height: 1080 })
       if (imageSrc) {
         setProductImage(imageSrc)
         setMode('main')
