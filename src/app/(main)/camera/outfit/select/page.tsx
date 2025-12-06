@@ -27,7 +27,7 @@ export default function OutfitSelectPage() {
   const { user } = useAuth()
   const { checkQuota, showExceededModal, closeExceededModal } = useQuota()
   const presetStore = usePresetStore()
-  const { models: userModels, backgrounds: userBackgrounds } = useAssetStore()
+  const { userModels, userBackgrounds } = useAssetStore()
   const { addTask, updateTaskStatus, updateImageSlot } = useGenerationTaskStore()
   
   // 状态
