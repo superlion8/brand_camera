@@ -658,9 +658,9 @@ export default function ProStudioPage() {
                   screenshotFormat="image/jpeg"
                   screenshotQuality={0.95}
                   videoConstraints={{
-                    width: { ideal: 1920 },
-                    height: { ideal: 1080 },
-                    facingMode: "environment"
+                    facingMode: "environment",
+                    width: { min: 1080, ideal: 1920 },
+                    height: { min: 1080, ideal: 1920 }
                   }}
                   className="absolute inset-0 w-full h-full object-cover"
                 />

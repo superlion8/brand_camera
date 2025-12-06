@@ -260,9 +260,9 @@ export default function StudioPage() {
   }, [])
   
   const videoConstraints = {
-    width: { ideal: 1920 },
-    height: { ideal: 1080 },
     facingMode: "environment",
+    width: { min: 1080, ideal: 1920 },
+    height: { min: 1080, ideal: 1920 },
   }
   
   const handleGenerate = async () => {
