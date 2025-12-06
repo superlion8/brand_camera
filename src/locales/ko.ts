@@ -474,4 +474,58 @@ export const ko: Translations = {
     failed: "실패",
     viewResult: "결과 보기",
   },
+
+  // Shoot page
+  shoot: {
+    title: "상품 촬영",
+    analyzing: "상품 분석 중...",
+    pleaseWait: "잠시만 기다려주세요",
+    analyzeFailed: "분석 실패",
+    retry: "다시 촬영",
+    hint: "상품을 촬영해주세요",
+    hintSub: "상품 유형을 자동으로 식별합니다",
+    checkingCamera: "카메라 권한 확인 중...",
+    noCameraAccess: "카메라에 접근할 수 없습니다",
+    useAlbum: "앨범에서 업로드해주세요",
+    selectFromAssets: "에셋에서 선택",
+    noProducts: "상품 없음",
+    uploadFirst: "먼저 에셋 라이브러리에 상품을 업로드하세요",
+  },
+
+  // Outfit editor
+  outfit: {
+    title: "코디 구성",
+    hat: "모자",
+    top: "상의",
+    inner: "이너",
+    pants: "바지",
+    shoes: "신발",
+    accessory: "악세서리",
+    analyzing: "분석 중...",
+    hint: "빈 슬롯을 탭하여 추가, 드래그하여 조정",
+    hintSub: "추가됨",
+    items: "개 상품",
+    addMore: "더 많은 상품 촬영",
+    next: "다음: 스타일 선택",
+  },
+
+  // Outfit select
+  outfitSelect: {
+    title: "스타일 선택",
+    selectedItems: "선택됨",
+    items: "개 상품",
+    selectStyle: "촬영 스타일 선택",
+    proStudio: "프로 스튜디오",
+    proStudioDesc: "고급 스튜디오 효과",
+    buyerShow: "바이어 쇼",
+    buyerShowDesc: "실제 장면 효과",
+    selectModel: "모델 선택",
+    selectBackground: "배경 선택",
+    tapToSelectModel: "모델을 선택하려면 탭하세요",
+    tapToSelectBg: "배경을 선택하려면 탭하세요",
+    modelSelected: "모델 선택됨",
+    bgSelected: "배경 선택됨",
+    startGenerate: "생성 시작",
+    generating: "생성 중...",
+  },
 }

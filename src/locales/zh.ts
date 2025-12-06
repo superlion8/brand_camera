@@ -472,6 +472,60 @@ export const zh = {
     failed: "生成失败",
     viewResult: "查看结果",
   },
+
+  // Shoot page (拍摄商品入口)
+  shoot: {
+    title: "拍摄商品",
+    analyzing: "正在分析商品...",
+    pleaseWait: "请稍候",
+    analyzeFailed: "分析失败",
+    retry: "重新拍摄",
+    hint: "请拍摄一件商品",
+    hintSub: "我们会自动识别商品类型",
+    checkingCamera: "检查摄像头权限...",
+    noCameraAccess: "无法访问摄像头",
+    useAlbum: "请使用相册上传",
+    selectFromAssets: "从资产库选择",
+    noProducts: "暂无商品",
+    uploadFirst: "请先上传商品到资产库",
+  },
+
+  // Outfit editor (搭配编辑)
+  outfit: {
+    title: "搭配商品",
+    hat: "帽子",
+    top: "上衣",
+    inner: "内衬",
+    pants: "裤子",
+    shoes: "鞋子",
+    accessory: "配饰",
+    analyzing: "分析中...",
+    hint: "点击空位添加商品，拖拽可调整位置",
+    hintSub: "已添加",
+    items: "件商品",
+    addMore: "拍摄更多商品",
+    next: "下一步：选择风格",
+  },
+
+  // Outfit select (选择拍摄风格)
+  outfitSelect: {
+    title: "选择风格",
+    selectedItems: "已选择",
+    items: "件商品",
+    selectStyle: "选择拍摄风格",
+    proStudio: "专业棚拍",
+    proStudioDesc: "高端影棚效果",
+    buyerShow: "买家秀",
+    buyerShowDesc: "真实场景效果",
+    selectModel: "选择模特",
+    selectBackground: "选择背景",
+    tapToSelectModel: "点击选择模特",
+    tapToSelectBg: "点击选择背景",
+    modelSelected: "已选择模特",
+    bgSelected: "已选择背景",
+    startGenerate: "开始生成",
+    generating: "生成中...",
+  },
 }
 
 export type Translations = typeof zh

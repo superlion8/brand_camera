@@ -474,4 +474,58 @@ export const en: Translations = {
     failed: "Failed",
     viewResult: "View Result",
   },
+
+  // Shoot page
+  shoot: {
+    title: "Shoot Product",
+    analyzing: "Analyzing product...",
+    pleaseWait: "Please wait",
+    analyzeFailed: "Analysis failed",
+    retry: "Retake",
+    hint: "Take a photo of a product",
+    hintSub: "We will identify the product type automatically",
+    checkingCamera: "Checking camera permission...",
+    noCameraAccess: "Cannot access camera",
+    useAlbum: "Please upload from album",
+    selectFromAssets: "Select from Assets",
+    noProducts: "No products",
+    uploadFirst: "Please upload products to asset library first",
+  },
+
+  // Outfit editor
+  outfit: {
+    title: "Style Outfit",
+    hat: "Hat",
+    top: "Top",
+    inner: "Inner",
+    pants: "Pants",
+    shoes: "Shoes",
+    accessory: "Accessory",
+    analyzing: "Analyzing...",
+    hint: "Tap empty slot to add, drag to adjust",
+    hintSub: "Added",
+    items: "items",
+    addMore: "Shoot more products",
+    next: "Next: Select Style",
+  },
+
+  // Outfit select
+  outfitSelect: {
+    title: "Select Style",
+    selectedItems: "Selected",
+    items: "items",
+    selectStyle: "Select shooting style",
+    proStudio: "Pro Studio",
+    proStudioDesc: "High-end studio effect",
+    buyerShow: "Buyer Show",
+    buyerShowDesc: "Real scene effect",
+    selectModel: "Select Model",
+    selectBackground: "Select Background",
+    tapToSelectModel: "Tap to select model",
+    tapToSelectBg: "Tap to select background",
+    modelSelected: "Model selected",
+    bgSelected: "Background selected",
+    startGenerate: "Start Generate",
+    generating: "Generating...",
+  },
 }
