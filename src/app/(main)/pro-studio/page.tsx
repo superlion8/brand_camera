@@ -314,6 +314,7 @@ function ProStudioPageContent() {
   const [productSourceTab, setProductSourceTab] = useState<'preset' | 'user'>('preset')
   const [product2SourceTab, setProduct2SourceTab] = useState<'album' | 'asset'>('album') // 第二件商品来源
   const [isLoadingAssets, setIsLoadingAssets] = useState(false)
+  const [isAnalyzingProduct, setIsAnalyzingProduct] = useState(false) // 分析商品类型中
   
   // Results state
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
@@ -815,16 +816,61 @@ function ProStudioPageContent() {
                   {/* 右下角搭配商品按钮 - 只在review模式且没有第二张商品时显示 */}
                   {mode === "review" && !capturedImage2 && (
                     <button
-                      onClick={() => {
-                        // 直接跳转到骨架页面，把当前图片带过去
-                        sessionStorage.setItem('product1Image', capturedImage!)
-                        sessionStorage.removeItem('product2Image')
-                        router.push('/pro-studio/outfit')
+                      disabled={isAnalyzingProduct}
+                      onClick={async () => {
+                        if (!capturedImage) return
+                        
+                        setIsAnalyzingProduct(true)
+                        try {
+                          // 调用分析 API 获取商品类型
+                          const response = await fetch('/api/analyze-product', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ image: capturedImage })
+                          })
+                          
+                          const result = await response.json()
+                          
+                          if (result.success && result.data?.type) {
+                            // 保存图片和分析结果到 sessionStorage
+                            sessionStorage.setItem('product1Image', capturedImage)
+                            sessionStorage.setItem('product1Type', result.data.type)
+                            sessionStorage.removeItem('product2Image')
+                            sessionStorage.removeItem('product2Type')
+                            console.log('[ProStudio] Product analyzed:', result.data.type)
+                          } else {
+                            // 分析失败时也跳转，但不设置类型
+                            sessionStorage.setItem('product1Image', capturedImage)
+                            sessionStorage.removeItem('product1Type')
+                            sessionStorage.removeItem('product2Image')
+                            sessionStorage.removeItem('product2Type')
+                            console.warn('[ProStudio] Product analysis failed, proceeding without type')
+                          }
+                          
+                          router.push('/pro-studio/outfit')
+                        } catch (error) {
+                          console.error('[ProStudio] Failed to analyze product:', error)
+                          // 出错也跳转
+                          sessionStorage.setItem('product1Image', capturedImage)
+                          sessionStorage.removeItem('product1Type')
+                          router.push('/pro-studio/outfit')
+                        } finally {
+                          setIsAnalyzingProduct(false)
+                        }
                       }}
-                      className="absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2.5 rounded-full bg-black/60 backdrop-blur-md text-white hover:bg-black/70 transition-colors border border-white/20"
+                      className="absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2.5 rounded-full bg-black/60 backdrop-blur-md text-white hover:bg-black/70 transition-colors border border-white/20 disabled:opacity-50"
                     >
-                      <Plus className="w-4 h-4" />
-                      <span className="text-sm font-medium">{t.proStudio?.styleOutfit || '搭配商品'}</span>
+                      {isAnalyzingProduct ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span className="text-sm font-medium">{t.common?.analyzing || '分析中...'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="w-4 h-4" />
+                          <span className="text-sm font-medium">{t.proStudio?.styleOutfit || '搭配商品'}</span>
+                        </>
+                      )}
                     </button>
                   )}
                 </div>

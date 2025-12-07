@@ -373,23 +373,29 @@ function OutfitPageContent() {
     // 防止 React Strict Mode 下重复执行
     if (hasLoadedFromSession.current) return
     
-    // 读取第一张商品图片 -> 放到上衣槽位
+    // 读取第一张商品图片和类型
     const product1Image = sessionStorage.getItem('product1Image')
+    const product1Type = sessionStorage.getItem('product1Type') as ProductCategory | null
     if (product1Image) {
-      console.log('[Outfit] Loading product1 from sessionStorage')
+      // 使用分析得到的类型，如果没有则默认放到"上衣"槽位
+      const targetSlot = product1Type || '上衣'
+      console.log('[Outfit] Loading product1 from sessionStorage, type:', targetSlot)
       setSlots(prev => prev.map(slot => 
-        slot.id === '上衣'
+        slot.id === targetSlot
           ? { ...slot, product: { imageUrl: product1Image } }
           : slot
       ))
     }
     
-    // 读取第二张商品图片 -> 放到裤子槽位
+    // 读取第二张商品图片和类型
     const product2Image = sessionStorage.getItem('product2Image')
+    const product2Type = sessionStorage.getItem('product2Type') as ProductCategory | null
     if (product2Image) {
-      console.log('[Outfit] Loading product2 from sessionStorage')
+      // 使用分析得到的类型，如果没有则默认放到"裤子"槽位
+      const targetSlot = product2Type || '裤子'
+      console.log('[Outfit] Loading product2 from sessionStorage, type:', targetSlot)
       setSlots(prev => prev.map(slot => 
-        slot.id === '裤子'
+        slot.id === targetSlot
           ? { ...slot, product: { imageUrl: product2Image } }
           : slot
       ))
@@ -401,7 +407,9 @@ function OutfitPageContent() {
       // 延迟清理，确保数据已被组件读取
       setTimeout(() => {
         sessionStorage.removeItem('product1Image')
+        sessionStorage.removeItem('product1Type')
         sessionStorage.removeItem('product2Image')
+        sessionStorage.removeItem('product2Type')
         console.log('[Outfit] Cleaned sessionStorage')
       }, 100)
     }
