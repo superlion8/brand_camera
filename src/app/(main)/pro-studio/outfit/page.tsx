@@ -473,13 +473,43 @@ export default function ProStudioOutfitPage() {
     
     const isDragging = draggedSlotId === slot.id || touchDragSlotId === slot.id
     
-    // 触摸拖拽事件
+    // 长按计时器
+    const longPressTimer = useRef<NodeJS.Timeout | null>(null)
+    
+    // 触摸拖拽事件 - 支持Safari
     const handleTouchStart = (e: React.TouchEvent) => {
       if (!slot.product) return
-      setTouchDragSlotId(slot.id)
+      
+      // 长按300ms后开始拖拽
+      longPressTimer.current = setTimeout(() => {
+        setTouchDragSlotId(slot.id)
+        // 震动反馈（如果支持）
+        if (navigator.vibrate) {
+          navigator.vibrate(50)
+        }
+      }, 300)
+    }
+    
+    const handleTouchMove = (e: React.TouchEvent) => {
+      // 如果还没开始拖拽，取消长按计时
+      if (!touchDragSlotId && longPressTimer.current) {
+        clearTimeout(longPressTimer.current)
+        longPressTimer.current = null
+      }
+      
+      // 如果正在拖拽，阻止滚动
+      if (touchDragSlotId) {
+        e.preventDefault()
+      }
     }
     
     const handleTouchEnd = (e: React.TouchEvent) => {
+      // 清除长按计时器
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current)
+        longPressTimer.current = null
+      }
+      
       if (!touchDragSlotId) return
       
       // 获取触摸结束位置
@@ -498,6 +528,14 @@ export default function ProStudioOutfitPage() {
       setTouchDragSlotId(null)
     }
     
+    const handleTouchCancel = () => {
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current)
+        longPressTimer.current = null
+      }
+      setTouchDragSlotId(null)
+    }
+    
     return (
       <motion.div
         layout
@@ -508,13 +546,19 @@ export default function ProStudioOutfitPage() {
         onDragOver={(e) => e.preventDefault()}
         onDrop={() => handleDrop(slot.id)}
         onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchCancel}
         onClick={() => !slot.product && handleSlotClick(slot.id)}
+        style={{ 
+          WebkitUserSelect: 'none',
+          WebkitTouchCallout: 'none',
+        }}
         className={`
           ${sizeClasses[size]} rounded-xl relative cursor-pointer
-          bg-white shadow-md
-          ${isDragging ? 'opacity-50 scale-95 ring-2 ring-blue-500' : ''}
-          transition-all duration-200 touch-none
+          bg-white shadow-md select-none
+          ${isDragging ? 'opacity-60 scale-105 ring-2 ring-blue-500 z-50' : ''}
+          transition-all duration-200
         `}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}

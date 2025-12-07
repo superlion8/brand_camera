@@ -775,7 +775,12 @@ function ProStudioPageContent() {
                   {/* 右下角搭配商品按钮 - 只在review模式且没有第二张商品时显示 */}
                   {mode === "review" && !capturedImage2 && (
                     <button
-                      onClick={() => setShowProduct2Panel(true)}
+                      onClick={() => {
+                        // 直接跳转到骨架页面，把当前图片带过去
+                        sessionStorage.setItem('product1Image', capturedImage!)
+                        sessionStorage.removeItem('product2Image')
+                        router.push('/pro-studio/outfit')
+                      }}
                       className="absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2.5 rounded-full bg-black/60 backdrop-blur-md text-white hover:bg-black/70 transition-colors border border-white/20"
                     >
                       <Plus className="w-4 h-4" />
