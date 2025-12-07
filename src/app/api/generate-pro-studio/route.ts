@@ -96,11 +96,13 @@ Analyze the style, material, and vibe of the products.
 
 3. Posing: Suggest a pose that highlights the best features of clothes.
 
+Strictly, no studio equipment (such as softboxes, tripods, or light stands) should be visible in the frame. The background must be clean.
+
 Output strictly in English using the following format. Do not output any intro/outro text:
 
 {{clothing}}: [Describe the styling details for any missing items to complete the look. E.g., "White crew socks, silver minimalistic rings"]
 
-{{background}}: [Describe the studio setting, color palette, and texture. E.g., "Matte grey concrete wall, soft shadows"]
+{{background}}: [Describe the studio setting, color palette, and texture.]
 
 {{model_pose}}: [Describe the pose precisely. E.g., "Standing slightly sideways, hands in pockets, looking away from camera"]
 
