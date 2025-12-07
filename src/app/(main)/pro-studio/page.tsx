@@ -734,44 +734,38 @@ function ProStudioPageContent() {
                   </div>
                 </div>
               ) : (
-                <div className="absolute inset-0 flex">
-                  {/* 第一张商品图片 */}
-                  <div className={`relative ${capturedImage2 ? 'w-1/2' : 'w-full'} h-full`}>
-                    <img 
-                      src={capturedImage || ""} 
-                      alt="商品1" 
-                      className="w-full h-full object-cover"
-                    />
-                    <span className="absolute top-2 left-2 px-2 py-1 bg-black/50 text-white text-xs rounded backdrop-blur-md">
-                      商品1
-                    </span>
-                  </div>
+                <div className="absolute inset-0">
+                  {/* 第一张商品图片 - 全屏显示 */}
+                  <img 
+                    src={capturedImage || ""} 
+                    alt="商品" 
+                    className="w-full h-full object-cover"
+                  />
                   
-                  {/* 第二张商品图片或添加按钮 */}
-                  {capturedImage2 ? (
-                    <div className="relative w-1/2 h-full border-l-2 border-white/30">
+                  {/* 如果有第二张商品，右下角显示缩略图 */}
+                  {capturedImage2 && (
+                    <div className="absolute bottom-4 right-4 w-20 h-20 rounded-xl overflow-hidden border-2 border-white shadow-lg">
                       <img 
                         src={capturedImage2} 
                         alt="商品2" 
                         className="w-full h-full object-cover"
                       />
-                      <span className="absolute top-2 left-2 px-2 py-1 bg-black/50 text-white text-xs rounded backdrop-blur-md">
-                        商品2
-                      </span>
+                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                        <span className="text-white text-xs font-medium">+1</span>
+                      </div>
                     </div>
-                  ) : mode === "review" ? (
-                    <div className="relative w-1/2 h-full border-l-2 border-white/30 flex items-center justify-center bg-black/20">
-                      <button
-                        onClick={() => fileInputRef2.current?.click()}
-                        className="flex flex-col items-center gap-2 text-white/80 hover:text-white transition-colors"
-                      >
-                        <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center border-2 border-dashed border-white/30">
-                          <Plus className="w-8 h-8" />
-                        </div>
-                        <span className="text-xs">添加商品</span>
-                      </button>
-                    </div>
-                  ) : null}
+                  )}
+                  
+                  {/* 右下角搭配商品按钮 - 只在review模式且没有第二张商品时显示 */}
+                  {mode === "review" && !capturedImage2 && (
+                    <button
+                      onClick={() => fileInputRef2.current?.click()}
+                      className="absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2.5 rounded-full bg-black/60 backdrop-blur-md text-white hover:bg-black/70 transition-colors border border-white/20"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span className="text-sm font-medium">搭配商品</span>
+                    </button>
+                  )}
                 </div>
               )}
 
