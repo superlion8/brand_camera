@@ -435,8 +435,8 @@ export default function GeneralEditPage() {
             <div className="absolute inset-0 bg-purple-500/20 blur-xl rounded-full animate-pulse" />
             <Loader2 className="w-16 h-16 text-purple-500 animate-spin relative z-10" />
           </div>
-          <h3 className="text-white text-xl font-bold mb-2">AI 正在处理...</h3>
-          <p className="text-zinc-400 text-sm mb-8">根据您的描述修改图片</p>
+          <h3 className="text-white text-xl font-bold mb-2">{t.edit?.processing || 'AI 正在处理...'}</h3>
+          <p className="text-zinc-400 text-sm mb-8">{t.edit?.processingDesc || '根据您的描述修改图片'}</p>
           
           {/* Navigation buttons during processing */}
           <div className="space-y-3 w-full max-w-xs">
@@ -446,7 +446,7 @@ export default function GeneralEditPage() {
               className="w-full h-12 rounded-full bg-purple-500 hover:bg-purple-600 text-white font-medium flex items-center justify-center gap-2 transition-colors"
             >
               <Wand2 className="w-5 h-5" />
-              修新的图
+              {t.edit?.editNew || '修新的图'}
             </button>
             <button
               onClick={handleReturnHomeDuringProcessing}
