@@ -19,6 +19,24 @@ import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { useGenerationTaskStore, base64ToBlobUrl } from "@/stores/generationTaskStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { Asset } from "@/types"
+import { PRESET_PRODUCTS } from "@/data/presets"
+
+// 商品分类
+type ProductSubTab = "all" | "top" | "pants" | "inner" | "shoes" | "hat"
+const PRODUCT_SUB_TABS: ProductSubTab[] = ["all", "top", "pants", "inner", "shoes", "hat"]
+
+// 商品分类翻译映射
+const getProductCategoryLabel = (cat: ProductSubTab, t: any): string => {
+  switch (cat) {
+    case "all": return t.common?.all || "全部"
+    case "top": return t.assets?.productTop || "上衣"
+    case "pants": return t.assets?.productPants || "裤子"
+    case "inner": return t.assets?.productInner || "内衬"
+    case "shoes": return t.assets?.productShoes || "鞋子"
+    case "hat": return t.assets?.productHat || "帽子"
+    default: return cat
+  }
+}
 
 // 只使用5个类型（去掉配饰）
 const VALID_CATEGORIES: ProductCategory[] = ["内衬", "上衣", "裤子", "帽子", "鞋子"]
@@ -247,6 +265,8 @@ function OutfitPageContent() {
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
   const [showSlotOptions, setShowSlotOptions] = useState(false) // 空白框点击选项面板
   const [showAssetPicker, setShowAssetPicker] = useState(false) // 资产库选择面板
+  const [assetPickerSource, setAssetPickerSource] = useState<"user" | "preset">("user") // 资产来源
+  const [assetPickerSubTab, setAssetPickerSubTab] = useState<ProductSubTab>("all") // 商品二级分类
   const [touchDragSlotId, setTouchDragSlotId] = useState<ProductCategory | null>(null) // 触摸拖拽
   const touchDragSlotIdRef = useRef<ProductCategory | null>(null) // 用ref避免闭包问题
   const [dropTargetSlotId, setDropTargetSlotId] = useState<ProductCategory | null>(null) // 当前悬停的目标槽位
@@ -1186,8 +1206,9 @@ function OutfitPageContent() {
               animate={{ y: 0 }} 
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed bottom-0 left-0 right-0 h-[70%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
+              className="fixed bottom-0 left-0 right-0 h-[80%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
             >
+              {/* 标题栏 */}
               <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
                 <span className="font-semibold text-zinc-900 dark:text-white">
                   {t.outfit?.selectProduct || '选择商品'} - {uploadTargetSlot ? labelMap[uploadTargetSlot] : ''}
@@ -1200,36 +1221,112 @@ function OutfitPageContent() {
                 </button>
               </div>
               
-              <div className="flex-1 overflow-y-auto p-4">
-                {userProducts.length > 0 ? (
-                  <div className="grid grid-cols-3 gap-3">
-                    {userProducts.map(product => (
-                      <button
-                        key={product.id}
-                        onClick={() => {
-                          if (uploadTargetSlot) {
-                            setSlots(prev => prev.map(slot => 
-                              slot.id === uploadTargetSlot
-                                ? { ...slot, product: { imageUrl: product.imageUrl } }
-                                : slot
-                            ))
-                          }
-                          setShowAssetPicker(false)
-                          setUploadTargetSlot(null)
-                        }}
-                        className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all"
-                      >
-                        <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-zinc-400">
-                    <FolderHeart className="w-12 h-12 mb-3 opacity-30" />
-                    <p className="text-sm">{t.outfit?.noProducts || '暂无商品'}</p>
-                    <p className="text-xs mt-1">{t.outfit?.uploadProductFirst || '请先在资源库上传商品'}</p>
+              {/* 来源切换：我的资产 | 官方预设 */}
+              <div className="px-4 py-2 border-b shrink-0">
+                <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1">
+                  <button
+                    onClick={() => setAssetPickerSource("user")}
+                    className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
+                      assetPickerSource === "user"
+                        ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
+                        : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                    }`}
+                  >
+                    {t.common?.my || '我的'}{t.nav?.assets || '资产'}
+                    <span className="ml-1 text-xs opacity-60">({userProducts.length})</span>
+                  </button>
+                  <button
+                    onClick={() => setAssetPickerSource("preset")}
+                    className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
+                      assetPickerSource === "preset"
+                        ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
+                        : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                    }`}
+                  >
+                    {t.common?.official || '官方'}{t.common?.preset || '预设'}
+                    <span className="ml-1 text-xs opacity-60">({PRESET_PRODUCTS.length})</span>
+                  </button>
+                </div>
+                
+                {/* 二级分类（仅我的资产） */}
+                {assetPickerSource === "user" && (
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    {PRODUCT_SUB_TABS.map(cat => {
+                      const count = cat === "all" 
+                        ? userProducts.length 
+                        : userProducts.filter(p => p.category === cat).length
+                      return (
+                        <button
+                          key={cat}
+                          onClick={() => setAssetPickerSubTab(cat)}
+                          className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors ${
+                            assetPickerSubTab === cat
+                              ? "bg-blue-600 text-white"
+                              : "bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-300 dark:hover:bg-zinc-600"
+                          }`}
+                        >
+                          {getProductCategoryLabel(cat, t)}
+                          <span className="ml-1 opacity-70">({count})</span>
+                        </button>
+                      )
+                    })}
                   </div>
                 )}
+              </div>
+              
+              {/* 商品列表 */}
+              <div className="flex-1 overflow-y-auto p-4">
+                {(() => {
+                  // 根据来源和分类筛选商品
+                  let displayProducts: Asset[] = []
+                  if (assetPickerSource === "preset") {
+                    displayProducts = PRESET_PRODUCTS
+                  } else {
+                    displayProducts = assetPickerSubTab === "all" 
+                      ? userProducts 
+                      : userProducts.filter(p => p.category === assetPickerSubTab)
+                  }
+                  
+                  if (displayProducts.length > 0) {
+                    return (
+                      <div className="grid grid-cols-3 gap-3">
+                        {displayProducts.map(product => (
+                          <button
+                            key={product.id}
+                            onClick={() => {
+                              if (uploadTargetSlot) {
+                                setSlots(prev => prev.map(slot => 
+                                  slot.id === uploadTargetSlot
+                                    ? { ...slot, product: { imageUrl: product.imageUrl } }
+                                    : slot
+                                ))
+                              }
+                              setShowAssetPicker(false)
+                              setUploadTargetSlot(null)
+                            }}
+                            className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all group"
+                          >
+                            <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
+                            {/* 商品名称悬浮显示 */}
+                            {product.name && (
+                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <p className="text-white text-xs truncate">{product.name}</p>
+                              </div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )
+                  } else {
+                    return (
+                      <div className="flex flex-col items-center justify-center h-full text-zinc-400">
+                        <FolderHeart className="w-12 h-12 mb-3 opacity-30" />
+                        <p className="text-sm">{t.outfit?.noProducts || '暂无商品'}</p>
+                        <p className="text-xs mt-1">{t.outfit?.uploadProductFirst || '请先在资源库上传商品'}</p>
+                      </div>
+                    )
+                  }
+                })()}
               </div>
             </motion.div>
           </>
