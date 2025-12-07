@@ -1166,13 +1166,18 @@ export default function CameraPage() {
                         <X className="w-4 h-4" />
                       </button>
                     </div>
-                  ) : mode === "review" && (
+                  ) : mode === "review" && !capturedImage2 && (
                     <button
-                      onClick={() => setShowProduct2Panel(true)}
-                      className="absolute bottom-4 right-4 px-3 py-2 bg-white/90 text-zinc-800 rounded-lg text-sm font-medium flex items-center gap-2 shadow-lg backdrop-blur-md"
+                      onClick={() => {
+                        // 跳转到搭配页面，带上 camera 模式参数
+                        sessionStorage.setItem('product1Image', capturedImage!)
+                        sessionStorage.removeItem('product2Image')
+                        router.push('/pro-studio/outfit?mode=camera')
+                      }}
+                      className="absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2.5 rounded-full bg-black/60 backdrop-blur-md text-white hover:bg-black/70 transition-colors border border-white/20"
                     >
                       <Plus className="w-4 h-4" />
-                      {t.camera.addProduct2}
+                      <span className="text-sm font-medium">{t.outfit?.title || '搭配商品'}</span>
                     </button>
                   )}
                 </div>
