@@ -816,23 +816,6 @@ function OutfitPageContent() {
     const taskId = addTask(taskType, products[0], {}, numImages)
     initImageSlots(taskId, numImages)
     
-    // 在数据库中创建 pending 记录，这样刷新页面后能恢复 loading 卡片
-    try {
-      await fetch('/api/quota/reserve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          taskId,
-          imageCount: numImages,
-          taskType,
-        }),
-      })
-      console.log('[Outfit] Reserved', numImages, 'images for task', taskId)
-      refreshQuota()
-    } catch (e) {
-      console.warn('[Outfit] Failed to reserve quota:', e)
-    }
-    
     // 获取选中的模特和背景信息（只获取ID和URL，不加载图片）
     const allModels = [...customModels, ...studioModels, ...userModels]
     const allBgs = [...customBgs, ...allStudioBackgrounds, ...userBackgrounds]
@@ -844,8 +827,7 @@ function OutfitPageContent() {
       ? allBgs.find(b => b.id === selectedBgId)
       : null
     
-    // 立即跳转到 processing 页面（不等待图片加载）
-    // 清理 sessionStorage（用户已确认操作，不再需要保留）
+    // 立即跳转到 processing 页面（不等待任何其他操作）
     clearSessionStorage()
     
     if (isCameraMode) {
@@ -855,6 +837,22 @@ function OutfitPageContent() {
       sessionStorage.setItem('proStudioTaskId', taskId)
       router.push('/pro-studio?mode=processing')
     }
+    
+    // 在后台创建 pending 记录（不阻塞跳转）
+    fetch('/api/quota/reserve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        taskId,
+        imageCount: numImages,
+        taskType,
+      }),
+    }).then(() => {
+      console.log('[Outfit] Reserved', numImages, 'images for task', taskId)
+      refreshQuota()
+    }).catch(e => {
+      console.warn('[Outfit] Failed to reserve quota:', e)
+    })
     
     // 在后台加载图片并发起生成请求
     const generateInBackground = async () => {

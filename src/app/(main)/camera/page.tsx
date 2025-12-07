@@ -411,24 +411,21 @@ function CameraPageContent() {
     initImageSlots(taskId, CAMERA_NUM_IMAGES)
     setMode("processing")
     
-    // IMMEDIATELY reserve quota - deduct before generation starts
-    // This will be refunded if generation fails
-    try {
-      await fetch('/api/quota/reserve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          taskId,
-          imageCount: CAMERA_NUM_IMAGES,
-          taskType: 'model_studio',
-        }),
-      })
+    // Reserve quota in background (don't block generation)
+    fetch('/api/quota/reserve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        taskId,
+        imageCount: CAMERA_NUM_IMAGES,
+        taskType: 'model_studio',
+      }),
+    }).then(() => {
       console.log('[Quota] Reserved', CAMERA_NUM_IMAGES, 'images for task', taskId)
-      // Refresh quota display
       refreshQuota()
-    } catch (e) {
+    }).catch(e => {
       console.warn('[Quota] Failed to reserve quota:', e)
-    }
+    })
     
     // Start background generation with captured values
     runBackgroundGeneration(
