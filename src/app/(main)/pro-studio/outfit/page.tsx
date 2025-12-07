@@ -442,15 +442,15 @@ export default function ProStudioOutfitPage() {
     '配饰': 'ACCESSORY'
   }
   
-  // 渲染槽位卡片 - 全屏版本，更大的卡片
+  // 渲染槽位卡片 - 更大更集中的卡片
   const renderSlotCard = (slot: OutfitSlot | undefined, size: "small" | "medium" | "large" = "medium") => {
     if (!slot) return null
     
     // 更大的尺寸
     const sizeClasses = {
-      small: "w-20 h-20",     // 帽子/鞋子
-      medium: "w-28 h-36",    // 内衬/裤子
-      large: "w-32 h-40"      // 上衣
+      small: "w-24 h-24",     // 帽子/鞋子
+      medium: "w-32 h-40",    // 内衬/裤子
+      large: "w-36 h-44"      // 上衣
     }
     
     const isDragging = draggedSlotId === slot.id
@@ -668,12 +668,12 @@ export default function ProStudioOutfitPage() {
       </div>
       
       {/* 全屏搭配区域 */}
-      <div className="flex-1 relative bg-[#e8eef3] overflow-hidden">
-        {/* 人体轮廓 SVG - 居中，更大 */}
+      <div className="flex-1 relative bg-[#e8eef3] overflow-hidden flex items-center justify-center">
+        {/* 人体轮廓 SVG - 居中，作为背景参考 */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <svg
             viewBox="0 0 200 380"
-            className="w-40 h-auto opacity-30"
+            className="w-32 h-auto opacity-20"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
           >
@@ -689,25 +689,27 @@ export default function ProStudioOutfitPage() {
           </svg>
         </div>
         
-        {/* 商品槽位 - 全屏布局 */}
+        {/* 商品槽位 - 紧凑集中布局，可以遮挡骨架图 */}
         {/* HAT - 顶部中间 */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+        <div className="absolute top-[8%] left-1/2 -translate-x-1/2 z-10">
           {renderSlotCard(slots.find(s => s.id === '帽子')!, 'small')}
         </div>
-        {/* INNER - 左上 */}
-        <div className="absolute top-[20%] left-3 z-10">
+        {/* 上半身区域 - 左右靠近 */}
+        {/* INNER - 左侧 */}
+        <div className="absolute top-[22%] left-[8%] z-10">
           {renderSlotCard(slots.find(s => s.id === '内衬')!, 'medium')}
         </div>
-        {/* TOP - 右上 */}
-        <div className="absolute top-[15%] right-3 z-10">
+        {/* TOP - 右侧 */}
+        <div className="absolute top-[18%] right-[8%] z-10">
           {renderSlotCard(slots.find(s => s.id === '上衣')!, 'large')}
         </div>
-        {/* BOTTOM - 左下 */}
-        <div className="absolute bottom-[20%] left-3 z-10">
+        {/* 下半身区域 - 左右靠近 */}
+        {/* BOTTOM - 左侧 */}
+        <div className="absolute bottom-[22%] left-[8%] z-10">
           {renderSlotCard(slots.find(s => s.id === '裤子')!, 'medium')}
         </div>
-        {/* SHOES - 右下 */}
-        <div className="absolute bottom-[15%] right-3 z-10">
+        {/* SHOES - 右侧 */}
+        <div className="absolute bottom-[18%] right-[8%] z-10">
           {renderSlotCard(slots.find(s => s.id === '鞋子')!, 'small')}
         </div>
       </div>
