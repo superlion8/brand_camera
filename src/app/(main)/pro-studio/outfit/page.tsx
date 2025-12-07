@@ -256,7 +256,8 @@ export default function ProStudioOutfitPage() {
   }, [presetStore])
   
   // 获取所有模特和背景
-  const studioModels = presetStore.visibleModels || []
+  // studioModels 是专业棚拍模特（用于随机选择）
+  const studioModels = presetStore.studioModels || []
   const studioBackgroundsLight = presetStore.getAllStudioBackgrounds().filter(bg => bg.name?.includes('Light') || bg.name?.includes('light'))
   const studioBackgroundsSolid = presetStore.getAllStudioBackgrounds().filter(bg => bg.name?.includes('Solid') || bg.name?.includes('solid'))
   const studioBackgroundsPattern = presetStore.getAllStudioBackgrounds().filter(bg => bg.name?.includes('Pattern') || bg.name?.includes('pattern'))
@@ -517,16 +518,58 @@ export default function ProStudioOutfitPage() {
     initImageSlots(taskId, 6)
     
     // 获取选中的模特和背景
-    const selectedModel = selectedModelId 
-      ? [...customModels, ...studioModels, ...userModels].find(m => m.id === selectedModelId)
+    const allModels = [...customModels, ...studioModels, ...userModels]
+    const allBgs = [...customBgs, ...studioBackgroundsLight, ...studioBackgroundsSolid, ...studioBackgroundsPattern, ...userBackgrounds]
+    
+    let selectedModel = selectedModelId 
+      ? allModels.find(m => m.id === selectedModelId)
       : null
-    const selectedBg = selectedBgId
-      ? [...customBgs, ...studioBackgroundsLight, ...studioBackgroundsSolid, ...studioBackgroundsPattern, ...userBackgrounds].find(b => b.id === selectedBgId)
+    let selectedBg = selectedBgId
+      ? allBgs.find(b => b.id === selectedBgId)
       : null
     
-    // 准备模特和背景数据
-    const modelImageData = selectedModel ? await ensureBase64(selectedModel.imageUrl) : null
+    // 如果没有选择模特，标记为随机
+    const isModelRandom = !selectedModel
+    
+    // 如果没有选择背景，标记为随机（由AI生成）
+    const isBgRandom = !selectedBg
+    
+    // 辅助函数：带重试的随机模特加载（每次重试换一个不同的模特）
+    const loadRandomModelWithRetry = async (maxRetries = 3): Promise<string | null> => {
+      for (let i = 0; i < maxRetries; i++) {
+        if (studioModels.length === 0) {
+          console.error('[Outfit] No studio models available')
+          return null
+        }
+        const randomIndex = Math.floor(Math.random() * studioModels.length)
+        const randomModel = studioModels[randomIndex]
+        console.log(`[Outfit] Trying random model ${i + 1}/${maxRetries}:`, randomModel?.name)
+        const base64 = await ensureBase64(randomModel.imageUrl)
+        if (base64) {
+          console.log(`[Outfit] Successfully loaded random model on attempt ${i + 1}`)
+          return base64
+        }
+        console.warn(`[Outfit] Failed to load random model on attempt ${i + 1}, trying another...`)
+      }
+      console.error(`[Outfit] All ${maxRetries} attempts to load random model failed`)
+      return null
+    }
+    
+    // 准备模特数据：用户选择的或随机选择的
+    let modelImageData: string | null
+    if (selectedModel) {
+      modelImageData = await ensureBase64(selectedModel.imageUrl)
+    } else {
+      modelImageData = await loadRandomModelWithRetry()
+    }
+    
+    // 准备背景数据
     const bgImageData = selectedBg ? await ensureBase64(selectedBg.imageUrl) : null
+    
+    if (!modelImageData) {
+      alert('无法加载模特图片，请稍后重试')
+      return
+    }
     
     // 调用生成API，传入所有商品图片
     try {
@@ -544,8 +587,8 @@ export default function ProStudioOutfitPage() {
               mode: 'simple',
               index: i,
               taskId,
-              modelIsRandom: !selectedModel,
-              bgIsRandom: !selectedBg,
+              modelIsRandom: isModelRandom,
+              bgIsRandom: isBgRandom,
               modelName: selectedModel?.name || '专业模特',
               bgName: selectedBg?.name || '影棚背景',
               modelUrl: selectedModel?.imageUrl,
@@ -571,8 +614,8 @@ export default function ProStudioOutfitPage() {
               mode: 'extended',
               index: i + 3,
               taskId,
-              modelIsRandom: !selectedModel,
-              bgIsRandom: !selectedBg,
+              modelIsRandom: isModelRandom,
+              bgIsRandom: isBgRandom,
               modelName: selectedModel?.name || '专业模特',
               bgName: selectedBg?.name || '影棚背景',
               modelUrl: selectedModel?.imageUrl,
@@ -720,8 +763,8 @@ export default function ProStudioOutfitPage() {
               <Wand2 className="w-5 h-5" />
               <span className="text-[10px]">随机</span>
             </button>
-            {/* 模特列表 */}
-            {[...customModels, ...userModels, ...studioModels].slice(0, 10).map(model => (
+            {/* 模特列表 - 显示专业棚拍模特 */}
+            {[...customModels, ...studioModels, ...userModels].slice(0, 10).map(model => (
               <button
                 key={model.id}
                 onClick={() => setSelectedModelId(model.id)}
@@ -854,7 +897,7 @@ export default function ProStudioOutfitPage() {
                       )}
                     </div>
                     <AssetGrid 
-                      items={[...customModels, ...userModels, ...studioModels]} 
+                      items={[...customModels, ...studioModels, ...userModels]} 
                       selectedId={selectedModelId} 
                       onSelect={(id) => setSelectedModelId(selectedModelId === id ? null : id)}
                       onUpload={() => modelUploadRef.current?.click()}
