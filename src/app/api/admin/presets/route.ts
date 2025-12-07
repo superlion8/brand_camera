@@ -77,9 +77,38 @@ export async function POST(request: NextRequest) {
     let uploaded = 0
     const errors: string[] = []
 
+    // Helper: 将文件名转换为 URL 安全格式
+    const sanitizeFileName = (name: string): string => {
+      // 获取文件扩展名
+      const ext = name.split('.').pop()?.toLowerCase() || 'png'
+      // 获取不含扩展名的文件名
+      const baseName = name.replace(/\.[^/.]+$/, '')
+      
+      // 检查是否包含非 ASCII 字符
+      const hasNonAscii = /[^\x00-\x7F]/.test(baseName)
+      
+      if (hasNonAscii) {
+        // 如果有中文或其他非 ASCII 字符，生成时间戳 + 随机字符串
+        const timestamp = Date.now().toString(36)
+        const random = Math.random().toString(36).substring(2, 8)
+        return `${timestamp}_${random}.${ext}`
+      }
+      
+      // ASCII 文件名：只保留字母、数字、下划线、连字符
+      const sanitized = baseName
+        .replace(/[^a-zA-Z0-9_-]/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_|_$/g, '')
+      
+      return `${sanitized || 'file'}.${ext}`
+    }
+
     for (const file of files) {
-      const fileName = file.name
+      const originalName = file.name
+      const fileName = sanitizeFileName(originalName)
       const filePath = `${folder}/${fileName}`
+      
+      console.log(`Uploading: ${originalName} -> ${filePath}`)
       
       const arrayBuffer = await file.arrayBuffer()
       const buffer = new Uint8Array(arrayBuffer)
@@ -92,8 +121,8 @@ export async function POST(request: NextRequest) {
         })
 
       if (error) {
-        console.error(`Upload error for ${fileName}:`, error)
-        errors.push(`${fileName}: ${error.message}`)
+        console.error(`Upload error for ${originalName}:`, error)
+        errors.push(`${originalName}: ${error.message}`)
       } else {
         uploaded++
       }
