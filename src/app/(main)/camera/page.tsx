@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback, useEffect } from "react"
+import { useState, useRef, useCallback, useEffect, Suspense } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
 import Webcam from "react-webcam"
@@ -13,7 +13,7 @@ import { useCameraStore } from "@/stores/cameraStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { useGenerationTaskStore, base64ToBlobUrl } from "@/stores/generationTaskStore"
 import { useSettingsStore } from "@/stores/settingsStore"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { fileToBase64, generateId, compressBase64Image, fetchWithTimeout, ensureBase64 } from "@/lib/utils"
 import { Asset, ModelStyle, ModelGender } from "@/types"
 import Image from "next/image"
@@ -43,8 +43,9 @@ type CameraMode = "camera" | "review" | "processing" | "results"
 const CAMERA_NUM_IMAGES = 6
 const CAMERA_NUM_SIMPLE = 3
 
-export default function CameraPage() {
+function CameraPageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, isLoading: authLoading } = useAuth()
   const t = useLanguageStore(state => state.t)
   
@@ -82,6 +83,19 @@ export default function CameraPage() {
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null) // Track current task
   const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
+  
+  // 从 URL 参数读取 mode（从 outfit 页面跳转过来时）
+  useEffect(() => {
+    const urlMode = searchParams.get('mode')
+    if (urlMode === 'processing' || urlMode === 'results') {
+      setMode(urlMode as CameraMode)
+      // 从 sessionStorage 恢复 taskId
+      const savedTaskId = sessionStorage.getItem('cameraTaskId')
+      if (savedTaskId) {
+        setCurrentTaskId(savedTaskId)
+      }
+    }
+  }, [searchParams])
   
   // Keep modeRef in sync with mode
   useEffect(() => {
@@ -2295,5 +2309,18 @@ export default function CameraPage() {
         userEmail={user?.email || ''}
       />
     </div>
+  )
+}
+
+// Default export with Suspense wrapper for useSearchParams
+export default function CameraPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-white animate-spin" />
+      </div>
+    }>
+      <CameraPageContent />
+    </Suspense>
   )
 }

@@ -800,20 +800,35 @@ function OutfitPageContent() {
         // 准备模特数据：用户选择的或随机选择的
         let modelImageData: string | null
         if (selectedModel) {
+          console.log('[Outfit] Using selected model:', selectedModel.name)
           modelImageData = await ensureBase64(selectedModel.imageUrl)
         } else {
-          modelImageData = await loadRandomModelWithRetry()
+          console.log('[Outfit] No model selected, trying random model. studioModels count:', studioModels.length)
+          // 如果没有预设模特，尝试使用用户上传的模特
+          if (studioModels.length === 0 && userModels.length > 0) {
+            console.log('[Outfit] No studio models, using user model instead')
+            const randomUserModel = userModels[Math.floor(Math.random() * userModels.length)]
+            modelImageData = await ensureBase64(randomUserModel.imageUrl)
+          } else {
+            modelImageData = await loadRandomModelWithRetry()
+          }
         }
         
         // 准备背景数据
         const bgImageData = selectedBg ? await ensureBase64(selectedBg.imageUrl) : null
         
         if (!modelImageData) {
-          console.error('[Outfit] Failed to load model image')
+          console.error('[Outfit] Failed to load model image - no models available')
+          alert('无法加载模特图片，请手动选择一个模特')
           return
         }
         
+        console.log('[Outfit] Model loaded successfully, starting generation...')
+        
         // 根据模式选择不同的 API 和参数格式
+        console.log('[Outfit] Mode:', isCameraMode ? 'camera' : 'pro_studio')
+        console.log('[Outfit] Products count:', products.length)
+        
         if (isCameraMode) {
           // 买家秀模式：使用 /api/generate-single，productImage/productImage2 格式
           // 将商品 URL 转换为 base64
@@ -885,7 +900,9 @@ function OutfitPageContent() {
           }
           
           // 等待所有请求完成
-          await Promise.allSettled([...simplePromises, ...extendedPromises])
+          console.log('[Outfit-Camera] Sending 6 requests (3 simple + 3 extended)...')
+          const results = await Promise.allSettled([...simplePromises, ...extendedPromises])
+          console.log('[Outfit-Camera] All requests completed:', results.map(r => r.status))
         } else {
           // 模特棚拍模式：使用 /api/generate-pro-studio，productImages 数组格式
           // 简单模式：3张图
@@ -943,7 +960,9 @@ function OutfitPageContent() {
           }
           
           // 等待所有请求完成
-          await Promise.allSettled([...simplePromises, ...extendedPromises])
+          console.log('[Outfit-ProStudio] Sending 6 requests (3 simple + 3 extended)...')
+          const results = await Promise.allSettled([...simplePromises, ...extendedPromises])
+          console.log('[Outfit-ProStudio] All requests completed:', results.map(r => r.status))
         }
       } catch (error) {
         console.error('Generation failed:', error)
