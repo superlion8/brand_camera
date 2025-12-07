@@ -66,6 +66,10 @@ export interface GenerationParams {
   // Group shoot params
   shootMode?: 'random' | 'multiangle'
   styleMode?: 'lifestyle' | 'studio'
+  // Outfit/multi-product params
+  productImage?: string           // 第一张商品图（向后兼容）
+  productImages?: string[]        // 多商品图数组（outfit模式）
+  inputImage?: string             // 输入图片 URL
 }
 
 export interface Collection {
