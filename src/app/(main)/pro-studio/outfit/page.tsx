@@ -442,15 +442,15 @@ export default function ProStudioOutfitPage() {
     '配饰': 'ACCESSORY'
   }
   
-  // 渲染槽位卡片 - 统一协调的尺寸
+  // 渲染槽位卡片 - 更大的尺寸填满空间
   const renderSlotCard = (slot: OutfitSlot | undefined, size: "small" | "medium" | "large" = "medium") => {
     if (!slot) return null
     
-    // 协调的尺寸
+    // 放大的尺寸
     const sizeClasses = {
-      small: "w-[88px] h-[88px]",     // 帽子/鞋子 - 正方形
-      medium: "w-[100px] h-[130px]",  // 内衬/裤子 - 竖长
-      large: "w-[120px] h-[150px]"    // 上衣 - 最大
+      small: "w-[100px] h-[100px]",   // 帽子/鞋子 - 正方形
+      medium: "w-[130px] h-[170px]",  // 内衬/裤子 - 竖长
+      large: "w-[150px] h-[190px]"    // 上衣 - 最大
     }
     
     const isDragging = draggedSlotId === slot.id
@@ -689,22 +689,21 @@ export default function ProStudioOutfitPage() {
           </svg>
         </div>
         
-        {/* 商品槽位 - 人形对称布局 */}
-        {/* 使用 grid 实现对称布局 */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center py-4 px-6">
+        {/* 商品槽位 - 人形对称布局，靠上放置 */}
+        <div className="absolute inset-x-0 top-4 bottom-0 flex flex-col items-center pt-2 px-4">
           {/* 第一行：帽子 */}
-          <div className="mb-2">
+          <div className="mb-3">
             {renderSlotCard(slots.find(s => s.id === '帽子')!, 'small')}
           </div>
           
           {/* 第二行：内衬 + 上衣 */}
-          <div className="flex gap-4 mb-2">
+          <div className="flex gap-3 mb-3">
             {renderSlotCard(slots.find(s => s.id === '内衬')!, 'medium')}
             {renderSlotCard(slots.find(s => s.id === '上衣')!, 'large')}
           </div>
           
           {/* 第三行：裤子 + 鞋子 */}
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             {renderSlotCard(slots.find(s => s.id === '裤子')!, 'medium')}
             {renderSlotCard(slots.find(s => s.id === '鞋子')!, 'small')}
           </div>
