@@ -306,6 +306,7 @@ export const en: Translations = {
     bgColor: "Background",
     syncing: "Syncing...",
     generating: "Generating...",
+    prompt: "Prompt",
   },
   
   // Brand Assets Page

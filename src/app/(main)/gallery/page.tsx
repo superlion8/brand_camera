@@ -1007,7 +1007,7 @@ export default function GalleryPage() {
                     
                     {(selectedItem.gen.prompts?.[selectedItem.index] || selectedItem.gen.prompt) && (
                       <div className="mb-4">
-                        <p className="text-xs font-medium text-zinc-500 mb-2">Prompt</p>
+                        <p className="text-xs font-medium text-zinc-500 mb-2">{t.gallery.prompt}</p>
                         <div className="bg-zinc-50 rounded-lg p-3 max-h-32 overflow-y-auto">
                           <pre className="text-[11px] text-zinc-600 whitespace-pre-wrap font-mono leading-relaxed">
                             {selectedItem.gen.prompts?.[selectedItem.index] || selectedItem.gen.prompt}

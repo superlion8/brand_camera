@@ -304,6 +304,7 @@ export const zh = {
     bgColor: "背景色",
     syncing: "同步中...",
     generating: "生成中...",
+    prompt: "提示词",
   },
   
   // Brand Assets Page
