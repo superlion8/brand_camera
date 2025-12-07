@@ -5,7 +5,7 @@ import { motion, AnimatePresence, Reorder } from "framer-motion"
 import { 
   ArrowLeft, ArrowRight, Plus, X, Upload, Camera, 
   Shirt, HardHat, Footprints, Loader2, AlertCircle, Wand2, SlidersHorizontal,
-  Check, ZoomIn
+  Check, ZoomIn, FolderHeart
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
@@ -235,10 +235,13 @@ export default function ProStudioOutfitPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analyzeError, setAnalyzeError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null) // 拍摄用
   const modelUploadRef = useRef<HTMLInputElement>(null)
   const bgUploadRef = useRef<HTMLInputElement>(null)
   const [uploadTargetSlot, setUploadTargetSlot] = useState<ProductCategory | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
+  const [showSlotOptions, setShowSlotOptions] = useState(false) // 空白框点击选项面板
+  const [touchDragSlotId, setTouchDragSlotId] = useState<ProductCategory | null>(null) // 触摸拖拽
   
   // 模特和背景选择
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null)
@@ -300,38 +303,28 @@ export default function ProStudioOutfitPage() {
     e.target.value = ''
   }
   
-  // 从 sessionStorage 读取商品分析结果
+  // 从 sessionStorage 读取商品图片（直接放到上衣和裤子槽位）
   useEffect(() => {
-    // 读取第一张商品分析结果
-    const product1AnalysisStr = sessionStorage.getItem('product1Analysis')
-    if (product1AnalysisStr) {
-      try {
-        const analysis = JSON.parse(product1AnalysisStr)
-        setSlots(prev => prev.map(slot => 
-          slot.id === analysis.type
-            ? { ...slot, product: { imageUrl: analysis.imageUrl } }
-            : slot
-        ))
-        sessionStorage.removeItem('product1Analysis')
-      } catch (e) {
-        console.error('Failed to parse product1Analysis:', e)
-      }
+    // 读取第一张商品图片 -> 放到上衣槽位
+    const product1Image = sessionStorage.getItem('product1Image')
+    if (product1Image) {
+      setSlots(prev => prev.map(slot => 
+        slot.id === '上衣'
+          ? { ...slot, product: { imageUrl: product1Image } }
+          : slot
+      ))
+      sessionStorage.removeItem('product1Image')
     }
     
-    // 读取第二张商品分析结果
-    const product2AnalysisStr = sessionStorage.getItem('product2Analysis')
-    if (product2AnalysisStr) {
-      try {
-        const analysis = JSON.parse(product2AnalysisStr)
-        setSlots(prev => prev.map(slot => 
-          slot.id === analysis.type
-            ? { ...slot, product: { imageUrl: analysis.imageUrl } }
-            : slot
-        ))
-        sessionStorage.removeItem('product2Analysis')
-      } catch (e) {
-        console.error('Failed to parse product2Analysis:', e)
-      }
+    // 读取第二张商品图片 -> 放到裤子槽位
+    const product2Image = sessionStorage.getItem('product2Image')
+    if (product2Image) {
+      setSlots(prev => prev.map(slot => 
+        slot.id === '裤子'
+          ? { ...slot, product: { imageUrl: product2Image } }
+          : slot
+      ))
+      sessionStorage.removeItem('product2Image')
     }
   }, [])
   
@@ -352,32 +345,22 @@ export default function ProStudioOutfitPage() {
     }
   }
   
-  // 处理文件上传
+  // 处理文件上传（直接放到目标槽位，不分析）
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !uploadTargetSlot) return
     
-    setIsAnalyzing(true)
-    setAnalyzeError(null)
-    
     try {
       const base64 = await fileToBase64(file)
-      
-      // 分析商品类型
-      await analyzeProduct(base64, (type) => {
-        // 如果分析出的类型和目标槽位不同，放到分析出的类型对应的槽位
-        setSlots(prev => prev.map(slot => 
-          slot.id === type
-            ? { ...slot, product: { imageUrl: base64 } }
-            : slot
-        ))
-      })
-      
+      // 直接放到目标槽位
+      setSlots(prev => prev.map(slot => 
+        slot.id === uploadTargetSlot
+          ? { ...slot, product: { imageUrl: base64 } }
+          : slot
+      ))
     } catch (error: any) {
       console.error('Upload failed:', error)
-      setAnalyzeError(error.message || '上传失败')
     } finally {
-      setIsAnalyzing(false)
       setUploadTargetSlot(null)
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
@@ -385,10 +368,45 @@ export default function ProStudioOutfitPage() {
     }
   }
   
-  // 点击空槽位触发上传
+  // 点击空槽位显示选项面板
   const handleSlotClick = (slotId: ProductCategory) => {
     setUploadTargetSlot(slotId)
+    setShowSlotOptions(true)
+  }
+  
+  // 选择拍摄
+  const handleCaptureOption = () => {
+    setShowSlotOptions(false)
+    cameraInputRef.current?.click()
+  }
+  
+  // 选择从资产库上传
+  const handleAssetOption = () => {
+    setShowSlotOptions(false)
     fileInputRef.current?.click()
+  }
+  
+  // 处理拍摄上传
+  const handleCameraCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !uploadTargetSlot) return
+    
+    try {
+      const base64 = await fileToBase64(file)
+      // 直接放到目标槽位
+      setSlots(prev => prev.map(slot => 
+        slot.id === uploadTargetSlot
+          ? { ...slot, product: { imageUrl: base64 } }
+          : slot
+      ))
+    } catch (error) {
+      console.error('Capture failed:', error)
+    } finally {
+      setUploadTargetSlot(null)
+      if (cameraInputRef.current) {
+        cameraInputRef.current.value = ''
+      }
+    }
   }
   
   // 清除槽位
@@ -453,22 +471,50 @@ export default function ProStudioOutfitPage() {
       large: "w-[150px] h-[190px]"    // 上衣 - 最大
     }
     
-    const isDragging = draggedSlotId === slot.id
+    const isDragging = draggedSlotId === slot.id || touchDragSlotId === slot.id
+    
+    // 触摸拖拽事件
+    const handleTouchStart = (e: React.TouchEvent) => {
+      if (!slot.product) return
+      setTouchDragSlotId(slot.id)
+    }
+    
+    const handleTouchEnd = (e: React.TouchEvent) => {
+      if (!touchDragSlotId) return
+      
+      // 获取触摸结束位置
+      const touch = e.changedTouches[0]
+      const element = document.elementFromPoint(touch.clientX, touch.clientY)
+      
+      // 查找目标槽位
+      const targetSlotElement = element?.closest('[data-slot-id]')
+      if (targetSlotElement) {
+        const targetSlotId = targetSlotElement.getAttribute('data-slot-id') as ProductCategory
+        if (targetSlotId && targetSlotId !== touchDragSlotId) {
+          handleDrop(targetSlotId)
+        }
+      }
+      
+      setTouchDragSlotId(null)
+    }
     
     return (
       <motion.div
         layout
+        data-slot-id={slot.id}
         draggable={!!slot.product}
         onDragStart={() => handleDragStart(slot.id)}
         onDragEnd={handleDragEnd}
         onDragOver={(e) => e.preventDefault()}
         onDrop={() => handleDrop(slot.id)}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
         onClick={() => !slot.product && handleSlotClick(slot.id)}
         className={`
           ${sizeClasses[size]} rounded-xl relative cursor-pointer
           bg-white shadow-md
-          ${isDragging ? 'opacity-50 scale-95' : ''}
-          transition-all duration-200
+          ${isDragging ? 'opacity-50 scale-95 ring-2 ring-blue-500' : ''}
+          transition-all duration-200 touch-none
         `}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
@@ -483,15 +529,15 @@ export default function ProStudioOutfitPage() {
             />
             <button
               onClick={(e) => handleClearSlot(slot.id, e)}
-              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center shadow z-10"
+              className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 flex items-center justify-center shadow-lg z-10"
             >
-              <X className="w-2.5 h-2.5 text-white" />
+              <X className="w-3 h-3 text-white" />
             </button>
           </>
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
-            <Plus className="w-4 h-4 text-zinc-400" />
-            <span className="text-zinc-500 text-[9px] font-medium">{labelMap[slot.id]}</span>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+            <Plus className="w-5 h-5 text-zinc-400" />
+            <span className="text-zinc-500 text-[10px] font-medium">{labelMap[slot.id]}</span>
           </div>
         )}
       </motion.div>
@@ -707,8 +753,58 @@ export default function ProStudioOutfitPage() {
             {renderSlotCard(slots.find(s => s.id === '裤子')!, 'medium')}
             {renderSlotCard(slots.find(s => s.id === '鞋子')!, 'small')}
           </div>
+          
+          {/* 提示文字 */}
+          <p className="text-zinc-500 text-xs mt-4 text-center">
+            💡 长按拖动可移动服饰位置
+          </p>
         </div>
       </div>
+      
+      {/* 空白框点击选项面板 */}
+      <AnimatePresence>
+        {showSlotOptions && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
+              onClick={() => setShowSlotOptions(false)}
+            />
+            <motion.div 
+              initial={{ y: "100%" }} 
+              animate={{ y: 0 }} 
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed bottom-0 left-0 right-0 bg-white dark:bg-zinc-900 rounded-t-2xl z-50 p-4 pb-safe"
+            >
+              <div className="flex justify-center mb-4">
+                <div className="w-10 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full" />
+              </div>
+              <h3 className="text-center font-semibold mb-4 text-zinc-900 dark:text-white">
+                添加 {uploadTargetSlot ? labelMap[uploadTargetSlot] : ''}
+              </h3>
+              <div className="flex gap-4 px-4">
+                <button
+                  onClick={handleCaptureOption}
+                  className="flex-1 flex flex-col items-center gap-2 py-4 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                >
+                  <Camera className="w-8 h-8 text-blue-500" />
+                  <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">拍摄</span>
+                </button>
+                <button
+                  onClick={handleAssetOption}
+                  className="flex-1 flex flex-col items-center gap-2 py-4 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                >
+                  <FolderHeart className="w-8 h-8 text-purple-500" />
+                  <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">从相册选择</span>
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
       
       {/* 选择状态显示 */}
       <div className="flex justify-center gap-2 py-3 flex-wrap">
@@ -882,6 +978,15 @@ export default function ProStudioOutfitPage() {
         className="hidden" 
         accept="image/*" 
         onChange={handleFileUpload}
+      />
+      {/* 拍摄上传 */}
+      <input 
+        type="file" 
+        ref={cameraInputRef} 
+        className="hidden" 
+        accept="image/*"
+        capture="environment"
+        onChange={handleCameraCapture}
       />
       <input 
         type="file" 

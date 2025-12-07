@@ -846,58 +846,25 @@ function ProStudioPageContent() {
                     <motion.button
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      onClick={async (e) => {
+                      onClick={(e) => {
                         if (capturedImage2) {
-                          // 有第二张商品，显示loading并分析两件商品
-                          setIsAnalyzingProducts(true)
-                          try {
-                            // 并行分析两件商品
-                            const [result1, result2] = await Promise.all([
-                              analyzeProductForOutfit(capturedImage!),
-                              analyzeProductForOutfit(capturedImage2)
-                            ])
-                            
-                            // 保存分析结果到 sessionStorage
-                            if (result1) {
-                              sessionStorage.setItem('product1Analysis', JSON.stringify({
-                                imageUrl: capturedImage,
-                                type: result1.type
-                              }))
-                            }
-                            if (result2) {
-                              sessionStorage.setItem('product2Analysis', JSON.stringify({
-                                imageUrl: capturedImage2,
-                                type: result2.type
-                              }))
-                            }
-                            
-                            // 跳转到搭配页面
-                            router.push('/pro-studio/outfit')
-                          } catch (error) {
-                            console.error('Failed to analyze products:', error)
-                            alert('商品识别失败，请重试')
-                          } finally {
-                            setIsAnalyzingProducts(false)
-                          }
+                          // 有第二张商品，直接保存图片到sessionStorage然后跳转（不调用VLM）
+                          sessionStorage.setItem('product1Image', capturedImage!)
+                          sessionStorage.setItem('product2Image', capturedImage2)
+                          // 清除旧的分析结果
+                          sessionStorage.removeItem('product1Analysis')
+                          sessionStorage.removeItem('product2Analysis')
+                          // 跳转到搭配页面
+                          router.push('/pro-studio/outfit')
                         } else {
                           triggerFlyToGallery(e)
                           handleShootIt()
                         }
                       }}
-                      disabled={isAnalyzingProducts}
-                      className="w-full max-w-xs h-14 rounded-full text-lg font-semibold gap-2 bg-white text-black hover:bg-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.3)] flex items-center justify-center transition-colors disabled:opacity-70"
+                      className="w-full max-w-xs h-14 rounded-full text-lg font-semibold gap-2 bg-white text-black hover:bg-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.3)] flex items-center justify-center transition-colors"
                     >
-                      {isAnalyzingProducts ? (
-                        <>
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          识别中...
-                        </>
-                      ) : (
-                        <>
-                          <Wand2 className="w-5 h-5" />
-                          {capturedImage2 ? '下一步' : 'Shoot It'}
-                        </>
-                      )}
+                      <Wand2 className="w-5 h-5" />
+                      {capturedImage2 ? '去搭配' : 'Shoot It'}
                     </motion.button>
                   </div>
                 </div>
