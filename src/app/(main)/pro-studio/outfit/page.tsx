@@ -584,9 +584,12 @@ function OutfitPageContent() {
       setDropTargetSlotId(null)
     }
     
+    // 是否有任何卡片正在被拖动
+    const isAnyDragging = !!touchDragSlotId || !!draggedSlotId
+    
     return (
       <motion.div
-        layout
+        layout={!isAnyDragging} // 拖动时禁用layout动画，防止其他卡片移动
         data-slot-id={slot.id}
         draggable={!!slot.product}
         onDragStart={() => handleDragStart(slot.id)}
@@ -601,6 +604,8 @@ function OutfitPageContent() {
         style={{ 
           WebkitUserSelect: 'none',
           WebkitTouchCallout: 'none',
+          // 拖动时禁止触摸操作
+          touchAction: isAnyDragging ? 'none' : 'manipulation',
         }}
         className={`
           ${sizeClasses[size]} rounded-xl relative cursor-pointer
@@ -611,7 +616,6 @@ function OutfitPageContent() {
               ? 'ring-4 ring-green-500 ring-opacity-80 shadow-lg bg-green-50' 
               : 'shadow-md'
           }
-          transition-shadow duration-200
         `}
         animate={
           isDragging 
@@ -623,13 +627,16 @@ function OutfitPageContent() {
             : isDropTarget
               ? { 
                   scale: 1.08,
-                  transition: { type: "spring", stiffness: 400, damping: 15 }
                 }
               : { scale: 1, rotate: 0, opacity: 1 }
         }
-        transition={isDragging ? { rotate: { repeat: Infinity, duration: 0.5 } } : { duration: 0.2 }}
-        whileHover={!isDragging && !isDropTarget ? { scale: 1.02 } : {}}
-        whileTap={!isDragging ? { scale: 0.98 } : {}}
+        transition={
+          isDragging 
+            ? { rotate: { repeat: Infinity, duration: 0.5 }, scale: { duration: 0.15 } } 
+            : { duration: 0.15, type: "tween" }
+        }
+        whileHover={!isDragging && !isDropTarget && !isAnyDragging ? { scale: 1.02 } : {}}
+        whileTap={!isDragging && !isAnyDragging ? { scale: 0.98 } : {}}
       >
         {slot.product ? (
           <>
@@ -937,10 +944,23 @@ function OutfitPageContent() {
         </div>
       </div>
       
-      {/* 全屏搭配区域 */}
-      <div className="flex-1 relative bg-[#e8eef3] overflow-hidden">
-        {/* 人体轮廓 SVG - 居中，作为背景参考 */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      {/* 全屏搭配区域 - 拖动时锁定 */}
+      <div 
+        className="flex-1 relative bg-[#e8eef3] overflow-hidden"
+        style={{ 
+          // 拖动时禁止触摸滚动
+          touchAction: touchDragSlotId ? 'none' : 'auto',
+        }}
+      >
+        {/* 人体轮廓 SVG - 居中，作为背景参考 - 拖动时固定 */}
+        <div 
+          className="absolute inset-0 flex items-center justify-center pointer-events-none"
+          style={{ 
+            // 确保SVG在拖动时不会移动
+            transform: 'translateZ(0)',
+            willChange: touchDragSlotId ? 'auto' : 'transform',
+          }}
+        >
           <svg
             viewBox="0 0 200 380"
             className="w-28 h-auto opacity-15"
@@ -960,7 +980,13 @@ function OutfitPageContent() {
         </div>
         
         {/* 商品槽位 - 人形对称布局，靠上放置 */}
-        <div className="absolute inset-x-0 top-4 bottom-0 flex flex-col items-center pt-2 px-4">
+        <div 
+          className="absolute inset-x-0 top-4 bottom-0 flex flex-col items-center pt-2 px-4"
+          style={{
+            // 固定布局，防止拖动时整体移动
+            transform: 'translateZ(0)',
+          }}
+        >
           {/* 第一行：帽子 */}
           <div className="mb-3">
             {renderSlotCard(slots.find(s => s.id === '帽子')!, 'small')}
