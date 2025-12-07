@@ -1193,41 +1193,43 @@ function ProStudioPageContent() {
                             </div>
                           )}
                           {PRESET_PRODUCTS.map(product => (
-                            <div key={product.id} className="relative group">
-                              <button
-                                disabled={isLoadingAssets}
-                                onClick={async () => {
-                                  setIsLoadingAssets(true)
-                                  try {
-                                    const base64 = await ensureBase64(product.imageUrl)
-                                    if (base64) {
-                                      setCapturedImage(base64)
-                                      setMode("review")
-                                      setShowProductPanel(false)
-                                    }
-                                  } catch (e) {
-                                    console.error("Failed to load preset product:", e)
-                                  } finally {
-                                    setIsLoadingAssets(false)
+                            <div 
+                              key={product.id} 
+                              className={`relative group cursor-pointer ${isLoadingAssets ? 'opacity-50 pointer-events-none' : ''}`}
+                              style={{ touchAction: 'manipulation' }}
+                              onClick={async () => {
+                                if (isLoadingAssets) return
+                                setIsLoadingAssets(true)
+                                try {
+                                  const base64 = await ensureBase64(product.imageUrl)
+                                  if (base64) {
+                                    setCapturedImage(base64)
+                                    setMode("review")
+                                    setShowProductPanel(false)
                                   }
-                                }}
-                                className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all disabled:opacity-50 w-full"
-                              >
-                                <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
-                                <span className="absolute top-1 left-1 bg-blue-600 text-white text-[8px] px-1 py-0.5 rounded font-medium">
+                                } catch (e) {
+                                  console.error("Failed to load preset product:", e)
+                                } finally {
+                                  setIsLoadingAssets(false)
+                                }
+                              }}
+                            >
+                              <div className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 active:border-blue-600 transition-all w-full">
+                                <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover pointer-events-none" />
+                                <span className="absolute top-1 left-1 bg-blue-600 text-white text-[8px] px-1 py-0.5 rounded font-medium pointer-events-none">
                                   官方
                                 </span>
-                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-4">
+                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-4 pointer-events-none">
                                   <p className="text-[10px] text-white truncate text-center">{product.name}</p>
                                 </div>
-                              </button>
+                              </div>
                               {/* 放大按钮 */}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   setZoomProductImage(product.imageUrl)
                                 }}
-                                className="absolute bottom-1 right-1 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="absolute bottom-1 right-1 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10"
                               >
                                 <ZoomIn className="w-3 h-3 text-white" />
                               </button>

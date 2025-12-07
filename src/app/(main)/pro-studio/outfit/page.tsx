@@ -1370,8 +1370,10 @@ function OutfitPageContent() {
                     return (
                       <div className="grid grid-cols-3 gap-3">
                         {displayProducts.map(product => (
-                          <button
+                          <div
                             key={product.id}
+                            className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 active:border-blue-600 transition-all group cursor-pointer"
+                            style={{ touchAction: 'manipulation' }}
                             onClick={() => {
                               if (uploadTargetSlot) {
                                 setSlots(prev => prev.map(slot => 
@@ -1383,16 +1385,15 @@ function OutfitPageContent() {
                               setShowAssetPicker(false)
                               setUploadTargetSlot(null)
                             }}
-                            className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all group"
                           >
-                            <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
+                            <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover pointer-events-none" />
                             {/* 商品名称悬浮显示 */}
                             {product.name && (
-                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                                 <p className="text-white text-xs truncate">{product.name}</p>
                               </div>
                             )}
-                          </button>
+                          </div>
                         ))}
                       </div>
                     )
