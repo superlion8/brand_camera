@@ -9,6 +9,26 @@ const VALID_CATEGORIES = ["内衬", "上衣", "裤子", "帽子", "鞋子"] as c
 // VLM 模型 - 使用 gemini-2.5-flash
 const VLM_MODEL = 'gemini-2.5-flash'
 
+// 将 URL 转换为 base64（服务端版本）
+async function urlToBase64(url: string): Promise<string> {
+  try {
+    const cleanUrl = url.trim()
+    console.log('[urlToBase64] Fetching:', cleanUrl.substring(0, 100) + '...')
+    const response = await fetch(cleanUrl)
+    if (!response.ok) {
+      console.error('[urlToBase64] HTTP Error:', response.status, response.statusText, 'URL:', cleanUrl)
+      throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`)
+    }
+    const arrayBuffer = await response.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+    console.log('[urlToBase64] Success, base64 length:', buffer.toString('base64').length)
+    return buffer.toString('base64')
+  } catch (error: any) {
+    console.error('[urlToBase64] Error:', error.message, 'URL:', url?.substring(0, 100))
+    throw error
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -21,9 +41,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 准备图片数据
-    const base64Data = image.replace(/^data:image\/\w+;base64,/, '')
-    const mimeType = image.startsWith('data:image/png') ? 'image/png' : 'image/jpeg'
+    // 准备图片数据 - 支持 URL 和 base64 格式
+    let base64Data: string
+    let mimeType: string = 'image/jpeg'
+    
+    if (image.startsWith('http://') || image.startsWith('https://')) {
+      // URL 格式：转换为 base64
+      console.log('[Analyze Product] Converting URL to base64:', image.substring(0, 80))
+      base64Data = await urlToBase64(image)
+      // 根据 URL 扩展名推断 MIME 类型
+      if (image.toLowerCase().includes('.png')) {
+        mimeType = 'image/png'
+      }
+    } else if (image.startsWith('data:')) {
+      // data URL 格式：提取 base64
+      base64Data = image.replace(/^data:image\/\w+;base64,/, '')
+      mimeType = image.startsWith('data:image/png') ? 'image/png' : 'image/jpeg'
+    } else {
+      // 纯 base64
+      base64Data = image
+    }
 
     const genAI = getGenAIClient()
 
