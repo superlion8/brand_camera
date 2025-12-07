@@ -249,6 +249,7 @@ function OutfitPageContent() {
   const [showAssetPicker, setShowAssetPicker] = useState(false) // 资产库选择面板
   const [touchDragSlotId, setTouchDragSlotId] = useState<ProductCategory | null>(null) // 触摸拖拽
   const touchDragSlotIdRef = useRef<ProductCategory | null>(null) // 用ref避免闭包问题
+  const [dropTargetSlotId, setDropTargetSlotId] = useState<ProductCategory | null>(null) // 当前悬停的目标槽位
   
   // 模特和背景选择
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null)
@@ -482,6 +483,7 @@ function OutfitPageContent() {
     }
     
     const isDragging = draggedSlotId === slot.id || touchDragSlotId === slot.id
+    const isDropTarget = dropTargetSlotId === slot.id && !isDragging
     
     // 长按计时器
     const longPressTimer = useRef<NodeJS.Timeout | null>(null)
@@ -508,9 +510,25 @@ function OutfitPageContent() {
         longPressTimer.current = null
       }
       
-      // 如果正在拖拽，阻止滚动
+      // 如果正在拖拽
       if (touchDragSlotIdRef.current) {
         e.preventDefault()
+        
+        // 检测当前触摸位置下的目标槽位
+        const touch = e.touches[0]
+        const element = document.elementFromPoint(touch.clientX, touch.clientY)
+        const targetSlotElement = element?.closest('[data-slot-id]')
+        
+        if (targetSlotElement) {
+          const targetId = targetSlotElement.getAttribute('data-slot-id') as ProductCategory
+          if (targetId && targetId !== touchDragSlotIdRef.current) {
+            setDropTargetSlotId(targetId)
+          } else {
+            setDropTargetSlotId(null)
+          }
+        } else {
+          setDropTargetSlotId(null)
+        }
       }
     }
     
@@ -553,6 +571,7 @@ function OutfitPageContent() {
       
       touchDragSlotIdRef.current = null
       setTouchDragSlotId(null)
+      setDropTargetSlotId(null)
     }
     
     const handleTouchCancel = () => {
@@ -562,6 +581,7 @@ function OutfitPageContent() {
       }
       touchDragSlotIdRef.current = null
       setTouchDragSlotId(null)
+      setDropTargetSlotId(null)
     }
     
     return (
@@ -584,12 +604,32 @@ function OutfitPageContent() {
         }}
         className={`
           ${sizeClasses[size]} rounded-xl relative cursor-pointer
-          bg-white shadow-md select-none
-          ${isDragging ? 'opacity-60 scale-105 ring-2 ring-blue-500 z-50' : ''}
-          transition-all duration-200
+          bg-white select-none
+          ${isDragging 
+            ? 'z-50 shadow-2xl ring-4 ring-blue-500 ring-opacity-80' 
+            : isDropTarget 
+              ? 'ring-4 ring-green-500 ring-opacity-80 shadow-lg bg-green-50' 
+              : 'shadow-md'
+          }
+          transition-shadow duration-200
         `}
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
+        animate={
+          isDragging 
+            ? { 
+                scale: 1.15, 
+                rotate: [0, -2, 2, -2, 0],
+                opacity: 0.9,
+              }
+            : isDropTarget
+              ? { 
+                  scale: 1.08,
+                  transition: { type: "spring", stiffness: 400, damping: 15 }
+                }
+              : { scale: 1, rotate: 0, opacity: 1 }
+        }
+        transition={isDragging ? { rotate: { repeat: Infinity, duration: 0.5 } } : { duration: 0.2 }}
+        whileHover={!isDragging && !isDropTarget ? { scale: 1.02 } : {}}
+        whileTap={!isDragging ? { scale: 0.98 } : {}}
       >
         {slot.product ? (
           <>
@@ -599,6 +639,16 @@ function OutfitPageContent() {
               fill
               className="object-cover rounded-xl"
             />
+            {/* 拖拽提示图标 - 只在非拖拽状态下显示 */}
+            {!isDragging && (
+              <div className="absolute bottom-1 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-black/40 backdrop-blur-sm rounded-full flex items-center gap-1">
+                <svg className="w-3 h-3 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+                </svg>
+                <span className="text-[8px] text-white/80">{isDragging ? 'DROP' : 'DRAG'}</span>
+              </div>
+            )}
+            {/* 删除按钮 */}
             <button
               onClick={(e) => handleClearSlot(slot.id, e)}
               className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 flex items-center justify-center shadow-lg z-10"
@@ -608,9 +658,28 @@ function OutfitPageContent() {
           </>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-            <Plus className="w-5 h-5 text-zinc-400" />
-            <span className="text-zinc-500 text-[10px] font-medium">{labelMap[slot.id]}</span>
+            <Plus className={`w-5 h-5 ${isDropTarget ? 'text-green-500' : 'text-zinc-400'}`} />
+            <span className={`text-[10px] font-medium ${isDropTarget ? 'text-green-600' : 'text-zinc-500'}`}>
+              {isDropTarget ? 'DROP' : labelMap[slot.id]}
+            </span>
           </div>
+        )}
+        
+        {/* Drop 目标覆盖层 */}
+        {isDropTarget && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0 rounded-xl bg-green-500/10 border-2 border-dashed border-green-500 flex items-center justify-center"
+          >
+            <motion.div
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ repeat: Infinity, duration: 0.8 }}
+              className="text-green-600 text-xs font-bold"
+            >
+              ↓ DROP HERE ↓
+            </motion.div>
+          </motion.div>
         )}
       </motion.div>
     )
