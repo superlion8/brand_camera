@@ -1604,28 +1604,30 @@ function CameraPageContent() {
                         return filteredProducts.length > 0 ? (
                           <div className="grid grid-cols-3 gap-3 pb-20">
                             {filteredProducts.map(product => (
-                              <div key={product.id} className="relative group">
-                                <button
-                                  onClick={() => {
-                                    setCapturedImage(product.imageUrl)
-                                    setProductFromPhone(false)
-                                    setMode("review")
-                                    setShowProductPanel(false)
-                                  }}
-                                  className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all w-full"
-                                >
-                                  <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
-                                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-4">
+                              <div 
+                                key={product.id} 
+                                className="relative group cursor-pointer"
+                                style={{ touchAction: 'manipulation' }}
+                                onClick={() => {
+                                  setCapturedImage(product.imageUrl)
+                                  setProductFromPhone(false)
+                                  setMode("review")
+                                  setShowProductPanel(false)
+                                }}
+                              >
+                                <div className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 active:border-blue-600 transition-all w-full">
+                                  <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover pointer-events-none" />
+                                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-4 pointer-events-none">
                                     <p className="text-[10px] text-white truncate text-center">{product.name}</p>
                                   </div>
-                                </button>
+                                </div>
                                 {/* 放大按钮 */}
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     setZoomProductImage(product.imageUrl)
                                   }}
-                                  className="absolute bottom-1 right-1 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                  className="absolute bottom-1 right-1 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10"
                                 >
                                   <ZoomIn className="w-3 h-3 text-white" />
                                 </button>
@@ -1836,27 +1838,29 @@ function CameraPageContent() {
                         return filteredProducts.length > 0 ? (
                           <div className="grid grid-cols-3 gap-3 pb-20">
                             {filteredProducts.map(product => (
-                              <div key={product.id} className="relative group">
-                                <button
-                                  onClick={() => {
-                                    setCapturedImage2(product.imageUrl)
-                                    setProduct2FromPhone(false)
-                                    setShowProduct2Panel(false)
-                                  }}
-                                  className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all w-full"
-                                >
-                                  <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
-                                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-4">
+                              <div 
+                                key={product.id} 
+                                className="relative group cursor-pointer"
+                                style={{ touchAction: 'manipulation' }}
+                                onClick={() => {
+                                  setCapturedImage2(product.imageUrl)
+                                  setProduct2FromPhone(false)
+                                  setShowProduct2Panel(false)
+                                }}
+                              >
+                                <div className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 active:border-blue-600 transition-all w-full">
+                                  <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover pointer-events-none" />
+                                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-4 pointer-events-none">
                                     <p className="text-[10px] text-white truncate text-center">{product.name}</p>
                                   </div>
-                                </button>
+                                </div>
                                 {/* 放大按钮 */}
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     setZoomProductImage(product.imageUrl)
                                   }}
-                                  className="absolute bottom-1 right-1 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                  className="absolute bottom-1 right-1 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10"
                                 >
                                   <ZoomIn className="w-3 h-3 text-white" />
                                 </button>
