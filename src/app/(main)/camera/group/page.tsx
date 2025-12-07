@@ -65,28 +65,19 @@ export default function GroupShootPage() {
 
   // 从成片选择 - 根据类型自动设置模式
   const handleSelectFromGallery = async (imageUrl: string, genType?: string) => {
-    setIsLoadingAssets(true)
     setShowGalleryPicker(false)
-    try {
-      const base64 = await ensureBase64(imageUrl)
-      if (base64) {
-        setSelectedImage(base64)
-        
-        // 智能模式选择：根据来源图片的类型
-        if (genType) {
-          if (genType === 'pro_studio') {
-            // 专业棚拍 → 棚拍模式
-            setStyleMode('studio')
-          } else if (genType === 'camera' || genType === 'camera_model') {
-            // 买家秀 → 生活模式
-            setStyleMode('lifestyle')
-          }
-        }
+    // 直接使用 URL，后端会转换为 base64
+    setSelectedImage(imageUrl)
+    
+    // 智能模式选择：根据来源图片的类型
+    if (genType) {
+      if (genType === 'pro_studio') {
+        // 专业棚拍 → 棚拍模式
+        setStyleMode('studio')
+      } else if (genType === 'camera' || genType === 'camera_model') {
+        // 买家秀 → 生活模式
+        setStyleMode('lifestyle')
       }
-    } catch (e) {
-      console.error("Failed to load image:", e)
-    } finally {
-      setIsLoadingAssets(false)
     }
   }
 

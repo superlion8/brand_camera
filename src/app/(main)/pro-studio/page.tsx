@@ -529,43 +529,30 @@ function ProStudioPageContent() {
     const compressedProduct = capturedImage
 
     // ========== 预先确定每个模式使用的模特和背景 ==========
-    // 如果用户选择了，使用用户选择的；否则随机选择一个，同模式的2张图共用
+    // 直接使用 URL，后端会转换为 base64（减少前端请求体大小）
     
-    // 用户选择的模特（如果有）
-    const userSelectedModelBase64 = selectedModel 
-      ? await ensureBase64(selectedModel.imageUrl) 
-      : null
+    // 用户选择的模特 URL（如果有）
+    const userSelectedModelUrl = selectedModel?.imageUrl || null
     
-    // 用户选择的背景（如果有）
-    const userSelectedBgBase64 = selectedBg 
-      ? await ensureBase64(selectedBg.imageUrl) 
-      : null
+    // 用户选择的背景 URL（如果有）
+    const userSelectedBgUrl = selectedBg?.imageUrl || null
 
-    // 辅助函数：带重试的随机模特加载（每次重试换一个不同的模特）
-    const loadRandomModelWithRetry = async (maxRetries = 3): Promise<string | null> => {
-      for (let i = 0; i < maxRetries; i++) {
-        const randomModel = getRandomStudioModel()
-        if (!randomModel) {
-          console.error(`[ProStudio] No studio models available`)
-          return null
-        }
-        console.log(`[ProStudio] Trying random model ${i + 1}/${maxRetries}:`, randomModel.imageUrl)
-        const base64 = await ensureBase64(randomModel.imageUrl)
-        if (base64) {
-          console.log(`[ProStudio] Successfully loaded random model on attempt ${i + 1}`)
-          return base64
-        }
-        console.warn(`[ProStudio] Failed to load random model on attempt ${i + 1}, trying another...`)
+    // 获取随机模特 URL
+    const getRandomModelUrl = (): string | null => {
+      const randomModel = getRandomStudioModel()
+      if (!randomModel) {
+        console.error(`[ProStudio] No studio models available`)
+        return null
       }
-      console.error(`[ProStudio] All ${maxRetries} attempts to load random model failed`)
-      return null
+      console.log(`[ProStudio] Random model:`, randomModel.name)
+      return randomModel.imageUrl
     }
 
-    // 简单模式：随机选择一个模特（3张图共用）
-    const simpleModelBase64 = userSelectedModelBase64 || (!selectedModel ? await loadRandomModelWithRetry() : null)
+    // 简单模式：随机选择一个模特 URL（3张图共用）
+    const simpleModelUrl = userSelectedModelUrl || (!selectedModel ? getRandomModelUrl() : null)
 
-    // 扩展模式：随机选择一个模特（3张图共用）
-    const extendedModelBase64 = userSelectedModelBase64 || (!selectedModel ? await loadRandomModelWithRetry() : null)
+    // 扩展模式：随机选择一个模特 URL（3张图共用）
+    const extendedModelUrl = userSelectedModelUrl || (!selectedModel ? getRandomModelUrl() : null)
 
     // 是否用户选择的标志
     const modelIsRandom = !selectedModel
@@ -585,13 +572,14 @@ function ProStudioPageContent() {
 
     // 生成任务配置：简单模式3张 + 扩展模式3张
     // 背景：如果用户选择了就用，没选择就不传（AI生成背景）
+    // 直接使用 URL，后端会转换为 base64
     const taskConfigs = [
-      { mode: 'simple', index: 0, model: simpleModelBase64, bg: userSelectedBgBase64 },
-      { mode: 'simple', index: 1, model: simpleModelBase64, bg: userSelectedBgBase64 },
-      { mode: 'simple', index: 2, model: simpleModelBase64, bg: userSelectedBgBase64 },
-      { mode: 'extended', index: 3, model: extendedModelBase64, bg: userSelectedBgBase64 },
-      { mode: 'extended', index: 4, model: extendedModelBase64, bg: userSelectedBgBase64 },
-      { mode: 'extended', index: 5, model: extendedModelBase64, bg: userSelectedBgBase64 },
+      { mode: 'simple', index: 0, model: simpleModelUrl, bg: userSelectedBgUrl },
+      { mode: 'simple', index: 1, model: simpleModelUrl, bg: userSelectedBgUrl },
+      { mode: 'simple', index: 2, model: simpleModelUrl, bg: userSelectedBgUrl },
+      { mode: 'extended', index: 3, model: extendedModelUrl, bg: userSelectedBgUrl },
+      { mode: 'extended', index: 4, model: extendedModelUrl, bg: userSelectedBgUrl },
+      { mode: 'extended', index: 5, model: extendedModelUrl, bg: userSelectedBgUrl },
     ]
 
     const results: string[] = []
@@ -1217,21 +1205,11 @@ function ProStudioPageContent() {
                               key={product.id} 
                               className={`relative group cursor-pointer ${isLoadingAssets ? 'opacity-50 pointer-events-none' : ''}`}
                               style={{ touchAction: 'manipulation' }}
-                              onClick={async () => {
-                                if (isLoadingAssets) return
-                                setIsLoadingAssets(true)
-                                try {
-                                  const base64 = await ensureBase64(product.imageUrl)
-                                  if (base64) {
-                                    setCapturedImage(base64)
-                                    setMode("review")
-                                    setShowProductPanel(false)
-                                  }
-                                } catch (e) {
-                                  console.error("Failed to load preset product:", e)
-                                } finally {
-                                  setIsLoadingAssets(false)
-                                }
+                              onClick={() => {
+                                // 直接使用 URL，后端会转换为 base64
+                                setCapturedImage(product.imageUrl)
+                                setMode("review")
+                                setShowProductPanel(false)
                               }}
                             >
                               <div className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 active:border-blue-600 transition-all w-full">
@@ -1419,20 +1397,10 @@ function ProStudioPageContent() {
                           {PRESET_PRODUCTS.map(product => (
                             <button
                               key={product.id}
-                              disabled={isLoadingAssets}
-                              onClick={async () => {
-                                setIsLoadingAssets(true)
-                                try {
-                                  const base64 = await ensureBase64(product.imageUrl)
-                                  if (base64) {
-                                    setCapturedImage2(base64)
-                                    setShowProduct2Panel(false)
-                                  }
-                                } catch (e) {
-                                  console.error("Failed to load preset product:", e)
-                                } finally {
-                                  setIsLoadingAssets(false)
-                                }
+                              onClick={() => {
+                                // 直接使用 URL，后端会转换为 base64
+                                setCapturedImage2(product.imageUrl)
+                                setShowProduct2Panel(false)
                               }}
                               className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all disabled:opacity-50"
                             >
@@ -1462,20 +1430,10 @@ function ProStudioPageContent() {
                           {PRESET_PRODUCTS.map(product => (
                             <button
                               key={product.id}
-                              disabled={isLoadingAssets}
-                              onClick={async () => {
-                                setIsLoadingAssets(true)
-                                try {
-                                  const base64 = await ensureBase64(product.imageUrl)
-                                  if (base64) {
-                                    setCapturedImage2(base64)
-                                    setShowProduct2Panel(false)
-                                  }
-                                } catch (e) {
-                                  console.error("Failed to load preset product:", e)
-                                } finally {
-                                  setIsLoadingAssets(false)
-                                }
+                              onClick={() => {
+                                // 直接使用 URL，后端会转换为 base64
+                                setCapturedImage2(product.imageUrl)
+                                setShowProduct2Panel(false)
                               }}
                               className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all disabled:opacity-50"
                             >

@@ -904,15 +904,9 @@ function OutfitPageContent() {
         
         if (isCameraMode) {
           // 买家秀模式：使用 /api/generate-single，productImage/productImage2 格式
-          // 将商品 URL 转换为 base64
-          const productBase64Array: string[] = []
-          for (const productUrl of products) {
-            const base64 = await ensureBase64(productUrl)
-            if (base64) productBase64Array.push(base64)
-          }
-          
-          const productImage = productBase64Array[0] || null
-          const productImage2 = productBase64Array[1] || null
+          // 直接发送 URL/base64，后端会处理转换
+          const productImage = products[0] || null
+          const productImage2 = products[1] || null
           
           // 简单模式：3张图
           // Helper function to create a single camera request with response handling

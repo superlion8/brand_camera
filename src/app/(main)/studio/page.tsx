@@ -219,19 +219,10 @@ export default function StudioPage() {
   }, [])
   
   const handleSelectFromAsset = useCallback(async (imageUrl: string) => {
-    setIsLoadingAsset(true)
-    try {
-      const base64 = await ensureBase64(imageUrl)
-      if (base64) {
-        setProductImage(base64)
-        setShowProductPanel(false)
-        setMode('main')
-      }
-    } catch (e) {
-      console.error('Failed to load asset:', e)
-    } finally {
-      setIsLoadingAsset(false)
-    }
+    // 直接使用 URL，后端会转换为 base64
+    setProductImage(imageUrl)
+    setShowProductPanel(false)
+    setMode('main')
   }, [])
   
   // Camera handlers
@@ -1381,15 +1372,10 @@ export default function StudioPage() {
                           disabled={isLoadingAsset}
                           onClick={async () => {
                             setIsLoadingAsset(true)
-                            try {
-                              const base64 = await ensureBase64(url)
-                              setProductImage(base64)
-                              setShowGalleryPanel(false)
-                            } catch (error) {
-                              console.error('Failed to load image:', error)
-                            } finally {
-                              setIsLoadingAsset(false)
-                            }
+                            // 直接使用 URL，后端会转换为 base64
+                            setProductImage(url)
+                            setShowGalleryPanel(false)
+                            setIsLoadingAsset(false)
                           }}
                           className="aspect-[4/5] rounded-lg overflow-hidden relative border-2 border-transparent hover:border-amber-500 transition-all bg-white disabled:opacity-50"
                         >

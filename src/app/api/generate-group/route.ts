@@ -2,8 +2,34 @@ import { NextRequest } from 'next/server'
 import { getGenAIClient, extractImage, extractText, safetySettings } from '@/lib/genai'
 import { createClient } from '@/lib/supabase/server'
 import { appendImageToGeneration, uploadImageToStorage } from '@/lib/supabase/generationService'
+import { stripBase64Prefix } from '@/lib/utils'
 
 export const maxDuration = 300 // 5 minutes
+
+// 将 URL 转换为 base64（服务端版本）
+async function urlToBase64(url: string): Promise<string> {
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image: ${response.statusText}`)
+    }
+    const arrayBuffer = await response.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+    return buffer.toString('base64')
+  } catch (error: any) {
+    console.error('[urlToBase64] Error:', error.message)
+    throw error
+  }
+}
+
+// 确保图片数据是 base64 格式（支持 URL 和 base64 输入）
+async function ensureBase64Data(image: string | null | undefined): Promise<string | null> {
+  if (!image) return null
+  if (image.startsWith('http://') || image.startsWith('https://')) {
+    return await urlToBase64(image)
+  }
+  return stripBase64Prefix(image)
+}
 
 // VLM model for generating pose instructions
 const VLM_MODEL = 'gemini-3-pro-preview'
@@ -368,10 +394,8 @@ export async function POST(request: NextRequest) {
 
         console.log(`[GroupShoot] Starting ${isLifestyle ? 'lifestyle' : 'studio'} mode, shoot mode: ${mode}`)
 
-        // Prepare image data
-        const imageData = startImage?.startsWith('data:') 
-          ? startImage.split(',')[1] 
-          : startImage
+        // Prepare image data - 支持 URL 和 base64 格式
+        const imageData = await ensureBase64Data(startImage)
 
         if (mode === 'random') {
           // ========== 随意拍模式 ==========

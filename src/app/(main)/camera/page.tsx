@@ -472,10 +472,9 @@ function CameraPageContent() {
       const compressedProduct = inputImage
       const compressedProduct2 = inputImage2 || null
       
-      // If user selected model/background, convert to base64 once
-      // Otherwise, will pick random for each image
-      const userModelBase64 = model ? await ensureBase64(model.imageUrl) : null
-      const userBgBase64 = background ? await ensureBase64(background.imageUrl) : null
+      // 直接使用 URL，后端会转换为 base64（减少前端请求体大小）
+      const userModelUrl = model?.imageUrl || null
+      const userBgUrl = background?.imageUrl || null
       
       // For saving purposes, if user didn't select model/background, 
       // pick a random one as "representative" for the generation record
@@ -532,8 +531,9 @@ function CameraPageContent() {
       // Each request gets its own model/background (random if not user-selected)
       const createModelRequest = async (index: number, delayMs: number, simpleMode: boolean): Promise<ImageResult> => {
         // For each image, use user's selection or pick random
-        let modelForThisImage = userModelBase64
-        let bgForThisImage = userBgBase64
+        // 直接使用 URL，后端会转换为 base64
+        let modelForThisImage = userModelUrl
+        let bgForThisImage = userBgUrl
         let modelNameForThis = model?.name || ''
         let bgNameForThis = background?.name || ''
         let modelUrlForThis = model?.imageUrl || ''
@@ -541,58 +541,34 @@ function CameraPageContent() {
         let modelIsRandom = false
         let bgIsRandom = false
         
-        // If user didn't select model, pick a random one for this image (with retry)
+        // If user didn't select model, pick a random one for this image
         if (!modelForThisImage) {
-          const MAX_RETRIES = 3
-          for (let retry = 0; retry < MAX_RETRIES; retry++) {
-            const randomModel = getRandomModel()
-            if (!randomModel) {
-              console.error(`Image ${index + 1}: No models available`)
-              break
-            }
-            const modelBase64 = await ensureBase64(randomModel.imageUrl)
-            if (modelBase64) {
-              modelForThisImage = modelBase64
-              modelNameForThis = randomModel.name || t.common.model
-              modelUrlForThis = randomModel.imageUrl || ''
-              modelIsRandom = true
-              console.log(`Image ${index + 1}: Random model = ${randomModel.name}${retry > 0 ? ` (retry ${retry})` : ''}`)
-              break
-            }
-            console.warn(`Image ${index + 1}: Failed to load model ${randomModel.name}, trying another...`)
+          const randomModel = getRandomModel()
+          if (!randomModel) {
+            console.error(`Image ${index + 1}: No models available`)
+            updateImageSlot(taskId, index, { status: 'failed', error: '没有可用的模特' })
+            return { index, success: false, error: '没有可用的模特' }
           }
-          if (!modelForThisImage) {
-            console.error(`Image ${index + 1}: Failed to load model after ${MAX_RETRIES} retries`)
-            updateImageSlot(taskId, index, { status: 'failed', error: '模特图片加载失败' })
-            return { index, success: false, error: '模特图片加载失败' }
-          }
+          modelForThisImage = randomModel.imageUrl
+          modelNameForThis = randomModel.name || t.common.model
+          modelUrlForThis = randomModel.imageUrl || ''
+          modelIsRandom = true
+          console.log(`Image ${index + 1}: Random model = ${randomModel.name}`)
         }
         
-        // If user didn't select background, pick a random one for this image (with retry)
+        // If user didn't select background, pick a random one for this image
         if (!bgForThisImage) {
-          const MAX_RETRIES = 3
-          for (let retry = 0; retry < MAX_RETRIES; retry++) {
-            const randomBg = getRandomBackground()
-            if (!randomBg) {
-              console.error(`Image ${index + 1}: No backgrounds available`)
-              break
-            }
-            const bgBase64 = await ensureBase64(randomBg.imageUrl)
-            if (bgBase64) {
-              bgForThisImage = bgBase64
-              bgNameForThis = randomBg.name || t.common.background
-              bgUrlForThis = randomBg.imageUrl || ''
-              bgIsRandom = true
-              console.log(`Image ${index + 1}: Random background = ${randomBg.name}${retry > 0 ? ` (retry ${retry})` : ''}`)
-              break
-            }
-            console.warn(`Image ${index + 1}: Failed to load background ${randomBg.name}, trying another...`)
+          const randomBg = getRandomBackground()
+          if (!randomBg) {
+            console.error(`Image ${index + 1}: No backgrounds available`)
+            updateImageSlot(taskId, index, { status: 'failed', error: '没有可用的背景' })
+            return { index, success: false, error: '没有可用的背景' }
           }
-          if (!bgForThisImage) {
-            console.error(`Image ${index + 1}: Failed to load background after ${MAX_RETRIES} retries`)
-            updateImageSlot(taskId, index, { status: 'failed', error: '背景图片加载失败' })
-            return { index, success: false, error: '背景图片加载失败' }
-          }
+          bgForThisImage = randomBg.imageUrl
+          bgNameForThis = randomBg.name || t.common.background
+          bgUrlForThis = randomBg.imageUrl || ''
+          bgIsRandom = true
+          console.log(`Image ${index + 1}: Random background = ${randomBg.name}`)
         }
         
         // Save per-image model/background info with isRandom and isPreset flags
@@ -1583,21 +1559,12 @@ function CameraPageContent() {
                             <div key={product.id} className="relative group">
                               <button
                                 disabled={isLoadingAssets}
-                                onClick={async () => {
-                                  setIsLoadingAssets(true)
-                                  try {
-                                    const base64 = await ensureBase64(product.imageUrl)
-                                    if (base64) {
-                                      setCapturedImage(base64)
-                                      setProductFromPhone(false)
-                                      setMode("review")
-                                      setShowProductPanel(false)
-                                    }
-                                  } catch (e) {
-                                    console.error("Failed to load preset product:", e)
-                                  } finally {
-                                    setIsLoadingAssets(false)
-                                  }
+                                onClick={() => {
+                                  // 直接使用 URL，后端会转换为 base64
+                                  setCapturedImage(product.imageUrl)
+                                  setProductFromPhone(false)
+                                  setMode("review")
+                                  setShowProductPanel(false)
                                 }}
                                 className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all disabled:opacity-50 w-full"
                               >
@@ -1818,20 +1785,11 @@ function CameraPageContent() {
                             <div key={product.id} className="relative group">
                               <button
                                 disabled={isLoadingAssets}
-                                onClick={async () => {
-                                  setIsLoadingAssets(true)
-                                  try {
-                                    const base64 = await ensureBase64(product.imageUrl)
-                                    if (base64) {
-                                      setCapturedImage2(base64)
-                                      setProduct2FromPhone(false)
-                                      setShowProduct2Panel(false)
-                                    }
-                                  } catch (e) {
-                                    console.error("Failed to load preset product:", e)
-                                  } finally {
-                                    setIsLoadingAssets(false)
-                                  }
+                                onClick={() => {
+                                  // 直接使用 URL，后端会转换为 base64
+                                  setCapturedImage2(product.imageUrl)
+                                  setProduct2FromPhone(false)
+                                  setShowProduct2Panel(false)
                                 }}
                                 className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all disabled:opacity-50 w-full"
                               >

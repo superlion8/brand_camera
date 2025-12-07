@@ -6,6 +6,31 @@ import { uploadImageToStorage, appendImageToGeneration, markImageFailed } from '
 
 export const maxDuration = 300 // 5 minutes (Pro plan) - includes image upload
 
+// 将 URL 转换为 base64（服务端版本）
+async function urlToBase64(url: string): Promise<string> {
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image: ${response.statusText}`)
+    }
+    const arrayBuffer = await response.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+    return buffer.toString('base64')
+  } catch (error: any) {
+    console.error('[urlToBase64] Error:', error.message)
+    throw error
+  }
+}
+
+// 确保图片数据是 base64 格式（支持 URL 和 base64 输入）
+async function ensureBase64Data(image: string | null | undefined): Promise<string | null> {
+  if (!image) return null
+  if (image.startsWith('http://') || image.startsWith('https://')) {
+    return await urlToBase64(image)
+  }
+  return stripBase64Prefix(image)
+}
+
 // Model names
 const PRIMARY_IMAGE_MODEL = 'gemini-3-pro-image-preview'
 const FALLBACK_IMAGE_MODEL = 'gemini-2.5-flash-image'
@@ -188,7 +213,8 @@ export async function POST(request: NextRequest) {
     const client = getGenAIClient()
     const label = `Studio ${index + 1} (${photoType})`
     
-    const productImageData = stripBase64Prefix(productImage)
+    // 支持 URL 和 base64 格式
+    const productImageData = await ensureBase64Data(productImage)
     
     if (!productImageData || productImageData.length < 100) {
       return NextResponse.json({ success: false, error: '商品图片格式无效' }, { status: 400 })

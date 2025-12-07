@@ -93,36 +93,18 @@ export default function GeneralEditPage() {
     setCameraReady(true)
   }, [])
   
-  const handleSelectFromAsset = useCallback(async (imageUrl: string) => {
-    setIsLoadingAsset(true)
-    try {
-      const base64 = await ensureBase64(imageUrl)
-      if (base64) {
-        setInputImage(base64)
-        setShowProductPanel(false)
-        setResultImage(null)
-      }
-    } catch (e) {
-      console.error('Failed to load asset:', e)
-    } finally {
-      setIsLoadingAsset(false)
-    }
+  const handleSelectFromAsset = useCallback((imageUrl: string) => {
+    // 直接使用 URL，后端会转换为 base64
+    setInputImage(imageUrl)
+    setShowProductPanel(false)
+    setResultImage(null)
   }, [])
   
-  const handleSelectFromGallery = useCallback(async (imageUrl: string) => {
-    setIsLoadingAsset(true)
-    try {
-      const base64 = await ensureBase64(imageUrl)
-      if (base64) {
-        setInputImage(base64)
-        setShowGalleryPanel(false)
-        setResultImage(null)
-      }
-    } catch (e) {
-      console.error('Failed to load gallery image:', e)
-    } finally {
-      setIsLoadingAsset(false)
-    }
+  const handleSelectFromGallery = useCallback((imageUrl: string) => {
+    // 直接使用 URL，后端会转换为 base64
+    setInputImage(imageUrl)
+    setShowGalleryPanel(false)
+    setResultImage(null)
   }, [])
   
   const videoConstraints = {

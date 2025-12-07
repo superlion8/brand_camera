@@ -197,12 +197,12 @@ export async function POST(request: NextRequest) {
     const client = getGenAIClient()
     const label = `${type === 'product' ? 'Product' : 'Model'} ${(index || 0) + 1}${simpleMode ? ' (Simple)' : ''}`
     
-    const productImageData = stripBase64Prefix(productImage)
-    const productImage2Data = productImage2 ? stripBase64Prefix(productImage2) : null
-    // 模特和背景图片支持 URL 格式（后端转换），减少前端请求体大小
+    // 所有图片都支持 URL 格式（后端转换），减少前端请求体大小
+    const productImageData = await ensureBase64Data(productImage)
+    const productImage2Data = productImage2 ? await ensureBase64Data(productImage2) : null
     const modelImageData = await ensureBase64Data(modelImage)
     const backgroundImageData = await ensureBase64Data(backgroundImage)
-    const vibeImageData = vibeImage ? stripBase64Prefix(vibeImage) : null
+    const vibeImageData = vibeImage ? await ensureBase64Data(vibeImage) : null
     
     if (!productImageData || productImageData.length < 100) {
       return NextResponse.json({ success: false, error: '商品图片格式无效' }, { status: 400 })
