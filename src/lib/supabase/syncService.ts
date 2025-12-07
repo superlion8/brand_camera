@@ -144,6 +144,7 @@ export async function fetchUserAssets(userId: string): Promise<{
     thumbnailUrl: row.thumbnail_url,
     tags: row.tags,
     isPinned: row.is_pinned,
+    category: row.category, // 商品分类
   }))
 
   return {
@@ -193,6 +194,7 @@ export async function saveUserAsset(userId: string, asset: Asset): Promise<Asset
       thumbnail_url: asset.thumbnailUrl,
       tags: asset.tags,
       is_pinned: asset.isPinned || false,
+      category: asset.category, // 商品分类：top/pants/inner/shoes/hat
     })
     .select()
     .single()
@@ -212,6 +214,7 @@ export async function saveUserAsset(userId: string, asset: Asset): Promise<Asset
     thumbnailUrl: data.thumbnail_url,
     tags: data.tags,
     isPinned: data.is_pinned,
+    category: data.category,
   }
 }
 
