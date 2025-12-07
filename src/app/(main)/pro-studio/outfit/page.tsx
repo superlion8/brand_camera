@@ -5,7 +5,7 @@ import { motion, AnimatePresence, Reorder } from "framer-motion"
 import { 
   ArrowLeft, ArrowRight, Plus, X, Upload, Camera, 
   Shirt, HardHat, Footprints, Loader2, AlertCircle, Wand2, SlidersHorizontal,
-  Check, ZoomIn, FolderHeart
+  Check, ZoomIn, FolderHeart, ImageIcon
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
@@ -227,7 +227,7 @@ export default function ProStudioOutfitPage() {
   const t = useLanguageStore(state => state.t)
   const { checkQuota, showExceededModal, requiredCount, closeExceededModal } = useQuota()
   const { addTask, initImageSlots } = useGenerationTaskStore()
-  const { userModels, userBackgrounds, addUserAsset } = useAssetStore()
+  const { userModels, userBackgrounds, userProducts, addUserAsset } = useAssetStore()
   const presetStore = usePresetStore()
   
   const [slots, setSlots] = useState<OutfitSlot[]>(() => getInitialSlots())
@@ -241,6 +241,7 @@ export default function ProStudioOutfitPage() {
   const [uploadTargetSlot, setUploadTargetSlot] = useState<ProductCategory | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
   const [showSlotOptions, setShowSlotOptions] = useState(false) // 空白框点击选项面板
+  const [showAssetPicker, setShowAssetPicker] = useState(false) // 资产库选择面板
   const [touchDragSlotId, setTouchDragSlotId] = useState<ProductCategory | null>(null) // 触摸拖拽
   
   // 模特和背景选择
@@ -427,17 +428,19 @@ export default function ProStudioOutfitPage() {
     setDraggedSlotId(null)
   }
   
-  // 拖拽放置
+  // 拖拽放置 - 支持桌面拖拽和触摸拖拽
   const handleDrop = (targetSlotId: ProductCategory) => {
-    if (!draggedSlotId || draggedSlotId === targetSlotId) return
+    // 获取源槽位ID（桌面拖拽用draggedSlotId，触摸拖拽用touchDragSlotId）
+    const sourceSlotId = draggedSlotId || touchDragSlotId
+    if (!sourceSlotId || sourceSlotId === targetSlotId) return
     
-    const sourceSlot = slots.find(s => s.id === draggedSlotId)
+    const sourceSlot = slots.find(s => s.id === sourceSlotId)
     const targetSlot = slots.find(s => s.id === targetSlotId)
     
     if (sourceSlot?.product) {
       // 交换两个槽位的商品
       setSlots(prev => prev.map(slot => {
-        if (slot.id === draggedSlotId) {
+        if (slot.id === sourceSlotId) {
           return { ...slot, product: targetSlot?.product }
         }
         if (slot.id === targetSlotId) {
@@ -448,6 +451,7 @@ export default function ProStudioOutfitPage() {
     }
     
     setDraggedSlotId(null)
+    setTouchDragSlotId(null)
   }
   
   // 英文标签映射
@@ -829,21 +833,97 @@ export default function ProStudioOutfitPage() {
               <h3 className="text-center font-semibold mb-4 text-zinc-900 dark:text-white">
                 添加 {uploadTargetSlot ? labelMap[uploadTargetSlot] : ''}
               </h3>
-              <div className="flex gap-4 px-4">
+              <div className="grid grid-cols-3 gap-3 px-4">
                 <button
                   onClick={handleCaptureOption}
-                  className="flex-1 flex flex-col items-center gap-2 py-4 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                  className="flex flex-col items-center gap-2 py-4 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
                 >
-                  <Camera className="w-8 h-8 text-blue-500" />
-                  <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">拍摄</span>
+                  <Camera className="w-7 h-7 text-blue-500" />
+                  <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">拍摄</span>
                 </button>
                 <button
                   onClick={handleAssetOption}
-                  className="flex-1 flex flex-col items-center gap-2 py-4 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                  className="flex flex-col items-center gap-2 py-4 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
                 >
-                  <FolderHeart className="w-8 h-8 text-purple-500" />
-                  <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">从相册选择</span>
+                  <ImageIcon className="w-7 h-7 text-green-500" />
+                  <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">相册</span>
                 </button>
+                <button
+                  onClick={() => {
+                    setShowSlotOptions(false)
+                    setShowAssetPicker(true)
+                  }}
+                  className="flex flex-col items-center gap-2 py-4 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                >
+                  <FolderHeart className="w-7 h-7 text-purple-500" />
+                  <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">资产库</span>
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+      
+      {/* 资产库选择面板 */}
+      <AnimatePresence>
+        {showAssetPicker && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
+              onClick={() => setShowAssetPicker(false)}
+            />
+            <motion.div 
+              initial={{ y: "100%" }} 
+              animate={{ y: 0 }} 
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed bottom-0 left-0 right-0 h-[70%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
+            >
+              <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
+                <span className="font-semibold text-zinc-900 dark:text-white">
+                  选择商品 - {uploadTargetSlot ? labelMap[uploadTargetSlot] : ''}
+                </span>
+                <button 
+                  onClick={() => setShowAssetPicker(false)} 
+                  className="h-8 w-8 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-4">
+                {userProducts.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-3">
+                    {userProducts.map(product => (
+                      <button
+                        key={product.id}
+                        onClick={() => {
+                          if (uploadTargetSlot) {
+                            setSlots(prev => prev.map(slot => 
+                              slot.id === uploadTargetSlot
+                                ? { ...slot, product: { imageUrl: product.imageUrl } }
+                                : slot
+                            ))
+                          }
+                          setShowAssetPicker(false)
+                          setUploadTargetSlot(null)
+                        }}
+                        className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all"
+                      >
+                        <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-zinc-400">
+                    <FolderHeart className="w-12 h-12 mb-3 opacity-30" />
+                    <p className="text-sm">暂无商品</p>
+                    <p className="text-xs mt-1">请先在资源库上传商品</p>
+                  </div>
+                )}
               </div>
             </motion.div>
           </>
