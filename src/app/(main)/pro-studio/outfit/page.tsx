@@ -244,7 +244,7 @@ function OutfitPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const t = useLanguageStore(state => state.t)
-  const { checkQuota, showExceededModal, requiredCount, closeExceededModal } = useQuota()
+  const { checkQuota, showExceededModal, requiredCount, closeExceededModal, refreshQuota } = useQuota()
   const { addTask, initImageSlots, updateImageSlot } = useGenerationTaskStore()
   const { userModels, userBackgrounds, userProducts, addUserAsset } = useAssetStore()
   const presetStore = usePresetStore()
@@ -815,6 +815,23 @@ function OutfitPageContent() {
     const taskId = addTask(taskType, products[0], {}, numImages)
     initImageSlots(taskId, numImages)
     
+    // 在数据库中创建 pending 记录，这样刷新页面后能恢复 loading 卡片
+    try {
+      await fetch('/api/quota/reserve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskId,
+          imageCount: numImages,
+          taskType,
+        }),
+      })
+      console.log('[Outfit] Reserved', numImages, 'images for task', taskId)
+      refreshQuota()
+    } catch (e) {
+      console.warn('[Outfit] Failed to reserve quota:', e)
+    }
+    
     // 获取选中的模特和背景信息（只获取ID和URL，不加载图片）
     const allModels = [...customModels, ...studioModels, ...userModels]
     const allBgs = [...customBgs, ...allStudioBackgrounds, ...userBackgrounds]
@@ -984,8 +1001,20 @@ function OutfitPageContent() {
           
           // 等待所有请求完成
           console.log('[Outfit-Camera] Sending 6 requests (3 simple + 3 extended)...')
-          await Promise.allSettled([...simplePromises, ...extendedPromises])
+          const allResults = await Promise.allSettled([...simplePromises, ...extendedPromises])
           console.log('[Outfit-Camera] All requests completed')
+          
+          // 检查是否全部失败，退还额度
+          const allFailed = allResults.every(r => r.status === 'rejected')
+          if (allFailed) {
+            console.log('[Outfit] All camera tasks failed, refunding quota')
+            try {
+              await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
+              refreshQuota()
+            } catch (e) {
+              console.warn('[Outfit] Failed to refund quota:', e)
+            }
+          }
         } else {
           // 模特棚拍模式：使用 /api/generate-pro-studio，outfitItems 格式
           // Helper function to create a single request with response handling
@@ -1062,11 +1091,31 @@ function OutfitPageContent() {
           
           // 等待所有请求完成
           console.log('[Outfit-ProStudio] Sending 6 requests (3 simple + 3 extended)...')
-          await Promise.allSettled([...simplePromises, ...extendedPromises])
+          const allResults = await Promise.allSettled([...simplePromises, ...extendedPromises])
           console.log('[Outfit-ProStudio] All requests completed')
+          
+          // 检查是否全部失败，退还额度
+          const allFailed = allResults.every(r => r.status === 'rejected')
+          if (allFailed) {
+            console.log('[Outfit] All pro-studio tasks failed, refunding quota')
+            try {
+              await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
+              refreshQuota()
+            } catch (e) {
+              console.warn('[Outfit] Failed to refund quota:', e)
+            }
+          }
         }
       } catch (error) {
         console.error('Generation failed:', error)
+        // 发生异常，退还额度
+        console.log('[Outfit] Generation error, refunding quota')
+        try {
+          await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
+          refreshQuota()
+        } catch (e) {
+          console.warn('[Outfit] Failed to refund quota:', e)
+        }
       }
     }
     
