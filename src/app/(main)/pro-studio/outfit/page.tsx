@@ -439,16 +439,16 @@ export default function ProStudioOutfitPage() {
     '配饰': 'ACCESSORY'
   }
   
-  // 渲染槽位卡片（用于人形图周围）- 参考图片设计
+  // 渲染槽位卡片（用于人形图周围）- 完全还原参考图片设计
   const renderSlotCard = (slot: OutfitSlot | undefined, size: "hat" | "top" | "tall" | "shoes" = "top") => {
     if (!slot) return null
     
     // 根据类型设置不同尺寸 - 参考图片
     const sizeClasses = {
-      hat: "w-24 h-24",      // 帽子 - 小正方形
-      top: "w-32 h-40",      // 上衣 - 较大
-      tall: "w-24 h-40",     // 内衬/裤子 - 高矩形
-      shoes: "w-24 h-24"     // 鞋子 - 小正方形
+      hat: "w-28 h-28",      // 帽子 - 正方形
+      top: "w-36 h-48",      // 上衣 - 较大
+      tall: "w-28 h-44",     // 内衬/裤子 - 高矩形
+      shoes: "w-28 h-28"     // 鞋子 - 正方形
     }
     
     const isDragging = draggedSlotId === slot.id
@@ -464,7 +464,7 @@ export default function ProStudioOutfitPage() {
         onClick={() => !slot.product && handleSlotClick(slot.id)}
         className={`
           ${sizeClasses[size]} rounded-2xl relative cursor-pointer
-          bg-white shadow-md
+          bg-white shadow-lg
           ${isDragging ? 'opacity-50 scale-95' : ''}
           transition-all duration-200
         `}
@@ -487,9 +487,10 @@ export default function ProStudioOutfitPage() {
             </button>
           </>
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-            <Plus className="w-5 h-5 text-zinc-400" />
-            <span className="text-zinc-500 text-xs font-medium tracking-wider">{labelMap[slot.id]}</span>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5">
+            <Plus className="w-6 h-6 text-zinc-400" />
+            <span className="text-zinc-600 text-sm font-semibold tracking-wider">{labelMap[slot.id]}</span>
+            <span className="text-zinc-400 text-xs">上传图片</span>
           </div>
         )}
       </motion.div>
@@ -629,60 +630,62 @@ export default function ProStudioOutfitPage() {
         </div>
       </div>
       
-      {/* 内容区域 - 参考图片设计 */}
-      <div className="p-4 pb-32">
-        {/* 主容器 - 浅灰色背景 */}
-        <div className="relative w-full max-w-md mx-auto bg-[#f5f5f7] rounded-3xl min-h-[580px] overflow-hidden">
-          {/* 人体轮廓 SVG - 居中 */}
+      {/* 内容区域 - 完全还原参考图片设计 */}
+      <div className="flex-1 pb-32">
+        {/* 主容器 - 浅蓝灰色背景，全屏 */}
+        <div className="relative w-full min-h-[calc(100vh-180px)] bg-[#e8eef3]">
+          {/* 人体轮廓 SVG - 居中，更精细的线条 */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <svg
-              viewBox="0 0 120 280"
-              className="w-24 h-auto"
+              viewBox="0 0 200 450"
+              className="w-48 h-auto"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
               {/* 头部 */}
-              <circle cx="60" cy="20" r="15" stroke="#d1d5db" strokeWidth="1.5" fill="none" />
+              <ellipse cx="100" cy="35" rx="22" ry="28" stroke="#c5cdd5" strokeWidth="1" fill="none" />
               {/* 脖子 */}
-              <line x1="60" y1="35" x2="60" y2="50" stroke="#d1d5db" strokeWidth="1.5" />
-              {/* 肩膀 */}
-              <line x1="30" y1="55" x2="90" y2="55" stroke="#d1d5db" strokeWidth="1.5" />
-              {/* 身体轮廓 */}
-              <path d="M 40 50 L 80 50 L 80 140 L 40 140 Z" stroke="#d1d5db" strokeWidth="1.5" fill="none" />
+              <line x1="100" y1="63" x2="100" y2="80" stroke="#c5cdd5" strokeWidth="1" />
+              {/* 肩膀线 */}
+              <path d="M 55 85 Q 100 75 145 85" stroke="#c5cdd5" strokeWidth="1" fill="none" />
+              {/* 身体 - 躯干轮廓 */}
+              <path d="M 70 85 L 70 200 M 130 85 L 130 200" stroke="#c5cdd5" strokeWidth="1" />
+              {/* 腰部 */}
+              <path d="M 70 200 Q 100 210 130 200" stroke="#c5cdd5" strokeWidth="1" fill="none" />
               {/* 左臂 */}
-              <path d="M 30 55 L 20 70 L 15 120" stroke="#d1d5db" strokeWidth="1.5" fill="none" />
+              <path d="M 55 85 Q 35 120 30 180" stroke="#c5cdd5" strokeWidth="1" fill="none" />
               {/* 右臂 */}
-              <path d="M 90 55 L 100 70 L 105 120" stroke="#d1d5db" strokeWidth="1.5" fill="none" />
+              <path d="M 145 85 Q 165 120 170 180" stroke="#c5cdd5" strokeWidth="1" fill="none" />
               {/* 左腿 */}
-              <path d="M 50 140 L 45 200 L 40 260" stroke="#d1d5db" strokeWidth="1.5" fill="none" />
+              <path d="M 80 200 L 75 320 Q 70 400 65 420" stroke="#c5cdd5" strokeWidth="1" fill="none" />
               {/* 右腿 */}
-              <path d="M 70 140 L 75 200 L 80 260" stroke="#d1d5db" strokeWidth="1.5" fill="none" />
+              <path d="M 120 200 L 125 320 Q 130 400 135 420" stroke="#c5cdd5" strokeWidth="1" fill="none" />
             </svg>
           </div>
           
-          {/* 商品槽位 - 精确定位 */}
+          {/* 商品槽位 - 精确定位，还原参考图片布局 */}
           {/* HAT 帽子 - 顶部居中 */}
-          <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10">
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
             {renderSlotCard(slots.find(s => s.id === '帽子')!, 'hat')}
           </div>
           
-          {/* INNER 内衬 - 左侧中间 */}
-          <div className="absolute top-32 left-3 z-10">
+          {/* INNER 内衬 - 左侧中间偏上 */}
+          <div className="absolute top-36 left-2 z-10">
             {renderSlotCard(slots.find(s => s.id === '内衬')!, 'tall')}
           </div>
           
-          {/* TOP 上衣 - 右侧偏中 */}
-          <div className="absolute top-28 right-3 z-10">
+          {/* TOP 上衣 - 右侧中间 */}
+          <div className="absolute top-32 right-2 z-10">
             {renderSlotCard(slots.find(s => s.id === '上衣')!, 'top')}
           </div>
           
           {/* BOTTOM 裤子 - 左下 */}
-          <div className="absolute bottom-24 left-3 z-10">
+          <div className="absolute bottom-32 left-2 z-10">
             {renderSlotCard(slots.find(s => s.id === '裤子')!, 'tall')}
           </div>
           
           {/* SHOES 鞋子 - 右下 */}
-          <div className="absolute bottom-6 right-3 z-10">
+          <div className="absolute bottom-8 right-2 z-10">
             {renderSlotCard(slots.find(s => s.id === '鞋子')!, 'shoes')}
           </div>
         </div>
@@ -754,14 +757,13 @@ export default function ProStudioOutfitPage() {
         </div>
       </div>
       
-      {/* 底部 Shoot It 按钮 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-lg border-t border-zinc-800 p-4 pb-safe">
+      {/* 底部按钮 - 参考图片样式 */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg p-4 pb-safe">
         <motion.button
           onClick={handleShootIt}
-          className="w-full h-14 rounded-full text-lg font-semibold gap-2 bg-white text-black hover:bg-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.3)] flex items-center justify-center transition-colors"
+          className="w-full max-w-sm mx-auto h-12 rounded-full text-base font-medium bg-white text-zinc-700 shadow-lg border border-zinc-200 flex items-center justify-center transition-colors hover:bg-zinc-50"
         >
-          <Wand2 className="w-5 h-5" />
-          Shoot It
+          保存搭配
         </motion.button>
       </div>
       
