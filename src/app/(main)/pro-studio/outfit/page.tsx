@@ -266,6 +266,40 @@ function OutfitPageContent() {
     presetStore.loadPresets()
   }, [presetStore])
   
+  // 拖动时锁定页面滚动
+  useEffect(() => {
+    if (touchDragSlotId) {
+      // 保存原始样式
+      const originalOverflow = document.body.style.overflow
+      const originalPosition = document.body.style.position
+      const originalTop = document.body.style.top
+      const originalWidth = document.body.style.width
+      const scrollY = window.scrollY
+      
+      // 锁定页面
+      document.body.style.overflow = 'hidden'
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.width = '100%'
+      
+      // 阻止所有触摸移动事件的默认行为
+      const preventTouchMove = (e: TouchEvent) => {
+        e.preventDefault()
+      }
+      document.addEventListener('touchmove', preventTouchMove, { passive: false })
+      
+      return () => {
+        // 恢复原始样式
+        document.body.style.overflow = originalOverflow
+        document.body.style.position = originalPosition
+        document.body.style.top = originalTop
+        document.body.style.width = originalWidth
+        window.scrollTo(0, scrollY)
+        document.removeEventListener('touchmove', preventTouchMove)
+      }
+    }
+  }, [touchDragSlotId])
+  
   // 获取所有模特和背景
   // studioModels 是专业棚拍模特（用于随机选择）
   const studioModels = presetStore.studioModels || []
