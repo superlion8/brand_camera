@@ -36,9 +36,22 @@ const systemPresets: Record<AssetType, Asset[]> = {
 type SourceTab = "user" | "preset"
 type ModelSubTab = "normal" | "studio"
 type BackgroundSubTab = "normal" | "studio"
-type ProductSubTab = "all" | "上衣" | "裤子" | "内衬" | "鞋子" | "帽子"
+type ProductSubTab = "all" | "top" | "pants" | "inner" | "shoes" | "hat"
 
-const PRODUCT_CATEGORIES: ProductSubTab[] = ["all", "上衣", "裤子", "内衬", "鞋子", "帽子"]
+const PRODUCT_CATEGORIES: ProductSubTab[] = ["all", "top", "pants", "inner", "shoes", "hat"]
+
+// 商品分类翻译映射
+const getProductCategoryLabel = (cat: ProductSubTab, t: any): string => {
+  switch (cat) {
+    case "all": return t.common?.all || "全部"
+    case "top": return t.assets?.productTop || "上衣"
+    case "pants": return t.assets?.productPants || "裤子"
+    case "inner": return t.assets?.productInner || "内衬"
+    case "shoes": return t.assets?.productShoes || "鞋子"
+    case "hat": return t.assets?.productHat || "帽子"
+    default: return cat
+  }
+}
 
 export default function BrandAssetsPage() {
   const router = useRouter()
@@ -354,7 +367,7 @@ export default function BrandAssetsPage() {
                       : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
                   }`}
                 >
-                  {cat === "all" ? (t.common.all || "全部") : cat}
+                  {getProductCategoryLabel(cat, t)}
                   <span className="ml-1 opacity-70">({count})</span>
                 </button>
               )
