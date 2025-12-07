@@ -255,8 +255,10 @@ function ProStudioPageContent() {
   // Panel state
   const [showCustomPanel, setShowCustomPanel] = useState(false)
   const [showProductPanel, setShowProductPanel] = useState(false)
+  const [showProduct2Panel, setShowProduct2Panel] = useState(false) // 第二件商品选择面板
   const [activeCustomTab, setActiveCustomTab] = useState<'model' | 'bg'>('model')
   const [productSourceTab, setProductSourceTab] = useState<'preset' | 'user'>('preset')
+  const [product2SourceTab, setProduct2SourceTab] = useState<'album' | 'asset'>('album') // 第二件商品来源
   const [isLoadingAssets, setIsLoadingAssets] = useState(false)
   
   // Results state
@@ -759,7 +761,7 @@ function ProStudioPageContent() {
                   {/* 右下角搭配商品按钮 - 只在review模式且没有第二张商品时显示 */}
                   {mode === "review" && !capturedImage2 && (
                     <button
-                      onClick={() => fileInputRef2.current?.click()}
+                      onClick={() => setShowProduct2Panel(true)}
                       className="absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2.5 rounded-full bg-black/60 backdrop-blur-md text-white hover:bg-black/70 transition-colors border border-white/20"
                     >
                       <Plus className="w-4 h-4" />
@@ -1157,6 +1159,157 @@ function ProStudioPageContent() {
                           >
                             {t.proStudio?.goUpload || '去上传'}
                           </button>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+            
+            {/* 第二件商品选择面板 */}
+            <AnimatePresence>
+              {showProduct2Panel && (
+                <>
+                  <motion.div 
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }} 
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 bg-black/60 z-40 backdrop-blur-sm"
+                    onClick={() => setShowProduct2Panel(false)}
+                  />
+                  <motion.div 
+                    initial={{ y: "100%" }} 
+                    animate={{ y: 0 }} 
+                    exit={{ y: "100%" }}
+                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                    className="absolute bottom-0 left-0 right-0 h-[60%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
+                  >
+                    <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
+                      <span className="font-semibold">添加搭配商品</span>
+                      <button 
+                        onClick={() => setShowProduct2Panel(false)} 
+                        className="h-8 w-8 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    
+                    <div className="px-4 py-2 border-b bg-white dark:bg-zinc-900">
+                      <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1">
+                        <button
+                          onClick={() => setProduct2SourceTab("album")}
+                          className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${
+                            product2SourceTab === "album"
+                              ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
+                              : "text-zinc-500 hover:text-zinc-700"
+                          }`}
+                        >
+                          从相册上传
+                        </button>
+                        <button
+                          onClick={() => setProduct2SourceTab("asset")}
+                          className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${
+                            product2SourceTab === "asset"
+                              ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
+                              : "text-zinc-500 hover:text-zinc-700"
+                          }`}
+                        >
+                          从资产库选择
+                          {userProducts.length > 0 && (
+                            <span className="ml-1 text-zinc-400">({userProducts.length})</span>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4">
+                      {product2SourceTab === "album" ? (
+                        <div className="flex flex-col items-center justify-center h-full">
+                          <button
+                            onClick={() => {
+                              setShowProduct2Panel(false)
+                              fileInputRef2.current?.click()
+                            }}
+                            className="w-32 h-32 rounded-2xl bg-zinc-200 dark:bg-zinc-800 flex flex-col items-center justify-center gap-3 hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-colors"
+                          >
+                            <ImageIcon className="w-10 h-10 text-zinc-500" />
+                            <span className="text-sm text-zinc-600 dark:text-zinc-400">点击上传</span>
+                          </button>
+                          <p className="text-xs text-zinc-500 mt-4">支持 JPG、PNG 格式</p>
+                        </div>
+                      ) : userProducts.length > 0 ? (
+                        <div className="grid grid-cols-3 gap-3 pb-20">
+                          {/* 官方示例商品 */}
+                          {PRESET_PRODUCTS.map(product => (
+                            <button
+                              key={product.id}
+                              disabled={isLoadingAssets}
+                              onClick={async () => {
+                                setIsLoadingAssets(true)
+                                try {
+                                  const base64 = await ensureBase64(product.imageUrl)
+                                  if (base64) {
+                                    setCapturedImage2(base64)
+                                    setShowProduct2Panel(false)
+                                  }
+                                } catch (e) {
+                                  console.error("Failed to load preset product:", e)
+                                } finally {
+                                  setIsLoadingAssets(false)
+                                }
+                              }}
+                              className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all disabled:opacity-50"
+                            >
+                              <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
+                              <span className="absolute top-1 left-1 bg-blue-600 text-white text-[8px] px-1 py-0.5 rounded font-medium">
+                                官方
+                              </span>
+                            </button>
+                          ))}
+                          {/* 用户商品 */}
+                          {userProducts.map(product => (
+                            <button
+                              key={product.id}
+                              onClick={() => {
+                                setCapturedImage2(product.imageUrl)
+                                setShowProduct2Panel(false)
+                              }}
+                              className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all"
+                            >
+                              <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-3 pb-20">
+                          {/* 只显示官方示例商品 */}
+                          {PRESET_PRODUCTS.map(product => (
+                            <button
+                              key={product.id}
+                              disabled={isLoadingAssets}
+                              onClick={async () => {
+                                setIsLoadingAssets(true)
+                                try {
+                                  const base64 = await ensureBase64(product.imageUrl)
+                                  if (base64) {
+                                    setCapturedImage2(base64)
+                                    setShowProduct2Panel(false)
+                                  }
+                                } catch (e) {
+                                  console.error("Failed to load preset product:", e)
+                                } finally {
+                                  setIsLoadingAssets(false)
+                                }
+                              }}
+                              className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all disabled:opacity-50"
+                            >
+                              <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
+                              <span className="absolute top-1 left-1 bg-blue-600 text-white text-[8px] px-1 py-0.5 rounded font-medium">
+                                官方
+                              </span>
+                            </button>
+                          ))}
                         </div>
                       )}
                     </div>
