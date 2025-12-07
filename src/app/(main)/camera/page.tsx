@@ -128,10 +128,10 @@ function CameraPageContent() {
       console.log('[Camera] Task has completed images, switching to results mode')
       // 更新 generatedImages 从 imageSlots
       const images = currentTask.imageSlots.map(s => s.imageUrl || '')
-      const modelTypes = currentTask.imageSlots.map(s => s.modelType || null)
+      const modelTypes = currentTask.imageSlots.map(s => (s.modelType === 'pro' || s.modelType === 'flash' ? s.modelType : 'pro') as 'pro' | 'flash')
       const genModes = currentTask.imageSlots.map(s => s.genMode || 'simple')
       setGeneratedImages(images)
-      setGeneratedModelTypes(modelTypes as (string | null)[])
+      setGeneratedModelTypes(modelTypes)
       setGeneratedGenModes(genModes)
       setMode('results')
     }
