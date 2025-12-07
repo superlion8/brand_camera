@@ -442,15 +442,15 @@ export default function ProStudioOutfitPage() {
     '配饰': 'ACCESSORY'
   }
   
-  // 渲染槽位卡片 - 紧凑版本
+  // 渲染槽位卡片 - 全屏版本，更大的卡片
   const renderSlotCard = (slot: OutfitSlot | undefined, size: "small" | "medium" | "large" = "medium") => {
     if (!slot) return null
     
-    // 紧凑的尺寸
+    // 更大的尺寸
     const sizeClasses = {
-      small: "w-16 h-16",     // 帽子/鞋子
-      medium: "w-20 h-28",    // 内衬/裤子
-      large: "w-24 h-32"      // 上衣
+      small: "w-20 h-20",     // 帽子/鞋子
+      medium: "w-28 h-36",    // 内衬/裤子
+      large: "w-32 h-40"      // 上衣
     }
     
     const isDragging = draggedSlotId === slot.id
@@ -519,67 +519,65 @@ export default function ProStudioOutfitPage() {
     const taskId = addTask('pro_studio', products[0], {}, 6)
     initImageSlots(taskId, 6)
     
-    // 获取选中的模特和背景
+    // 获取选中的模特和背景信息（只获取ID和URL，不加载图片）
     const allModels = [...customModels, ...studioModels, ...userModels]
     const allBgs = [...customBgs, ...allStudioBackgrounds, ...userBackgrounds]
     
-    let selectedModel = selectedModelId 
+    const selectedModel = selectedModelId 
       ? allModels.find(m => m.id === selectedModelId)
       : null
-    let selectedBg = selectedBgId
+    const selectedBg = selectedBgId
       ? allBgs.find(b => b.id === selectedBgId)
       : null
     
-    // 如果没有选择模特，标记为随机
-    const isModelRandom = !selectedModel
-    
-    // 如果没有选择背景，标记为随机（由AI生成）
-    const isBgRandom = !selectedBg
-    
-    // 辅助函数：带重试的随机模特加载（每次重试换一个不同的模特）
-    const loadRandomModelWithRetry = async (maxRetries = 3): Promise<string | null> => {
-      for (let i = 0; i < maxRetries; i++) {
-        if (studioModels.length === 0) {
-          console.error('[Outfit] No studio models available')
-          return null
-        }
-        const randomIndex = Math.floor(Math.random() * studioModels.length)
-        const randomModel = studioModels[randomIndex]
-        console.log(`[Outfit] Trying random model ${i + 1}/${maxRetries}:`, randomModel?.name)
-        const base64 = await ensureBase64(randomModel.imageUrl)
-        if (base64) {
-          console.log(`[Outfit] Successfully loaded random model on attempt ${i + 1}`)
-          return base64
-        }
-        console.warn(`[Outfit] Failed to load random model on attempt ${i + 1}, trying another...`)
-      }
-      console.error(`[Outfit] All ${maxRetries} attempts to load random model failed`)
-      return null
-    }
-    
-    // 准备模特数据：用户选择的或随机选择的
-    let modelImageData: string | null
-    if (selectedModel) {
-      modelImageData = await ensureBase64(selectedModel.imageUrl)
-    } else {
-      modelImageData = await loadRandomModelWithRetry()
-    }
-    
-    // 准备背景数据
-    const bgImageData = selectedBg ? await ensureBase64(selectedBg.imageUrl) : null
-    
-    if (!modelImageData) {
-      alert('无法加载模特图片，请稍后重试')
-      return
-    }
-    
-    // 保存 taskId 并立即跳转到 processing 页面
+    // 立即跳转到 processing 页面（不等待图片加载）
     sessionStorage.setItem('proStudioTaskId', taskId)
     router.push('/pro-studio?mode=processing')
     
-    // 在后台发起生成请求（不等待完成）
+    // 在后台加载图片并发起生成请求
     const generateInBackground = async () => {
       try {
+        // 如果没有选择模特，标记为随机
+        const isModelRandom = !selectedModel
+        const isBgRandom = !selectedBg
+        
+        // 辅助函数：带重试的随机模特加载
+        const loadRandomModelWithRetry = async (maxRetries = 3): Promise<string | null> => {
+          for (let i = 0; i < maxRetries; i++) {
+            if (studioModels.length === 0) {
+              console.error('[Outfit] No studio models available')
+              return null
+            }
+            const randomIndex = Math.floor(Math.random() * studioModels.length)
+            const randomModel = studioModels[randomIndex]
+            console.log(`[Outfit] Trying random model ${i + 1}/${maxRetries}:`, randomModel?.name)
+            const base64 = await ensureBase64(randomModel.imageUrl)
+            if (base64) {
+              console.log(`[Outfit] Successfully loaded random model on attempt ${i + 1}`)
+              return base64
+            }
+            console.warn(`[Outfit] Failed to load random model on attempt ${i + 1}, trying another...`)
+          }
+          console.error(`[Outfit] All ${maxRetries} attempts to load random model failed`)
+          return null
+        }
+        
+        // 准备模特数据：用户选择的或随机选择的
+        let modelImageData: string | null
+        if (selectedModel) {
+          modelImageData = await ensureBase64(selectedModel.imageUrl)
+        } else {
+          modelImageData = await loadRandomModelWithRetry()
+        }
+        
+        // 准备背景数据
+        const bgImageData = selectedBg ? await ensureBase64(selectedBg.imageUrl) : null
+        
+        if (!modelImageData) {
+          console.error('[Outfit] Failed to load model image')
+          return
+        }
+        
         // 简单模式：3张图
         const simplePromises = []
         for (let i = 0; i < 3; i++) {
@@ -669,47 +667,47 @@ export default function ProStudioOutfitPage() {
         </div>
       </div>
       
-      {/* 紧凑的搭配区域 */}
-      <div className="relative bg-[#e8eef3] mx-3 mt-2 rounded-2xl h-[320px] overflow-hidden">
-        {/* 人体轮廓 SVG - 居中，缩小 */}
+      {/* 全屏搭配区域 */}
+      <div className="flex-1 relative bg-[#e8eef3] overflow-hidden">
+        {/* 人体轮廓 SVG - 居中，更大 */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <svg
             viewBox="0 0 200 380"
-            className="w-24 h-auto opacity-40"
+            className="w-40 h-auto opacity-30"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
           >
-            <ellipse cx="100" cy="30" rx="18" ry="22" stroke="#b0b8c0" strokeWidth="1" fill="none" />
-            <line x1="100" y1="52" x2="100" y2="65" stroke="#b0b8c0" strokeWidth="1" />
-            <path d="M 60 70 Q 100 62 140 70" stroke="#b0b8c0" strokeWidth="1" fill="none" />
-            <path d="M 75 70 L 75 160 M 125 70 L 125 160" stroke="#b0b8c0" strokeWidth="1" />
-            <path d="M 75 160 Q 100 168 125 160" stroke="#b0b8c0" strokeWidth="1" fill="none" />
-            <path d="M 60 70 Q 42 100 38 145" stroke="#b0b8c0" strokeWidth="1" fill="none" />
-            <path d="M 140 70 Q 158 100 162 145" stroke="#b0b8c0" strokeWidth="1" fill="none" />
-            <path d="M 82 160 L 78 260 Q 74 320 70 340" stroke="#b0b8c0" strokeWidth="1" fill="none" />
-            <path d="M 118 160 L 122 260 Q 126 320 130 340" stroke="#b0b8c0" strokeWidth="1" fill="none" />
+            <ellipse cx="100" cy="30" rx="18" ry="22" stroke="#9ca3af" strokeWidth="1.5" fill="none" />
+            <line x1="100" y1="52" x2="100" y2="65" stroke="#9ca3af" strokeWidth="1.5" />
+            <path d="M 60 70 Q 100 62 140 70" stroke="#9ca3af" strokeWidth="1.5" fill="none" />
+            <path d="M 75 70 L 75 160 M 125 70 L 125 160" stroke="#9ca3af" strokeWidth="1.5" />
+            <path d="M 75 160 Q 100 168 125 160" stroke="#9ca3af" strokeWidth="1.5" fill="none" />
+            <path d="M 60 70 Q 42 100 38 145" stroke="#9ca3af" strokeWidth="1.5" fill="none" />
+            <path d="M 140 70 Q 158 100 162 145" stroke="#9ca3af" strokeWidth="1.5" fill="none" />
+            <path d="M 82 160 L 78 260 Q 74 320 70 340" stroke="#9ca3af" strokeWidth="1.5" fill="none" />
+            <path d="M 118 160 L 122 260 Q 126 320 130 340" stroke="#9ca3af" strokeWidth="1.5" fill="none" />
           </svg>
         </div>
         
-        {/* 商品槽位 - 更紧凑的布局 */}
-        {/* HAT */}
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10">
+        {/* 商品槽位 - 全屏布局 */}
+        {/* HAT - 顶部中间 */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
           {renderSlotCard(slots.find(s => s.id === '帽子')!, 'small')}
         </div>
-        {/* INNER */}
-        <div className="absolute top-20 left-1 z-10">
+        {/* INNER - 左上 */}
+        <div className="absolute top-[20%] left-3 z-10">
           {renderSlotCard(slots.find(s => s.id === '内衬')!, 'medium')}
         </div>
-        {/* TOP */}
-        <div className="absolute top-16 right-1 z-10">
+        {/* TOP - 右上 */}
+        <div className="absolute top-[15%] right-3 z-10">
           {renderSlotCard(slots.find(s => s.id === '上衣')!, 'large')}
         </div>
-        {/* BOTTOM */}
-        <div className="absolute bottom-12 left-1 z-10">
+        {/* BOTTOM - 左下 */}
+        <div className="absolute bottom-[20%] left-3 z-10">
           {renderSlotCard(slots.find(s => s.id === '裤子')!, 'medium')}
         </div>
-        {/* SHOES */}
-        <div className="absolute bottom-2 right-1 z-10">
+        {/* SHOES - 右下 */}
+        <div className="absolute bottom-[15%] right-3 z-10">
           {renderSlotCard(slots.find(s => s.id === '鞋子')!, 'small')}
         </div>
       </div>
