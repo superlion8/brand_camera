@@ -635,7 +635,7 @@ function OutfitPageContent() {
     triggerFlyToGallery()
     
     // 根据模式创建任务
-    const taskType = isCameraMode ? 'camera_model' : 'pro_studio'
+    const taskType = isCameraMode ? 'camera' : 'pro_studio'
     const taskId = addTask(taskType, products[0], {}, numImages)
     initImageSlots(taskId, numImages)
     
