@@ -157,8 +157,67 @@ async function generateInstructions(
   }
 }
 
-// Simple prompt for model generation (简单版)
+// 服装项接口
+interface OutfitItems {
+  inner?: string   // 内衬
+  top?: string     // 上衣
+  pants?: string   // 裤子
+  hat?: string     // 帽子
+  shoes?: string   // 鞋子
+}
+
+// 构建服装描述
+function buildOutfitDescription(hasItems: { inner: boolean; top: boolean; pants: boolean; hat: boolean; shoes: boolean }): string {
+  const items: string[] = []
+  if (hasItems.inner) items.push('{{内衬}}')
+  if (hasItems.top) items.push('{{上衣}}')
+  if (hasItems.pants) items.push('{{裤子}}')
+  if (hasItems.hat) items.push('{{帽子}}')
+  if (hasItems.shoes) items.push('{{鞋子}}')
+  return items.join('、') || '{{product}}'
+}
+
+// Simple prompt for model generation (简单版 - outfit 模式)
+function buildSimpleOutfitPrompt(outfitDesc: string): string {
+  return `请为${outfitDesc}这些商品生成一个模特实拍图，环境参考{{background}}，模特参考{{model}}，但不能长得和图一完全一样，效果要生活化一些，随意一些，符合小红书和 INS 的韩系审美风格`
+}
+
+// Simple prompt for model generation (简单版 - 兼容旧模式)
 const SIMPLE_MODEL_PROMPT = `请为{{product}}生成一个模特实拍图，环境参考{{background}}，模特参考{{model}}，但不能长得和图一完全一样，效果要生活化一些，随意一些，符合小红书和 INS 的韩系审美风格`
+
+// Extended mode - Step 1: 生成拍摄指令 (outfit 模式)
+function buildOutfitInstructPrompt(outfitDesc: string): string {
+  return `你是一个擅长拍摄小红书/instagram等社媒生活感照片的电商摄影师。
+
+你先要理解${outfitDesc}这些商品的版型和风格，
+
+然后根据模特图{{model}}、背景图{{background}}，输出一段韩系审美、小红书和ins的，适合模特展示商品的拍摄指令，要求是随意一点、有生活感，是生活中用手机随手拍出来的效果。请使用以下格式用英文输出：
+
+- composition：
+
+- model pose：
+
+- model expression：
+
+- lighting and color:
+
+输出的内容要尽量简单，不要包含太复杂的信息尽量控制在200字以内；`
+}
+
+// Extended mode - Step 2: 图片生成 prompt (outfit 模式)
+function buildOutfitImagePrompt(outfitDesc: string, instructPrompt: string | null): string {
+  return `take authentic photo of a new model that looks like {{model}}, but do not have the exact same look. 
+
+the new model shows the products ${outfitDesc}, use instagram friendly composition, 要随意一点、有生活感，像是生活中用手机随手拍出来的图片.
+
+the background should be consistent with {{background}}.
+
+The color/size/design/detial must be exactly consistent with products. 
+
+${instructPrompt ? `photo shot instruction: ${instructPrompt}` : ''}
+
+negatives: exaggerated or distorted anatomy, fake portrait-mode blur, CGI/illustration look.`
+}
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
@@ -187,9 +246,14 @@ export async function POST(request: NextRequest) {
       simpleMode, // New: use simple prompt for model generation
       // 新增：用于数据库写入的参数
       inputParams, // 生成参数（modelStyle, modelGender 等）
+      // 新增：outfit 模式的服装项
+      outfitItems, // { inner, top, pants, hat, shoes }
     } = body
     
-    if (!productImage) {
+    // outfit 模式检查
+    const hasOutfitItems = outfitItems && (outfitItems.inner || outfitItems.top || outfitItems.pants || outfitItems.hat || outfitItems.shoes)
+    
+    if (!productImage && !hasOutfitItems) {
       return NextResponse.json({ success: false, error: '缺少商品图片' }, { status: 400 })
     }
     
@@ -198,7 +262,7 @@ export async function POST(request: NextRequest) {
     }
     
     const client = getGenAIClient()
-    const label = `${type === 'product' ? 'Product' : 'Model'} ${(index || 0) + 1}${simpleMode ? ' (Simple)' : ''}`
+    const label = `${type === 'product' ? 'Product' : 'Model'} ${(index || 0) + 1}${simpleMode ? ' (Simple)' : ''}${hasOutfitItems ? ' (Outfit)' : ''}`
     
     // 所有图片都支持 URL 格式（后端转换），减少前端请求体大小
     const productImageData = await ensureBase64Data(productImage)
@@ -207,7 +271,20 @@ export async function POST(request: NextRequest) {
     const backgroundImageData = await ensureBase64Data(backgroundImage)
     const vibeImageData = vibeImage ? await ensureBase64Data(vibeImage) : null
     
-    if (!productImageData || productImageData.length < 100) {
+    // outfit 模式：转换各服装项
+    let outfitImagesData: { inner?: string; top?: string; pants?: string; hat?: string; shoes?: string } = {}
+    if (hasOutfitItems) {
+      console.log(`[${label}] Processing outfit items...`)
+      if (outfitItems.inner) outfitImagesData.inner = await ensureBase64Data(outfitItems.inner) || undefined
+      if (outfitItems.top) outfitImagesData.top = await ensureBase64Data(outfitItems.top) || undefined
+      if (outfitItems.pants) outfitImagesData.pants = await ensureBase64Data(outfitItems.pants) || undefined
+      if (outfitItems.hat) outfitImagesData.hat = await ensureBase64Data(outfitItems.hat) || undefined
+      if (outfitItems.shoes) outfitImagesData.shoes = await ensureBase64Data(outfitItems.shoes) || undefined
+    }
+    
+    // 检查是否有有效的商品图片
+    const hasAnyProduct = productImageData || outfitImagesData.inner || outfitImagesData.top || outfitImagesData.pants || outfitImagesData.hat || outfitImagesData.shoes
+    if (!hasAnyProduct) {
       return NextResponse.json({ success: false, error: '商品图片格式无效' }, { status: 400 })
     }
     
@@ -233,16 +310,45 @@ export async function POST(request: NextRequest) {
       // Simple mode: Direct prompt with model and background reference (简单版)
       console.log(`[${label}] Generating with simple prompt...`)
       generationMode = 'simple'
-      usedPrompt = SIMPLE_MODEL_PROMPT
       
-      const parts: any[] = [
-        { text: SIMPLE_MODEL_PROMPT },
-        { inlineData: { mimeType: 'image/jpeg', data: productImageData } }, // {{product}}
-        { inlineData: { mimeType: 'image/jpeg', data: backgroundImageData } }, // {{background}}
-        { inlineData: { mimeType: 'image/jpeg', data: modelImageData } }, // {{model}}
-      ]
+      // 判断是否使用 outfit 模式
+      const hasOutfit = outfitImagesData.inner || outfitImagesData.top || outfitImagesData.pants || outfitImagesData.hat || outfitImagesData.shoes
       
-      result = await generateImageWithFallback(client, parts, label)
+      if (hasOutfit) {
+        // Outfit 模式：使用新的 prompt 和多商品图片
+        const outfitDesc = buildOutfitDescription({
+          inner: !!outfitImagesData.inner,
+          top: !!outfitImagesData.top,
+          pants: !!outfitImagesData.pants,
+          hat: !!outfitImagesData.hat,
+          shoes: !!outfitImagesData.shoes,
+        })
+        usedPrompt = buildSimpleOutfitPrompt(outfitDesc)
+        
+        const parts: any[] = [{ text: usedPrompt }]
+        // 按顺序添加商品图片：内衬、上衣、裤子、帽子、鞋子
+        if (outfitImagesData.inner) parts.push({ inlineData: { mimeType: 'image/jpeg', data: outfitImagesData.inner } })
+        if (outfitImagesData.top) parts.push({ inlineData: { mimeType: 'image/jpeg', data: outfitImagesData.top } })
+        if (outfitImagesData.pants) parts.push({ inlineData: { mimeType: 'image/jpeg', data: outfitImagesData.pants } })
+        if (outfitImagesData.hat) parts.push({ inlineData: { mimeType: 'image/jpeg', data: outfitImagesData.hat } })
+        if (outfitImagesData.shoes) parts.push({ inlineData: { mimeType: 'image/jpeg', data: outfitImagesData.shoes } })
+        // 添加背景和模特
+        parts.push({ inlineData: { mimeType: 'image/jpeg', data: backgroundImageData } }) // {{background}}
+        parts.push({ inlineData: { mimeType: 'image/jpeg', data: modelImageData } }) // {{model}}
+        
+        console.log(`[${label}] Using outfit mode with ${Object.values(outfitImagesData).filter(Boolean).length} items`)
+        result = await generateImageWithFallback(client, parts, label)
+      } else {
+        // 兼容旧模式：使用单一 product 图片
+        usedPrompt = SIMPLE_MODEL_PROMPT
+        const parts: any[] = [
+          { text: SIMPLE_MODEL_PROMPT },
+          { inlineData: { mimeType: 'image/jpeg', data: productImageData } }, // {{product}}
+          { inlineData: { mimeType: 'image/jpeg', data: backgroundImageData } }, // {{background}}
+          { inlineData: { mimeType: 'image/jpeg', data: modelImageData } }, // {{model}}
+        ]
+        result = await generateImageWithFallback(client, parts, label)
+      }
       
     } else {
       // Extended mode: 2-step process (扩展版)
@@ -256,32 +362,96 @@ export async function POST(request: NextRequest) {
         }, { status: 400 })
       }
       
-      console.log(`[${label}] Step 1: Generating instructions...`)
-      const instructPrompt = await generateInstructions(
-        client, productImageData, modelImageData, backgroundImageData, label
-      )
+      // 判断是否使用 outfit 模式
+      const hasOutfit = outfitImagesData.inner || outfitImagesData.top || outfitImagesData.pants || outfitImagesData.hat || outfitImagesData.shoes
       
-      // Step 2: Generate image
-      const modelPrompt = buildModelPrompt({
-        instructPrompt: instructPrompt || undefined,
-      })
-      
-      // Save the full prompt used
-      usedPrompt = modelPrompt
-      if (instructPrompt) {
-        usedPrompt = `[Photography Instructions]\n${instructPrompt}\n\n[Image Generation Prompt]\n${modelPrompt}`
+      if (hasOutfit) {
+        // Outfit 模式扩展版
+        const outfitDesc = buildOutfitDescription({
+          inner: !!outfitImagesData.inner,
+          top: !!outfitImagesData.top,
+          pants: !!outfitImagesData.pants,
+          hat: !!outfitImagesData.hat,
+          shoes: !!outfitImagesData.shoes,
+        })
+        
+        // Step 1: 生成拍摄指令
+        console.log(`[${label}] Step 1: Generating outfit instructions...`)
+        const instructParts: any[] = [{ text: buildOutfitInstructPrompt(outfitDesc) }]
+        // 添加商品图片
+        if (outfitImagesData.inner) instructParts.push({ inlineData: { mimeType: 'image/jpeg', data: outfitImagesData.inner } })
+        if (outfitImagesData.top) instructParts.push({ inlineData: { mimeType: 'image/jpeg', data: outfitImagesData.top } })
+        if (outfitImagesData.pants) instructParts.push({ inlineData: { mimeType: 'image/jpeg', data: outfitImagesData.pants } })
+        if (outfitImagesData.hat) instructParts.push({ inlineData: { mimeType: 'image/jpeg', data: outfitImagesData.hat } })
+        if (outfitImagesData.shoes) instructParts.push({ inlineData: { mimeType: 'image/jpeg', data: outfitImagesData.shoes } })
+        // 添加模特和背景
+        instructParts.push({ inlineData: { mimeType: 'image/jpeg', data: modelImageData } })
+        instructParts.push({ inlineData: { mimeType: 'image/jpeg', data: backgroundImageData } })
+        
+        let instructPrompt: string | null = null
+        try {
+          const instructResponse = await client.models.generateContent({
+            model: VLM_MODEL,
+            contents: [{ role: 'user', parts: instructParts }],
+            config: { safetySettings },
+          })
+          instructPrompt = extractText(instructResponse)
+          console.log(`[${label}] Instructions generated: ${instructPrompt?.substring(0, 200)}...`)
+        } catch (err: any) {
+          console.error(`[${label}] Instructions error:`, err?.message)
+        }
+        
+        // Step 2: 生成图片
+        const imagePrompt = buildOutfitImagePrompt(outfitDesc, instructPrompt)
+        usedPrompt = instructPrompt 
+          ? `[Photography Instructions]\n${instructPrompt}\n\n[Image Generation Prompt]\n${imagePrompt}`
+          : imagePrompt
+        
+        const imageParts: any[] = []
+        // 添加商品图片
+        if (outfitImagesData.inner) imageParts.push({ inlineData: { mimeType: 'image/jpeg', data: outfitImagesData.inner } })
+        if (outfitImagesData.top) imageParts.push({ inlineData: { mimeType: 'image/jpeg', data: outfitImagesData.top } })
+        if (outfitImagesData.pants) imageParts.push({ inlineData: { mimeType: 'image/jpeg', data: outfitImagesData.pants } })
+        if (outfitImagesData.hat) imageParts.push({ inlineData: { mimeType: 'image/jpeg', data: outfitImagesData.hat } })
+        if (outfitImagesData.shoes) imageParts.push({ inlineData: { mimeType: 'image/jpeg', data: outfitImagesData.shoes } })
+        // 添加模特和背景
+        imageParts.push({ inlineData: { mimeType: 'image/jpeg', data: modelImageData } })
+        imageParts.push({ inlineData: { mimeType: 'image/jpeg', data: backgroundImageData } })
+        // 添加 prompt
+        imageParts.push({ text: imagePrompt })
+        
+        console.log(`[${label}] Step 2: Generating outfit image...`)
+        result = await generateImageWithFallback(client, imageParts, label)
+        
+      } else {
+        // 兼容旧模式
+        console.log(`[${label}] Step 1: Generating instructions...`)
+        const instructPrompt = await generateInstructions(
+          client, productImageData!, modelImageData, backgroundImageData, label
+        )
+        
+        // Step 2: Generate image
+        const modelPrompt = buildModelPrompt({
+          instructPrompt: instructPrompt || undefined,
+        })
+        
+        // Save the full prompt used
+        usedPrompt = modelPrompt
+        if (instructPrompt) {
+          usedPrompt = `[Photography Instructions]\n${instructPrompt}\n\n[Image Generation Prompt]\n${modelPrompt}`
+        }
+        
+        // Parts order: product, model, background, prompt
+        const parts: any[] = [
+          { inlineData: { mimeType: 'image/jpeg', data: productImageData } },  // {{product}}
+          { inlineData: { mimeType: 'image/jpeg', data: modelImageData } },    // {{model}}
+          { inlineData: { mimeType: 'image/jpeg', data: backgroundImageData } }, // {{background}}
+          { text: modelPrompt },
+        ]
+        
+        console.log(`[${label}] Step 2: Generating model image...`)
+        result = await generateImageWithFallback(client, parts, label)
       }
-      
-      // Parts order: product, model, background, prompt
-      const parts: any[] = [
-        { inlineData: { mimeType: 'image/jpeg', data: productImageData } },  // {{product}}
-        { inlineData: { mimeType: 'image/jpeg', data: modelImageData } },    // {{model}}
-        { inlineData: { mimeType: 'image/jpeg', data: backgroundImageData } }, // {{background}}
-        { text: modelPrompt },
-      ]
-      
-      console.log(`[${label}] Step 2: Generating model image...`)
-      result = await generateImageWithFallback(client, parts, label)
     }
     
     const duration = Date.now() - startTime

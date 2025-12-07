@@ -901,10 +901,8 @@ function OutfitPageContent() {
         console.log('[Outfit] Products count:', products.length)
         
         if (isCameraMode) {
-          // 买家秀模式：使用 /api/generate-single，productImage/productImage2 格式
-          // 直接发送 URL/base64，后端会处理转换
-          const productImage = products[0] || null
-          const productImage2 = products[1] || null
+          // 买家秀模式：使用 /api/generate-single，传递 outfitItems
+          // 直接发送 URL，后端会处理转换
           
           // 简单模式：3张图
           // Helper function to create a single camera request with response handling
@@ -919,8 +917,8 @@ function OutfitPageContent() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   type: 'model',
-                  productImage,
-                  productImage2,
+                  // 传递 outfitItems 而不是 productImage/productImage2
+                  outfitItems,
                   modelImage: modelImageUrl,
                   backgroundImage: bgImageUrl,
                   simpleMode,
