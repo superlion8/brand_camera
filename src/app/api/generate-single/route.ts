@@ -7,6 +7,32 @@ import { uploadImageToStorage, appendImageToGeneration, markImageFailed } from '
 
 export const maxDuration = 300 // 5 minutes (Pro plan) - includes image upload
 
+// 将 URL 转换为 base64（服务端版本）
+async function urlToBase64(url: string): Promise<string> {
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image: ${response.statusText}`)
+    }
+    const arrayBuffer = await response.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+    const base64 = buffer.toString('base64')
+    return base64
+  } catch (error: any) {
+    console.error('[urlToBase64] Error:', error.message)
+    throw error
+  }
+}
+
+// 确保图片数据是 base64 格式（支持 URL 和 base64 输入）
+async function ensureBase64Data(image: string | null | undefined): Promise<string | null> {
+  if (!image) return null
+  if (image.startsWith('http://') || image.startsWith('https://')) {
+    return await urlToBase64(image)
+  }
+  return stripBase64Prefix(image)
+}
+
 // Model names
 const PRIMARY_IMAGE_MODEL = 'gemini-3-pro-image-preview'
 const FALLBACK_IMAGE_MODEL = 'gemini-2.5-flash-image'
@@ -173,8 +199,9 @@ export async function POST(request: NextRequest) {
     
     const productImageData = stripBase64Prefix(productImage)
     const productImage2Data = productImage2 ? stripBase64Prefix(productImage2) : null
-    const modelImageData = modelImage ? stripBase64Prefix(modelImage) : null
-    const backgroundImageData = backgroundImage ? stripBase64Prefix(backgroundImage) : null
+    // 模特和背景图片支持 URL 格式（后端转换），减少前端请求体大小
+    const modelImageData = await ensureBase64Data(modelImage)
+    const backgroundImageData = await ensureBase64Data(backgroundImage)
     const vibeImageData = vibeImage ? stripBase64Prefix(vibeImage) : null
     
     if (!productImageData || productImageData.length < 100) {

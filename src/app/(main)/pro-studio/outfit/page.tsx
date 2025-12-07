@@ -863,54 +863,40 @@ function OutfitPageContent() {
         const isModelRandom = !selectedModel
         const isBgRandom = !selectedBg
         
-        // 辅助函数：带重试的随机模特加载
-        const loadRandomModelWithRetry = async (maxRetries = 3): Promise<string | null> => {
-          for (let i = 0; i < maxRetries; i++) {
-            if (studioModels.length === 0) {
-              console.error('[Outfit] No studio models available')
-              return null
-            }
-            const randomIndex = Math.floor(Math.random() * studioModels.length)
-            const randomModel = studioModels[randomIndex]
-            console.log(`[Outfit] Trying random model ${i + 1}/${maxRetries}:`, randomModel?.name)
-            const base64 = await ensureBase64(randomModel.imageUrl)
-            if (base64) {
-              console.log(`[Outfit] Successfully loaded random model on attempt ${i + 1}`)
-              return base64
-            }
-            console.warn(`[Outfit] Failed to load random model on attempt ${i + 1}, trying another...`)
-          }
-          console.error(`[Outfit] All ${maxRetries} attempts to load random model failed`)
-          return null
-        }
-        
-        // 准备模特数据：用户选择的或随机选择的
-        let modelImageData: string | null
+        // 准备模特数据：直接使用 URL，后端会转换为 base64
+        // 这样可以大幅减少请求体大小，避免 Cloudflare 超时
+        let modelImageUrl: string | null
         if (selectedModel) {
           console.log('[Outfit] Using selected model:', selectedModel.name)
-          modelImageData = await ensureBase64(selectedModel.imageUrl)
+          modelImageUrl = selectedModel.imageUrl
         } else {
           console.log('[Outfit] No model selected, trying random model. studioModels count:', studioModels.length)
           // 如果没有预设模特，尝试使用用户上传的模特
           if (studioModels.length === 0 && userModels.length > 0) {
             console.log('[Outfit] No studio models, using user model instead')
             const randomUserModel = userModels[Math.floor(Math.random() * userModels.length)]
-            modelImageData = await ensureBase64(randomUserModel.imageUrl)
+            modelImageUrl = randomUserModel.imageUrl
+          } else if (studioModels.length > 0) {
+            // 随机选择一个预设模特
+            const randomIndex = Math.floor(Math.random() * studioModels.length)
+            const randomModel = studioModels[randomIndex]
+            console.log('[Outfit] Using random model:', randomModel?.name)
+            modelImageUrl = randomModel?.imageUrl || null
           } else {
-            modelImageData = await loadRandomModelWithRetry()
+            modelImageUrl = null
           }
         }
         
-        // 准备背景数据
-        const bgImageData = selectedBg ? await ensureBase64(selectedBg.imageUrl) : null
+        // 准备背景数据：直接使用 URL
+        const bgImageUrl = selectedBg ? selectedBg.imageUrl : null
         
-        if (!modelImageData) {
-          console.error('[Outfit] Failed to load model image - no models available')
-          alert('无法加载模特图片，请手动选择一个模特')
+        if (!modelImageUrl) {
+          console.error('[Outfit] Failed to get model URL - no models available')
+          alert('无法获取模特图片，请手动选择一个模特')
           return
         }
         
-        console.log('[Outfit] Model loaded successfully, starting generation...')
+        console.log('[Outfit] Model URL ready, starting generation...')
         
         // 根据模式选择不同的 API 和参数格式
         console.log('[Outfit] Mode:', isCameraMode ? 'camera' : 'pro_studio')
@@ -943,8 +929,8 @@ function OutfitPageContent() {
                   type: 'model',
                   productImage,
                   productImage2,
-                  modelImage: modelImageData,
-                  backgroundImage: bgImageData,
+                  modelImage: modelImageUrl,
+                  backgroundImage: bgImageUrl,
                   simpleMode,
                   index,
                   taskId,
@@ -1033,8 +1019,8 @@ function OutfitPageContent() {
                 body: JSON.stringify({
                   outfitItems, // 新格式：独立的服装项 { inner?, top?, pants?, hat?, shoes? }
                   productImages: products, // 向后兼容
-                  modelImage: modelImageData,
-                  backgroundImage: bgImageData,
+                  modelImage: modelImageUrl,  // 发送 URL，后端转换 base64
+                  backgroundImage: bgImageUrl,  // 发送 URL，后端转换 base64
                   mode,
                   index,
                   taskId,
