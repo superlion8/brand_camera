@@ -435,7 +435,8 @@ export default function ProStudioOutfitPage() {
     '上衣': 'TOP',
     '内衬': 'INNER',
     '裤子': 'BOTTOM',
-    '鞋子': 'SHOES'
+    '鞋子': 'SHOES',
+    '配饰': 'ACCESSORY'
   }
   
   // 渲染槽位卡片（用于人形图周围）- 参考图片设计
