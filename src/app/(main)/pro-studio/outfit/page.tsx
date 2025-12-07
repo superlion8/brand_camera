@@ -243,6 +243,7 @@ export default function ProStudioOutfitPage() {
   const [showSlotOptions, setShowSlotOptions] = useState(false) // 空白框点击选项面板
   const [showAssetPicker, setShowAssetPicker] = useState(false) // 资产库选择面板
   const [touchDragSlotId, setTouchDragSlotId] = useState<ProductCategory | null>(null) // 触摸拖拽
+  const touchDragSlotIdRef = useRef<ProductCategory | null>(null) // 用ref避免闭包问题
   
   // 模特和背景选择
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null)
@@ -486,6 +487,7 @@ export default function ProStudioOutfitPage() {
       
       // 长按300ms后开始拖拽
       longPressTimer.current = setTimeout(() => {
+        touchDragSlotIdRef.current = slot.id
         setTouchDragSlotId(slot.id)
         // 震动反馈（如果支持）
         if (navigator.vibrate) {
@@ -496,13 +498,13 @@ export default function ProStudioOutfitPage() {
     
     const handleTouchMove = (e: React.TouchEvent) => {
       // 如果还没开始拖拽，取消长按计时
-      if (!touchDragSlotId && longPressTimer.current) {
+      if (!touchDragSlotIdRef.current && longPressTimer.current) {
         clearTimeout(longPressTimer.current)
         longPressTimer.current = null
       }
       
       // 如果正在拖拽，阻止滚动
-      if (touchDragSlotId) {
+      if (touchDragSlotIdRef.current) {
         e.preventDefault()
       }
     }
@@ -514,7 +516,8 @@ export default function ProStudioOutfitPage() {
         longPressTimer.current = null
       }
       
-      if (!touchDragSlotId) return
+      const currentDragSlotId = touchDragSlotIdRef.current
+      if (!currentDragSlotId) return
       
       // 获取触摸结束位置
       const touch = e.changedTouches[0]
@@ -524,11 +527,26 @@ export default function ProStudioOutfitPage() {
       const targetSlotElement = element?.closest('[data-slot-id]')
       if (targetSlotElement) {
         const targetSlotId = targetSlotElement.getAttribute('data-slot-id') as ProductCategory
-        if (targetSlotId && targetSlotId !== touchDragSlotId) {
-          handleDrop(targetSlotId)
+        if (targetSlotId && targetSlotId !== currentDragSlotId) {
+          // 直接交换，不调用handleDrop避免闭包问题
+          const sourceSlot = slots.find(s => s.id === currentDragSlotId)
+          const targetSlot = slots.find(s => s.id === targetSlotId)
+          
+          if (sourceSlot?.product) {
+            setSlots(prev => prev.map(s => {
+              if (s.id === currentDragSlotId) {
+                return { ...s, product: targetSlot?.product }
+              }
+              if (s.id === targetSlotId) {
+                return { ...s, product: sourceSlot.product }
+              }
+              return s
+            }))
+          }
         }
       }
       
+      touchDragSlotIdRef.current = null
       setTouchDragSlotId(null)
     }
     
@@ -537,6 +555,7 @@ export default function ProStudioOutfitPage() {
         clearTimeout(longPressTimer.current)
         longPressTimer.current = null
       }
+      touchDragSlotIdRef.current = null
       setTouchDragSlotId(null)
     }
     
