@@ -573,80 +573,76 @@ export default function ProStudioOutfitPage() {
       return
     }
     
-    // 调用生成API，传入所有商品图片
-    try {
-      // 简单模式：3张图
-      const simplePromises = []
-      for (let i = 0; i < 3; i++) {
-        simplePromises.push(
-          fetch('/api/generate-pro-studio', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              productImages: products, // 传入所有商品图片
-              modelImage: modelImageData,
-              backgroundImage: bgImageData,
-              mode: 'simple',
-              index: i,
-              taskId,
-              modelIsRandom: isModelRandom,
-              bgIsRandom: isBgRandom,
-              modelName: selectedModel?.name || '专业模特',
-              bgName: selectedBg?.name || '影棚背景',
-              modelUrl: selectedModel?.imageUrl,
-              bgUrl: selectedBg?.imageUrl,
-              modelIsPreset: selectedModel ? !customModels.find(m => m.id === selectedModel.id) : true,
-              bgIsPreset: selectedBg ? !customBgs.find(b => b.id === selectedBg.id) : true,
+    // 保存 taskId 并立即跳转到 processing 页面
+    sessionStorage.setItem('proStudioTaskId', taskId)
+    router.push('/pro-studio?mode=processing')
+    
+    // 在后台发起生成请求（不等待完成）
+    const generateInBackground = async () => {
+      try {
+        // 简单模式：3张图
+        const simplePromises = []
+        for (let i = 0; i < 3; i++) {
+          simplePromises.push(
+            fetch('/api/generate-pro-studio', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                productImages: products,
+                modelImage: modelImageData,
+                backgroundImage: bgImageData,
+                mode: 'simple',
+                index: i,
+                taskId,
+                modelIsRandom: isModelRandom,
+                bgIsRandom: isBgRandom,
+                modelName: selectedModel?.name || '专业模特',
+                bgName: selectedBg?.name || '影棚背景',
+                modelUrl: selectedModel?.imageUrl,
+                bgUrl: selectedBg?.imageUrl,
+                modelIsPreset: selectedModel ? !customModels.find(m => m.id === selectedModel.id) : true,
+                bgIsPreset: selectedBg ? !customBgs.find(b => b.id === selectedBg.id) : true,
+              })
             })
-          })
-        )
-      }
-      
-      // 扩展模式：3张图
-      const extendedPromises = []
-      for (let i = 0; i < 3; i++) {
-        extendedPromises.push(
-          fetch('/api/generate-pro-studio', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              productImages: products, // 传入所有商品图片
-              modelImage: modelImageData,
-              backgroundImage: bgImageData,
-              mode: 'extended',
-              index: i + 3,
-              taskId,
-              modelIsRandom: isModelRandom,
-              bgIsRandom: isBgRandom,
-              modelName: selectedModel?.name || '专业模特',
-              bgName: selectedBg?.name || '影棚背景',
-              modelUrl: selectedModel?.imageUrl,
-              bgUrl: selectedBg?.imageUrl,
-              modelIsPreset: selectedModel ? !customModels.find(m => m.id === selectedModel.id) : true,
-              bgIsPreset: selectedBg ? !customBgs.find(b => b.id === selectedBg.id) : true,
+          )
+        }
+        
+        // 扩展模式：3张图
+        const extendedPromises = []
+        for (let i = 0; i < 3; i++) {
+          extendedPromises.push(
+            fetch('/api/generate-pro-studio', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                productImages: products,
+                modelImage: modelImageData,
+                backgroundImage: bgImageData,
+                mode: 'extended',
+                index: i + 3,
+                taskId,
+                modelIsRandom: isModelRandom,
+                bgIsRandom: isBgRandom,
+                modelName: selectedModel?.name || '专业模特',
+                bgName: selectedBg?.name || '影棚背景',
+                modelUrl: selectedModel?.imageUrl,
+                bgUrl: selectedBg?.imageUrl,
+                modelIsPreset: selectedModel ? !customModels.find(m => m.id === selectedModel.id) : true,
+                bgIsPreset: selectedBg ? !customBgs.find(b => b.id === selectedBg.id) : true,
+              })
             })
-          })
-        )
+          )
+        }
+        
+        // 等待所有请求完成（后台处理）
+        await Promise.allSettled([...simplePromises, ...extendedPromises])
+      } catch (error) {
+        console.error('Generation failed:', error)
       }
-      
-      // 等待所有请求完成
-      const results = await Promise.allSettled([...simplePromises, ...extendedPromises])
-      
-      // 检查是否有失败
-      const failures = results.filter(r => r.status === 'rejected')
-      if (failures.length > 0) {
-        console.error('Some generations failed:', failures)
-        alert(`有 ${failures.length} 张图片生成失败，请重试`)
-        return
-      }
-      
-      // 跳转到pro-studio页面，并设置模式为results
-      sessionStorage.setItem('proStudioTaskId', taskId)
-      router.push('/pro-studio?mode=results')
-    } catch (error) {
-      console.error('Generation failed:', error)
-      alert('生成失败，请重试')
     }
+    
+    // 启动后台生成
+    generateInBackground()
   }
   
   // 获取选中的模特和背景

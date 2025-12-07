@@ -216,6 +216,7 @@ function BackgroundGrid({
 
 function ProStudioPageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, isLoading: authLoading } = useAuth()
   const t = useLanguageStore(state => state.t)
   const { checkQuota, showExceededModal, requiredCount, closeExceededModal, quota } = useQuota()
@@ -229,6 +230,19 @@ function ProStudioPageContent() {
       router.replace('/login')
     }
   }, [user, authLoading, router])
+  
+  // 从 URL 参数读取 mode（从 outfit 页面跳转过来时）
+  useEffect(() => {
+    const urlMode = searchParams.get('mode')
+    if (urlMode === 'processing' || urlMode === 'results') {
+      setMode(urlMode as PageMode)
+      // 从 sessionStorage 恢复 taskId
+      const savedTaskId = sessionStorage.getItem('proStudioTaskId')
+      if (savedTaskId) {
+        setCurrentTaskId(savedTaskId)
+      }
+    }
+  }, [searchParams])
   
   const webcamRef = useRef<Webcam>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
