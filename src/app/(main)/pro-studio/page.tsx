@@ -26,6 +26,23 @@ import { useSettingsStore } from "@/stores/settingsStore"
 
 type PageMode = "camera" | "review" | "processing" | "results"
 
+// 商品分类
+type ProductSubTab = "all" | "top" | "pants" | "inner" | "shoes" | "hat"
+const PRODUCT_SUB_TABS: ProductSubTab[] = ["all", "top", "pants", "inner", "shoes", "hat"]
+
+// 商品分类翻译映射
+const getProductCategoryLabel = (cat: ProductSubTab, t: any): string => {
+  switch (cat) {
+    case "all": return t.common?.all || "全部"
+    case "top": return t.assets?.productTop || "上衣"
+    case "pants": return t.assets?.productPants || "裤子"
+    case "inner": return t.assets?.productInner || "内衬"
+    case "shoes": return t.assets?.productShoes || "鞋子"
+    case "hat": return t.assets?.productHat || "帽子"
+    default: return cat
+  }
+}
+
 // 专业棚拍生成6张图
 const PRO_STUDIO_NUM_IMAGES = 6
 
@@ -269,6 +286,8 @@ function ProStudioPageContent() {
   // Panel state
   const [showCustomPanel, setShowCustomPanel] = useState(false)
   const [showProductPanel, setShowProductPanel] = useState(false)
+  const [productSubTab, setProductSubTab] = useState<ProductSubTab>("all")
+  const [zoomProductImage, setZoomProductImage] = useState<string | null>(null)
   const [showProduct2Panel, setShowProduct2Panel] = useState(false) // 第二件商品选择面板
   const [activeCustomTab, setActiveCustomTab] = useState<'model' | 'bg'>('model')
   const [productSourceTab, setProductSourceTab] = useState<'preset' | 'user'>('preset')
@@ -1032,7 +1051,7 @@ function ProStudioPageContent() {
                     animate={{ y: 0 }} 
                     exit={{ y: "100%" }}
                     transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className="absolute bottom-0 left-0 right-0 h-[60%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
+                    className="absolute bottom-0 left-0 right-0 h-[80%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
                   >
                     <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
                       <span className="font-semibold">{t.proStudio?.selectProduct || '选择商品'}</span>
@@ -1044,7 +1063,7 @@ function ProStudioPageContent() {
                       </button>
                     </div>
                     
-                    <div className="px-4 py-2 border-b bg-white dark:bg-zinc-900">
+                    <div className="px-4 py-2 border-b bg-white dark:bg-zinc-900 shrink-0">
                       <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1">
                         <button
                           onClick={() => setProductSourceTab("preset")}
@@ -1071,6 +1090,31 @@ function ProStudioPageContent() {
                           )}
                         </button>
                       </div>
+                      
+                      {/* 二级分类（仅我的商品） */}
+                      {productSourceTab === "user" && (
+                        <div className="flex gap-2 mt-2 flex-wrap">
+                          {PRODUCT_SUB_TABS.map(cat => {
+                            const count = cat === "all" 
+                              ? userProducts.length 
+                              : userProducts.filter(p => p.category === cat).length
+                            return (
+                              <button
+                                key={cat}
+                                onClick={() => setProductSubTab(cat)}
+                                className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors ${
+                                  productSubTab === cat
+                                    ? "bg-blue-600 text-white"
+                                    : "bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-300 dark:hover:bg-zinc-600"
+                                }`}
+                              >
+                                {getProductCategoryLabel(cat, t)}
+                                <span className="ml-1 opacity-70">({count})</span>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
                     </div>
                     
                     <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4">
@@ -1082,73 +1126,127 @@ function ProStudioPageContent() {
                             </div>
                           )}
                           {PRESET_PRODUCTS.map(product => (
-                            <button
-                              key={product.id}
-                              disabled={isLoadingAssets}
-                              onClick={async () => {
-                                setIsLoadingAssets(true)
-                                try {
-                                  const base64 = await ensureBase64(product.imageUrl)
-                                  if (base64) {
-                                    setCapturedImage(base64)
+                            <div key={product.id} className="relative group">
+                              <button
+                                disabled={isLoadingAssets}
+                                onClick={async () => {
+                                  setIsLoadingAssets(true)
+                                  try {
+                                    const base64 = await ensureBase64(product.imageUrl)
+                                    if (base64) {
+                                      setCapturedImage(base64)
+                                      setMode("review")
+                                      setShowProductPanel(false)
+                                    }
+                                  } catch (e) {
+                                    console.error("Failed to load preset product:", e)
+                                  } finally {
+                                    setIsLoadingAssets(false)
+                                  }
+                                }}
+                                className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all disabled:opacity-50 w-full"
+                              >
+                                <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
+                                <span className="absolute top-1 left-1 bg-blue-600 text-white text-[8px] px-1 py-0.5 rounded font-medium">
+                                  官方
+                                </span>
+                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-4">
+                                  <p className="text-[10px] text-white truncate text-center">{product.name}</p>
+                                </div>
+                              </button>
+                              {/* 放大按钮 */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setZoomProductImage(product.imageUrl)
+                                }}
+                                className="absolute bottom-1 right-1 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <ZoomIn className="w-3 h-3 text-white" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (() => {
+                        // 筛选用户商品
+                        const filteredProducts = productSubTab === "all" 
+                          ? userProducts 
+                          : userProducts.filter(p => p.category === productSubTab)
+                        
+                        return filteredProducts.length > 0 ? (
+                          <div className="grid grid-cols-3 gap-3 pb-20">
+                            {filteredProducts.map(product => (
+                              <div key={product.id} className="relative group">
+                                <button
+                                  onClick={() => {
+                                    setCapturedImage(product.imageUrl)
                                     setMode("review")
                                     setShowProductPanel(false)
-                                  }
-                                } catch (e) {
-                                  console.error("Failed to load preset product:", e)
-                                } finally {
-                                  setIsLoadingAssets(false)
-                                }
-                              }}
-                              className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all disabled:opacity-50"
-                            >
-                              <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
-                              <span className="absolute top-1 left-1 bg-blue-600 text-white text-[8px] px-1 py-0.5 rounded font-medium">
-                                官方
-                              </span>
-                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-4">
-                                <p className="text-[10px] text-white truncate text-center">{product.name}</p>
+                                  }}
+                                  className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all w-full"
+                                >
+                                  <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
+                                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-4">
+                                    <p className="text-[10px] text-white truncate text-center">{product.name}</p>
+                                  </div>
+                                </button>
+                                {/* 放大按钮 */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setZoomProductImage(product.imageUrl)
+                                  }}
+                                  className="absolute bottom-1 right-1 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <ZoomIn className="w-3 h-3 text-white" />
+                                </button>
                               </div>
-                            </button>
-                          ))}
-                        </div>
-                      ) : userProducts.length > 0 ? (
-                        <div className="grid grid-cols-3 gap-3 pb-20">
-                          {userProducts.map(product => (
-                            <button
-                              key={product.id}
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center h-full text-zinc-400">
+                            <FolderHeart className="w-12 h-12 mb-3 opacity-30" />
+                            <p className="text-sm">{t.proStudio?.noMyProducts || '暂无我的商品'}</p>
+                            <p className="text-xs mt-1">{t.proStudio?.uploadInAssets || '请先在资源库上传商品'}</p>
+                            <button 
                               onClick={() => {
-                                setCapturedImage(product.imageUrl)
-                                setMode("review")
                                 setShowProductPanel(false)
+                                router.push("/brand-assets")
                               }}
-                              className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all"
+                              className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
                             >
-                              <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
-                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-4">
-                                <p className="text-[10px] text-white truncate text-center">{product.name}</p>
-                              </div>
+                              {t.proStudio?.goUpload || '去上传'}
                             </button>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-zinc-400">
-                          <FolderHeart className="w-12 h-12 mb-3 opacity-30" />
-                          <p className="text-sm">{t.proStudio?.noMyProducts || '暂无我的商品'}</p>
-                          <p className="text-xs mt-1">{t.proStudio?.uploadInAssets || '请先在资源库上传商品'}</p>
-                          <button 
-                            onClick={() => {
-                              setShowProductPanel(false)
-                              router.push("/brand-assets")
-                            }}
-                            className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-                          >
-                            {t.proStudio?.goUpload || '去上传'}
-                          </button>
-                        </div>
-                      )}
+                          </div>
+                        )
+                      })()}
                     </div>
                   </motion.div>
+                  
+                  {/* 商品放大预览 */}
+                  <AnimatePresence>
+                    {zoomProductImage && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center"
+                        onClick={() => setZoomProductImage(null)}
+                      >
+                        <button
+                          onClick={() => setZoomProductImage(null)}
+                          className="absolute top-4 right-4 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center"
+                        >
+                          <X className="w-6 h-6 text-white" />
+                        </button>
+                        <img 
+                          src={zoomProductImage} 
+                          alt="商品预览" 
+                          className="max-w-[90%] max-h-[80%] object-contain rounded-lg"
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </>
               )}
             </AnimatePresence>
