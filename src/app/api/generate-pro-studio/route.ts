@@ -6,16 +6,22 @@ import { appendImageToGeneration, uploadImageToStorage } from '@/lib/supabase/ge
 // 将 URL 转换为 base64（服务端版本）
 async function urlToBase64(url: string): Promise<string> {
   try {
-    const response = await fetch(url)
+    // 处理 URL 编码问题
+    const cleanUrl = url.trim()
+    console.log('[urlToBase64] Fetching:', cleanUrl.substring(0, 100) + '...')
+    
+    const response = await fetch(cleanUrl)
     if (!response.ok) {
-      throw new Error(`Failed to fetch image: ${response.statusText}`)
+      console.error('[urlToBase64] HTTP Error:', response.status, response.statusText, 'URL:', cleanUrl)
+      throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`)
     }
     const arrayBuffer = await response.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
     const base64 = buffer.toString('base64')
+    console.log('[urlToBase64] Success, base64 length:', base64.length)
     return `data:image/jpeg;base64,${base64}`
   } catch (error: any) {
-    console.error('[urlToBase64] Error:', error.message)
+    console.error('[urlToBase64] Error:', error.message, 'URL:', url?.substring(0, 100))
     throw error
   }
 }
@@ -253,16 +259,26 @@ export async function POST(request: NextRequest) {
     // 准备所有商品图片数据 - 如果是 URL，先转换为 base64
     const productImagesData: string[] = []
     for (const product of products) {
+      if (!product) {
+        console.warn(`${label} Skipping empty product`)
+        continue
+      }
       let productImageData: string
-      if (product?.startsWith('http://') || product?.startsWith('https://')) {
+      if (product.startsWith('http://') || product.startsWith('https://')) {
+        console.log(`${label} Converting product URL to base64:`, product.substring(0, 80))
         const base64Data = await urlToBase64(product)
         productImageData = base64Data.split(',')[1]
-      } else if (product?.startsWith('data:')) {
+      } else if (product.startsWith('data:')) {
         productImageData = product.split(',')[1]
       } else {
+        // 假设是纯 base64
         productImageData = product
       }
-      productImagesData.push(productImageData)
+      if (productImageData && productImageData.length > 100) {
+        productImagesData.push(productImageData)
+      } else {
+        console.warn(`${label} Skipping invalid product data, length:`, productImageData?.length || 0)
+      }
     }
     
     if (productImagesData.length === 0) {
@@ -275,19 +291,23 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    let modelImageData: string
-    if (modelImage?.startsWith('http://') || modelImage?.startsWith('https://')) {
-      const base64Data = await urlToBase64(modelImage)
-      modelImageData = base64Data.split(',')[1]
-    } else if (modelImage?.startsWith('data:')) {
-      modelImageData = modelImage.split(',')[1]
-    } else {
-      modelImageData = modelImage
+    let modelImageData: string = ''
+    if (modelImage) {
+      if (modelImage.startsWith('http://') || modelImage.startsWith('https://')) {
+        console.log(`${label} Converting model URL to base64:`, modelImage.substring(0, 80))
+        const base64Data = await urlToBase64(modelImage)
+        modelImageData = base64Data.split(',')[1]
+      } else if (modelImage.startsWith('data:')) {
+        modelImageData = modelImage.split(',')[1]
+      } else {
+        modelImageData = modelImage
+      }
     }
 
     let bgImageData: string | undefined
     if (backgroundImage) {
       if (backgroundImage.startsWith('http://') || backgroundImage.startsWith('https://')) {
+        console.log(`${label} Converting background URL to base64:`, backgroundImage.substring(0, 80))
         const base64Data = await urlToBase64(backgroundImage)
         bgImageData = base64Data.split(',')[1]
       } else if (backgroundImage.startsWith('data:')) {

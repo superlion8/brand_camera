@@ -10,16 +10,19 @@ export const maxDuration = 300 // 5 minutes (Pro plan) - includes image upload
 // 将 URL 转换为 base64（服务端版本）
 async function urlToBase64(url: string): Promise<string> {
   try {
-    const response = await fetch(url)
+    const cleanUrl = url.trim()
+    console.log('[urlToBase64] Fetching:', cleanUrl.substring(0, 100) + '...')
+    const response = await fetch(cleanUrl)
     if (!response.ok) {
-      throw new Error(`Failed to fetch image: ${response.statusText}`)
+      console.error('[urlToBase64] HTTP Error:', response.status, response.statusText, 'URL:', cleanUrl)
+      throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`)
     }
     const arrayBuffer = await response.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
-    const base64 = buffer.toString('base64')
-    return base64
+    console.log('[urlToBase64] Success, base64 length:', buffer.toString('base64').length)
+    return buffer.toString('base64')
   } catch (error: any) {
-    console.error('[urlToBase64] Error:', error.message)
+    console.error('[urlToBase64] Error:', error.message, 'URL:', url?.substring(0, 100))
     throw error
   }
 }
