@@ -36,6 +36,9 @@ const systemPresets: Record<AssetType, Asset[]> = {
 type SourceTab = "user" | "preset"
 type ModelSubTab = "normal" | "studio"
 type BackgroundSubTab = "normal" | "studio"
+type ProductSubTab = "all" | "上衣" | "裤子" | "内衬" | "鞋子" | "帽子"
+
+const PRODUCT_CATEGORIES: ProductSubTab[] = ["all", "上衣", "裤子", "内衬", "鞋子", "帽子"]
 
 export default function BrandAssetsPage() {
   const router = useRouter()
@@ -55,6 +58,7 @@ export default function BrandAssetsPage() {
   // 二级分类状态
   const [modelSubTab, setModelSubTab] = useState<ModelSubTab>("normal")
   const [backgroundSubTab, setBackgroundSubTab] = useState<BackgroundSubTab>("normal")
+  const [productSubTab, setProductSubTab] = useState<ProductSubTab>("all")
   
   // Auth and sync state
   const { isSyncing: authSyncing } = useAuth()
@@ -81,7 +85,10 @@ export default function BrandAssetsPage() {
     switch (type) {
       case "model": return userModels
       case "background": return userBackgrounds
-      case "product": return userProducts
+      case "product": 
+        // 商品支持二级分类筛选
+        if (productSubTab === "all") return userProducts
+        return userProducts.filter(p => p.category === productSubTab)
       case "vibe": return userVibes
       default: return []
     }
@@ -105,6 +112,8 @@ export default function BrandAssetsPage() {
         type: uploadType,
         name: file.name.replace(/\.[^/.]+$/, ""),
         imageUrl: base64,
+        // 如果上传的是商品且选择了具体分类，则设置 category
+        ...(uploadType === 'product' && productSubTab !== 'all' && { category: productSubTab }),
       }
       
       // Use addUserAsset which handles both local state and cloud sync
@@ -325,6 +334,31 @@ export default function BrandAssetsPage() {
               {t.assets.studioBackgrounds || '棚拍背景'}
               <span className="ml-1 opacity-70">({backgroundPresets.studio.length})</span>
             </button>
+          </div>
+        )}
+        
+        {/* 二级分类 - 商品（仅我的资产） */}
+        {activeSource === "user" && activeType === "product" && (
+          <div className="flex gap-2 mt-2 flex-wrap">
+            {PRODUCT_CATEGORIES.map(cat => {
+              const count = cat === "all" 
+                ? userProducts.length 
+                : userProducts.filter(p => p.category === cat).length
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setProductSubTab(cat)}
+                  className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                    productSubTab === cat
+                      ? "bg-blue-600 text-white"
+                      : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                  }`}
+                >
+                  {cat === "all" ? (t.common.all || "全部") : cat}
+                  <span className="ml-1 opacity-70">({count})</span>
+                </button>
+              )
+            })}
           </div>
         )}
       </div>

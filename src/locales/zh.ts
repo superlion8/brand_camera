@@ -324,6 +324,12 @@ export const zh = {
     studioModels: "高级模特",
     normalBackgrounds: "普通背景",
     studioBackgrounds: "棚拍背景",
+    // 商品分类
+    productTop: "上衣",
+    productPants: "裤子",
+    productInner: "内衬",
+    productShoes: "鞋子",
+    productHat: "帽子",
   },
   
   // User Menu

@@ -326,6 +326,12 @@ export const en: Translations = {
     studioModels: "Pro Models",
     normalBackgrounds: "Regular Backgrounds",
     studioBackgrounds: "Studio Backgrounds",
+    // Product categories
+    productTop: "Tops",
+    productPants: "Pants",
+    productInner: "Innerwear",
+    productShoes: "Shoes",
+    productHat: "Hats",
   },
   
   // User Menu

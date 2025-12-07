@@ -326,6 +326,12 @@ export const ko: Translations = {
     studioModels: "프로 모델",
     normalBackgrounds: "일반 배경",
     studioBackgrounds: "스튜디오 배경",
+    // 상품 카테고리
+    productTop: "상의",
+    productPants: "바지",
+    productInner: "이너웨어",
+    productShoes: "신발",
+    productHat: "모자",
   },
   
   // User Menu
