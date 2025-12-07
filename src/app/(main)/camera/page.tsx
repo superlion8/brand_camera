@@ -114,6 +114,29 @@ function CameraPageContent() {
     }
   }, [searchParams])
   
+  // 监听任务完成，自动切换到 results 模式（从 outfit 页面跳转过来时）
+  useEffect(() => {
+    if (mode !== 'processing' || !currentTaskId) return
+    
+    const currentTask = tasks.find(t => t.id === currentTaskId)
+    if (!currentTask?.imageSlots) return
+    
+    // 检查是否有任何一张图片完成
+    const hasAnyCompleted = currentTask.imageSlots.some(s => s.status === 'completed')
+    
+    if (hasAnyCompleted) {
+      console.log('[Camera] Task has completed images, switching to results mode')
+      // 更新 generatedImages 从 imageSlots
+      const images = currentTask.imageSlots.map(s => s.imageUrl || '')
+      const modelTypes = currentTask.imageSlots.map(s => s.modelType || null)
+      const genModes = currentTask.imageSlots.map(s => s.genMode || 'simple')
+      setGeneratedImages(images)
+      setGeneratedModelTypes(modelTypes as (string | null)[])
+      setGeneratedGenModes(genModes)
+      setMode('results')
+    }
+  }, [mode, currentTaskId, tasks])
+  
   // Keep modeRef in sync with mode
   useEffect(() => {
     modeRef.current = mode

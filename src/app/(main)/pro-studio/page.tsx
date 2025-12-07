@@ -261,6 +261,27 @@ function ProStudioPageContent() {
     }
   }, [searchParams])
   
+  // 监听任务完成，自动切换到 results 模式（从 outfit 页面跳转过来时）
+  useEffect(() => {
+    if (mode !== 'processing' || !currentTaskId) return
+    
+    const currentTask = tasks.find(t => t.id === currentTaskId)
+    if (!currentTask?.imageSlots) return
+    
+    // 检查是否有任何一张图片完成
+    const hasAnyCompleted = currentTask.imageSlots.some(s => s.status === 'completed')
+    
+    if (hasAnyCompleted) {
+      console.log('[ProStudio] Task has completed images, switching to results mode')
+      // 更新 generatedImages 从 imageSlots
+      const images = currentTask.imageSlots.map(s => s.imageUrl || '')
+      const modes = currentTask.imageSlots.map((s, i) => s.genMode || (i < 3 ? 'simple' : 'extended'))
+      setGeneratedImages(images)
+      setGeneratedModes(modes as ('simple' | 'extended')[])
+      setMode('results')
+    }
+  }, [mode, currentTaskId, tasks])
+  
   const webcamRef = useRef<Webcam>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef2 = useRef<HTMLInputElement>(null) // 第二张商品图片上传
