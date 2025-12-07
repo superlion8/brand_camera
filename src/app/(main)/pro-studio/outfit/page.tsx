@@ -16,7 +16,7 @@ import { usePresetStore } from "@/stores/presetStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { useQuota } from "@/hooks/useQuota"
 import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
-import { useGenerationTaskStore } from "@/stores/generationTaskStore"
+import { useGenerationTaskStore, base64ToBlobUrl } from "@/stores/generationTaskStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { Asset } from "@/types"
 
@@ -227,7 +227,7 @@ function OutfitPageContent() {
   const searchParams = useSearchParams()
   const t = useLanguageStore(state => state.t)
   const { checkQuota, showExceededModal, requiredCount, closeExceededModal } = useQuota()
-  const { addTask, initImageSlots } = useGenerationTaskStore()
+  const { addTask, initImageSlots, updateImageSlot } = useGenerationTaskStore()
   const { userModels, userBackgrounds, userProducts, addUserAsset } = useAssetStore()
   const presetStore = usePresetStore()
   
@@ -842,10 +842,14 @@ function OutfitPageContent() {
           const productImage2 = productBase64Array[1] || null
           
           // 简单模式：3张图
-          const simplePromises = []
-          for (let i = 0; i < 3; i++) {
-            simplePromises.push(
-              fetch('/api/generate-single', {
+          // Helper function to create a single camera request with response handling
+          const createCameraRequest = async (index: number, simpleMode: boolean) => {
+            const mode = simpleMode ? 'simple' : 'extended'
+            console.log(`[Outfit-Camera] Starting image ${index + 1} (${mode})`)
+            updateImageSlot(taskId, index, { status: 'generating' })
+            
+            try {
+              const response = await fetch('/api/generate-single', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -854,8 +858,8 @@ function OutfitPageContent() {
                   productImage2,
                   modelImage: modelImageData,
                   backgroundImage: bgImageData,
-                  simpleMode: true,
-                  index: i,
+                  simpleMode,
+                  index,
                   taskId,
                   modelIsRandom: isModelRandom,
                   bgIsRandom: isBgRandom,
@@ -867,57 +871,72 @@ function OutfitPageContent() {
                   bgIsPreset: selectedBg ? !customBgs.find(b => b.id === selectedBg.id) : true,
                 })
               })
-            )
+              
+              if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }))
+                console.log(`[Outfit-Camera] Image ${index + 1}: ✗ HTTP ${response.status}`)
+                updateImageSlot(taskId, index, { 
+                  status: 'failed', 
+                  error: errorData.error || `HTTP ${response.status}` 
+                })
+                return
+              }
+              
+              const result = await response.json()
+              if (result.success && result.image) {
+                const imageUrl = result.image.startsWith('data:') 
+                  ? base64ToBlobUrl(result.image) 
+                  : result.image
+                console.log(`[Outfit-Camera] Image ${index + 1}: ✓ (${result.modelType}, ${mode})`)
+                updateImageSlot(taskId, index, {
+                  status: 'completed',
+                  imageUrl: imageUrl,
+                  modelType: result.modelType,
+                  genMode: mode,
+                })
+              } else {
+                console.log(`[Outfit-Camera] Image ${index + 1}: ✗ (${result.error})`)
+                updateImageSlot(taskId, index, { 
+                  status: 'failed', 
+                  error: result.error || '生成失败' 
+                })
+              }
+            } catch (e: any) {
+              console.log(`[Outfit-Camera] Image ${index + 1}: ✗ (${e.message})`)
+              updateImageSlot(taskId, index, { 
+                status: 'failed', 
+                error: e.message || '网络错误' 
+              })
+            }
           }
           
-          // 扩展模式：3张图
-          const extendedPromises = []
-          for (let i = 0; i < 3; i++) {
-            extendedPromises.push(
-              fetch('/api/generate-single', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  type: 'model',
-                  productImage,
-                  productImage2,
-                  modelImage: modelImageData,
-                  backgroundImage: bgImageData,
-                  simpleMode: false,
-                  index: i + 3,
-                  taskId,
-                  modelIsRandom: isModelRandom,
-                  bgIsRandom: isBgRandom,
-                  modelName: selectedModel?.name || '模特',
-                  bgName: selectedBg?.name || '背景',
-                  modelUrl: selectedModel?.imageUrl,
-                  bgUrl: selectedBg?.imageUrl,
-                  modelIsPreset: selectedModel ? !customModels.find(m => m.id === selectedModel.id) : true,
-                  bgIsPreset: selectedBg ? !customBgs.find(b => b.id === selectedBg.id) : true,
-                })
-              })
-            )
-          }
+          // 简单模式：3张图（index 0, 1, 2）
+          const simplePromises = [0, 1, 2].map(i => createCameraRequest(i, true))
+          
+          // 扩展模式：3张图（index 3, 4, 5）
+          const extendedPromises = [3, 4, 5].map(i => createCameraRequest(i, false))
           
           // 等待所有请求完成
           console.log('[Outfit-Camera] Sending 6 requests (3 simple + 3 extended)...')
-          const results = await Promise.allSettled([...simplePromises, ...extendedPromises])
-          console.log('[Outfit-Camera] All requests completed:', results.map(r => r.status))
+          await Promise.allSettled([...simplePromises, ...extendedPromises])
+          console.log('[Outfit-Camera] All requests completed')
         } else {
           // 模特棚拍模式：使用 /api/generate-pro-studio，productImages 数组格式
-          // 简单模式：3张图
-          const simplePromises = []
-          for (let i = 0; i < 3; i++) {
-            simplePromises.push(
-              fetch('/api/generate-pro-studio', {
+          // Helper function to create a single request with response handling
+          const createProStudioRequest = async (index: number, mode: 'simple' | 'extended') => {
+            console.log(`[Outfit-ProStudio] Starting image ${index + 1} (${mode})`)
+            updateImageSlot(taskId, index, { status: 'generating' })
+            
+            try {
+              const response = await fetch('/api/generate-pro-studio', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   productImages: products,
                   modelImage: modelImageData,
                   backgroundImage: bgImageData,
-                  mode: 'simple',
-                  index: i,
+                  mode,
+                  index,
                   taskId,
                   modelIsRandom: isModelRandom,
                   bgIsRandom: isBgRandom,
@@ -929,40 +948,55 @@ function OutfitPageContent() {
                   bgIsPreset: selectedBg ? !customBgs.find(b => b.id === selectedBg.id) : true,
                 })
               })
-            )
+              
+              if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }))
+                console.log(`[Outfit-ProStudio] Image ${index + 1}: ✗ HTTP ${response.status}`)
+                updateImageSlot(taskId, index, { 
+                  status: 'failed', 
+                  error: errorData.error || `HTTP ${response.status}` 
+                })
+                return
+              }
+              
+              const result = await response.json()
+              if (result.success && result.image) {
+                const imageUrl = result.image.startsWith('data:') 
+                  ? base64ToBlobUrl(result.image) 
+                  : result.image
+                console.log(`[Outfit-ProStudio] Image ${index + 1}: ✓ (${result.modelType}, ${mode})`)
+                updateImageSlot(taskId, index, {
+                  status: 'completed',
+                  imageUrl: imageUrl,
+                  modelType: result.modelType,
+                  genMode: mode,
+                })
+              } else {
+                console.log(`[Outfit-ProStudio] Image ${index + 1}: ✗ (${result.error})`)
+                updateImageSlot(taskId, index, { 
+                  status: 'failed', 
+                  error: result.error || '生成失败' 
+                })
+              }
+            } catch (e: any) {
+              console.log(`[Outfit-ProStudio] Image ${index + 1}: ✗ (${e.message})`)
+              updateImageSlot(taskId, index, { 
+                status: 'failed', 
+                error: e.message || '网络错误' 
+              })
+            }
           }
           
-          // 扩展模式：3张图
-          const extendedPromises = []
-          for (let i = 0; i < 3; i++) {
-            extendedPromises.push(
-              fetch('/api/generate-pro-studio', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  productImages: products,
-                  modelImage: modelImageData,
-                  backgroundImage: bgImageData,
-                  mode: 'extended',
-                  index: i + 3,
-                  taskId,
-                  modelIsRandom: isModelRandom,
-                  bgIsRandom: isBgRandom,
-                  modelName: selectedModel?.name || '专业模特',
-                  bgName: selectedBg?.name || '影棚背景',
-                  modelUrl: selectedModel?.imageUrl,
-                  bgUrl: selectedBg?.imageUrl,
-                  modelIsPreset: selectedModel ? !customModels.find(m => m.id === selectedModel.id) : true,
-                  bgIsPreset: selectedBg ? !customBgs.find(b => b.id === selectedBg.id) : true,
-                })
-              })
-            )
-          }
+          // 简单模式：3张图（index 0, 1, 2）
+          const simplePromises = [0, 1, 2].map(i => createProStudioRequest(i, 'simple'))
+          
+          // 扩展模式：3张图（index 3, 4, 5）
+          const extendedPromises = [3, 4, 5].map(i => createProStudioRequest(i, 'extended'))
           
           // 等待所有请求完成
           console.log('[Outfit-ProStudio] Sending 6 requests (3 simple + 3 extended)...')
-          const results = await Promise.allSettled([...simplePromises, ...extendedPromises])
-          console.log('[Outfit-ProStudio] All requests completed:', results.map(r => r.status))
+          await Promise.allSettled([...simplePromises, ...extendedPromises])
+          console.log('[Outfit-ProStudio] All requests completed')
         }
       } catch (error) {
         console.error('Generation failed:', error)
