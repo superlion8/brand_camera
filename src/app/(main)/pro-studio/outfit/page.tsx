@@ -740,10 +740,9 @@ export default function ProStudioOutfitPage() {
               )
             })}
           </div>
-        </div>
         
         {/* 自定义配置按钮 */}
-        <div className="flex justify-center mb-4">
+        <div className="flex justify-center mt-6">
           <button 
             onClick={() => setShowCustomPanel(true)}
             className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 text-white/90 hover:bg-white/20 transition-colors border border-white/20"
