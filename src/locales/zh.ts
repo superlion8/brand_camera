@@ -454,6 +454,10 @@ export const zh = {
     bgSolid: "纯色",
     bgPattern: "花色",
     clearSelection: "清除选择",
+    selectProduct: "选择商品",
+    officialExample: "官方示例",
+    myProducts: "我的商品",
+    styleOutfit: "搭配商品",
   },
   
   // Quota

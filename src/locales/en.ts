@@ -456,6 +456,10 @@ export const en: Translations = {
     bgSolid: "Solid",
     bgPattern: "Pattern",
     clearSelection: "Clear",
+    selectProduct: "Select Product",
+    officialExample: "Official Examples",
+    myProducts: "My Products",
+    styleOutfit: "Style Outfit",
   },
   
   // Quota

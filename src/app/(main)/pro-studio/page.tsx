@@ -784,7 +784,7 @@ function ProStudioPageContent() {
                       className="absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2.5 rounded-full bg-black/60 backdrop-blur-md text-white hover:bg-black/70 transition-colors border border-white/20"
                     >
                       <Plus className="w-4 h-4" />
-                      <span className="text-sm font-medium">搭配商品</span>
+                      <span className="text-sm font-medium">{t.proStudio?.styleOutfit || '搭配商品'}</span>
                     </button>
                   )}
                 </div>
@@ -1035,7 +1035,7 @@ function ProStudioPageContent() {
                     className="absolute bottom-0 left-0 right-0 h-[60%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
                   >
                     <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
-                      <span className="font-semibold">选择商品</span>
+                      <span className="font-semibold">{t.proStudio?.selectProduct || '选择商品'}</span>
                       <button 
                         onClick={() => setShowProductPanel(false)} 
                         className="h-8 w-8 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center"
@@ -1054,7 +1054,7 @@ function ProStudioPageContent() {
                               : "text-zinc-500 hover:text-zinc-700"
                           }`}
                         >
-                          官方示例
+                          {t.proStudio?.officialExample || '官方示例'}
                           <span className="ml-1 text-zinc-400">({PRESET_PRODUCTS.length})</span>
                         </button>
                         <button
@@ -1065,7 +1065,7 @@ function ProStudioPageContent() {
                               : "text-zinc-500 hover:text-zinc-700"
                           }`}
                         >
-                          我的商品
+                          {t.proStudio?.myProducts || '我的商品'}
                           {userProducts.length > 0 && (
                             <span className="ml-1 text-zinc-400">({userProducts.length})</span>
                           )}
@@ -1172,7 +1172,7 @@ function ProStudioPageContent() {
                     className="absolute bottom-0 left-0 right-0 h-[60%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
                   >
                     <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
-                      <span className="font-semibold">添加搭配商品</span>
+                      <span className="font-semibold">{t.proStudio?.styleOutfit || '搭配商品'}</span>
                       <button 
                         onClick={() => setShowProduct2Panel(false)} 
                         className="h-8 w-8 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center"

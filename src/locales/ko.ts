@@ -456,6 +456,10 @@ export const ko: Translations = {
     bgSolid: "단색",
     bgPattern: "패턴",
     clearSelection: "선택 해제",
+    selectProduct: "상품 선택",
+    officialExample: "공식 예제",
+    myProducts: "내 상품",
+    styleOutfit: "코디 구성",
   },
   
   // Quota
