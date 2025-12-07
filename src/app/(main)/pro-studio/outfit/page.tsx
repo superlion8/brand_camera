@@ -368,6 +368,15 @@ function OutfitPageContent() {
   // 用于确保 sessionStorage 只读取一次（避免 React Strict Mode 双重执行问题）
   const hasLoadedFromSession = useRef(false)
   
+  // 清理 sessionStorage 的函数（只在 Shoot It 后调用）
+  const clearSessionStorage = () => {
+    sessionStorage.removeItem('product1Image')
+    sessionStorage.removeItem('product1Type')
+    sessionStorage.removeItem('product2Image')
+    sessionStorage.removeItem('product2Type')
+    console.log('[Outfit] Cleaned sessionStorage')
+  }
+  
   // 从 sessionStorage 读取商品图片（直接放到上衣和裤子槽位）
   useEffect(() => {
     // 防止 React Strict Mode 下重复执行
@@ -401,17 +410,9 @@ function OutfitPageContent() {
       ))
     }
     
-    // 标记为已加载，并清理 sessionStorage
+    // 标记为已加载（但不立即清理 sessionStorage，防止刷新后图片丢失）
     if (product1Image || product2Image) {
       hasLoadedFromSession.current = true
-      // 延迟清理，确保数据已被组件读取
-      setTimeout(() => {
-        sessionStorage.removeItem('product1Image')
-        sessionStorage.removeItem('product1Type')
-        sessionStorage.removeItem('product2Image')
-        sessionStorage.removeItem('product2Type')
-        console.log('[Outfit] Cleaned sessionStorage')
-      }, 100)
     }
   }, [])
   
@@ -844,6 +845,9 @@ function OutfitPageContent() {
       : null
     
     // 立即跳转到 processing 页面（不等待图片加载）
+    // 清理 sessionStorage（用户已确认操作，不再需要保留）
+    clearSessionStorage()
+    
     if (isCameraMode) {
       sessionStorage.setItem('cameraTaskId', taskId)
       router.push('/camera?mode=processing')
