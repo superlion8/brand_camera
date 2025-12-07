@@ -863,7 +863,7 @@ function ProStudioPageContent() {
                       {isAnalyzingProduct ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          <span className="text-sm font-medium">{t.common?.analyzing || '分析中...'}</span>
+                          <span className="text-sm font-medium">{t.outfit?.analyzing || '分析中...'}</span>
                         </>
                       ) : (
                         <>
