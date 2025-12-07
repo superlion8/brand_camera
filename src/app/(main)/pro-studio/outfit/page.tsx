@@ -765,7 +765,28 @@ function OutfitPageContent() {
   
   // 开始生成
   const handleShootIt = async () => {
-    // 收集所有商品图片
+    // 收集服装项（按槽位 ID 分类）
+    const outfitItems: {
+      inner?: string   // 内衬
+      top?: string     // 上衣
+      pants?: string   // 裤子
+      hat?: string     // 帽子
+      shoes?: string   // 鞋子
+    } = {}
+    
+    slots.forEach(slot => {
+      if (slot.product) {
+        switch (slot.id) {
+          case '内衬': outfitItems.inner = slot.product.imageUrl; break
+          case '上衣': outfitItems.top = slot.product.imageUrl; break
+          case '裤子': outfitItems.pants = slot.product.imageUrl; break
+          case '帽子': outfitItems.hat = slot.product.imageUrl; break
+          case '鞋子': outfitItems.shoes = slot.product.imageUrl; break
+        }
+      }
+    })
+    
+    // 向后兼容：同时收集所有商品图片用于显示
     const products = slots
       .filter(slot => slot.product)
       .map(slot => slot.product!.imageUrl)
@@ -958,7 +979,7 @@ function OutfitPageContent() {
           await Promise.allSettled([...simplePromises, ...extendedPromises])
           console.log('[Outfit-Camera] All requests completed')
         } else {
-          // 模特棚拍模式：使用 /api/generate-pro-studio，productImages 数组格式
+          // 模特棚拍模式：使用 /api/generate-pro-studio，outfitItems 格式
           // Helper function to create a single request with response handling
           const createProStudioRequest = async (index: number, mode: 'simple' | 'extended') => {
             console.log(`[Outfit-ProStudio] Starting image ${index + 1} (${mode})`)
@@ -969,7 +990,8 @@ function OutfitPageContent() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  productImages: products,
+                  outfitItems, // 新格式：独立的服装项 { inner?, top?, pants?, hat?, shoes? }
+                  productImages: products, // 向后兼容
                   modelImage: modelImageData,
                   backgroundImage: bgImageData,
                   mode,
