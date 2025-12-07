@@ -863,7 +863,7 @@ export default function GalleryPage() {
                    activeTab === "product" ? t.gallery.noProductImages : t.gallery.noImages}
                 </p>
                 <p className="text-xs text-zinc-300 mt-1">
-                  {activeTab !== "favorites" && "去拍摄生成你的第一张图片吧"}
+                  {activeTab !== "favorites" && (t.gallery?.startShooting || "去拍摄生成你的第一张图片吧")}
                 </p>
               </>
             )}

@@ -619,7 +619,7 @@ export default function ProStudioOutfitPage() {
       .map(slot => slot.product!.imageUrl)
     
     if (products.length === 0) {
-      alert('请至少添加一个商品')
+      alert(t.outfit?.atLeastOneProduct || '请至少添加一个商品')
       return
     }
     
@@ -775,7 +775,7 @@ export default function ProStudioOutfitPage() {
           >
             <ArrowLeft className="w-4 h-4 text-white" />
           </button>
-          <span className="text-white font-medium text-sm">搭配商品</span>
+          <span className="text-white font-medium text-sm">{t.outfit?.title || '搭配商品'}</span>
           <div className="w-9" />
         </div>
       </div>
@@ -823,7 +823,7 @@ export default function ProStudioOutfitPage() {
           
           {/* 提示文字 */}
           <p className="text-zinc-500 text-xs mt-4 text-center">
-            💡 长按拖动可移动服饰位置
+            {t.outfit?.dragHint || '💡 长按拖动可移动服饰位置'}
           </p>
         </div>
       </div>
@@ -850,7 +850,7 @@ export default function ProStudioOutfitPage() {
                 <div className="w-10 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full" />
               </div>
               <h3 className="text-center font-semibold mb-4 text-zinc-900 dark:text-white">
-                添加 {uploadTargetSlot ? labelMap[uploadTargetSlot] : ''}
+                {t.outfit?.add || '添加'} {uploadTargetSlot ? labelMap[uploadTargetSlot] : ''}
               </h3>
               <div className="grid grid-cols-3 gap-3 px-4">
                 <button
@@ -858,14 +858,14 @@ export default function ProStudioOutfitPage() {
                   className="flex flex-col items-center gap-2 py-4 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
                 >
                   <Camera className="w-7 h-7 text-blue-500" />
-                  <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">拍摄</span>
+                  <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">{t.outfit?.capture || '拍摄'}</span>
                 </button>
                 <button
                   onClick={handleAssetOption}
                   className="flex flex-col items-center gap-2 py-4 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
                 >
                   <ImageIcon className="w-7 h-7 text-green-500" />
-                  <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">相册</span>
+                  <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">{t.outfit?.album || '相册'}</span>
                 </button>
                 <button
                   onClick={() => {
@@ -875,7 +875,7 @@ export default function ProStudioOutfitPage() {
                   className="flex flex-col items-center gap-2 py-4 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
                 >
                   <FolderHeart className="w-7 h-7 text-purple-500" />
-                  <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">资产库</span>
+                  <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">{t.outfit?.assetLibrary || '资产库'}</span>
                 </button>
               </div>
             </motion.div>
@@ -903,7 +903,7 @@ export default function ProStudioOutfitPage() {
             >
               <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
                 <span className="font-semibold text-zinc-900 dark:text-white">
-                  选择商品 - {uploadTargetSlot ? labelMap[uploadTargetSlot] : ''}
+                  {t.outfit?.selectProduct || '选择商品'} - {uploadTargetSlot ? labelMap[uploadTargetSlot] : ''}
                 </span>
                 <button 
                   onClick={() => setShowAssetPicker(false)} 
@@ -939,8 +939,8 @@ export default function ProStudioOutfitPage() {
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-zinc-400">
                     <FolderHeart className="w-12 h-12 mb-3 opacity-30" />
-                    <p className="text-sm">暂无商品</p>
-                    <p className="text-xs mt-1">请先在资源库上传商品</p>
+                    <p className="text-sm">{t.outfit?.noProducts || '暂无商品'}</p>
+                    <p className="text-xs mt-1">{t.outfit?.uploadProductFirst || '请先在资源库上传商品'}</p>
                   </div>
                 )}
               </div>
@@ -954,12 +954,12 @@ export default function ProStudioOutfitPage() {
         <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${
           selectedModelId ? 'bg-blue-600/20 text-blue-400' : 'bg-zinc-800 text-zinc-400'
         }`}>
-          模特: {selectedModelId ? '已选择' : '随机'}
+          {selectedModelId ? (t.outfit?.modelSelected || '模特: 已选择') : (t.outfit?.modelRandom || '模特: 随机')}
         </span>
         <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${
           selectedBgId ? 'bg-purple-600/20 text-purple-400' : 'bg-zinc-800 text-zinc-400'
         }`}>
-          背景: {selectedBgId ? '已选择' : 'AI生成'}
+          {selectedBgId ? (t.outfit?.bgSelected || '背景: 已选择') : (t.outfit?.bgAI || '背景: AI生成')}
         </span>
       </div>
       
@@ -972,7 +972,7 @@ export default function ProStudioOutfitPage() {
             className="flex items-center gap-2 px-5 py-2 rounded-full bg-white/10 text-white/90 hover:bg-white/20 transition-colors border border-white/20"
           >
             <SlidersHorizontal className="w-4 h-4" />
-            <span className="text-sm font-medium">自定义模特/背景</span>
+            <span className="text-sm font-medium">{t.outfit?.customModelBg || '自定义模特/背景'}</span>
           </button>
         </div>
         
@@ -1005,19 +1005,19 @@ export default function ProStudioOutfitPage() {
               className="fixed bottom-0 left-0 right-0 h-[80%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
             >
               <div className="h-14 border-b flex items-center justify-between px-4 shrink-0">
-                <span className="font-semibold text-lg">自定义配置</span>
+                <span className="font-semibold text-lg">{t.outfit?.customConfig || '自定义配置'}</span>
                 <button 
                   onClick={() => setShowCustomPanel(false)} 
                   className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors"
                 >
-                  完成
+                  {t.outfit?.done || '完成'}
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
               <div className="p-2 flex gap-2 border-b overflow-x-auto shrink-0">
                 {[
-                  { id: "model", label: "专业模特" },
-                  { id: "bg", label: "棚拍背景" }
+                  { id: "model", label: t.outfit?.proModel || "专业模特" },
+                  { id: "bg", label: t.outfit?.studioBg || "棚拍背景" }
                 ].map(tab => (
                   <button 
                     key={tab.id}
@@ -1036,13 +1036,13 @@ export default function ProStudioOutfitPage() {
                 {activeCustomTab === "model" && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-zinc-600">选择模特（不选则随机）</span>
+                      <span className="text-sm text-zinc-600">{t.outfit?.selectModel || '选择模特（不选则随机）'}</span>
                       {selectedModelId && (
                         <button 
                           onClick={() => setSelectedModelId(null)}
                           className="text-xs text-blue-600"
                         >
-                          清除选择
+                          {t.outfit?.clearSelection || '清除选择'}
                         </button>
                       )}
                     </div>
@@ -1052,20 +1052,20 @@ export default function ProStudioOutfitPage() {
                       onSelect={(id) => setSelectedModelId(selectedModelId === id ? null : id)}
                       onUpload={() => modelUploadRef.current?.click()}
                       onZoom={(url) => setFullscreenImage(url)}
-                      uploadLabel="上传"
+                      uploadLabel={t.outfit?.upload || "上传"}
                     />
                   </div>
                 )}
                 {activeCustomTab === "bg" && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-zinc-600">选择背景（不选则随机）</span>
+                      <span className="text-sm text-zinc-600">{t.outfit?.selectBg || '选择背景（不选则随机）'}</span>
                       {selectedBgId && (
                         <button 
                           onClick={() => setSelectedBgId(null)}
                           className="text-xs text-blue-600"
                         >
-                          清除选择
+                          {t.outfit?.clearSelection || '清除选择'}
                         </button>
                       )}
                     </div>
@@ -1074,9 +1074,9 @@ export default function ProStudioOutfitPage() {
                       onSelect={(id) => setSelectedBgId(selectedBgId === id ? null : id)}
                       onUpload={() => bgUploadRef.current?.click()}
                       onZoom={(url) => setFullscreenImage(url)}
-                      uploadLabel="上传"
+                      uploadLabel={t.outfit?.upload || "上传"}
                       labels={{ 
-                        all: "全部", 
+                        all: t.outfit?.all || "全部", 
                         light: "Light", 
                         solid: "Solid", 
                         pattern: "Pattern" 

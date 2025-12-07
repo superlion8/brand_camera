@@ -595,7 +595,7 @@ export default function CameraPage() {
         // 返回处理结果而不是 Response（因为我们需要在这里解析并实时更新状态）
         return new Promise<ImageResult>((resolve) => {
           setTimeout(async () => {
-            const mode = simpleMode ? '极简模式' : '扩展模式'
+            const mode = simpleMode ? 'simple' : 'extended'
             console.log(`Starting Image ${index + 1} (${mode}) - Model: ${modelNameForThis}, Bg: ${bgNameForThis}`)
             
             // 更新状态为 generating
@@ -2005,7 +2005,7 @@ export default function CameraPage() {
                                 ? "bg-green-100 text-green-700" 
                                 : "bg-blue-100 text-blue-700"
                             }`}>
-                              {selectedResultIndex < 3 ? "极简模式" : "扩展模式"}
+                              {selectedResultIndex < 3 ? (t.gallery?.simpleMode || "极简模式") : (t.gallery?.extendedMode || "扩展模式")}
                             </span>
                             {selectedModelType === 'flash' && (
                               <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700">
@@ -2164,7 +2164,7 @@ export default function CameraPage() {
                                       ? 'bg-blue-100 text-blue-700'
                                       : 'bg-purple-100 text-purple-700'
                                   }`}>
-                                    {(generatedGenModes[selectedResultIndex] || generation?.outputGenModes?.[selectedResultIndex]) === 'simple' ? '极简模式' : '扩展模式'}
+                                    {(generatedGenModes[selectedResultIndex] || generation?.outputGenModes?.[selectedResultIndex]) === 'simple' ? (t.gallery?.simpleMode || '极简模式') : (t.gallery?.extendedMode || '扩展模式')}
                                   </span>
                                 )}
                               </div>
