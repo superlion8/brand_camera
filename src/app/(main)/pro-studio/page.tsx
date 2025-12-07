@@ -821,42 +821,36 @@ function ProStudioPageContent() {
                         if (!capturedImage) return
                         
                         setIsAnalyzingProduct(true)
-                        try {
-                          // 调用分析 API 获取商品类型
-                          const response = await fetch('/api/analyze-product', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ image: capturedImage })
+                        
+                        // 先保存图片，确保跳转后能获取到
+                        sessionStorage.setItem('product1Image', capturedImage)
+                        sessionStorage.removeItem('product2Image')
+                        sessionStorage.removeItem('product2Type')
+                        
+                        // 在后台分析，同时立即跳转（不阻塞用户）
+                        // 分析结果会在跳转过程中完成并写入 sessionStorage
+                        fetch('/api/analyze-product', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ image: capturedImage })
+                        })
+                          .then(res => res.json())
+                          .then(result => {
+                            if (result.success && result.data?.type) {
+                              sessionStorage.setItem('product1Type', result.data.type)
+                              console.log('[ProStudio] Product analyzed:', result.data.type)
+                            } else {
+                              sessionStorage.removeItem('product1Type')
+                              console.warn('[ProStudio] Product analysis failed')
+                            }
                           })
-                          
-                          const result = await response.json()
-                          
-                          if (result.success && result.data?.type) {
-                            // 保存图片和分析结果到 sessionStorage
-                            sessionStorage.setItem('product1Image', capturedImage)
-                            sessionStorage.setItem('product1Type', result.data.type)
-                            sessionStorage.removeItem('product2Image')
-                            sessionStorage.removeItem('product2Type')
-                            console.log('[ProStudio] Product analyzed:', result.data.type)
-                          } else {
-                            // 分析失败时也跳转，但不设置类型
-                            sessionStorage.setItem('product1Image', capturedImage)
+                          .catch(error => {
+                            console.error('[ProStudio] Failed to analyze product:', error)
                             sessionStorage.removeItem('product1Type')
-                            sessionStorage.removeItem('product2Image')
-                            sessionStorage.removeItem('product2Type')
-                            console.warn('[ProStudio] Product analysis failed, proceeding without type')
-                          }
-                          
-                          router.push('/pro-studio/outfit')
-                        } catch (error) {
-                          console.error('[ProStudio] Failed to analyze product:', error)
-                          // 出错也跳转
-                          sessionStorage.setItem('product1Image', capturedImage)
-                          sessionStorage.removeItem('product1Type')
-                          router.push('/pro-studio/outfit')
-                        } finally {
-                          setIsAnalyzingProduct(false)
-                        }
+                          })
+                        
+                        // 立即跳转，不等待分析完成
+                        router.push('/pro-studio/outfit')
                       }}
                       className="absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2.5 rounded-full bg-black/60 backdrop-blur-md text-white hover:bg-black/70 transition-colors border border-white/20 disabled:opacity-50"
                     >
