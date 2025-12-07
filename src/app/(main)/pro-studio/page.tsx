@@ -10,6 +10,7 @@ import {
 } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { fileToBase64, generateId, compressBase64Image, ensureBase64 } from "@/lib/utils"
+import { ensureImageUrl } from "@/lib/supabase/storage"
 import { Asset } from "@/types"
 import Image from "next/image"
 import { PRESET_PRODUCTS } from "@/data/presets"
@@ -497,9 +498,18 @@ function ProStudioPageContent() {
 
     // 如果有第二张商品，跳转到搭配页面
     if (capturedImage2) {
-      // 保存第一张商品到 sessionStorage
-      sessionStorage.setItem('product1Image', capturedImage)
-      // 跳转到搭配页面
+      // 上传图片到 Storage，避免 sessionStorage 存大量 base64
+      if (user?.id) {
+        const [url1, url2] = await Promise.all([
+          ensureImageUrl(capturedImage, user.id, 'product'),
+          ensureImageUrl(capturedImage2, user.id, 'product')
+        ])
+        sessionStorage.setItem('product1Image', url1)
+        sessionStorage.setItem('product2Image', url2)
+      } else {
+        sessionStorage.setItem('product1Image', capturedImage)
+        sessionStorage.setItem('product2Image', capturedImage2)
+      }
       router.push('/pro-studio/outfit')
       return
     }
@@ -823,30 +833,35 @@ function ProStudioPageContent() {
                         setIsAnalyzingProduct(true)
                         
                         try {
-                          // 调用分析 API 获取商品类型
-                          const response = await fetch('/api/analyze-product', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ image: capturedImage })
-                          })
+                          // 并行执行：分析商品 + 上传图片到 Storage
+                          const [analysisResult, uploadedUrl] = await Promise.all([
+                            // 分析商品类型
+                            fetch('/api/analyze-product', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ image: capturedImage })
+                            }).then(res => res.json()).catch(() => ({ success: false })),
+                            // 上传图片到 Storage（避免 sessionStorage 存大量 base64）
+                            user?.id 
+                              ? ensureImageUrl(capturedImage, user.id, 'product')
+                              : Promise.resolve(capturedImage) // 未登录则保留 base64
+                          ])
                           
-                          const result = await response.json()
-                          
-                          // 保存图片和分析结果到 sessionStorage
-                          sessionStorage.setItem('product1Image', capturedImage)
+                          // 保存图片 URL 到 sessionStorage
+                          sessionStorage.setItem('product1Image', uploadedUrl)
                           sessionStorage.removeItem('product2Image')
                           sessionStorage.removeItem('product2Type')
                           
-                          if (result.success && result.data?.type) {
-                            sessionStorage.setItem('product1Type', result.data.type)
-                            console.log('[ProStudio] Product analyzed:', result.data.type)
+                          if (analysisResult.success && analysisResult.data?.type) {
+                            sessionStorage.setItem('product1Type', analysisResult.data.type)
+                            console.log('[ProStudio] Product analyzed:', analysisResult.data.type)
                           } else {
                             sessionStorage.removeItem('product1Type')
                             console.warn('[ProStudio] Product analysis failed, proceeding without type')
                           }
                         } catch (error) {
-                          console.error('[ProStudio] Failed to analyze product:', error)
-                          // 出错也跳转
+                          console.error('[ProStudio] Failed to analyze/upload product:', error)
+                          // 出错也跳转，使用原图
                           sessionStorage.setItem('product1Image', capturedImage)
                           sessionStorage.removeItem('product1Type')
                         }
@@ -933,11 +948,20 @@ function ProStudioPageContent() {
                     <motion.button
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      onClick={(e) => {
+                      onClick={async (e) => {
                         if (capturedImage2) {
-                          // 有第二张商品，直接保存图片到sessionStorage然后跳转（不调用VLM）
-                          sessionStorage.setItem('product1Image', capturedImage!)
-                          sessionStorage.setItem('product2Image', capturedImage2)
+                          // 有第二张商品，上传图片到 Storage 后跳转
+                          if (user?.id) {
+                            const [url1, url2] = await Promise.all([
+                              ensureImageUrl(capturedImage!, user.id, 'product'),
+                              ensureImageUrl(capturedImage2, user.id, 'product')
+                            ])
+                            sessionStorage.setItem('product1Image', url1)
+                            sessionStorage.setItem('product2Image', url2)
+                          } else {
+                            sessionStorage.setItem('product1Image', capturedImage!)
+                            sessionStorage.setItem('product2Image', capturedImage2)
+                          }
                           // 清除旧的分析结果
                           sessionStorage.removeItem('product1Analysis')
                           sessionStorage.removeItem('product2Analysis')

@@ -15,6 +15,7 @@ import { useGenerationTaskStore, base64ToBlobUrl } from "@/stores/generationTask
 import { useSettingsStore } from "@/stores/settingsStore"
 import { useRouter, useSearchParams } from "next/navigation"
 import { fileToBase64, generateId, compressBase64Image, fetchWithTimeout, ensureBase64 } from "@/lib/utils"
+import { ensureImageUrl } from "@/lib/supabase/storage"
 import { Asset, ModelStyle, ModelGender } from "@/types"
 import Image from "next/image"
 import { PRESET_PRODUCTS } from "@/data/presets"
@@ -1224,9 +1225,12 @@ function CameraPageContent() {
                     </div>
                   ) : mode === "review" && !capturedImage2 && (
                     <button
-                      onClick={() => {
-                        // 跳转到搭配页面，带上 camera 模式参数
-                        sessionStorage.setItem('product1Image', capturedImage!)
+                      onClick={async () => {
+                        // 上传图片到 Storage，避免 sessionStorage 存大量 base64
+                        const imageUrl = user?.id 
+                          ? await ensureImageUrl(capturedImage!, user.id, 'product')
+                          : capturedImage!
+                        sessionStorage.setItem('product1Image', imageUrl)
                         sessionStorage.removeItem('product2Image')
                         router.push('/pro-studio/outfit?mode=camera')
                       }}
