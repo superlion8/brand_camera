@@ -1018,7 +1018,29 @@ export default function GalleryPage() {
                     
                     <div className="space-y-3">
                       <div className="grid grid-cols-4 gap-2">
-                        {selectedItem.gen.inputImageUrl && (
+                        {/* 多商品图（outfit模式）优先显示 */}
+                        {selectedItem.gen.params?.productImages && selectedItem.gen.params.productImages.length > 0 ? (
+                          selectedItem.gen.params.productImages.map((productUrl: string, idx: number) => (
+                            <div key={idx} className="flex flex-col items-center">
+                              <div 
+                                className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"
+                                onClick={() => setFullscreenImage(productUrl)}
+                              >
+                                <Image 
+                                  src={productUrl} 
+                                  alt={`${t.gallery.productOriginal} ${idx + 1}`} 
+                                  width={56}
+                                  height={56}
+                                  className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <ZoomIn className="w-4 h-4 text-white" />
+                                </div>
+                              </div>
+                              <p className="text-[10px] text-zinc-500 mt-1">{t.gallery.productOriginal}{idx + 1}</p>
+                            </div>
+                          ))
+                        ) : selectedItem.gen.inputImageUrl && (
                           <div className="flex flex-col items-center">
                             <div 
                               className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"

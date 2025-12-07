@@ -826,7 +826,28 @@ export default function AdminDashboard() {
                 <div>
                   <p className="text-sm font-medium text-zinc-700 mb-2">输入商品图</p>
                   <div className="flex gap-2 flex-wrap">
-                    {(selectedTask.inputImageUrl || selectedTask.inputParams?.inputImage) ? (
+                    {/* 优先显示多商品图（outfit模式） */}
+                    {selectedTask.inputParams?.productImages && selectedTask.inputParams.productImages.length > 0 ? (
+                      selectedTask.inputParams.productImages.map((productUrl: string, idx: number) => (
+                        <div 
+                          key={idx}
+                          className="relative cursor-pointer group"
+                          onClick={() => setFullscreenImage(productUrl)}
+                        >
+                          <img 
+                            src={productUrl} 
+                            alt={`商品 ${idx + 1}`} 
+                            className="w-20 h-20 object-cover rounded-lg"
+                          />
+                          <span className="absolute bottom-1 left-1 px-1 py-0.5 bg-black/50 text-white text-[8px] rounded">
+                            商品{idx + 1}
+                          </span>
+                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                            <ZoomIn className="w-5 h-5 text-white" />
+                          </div>
+                        </div>
+                      ))
+                    ) : (selectedTask.inputImageUrl || selectedTask.inputParams?.inputImage) ? (
                       <div 
                         className="relative cursor-pointer group"
                         onClick={() => setFullscreenImage(selectedTask.inputImageUrl || selectedTask.inputParams?.inputImage || '')}
