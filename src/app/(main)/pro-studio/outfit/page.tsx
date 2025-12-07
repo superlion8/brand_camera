@@ -345,28 +345,45 @@ function OutfitPageContent() {
     e.target.value = ''
   }
   
+  // 用于确保 sessionStorage 只读取一次（避免 React Strict Mode 双重执行问题）
+  const hasLoadedFromSession = useRef(false)
+  
   // 从 sessionStorage 读取商品图片（直接放到上衣和裤子槽位）
   useEffect(() => {
+    // 防止 React Strict Mode 下重复执行
+    if (hasLoadedFromSession.current) return
+    
     // 读取第一张商品图片 -> 放到上衣槽位
     const product1Image = sessionStorage.getItem('product1Image')
     if (product1Image) {
+      console.log('[Outfit] Loading product1 from sessionStorage')
       setSlots(prev => prev.map(slot => 
         slot.id === '上衣'
           ? { ...slot, product: { imageUrl: product1Image } }
           : slot
       ))
-      sessionStorage.removeItem('product1Image')
     }
     
     // 读取第二张商品图片 -> 放到裤子槽位
     const product2Image = sessionStorage.getItem('product2Image')
     if (product2Image) {
+      console.log('[Outfit] Loading product2 from sessionStorage')
       setSlots(prev => prev.map(slot => 
         slot.id === '裤子'
           ? { ...slot, product: { imageUrl: product2Image } }
           : slot
       ))
-      sessionStorage.removeItem('product2Image')
+    }
+    
+    // 标记为已加载，并清理 sessionStorage
+    if (product1Image || product2Image) {
+      hasLoadedFromSession.current = true
+      // 延迟清理，确保数据已被组件读取
+      setTimeout(() => {
+        sessionStorage.removeItem('product1Image')
+        sessionStorage.removeItem('product2Image')
+        console.log('[Outfit] Cleaned sessionStorage')
+      }, 100)
     }
   }, [])
   
