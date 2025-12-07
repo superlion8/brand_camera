@@ -399,7 +399,16 @@ export async function POST(request: NextRequest) {
         console.log(`[GroupShoot] Starting ${isLifestyle ? 'lifestyle' : 'studio'} mode, shoot mode: ${mode}`)
 
         // Prepare image data - 支持 URL 和 base64 格式
-        const imageData = await ensureBase64Data(startImage)
+        const imageDataRaw = await ensureBase64Data(startImage)
+        
+        if (!imageDataRaw) {
+          send({ type: 'error', error: '图片数据无效' })
+          controller.close()
+          return
+        }
+        
+        // 类型保证：此处 imageData 一定是 string
+        const imageData: string = imageDataRaw
 
         if (mode === 'random') {
           // ========== 随意拍模式 ==========
