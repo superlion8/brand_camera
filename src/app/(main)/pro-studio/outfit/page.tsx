@@ -258,9 +258,11 @@ export default function ProStudioOutfitPage() {
   // 获取所有模特和背景
   // studioModels 是专业棚拍模特（用于随机选择）
   const studioModels = presetStore.studioModels || []
-  const studioBackgroundsLight = presetStore.getAllStudioBackgrounds().filter(bg => bg.name?.includes('Light') || bg.name?.includes('light'))
-  const studioBackgroundsSolid = presetStore.getAllStudioBackgrounds().filter(bg => bg.name?.includes('Solid') || bg.name?.includes('solid'))
-  const studioBackgroundsPattern = presetStore.getAllStudioBackgrounds().filter(bg => bg.name?.includes('Pattern') || bg.name?.includes('pattern'))
+  // 直接从 presetStore 获取分类背景
+  const studioBackgroundsLight = presetStore.studioBackgroundsLight || []
+  const studioBackgroundsSolid = presetStore.studioBackgroundsSolid || []
+  const studioBackgroundsPattern = presetStore.studioBackgroundsPattern || []
+  const allStudioBackgrounds = [...studioBackgroundsLight, ...studioBackgroundsSolid, ...studioBackgroundsPattern]
   
   // 处理模特上传
   const handleModelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -519,7 +521,7 @@ export default function ProStudioOutfitPage() {
     
     // 获取选中的模特和背景
     const allModels = [...customModels, ...studioModels, ...userModels]
-    const allBgs = [...customBgs, ...studioBackgroundsLight, ...studioBackgroundsSolid, ...studioBackgroundsPattern, ...userBackgrounds]
+    const allBgs = [...customBgs, ...allStudioBackgrounds, ...userBackgrounds]
     
     let selectedModel = selectedModelId 
       ? allModels.find(m => m.id === selectedModelId)
@@ -716,117 +718,34 @@ export default function ProStudioOutfitPage() {
         </div>
       </div>
       
-      {/* 模特/背景选择区域 - 直接展示在页面内 */}
-      <div className="flex-1 bg-zinc-900 px-3 pt-3 pb-24 overflow-y-auto">
-        {/* Tab 切换 */}
-        <div className="flex gap-2 mb-3">
-          <button
-            onClick={() => setActiveCustomTab('model')}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeCustomTab === 'model'
-                ? 'bg-white text-zinc-900'
-                : 'bg-zinc-800 text-zinc-400'
-            }`}
+      {/* 选择状态显示 */}
+      <div className="flex justify-center gap-2 py-3 flex-wrap">
+        <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${
+          selectedModelId ? 'bg-blue-600/20 text-blue-400' : 'bg-zinc-800 text-zinc-400'
+        }`}>
+          模特: {selectedModelId ? '已选择' : '随机'}
+        </span>
+        <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${
+          selectedBgId ? 'bg-purple-600/20 text-purple-400' : 'bg-zinc-800 text-zinc-400'
+        }`}>
+          背景: {selectedBgId ? '已选择' : 'AI生成'}
+        </span>
+      </div>
+      
+      {/* 底部按钮区域 */}
+      <div className="fixed bottom-0 left-0 right-0 bg-zinc-900/95 backdrop-blur-lg p-3 pb-safe border-t border-zinc-800">
+        {/* 自定义模特/背景按钮 */}
+        <div className="flex justify-center mb-3">
+          <button 
+            onClick={() => setShowCustomPanel(true)}
+            className="flex items-center gap-2 px-5 py-2 rounded-full bg-white/10 text-white/90 hover:bg-white/20 transition-colors border border-white/20"
           >
-            选择模特
-          </button>
-          <button
-            onClick={() => setActiveCustomTab('bg')}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeCustomTab === 'bg'
-                ? 'bg-white text-zinc-900'
-                : 'bg-zinc-800 text-zinc-400'
-            }`}
-          >
-            选择背景
+            <SlidersHorizontal className="w-4 h-4" />
+            <span className="text-sm font-medium">自定义模特/背景</span>
           </button>
         </div>
         
-        {/* 模特列表 */}
-        {activeCustomTab === 'model' && (
-          <div className="grid grid-cols-4 gap-2">
-            {/* 上传按钮 */}
-            <button
-              onClick={() => modelUploadRef.current?.click()}
-              className="aspect-[3/4] rounded-lg bg-zinc-800 border border-dashed border-zinc-600 flex flex-col items-center justify-center gap-1"
-            >
-              <Plus className="w-5 h-5 text-zinc-500" />
-              <span className="text-[10px] text-zinc-500">上传</span>
-            </button>
-            {/* 随机选项 */}
-            <button
-              onClick={() => setSelectedModelId(null)}
-              className={`aspect-[3/4] rounded-lg flex flex-col items-center justify-center gap-1 transition-all ${
-                !selectedModelId ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-zinc-400'
-              }`}
-            >
-              <Wand2 className="w-5 h-5" />
-              <span className="text-[10px]">随机</span>
-            </button>
-            {/* 模特列表 - 显示专业棚拍模特 */}
-            {[...customModels, ...studioModels, ...userModels].slice(0, 10).map(model => (
-              <button
-                key={model.id}
-                onClick={() => setSelectedModelId(model.id)}
-                className={`aspect-[3/4] rounded-lg overflow-hidden relative ${
-                  selectedModelId === model.id ? 'ring-2 ring-blue-500' : ''
-                }`}
-              >
-                <Image src={model.imageUrl} alt={model.name || ''} fill className="object-cover" />
-                {selectedModelId === model.id && (
-                  <div className="absolute inset-0 bg-blue-500/30 flex items-center justify-center">
-                    <Check className="w-5 h-5 text-white" />
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-        
-        {/* 背景列表 */}
-        {activeCustomTab === 'bg' && (
-          <div className="grid grid-cols-4 gap-2">
-            {/* 上传按钮 */}
-            <button
-              onClick={() => bgUploadRef.current?.click()}
-              className="aspect-square rounded-lg bg-zinc-800 border border-dashed border-zinc-600 flex flex-col items-center justify-center gap-1"
-            >
-              <Plus className="w-5 h-5 text-zinc-500" />
-              <span className="text-[10px] text-zinc-500">上传</span>
-            </button>
-            {/* 随机选项 */}
-            <button
-              onClick={() => setSelectedBgId(null)}
-              className={`aspect-square rounded-lg flex flex-col items-center justify-center gap-1 transition-all ${
-                !selectedBgId ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-zinc-400'
-              }`}
-            >
-              <Wand2 className="w-5 h-5" />
-              <span className="text-[10px]">随机</span>
-            </button>
-            {/* 背景列表 */}
-            {[...customBgs, ...userBackgrounds, ...studioBackgroundsLight, ...studioBackgroundsSolid, ...studioBackgroundsPattern].slice(0, 14).map(bg => (
-              <button
-                key={bg.id}
-                onClick={() => setSelectedBgId(bg.id)}
-                className={`aspect-square rounded-lg overflow-hidden relative ${
-                  selectedBgId === bg.id ? 'ring-2 ring-blue-500' : ''
-                }`}
-              >
-                <Image src={bg.imageUrl} alt={bg.name || ''} fill className="object-cover" />
-                {selectedBgId === bg.id && (
-                  <div className="absolute inset-0 bg-blue-500/30 flex items-center justify-center">
-                    <Check className="w-5 h-5 text-white" />
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-      
-      {/* 底部 Shoot It 按钮 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-zinc-900/95 backdrop-blur-lg p-3 pb-safe border-t border-zinc-800">
+        {/* Shoot It 按钮 */}
         <motion.button
           onClick={handleShootIt}
           className="w-full h-12 rounded-full text-base font-semibold bg-white text-zinc-900 shadow-lg flex items-center justify-center gap-2 transition-colors hover:bg-zinc-100"
