@@ -6,6 +6,35 @@ import { requireAuth } from '@/lib/auth'
 
 export const maxDuration = 240 // 4 minutes for model images (includes instruction generation)
 
+// 将 URL 转换为 base64（服务端版本）
+async function urlToBase64(url: string): Promise<string> {
+  try {
+    const cleanUrl = url.trim()
+    console.log('[urlToBase64] Fetching:', cleanUrl.substring(0, 100) + '...')
+    const response = await fetch(cleanUrl)
+    if (!response.ok) {
+      console.error('[urlToBase64] HTTP Error:', response.status, response.statusText, 'URL:', cleanUrl)
+      throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`)
+    }
+    const arrayBuffer = await response.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+    console.log('[urlToBase64] Success, base64 length:', buffer.toString('base64').length)
+    return buffer.toString('base64')
+  } catch (error: any) {
+    console.error('[urlToBase64] Error:', error.message, 'URL:', url?.substring(0, 100))
+    throw error
+  }
+}
+
+// 确保图片数据是 base64 格式（支持 URL 和 base64 输入）
+async function ensureBase64Data(image: string | null | undefined): Promise<string | null> {
+  if (!image) return null
+  if (image.startsWith('http://') || image.startsWith('https://')) {
+    return await urlToBase64(image)
+  }
+  return stripBase64Prefix(image)
+}
+
 // Model names
 const PRIMARY_IMAGE_MODEL = 'gemini-3-pro-image-preview'
 const FALLBACK_IMAGE_MODEL = 'gemini-2.5-flash-image'
@@ -174,11 +203,12 @@ export async function POST(request: NextRequest) {
     
     const client = getGenAIClient()
     
-    const productImageData = stripBase64Prefix(productImage)
-    const productImage2Data = productImage2 ? stripBase64Prefix(productImage2) : null
-    const modelImageData = modelImage ? stripBase64Prefix(modelImage) : null
-    const backgroundImageData = backgroundImage ? stripBase64Prefix(backgroundImage) : null
-    const vibeImageData = vibeImage ? stripBase64Prefix(vibeImage) : null
+    // 所有图片都支持 URL 格式（后端转换），减少前端请求体大小
+    const productImageData = await ensureBase64Data(productImage)
+    const productImage2Data = await ensureBase64Data(productImage2)
+    const modelImageData = await ensureBase64Data(modelImage)
+    const backgroundImageData = await ensureBase64Data(backgroundImage)
+    const vibeImageData = await ensureBase64Data(vibeImage)
     
     if (!productImageData || productImageData.length < 100) {
       return NextResponse.json({ 
