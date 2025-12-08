@@ -307,10 +307,9 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // 注意：背景是可选的，如果没有背景会让 AI 生成
-    // 如果 bgIsRandom 为 true 但没有 backgroundImage，我们不主动获取随机背景
-    // 只有当明确请求随机背景时才获取
-    if (!bgImageData && backgroundImage === 'random') {
+    // 如果没有背景图且需要随机选择（前端没选或明确要求随机）
+    // 条件：没有背景数据 且 (bgIsRandom 为 true 或 backgroundImage 为 'random' 或 backgroundImage 为空)
+    if (!bgImageData && (bgIsRandom || backgroundImage === 'random' || !backgroundImage)) {
       console.log(`${label} Getting random studio background...`)
       const randomBg = await getRandomStudioBackgroundBase64(5)
       if (randomBg) {

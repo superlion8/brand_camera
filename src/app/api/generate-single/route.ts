@@ -534,14 +534,30 @@ export async function POST(request: NextRequest) {
     
     console.log(`[${label}] Uploaded to storage: ${uploaded.substring(0, 80)}...`)
     
-    // 只在第一张图时上传商品图（避免重复上传）
+    // 只在第一张图时保存商品图 URL（避免重复）
     let inputImageUrl: string | undefined
-    if (index === 0 && productImage) {
-      const productBase64 = productImage.startsWith('data:') ? productImage : `data:image/jpeg;base64,${productImage}`
-      const uploadedInput = await uploadImageToStorage(productBase64, userId, 'input_product')
-      if (uploadedInput) {
-        inputImageUrl = uploadedInput
-        console.log(`[${label}] Uploaded product image to storage`)
+    if (index === 0) {
+      // 优先使用 productImage，否则使用 outfitItems 中的第一个有效项
+      const primaryInput = productImage 
+        || outfitItems?.top 
+        || outfitItems?.pants 
+        || outfitItems?.inner 
+        || outfitItems?.hat 
+        || outfitItems?.shoes
+      
+      if (primaryInput) {
+        // 如果已经是 URL，直接使用
+        if (primaryInput.startsWith('http')) {
+          inputImageUrl = primaryInput
+          console.log(`[${label}] Using existing product URL`)
+        } else if (primaryInput.startsWith('data:') || primaryInput.length > 1000) {
+          // 如果是 base64，上传到 storage
+          const uploadedInput = await uploadImageToStorage(primaryInput, userId, 'input_product')
+          if (uploadedInput) {
+            inputImageUrl = uploadedInput
+            console.log(`[${label}] Uploaded product image to storage`)
+          }
+        }
       }
     }
     
