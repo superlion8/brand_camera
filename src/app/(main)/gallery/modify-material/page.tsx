@@ -251,7 +251,8 @@ function ModifyMaterialContent() {
   const [outputImage, setOutputImage] = useState<string>('')
   const [inputImages, setInputImages] = useState<string[]>([])
   const [productStates, setProductStates] = useState<ProductEditState[]>([])
-  const [resultImage, setResultImage] = useState<string>('')
+  const [resultImages, setResultImages] = useState<string[]>([]) // 改为数组，存储2张图
+  const [generatingProgress, setGeneratingProgress] = useState<number>(0) // 生成进度
   const [error, setError] = useState<string>('')
   
   // 加载数据
@@ -352,7 +353,7 @@ function ModifyMaterialContent() {
     return value === 'custom' ? customValue : value
   }
   
-  // 开始生成
+  // 开始生成（生成2张图）
   const handleGenerate = async () => {
     const enabledStates = productStates.filter(s => s.enabled)
     
@@ -361,51 +362,65 @@ function ModifyMaterialContent() {
       return
     }
     
-    // 检查配额
-    const hasQuota = await checkQuota(1)
+    // 检查配额（2张图）
+    const hasQuota = await checkQuota(2)
     if (!hasQuota) return
     
     setPhase('generating')
     setError('')
+    setGeneratingProgress(0)
+    setResultImages([])
     
-    try {
-      // 构建请求数据
-      const targets = enabledStates.map(state => ({
-        category: state.category,
-        params: {
-          shape: getValue(state, 'shape'),
-          fit: getValue(state, 'fit'),
-          visual_fabric_vibe: getValue(state, 'visual_fabric_vibe'),
-          fiber_composition: getValue(state, 'fiber_composition'),
-          visual_luster: getValue(state, 'visual_luster'),
-          weave_structure: getValue(state, 'weave_structure'),
-        }
-      }))
-      
-      const response = await fetch('/api/modify-material', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          outputImage,
-          referenceImages: inputImages,
-          targets
-        })
-      })
-      
-      const data = await response.json()
-      
-      if (!data.success) {
-        throw new Error(data.error || '生成失败')
+    // 构建请求数据
+    const targets = enabledStates.map(state => ({
+      category: state.category,
+      params: {
+        shape: getValue(state, 'shape'),
+        fit: getValue(state, 'fit'),
+        visual_fabric_vibe: getValue(state, 'visual_fabric_vibe'),
+        fiber_composition: getValue(state, 'fiber_composition'),
+        visual_luster: getValue(state, 'visual_luster'),
+        weave_structure: getValue(state, 'weave_structure'),
       }
-      
-      setResultImage(data.image)
-      setPhase('result')
-      
-    } catch (err: any) {
-      console.error('Generation error:', err)
-      setError(err.message || '生成失败')
-      setPhase('editing')
+    }))
+    
+    const results: string[] = []
+    
+    // 生成2张图
+    for (let i = 0; i < 2; i++) {
+      try {
+        setGeneratingProgress(i + 1)
+        
+        const response = await fetch('/api/modify-material', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            outputImage,
+            referenceImages: inputImages,
+            targets
+          })
+        })
+        
+        const data = await response.json()
+        
+        if (data.success && data.image) {
+          results.push(data.image)
+        } else {
+          console.error(`Image ${i + 1} failed:`, data.error)
+        }
+      } catch (err: any) {
+        console.error(`Image ${i + 1} error:`, err.message)
+      }
     }
+    
+    if (results.length === 0) {
+      setError(t.modifyMaterial?.generateFailed || '生成失败，请重试')
+      setPhase('editing')
+      return
+    }
+    
+    setResultImages(results)
+    setPhase('result')
   }
   
   // 更新商品状态
@@ -449,13 +464,22 @@ function ModifyMaterialContent() {
           {t.modifyMaterial?.generating || '正在生成修改后的图片...'}
         </p>
         <p className="mt-2 text-sm text-zinc-400">
-          {t.modifyMaterial?.mayTakeTime || '这可能需要一些时间'}
+          {generatingProgress}/2 {t.modifyMaterial?.mayTakeTime || '这可能需要一些时间'}
         </p>
+        {/* 进度条 */}
+        <div className="mt-4 w-48 h-2 bg-zinc-200 rounded-full overflow-hidden">
+          <motion.div
+            className="h-full bg-blue-500"
+            initial={{ width: '0%' }}
+            animate={{ width: `${(generatingProgress / 2) * 100}%` }}
+            transition={{ duration: 0.3 }}
+          />
+        </div>
       </div>
     )
   }
   
-  // 渲染结果页
+  // 渲染结果页（显示2张图）
   if (phase === 'result') {
     return (
       <div className="min-h-screen bg-zinc-50 flex flex-col">
@@ -469,57 +493,53 @@ function ModifyMaterialContent() {
               <ArrowLeft className="w-5 h-5" />
             </button>
             <h1 className="flex-1 text-center font-semibold">
-              {t.modifyMaterial?.result || '修改结果'}
+              {t.modifyMaterial?.result || '修改结果'} ({resultImages.length})
             </h1>
             <div className="w-10" />
           </div>
         </div>
         
-        {/* Result Image */}
-        <div className="flex-1 p-4">
-          <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-zinc-200">
-            <Image
-              src={resultImage}
-              alt="Result"
-              fill
-              className="object-cover"
-            />
+        {/* Result Images - 2张图并排显示 */}
+        <div className="flex-1 p-4 pb-24 overflow-y-auto">
+          {/* 原图 */}
+          <div className="mb-4">
+            <p className="text-sm font-medium text-zinc-600 mb-2">{t.modifyMaterial?.before || '修改前'}</p>
+            <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-zinc-200">
+              <Image
+                src={outputImage}
+                alt="Original"
+                fill
+                className="object-cover"
+              />
+            </div>
           </div>
           
-          {/* Comparison */}
-          <div className="mt-4 flex gap-4">
-            <div className="flex-1">
-              <p className="text-xs text-zinc-500 mb-2 text-center">{t.modifyMaterial?.before || '修改前'}</p>
-              <div className="relative aspect-square rounded-lg overflow-hidden bg-zinc-200">
+          {/* 生成的图片 */}
+          <p className="text-sm font-medium text-zinc-600 mb-2">{t.modifyMaterial?.after || '修改后'}</p>
+          <div className="grid grid-cols-2 gap-3">
+            {resultImages.map((img, idx) => (
+              <div key={idx} className="relative aspect-[3/4] rounded-xl overflow-hidden bg-zinc-200">
                 <Image
-                  src={outputImage}
-                  alt="Before"
+                  src={img}
+                  alt={`Result ${idx + 1}`}
                   fill
                   className="object-cover"
                 />
+                <div className="absolute top-2 left-2 px-2 py-1 bg-black/50 rounded-full text-xs text-white">
+                  {idx + 1}
+                </div>
               </div>
-            </div>
-            <div className="flex-1">
-              <p className="text-xs text-zinc-500 mb-2 text-center">{t.modifyMaterial?.after || '修改后'}</p>
-              <div className="relative aspect-square rounded-lg overflow-hidden bg-zinc-200">
-                <Image
-                  src={resultImage}
-                  alt="After"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            </div>
+            ))}
           </div>
         </div>
         
         {/* Actions */}
-        <div className="sticky bottom-0 p-4 bg-white border-t border-zinc-200">
+        <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t border-zinc-200 shadow-lg">
           <div className="flex gap-3">
             <button
               onClick={() => {
                 setPhase('editing')
-                setResultImage('')
+                setResultImages([])
               }}
               className="flex-1 h-12 rounded-lg border border-zinc-300 text-zinc-700 font-medium"
             >
@@ -604,8 +624,8 @@ function ModifyMaterialContent() {
         </div>
       </div>
       
-      {/* Bottom Action */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-zinc-200">
+      {/* Bottom Action - 增加底部间距避免被导航栏遮挡 */}
+      <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t border-zinc-200 shadow-lg">
         <button
           onClick={handleGenerate}
           disabled={!productStates.some(s => s.enabled)}

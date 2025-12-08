@@ -586,6 +586,7 @@ export const ko: Translations = {
     startModify: "수정 시작",
     selectAtLeastOne: "수정할 상품을 하나 이상 선택해 주세요",
     noInputImages: "입력 이미지를 찾을 수 없습니다",
+    generateFailed: "생성 실패, 다시 시도해 주세요",
     modifyEnabled: "수정 활성화됨",
     clickToEnable: "클릭하여 수정 활성화",
     // 핏 속성
