@@ -533,21 +533,21 @@ function ModifyMaterialContent() {
           </div>
         </div>
         
-        {/* Actions */}
-        <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t border-zinc-200 shadow-lg">
+        {/* Actions - 参考 studio 的吸底样式 */}
+        <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-white via-white to-transparent max-w-md mx-auto z-40">
           <div className="flex gap-3">
             <button
               onClick={() => {
                 setPhase('editing')
                 setResultImages([])
               }}
-              className="flex-1 h-12 rounded-lg border border-zinc-300 text-zinc-700 font-medium"
+              className="flex-1 h-12 rounded-full border-2 border-zinc-300 text-zinc-700 font-medium hover:bg-zinc-50 transition-colors"
             >
               {t.modifyMaterial?.modifyAgain || '再次修改'}
             </button>
             <button
               onClick={() => router.push('/gallery')}
-              className="flex-1 h-12 rounded-lg bg-blue-600 text-white font-medium"
+              className="flex-1 h-12 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-lg shadow-blue-200 transition-colors"
             >
               {t.modifyMaterial?.backToGallery || '返回成片'}
             </button>
@@ -576,8 +576,8 @@ function ModifyMaterialContent() {
         </div>
       </div>
       
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto pb-24">
+      {/* Content - pb-40 给底部按钮留空间 */}
+      <div className="flex-1 overflow-y-auto pb-40">
         {/* Output Image Preview */}
         <div className="p-4">
           <p className="text-sm font-medium text-zinc-600 mb-2">
@@ -624,14 +624,14 @@ function ModifyMaterialContent() {
         </div>
       </div>
       
-      {/* Bottom Action - 增加底部间距避免被导航栏遮挡 */}
-      <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t border-zinc-200 shadow-lg">
+      {/* Bottom Action - 参考 studio 的吸底样式 */}
+      <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-white via-white to-transparent max-w-md mx-auto z-40">
         <button
           onClick={handleGenerate}
           disabled={!productStates.some(s => s.enabled)}
-          className={`w-full h-12 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all ${
+          className={`w-full h-14 rounded-full font-semibold flex items-center justify-center gap-2 transition-all ${
             productStates.some(s => s.enabled)
-              ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white'
+              ? 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg shadow-purple-200'
               : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
           }`}
         >
