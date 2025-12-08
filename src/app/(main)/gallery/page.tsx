@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
-import { Download, Heart, X, Wand2, Camera, Users, Home, ZoomIn, Loader2, Lightbulb, RefreshCw, Trash2, Package, FolderPlus, ChevronDown, Check, Grid3X3 } from "lucide-react"
+import { Download, Heart, X, Wand2, Camera, Users, Home, ZoomIn, Loader2, Lightbulb, RefreshCw, Trash2, Package, FolderPlus, ChevronDown, Check, Grid3X3, Palette } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useGenerationTaskStore, GenerationTask, ImageSlot } from "@/stores/generationTaskStore"
@@ -990,6 +990,35 @@ export default function GalleryPage() {
                       {t.gallery.goGroupShoot || '拍组图'}
                     </button>
                   </div>
+                  {/* 改材质版型按钮 - 仅模特类图片显示 */}
+                  {isModelType(selectedItem.gen) && (
+                    <div className="flex gap-3 mt-3">
+                      <button 
+                        onClick={() => {
+                          const imageUrl = selectedItem.gen.outputImageUrls[selectedItem.index]
+                          // 收集原始商品图
+                          const inputImages: string[] = []
+                          // 优先使用 outfit 模式的多商品图
+                          if (selectedItem.gen.params?.productImages && selectedItem.gen.params.productImages.length > 0) {
+                            inputImages.push(...selectedItem.gen.params.productImages)
+                          }
+                          // 否则使用单个商品图
+                          else if (selectedItem.gen.inputImageUrl) {
+                            inputImages.push(selectedItem.gen.inputImageUrl)
+                          }
+                          // 保存到 sessionStorage
+                          sessionStorage.setItem('modifyMaterial_outputImage', imageUrl)
+                          sessionStorage.setItem('modifyMaterial_inputImages', JSON.stringify(inputImages))
+                          setSelectedItem(null)
+                          router.push("/gallery/modify-material")
+                        }}
+                        className="flex-1 h-12 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium flex items-center justify-center gap-2 transition-colors"
+                      >
+                        <Palette className="w-4 h-4" />
+                        {t.gallery.modifyMaterial || '改材质版型'}
+                      </button>
+                    </div>
+                  )}
                   <div className="flex gap-3 mt-3">
                     <button 
                       onClick={() => setShowSaveMenu(true)}

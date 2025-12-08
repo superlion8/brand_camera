@@ -268,6 +268,7 @@ export const zh = {
     proStudio: "模特棚拍",
     groupShoot: "组图",
     goGroupShoot: "拍组图",
+    modifyMaterial: "改材质版型",
     saveAsAsset: "存为素材",
     editRoom: "修图室",
     productStudio: "商品影棚",
@@ -563,6 +564,38 @@ export const zh = {
     bgSelected: "已选择背景",
     startGenerate: "开始生成",
     generating: "生成中...",
+  },
+  
+  // 改材质版型
+  modifyMaterial: {
+    title: "改材质版型",
+    analyzing: "正在分析商品特征...",
+    pleaseWait: "请稍候",
+    generating: "正在生成修改后的图片...",
+    mayTakeTime: "这可能需要一些时间",
+    result: "修改结果",
+    before: "修改前",
+    after: "修改后",
+    modifyAgain: "再次修改",
+    backToGallery: "返回成片",
+    targetImage: "目标图片",
+    selectProducts: "选择要修改的商品",
+    noProductsFound: "未检测到商品",
+    startModify: "开始修改",
+    selectAtLeastOne: "请至少选择一个商品进行修改",
+    noInputImages: "没有找到原始商品图片",
+    modifyEnabled: "已启用修改",
+    clickToEnable: "点击启用修改",
+    // 版型属性
+    fitAttributes: "版型属性",
+    shape: "整体廓形",
+    fit: "合身度",
+    visualFabricVibe: "视觉体感",
+    // 材质属性
+    materialAttributes: "材质属性",
+    fiberComposition: "材质成分",
+    visualLuster: "视觉光泽",
+    weaveStructure: "工艺结构",
   },
 }
 
