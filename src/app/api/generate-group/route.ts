@@ -2,50 +2,14 @@ import { NextRequest } from 'next/server'
 import { getGenAIClient, extractImage, extractText, safetySettings } from '@/lib/genai'
 import { createClient } from '@/lib/supabase/server'
 import { appendImageToGeneration, uploadImageToStorage } from '@/lib/supabase/generationService'
-import { stripBase64Prefix } from '@/lib/utils'
+import { imageToBase64 } from '@/lib/presets/serverPresets'
 
 export const maxDuration = 300 // 5 minutes
-
-// 将 URL 转换为 base64（服务端版本）
-async function urlToBase64(url: string, maxRetries = 2): Promise<string> {
-  const cleanUrl = url.trim()
-  
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      console.log(`[urlToBase64] Attempt ${attempt}/${maxRetries}, Fetching:`, cleanUrl.substring(0, 100) + '...')
-      const response = await fetch(cleanUrl, {
-        signal: AbortSignal.timeout(30000),
-      })
-      if (!response.ok) {
-        console.error(`[urlToBase64] HTTP Error (attempt ${attempt}):`, response.status, response.statusText, 'URL:', cleanUrl)
-        if (attempt === maxRetries) {
-          throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`)
-        }
-        await new Promise(resolve => setTimeout(resolve, 500 * attempt))
-        continue
-      }
-      const arrayBuffer = await response.arrayBuffer()
-      const buffer = Buffer.from(arrayBuffer)
-      console.log('[urlToBase64] Success, base64 length:', buffer.toString('base64').length)
-      return buffer.toString('base64')
-    } catch (error: any) {
-      console.error(`[urlToBase64] Error (attempt ${attempt}):`, error.message, 'URL:', cleanUrl.substring(0, 100))
-      if (attempt === maxRetries) {
-        throw error
-      }
-      await new Promise(resolve => setTimeout(resolve, 500 * attempt))
-    }
-  }
-  throw new Error('Failed to fetch image after all retries')
-}
 
 // 确保图片数据是 base64 格式（支持 URL 和 base64 输入）
 async function ensureBase64Data(image: string | null | undefined): Promise<string | null> {
   if (!image) return null
-  if (image.startsWith('http://') || image.startsWith('https://')) {
-    return await urlToBase64(image)
-  }
-  return stripBase64Prefix(image)
+  return await imageToBase64(image)
 }
 
 // VLM model for generating pose instructions

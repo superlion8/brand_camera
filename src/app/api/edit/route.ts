@@ -1,51 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getGenAIClient, extractImage, safetySettings } from '@/lib/genai'
 import { buildEditPrompt, EDIT_PROMPT_PREFIX } from '@/prompts'
-import { stripBase64Prefix, generateId } from '@/lib/utils'
+import { generateId } from '@/lib/utils'
 import { uploadImageToStorage, appendImageToGeneration, markImageFailed } from '@/lib/supabase/generationService'
 import { requireAuth } from '@/lib/auth'
+import { imageToBase64 } from '@/lib/presets/serverPresets'
 
 export const maxDuration = 300 // 5 minutes (Pro plan)
 
-// 将 URL 转换为 base64（服务端版本，带重试）
-async function urlToBase64(url: string, maxRetries = 2): Promise<string> {
-  const cleanUrl = url.trim()
-  
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      console.log(`[urlToBase64] Attempt ${attempt}/${maxRetries}, Fetching:`, cleanUrl.substring(0, 100) + '...')
-      const response = await fetch(cleanUrl, {
-        signal: AbortSignal.timeout(30000),
-      })
-      if (!response.ok) {
-        console.error(`[urlToBase64] HTTP Error (attempt ${attempt}):`, response.status, response.statusText, 'URL:', cleanUrl)
-        if (attempt === maxRetries) {
-          throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`)
-        }
-        await new Promise(resolve => setTimeout(resolve, 500 * attempt))
-        continue
-      }
-      const arrayBuffer = await response.arrayBuffer()
-      const buffer = Buffer.from(arrayBuffer)
-      console.log('[urlToBase64] Success, base64 length:', buffer.toString('base64').length)
-      return buffer.toString('base64')
-    } catch (error: any) {
-      console.error(`[urlToBase64] Error (attempt ${attempt}):`, error.message, 'URL:', cleanUrl.substring(0, 100))
-      if (attempt === maxRetries) {
-        throw error
-      }
-      await new Promise(resolve => setTimeout(resolve, 500 * attempt))
-    }
-  }
-  throw new Error('Failed to fetch image after all retries')
-}
-
 // 确保图片数据是 base64 格式
 async function ensureBase64Data(image: string): Promise<string> {
-  if (image.startsWith('http://') || image.startsWith('https://')) {
-    return await urlToBase64(image)
-  }
-  return stripBase64Prefix(image)
+  const result = await imageToBase64(image)
+  return result || ''
 }
 
 // Model names

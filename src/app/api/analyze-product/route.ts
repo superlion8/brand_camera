@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getGenAIClient, safetySettings, extractText } from '@/lib/genai'
+import { imageToBase64 } from '@/lib/presets/serverPresets'
 
 export const maxDuration = 60 // 1 minute timeout
 
@@ -8,39 +9,6 @@ const VALID_CATEGORIES = ["内衬", "上衣", "裤子", "帽子", "鞋子"] as c
 
 // VLM 模型 - 使用 gemini-2.5-flash
 const VLM_MODEL = 'gemini-2.5-flash'
-
-// 将 URL 转换为 base64（服务端版本，带重试）
-async function urlToBase64(url: string, maxRetries = 2): Promise<string> {
-  const cleanUrl = url.trim()
-  
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      console.log(`[urlToBase64] Attempt ${attempt}/${maxRetries}, Fetching:`, cleanUrl.substring(0, 100) + '...')
-      const response = await fetch(cleanUrl, {
-        signal: AbortSignal.timeout(30000),
-      })
-      if (!response.ok) {
-        console.error(`[urlToBase64] HTTP Error (attempt ${attempt}):`, response.status, response.statusText, 'URL:', cleanUrl)
-        if (attempt === maxRetries) {
-          throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`)
-        }
-        await new Promise(resolve => setTimeout(resolve, 500 * attempt))
-        continue
-      }
-      const arrayBuffer = await response.arrayBuffer()
-      const buffer = Buffer.from(arrayBuffer)
-      console.log('[urlToBase64] Success, base64 length:', buffer.toString('base64').length)
-      return buffer.toString('base64')
-    } catch (error: any) {
-      console.error(`[urlToBase64] Error (attempt ${attempt}):`, error.message, 'URL:', cleanUrl.substring(0, 100))
-      if (attempt === maxRetries) {
-        throw error
-      }
-      await new Promise(resolve => setTimeout(resolve, 500 * attempt))
-    }
-  }
-  throw new Error('Failed to fetch image after all retries')
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,24 +23,21 @@ export async function POST(request: NextRequest) {
     }
 
     // 准备图片数据 - 支持 URL 和 base64 格式
-    let base64Data: string
     let mimeType: string = 'image/jpeg'
     
-    if (image.startsWith('http://') || image.startsWith('https://')) {
-      // URL 格式：转换为 base64
-      console.log('[Analyze Product] Converting URL to base64:', image.substring(0, 80))
-      base64Data = await urlToBase64(image)
-      // 根据 URL 扩展名推断 MIME 类型
-      if (image.toLowerCase().includes('.png')) {
-        mimeType = 'image/png'
-      }
-    } else if (image.startsWith('data:')) {
-      // data URL 格式：提取 base64
-      base64Data = image.replace(/^data:image\/\w+;base64,/, '')
-      mimeType = image.startsWith('data:image/png') ? 'image/png' : 'image/jpeg'
-    } else {
-      // 纯 base64
-      base64Data = image
+    // 使用共享的 imageToBase64 函数处理
+    const base64Data = await imageToBase64(image)
+    
+    if (!base64Data) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid image format' },
+        { status: 400 }
+      )
+    }
+    
+    // 根据原始格式推断 MIME 类型
+    if (image.toLowerCase().includes('.png') || image.startsWith('data:image/png')) {
+      mimeType = 'image/png'
     }
 
     const genAI = getGenAIClient()
