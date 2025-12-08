@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getGenAIClient, safetySettings, extractImage } from '@/lib/genai'
 import { requireAuth } from '@/lib/auth'
-import { uploadImageToStorage } from '@/lib/supabase/generationService'
+import { uploadImageToStorage, appendImageToGeneration } from '@/lib/supabase/generationService'
 
 export const maxDuration = 300 // 5 minutes timeout
 
@@ -162,6 +162,8 @@ export async function POST(request: NextRequest) {
       outputImage,     // 要修改的生成图（Output 大图）
       referenceImages, // 原始商品图（可选，作为参考）
       targets,         // 要修改的商品列表
+      taskId,          // 任务ID（用于保存到数据库）
+      index = 0,       // 图片索引
     } = body
 
     if (!outputImage) {
@@ -197,8 +199,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const label = '[Modify Material]'
-    console.log(`${label} Starting modification with ${targets.length} targets`)
+    const label = `[ModifyMaterial-${index + 1}]`
+    console.log(`${label} Starting modification with ${targets.length} targets, taskId: ${taskId || 'none'}`)
 
     // 转换图片
     const outputImageData = await ensureBase64Data(outputImage)
@@ -263,6 +265,34 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`${label} Uploaded successfully`)
+
+    // 保存到数据库（如果有 taskId）
+    if (taskId) {
+      try {
+        const inputParams = {
+          type: 'modify_material',
+          outputImage,
+          targets,
+          referenceImages,
+        }
+        
+        await appendImageToGeneration({
+          taskId,
+          userId,
+          imageIndex: index,
+          imageUrl: uploadedUrl,
+          inputImageUrl: outputImage, // 原始大图作为 input
+          inputParams,
+          modelType: result.model === 'pro' ? 'pro' : 'flash',
+          genMode: 'simple',
+          taskType: 'edit',
+        })
+        console.log(`${label} Saved to database`)
+      } catch (dbError: any) {
+        console.error(`${label} Failed to save to database:`, dbError.message)
+        // 不阻塞返回，图片已生成成功
+      }
+    }
 
     return NextResponse.json({
       success: true,

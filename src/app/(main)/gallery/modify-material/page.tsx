@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, Suspense, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Loader2, Check, ChevronDown, Sparkles, AlertCircle, Wand2, Home } from 'lucide-react'
 import { useTranslation } from '@/stores/languageStore'
 import { useQuota } from '@/hooks/useQuota'
+import { useGenerationTaskStore } from '@/stores/generationTaskStore'
 
 // 分析结果类型
 interface AnalysisResult {
@@ -245,7 +246,8 @@ function ProductCard({
 function ModifyMaterialContent() {
   const router = useRouter()
   const { t } = useTranslation()
-  const { checkQuota } = useQuota()
+  const { checkQuota, refreshQuota } = useQuota()
+  const { addTask, updateTaskStatus, initImageSlots, updateImageSlot } = useGenerationTaskStore()
   
   const [phase, setPhase] = useState<'loading' | 'analyzing' | 'editing' | 'generating' | 'result'>('loading')
   const [outputImage, setOutputImage] = useState<string>('')
@@ -254,6 +256,11 @@ function ModifyMaterialContent() {
   const [resultImages, setResultImages] = useState<string[]>([]) // 改为数组，存储2张图
   const [generatingProgress, setGeneratingProgress] = useState<number>(0) // 生成进度
   const [error, setError] = useState<string>('')
+  const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
+  
+  // 用于追踪当前 phase 的 ref（避免闭包问题）
+  const phaseRef = useRef(phase)
+  useEffect(() => { phaseRef.current = phase }, [phase])
   
   // 加载数据
   useEffect(() => {
@@ -366,11 +373,6 @@ function ModifyMaterialContent() {
     const hasQuota = await checkQuota(2)
     if (!hasQuota) return
     
-    setPhase('generating')
-    setError('')
-    setGeneratingProgress(0)
-    setResultImages([])
-    
     // 构建请求数据
     const targets = enabledStates.map(state => ({
       category: state.category,
@@ -384,12 +386,43 @@ function ModifyMaterialContent() {
       }
     }))
     
+    // 创建任务（显示在 gallery loading 卡片）
+    const taskId = addTask('edit', outputImage, { 
+      type: 'modify_material',
+      targets: targets.map(t => t.category).join(', ')
+    }, 2)
+    setCurrentTaskId(taskId)
+    initImageSlots(taskId, 2)
+    
+    setPhase('generating')
+    setError('')
+    setGeneratingProgress(0)
+    setResultImages([])
+    
+    // 在数据库中创建 pending 记录
+    try {
+      await fetch('/api/quota/reserve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskId,
+          imageCount: 2,
+          taskType: 'modify_material',
+        }),
+      })
+      console.log('[ModifyMaterial] Reserved quota for task', taskId)
+      refreshQuota()
+    } catch (e) {
+      console.warn('[ModifyMaterial] Failed to reserve quota:', e)
+    }
+    
     const results: string[] = []
     
     // 生成2张图
     for (let i = 0; i < 2; i++) {
       try {
         setGeneratingProgress(i + 1)
+        updateImageSlot(taskId, i, { status: 'generating' })
         
         const response = await fetch('/api/modify-material', {
           method: 'POST',
@@ -397,7 +430,9 @@ function ModifyMaterialContent() {
           body: JSON.stringify({
             outputImage,
             referenceImages: inputImages,
-            targets
+            targets,
+            taskId,
+            index: i,
           })
         })
         
@@ -405,20 +440,30 @@ function ModifyMaterialContent() {
         
         if (data.success && data.image) {
           results.push(data.image)
+          updateImageSlot(taskId, i, { 
+            status: 'completed', 
+            imageUrl: data.image,
+            modelType: data.modelType 
+          })
+          console.log(`[ModifyMaterial] Image ${i + 1} completed`)
         } else {
-          console.error(`Image ${i + 1} failed:`, data.error)
+          console.error(`[ModifyMaterial] Image ${i + 1} failed:`, data.error)
+          updateImageSlot(taskId, i, { status: 'failed', error: data.error })
         }
       } catch (err: any) {
-        console.error(`Image ${i + 1} error:`, err.message)
+        console.error(`[ModifyMaterial] Image ${i + 1} error:`, err.message)
+        updateImageSlot(taskId, i, { status: 'failed', error: err.message })
       }
     }
     
     if (results.length === 0) {
       setError(t.modifyMaterial?.generateFailed || '生成失败，请重试')
+      updateTaskStatus(taskId, 'failed')
       setPhase('editing')
       return
     }
     
+    updateTaskStatus(taskId, 'completed')
     setResultImages(results)
     setPhase('result')
   }
