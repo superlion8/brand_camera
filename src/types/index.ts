@@ -70,6 +70,9 @@ export interface GenerationParams {
   productImage?: string           // 第一张商品图（向后兼容）
   productImages?: string[]        // 多商品图数组（outfit模式）
   inputImage?: string             // 输入图片 URL
+  // Modify material params
+  type?: string                   // 任务类型（如 'modify_material'）
+  targets?: string                // 修改目标描述
 }
 
 export interface Collection {
