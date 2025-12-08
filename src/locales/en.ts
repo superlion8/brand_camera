@@ -78,7 +78,7 @@ export const en: Translations = {
     groupShootSubtitle: "Multi-angle Sets",
     generalEdit: "General Edit",
     generalEditDesc: "Enhance, Remove BG, Magic Eraser",
-    modifyMaterial: "Modify Material",
+    modifyMaterial: "Material & Fit",
     modifyMaterialDesc: "Change fabric and fit of generated images",
     editRoom: "Edit Room",
     editRoomDesc: "AI Smart Edit · Describe what you want",
@@ -186,7 +186,7 @@ export const en: Translations = {
     generalEditDesc: "AI Smart Edit · Just describe",
     productStudioCard: "Product Studio",
     productStudioCardDesc: "Professional still life photography",
-    modifyMaterial: "Modify Material",
+    modifyMaterial: "Material & Fit",
     modifyMaterialDesc: "Change fabric and fit of generated images",
     productStudioExamples: "Adjust lighting, background, aspect ratio",
     generalEditExamples: "Change background, colors, remove people, add elements...",
@@ -274,7 +274,7 @@ export const en: Translations = {
     proStudio: "Model Studio",
     groupShoot: "Group",
     goGroupShoot: "Group Shoot",
-    modifyMaterial: "Modify Material",
+    modifyMaterial: "Material & Fit",
     saveAsAsset: "Save as Asset",
     editRoom: "Edit Room",
     productStudio: "Product Studio",
@@ -572,9 +572,9 @@ export const en: Translations = {
     generating: "Generating...",
   },
   
-  // Modify Material
+  // Material & Fit
   modifyMaterial: {
-    title: "Modify Material & Fit",
+    title: "Material & Fit",
     analyzing: "Analyzing product features...",
     pleaseWait: "Please wait",
     generating: "Generating modified image...",

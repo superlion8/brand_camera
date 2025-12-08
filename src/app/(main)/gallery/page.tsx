@@ -990,8 +990,8 @@ export default function GalleryPage() {
                       {t.gallery.goGroupShoot || '拍组图'}
                     </button>
                   </div>
-                  {/* 改材质版型按钮 - 仅模特类图片显示 */}
-                  {isModelType(selectedItem.gen) && (
+                  {/* 改材质版型按钮 - 所有生成图都可用 */}
+                  {selectedItem.gen && (
                     <div className="flex gap-3 mt-3">
                       <button 
                         onClick={() => {
