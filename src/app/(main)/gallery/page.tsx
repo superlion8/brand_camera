@@ -43,8 +43,8 @@ function isGroupShootType(gen: Generation | null | undefined): boolean {
 function isProductType(gen: Generation | null | undefined): boolean {
   if (!gen) return false
   const type = gen.type?.toLowerCase() || ''
-  // 商品类型 + 通用编辑（edit/editing 归类到商品下）
-  return type === 'studio' || type === 'camera_product' || type === 'product' || type === 'product_studio' || type === 'edit' || type === 'editing'
+  // 纯商品类型（不包含 edit）
+  return type === 'studio' || type === 'camera_product' || type === 'product' || type === 'product_studio'
 }
 
 function isEditType(gen: Generation | null | undefined): boolean {

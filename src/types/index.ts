@@ -4,7 +4,18 @@ export type ModelGender = 'male' | 'female' | 'boy' | 'girl'
 
 export type AssetType = 'model' | 'background' | 'product' | 'vibe'
 
-export type GenerationType = 'camera_product' | 'camera_model' | 'edit' | 'studio' | 'pro_studio' | 'group_shoot'
+// 所有可能的生成类型
+// - 买家秀: camera, camera_model, model, model_studio
+// - 模特棚拍: pro_studio, prostudio
+// - 组图拍摄: group_shoot
+// - 商品影棚: studio, camera_product, product, product_studio
+// - 通用编辑: edit, editing
+export type GenerationType = 
+  | 'camera' | 'camera_model' | 'model' | 'model_studio'  // 买家秀
+  | 'pro_studio' | 'prostudio'  // 模特棚拍
+  | 'group_shoot'  // 组图拍摄
+  | 'studio' | 'camera_product' | 'product' | 'product_studio'  // 商品影棚
+  | 'edit' | 'editing'  // 通用编辑
 
 export interface Asset {
   id: string
@@ -70,6 +81,9 @@ export interface GenerationParams {
   productImage?: string           // 第一张商品图（向后兼容）
   productImages?: string[]        // 多商品图数组（outfit模式）
   inputImage?: string             // 输入图片 URL
+  // Modify material params
+  type?: string                   // 任务类型（如 'modify_material'）
+  targets?: string                // 修改目标描述
 }
 
 export interface Collection {

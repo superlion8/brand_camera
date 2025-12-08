@@ -127,8 +127,8 @@ export async function GET(request: NextRequest) {
         query = query.or('task_type.eq.camera_model,task_type.eq.model,task_type.eq.camera,task_type.eq.model_studio,task_type.eq.pro_studio,task_type.eq.prostudio,task_type.eq.group_shoot')
       }
     } else if (type === 'product') {
-      // 商品类型 + 通用编辑
-      query = query.or('task_type.eq.studio,task_type.eq.camera_product,task_type.eq.product,task_type.eq.product_studio,task_type.eq.edit,task_type.eq.editing')
+      // 纯商品类型（不包含 edit，edit 只在"全部"分类中显示）
+      query = query.or('task_type.eq.studio,task_type.eq.camera_product,task_type.eq.product,task_type.eq.product_studio')
     }
 
     const { data: generations, error: genError, count: genCount } = await query
