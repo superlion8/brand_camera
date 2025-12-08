@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Loader2, Check, ChevronDown, Sparkles, AlertCircle, Wand2 } from 'lucide-react'
+import { ArrowLeft, Loader2, Check, ChevronDown, Sparkles, AlertCircle, Wand2, Home } from 'lucide-react'
 import { useTranslation } from '@/stores/languageStore'
 import { useQuota } from '@/hooks/useQuota'
 
@@ -450,30 +450,53 @@ function ModifyMaterialContent() {
     )
   }
   
-  // 渲染生成中状态
+  // 渲染生成中状态（参考商品影棚风格）
   if (phase === 'generating') {
     return (
-      <div className="min-h-screen bg-zinc-50 flex flex-col items-center justify-center p-4">
-        <motion.div
-          animate={{ scale: [1, 1.1, 1] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-        >
-          <Wand2 className="w-12 h-12 text-blue-500" />
-        </motion.div>
-        <p className="mt-4 text-zinc-600 font-medium">
+      <div className="min-h-screen bg-zinc-50 flex flex-col items-center justify-center p-8 pb-24">
+        {/* 带 glow 效果的 Loader */}
+        <div className="relative mb-6">
+          <div className="absolute inset-0 bg-purple-500/20 blur-xl rounded-full animate-pulse" />
+          <Loader2 className="w-16 h-16 text-purple-500 animate-spin relative z-10" />
+        </div>
+        
+        {/* 标题和描述 */}
+        <h3 className="text-xl font-bold text-zinc-800 mb-2">
           {t.modifyMaterial?.generating || '正在生成修改后的图片...'}
-        </p>
-        <p className="mt-2 text-sm text-zinc-400">
+        </h3>
+        <p className="text-zinc-500 text-sm mb-2">
           {generatingProgress}/2 {t.modifyMaterial?.mayTakeTime || '这可能需要一些时间'}
         </p>
+        
         {/* 进度条 */}
-        <div className="mt-4 w-48 h-2 bg-zinc-200 rounded-full overflow-hidden">
+        <div className="w-48 h-2 bg-zinc-200 rounded-full overflow-hidden mb-8">
           <motion.div
-            className="h-full bg-blue-500"
+            className="h-full bg-purple-500"
             initial={{ width: '0%' }}
             animate={{ width: `${(generatingProgress / 2) * 100}%` }}
             transition={{ duration: 0.3 }}
           />
+        </div>
+        
+        {/* 导航按钮（参考商品影棚） */}
+        <div className="space-y-3 w-full max-w-xs">
+          <p className="text-zinc-400 text-xs text-center mb-4">
+            {t.modifyMaterial?.continueInBackground || '可继续操作，生成在后台进行'}
+          </p>
+          <button
+            onClick={() => router.push('/gallery')}
+            className="w-full h-12 rounded-full bg-purple-500 text-white font-medium flex items-center justify-center gap-2 hover:bg-purple-600 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            {t.modifyMaterial?.backToGallery || '返回成片'}
+          </button>
+          <button
+            onClick={() => router.push('/')}
+            className="w-full h-12 rounded-full bg-zinc-100 text-zinc-700 font-medium flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors"
+          >
+            <Home className="w-5 h-5" />
+            {t.modifyMaterial?.returnHome || '返回首页'}
+          </button>
         </div>
       </div>
     )

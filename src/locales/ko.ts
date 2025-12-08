@@ -589,6 +589,8 @@ export const ko: Translations = {
     selectAtLeastOne: "수정할 상품을 하나 이상 선택해 주세요",
     noInputImages: "입력 이미지를 찾을 수 없습니다",
     generateFailed: "생성 실패, 다시 시도해 주세요",
+    continueInBackground: "계속 작업할 수 있습니다. 생성은 백그라운드에서 진행됩니다",
+    returnHome: "홈으로 돌아가기",
     modifyEnabled: "수정 활성화됨",
     clickToEnable: "클릭하여 수정 활성화",
     // 핏 속성

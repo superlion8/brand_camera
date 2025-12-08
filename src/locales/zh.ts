@@ -587,6 +587,8 @@ export const zh = {
     selectAtLeastOne: "请至少选择一个商品进行修改",
     noInputImages: "没有找到原始商品图片",
     generateFailed: "生成失败，请重试",
+    continueInBackground: "可继续操作，生成在后台进行",
+    returnHome: "返回首页",
     modifyEnabled: "已启用修改",
     clickToEnable: "点击启用修改",
     // 版型属性

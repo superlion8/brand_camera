@@ -589,6 +589,8 @@ export const en: Translations = {
     selectAtLeastOne: "Please select at least one product to modify",
     noInputImages: "No input images found",
     generateFailed: "Generation failed, please retry",
+    continueInBackground: "You can continue, generation runs in background",
+    returnHome: "Back to Home",
     modifyEnabled: "Modify enabled",
     clickToEnable: "Click to enable modify",
     // Fit attributes
