@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Loader2, Check, ChevronDown, Sparkles, AlertCircle, Wand2 } from 'lucide-react'
-import { useLanguage } from '@/components/LanguageProvider'
+import { useTranslation } from '@/stores/languageStore'
 import { useQuota } from '@/hooks/useQuota'
 
 // 分析结果类型
@@ -123,7 +123,7 @@ function ProductCard({
   onToggle: () => void
   onUpdate: (updates: Partial<ProductEditState>) => void
 }) {
-  const { t } = useLanguage()
+  const { t } = useTranslation()
   
   return (
     <div className={`rounded-xl border-2 transition-all ${
@@ -244,7 +244,7 @@ function ProductCard({
 
 function ModifyMaterialContent() {
   const router = useRouter()
-  const { t } = useLanguage()
+  const { t } = useTranslation()
   const { checkQuota } = useQuota()
   
   const [phase, setPhase] = useState<'loading' | 'analyzing' | 'editing' | 'generating' | 'result'>('loading')
