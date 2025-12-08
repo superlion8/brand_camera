@@ -3,27 +3,45 @@ import { getGenAIClient, extractImage, extractText, safetySettings } from '@/lib
 import { createClient } from '@/lib/supabase/server'
 import { appendImageToGeneration, uploadImageToStorage } from '@/lib/supabase/generationService'
 
-// 将 URL 转换为 base64（服务端版本）
-async function urlToBase64(url: string): Promise<string> {
-  try {
-    // 处理 URL 编码问题
-    const cleanUrl = url.trim()
-    console.log('[urlToBase64] Fetching:', cleanUrl.substring(0, 100) + '...')
-    
-    const response = await fetch(cleanUrl)
-    if (!response.ok) {
-      console.error('[urlToBase64] HTTP Error:', response.status, response.statusText, 'URL:', cleanUrl)
-      throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`)
+// 将 URL 转换为 base64（服务端版本，带重试）
+async function urlToBase64(url: string, maxRetries = 2): Promise<string> {
+  const cleanUrl = url.trim()
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`[urlToBase64] Attempt ${attempt}/${maxRetries}, Fetching:`, cleanUrl.substring(0, 100) + '...')
+      
+      const response = await fetch(cleanUrl, {
+        // 添加超时控制
+        signal: AbortSignal.timeout(30000), // 30秒超时
+      })
+      
+      if (!response.ok) {
+        console.error(`[urlToBase64] HTTP Error (attempt ${attempt}):`, response.status, response.statusText, 'URL:', cleanUrl)
+        if (attempt === maxRetries) {
+          throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`)
+        }
+        // 等待一小段时间后重试
+        await new Promise(resolve => setTimeout(resolve, 500 * attempt))
+        continue
+      }
+      
+      const arrayBuffer = await response.arrayBuffer()
+      const buffer = Buffer.from(arrayBuffer)
+      const base64 = buffer.toString('base64')
+      console.log('[urlToBase64] Success, base64 length:', base64.length)
+      return `data:image/jpeg;base64,${base64}`
+    } catch (error: any) {
+      console.error(`[urlToBase64] Error (attempt ${attempt}):`, error.message, 'URL:', cleanUrl.substring(0, 100))
+      if (attempt === maxRetries) {
+        throw error
+      }
+      // 等待一小段时间后重试
+      await new Promise(resolve => setTimeout(resolve, 500 * attempt))
     }
-    const arrayBuffer = await response.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-    const base64 = buffer.toString('base64')
-    console.log('[urlToBase64] Success, base64 length:', base64.length)
-    return `data:image/jpeg;base64,${base64}`
-  } catch (error: any) {
-    console.error('[urlToBase64] Error:', error.message, 'URL:', url?.substring(0, 100))
-    throw error
   }
+  
+  throw new Error('Failed to fetch image after all retries')
 }
 
 export const maxDuration = 300 // 5 minutes
