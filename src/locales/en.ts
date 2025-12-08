@@ -276,6 +276,7 @@ export const en: Translations = {
     goGroupShoot: "Group Shoot",
     modifyMaterial: "Material & Fit",
     saveAsAsset: "Save as Asset",
+    inputImages: "Input Images",
     editRoom: "Edit Room",
     productStudio: "Product Studio",
     productOriginal: "Original Product",

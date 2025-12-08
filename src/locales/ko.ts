@@ -276,6 +276,7 @@ export const ko: Translations = {
     goGroupShoot: "그룹 촬영",
     modifyMaterial: "소재/핏 변경",
     saveAsAsset: "자산으로 저장",
+    inputImages: "입력 이미지",
     editRoom: "편집실",
     productStudio: "상품 스튜디오",
     productOriginal: "원본 상품",

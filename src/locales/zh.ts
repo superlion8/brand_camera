@@ -274,6 +274,7 @@ export const zh = {
     goGroupShoot: "拍组图",
     modifyMaterial: "改材质版型",
     saveAsAsset: "存为素材",
+    inputImages: "输入图片",
     editRoom: "修图室",
     productStudio: "商品影棚",
     productOriginal: "商品原图",

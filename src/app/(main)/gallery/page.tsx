@@ -1029,6 +1029,64 @@ export default function GalleryPage() {
                     </button>
                   </div>
                   
+                  {/* Input Images Section - Show for all users (only user inputs, not random selections) */}
+                  {(() => {
+                    const productImages = selectedItem.gen.params?.productImages || []
+                    const inputImageUrl = selectedItem.gen.inputImageUrl
+                    const hasInputImages = productImages.length > 0 || inputImageUrl
+                    
+                    if (!hasInputImages) return null
+                    
+                    return (
+                      <div className="mt-6 pt-4 border-t border-zinc-100">
+                        <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.gallery.inputImages || '输入图片'}</h3>
+                        <div className="flex flex-wrap gap-3">
+                          {productImages.length > 0 ? (
+                            productImages.map((productUrl: string, idx: number) => (
+                              <div key={idx} className="flex flex-col items-center">
+                                <div 
+                                  className="w-20 h-20 rounded-xl overflow-hidden bg-zinc-100 cursor-pointer relative group shadow-sm border border-zinc-200"
+                                  onClick={() => setFullscreenImage(productUrl)}
+                                >
+                                  <Image 
+                                    src={productUrl} 
+                                    alt={`${t.gallery.productOriginal} ${idx + 1}`} 
+                                    width={80}
+                                    height={80}
+                                    className="w-full h-full object-cover"
+                                  />
+                                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <ZoomIn className="w-5 h-5 text-white" />
+                                  </div>
+                                </div>
+                                <p className="text-xs text-zinc-500 mt-1.5">{t.common.product} {idx + 1}</p>
+                              </div>
+                            ))
+                          ) : inputImageUrl && (
+                            <div className="flex flex-col items-center">
+                              <div 
+                                className="w-20 h-20 rounded-xl overflow-hidden bg-zinc-100 cursor-pointer relative group shadow-sm border border-zinc-200"
+                                onClick={() => setFullscreenImage(inputImageUrl)}
+                              >
+                                <Image 
+                                  src={inputImageUrl} 
+                                  alt={t.gallery.productOriginal} 
+                                  width={80}
+                                  height={80}
+                                  className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <ZoomIn className="w-5 h-5 text-white" />
+                                </div>
+                              </div>
+                              <p className="text-xs text-zinc-500 mt-1.5">{t.common.product}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })()}
+                  
                   {/* Generation Details - Only show in debug mode */}
                   {debugMode && (
                   <div className="mt-6 pt-4 border-t border-zinc-100 pb-8">
