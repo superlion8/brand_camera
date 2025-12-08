@@ -186,6 +186,8 @@ export const ko: Translations = {
     generalEditDesc: "AI 스마트 편집 · 설명만 하세요",
     productStudioCard: "상품 스튜디오",
     productStudioCardDesc: "전문 정물 사진 효과",
+    modifyMaterial: "소재/핏 변경",
+    modifyMaterialDesc: "생성된 이미지의 소재와 핏 변경",
     productStudioExamples: "조명, 배경, 화면 비율 조정",
     generalEditExamples: "배경 변경, 색상 변경, 사람 제거, 요소 추가...",
     comingModelStyle: "모델 스타일",

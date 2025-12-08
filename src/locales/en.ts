@@ -186,6 +186,8 @@ export const en: Translations = {
     generalEditDesc: "AI Smart Edit · Just describe",
     productStudioCard: "Product Studio",
     productStudioCardDesc: "Professional still life photography",
+    modifyMaterial: "Modify Material",
+    modifyMaterialDesc: "Change fabric and fit of generated images",
     productStudioExamples: "Adjust lighting, background, aspect ratio",
     generalEditExamples: "Change background, colors, remove people, add elements...",
     comingModelStyle: "Model Style",

@@ -184,6 +184,8 @@ export const zh = {
     generalEditDesc: "AI智能修图 · 描述即可实现",
     productStudioCard: "商品影棚",
     productStudioCardDesc: "专业静物摄影效果",
+    modifyMaterial: "改材质版型",
+    modifyMaterialDesc: "修改生成图的服装材质和版型",
     productStudioExamples: "调整光源、背景、画面比例",
     generalEditExamples: "换背景、换颜色、去路人、加元素...",
     comingModelStyle: "换模特风格",

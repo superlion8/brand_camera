@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { Wand2, Lightbulb, Home, ChevronRight, Layers } from "lucide-react"
+import { Wand2, Lightbulb, Home, ChevronRight, Layers, Palette } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useLanguageStore } from "@/stores/languageStore"
 import { motion } from "framer-motion"
@@ -100,6 +100,15 @@ export default function EditHubPage() {
       href: '/studio',
       color: 'bg-amber-600',
       image: 'https://images.unsplash.com/photo-1693763824929-bd6b4b959e2b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600',
+    },
+    {
+      id: 'modify-material',
+      title: t.edit.modifyMaterial || '改材质版型',
+      description: t.edit.modifyMaterialDesc || '修改生成图的服装材质和版型',
+      icon: <Palette className="w-5 h-5" />,
+      href: '/gallery',
+      color: 'bg-purple-600',
+      image: 'https://images.unsplash.com/photo-1558171813-4c088753af8f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600',
     },
   ]
 
