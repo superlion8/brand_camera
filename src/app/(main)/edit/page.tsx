@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { Wand2, Lightbulb, Home, ChevronRight, Layers, Palette } from "lucide-react"
+import { Wand2, Lightbulb, Home, ChevronRight, Palette } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useLanguageStore } from "@/stores/languageStore"
 import { motion } from "framer-motion"
@@ -64,18 +64,6 @@ function ToolCard({ title, description, icon, image, color, href }: ToolCardProp
   )
 }
 
-// Coming Soon Card Component
-function ComingSoonCard({ title, icon }: { title: string; icon: string }) {
-  return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      className="bg-white/80 backdrop-blur-sm border border-zinc-200/50 rounded-2xl p-4 flex items-center gap-3 opacity-70 hover:opacity-90 transition-opacity cursor-not-allowed"
-    >
-      <span className="text-2xl">{icon}</span>
-      <span className="text-sm font-medium text-zinc-500">{title}</span>
-    </motion.div>
-  )
-}
 
 export default function EditHubPage() {
   const router = useRouter()
@@ -112,13 +100,6 @@ export default function EditHubPage() {
     },
   ]
 
-  // Coming soon features with translations
-  const COMING_SOON = [
-    { title: t.edit.comingModelStyle, icon: '👤' },
-    { title: t.edit.comingPose, icon: '🕺' },
-    { title: t.edit.comingExpression, icon: '😊' },
-    { title: t.edit.comingCamera, icon: '📷' },
-  ]
   
   return (
     <div className="h-full flex flex-col bg-zinc-50">
@@ -170,40 +151,6 @@ export default function EditHubPage() {
           ))}
         </div>
         
-        {/* Coming Soon Section */}
-        <motion.div 
-          className="px-4 pt-8 pb-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.4, delay: 0.3 }}
-        >
-          <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-4">{t.edit.comingSoon}</h2>
-          <div className="grid grid-cols-2 gap-3">
-            {COMING_SOON.map((item, index) => (
-              <motion.div
-                key={item.title}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3, delay: 0.4 + index * 0.05 }}
-              >
-                <ComingSoonCard title={item.title} icon={item.icon} />
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Footer hint */}
-        <motion.div 
-          className="text-center pb-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.4, delay: 0.6 }}
-        >
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-100 rounded-full border border-zinc-200/50">
-            <Layers className="w-4 h-4 text-zinc-400" />
-            <span className="text-xs text-zinc-400 font-medium">{t.edit.moreComingSoon || '更多功能开发中...'}</span>
-          </div>
-        </motion.div>
       </div>
     </div>
   )
