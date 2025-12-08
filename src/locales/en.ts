@@ -78,6 +78,8 @@ export const en: Translations = {
     groupShootSubtitle: "Multi-angle Sets",
     generalEdit: "General Edit",
     generalEditDesc: "Enhance, Remove BG, Magic Eraser",
+    modifyMaterial: "Modify Material",
+    modifyMaterialDesc: "Change fabric and fit of generated images",
     editRoom: "Edit Room",
     editRoomDesc: "AI Smart Edit · Describe what you want",
     productStudio: "Product Studio",

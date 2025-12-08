@@ -76,6 +76,8 @@ export const zh = {
     groupShootSubtitle: "多角度套图",
     generalEdit: "通用编辑",
     generalEditDesc: "画质增强、智能抠图、消除笔",
+    modifyMaterial: "改材质版型",
+    modifyMaterialDesc: "修改生成图的服装材质和版型",
     editRoom: "修图室",
     editRoomDesc: "AI智能修图 · 自由描述你想要的效果",
     productStudio: "商品影棚",

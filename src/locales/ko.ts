@@ -78,6 +78,8 @@ export const ko: Translations = {
     groupShootSubtitle: "다각도 세트",
     generalEdit: "일반 편집",
     generalEditDesc: "화질 향상, 배경 제거, 지우개",
+    modifyMaterial: "소재/핏 변경",
+    modifyMaterialDesc: "생성된 이미지의 소재와 핏 변경",
     editRoom: "편집실",
     editRoomDesc: "AI 스마트 편집 · 원하는 것을 설명하세요",
     productStudio: "상품 스튜디오",

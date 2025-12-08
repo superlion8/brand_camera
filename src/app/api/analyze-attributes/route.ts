@@ -4,8 +4,8 @@ import { requireAuth } from '@/lib/auth'
 
 export const maxDuration = 60 // 1 minute timeout
 
-// 有效的商品类型
-const VALID_CATEGORIES = ["内衬", "上衣", "裤子", "帽子", "鞋子"] as const
+// 有效的商品类型（添加裙子）
+const VALID_CATEGORIES = ["内衬", "上衣", "裤子", "裙子", "帽子", "鞋子"] as const
 
 // VLM 模型
 const VLM_MODEL = 'gemini-2.5-flash'
@@ -52,7 +52,7 @@ async function ensureBase64Data(image: string | null | undefined): Promise<{ dat
 }
 
 // 分析商品属性的 prompt
-const ANALYSIS_PROMPT = `你是一个专业的服装设计师。请识别图中商品的类别（必须是以下之一：内衬、上衣、裤子、帽子、鞋子）。
+const ANALYSIS_PROMPT = `你是一个专业的服装设计师。请识别图中商品的类别（必须是以下之一：内衬、上衣、裤子、裙子、帽子、鞋子）。
 
 识别后，请分析其最可能的5种"版型"和5种"材质"特征。
 

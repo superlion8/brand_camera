@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { ChevronRight, FolderHeart, Images, Wand2, Users, Lightbulb, Sparkles, Grid3X3, ScanFace, Box, Settings } from "lucide-react"
+import { ChevronRight, FolderHeart, Images, Wand2, Users, Lightbulb, Sparkles, Grid3X3, ScanFace, Box, Settings, Palette } from "lucide-react"
 import { motion } from "framer-motion"
 import { useAssetStore } from "@/stores/assetStore"
 import { useTranslation } from "@/stores/languageStore"
@@ -250,6 +250,13 @@ export default function HomePage() {
               icon={<Settings className="w-6 h-6" />}
               image="https://images.unsplash.com/photo-1746458825397-9cd95fff0dfb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=200"
               href="/edit/general"
+            />
+            <RetouchRow
+              title={t.home.modifyMaterial || "改材质版型"}
+              subtitle={t.home.modifyMaterialDesc || "修改生成图的服装材质和版型"}
+              icon={<Palette className="w-6 h-6" />}
+              image="https://images.unsplash.com/photo-1558171813-4c088753af8f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=200"
+              href="/gallery"
             />
           </div>
         </motion.div>

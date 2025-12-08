@@ -40,11 +40,12 @@ async function ensureBase64Data(image: string | null | undefined): Promise<strin
   return image
 }
 
-// 类别中文到英文映射
+// 类别中文到英文映射（添加裙子）
 const CATEGORY_MAP: Record<string, string> = {
   '内衬': 'inner layer/undershirt',
   '上衣': 'top/shirt',
   '裤子': 'pants/trousers',
+  '裙子': 'skirt/dress',
   '帽子': 'hat/cap',
   '鞋子': 'shoes/footwear'
 }
@@ -67,7 +68,7 @@ function buildItemInstruction(target: {
   return `请调整图中模特穿的【${category}/${categoryLabel}】：整体廓形改为${params.shape}，合身度改为${params.fit}，视觉呈现${params.visual_fabric_vibe}的效果。材质改为${params.fiber_composition}，具有${params.visual_luster}光泽，结构为${params.weave_structure}。`
 }
 
-// 构建完整的修改 prompt
+// 构建完整的修改 prompt（包含参考图说明）
 function buildModifyPrompt(targets: Array<{
   category: string
   params: {
@@ -78,12 +79,17 @@ function buildModifyPrompt(targets: Array<{
     visual_luster: string
     weave_structure: string
   }
-}>): string {
-  const prefix = `作为高级修图师，请对提供的图片进行局部调整。保持图片的构图、背景、模特姿态以及未提及的商品完全不变。仅针对以下指令进行修改：\n\n`
+}>, hasReferenceImages: boolean = false): string {
+  const prefix = `作为高级修图师，请对提供的第一张图片进行局部调整。保持图片的构图、背景、模特姿态以及未提及的商品完全不变。仅针对以下指令进行修改：\n\n`
   
   const instructions = targets.map(t => buildItemInstruction(t)).join('\n\n')
   
-  const suffix = `\n\n确保修改后的衣物与模特身体自然贴合，光影关系与原图环境光保持一致。高保真输出。`
+  let suffix = `\n\n确保修改后的衣物与模特身体自然贴合，光影关系与原图环境光保持一致。高保真输出。`
+  
+  // 如果有参考图，添加说明
+  if (hasReferenceImages) {
+    suffix += `\n\n重要：后面附带的图片是原始商品参考图，请确保修改后的服装在颜色、图案、细节上与原始商品保持一致，仅改变版型和材质属性，不要改变商品的基本外观特征。`
+  }
   
   return prefix + instructions + suffix
 }
@@ -203,8 +209,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 构建 prompt
-    const prompt = buildModifyPrompt(targets)
+    // 构建 prompt（传递是否有参考图的标志）
+    const hasRefs = referenceImages && Array.isArray(referenceImages) && referenceImages.length > 0
+    const prompt = buildModifyPrompt(targets, hasRefs)
     console.log(`${label} Generated prompt:`, prompt.substring(0, 200) + '...')
 
     // 构建 parts
