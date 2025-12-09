@@ -10,7 +10,6 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { motion, AnimatePresence } from "framer-motion"
-import { createBrowserClient } from '@supabase/ssr'
 
 // Admin emails from environment variable (comma separated)
 const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
@@ -91,8 +90,8 @@ export default function PresetsManagement() {
     const uploadFiles = e.target.files
     if (!uploadFiles || uploadFiles.length === 0) return
 
-    // 单文件最大 50MB（Supabase 限制）
-    const MAX_SINGLE_SIZE = 50 * 1024 * 1024
+    // 单文件最大 3MB（保留余量给 Vercel 4.5MB 限制）
+    const MAX_SINGLE_SIZE = 3 * 1024 * 1024
     
     const oversizedFiles: string[] = []
     for (let i = 0; i < uploadFiles.length; i++) {
@@ -103,7 +102,7 @@ export default function PresetsManagement() {
     }
     
     if (oversizedFiles.length > 0) {
-      setError(`以下文件超过 50MB 限制：\n${oversizedFiles.join('\n')}`)
+      setError(`以下文件超过 3MB 限制，请压缩后重试：\n${oversizedFiles.join('\n')}`)
       return
     }
 
@@ -111,56 +110,46 @@ export default function PresetsManagement() {
     setError(null)
     setSuccessMessage(null)
 
-    // Helper: 将文件名转换为 URL 安全格式
-    const sanitizeFileName = (name: string): string => {
-      const ext = name.split('.').pop()?.toLowerCase() || 'png'
-      const baseName = name.replace(/\.[^/.]+$/, '')
-      const hasNonAscii = /[^\x00-\x7F]/.test(baseName)
-      
-      if (hasNonAscii) {
-        const timestamp = Date.now().toString(36)
-        const random = Math.random().toString(36).substring(2, 8)
-        return `${timestamp}_${random}.${ext}`
-      }
-      
-      const sanitized = baseName
-        .replace(/[^a-zA-Z0-9_-]/g, '_')
-        .replace(/_+/g, '_')
-        .replace(/^_|_$/g, '')
-      
-      return `${sanitized || 'file'}.${ext}`
-    }
-
     try {
-      // 直接使用 Supabase 客户端上传（绕过 Vercel 4.5MB 限制）
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
-      
       let uploaded = 0
       const errors: string[] = []
 
+      // 逐个文件上传（避免总大小超过 Vercel 限制）
       for (let i = 0; i < uploadFiles.length; i++) {
         const file = uploadFiles[i]
-        const fileName = sanitizeFileName(file.name)
-        const filePath = `${activeCategory.folder}/${fileName}`
         
-        console.log(`Uploading: ${file.name} -> ${filePath}`)
-        
-        const { error } = await supabase.storage
-          .from('presets')
-          .upload(filePath, file, {
-            contentType: file.type,
-            upsert: true,
+        const formData = new FormData()
+        formData.append('folder', activeCategory.folder)
+        formData.append('files', file)
+
+        try {
+          const response = await fetch('/api/admin/presets', {
+            method: 'POST',
+            body: formData,
           })
 
-        if (error) {
-          console.error(`Upload error for ${file.name}:`, error)
-          errors.push(`${file.name}: ${error.message}`)
-        } else {
-          uploaded++
+          if (!response.ok) {
+            if (response.status === 413) {
+              errors.push(`${file.name}: 文件太大`)
+            } else {
+              const text = await response.text()
+              try {
+                const data = JSON.parse(text)
+                errors.push(`${file.name}: ${data.error || 'Failed'}`)
+              } catch {
+                errors.push(`${file.name}: ${response.statusText}`)
+              }
+            }
+          } else {
+            const data = await response.json()
+            uploaded += data.uploaded || 1
+          }
+        } catch (err: any) {
+          errors.push(`${file.name}: ${err.message}`)
         }
+        
+        // 更新进度
+        setSuccessMessage(`上传中... ${i + 1}/${uploadFiles.length}`)
       }
 
       if (errors.length > 0 && uploaded === 0) {
@@ -178,11 +167,10 @@ export default function PresetsManagement() {
     } catch (err: any) {
       setError(err.message || '上传失败')
     } finally {
-      setIsUploading(true)
+      setIsUploading(false)
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
-      setIsUploading(false)
     }
   }
 
