@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Loader2, Check, ChevronDown, Sparkles, AlertCircle, Wand2, Home } from 'lucide-react'
+import { ArrowLeft, Loader2, Check, ChevronDown, Sparkles, AlertCircle, Wand2, Home, X, Image as ImageIcon } from 'lucide-react'
 import { useTranslation } from '@/stores/languageStore'
 import { useQuota } from '@/hooks/useQuota'
 import { useGenerationTaskStore } from '@/stores/generationTaskStore'
@@ -249,7 +249,7 @@ function ModifyMaterialContent() {
   const { checkQuota, refreshQuota } = useQuota()
   const { addTask, updateTaskStatus, initImageSlots, updateImageSlot } = useGenerationTaskStore()
   
-  const [phase, setPhase] = useState<'loading' | 'analyzing' | 'editing' | 'generating' | 'result'>('loading')
+  const [phase, setPhase] = useState<'select' | 'loading' | 'analyzing' | 'editing' | 'generating' | 'result'>('select')
   const [outputImage, setOutputImage] = useState<string>('')
   const [inputImages, setInputImages] = useState<string[]>([])
   const [productStates, setProductStates] = useState<ProductEditState[]>([])
@@ -257,6 +257,12 @@ function ModifyMaterialContent() {
   const [generatingProgress, setGeneratingProgress] = useState<number>(0) // 生成进度
   const [error, setError] = useState<string>('')
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
+  
+  // 图片选择相关状态
+  const [showGalleryPicker, setShowGalleryPicker] = useState(false)
+  const [galleryItems, setGalleryItems] = useState<any[]>([])
+  const [isLoadingGallery, setIsLoadingGallery] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   
   // 用于追踪当前 phase 的 ref（避免闭包问题）
   const phaseRef = useRef(phase)
@@ -267,12 +273,14 @@ function ModifyMaterialContent() {
     const output = sessionStorage.getItem('modifyMaterial_outputImage')
     const inputsStr = sessionStorage.getItem('modifyMaterial_inputImages')
     
+    // 如果没有 sessionStorage 数据，显示选择界面
     if (!output) {
-      router.push('/gallery')
+      setPhase('select')
       return
     }
     
     setOutputImage(output)
+    setPhase('loading')
     
     let inputs: string[] = []
     if (inputsStr) {
@@ -284,15 +292,76 @@ function ModifyMaterialContent() {
     }
     setInputImages(inputs)
     
+    // 清除 sessionStorage（避免刷新时重复使用）
+    sessionStorage.removeItem('modifyMaterial_outputImage')
+    sessionStorage.removeItem('modifyMaterial_inputImages')
+    
     // 开始分析
     if (inputs.length > 0) {
       setPhase('analyzing')
       analyzeProducts(inputs)
     } else {
-      setError(t.modifyMaterial?.noInputImages || '没有找到原始商品图片')
+      setError(t.modifyMaterial?.noInputImages || '没有找到原始商品图片，请上传商品图')
       setPhase('editing')
     }
   }, [router, t])
+  
+  // 加载成片列表
+  const loadGalleryItems = async () => {
+    setIsLoadingGallery(true)
+    try {
+      const response = await fetch('/api/gallery?type=all&page=1')
+      const data = await response.json()
+      if (data.success) {
+        setGalleryItems(data.data.items || [])
+      }
+    } catch (err) {
+      console.error('Failed to load gallery:', err)
+    } finally {
+      setIsLoadingGallery(false)
+    }
+  }
+  
+  // 从成片选择图片
+  const handleSelectFromGallery = (item: any) => {
+    setShowGalleryPicker(false)
+    setOutputImage(item.imageUrl)
+    
+    // 收集原始商品图
+    const inputs: string[] = []
+    if (item.generation?.params?.productImages?.length > 0) {
+      inputs.push(...item.generation.params.productImages)
+    } else if (item.generation?.inputImageUrl) {
+      inputs.push(item.generation.inputImageUrl)
+    }
+    setInputImages(inputs)
+    
+    // 开始分析
+    if (inputs.length > 0) {
+      setPhase('analyzing')
+      analyzeProducts(inputs)
+    } else {
+      setError(t.modifyMaterial?.noInputImages || '该图片没有关联的商品图，请手动上传')
+      setPhase('editing')
+    }
+  }
+  
+  // 上传图片
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string
+      setOutputImage(base64)
+      setInputImages([]) // 上传的图片没有关联的商品图
+      setError(t.modifyMaterial?.noInputImages || '请上传原始商品图用于分析材质')
+      setPhase('editing')
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
   
   // 分析商品
   const analyzeProducts = async (images: string[]) => {
@@ -473,6 +542,134 @@ function ModifyMaterialContent() {
     setProductStates(prev => prev.map((s, i) => 
       i === index ? { ...s, ...updates } : s
     ))
+  }
+  
+  // 渲染图片选择界面
+  if (phase === 'select') {
+    return (
+      <div className="min-h-screen bg-zinc-50">
+        {/* Header */}
+        <div className="sticky top-0 z-10 bg-white border-b border-zinc-100 px-4 py-3 flex items-center gap-3">
+          <button onClick={() => router.back()} className="p-2 -ml-2 rounded-full hover:bg-zinc-100">
+            <ArrowLeft className="w-5 h-5 text-zinc-600" />
+          </button>
+          <h1 className="text-lg font-semibold">{t.modifyMaterial?.title || '改材质版型'}</h1>
+        </div>
+        
+        <div className="p-4 space-y-6">
+          {/* 说明 */}
+          <div className="bg-purple-50 rounded-xl p-4">
+            <p className="text-sm text-purple-800">
+              {t.modifyMaterial?.selectDesc || '选择一张已生成的模特图，AI 将分析服装材质并允许您修改'}
+            </p>
+          </div>
+          
+          {/* 上传图片 */}
+          <div>
+            <p className="text-sm font-medium text-zinc-700 mb-3">{t.modifyMaterial?.uploadImage || '上传图片'}</p>
+            <input 
+              type="file" 
+              ref={fileInputRef}
+              accept="image/*" 
+              className="hidden" 
+              onChange={handleFileUpload}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full h-32 rounded-xl border-2 border-dashed border-zinc-300 hover:border-purple-400 hover:bg-purple-50/50 transition-colors flex flex-col items-center justify-center gap-2"
+            >
+              <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                <Wand2 className="w-6 h-6 text-purple-500" />
+              </div>
+              <span className="text-sm text-zinc-500">{t.common?.uploadFromAlbum || '从相册上传'}</span>
+            </button>
+          </div>
+          
+          {/* 分隔线 */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-zinc-200" />
+            <span className="text-xs text-zinc-400">{t.common?.or || '或'}</span>
+            <div className="flex-1 h-px bg-zinc-200" />
+          </div>
+          
+          {/* 从成片选择 */}
+          <div>
+            <p className="text-sm font-medium text-zinc-700 mb-3">{t.modifyMaterial?.selectFromGallery || '从成片选择'}</p>
+            <button
+              onClick={() => {
+                setShowGalleryPicker(true)
+                loadGalleryItems()
+              }}
+              className="w-full h-32 rounded-xl border-2 border-dashed border-zinc-300 hover:border-purple-400 hover:bg-purple-50/50 transition-colors flex flex-col items-center justify-center gap-2"
+            >
+              <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                <ImageIcon className="w-6 h-6 text-purple-500" />
+              </div>
+              <span className="text-sm text-zinc-500">{t.modifyMaterial?.selectFromGallery || '从成片选择'}</span>
+            </button>
+          </div>
+        </div>
+        
+        {/* Gallery Picker Modal */}
+        <AnimatePresence>
+          {showGalleryPicker && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/50 flex items-end"
+              onClick={() => setShowGalleryPicker(false)}
+            >
+              <motion.div
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="w-full bg-white rounded-t-2xl max-h-[80vh] overflow-hidden"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="p-4 border-b border-zinc-100 flex items-center justify-between">
+                  <h3 className="font-semibold">{t.modifyMaterial?.selectImage || '选择图片'}</h3>
+                  <button onClick={() => setShowGalleryPicker(false)} className="p-2 rounded-full hover:bg-zinc-100">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                <div className="p-4 overflow-y-auto max-h-[60vh]">
+                  {isLoadingGallery ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
+                    </div>
+                  ) : galleryItems.length === 0 ? (
+                    <div className="text-center py-12 text-zinc-400">
+                      {t.gallery?.noImages || '暂无图片'}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-2">
+                      {galleryItems.map((item, i) => (
+                        <button
+                          key={item.id || i}
+                          onClick={() => handleSelectFromGallery(item)}
+                          className="aspect-square rounded-lg overflow-hidden bg-zinc-100 hover:ring-2 hover:ring-purple-500 transition-all"
+                        >
+                          <Image
+                            src={item.imageUrl}
+                            alt=""
+                            width={200}
+                            height={200}
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    )
   }
   
   // 渲染加载/分析状态

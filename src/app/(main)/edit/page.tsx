@@ -92,9 +92,9 @@ export default function EditHubPage() {
     {
       id: 'modify-material',
       title: t.edit.modifyMaterial || '改材质版型',
-      description: t.edit.modifyMaterialDesc || '先在成片中选择一张图，再点击修改',
+      description: t.edit.modifyMaterialDesc || '修改生成图的服装材质和版型',
       icon: <Palette className="w-5 h-5" />,
-      href: '/gallery',
+      href: '/gallery/modify-material',
       color: 'bg-purple-600',
       image: 'https://images.unsplash.com/photo-1558171813-4c088753af8f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600',
     },
