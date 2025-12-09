@@ -4,11 +4,17 @@ import { requireAuth } from '@/lib/auth'
 
 export const maxDuration = 60 // 1 minute timeout
 
-// 有效的商品类型（添加裙子）
-const VALID_CATEGORIES = ["内衬", "上衣", "裤子", "裙子", "帽子", "鞋子"] as const
-
 // VLM 模型
 const VLM_MODEL = 'gemini-2.5-flash'
+
+// 多语言商品类型
+const CATEGORIES_BY_LANG = {
+  zh: ["内衬", "上衣", "裤子", "裙子", "帽子", "鞋子"],
+  en: ["Innerwear", "Top", "Pants", "Skirt", "Hat", "Shoes"],
+  ko: ["이너웨어", "상의", "바지", "스커트", "모자", "신발"]
+} as const
+
+type SupportedLang = 'zh' | 'en' | 'ko'
 
 // 将 URL 转换为 base64（服务端版本）
 async function urlToBase64(url: string): Promise<string> {
@@ -51,8 +57,72 @@ async function ensureBase64Data(image: string | null | undefined): Promise<{ dat
   return { data: base64Data, mimeType }
 }
 
-// 分析商品属性的 prompt
-const ANALYSIS_PROMPT = `你是一个专业的服装设计师。请识别图中商品的类别（必须是以下之一：内衬、上衣、裤子、裙子、帽子、鞋子）。
+// 多语言 prompt
+const getAnalysisPrompt = (lang: SupportedLang) => {
+  const categories = CATEGORIES_BY_LANG[lang].join(', ')
+  
+  if (lang === 'en') {
+    return `You are a professional fashion designer. Please identify the product category in the image (must be one of: ${categories}).
+
+After identifying, analyze the 5 most likely "fit" and 5 most likely "material" characteristics.
+
+Please output strictly in JSON format, options sorted by likelihood from highest to lowest:
+
+{
+  "product_category": "Top",
+  "fit_attributes": {
+    "shape": ["Silhouette1", "Silhouette2", "Silhouette3", "Silhouette4", "Silhouette5"],
+    "fit": ["Fit1", "Fit2", "Fit3", "Fit4", "Fit5"],
+    "visual_fabric_vibe": ["Vibe1", "Vibe2", "Vibe3", "Vibe4", "Vibe5"]
+  },
+  "material_attributes": {
+    "fiber_composition": ["Material1", "Material2", "Material3", "Material4", "Material5"],
+    "visual_luster": ["Luster1", "Luster2", "Luster3", "Luster4", "Luster5"],
+    "weave_structure": ["Weave1", "Weave2", "Weave3", "Weave4", "Weave5"]
+  }
+}
+
+Notes:
+- shape: Overall silhouette, e.g. H-line, A-line, X-line, Cocoon, Straight, Slim, Relaxed, Boxy
+- fit: Fit and ease, e.g. Tight, Fitted, Loose, Oversized, Slim fit, Regular fit
+- visual_fabric_vibe: Visual feel and fabric structure, e.g. Crisp, Draping, Fluffy, Body-hugging, Structured
+- fiber_composition: Fiber/material, e.g. Cotton, Polyester, Wool, Silk, Leather, Denim, Linen
+- visual_luster: Visual sheen, e.g. Matte, Silky, Glossy, Metallic, Satin, Brushed
+- weave_structure: Construction/weave, e.g. Plain weave, Twill, Knit, Denim, Tweed, Fleece`
+  }
+  
+  if (lang === 'ko') {
+    return `당신은 전문 패션 디자이너입니다. 이미지에서 상품 카테고리를 식별해주세요 (다음 중 하나여야 합니다: ${categories}).
+
+식별 후, 가장 가능성 있는 5가지 "핏"과 5가지 "소재" 특성을 분석해주세요.
+
+가능성이 높은 순서대로 정렬하여 JSON 형식으로 출력해주세요:
+
+{
+  "product_category": "상의",
+  "fit_attributes": {
+    "shape": ["실루엣1", "실루엣2", "실루엣3", "실루엣4", "실루엣5"],
+    "fit": ["핏1", "핏2", "핏3", "핏4", "핏5"],
+    "visual_fabric_vibe": ["느낌1", "느낌2", "느낌3", "느낌4", "느낌5"]
+  },
+  "material_attributes": {
+    "fiber_composition": ["소재1", "소재2", "소재3", "소재4", "소재5"],
+    "visual_luster": ["광택1", "광택2", "광택3", "광택4", "광택5"],
+    "weave_structure": ["조직1", "조직2", "조직3", "조직4", "조직5"]
+  }
+}
+
+참고:
+- shape: 전체 실루엣, 예: H라인, A라인, X라인, 코쿤, 스트레이트, 슬림, 릴렉스드, 박시
+- fit: 핏과 여유, 예: 타이트, 피티드, 루즈, 오버사이즈, 슬림핏, 레귤러핏
+- visual_fabric_vibe: 시각적 느낌과 원단 구조, 예: 뻣뻣한, 드레이프, 푹신한, 밀착, 구조감 있는
+- fiber_composition: 섬유/소재, 예: 면, 폴리에스터, 울, 실크, 가죽, 데님, 린넨
+- visual_luster: 시각적 광택, 예: 무광, 실키, 유광, 메탈릭, 새틴, 브러시드
+- weave_structure: 구조/조직, 예: 평직, 능직, 니트, 데님, 트위드, 플리스`
+  }
+  
+  // Default: Chinese
+  return `你是一个专业的服装设计师。请识别图中商品的类别（必须是以下之一：${categories}）。
 
 识别后，请分析其最可能的5种"版型"和5种"材质"特征。
 
@@ -79,6 +149,7 @@ const ANALYSIS_PROMPT = `你是一个专业的服装设计师。请识别图中�
 - fiber_composition: 成分/原料，如 纯棉、聚酯纤维、羊毛、真丝、皮革、丹宁 等
 - visual_luster: 视觉光泽，如 哑光、丝光、亮面、金属光泽、磨砂 等
 - weave_structure: 工艺与结构，如 平纹、斜纹、针织、丹宁、粗花呢、毛呢 等`
+}
 
 export async function POST(request: NextRequest) {
   // 验证用户身份
@@ -89,7 +160,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { images } = body // images: string[] - 可以是多张商品图
+    const { images, language = 'zh' } = body // images: string[], language: 'zh' | 'en' | 'ko'
 
     if (!images || !Array.isArray(images) || images.length === 0) {
       return NextResponse.json(
@@ -98,13 +169,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // 确定语言
+    const lang: SupportedLang = ['zh', 'en', 'ko'].includes(language) ? language : 'zh'
+    const validCategories = CATEGORIES_BY_LANG[lang]
+    const analysisPrompt = getAnalysisPrompt(lang)
+
     const genAI = getGenAIClient()
     const results: any[] = []
 
     // 逐张分析商品
     for (let i = 0; i < images.length; i++) {
       const image = images[i]
-      console.log(`[Analyze Attributes] Processing image ${i + 1}/${images.length}`)
+      console.log(`[Analyze Attributes] Processing image ${i + 1}/${images.length}, lang: ${lang}`)
 
       try {
         const imageData = await ensureBase64Data(image)
@@ -124,7 +200,7 @@ export async function POST(request: NextRequest) {
             {
               role: "user",
               parts: [
-                { text: ANALYSIS_PROMPT },
+                { text: analysisPrompt },
                 {
                   inlineData: {
                     mimeType: imageData.mimeType,
@@ -142,8 +218,8 @@ export async function POST(request: NextRequest) {
               properties: {
                 product_category: {
                   type: "STRING",
-                  enum: [...VALID_CATEGORIES],
-                  description: "商品类别"
+                  enum: [...validCategories],
+                  description: "Product category"
                 },
                 fit_attributes: {
                   type: "OBJECT",
@@ -218,8 +294,8 @@ export async function POST(request: NextRequest) {
         }
 
         // 验证类别
-        if (!VALID_CATEGORIES.includes(analysisResult.product_category)) {
-          analysisResult.product_category = "上衣"
+        if (!validCategories.includes(analysisResult.product_category)) {
+          analysisResult.product_category = validCategories[1] // Default to "Top"/"上衣"/"상의"
         }
 
         console.log(`[Analyze Attributes] Image ${i + 1} result:`, analysisResult.product_category)
