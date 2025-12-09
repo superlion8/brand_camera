@@ -281,6 +281,7 @@ function ModifyMaterialContent() {
   const [generatingProgress, setGeneratingProgress] = useState<number>(0) // 生成进度
   const [error, setError] = useState<string>('')
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null) // 全屏查看图片
   
   // 图片选择相关状态
   const [showGalleryPicker, setShowGalleryPicker] = useState(false)
@@ -813,26 +814,33 @@ function ModifyMaterialContent() {
           </div>
         </div>
         
-        {/* Result Images - 2张图并排显示 */}
-        <div className="flex-1 p-4 pb-24 overflow-y-auto">
-          {/* 原图 */}
+        {/* Result Images - 支持滚动到底部 */}
+        <div className="flex-1 p-4 pb-40 overflow-y-auto">
+          {/* 原图 - 点击放大 */}
           <div className="mb-4">
             <p className="text-sm font-medium text-zinc-600 mb-2">{t.modifyMaterial?.before || '修改前'}</p>
-            <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-zinc-200">
+            <button 
+              onClick={() => setFullscreenImage(outputImage)}
+              className="relative w-full aspect-[3/4] rounded-xl overflow-hidden bg-zinc-200 cursor-pointer active:scale-[0.98] transition-transform"
+            >
               <Image
                 src={outputImage}
                 alt="Original"
                 fill
                 className="object-cover"
               />
-            </div>
+            </button>
           </div>
           
-          {/* 生成的图片 */}
+          {/* 生成的图片 - 点击放大 */}
           <p className="text-sm font-medium text-zinc-600 mb-2">{t.modifyMaterial?.after || '修改后'}</p>
           <div className="grid grid-cols-2 gap-3">
             {resultImages.map((img, idx) => (
-              <div key={idx} className="relative aspect-[3/4] rounded-xl overflow-hidden bg-zinc-200">
+              <button 
+                key={idx} 
+                onClick={() => setFullscreenImage(img)}
+                className="relative aspect-[3/4] rounded-xl overflow-hidden bg-zinc-200 cursor-pointer active:scale-[0.98] transition-transform"
+              >
                 <Image
                   src={img}
                   alt={`Result ${idx + 1}`}
@@ -842,7 +850,7 @@ function ModifyMaterialContent() {
                 <div className="absolute top-2 left-2 px-2 py-1 bg-black/50 rounded-full text-xs text-white">
                   {idx + 1}
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -867,6 +875,32 @@ function ModifyMaterialContent() {
             </button>
           </div>
         </div>
+        
+        {/* 全屏图片查看 */}
+        <AnimatePresence>
+          {fullscreenImage && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black flex items-center justify-center"
+              onClick={() => setFullscreenImage(null)}
+            >
+              <button 
+                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center z-10"
+                onClick={() => setFullscreenImage(null)}
+              >
+                <X className="w-6 h-6 text-white" />
+              </button>
+              <Image
+                src={fullscreenImage}
+                alt="Fullscreen"
+                fill
+                className="object-contain"
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     )
   }
