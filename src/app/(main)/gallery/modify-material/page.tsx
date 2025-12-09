@@ -581,7 +581,7 @@ function ModifyMaterialContent() {
               <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
                 <Wand2 className="w-6 h-6 text-purple-500" />
               </div>
-              <span className="text-sm text-zinc-500">{t.common?.uploadFromAlbum || '从相册上传'}</span>
+              <span className="text-sm text-zinc-500">{t.modifyMaterial?.uploadImage || '上传图片'}</span>
             </button>
           </div>
           
