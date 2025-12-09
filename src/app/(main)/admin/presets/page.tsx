@@ -10,6 +10,7 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { motion, AnimatePresence } from "framer-motion"
+import { createBrowserClient } from '@supabase/ssr'
 
 // Admin emails from environment variable (comma separated)
 const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
@@ -90,38 +91,98 @@ export default function PresetsManagement() {
     const uploadFiles = e.target.files
     if (!uploadFiles || uploadFiles.length === 0) return
 
+    // 单文件最大 50MB（Supabase 限制）
+    const MAX_SINGLE_SIZE = 50 * 1024 * 1024
+    
+    const oversizedFiles: string[] = []
+    for (let i = 0; i < uploadFiles.length; i++) {
+      const file = uploadFiles[i]
+      if (file.size > MAX_SINGLE_SIZE) {
+        oversizedFiles.push(`${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`)
+      }
+    }
+    
+    if (oversizedFiles.length > 0) {
+      setError(`以下文件超过 50MB 限制：\n${oversizedFiles.join('\n')}`)
+      return
+    }
+
     setIsUploading(true)
     setError(null)
     setSuccessMessage(null)
 
-    try {
-      const formData = new FormData()
-      formData.append('folder', activeCategory.folder)
+    // Helper: 将文件名转换为 URL 安全格式
+    const sanitizeFileName = (name: string): string => {
+      const ext = name.split('.').pop()?.toLowerCase() || 'png'
+      const baseName = name.replace(/\.[^/.]+$/, '')
+      const hasNonAscii = /[^\x00-\x7F]/.test(baseName)
       
+      if (hasNonAscii) {
+        const timestamp = Date.now().toString(36)
+        const random = Math.random().toString(36).substring(2, 8)
+        return `${timestamp}_${random}.${ext}`
+      }
+      
+      const sanitized = baseName
+        .replace(/[^a-zA-Z0-9_-]/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_|_$/g, '')
+      
+      return `${sanitized || 'file'}.${ext}`
+    }
+
+    try {
+      // 直接使用 Supabase 客户端上传（绕过 Vercel 4.5MB 限制）
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      
+      let uploaded = 0
+      const errors: string[] = []
+
       for (let i = 0; i < uploadFiles.length; i++) {
-        formData.append('files', uploadFiles[i])
+        const file = uploadFiles[i]
+        const fileName = sanitizeFileName(file.name)
+        const filePath = `${activeCategory.folder}/${fileName}`
+        
+        console.log(`Uploading: ${file.name} -> ${filePath}`)
+        
+        const { error } = await supabase.storage
+          .from('presets')
+          .upload(filePath, file, {
+            contentType: file.type,
+            upsert: true,
+          })
+
+        if (error) {
+          console.error(`Upload error for ${file.name}:`, error)
+          errors.push(`${file.name}: ${error.message}`)
+        } else {
+          uploaded++
+        }
       }
 
-      const response = await fetch('/api/admin/presets', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Upload failed')
+      if (errors.length > 0 && uploaded === 0) {
+        throw new Error(errors.join('\n'))
       }
 
-      const data = await response.json()
-      setSuccessMessage(`成功上传 ${data.uploaded} 个文件`)
+      if (errors.length > 0) {
+        setSuccessMessage(`上传 ${uploaded} 个，失败 ${errors.length} 个`)
+        setError(errors.join('\n'))
+      } else {
+        setSuccessMessage(`成功上传 ${uploaded} 个文件`)
+      }
+      
       fetchFiles()
     } catch (err: any) {
       setError(err.message || '上传失败')
     } finally {
-      setIsUploading(false)
+      setIsUploading(true)
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
+      setIsUploading(false)
     }
   }
 
