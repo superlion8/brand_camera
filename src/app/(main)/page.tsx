@@ -253,10 +253,10 @@ export default function HomePage() {
             />
             <RetouchRow
               title={t.home.modifyMaterial || "改材质版型"}
-              subtitle={t.home.modifyMaterialDesc || "修改生成图的服装材质和版型"}
+              subtitle={t.home.modifyMaterialDesc || "先在成片中选择一张图，再点击修改"}
               icon={<Palette className="w-6 h-6" />}
               image="https://images.unsplash.com/photo-1558171813-4c088753af8f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=200"
-              href="/gallery/modify-material"
+              href="/gallery"
             />
           </div>
         </motion.div>
