@@ -597,7 +597,7 @@ export const en: Translations = {
     modifyEnabled: "Modify enabled",
     clickToEnable: "Click to enable modify",
     // Select interface
-    selectDesc: "Select a generated model image, AI will analyze and allow you to modify fabric and fit",
+    selectDesc: "Upload your photo to modify the fabric and fit on your model",
     uploadImage: "Upload Image",
     selectFromGallery: "Select from Photos",
     selectImage: "Select Image",
