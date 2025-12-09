@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
 
     // 确定语言
     const lang: SupportedLang = ['zh', 'en', 'ko'].includes(language) ? language : 'zh'
-    const validCategories = CATEGORIES_BY_LANG[lang]
+    const validCategories = [...CATEGORIES_BY_LANG[lang]] // Convert to mutable array
     const analysisPrompt = getAnalysisPrompt(lang)
 
     const genAI = getGenAIClient()
