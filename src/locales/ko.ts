@@ -613,6 +613,5 @@ export const ko: Translations = {
     stiffnessDrape: "경도/드레이프",
     surfaceTexture: "표면 질감",
     visualLuster: "광택",
-    weaveStructure: "직조 구조",
   },
 }
