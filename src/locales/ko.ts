@@ -596,6 +596,11 @@ export const ko: Translations = {
     returnHome: "홈으로 돌아가기",
     modifyEnabled: "수정 활성화됨",
     clickToEnable: "클릭하여 수정 활성화",
+    // 선택 인터페이스
+    selectDesc: "생성된 모델 이미지를 선택하면 AI가 소재와 핏을 분석하고 수정할 수 있습니다",
+    uploadImage: "이미지 업로드",
+    selectFromGallery: "사진에서 선택",
+    selectImage: "이미지 선택",
     // 핏 속성
     fitAttributes: "핏 속성",
     shape: "실루엣",

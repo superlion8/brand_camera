@@ -594,6 +594,11 @@ export const zh = {
     returnHome: "返回首页",
     modifyEnabled: "已启用修改",
     clickToEnable: "点击启用修改",
+    // 选择界面
+    selectDesc: "选择一张已生成的模特图，AI 将分析服装材质并允许您修改",
+    uploadImage: "上传图片",
+    selectFromGallery: "从成片选择",
+    selectImage: "选择图片",
     // 版型属性
     fitAttributes: "版型属性",
     shape: "整体廓形",

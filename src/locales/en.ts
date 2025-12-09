@@ -596,6 +596,11 @@ export const en: Translations = {
     returnHome: "Back to Home",
     modifyEnabled: "Modify enabled",
     clickToEnable: "Click to enable modify",
+    // Select interface
+    selectDesc: "Select a generated model image, AI will analyze and allow you to modify fabric and fit",
+    uploadImage: "Upload Image",
+    selectFromGallery: "Select from Photos",
+    selectImage: "Select Image",
     // Fit attributes
     fitAttributes: "Fit Attributes",
     shape: "Silhouette",
