@@ -324,15 +324,24 @@ function ModifyMaterialContent() {
   
   // 从成片选择图片
   const handleSelectFromGallery = (item: any) => {
+    if (!item?.imageUrl) {
+      console.error('Invalid item selected:', item)
+      return
+    }
+    
     setShowGalleryPicker(false)
     setOutputImage(item.imageUrl)
     
     // 收集原始商品图
     const inputs: string[] = []
-    if (item.generation?.params?.productImages?.length > 0) {
-      inputs.push(...item.generation.params.productImages)
-    } else if (item.generation?.inputImageUrl) {
-      inputs.push(item.generation.inputImageUrl)
+    try {
+      if (item.generation?.params?.productImages?.length > 0) {
+        inputs.push(...item.generation.params.productImages)
+      } else if (item.generation?.inputImageUrl) {
+        inputs.push(item.generation.inputImageUrl)
+      }
+    } catch (e) {
+      console.error('Error collecting input images:', e)
     }
     setInputImages(inputs)
     
@@ -646,7 +655,9 @@ function ModifyMaterialContent() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-3 gap-2">
-                      {galleryItems.map((item, i) => (
+                      {galleryItems
+                        .filter(item => item?.imageUrl)
+                        .map((item, i) => (
                         <button
                           key={item.id || i}
                           onClick={() => handleSelectFromGallery(item)}
@@ -658,6 +669,9 @@ function ModifyMaterialContent() {
                             width={200}
                             height={200}
                             className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none'
+                            }}
                           />
                         </button>
                       ))}
