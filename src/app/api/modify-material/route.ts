@@ -40,55 +40,76 @@ async function ensureBase64Data(image: string | null | undefined): Promise<strin
   return image
 }
 
-// 类别中文到英文映射（添加裙子）
+// 类别中英文映射
 const CATEGORY_MAP: Record<string, string> = {
-  '内衬': 'inner layer/undershirt',
-  '上衣': 'top/shirt',
-  '裤子': 'pants/trousers',
-  '裙子': 'skirt/dress',
-  '帽子': 'hat/cap',
-  '鞋子': 'shoes/footwear'
+  '内衬': 'inner layer',
+  '上衣': 'top',
+  '裤子': 'pants',
+  '裙子': 'skirt',
+  '帽子': 'hat',
+  '鞋子': 'shoes',
+  // English categories (pass through)
+  'Innerwear': 'inner layer',
+  'Top': 'top',
+  'Pants': 'pants',
+  'Skirt': 'skirt',
+  'Hat': 'hat',
+  'Shoes': 'shoes',
+  // Korean categories
+  '이너웨어': 'inner layer',
+  '상의': 'top',
+  '바지': 'pants',
+  '스커트': 'skirt',
+  '모자': 'hat',
+  '신발': 'shoes',
 }
 
-// 构建单个商品的修改指令
-function buildItemInstruction(target: {
+// V2 新版参数结构
+interface ModifyTarget {
   category: string
   params: {
-    shape: string
-    fit: string
-    visual_fabric_vibe: string
-    fiber_composition: string
-    visual_luster: string
-    weave_structure: string
+    silhouette: string        // 版型廓形
+    fit_tightness: string     // 松紧度
+    length: string            // 【新增】长度
+    waist_line?: string       // 【新增】腰线（裤子/裙子）
+    material_category: string // 【核心】面料大类
+    stiffness_drape: string   // 软硬度
+    surface_texture: string   // 【核心】表面肌理
+    visual_luster: string     // 光泽
   }
-}): string {
+}
+
+// 构建单个商品的修改指令 - V2 新版更自然的语法
+function buildItemInstruction(target: ModifyTarget): string {
   const { category, params } = target
-  const categoryLabel = CATEGORY_MAP[category] || category
+  const categoryEn = CATEGORY_MAP[category] || category
   
-  return `请调整图中模特穿的【${category}/${categoryLabel}】：整体廓形改为${params.shape}，合身度改为${params.fit}，视觉呈现${params.visual_fabric_vibe}的效果。材质改为${params.fiber_composition}，具有${params.visual_luster}光泽，结构为${params.weave_structure}。`
+  // 构建长度描述（如果有）
+  const lengthPart = params.length ? `${params.length}款式` : '原长度款式'
+  
+  // 构建腰线描述（裤子/裙子适用）
+  const waistPart = params.waist_line && 
+    (category.includes('裤') || category.includes('裙') || 
+     category.toLowerCase().includes('pants') || category.toLowerCase().includes('skirt')) 
+    ? `，腰线为${params.waist_line}` : ''
+  
+  return `请重绘图中模特穿的【${category}/${categoryEn}】：
+1. [版型结构]：将其修改为${params.silhouette}廓形的${lengthPart}${waistPart}，整体松紧度调整为${params.fit_tightness}。
+2. [面料材质]：材质改为${params.material_category}面料。
+3. [质感细节]：面料表现出${params.stiffness_drape}的物理质感，表面具有${params.surface_texture}的肌理细节，并呈现${params.visual_luster}。`
 }
 
-// 构建完整的修改 prompt（包含参考图说明）
-function buildModifyPrompt(targets: Array<{
-  category: string
-  params: {
-    shape: string
-    fit: string
-    visual_fabric_vibe: string
-    fiber_composition: string
-    visual_luster: string
-    weave_structure: string
-  }
-}>, hasReferenceImages: boolean = false): string {
-  const prefix = `作为高级修图师，请对提供的第一张图片进行局部调整。保持图片的构图、背景、模特姿态以及未提及的商品完全不变。仅针对以下指令进行修改：\n\n`
+// 构建完整的修改 prompt - V2 新版
+function buildModifyPrompt(targets: ModifyTarget[], hasReferenceImages: boolean = false): string {
+  const prefix = `作为高级修图师，请对提供的图片进行局部调整。保持图片的构图、背景、模特姿态以及未提及的商品完全不变。仅针对以下指令进行修改：\n\n`
   
   const instructions = targets.map(t => buildItemInstruction(t)).join('\n\n')
   
-  let suffix = `\n\n确保修改后的衣物与模特身体自然贴合，光影关系与原图环境光保持一致。高保真输出。`
+  let suffix = `\n\n确保修改后的衣物与模特身体自然贴合（尤其是腰部和关节处），面料的垂坠感符合重力学，光影关系与原图环境光保持一致。高保真输出。`
   
   // 如果有参考图，添加说明
   if (hasReferenceImages) {
-    suffix += `\n\n重要：后面附带的图片是原始商品参考图，请确保修改后的服装在颜色、图案、细节上与原始商品保持一致，仅改变版型和材质属性，不要改变商品的基本外观特征。`
+    suffix += `\n\n重要：后面附带的图片是原始商品参考图，请确保修改后的服装在颜色、图案、LOGO等视觉特征上与原始商品保持完全一致，仅改变版型和材质属性。`
   }
   
   return prefix + instructions + suffix
@@ -161,7 +182,7 @@ export async function POST(request: NextRequest) {
     const { 
       outputImage,     // 要修改的生成图（Output 大图）
       referenceImages, // 原始商品图（可选，作为参考）
-      targets,         // 要修改的商品列表
+      targets,         // 要修改的商品列表 (V2 新格式)
       taskId,          // 任务ID（用于保存到数据库）
       index = 0,       // 图片索引
     } = body
@@ -180,7 +201,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 验证 targets 格式
+    // 验证 targets 格式 (V2)
+    const requiredParams = ['silhouette', 'fit_tightness', 'length', 'material_category', 'stiffness_drape', 'surface_texture', 'visual_luster']
     for (const target of targets) {
       if (!target.category || !target.params) {
         return NextResponse.json(
@@ -188,7 +210,6 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         )
       }
-      const requiredParams = ['shape', 'fit', 'visual_fabric_vibe', 'fiber_composition', 'visual_luster', 'weave_structure']
       for (const param of requiredParams) {
         if (!target.params[param]) {
           return NextResponse.json(
@@ -213,8 +234,8 @@ export async function POST(request: NextRequest) {
 
     // 构建 prompt（传递是否有参考图的标志）
     const hasRefs = referenceImages && Array.isArray(referenceImages) && referenceImages.length > 0
-    const prompt = buildModifyPrompt(targets, hasRefs)
-    console.log(`${label} Generated prompt:`, prompt.substring(0, 200) + '...')
+    const prompt = buildModifyPrompt(targets as ModifyTarget[], hasRefs)
+    console.log(`${label} Generated prompt:`, prompt.substring(0, 300) + '...')
 
     // 构建 parts
     const parts: any[] = [
@@ -314,4 +335,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

@@ -9,7 +9,7 @@ import { useTranslation } from '@/stores/languageStore'
 import { useQuota } from '@/hooks/useQuota'
 import { useGenerationTaskStore } from '@/stores/generationTaskStore'
 
-// 分析结果类型
+// V2 分析结果类型
 interface AnalysisResult {
   index: number
   success: boolean
@@ -17,46 +17,54 @@ interface AnalysisResult {
   data?: {
     product_category: string
     fit_attributes: {
-      shape: string[]
-      fit: string[]
-      visual_fabric_vibe: string[]
+      silhouette: string[]      // 版型廓形
+      fit_tightness: string[]   // 松紧度
+      length: string[]          // 长度
+      waist_line: string[]      // 腰线
     }
     material_attributes: {
-      fiber_composition: string[]
-      visual_luster: string[]
-      weave_structure: string[]
+      material_category: string[] // 面料大类
+      stiffness_drape: string[]   // 软硬度
+      surface_texture: string[]   // 表面肌理
+      visual_luster: string[]     // 光泽
     }
   }
   error?: string
 }
 
-// 商品编辑状态
+// V2 商品编辑状态
 interface ProductEditState {
   enabled: boolean
   category: string
   imageUrl: string
   // 版型属性
-  shape: string
-  shapeCustom: string
-  fit: string
-  fitCustom: string
-  visual_fabric_vibe: string
-  visual_fabric_vibeCustom: string
+  silhouette: string
+  silhouetteCustom: string
+  fit_tightness: string
+  fit_tightnessCustom: string
+  length: string
+  lengthCustom: string
+  waist_line: string
+  waist_lineCustom: string
   // 材质属性
-  fiber_composition: string
-  fiber_compositionCustom: string
+  material_category: string
+  material_categoryCustom: string
+  stiffness_drape: string
+  stiffness_drapeCustom: string
+  surface_texture: string
+  surface_textureCustom: string
   visual_luster: string
   visual_lusterCustom: string
-  weave_structure: string
-  weave_structureCustom: string
   // 原始选项
   options: {
-    shape: string[]
-    fit: string[]
-    visual_fabric_vibe: string[]
-    fiber_composition: string[]
+    silhouette: string[]
+    fit_tightness: string[]
+    length: string[]
+    waist_line: string[]
+    material_category: string[]
+    stiffness_drape: string[]
+    surface_texture: string[]
     visual_luster: string[]
-    weave_structure: string[]
   }
 }
 
@@ -176,28 +184,36 @@ function ProductCard({
                 </p>
                 <div className="grid grid-cols-1 gap-3">
                   <AttributeSelect
-                    label={t.modifyMaterial?.shape || '整体廓形'}
-                    value={state.shape}
-                    customValue={state.shapeCustom}
-                    options={state.options.shape}
-                    onChange={(v) => onUpdate({ shape: v })}
-                    onCustomChange={(v) => onUpdate({ shapeCustom: v })}
+                    label={t.modifyMaterial?.silhouette || '版型廓形'}
+                    value={state.silhouette}
+                    customValue={state.silhouetteCustom}
+                    options={state.options.silhouette}
+                    onChange={(v) => onUpdate({ silhouette: v })}
+                    onCustomChange={(v) => onUpdate({ silhouetteCustom: v })}
                   />
                   <AttributeSelect
-                    label={t.modifyMaterial?.fit || '合身度'}
-                    value={state.fit}
-                    customValue={state.fitCustom}
-                    options={state.options.fit}
-                    onChange={(v) => onUpdate({ fit: v })}
-                    onCustomChange={(v) => onUpdate({ fitCustom: v })}
+                    label={t.modifyMaterial?.fitTightness || '松紧度'}
+                    value={state.fit_tightness}
+                    customValue={state.fit_tightnessCustom}
+                    options={state.options.fit_tightness}
+                    onChange={(v) => onUpdate({ fit_tightness: v })}
+                    onCustomChange={(v) => onUpdate({ fit_tightnessCustom: v })}
                   />
                   <AttributeSelect
-                    label={t.modifyMaterial?.visualFabricVibe || '视觉体感'}
-                    value={state.visual_fabric_vibe}
-                    customValue={state.visual_fabric_vibeCustom}
-                    options={state.options.visual_fabric_vibe}
-                    onChange={(v) => onUpdate({ visual_fabric_vibe: v })}
-                    onCustomChange={(v) => onUpdate({ visual_fabric_vibeCustom: v })}
+                    label={t.modifyMaterial?.length || '长度'}
+                    value={state.length}
+                    customValue={state.lengthCustom}
+                    options={state.options.length}
+                    onChange={(v) => onUpdate({ length: v })}
+                    onCustomChange={(v) => onUpdate({ lengthCustom: v })}
+                  />
+                  <AttributeSelect
+                    label={t.modifyMaterial?.waistLine || '腰线'}
+                    value={state.waist_line}
+                    customValue={state.waist_lineCustom}
+                    options={state.options.waist_line}
+                    onChange={(v) => onUpdate({ waist_line: v })}
+                    onCustomChange={(v) => onUpdate({ waist_lineCustom: v })}
                   />
                 </div>
               </div>
@@ -210,12 +226,28 @@ function ProductCard({
                 </p>
                 <div className="grid grid-cols-1 gap-3">
                   <AttributeSelect
-                    label={t.modifyMaterial?.fiberComposition || '材质成分'}
-                    value={state.fiber_composition}
-                    customValue={state.fiber_compositionCustom}
-                    options={state.options.fiber_composition}
-                    onChange={(v) => onUpdate({ fiber_composition: v })}
-                    onCustomChange={(v) => onUpdate({ fiber_compositionCustom: v })}
+                    label={t.modifyMaterial?.materialCategory || '面料大类'}
+                    value={state.material_category}
+                    customValue={state.material_categoryCustom}
+                    options={state.options.material_category}
+                    onChange={(v) => onUpdate({ material_category: v })}
+                    onCustomChange={(v) => onUpdate({ material_categoryCustom: v })}
+                  />
+                  <AttributeSelect
+                    label={t.modifyMaterial?.stiffnessDrape || '软硬度'}
+                    value={state.stiffness_drape}
+                    customValue={state.stiffness_drapeCustom}
+                    options={state.options.stiffness_drape}
+                    onChange={(v) => onUpdate({ stiffness_drape: v })}
+                    onCustomChange={(v) => onUpdate({ stiffness_drapeCustom: v })}
+                  />
+                  <AttributeSelect
+                    label={t.modifyMaterial?.surfaceTexture || '表面肌理'}
+                    value={state.surface_texture}
+                    customValue={state.surface_textureCustom}
+                    options={state.options.surface_texture}
+                    onChange={(v) => onUpdate({ surface_texture: v })}
+                    onCustomChange={(v) => onUpdate({ surface_textureCustom: v })}
                   />
                   <AttributeSelect
                     label={t.modifyMaterial?.visualLuster || '视觉光泽'}
@@ -224,14 +256,6 @@ function ProductCard({
                     options={state.options.visual_luster}
                     onChange={(v) => onUpdate({ visual_luster: v })}
                     onCustomChange={(v) => onUpdate({ visual_lusterCustom: v })}
-                  />
-                  <AttributeSelect
-                    label={t.modifyMaterial?.weaveStructure || '工艺结构'}
-                    value={state.weave_structure}
-                    customValue={state.weave_structureCustom}
-                    options={state.options.weave_structure}
-                    onChange={(v) => onUpdate({ weave_structure: v })}
-                    onCustomChange={(v) => onUpdate({ weave_structureCustom: v })}
                   />
                 </div>
               </div>
@@ -391,33 +415,40 @@ function ModifyMaterialContent() {
         throw new Error(data.error || '分析失败')
       }
       
-      // 转换分析结果为编辑状态
+      // 转换分析结果为编辑状态 (V2)
       const states: ProductEditState[] = data.results
         .filter((r: AnalysisResult) => r.success && r.data)
         .map((r: AnalysisResult) => ({
           enabled: false,
           category: r.data!.product_category,
           imageUrl: r.imageUrl || images[r.index],
-          // 默认选择第一个选项
-          shape: r.data!.fit_attributes.shape[0] || '',
-          shapeCustom: '',
-          fit: r.data!.fit_attributes.fit[0] || '',
-          fitCustom: '',
-          visual_fabric_vibe: r.data!.fit_attributes.visual_fabric_vibe[0] || '',
-          visual_fabric_vibeCustom: '',
-          fiber_composition: r.data!.material_attributes.fiber_composition[0] || '',
-          fiber_compositionCustom: '',
-          visual_luster: r.data!.material_attributes.visual_luster[0] || '',
+          // 版型属性 - 默认选择第一个选项
+          silhouette: r.data!.fit_attributes.silhouette?.[0] || '',
+          silhouetteCustom: '',
+          fit_tightness: r.data!.fit_attributes.fit_tightness?.[0] || '',
+          fit_tightnessCustom: '',
+          length: r.data!.fit_attributes.length?.[0] || '',
+          lengthCustom: '',
+          waist_line: r.data!.fit_attributes.waist_line?.[0] || '',
+          waist_lineCustom: '',
+          // 材质属性 - 默认选择第一个选项
+          material_category: r.data!.material_attributes.material_category?.[0] || '',
+          material_categoryCustom: '',
+          stiffness_drape: r.data!.material_attributes.stiffness_drape?.[0] || '',
+          stiffness_drapeCustom: '',
+          surface_texture: r.data!.material_attributes.surface_texture?.[0] || '',
+          surface_textureCustom: '',
+          visual_luster: r.data!.material_attributes.visual_luster?.[0] || '',
           visual_lusterCustom: '',
-          weave_structure: r.data!.material_attributes.weave_structure[0] || '',
-          weave_structureCustom: '',
           options: {
-            shape: r.data!.fit_attributes.shape,
-            fit: r.data!.fit_attributes.fit,
-            visual_fabric_vibe: r.data!.fit_attributes.visual_fabric_vibe,
-            fiber_composition: r.data!.material_attributes.fiber_composition,
-            visual_luster: r.data!.material_attributes.visual_luster,
-            weave_structure: r.data!.material_attributes.weave_structure,
+            silhouette: r.data!.fit_attributes.silhouette || [],
+            fit_tightness: r.data!.fit_attributes.fit_tightness || [],
+            length: r.data!.fit_attributes.length || [],
+            waist_line: r.data!.fit_attributes.waist_line || [],
+            material_category: r.data!.material_attributes.material_category || [],
+            stiffness_drape: r.data!.material_attributes.stiffness_drape || [],
+            surface_texture: r.data!.material_attributes.surface_texture || [],
+            visual_luster: r.data!.material_attributes.visual_luster || [],
           }
         }))
       
@@ -455,12 +486,16 @@ function ModifyMaterialContent() {
     const targets = enabledStates.map(state => ({
       category: state.category,
       params: {
-        shape: getValue(state, 'shape'),
-        fit: getValue(state, 'fit'),
-        visual_fabric_vibe: getValue(state, 'visual_fabric_vibe'),
-        fiber_composition: getValue(state, 'fiber_composition'),
+        // V2 版型属性
+        silhouette: getValue(state, 'silhouette'),
+        fit_tightness: getValue(state, 'fit_tightness'),
+        length: getValue(state, 'length'),
+        waist_line: getValue(state, 'waist_line'),
+        // V2 材质属性
+        material_category: getValue(state, 'material_category'),
+        stiffness_drape: getValue(state, 'stiffness_drape'),
+        surface_texture: getValue(state, 'surface_texture'),
         visual_luster: getValue(state, 'visual_luster'),
-        weave_structure: getValue(state, 'weave_structure'),
       }
     }))
     

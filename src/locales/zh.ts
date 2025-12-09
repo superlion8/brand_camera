@@ -599,16 +599,18 @@ export const zh = {
     uploadImage: "上传图片",
     selectFromGallery: "从成片选择",
     selectImage: "选择图片",
-    // 版型属性
+    // V2 版型属性
     fitAttributes: "版型属性",
-    shape: "整体廓形",
-    fit: "合身度",
-    visualFabricVibe: "视觉体感",
-    // 材质属性
+    silhouette: "版型廓形",
+    fitTightness: "松紧度",
+    length: "长度",
+    waistLine: "腰线",
+    // V2 材质属性
     materialAttributes: "材质属性",
-    fiberComposition: "材质成分",
+    materialCategory: "面料大类",
+    stiffnessDrape: "软硬度",
+    surfaceTexture: "表面肌理",
     visualLuster: "视觉光泽",
-    weaveStructure: "工艺结构",
   },
 }
 

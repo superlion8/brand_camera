@@ -601,14 +601,17 @@ export const ko: Translations = {
     uploadImage: "이미지 업로드",
     selectFromGallery: "사진에서 선택",
     selectImage: "이미지 선택",
-    // 핏 속성
+    // V2 핏 속성
     fitAttributes: "핏 속성",
-    shape: "실루엣",
-    fit: "핏",
-    visualFabricVibe: "패브릭 느낌",
-    // 소재 속성
+    silhouette: "실루엣",
+    fitTightness: "착용감",
+    length: "기장",
+    waistLine: "허리선",
+    // V2 소재 속성
     materialAttributes: "소재 속성",
-    fiberComposition: "섬유 구성",
+    materialCategory: "소재 대분류",
+    stiffnessDrape: "경도/드레이프",
+    surfaceTexture: "표면 질감",
     visualLuster: "광택",
     weaveStructure: "직조 구조",
   },

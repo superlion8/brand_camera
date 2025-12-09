@@ -57,98 +57,116 @@ async function ensureBase64Data(image: string | null | undefined): Promise<{ dat
   return { data: base64Data, mimeType }
 }
 
-// 多语言 prompt
+// 多语言 prompt - V2 新版本
 const getAnalysisPrompt = (lang: SupportedLang) => {
   const categories = CATEGORIES_BY_LANG[lang].join(', ')
   
   if (lang === 'en') {
     return `You are a professional fashion designer. Please identify the product category in the image (must be one of: ${categories}).
 
-After identifying, analyze the 5 most likely "fit" and 5 most likely "material" characteristics.
+After identifying, analyze the 4 most likely "fit dimension" and 4 most likely "fabric dimension" characteristic options.
 
-Please output strictly in JSON format, options sorted by likelihood from highest to lowest:
+Special note: When analyzing fabric, first determine if it belongs to major categories like 'Knit', 'Woven', or 'Denim', then analyze its specific surface texture.
+
+Please output strictly in JSON format, with options sorted by likelihood in descending order (most likely first):
 
 {
   "product_category": "Top",
   "fit_attributes": {
-    "shape": ["Silhouette1", "Silhouette2", "Silhouette3", "Silhouette4", "Silhouette5"],
-    "fit": ["Fit1", "Fit2", "Fit3", "Fit4", "Fit5"],
-    "visual_fabric_vibe": ["Vibe1", "Vibe2", "Vibe3", "Vibe4", "Vibe5"]
+    "silhouette": ["H-line", "A-line", "Cocoon", "Fitted waist", "Asymmetric"],
+    "fit_tightness": ["Tight", "Slim", "Fitted", "Loose", "Oversized"],
+    "length": ["Cropped", "Regular", "Midi", "Maxi", "Knee-length"],
+    "waist_line": ["High-waist", "Mid-rise", "Low-rise", "No waistline", "Elastic waist"]
   },
   "material_attributes": {
-    "fiber_composition": ["Material1", "Material2", "Material3", "Material4", "Material5"],
-    "visual_luster": ["Luster1", "Luster2", "Luster3", "Luster4", "Luster5"],
-    "weave_structure": ["Weave1", "Weave2", "Weave3", "Weave4", "Weave5"]
+    "material_category": ["Knit/Wool", "Woven/Cotton-Linen", "Denim", "Leather/Faux", "Silk/Satin", "Sheer/Lace"],
+    "stiffness_drape": ["Crisp structured", "Medium", "Soft draping", "Stiff", "Fluid"],
+    "surface_texture": ["Smooth", "Ribbed", "Fuzzy/Brushed", "Tweed texture", "Textured", "Cable knit"],
+    "visual_luster": ["Matte", "Soft sheen", "Silk shine", "Leather sheen", "Metallic"]
   }
 }
 
 Notes:
-- shape: Overall silhouette, e.g. H-line, A-line, X-line, Cocoon, Straight, Slim, Relaxed, Boxy
-- fit: Fit and ease, e.g. Tight, Fitted, Loose, Oversized, Slim fit, Regular fit
-- visual_fabric_vibe: Visual feel and fabric structure, e.g. Crisp, Draping, Fluffy, Body-hugging, Structured
-- fiber_composition: Fiber/material, e.g. Cotton, Polyester, Wool, Silk, Leather, Denim, Linen
-- visual_luster: Visual sheen, e.g. Matte, Silky, Glossy, Metallic, Satin, Brushed
-- weave_structure: Construction/weave, e.g. Plain weave, Twill, Knit, Denim, Tweed, Fleece`
+- silhouette: Overall shape - H-line, A-line, X-line, Cocoon, Fitted waist, Boxy, Asymmetric
+- fit_tightness: Fit level - Tight, Slim, Fitted, Regular, Loose, Oversized
+- length: Garment length - Cropped, Regular, Midi, Maxi, Knee-length, Ankle-length
+- waist_line: Waist position (for pants/skirts) - High-waist, Mid-rise, Low-rise, No waistline, Elastic waist
+- material_category: Main fabric type - Knit/Wool, Woven/Cotton-Linen, Denim, Leather/Faux, Silk/Satin, Sheer/Lace
+- stiffness_drape: Fabric stiffness - Crisp structured, Medium, Soft draping, Stiff, Fluid
+- surface_texture: Surface pattern - Smooth, Ribbed, Fuzzy/Brushed, Tweed texture, Textured, Cable knit
+- visual_luster: Sheen level - Matte, Soft sheen, Silk shine, Leather sheen, Metallic`
   }
   
   if (lang === 'ko') {
     return `당신은 전문 패션 디자이너입니다. 이미지에서 상품 카테고리를 식별해주세요 (다음 중 하나여야 합니다: ${categories}).
 
-식별 후, 가장 가능성 있는 5가지 "핏"과 5가지 "소재" 특성을 분석해주세요.
+식별 후, 가장 가능성 있는 4가지 "핏 차원"과 4가지 "소재 차원"의 특성 옵션을 분석해주세요.
 
-가능성이 높은 순서대로 정렬하여 JSON 형식으로 출력해주세요:
+특별 참고: 소재 분석 시, 먼저 '니트', '직물', '데님' 등의 대분류를 판단한 후 구체적인 표면 질감을 분석해주세요.
+
+가능성이 높은 순서대로 정렬하여 JSON 형식으로 출력해주세요 (가장 가능성 높은 것이 첫 번째):
 
 {
   "product_category": "상의",
   "fit_attributes": {
-    "shape": ["실루엣1", "실루엣2", "실루엣3", "실루엣4", "실루엣5"],
-    "fit": ["핏1", "핏2", "핏3", "핏4", "핏5"],
-    "visual_fabric_vibe": ["느낌1", "느낌2", "느낌3", "느낌4", "느낌5"]
+    "silhouette": ["H라인", "A라인", "코쿤", "피티드웨이스트", "비대칭"],
+    "fit_tightness": ["타이트", "슬림", "피티드", "루즈", "오버사이즈"],
+    "length": ["크롭", "레귤러", "미디", "맥시", "니렝스"],
+    "waist_line": ["하이웨이스트", "미드라이즈", "로우라이즈", "노웨이스트라인", "밴딩"]
   },
   "material_attributes": {
-    "fiber_composition": ["소재1", "소재2", "소재3", "소재4", "소재5"],
-    "visual_luster": ["광택1", "광택2", "광택3", "광택4", "광택5"],
-    "weave_structure": ["조직1", "조직2", "조직3", "조직4", "조직5"]
+    "material_category": ["니트/울", "직물/면마", "데님", "가죽/인조가죽", "실크/새틴", "시스루/레이스"],
+    "stiffness_drape": ["뻣뻣한", "보통", "부드러운드레이프", "딱딱한", "흐르는"],
+    "surface_texture": ["매끄러운", "골지", "기모/브러시드", "트위드", "텍스처", "케이블니트"],
+    "visual_luster": ["무광", "은은한광택", "실크광택", "가죽광택", "메탈릭"]
   }
 }
 
 참고:
-- shape: 전체 실루엣, 예: H라인, A라인, X라인, 코쿤, 스트레이트, 슬림, 릴렉스드, 박시
-- fit: 핏과 여유, 예: 타이트, 피티드, 루즈, 오버사이즈, 슬림핏, 레귤러핏
-- visual_fabric_vibe: 시각적 느낌과 원단 구조, 예: 뻣뻣한, 드레이프, 푹신한, 밀착, 구조감 있는
-- fiber_composition: 섬유/소재, 예: 면, 폴리에스터, 울, 실크, 가죽, 데님, 린넨
-- visual_luster: 시각적 광택, 예: 무광, 실키, 유광, 메탈릭, 새틴, 브러시드
-- weave_structure: 구조/조직, 예: 평직, 능직, 니트, 데님, 트위드, 플리스`
+- silhouette: 전체 실루엣 - H라인, A라인, X라인, 코쿤, 피티드웨이스트, 박시, 비대칭
+- fit_tightness: 핏 정도 - 타이트, 슬림, 피티드, 레귤러, 루즈, 오버사이즈
+- length: 기장 - 크롭, 레귤러, 미디, 맥시, 니렝스, 발목길이
+- waist_line: 허리선 위치 (바지/스커트) - 하이웨이스트, 미드라이즈, 로우라이즈, 노웨이스트라인, 밴딩
+- material_category: 소재 대분류 - 니트/울, 직물/면마, 데님, 가죽/인조가죽, 실크/새틴, 시스루/레이스
+- stiffness_drape: 소재 경도 - 뻣뻣한, 보통, 부드러운드레이프, 딱딱한, 흐르는
+- surface_texture: 표면 질감 - 매끄러운, 골지, 기모/브러시드, 트위드, 텍스처, 케이블니트
+- visual_luster: 광택 정도 - 무광, 은은한광택, 실크광택, 가죽광택, 메탈릭`
   }
   
   // Default: Chinese
   return `你是一个专业的服装设计师。请识别图中商品的类别（必须是以下之一：${categories}）。
 
-识别后，请分析其最可能的5种"版型"和5种"材质"特征。
+识别后，请分析其最可能的 4个"版型维度" 和 4个"面料维度" 的特征选项。
 
-请严格按照 JSON 格式输出，选项按可能性从高到低排列：
+特别注意：在分析面料时，请优先判断其属于"针织"、"梭织"还是"牛仔"等大类，再分析其具体的表面肌理。
+
+请严格按照以下 JSON 格式输出，数组中的选项按可能性倒序排列（最可能的排在第一位）：
 
 {
   "product_category": "上衣",
   "fit_attributes": {
-    "shape": ["廓形1", "廓形2", "廓形3", "廓形4", "廓形5"],
-    "fit": ["合身度1", "合身度2", "合身度3", "合身度4", "合身度5"],
-    "visual_fabric_vibe": ["视觉体感1", "视觉体感2", "视觉体感3", "视觉体感4", "视觉体感5"]
+    "silhouette": ["H型", "A型", "茧型", "收腰型", "不规则"],
+    "fit_tightness": ["紧身", "修身", "合身", "宽松", "Oversize"],
+    "length": ["超短/露腰", "常规长度", "中长款", "加长/拖地", "及膝"],
+    "waist_line": ["高腰", "中腰", "低腰", "无腰线", "松紧腰"]
   },
   "material_attributes": {
-    "fiber_composition": ["材质1", "材质2", "材质3", "材质4", "材质5"],
-    "visual_luster": ["光泽1", "光泽2", "光泽3", "光泽4", "光泽5"],
-    "weave_structure": ["工艺1", "工艺2", "工艺3", "工艺4", "工艺5"]
+    "material_category": ["针织/毛织", "梭织/棉麻", "牛仔", "皮革/仿皮", "丝绸/缎面", "薄纱/蕾丝"],
+    "stiffness_drape": ["挺括有型", "适中", "柔软垂坠", "硬朗", "流动感强"],
+    "surface_texture": ["平滑无痕", "竖条纹/坑条", "毛绒/磨毛", "粗花呢肌理", "凹凸纹理", "绞花/粗棒针"],
+    "visual_luster": ["完全哑光", "柔和光泽", "丝绸亮面", "皮革光泽", "金属光泽"]
   }
 }
 
 注意：
-- shape: 整体廓形，如 H型、A型、X型、茧型、直筒、修身 等
-- fit: 合身度与松量，如 紧身、合身、宽松、Oversize、修身 等
-- visual_fabric_vibe: 视觉体感与面料支撑，如 硬挺、垂坠、蓬松、贴身、有骨架 等
-- fiber_composition: 成分/原料，如 纯棉、聚酯纤维、羊毛、真丝、皮革、丹宁 等
-- visual_luster: 视觉光泽，如 哑光、丝光、亮面、金属光泽、磨砂 等
-- weave_structure: 工艺与结构，如 平纹、斜纹、针织、丹宁、粗花呢、毛呢 等`
+- silhouette: 整体廓形 - H型、A型、X型、茧型、收腰型、直筒、不规则
+- fit_tightness: 松紧度 - 紧身、修身、合身、常规、宽松、Oversize
+- length: 服装长度 - 超短/露腰、常规长度、中长款、加长/拖地、及膝、及踝
+- waist_line: 腰线位置(裤子/裙子) - 高腰、中腰、低腰、无腰线、松紧腰
+- material_category: 面料大类 - 针织/毛织、梭织/棉麻、牛仔、皮革/仿皮、丝绸/缎面、薄纱/蕾丝
+- stiffness_drape: 软硬度 - 挺括有型、适中、柔软垂坠、硬朗、流动感强
+- surface_texture: 表面肌理 - 平滑无痕、竖条纹/坑条、毛绒/磨毛、粗花呢肌理、凹凸纹理、绞花/粗棒针
+- visual_luster: 光泽度 - 完全哑光、柔和光泽、丝绸亮面、皮革光泽、金属光泽`
 }
 
 export async function POST(request: NextRequest) {
@@ -224,44 +242,54 @@ export async function POST(request: NextRequest) {
                 fit_attributes: {
                   type: "OBJECT",
                   properties: {
-                    shape: {
+                    silhouette: {
                       type: "ARRAY",
                       items: { type: "STRING" },
-                      description: "整体廓形选项"
+                      description: "Silhouette options"
                     },
-                    fit: {
+                    fit_tightness: {
                       type: "ARRAY",
                       items: { type: "STRING" },
-                      description: "合身度选项"
+                      description: "Fit tightness options"
                     },
-                    visual_fabric_vibe: {
+                    length: {
                       type: "ARRAY",
                       items: { type: "STRING" },
-                      description: "视觉体感选项"
+                      description: "Length options"
+                    },
+                    waist_line: {
+                      type: "ARRAY",
+                      items: { type: "STRING" },
+                      description: "Waist line options"
                     }
                   },
-                  required: ["shape", "fit", "visual_fabric_vibe"]
+                  required: ["silhouette", "fit_tightness", "length", "waist_line"]
                 },
                 material_attributes: {
                   type: "OBJECT",
                   properties: {
-                    fiber_composition: {
+                    material_category: {
                       type: "ARRAY",
                       items: { type: "STRING" },
-                      description: "材质成分选项"
+                      description: "Material category options"
+                    },
+                    stiffness_drape: {
+                      type: "ARRAY",
+                      items: { type: "STRING" },
+                      description: "Stiffness/drape options"
+                    },
+                    surface_texture: {
+                      type: "ARRAY",
+                      items: { type: "STRING" },
+                      description: "Surface texture options"
                     },
                     visual_luster: {
                       type: "ARRAY",
                       items: { type: "STRING" },
-                      description: "视觉光泽选项"
-                    },
-                    weave_structure: {
-                      type: "ARRAY",
-                      items: { type: "STRING" },
-                      description: "工艺结构选项"
+                      description: "Visual luster options"
                     }
                   },
-                  required: ["fiber_composition", "visual_luster", "weave_structure"]
+                  required: ["material_category", "stiffness_drape", "surface_texture", "visual_luster"]
                 }
               },
               required: ["product_category", "fit_attributes", "material_attributes"]
@@ -334,4 +362,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

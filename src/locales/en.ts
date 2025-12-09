@@ -601,15 +601,17 @@ export const en: Translations = {
     uploadImage: "Upload Image",
     selectFromGallery: "Select from Photos",
     selectImage: "Select Image",
-    // Fit attributes
+    // V2 Fit attributes
     fitAttributes: "Fit Attributes",
-    shape: "Silhouette",
-    fit: "Fit",
-    visualFabricVibe: "Fabric Vibe",
-    // Material attributes
+    silhouette: "Silhouette",
+    fitTightness: "Fit Tightness",
+    length: "Length",
+    waistLine: "Waist Line",
+    // V2 Material attributes
     materialAttributes: "Material Attributes",
-    fiberComposition: "Fiber Composition",
+    materialCategory: "Material Category",
+    stiffnessDrape: "Stiffness/Drape",
+    surfaceTexture: "Surface Texture",
     visualLuster: "Visual Luster",
-    weaveStructure: "Weave Structure",
   },
 }
