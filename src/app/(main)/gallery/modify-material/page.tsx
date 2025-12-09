@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Loader2, Check, ChevronDown, Sparkles, AlertCircle, Wand2, Home, X, Image as ImageIcon } from 'lucide-react'
-import { useTranslation } from '@/stores/languageStore'
+import { useTranslation, useLanguageStore } from '@/stores/languageStore'
 import { useQuota } from '@/hooks/useQuota'
 import { useGenerationTaskStore } from '@/stores/generationTaskStore'
 
@@ -28,6 +28,37 @@ interface AnalysisResult {
     }
   }
   error?: string
+}
+
+// 商品类别翻译映射
+const CATEGORY_TRANSLATIONS: Record<string, Record<string, string>> = {
+  zh: {
+    '裙子': '裙子',
+    '裤子': '裤子',
+    '上衣': '上衣',
+    '内衬': '内衬',
+    '帽子': '帽子',
+    '鞋子': '鞋子',
+    '配饰': '配饰',
+  },
+  en: {
+    '裙子': 'Skirt',
+    '裤子': 'Pants',
+    '上衣': 'Top',
+    '内衬': 'Innerwear',
+    '帽子': 'Hat',
+    '鞋子': 'Shoes',
+    '配饰': 'Accessories',
+  },
+  ko: {
+    '裙子': '스커트',
+    '裤子': '바지',
+    '上衣': '상의',
+    '内衬': '이너웨어',
+    '帽子': '모자',
+    '鞋子': '신발',
+    '配饰': '액세서리',
+  }
 }
 
 // 商品编辑状态
@@ -118,13 +149,20 @@ function AttributeSelect({
 function ProductCard({
   state,
   onToggle,
-  onUpdate
+  onUpdate,
+  language
 }: {
   state: ProductEditState
   onToggle: () => void
   onUpdate: (updates: Partial<ProductEditState>) => void
+  language: string
 }) {
   const { t } = useTranslation()
+  
+  // 翻译商品类别
+  const translateCategory = (category: string) => {
+    return CATEGORY_TRANSLATIONS[language]?.[category] || category
+  }
   
   return (
     <div className={`rounded-xl border-2 transition-all ${
@@ -146,7 +184,7 @@ function ProductCard({
           />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-zinc-800">{state.category}</p>
+          <p className="font-semibold text-zinc-800">{translateCategory(state.category)}</p>
           <p className="text-xs text-zinc-500 mt-0.5">
             {state.enabled ? t.modifyMaterial?.modifyEnabled || '已启用修改' : t.modifyMaterial?.clickToEnable || '点击启用修改'}
           </p>
@@ -246,6 +284,7 @@ function ProductCard({
 function ModifyMaterialContent() {
   const router = useRouter()
   const { t } = useTranslation()
+  const language = useLanguageStore(state => state.language)
   const { checkQuota, refreshQuota } = useQuota()
   const { addTask, updateTaskStatus, initImageSlots, updateImageSlot } = useGenerationTaskStore()
   
@@ -897,6 +936,7 @@ function ModifyMaterialContent() {
                 state={state}
                 onToggle={() => updateProductState(index, { enabled: !state.enabled })}
                 onUpdate={(updates) => updateProductState(index, updates)}
+                language={language}
               />
             ))
           )}
