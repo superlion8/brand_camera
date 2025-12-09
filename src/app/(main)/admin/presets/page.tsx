@@ -90,30 +90,79 @@ export default function PresetsManagement() {
     const uploadFiles = e.target.files
     if (!uploadFiles || uploadFiles.length === 0) return
 
+    // 单文件最大 3MB（保留余量给 Vercel 4.5MB 限制）
+    const MAX_SINGLE_SIZE = 3 * 1024 * 1024
+    
+    const oversizedFiles: string[] = []
+    for (let i = 0; i < uploadFiles.length; i++) {
+      const file = uploadFiles[i]
+      if (file.size > MAX_SINGLE_SIZE) {
+        oversizedFiles.push(`${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`)
+      }
+    }
+    
+    if (oversizedFiles.length > 0) {
+      setError(`以下文件超过 3MB 限制，请压缩后重试：\n${oversizedFiles.join('\n')}`)
+      return
+    }
+
     setIsUploading(true)
     setError(null)
     setSuccessMessage(null)
 
     try {
-      const formData = new FormData()
-      formData.append('folder', activeCategory.folder)
-      
+      let uploaded = 0
+      const errors: string[] = []
+
+      // 逐个文件上传（避免总大小超过 Vercel 限制）
       for (let i = 0; i < uploadFiles.length; i++) {
-        formData.append('files', uploadFiles[i])
+        const file = uploadFiles[i]
+        
+        const formData = new FormData()
+        formData.append('folder', activeCategory.folder)
+        formData.append('files', file)
+
+        try {
+          const response = await fetch('/api/admin/presets', {
+            method: 'POST',
+            body: formData,
+          })
+
+          if (!response.ok) {
+            if (response.status === 413) {
+              errors.push(`${file.name}: 文件太大`)
+            } else {
+              const text = await response.text()
+              try {
+                const data = JSON.parse(text)
+                errors.push(`${file.name}: ${data.error || 'Failed'}`)
+              } catch {
+                errors.push(`${file.name}: ${response.statusText}`)
+              }
+            }
+          } else {
+            const data = await response.json()
+            uploaded += data.uploaded || 1
+          }
+        } catch (err: any) {
+          errors.push(`${file.name}: ${err.message}`)
+        }
+        
+        // 更新进度
+        setSuccessMessage(`上传中... ${i + 1}/${uploadFiles.length}`)
       }
 
-      const response = await fetch('/api/admin/presets', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Upload failed')
+      if (errors.length > 0 && uploaded === 0) {
+        throw new Error(errors.join('\n'))
       }
 
-      const data = await response.json()
-      setSuccessMessage(`成功上传 ${data.uploaded} 个文件`)
+      if (errors.length > 0) {
+        setSuccessMessage(`上传 ${uploaded} 个，失败 ${errors.length} 个`)
+        setError(errors.join('\n'))
+      } else {
+        setSuccessMessage(`成功上传 ${uploaded} 个文件`)
+      }
+      
       fetchFiles()
     } catch (err: any) {
       setError(err.message || '上传失败')

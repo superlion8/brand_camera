@@ -2,29 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getGenAIClient, extractImage, extractText, safetySettings } from '@/lib/genai'
 import { createClient } from '@/lib/supabase/server'
 import { appendImageToGeneration, uploadImageToStorage } from '@/lib/supabase/generationService'
-
-// 将 URL 转换为 base64（服务端版本）
-async function urlToBase64(url: string): Promise<string> {
-  try {
-    // 处理 URL 编码问题
-    const cleanUrl = url.trim()
-    console.log('[urlToBase64] Fetching:', cleanUrl.substring(0, 100) + '...')
-    
-    const response = await fetch(cleanUrl)
-    if (!response.ok) {
-      console.error('[urlToBase64] HTTP Error:', response.status, response.statusText, 'URL:', cleanUrl)
-      throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`)
-    }
-    const arrayBuffer = await response.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-    const base64 = buffer.toString('base64')
-    console.log('[urlToBase64] Success, base64 length:', base64.length)
-    return `data:image/jpeg;base64,${base64}`
-  } catch (error: any) {
-    console.error('[urlToBase64] Error:', error.message, 'URL:', url?.substring(0, 100))
-    throw error
-  }
-}
+import { 
+  getRandomPresetBase64, 
+  getRandomStudioBackgroundBase64, 
+  imageToBase64 
+} from '@/lib/presets/serverPresets'
 
 export const maxDuration = 300 // 5 minutes
 
@@ -256,24 +238,15 @@ export async function POST(request: NextRequest) {
     let usedPrompt = ''
     let generationMode: 'simple' | 'extended' = mode === 'extended' ? 'extended' : 'simple'
 
-    // 准备所有商品图片数据 - 如果是 URL，先转换为 base64
+    // 准备所有商品图片数据 - 使用共享的 imageToBase64 处理
     const productImagesData: string[] = []
     for (const product of products) {
       if (!product) {
         console.warn(`${label} Skipping empty product`)
         continue
       }
-      let productImageData: string
-      if (product.startsWith('http://') || product.startsWith('https://')) {
-        console.log(`${label} Converting product URL to base64:`, product.substring(0, 80))
-        const base64Data = await urlToBase64(product)
-        productImageData = base64Data.split(',')[1]
-      } else if (product.startsWith('data:')) {
-        productImageData = product.split(',')[1]
-      } else {
-        // 假设是纯 base64
-        productImageData = product
-      }
+      console.log(`${label} Processing product image:`, product.substring(0, 80))
+      const productImageData = await imageToBase64(product)
       if (productImageData && productImageData.length > 100) {
         productImagesData.push(productImageData)
       } else {
@@ -291,29 +264,60 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
+    // 处理模特图片：支持 URL、base64、或随机选择
     let modelImageData: string = ''
-    if (modelImage) {
-      if (modelImage.startsWith('http://') || modelImage.startsWith('https://')) {
-        console.log(`${label} Converting model URL to base64:`, modelImage.substring(0, 80))
-        const base64Data = await urlToBase64(modelImage)
-        modelImageData = base64Data.split(',')[1]
-      } else if (modelImage.startsWith('data:')) {
-        modelImageData = modelImage.split(',')[1]
-      } else {
-        modelImageData = modelImage
+    let actualModelUrl = modelUrl // 用于保存到数据库
+    let actualModelName = modelName
+    let actualModelIsRandom = modelIsRandom
+    
+    if (modelImage && modelImage !== 'random' && modelImage !== true) {
+      // 用户指定了具体的模特图片
+      const converted = await imageToBase64(modelImage)
+      if (converted) {
+        modelImageData = converted
+        actualModelIsRandom = false
+      }
+    }
+    
+    // 如果没有模特数据（需要随机选择）
+    if (!modelImageData) {
+      console.log(`${label} Getting random studio model...`)
+      const randomModel = await getRandomPresetBase64('studio-models', 5)
+      if (randomModel) {
+        modelImageData = randomModel.base64
+        actualModelUrl = randomModel.url
+        actualModelName = randomModel.fileName.replace(/\.[^.]+$/, '') // 去掉扩展名
+        actualModelIsRandom = true
+        console.log(`${label} Got random model: ${randomModel.fileName}`)
       }
     }
 
+    // 处理背景图片：支持 URL、base64、或随机选择
     let bgImageData: string | undefined
-    if (backgroundImage) {
-      if (backgroundImage.startsWith('http://') || backgroundImage.startsWith('https://')) {
-        console.log(`${label} Converting background URL to base64:`, backgroundImage.substring(0, 80))
-        const base64Data = await urlToBase64(backgroundImage)
-        bgImageData = base64Data.split(',')[1]
-      } else if (backgroundImage.startsWith('data:')) {
-        bgImageData = backgroundImage.split(',')[1]
-      } else {
-        bgImageData = backgroundImage
+    let actualBgUrl = bgUrl
+    let actualBgName = bgName
+    let actualBgIsRandom = bgIsRandom
+    
+    if (backgroundImage && backgroundImage !== 'random' && backgroundImage !== true) {
+      // 用户指定了具体的背景图片
+      const converted = await imageToBase64(backgroundImage)
+      if (converted) {
+        bgImageData = converted
+        actualBgIsRandom = false
+      }
+    }
+    
+    // 如果没有背景图且需要随机选择（前端没选或明确要求随机）
+    // 条件：没有背景数据 且 (bgIsRandom 为 true 或 backgroundImage 为 'random' 或 backgroundImage 为空)
+    if (!bgImageData && (bgIsRandom || backgroundImage === 'random' || !backgroundImage)) {
+      console.log(`${label} Getting random studio background...`)
+      const randomBg = await getRandomStudioBackgroundBase64(5)
+      if (randomBg) {
+        bgImageData = randomBg.base64
+        actualBgUrl = randomBg.url
+        actualBgName = randomBg.fileName.replace(/\.[^.]+$/, '')
+        actualBgIsRandom = true
+        console.log(`${label} Got random background: ${randomBg.fileName} (${randomBg.type})`)
       }
     }
 
@@ -329,13 +333,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (!modelImageData) {
-      console.error(`${label} Missing modelImageData`)
+      console.error(`${label} Missing modelImageData - random selection also failed`)
       return NextResponse.json({ 
         success: false, 
-        error: '缺少模特图片数据',
+        error: '无法获取模特图片，请稍后重试',
         index,
         modelType: null,
-      }, { status: 400 })
+      }, { status: 500 })
     }
 
     // Helper function to generate with fallback
@@ -514,16 +518,10 @@ export async function POST(request: NextRequest) {
           }
         }
       }
-      // 上传模特图
-      if (modelImage) {
-        const uploadedModelUrl = await uploadImageToStorage(modelImage, userId, `prostudio_${taskId}_model`)
-        if (uploadedModelUrl) modelImageUrlToSave = uploadedModelUrl
-      }
-      // 上传背景图（如果有）
-      if (backgroundImage) {
-        const uploadedBgUrl = await uploadImageToStorage(backgroundImage, userId, `prostudio_${taskId}_bg`)
-        if (uploadedBgUrl) bgImageUrlToSave = uploadedBgUrl
-      }
+      // 模特图使用实际使用的 URL（可能是随机选择的）
+      modelImageUrlToSave = actualModelUrl
+      // 背景图使用实际使用的 URL（可能是随机选择的）
+      bgImageUrlToSave = actualBgUrl
     }
     
     // 保存到数据库
@@ -541,26 +539,28 @@ export async function POST(request: NextRequest) {
         // 商品原图也保存到 inputParams（支持多商品）
         productImage: inputImageUrlToSave, // 第一张商品图作为主图
         productImages: productImageUrlsToSave, // 所有商品图
-        modelImage: modelImageUrlToSave || modelUrl,
-        backgroundImage: bgImageUrlToSave || bgUrl,
-        hasBg,
+        modelImage: modelImageUrlToSave,
+        backgroundImage: bgImageUrlToSave,
+        hasBg: !!bgImageData,
         mode,
-        // 保存模特/背景选择信息
-        model: modelName,
-        background: bgName,
-        modelIsUserSelected: !modelIsRandom,
-        bgIsUserSelected: !bgIsRandom,
+        // 保存模特/背景选择信息（使用实际值）
+        model: actualModelName,
+        background: actualBgName,
+        modelIsUserSelected: !actualModelIsRandom,
+        bgIsUserSelected: !actualBgIsRandom,
+        modelIsRandom: actualModelIsRandom,
+        bgIsRandom: actualBgIsRandom,
         perImageModels: [{
-          name: modelName,
-          imageUrl: modelImageUrlToSave || modelUrl,
-          isRandom: modelIsRandom,
-          isPreset: modelIsRandom ? true : modelIsPreset,
+          name: actualModelName,
+          imageUrl: modelImageUrlToSave,
+          isRandom: actualModelIsRandom,
+          isPreset: actualModelIsRandom ? true : modelIsPreset,
         }],
-        perImageBackgrounds: hasBg ? [{
-          name: bgName,
-          imageUrl: bgImageUrlToSave || bgUrl,
-          isRandom: bgIsRandom,
-          isPreset: bgIsRandom ? true : bgIsPreset,
+        perImageBackgrounds: bgImageData ? [{
+          name: actualBgName,
+          imageUrl: bgImageUrlToSave,
+          isRandom: actualBgIsRandom,
+          isPreset: actualBgIsRandom ? true : bgIsPreset,
         }] : [],
       } : undefined,
     })

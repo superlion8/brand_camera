@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 
 // Admin emails from environment variable (comma separated)
 const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
@@ -57,13 +57,15 @@ export async function GET(request: NextRequest) {
 
 // POST - Upload files
 export async function POST(request: NextRequest) {
-  const supabase = await createClient()
-  
-  // Check auth
-  const { data: { user } } = await supabase.auth.getUser()
+  // 用普通客户端检查用户认证
+  const authClient = await createClient()
+  const { data: { user } } = await authClient.auth.getUser()
   if (!user || !ADMIN_EMAILS.includes(user.email?.toLowerCase() || '')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  // 用 service role 客户端进行存储操作（绕过 RLS）
+  const supabase = createServiceClient()
 
   try {
     const formData = await request.formData()
@@ -144,13 +146,15 @@ export async function POST(request: NextRequest) {
 
 // DELETE - Delete files
 export async function DELETE(request: NextRequest) {
-  const supabase = await createClient()
-  
-  // Check auth
-  const { data: { user } } = await supabase.auth.getUser()
+  // 用普通客户端检查用户认证
+  const authClient = await createClient()
+  const { data: { user } } = await authClient.auth.getUser()
   if (!user || !ADMIN_EMAILS.includes(user.email?.toLowerCase() || '')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  // 用 service role 客户端进行存储操作（绕过 RLS）
+  const supabase = createServiceClient()
 
   try {
     const body = await request.json()

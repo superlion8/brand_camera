@@ -4,36 +4,17 @@ import { PRODUCT_PROMPT, buildInstructPrompt, buildModelPrompt } from '@/prompts
 import { stripBase64Prefix } from '@/lib/utils'
 import { requireAuth } from '@/lib/auth'
 import { uploadImageToStorage, appendImageToGeneration, markImageFailed } from '@/lib/supabase/generationService'
+import { 
+  getRandomPresetBase64, 
+  imageToBase64 
+} from '@/lib/presets/serverPresets'
 
 export const maxDuration = 300 // 5 minutes (Pro plan) - includes image upload
-
-// 将 URL 转换为 base64（服务端版本）
-async function urlToBase64(url: string): Promise<string> {
-  try {
-    const cleanUrl = url.trim()
-    console.log('[urlToBase64] Fetching:', cleanUrl.substring(0, 100) + '...')
-    const response = await fetch(cleanUrl)
-    if (!response.ok) {
-      console.error('[urlToBase64] HTTP Error:', response.status, response.statusText, 'URL:', cleanUrl)
-      throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`)
-    }
-    const arrayBuffer = await response.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-    console.log('[urlToBase64] Success, base64 length:', buffer.toString('base64').length)
-    return buffer.toString('base64')
-  } catch (error: any) {
-    console.error('[urlToBase64] Error:', error.message, 'URL:', url?.substring(0, 100))
-    throw error
-  }
-}
 
 // 确保图片数据是 base64 格式（支持 URL 和 base64 输入）
 async function ensureBase64Data(image: string | null | undefined): Promise<string | null> {
   if (!image) return null
-  if (image.startsWith('http://') || image.startsWith('https://')) {
-    return await urlToBase64(image)
-  }
-  return stripBase64Prefix(image)
+  return await imageToBase64(image)
 }
 
 // Model names
@@ -267,9 +248,55 @@ export async function POST(request: NextRequest) {
     // 所有图片都支持 URL 格式（后端转换），减少前端请求体大小
     const productImageData = await ensureBase64Data(productImage)
     const productImage2Data = productImage2 ? await ensureBase64Data(productImage2) : null
-    const modelImageData = await ensureBase64Data(modelImage)
-    const backgroundImageData = await ensureBase64Data(backgroundImage)
     const vibeImageData = vibeImage ? await ensureBase64Data(vibeImage) : null
+    
+    // 处理模特图片：支持 URL、base64、或随机选择
+    let modelImageData: string | null = null
+    let actualModelUrl: string | undefined = inputParams?.modelUrl
+    let actualModelName: string = inputParams?.model || '模特'
+    let actualModelIsRandom = inputParams?.modelIsRandom ?? true
+    
+    if (modelImage && modelImage !== 'random' && modelImage !== true) {
+      modelImageData = await ensureBase64Data(modelImage)
+      if (modelImageData) actualModelIsRandom = false
+    }
+    
+    // 如果没有模特数据且是模特类型，使用随机预设
+    if (!modelImageData && type === 'model') {
+      console.log(`[${label}] Getting random model...`)
+      const randomModel = await getRandomPresetBase64('models', 5)
+      if (randomModel) {
+        modelImageData = randomModel.base64
+        actualModelUrl = randomModel.url
+        actualModelName = randomModel.fileName.replace(/\.[^.]+$/, '')
+        actualModelIsRandom = true
+        console.log(`[${label}] Got random model: ${randomModel.fileName}`)
+      }
+    }
+    
+    // 处理背景图片：支持 URL、base64、或随机选择
+    let backgroundImageData: string | null = null
+    let actualBgUrl: string | undefined = inputParams?.backgroundUrl
+    let actualBgName: string = inputParams?.background || '背景'
+    let actualBgIsRandom = inputParams?.bgIsRandom ?? true
+    
+    if (backgroundImage && backgroundImage !== 'random' && backgroundImage !== true) {
+      backgroundImageData = await ensureBase64Data(backgroundImage)
+      if (backgroundImageData) actualBgIsRandom = false
+    }
+    
+    // 如果没有背景数据且是模特类型，使用随机预设
+    if (!backgroundImageData && type === 'model') {
+      console.log(`[${label}] Getting random background...`)
+      const randomBg = await getRandomPresetBase64('backgrounds', 5)
+      if (randomBg) {
+        backgroundImageData = randomBg.base64
+        actualBgUrl = randomBg.url
+        actualBgName = randomBg.fileName.replace(/\.[^.]+$/, '')
+        actualBgIsRandom = true
+        console.log(`[${label}] Got random background: ${randomBg.fileName}`)
+      }
+    }
     
     // outfit 模式：转换各服装项
     let outfitImagesData: { inner?: string; top?: string; pants?: string; hat?: string; shoes?: string } = {}
@@ -507,14 +534,30 @@ export async function POST(request: NextRequest) {
     
     console.log(`[${label}] Uploaded to storage: ${uploaded.substring(0, 80)}...`)
     
-    // 只在第一张图时上传商品图（避免重复上传）
+    // 只在第一张图时保存商品图 URL（避免重复）
     let inputImageUrl: string | undefined
-    if (index === 0 && productImage) {
-      const productBase64 = productImage.startsWith('data:') ? productImage : `data:image/jpeg;base64,${productImage}`
-      const uploadedInput = await uploadImageToStorage(productBase64, userId, 'input_product')
-      if (uploadedInput) {
-        inputImageUrl = uploadedInput
-        console.log(`[${label}] Uploaded product image to storage`)
+    if (index === 0) {
+      // 优先使用 productImage，否则使用 outfitItems 中的第一个有效项
+      const primaryInput = productImage 
+        || outfitItems?.top 
+        || outfitItems?.pants 
+        || outfitItems?.inner 
+        || outfitItems?.hat 
+        || outfitItems?.shoes
+      
+      if (primaryInput) {
+        // 如果已经是 URL，直接使用
+        if (primaryInput.startsWith('http')) {
+          inputImageUrl = primaryInput
+          console.log(`[${label}] Using existing product URL`)
+        } else if (primaryInput.startsWith('data:') || primaryInput.length > 1000) {
+          // 如果是 base64，上传到 storage
+          const uploadedInput = await uploadImageToStorage(primaryInput, userId, 'input_product')
+          if (uploadedInput) {
+            inputImageUrl = uploadedInput
+            console.log(`[${label}] Uploaded product image to storage`)
+          }
+        }
       }
     }
     

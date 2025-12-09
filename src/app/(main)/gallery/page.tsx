@@ -22,6 +22,7 @@ function isModelType(gen: Generation | null | undefined): boolean {
   if (!gen) return false
   const type = gen.type?.toLowerCase() || ''
   // 模特类型：买家秀 + 专业棚拍 + 组图拍摄
+  // 注意：edit/editing 是通用编辑，不属于模特分类
   return type === 'camera_model' || type === 'model' || type === 'camera' || type === 'model_studio' || type === 'pro_studio' || type === 'prostudio' || type === 'group_shoot'
 }
 
@@ -42,6 +43,7 @@ function isGroupShootType(gen: Generation | null | undefined): boolean {
 function isProductType(gen: Generation | null | undefined): boolean {
   if (!gen) return false
   const type = gen.type?.toLowerCase() || ''
+  // 纯商品类型（不包含 edit）
   return type === 'studio' || type === 'camera_product' || type === 'product' || type === 'product_studio'
 }
 

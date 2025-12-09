@@ -1,38 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getGenAIClient, extractImage, safetySettings } from '@/lib/genai'
 import { buildEditPrompt, EDIT_PROMPT_PREFIX } from '@/prompts'
-import { stripBase64Prefix, generateId } from '@/lib/utils'
+import { generateId } from '@/lib/utils'
 import { uploadImageToStorage, appendImageToGeneration, markImageFailed } from '@/lib/supabase/generationService'
 import { requireAuth } from '@/lib/auth'
+import { imageToBase64 } from '@/lib/presets/serverPresets'
 
 export const maxDuration = 300 // 5 minutes (Pro plan)
 
-// 将 URL 转换为 base64（服务端版本）
-async function urlToBase64(url: string): Promise<string> {
-  try {
-    const cleanUrl = url.trim()
-    console.log('[urlToBase64] Fetching:', cleanUrl.substring(0, 100) + '...')
-    const response = await fetch(cleanUrl)
-    if (!response.ok) {
-      console.error('[urlToBase64] HTTP Error:', response.status, response.statusText, 'URL:', cleanUrl)
-      throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`)
-    }
-    const arrayBuffer = await response.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-    console.log('[urlToBase64] Success, base64 length:', buffer.toString('base64').length)
-    return buffer.toString('base64')
-  } catch (error: any) {
-    console.error('[urlToBase64] Error:', error.message, 'URL:', url?.substring(0, 100))
-    throw error
-  }
-}
-
 // 确保图片数据是 base64 格式
 async function ensureBase64Data(image: string): Promise<string> {
-  if (image.startsWith('http://') || image.startsWith('https://')) {
-    return await urlToBase64(image)
-  }
-  return stripBase64Prefix(image)
+  const result = await imageToBase64(image)
+  return result || ''
 }
 
 // Model names
