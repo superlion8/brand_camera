@@ -607,11 +607,16 @@ export const ko: Translations = {
     fitTightness: "착용감",
     length: "기장",
     waistLine: "허리선",
+    fitCustomize: "기타 핏 요구사항",
     // V2 소재 속성
     materialAttributes: "소재 속성",
     materialCategory: "소재 대분류",
     stiffnessDrape: "경도/드레이프",
     surfaceTexture: "표면 질감",
     visualLuster: "광택",
+    materialCustomize: "기타 소재 요구사항",
+    // 공통
+    customize: "사용자 정의",
+    customizePlaceholder: "사용자 정의 내용 입력...",
   },
 }

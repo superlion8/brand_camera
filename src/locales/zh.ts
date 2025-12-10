@@ -605,12 +605,17 @@ export const zh = {
     fitTightness: "松紧度",
     length: "长度",
     waistLine: "腰线",
+    fitCustomize: "其他版型要求",
     // V2 材质属性
     materialAttributes: "材质属性",
     materialCategory: "面料大类",
     stiffnessDrape: "软硬度",
     surfaceTexture: "表面肌理",
     visualLuster: "视觉光泽",
+    materialCustomize: "其他材质要求",
+    // 通用
+    customize: "自定义",
+    customizePlaceholder: "请输入自定义内容...",
   },
 }
 

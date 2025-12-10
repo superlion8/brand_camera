@@ -70,12 +70,14 @@ interface ModifyTarget {
   params: {
     silhouette: string        // 版型廓形
     fit_tightness: string     // 松紧度
-    length: string            // 【新增】长度
-    waist_line?: string       // 【新增】腰线（裤子/裙子）
-    material_category: string // 【核心】面料大类
+    length: string            // 长度
+    waist_line?: string       // 腰线（裤子/裙子）
+    fit_customize?: string    // 其他版型要求
+    material_category: string // 面料大类
     stiffness_drape: string   // 软硬度
-    surface_texture: string   // 【核心】表面肌理
+    surface_texture: string   // 表面肌理
     visual_luster: string     // 光泽
+    material_customize?: string // 其他材质要求
   }
 }
 
@@ -93,10 +95,16 @@ function buildItemInstruction(target: ModifyTarget): string {
      category.toLowerCase().includes('pants') || category.toLowerCase().includes('skirt')) 
     ? `，腰线为${params.waist_line}` : ''
   
+  // 构建自定义版型要求
+  const fitCustomPart = params.fit_customize ? `\n   额外版型要求：${params.fit_customize}` : ''
+  
+  // 构建自定义材质要求
+  const materialCustomPart = params.material_customize ? `\n   额外材质要求：${params.material_customize}` : ''
+  
   return `请重绘图中模特穿的【${category}/${categoryEn}】：
-1. [版型结构]：将其修改为${params.silhouette}廓形的${lengthPart}${waistPart}，整体松紧度调整为${params.fit_tightness}。
+1. [版型结构]：将其修改为${params.silhouette}廓形的${lengthPart}${waistPart}，整体松紧度调整为${params.fit_tightness}。${fitCustomPart}
 2. [面料材质]：材质改为${params.material_category}面料。
-3. [质感细节]：面料表现出${params.stiffness_drape}的物理质感，表面具有${params.surface_texture}的肌理细节，并呈现${params.visual_luster}。`
+3. [质感细节]：面料表现出${params.stiffness_drape}的物理质感，表面具有${params.surface_texture}的肌理细节，并呈现${params.visual_luster}。${materialCustomPart}`
 }
 
 // 构建完整的修改 prompt - V2 新版

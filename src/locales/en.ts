@@ -607,11 +607,16 @@ export const en: Translations = {
     fitTightness: "Fit Tightness",
     length: "Length",
     waistLine: "Waist Line",
+    fitCustomize: "Other Fit Requirements",
     // V2 Material attributes
     materialAttributes: "Material Attributes",
     materialCategory: "Material Category",
     stiffnessDrape: "Stiffness/Drape",
     surfaceTexture: "Surface Texture",
     visualLuster: "Visual Luster",
+    materialCustomize: "Other Material Requirements",
+    // Common
+    customize: "Customize",
+    customizePlaceholder: "Enter custom requirements...",
   },
 }

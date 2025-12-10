@@ -46,6 +46,7 @@ interface ProductEditState {
   lengthCustom: string
   waist_line: string
   waist_lineCustom: string
+  fitCustomize: string // 其他版型要求（自由输入）
   // 材质属性
   material_category: string
   material_categoryCustom: string
@@ -55,6 +56,7 @@ interface ProductEditState {
   surface_textureCustom: string
   visual_luster: string
   visual_lusterCustom: string
+  materialCustomize: string // 其他材质要求（自由输入）
   // 原始选项
   options: {
     silhouette: string[]
@@ -76,7 +78,9 @@ function AttributeSelect({
   options,
   onChange,
   onCustomChange,
-  disabled
+  disabled,
+  customizeLabel = '✏️ Customize',
+  customizePlaceholder = 'Enter custom value...'
 }: {
   label: string
   value: string
@@ -85,6 +89,8 @@ function AttributeSelect({
   onChange: (v: string) => void
   onCustomChange: (v: string) => void
   disabled?: boolean
+  customizeLabel?: string
+  customizePlaceholder?: string
 }) {
   const isCustom = value === 'custom'
   
@@ -102,7 +108,7 @@ function AttributeSelect({
               : 'bg-white text-zinc-800 border-zinc-300 hover:border-zinc-400'
           }`}
         >
-          <option value="custom">✏️ 自定义</option>
+          <option value="custom">{customizeLabel}</option>
           {options.map((opt, i) => (
             <option key={i} value={opt}>{opt}</option>
           ))}
@@ -114,10 +120,36 @@ function AttributeSelect({
           type="text"
           value={customValue}
           onChange={(e) => onCustomChange(e.target.value)}
-          placeholder="请输入..."
+          placeholder={customizePlaceholder}
           className="w-full h-9 px-3 text-sm rounded-lg border border-zinc-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
         />
       )}
+    </div>
+  )
+}
+
+// 自定义文本输入组件
+function CustomTextInput({
+  label,
+  value,
+  onChange,
+  placeholder
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  placeholder?: string
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="text-xs font-medium text-zinc-500">{label}</label>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={2}
+        className="w-full px-3 py-2 text-sm rounded-lg border border-zinc-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none resize-none"
+      />
     </div>
   )
 }
@@ -190,6 +222,8 @@ function ProductCard({
                     options={state.options.silhouette}
                     onChange={(v) => onUpdate({ silhouette: v })}
                     onCustomChange={(v) => onUpdate({ silhouetteCustom: v })}
+                    customizeLabel={`✏️ ${t.modifyMaterial?.customize || '自定义'}`}
+                    customizePlaceholder={t.modifyMaterial?.customizePlaceholder || '请输入自定义内容...'}
                   />
                   <AttributeSelect
                     label={t.modifyMaterial?.fitTightness || '松紧度'}
@@ -198,6 +232,8 @@ function ProductCard({
                     options={state.options.fit_tightness}
                     onChange={(v) => onUpdate({ fit_tightness: v })}
                     onCustomChange={(v) => onUpdate({ fit_tightnessCustom: v })}
+                    customizeLabel={`✏️ ${t.modifyMaterial?.customize || '自定义'}`}
+                    customizePlaceholder={t.modifyMaterial?.customizePlaceholder || '请输入自定义内容...'}
                   />
                   <AttributeSelect
                     label={t.modifyMaterial?.length || '长度'}
@@ -206,6 +242,8 @@ function ProductCard({
                     options={state.options.length}
                     onChange={(v) => onUpdate({ length: v })}
                     onCustomChange={(v) => onUpdate({ lengthCustom: v })}
+                    customizeLabel={`✏️ ${t.modifyMaterial?.customize || '自定义'}`}
+                    customizePlaceholder={t.modifyMaterial?.customizePlaceholder || '请输入自定义内容...'}
                   />
                   <AttributeSelect
                     label={t.modifyMaterial?.waistLine || '腰线'}
@@ -214,6 +252,15 @@ function ProductCard({
                     options={state.options.waist_line}
                     onChange={(v) => onUpdate({ waist_line: v })}
                     onCustomChange={(v) => onUpdate({ waist_lineCustom: v })}
+                    customizeLabel={`✏️ ${t.modifyMaterial?.customize || '自定义'}`}
+                    customizePlaceholder={t.modifyMaterial?.customizePlaceholder || '请输入自定义内容...'}
+                  />
+                  {/* 其他版型要求 */}
+                  <CustomTextInput
+                    label={t.modifyMaterial?.fitCustomize || '其他版型要求'}
+                    value={state.fitCustomize}
+                    onChange={(v) => onUpdate({ fitCustomize: v })}
+                    placeholder={t.modifyMaterial?.customizePlaceholder || '请输入其他版型修改要求...'}
                   />
                 </div>
               </div>
@@ -232,6 +279,8 @@ function ProductCard({
                     options={state.options.material_category}
                     onChange={(v) => onUpdate({ material_category: v })}
                     onCustomChange={(v) => onUpdate({ material_categoryCustom: v })}
+                    customizeLabel={`✏️ ${t.modifyMaterial?.customize || '自定义'}`}
+                    customizePlaceholder={t.modifyMaterial?.customizePlaceholder || '请输入自定义内容...'}
                   />
                   <AttributeSelect
                     label={t.modifyMaterial?.stiffnessDrape || '软硬度'}
@@ -240,6 +289,8 @@ function ProductCard({
                     options={state.options.stiffness_drape}
                     onChange={(v) => onUpdate({ stiffness_drape: v })}
                     onCustomChange={(v) => onUpdate({ stiffness_drapeCustom: v })}
+                    customizeLabel={`✏️ ${t.modifyMaterial?.customize || '自定义'}`}
+                    customizePlaceholder={t.modifyMaterial?.customizePlaceholder || '请输入自定义内容...'}
                   />
                   <AttributeSelect
                     label={t.modifyMaterial?.surfaceTexture || '表面肌理'}
@@ -248,6 +299,8 @@ function ProductCard({
                     options={state.options.surface_texture}
                     onChange={(v) => onUpdate({ surface_texture: v })}
                     onCustomChange={(v) => onUpdate({ surface_textureCustom: v })}
+                    customizeLabel={`✏️ ${t.modifyMaterial?.customize || '自定义'}`}
+                    customizePlaceholder={t.modifyMaterial?.customizePlaceholder || '请输入自定义内容...'}
                   />
                   <AttributeSelect
                     label={t.modifyMaterial?.visualLuster || '视觉光泽'}
@@ -256,6 +309,15 @@ function ProductCard({
                     options={state.options.visual_luster}
                     onChange={(v) => onUpdate({ visual_luster: v })}
                     onCustomChange={(v) => onUpdate({ visual_lusterCustom: v })}
+                    customizeLabel={`✏️ ${t.modifyMaterial?.customize || '自定义'}`}
+                    customizePlaceholder={t.modifyMaterial?.customizePlaceholder || '请输入自定义内容...'}
+                  />
+                  {/* 其他材质要求 */}
+                  <CustomTextInput
+                    label={t.modifyMaterial?.materialCustomize || '其他材质要求'}
+                    value={state.materialCustomize}
+                    onChange={(v) => onUpdate({ materialCustomize: v })}
+                    placeholder={t.modifyMaterial?.customizePlaceholder || '请输入其他材质修改要求...'}
                   />
                 </div>
               </div>
@@ -432,6 +494,7 @@ function ModifyMaterialContent() {
           lengthCustom: '',
           waist_line: r.data!.fit_attributes.waist_line?.[0] || '',
           waist_lineCustom: '',
+          fitCustomize: '', // 其他版型要求
           // 材质属性 - 默认选择第一个选项
           material_category: r.data!.material_attributes.material_category?.[0] || '',
           material_categoryCustom: '',
@@ -441,6 +504,7 @@ function ModifyMaterialContent() {
           surface_textureCustom: '',
           visual_luster: r.data!.material_attributes.visual_luster?.[0] || '',
           visual_lusterCustom: '',
+          materialCustomize: '', // 其他材质要求
           options: {
             silhouette: r.data!.fit_attributes.silhouette || [],
             fit_tightness: r.data!.fit_attributes.fit_tightness || [],
@@ -492,11 +556,13 @@ function ModifyMaterialContent() {
         fit_tightness: getValue(state, 'fit_tightness'),
         length: getValue(state, 'length'),
         waist_line: getValue(state, 'waist_line'),
+        fit_customize: state.fitCustomize || '', // 其他版型要求
         // V2 材质属性
         material_category: getValue(state, 'material_category'),
         stiffness_drape: getValue(state, 'stiffness_drape'),
         surface_texture: getValue(state, 'surface_texture'),
         visual_luster: getValue(state, 'visual_luster'),
+        material_customize: state.materialCustomize || '', // 其他材质要求
       }
     }))
     
