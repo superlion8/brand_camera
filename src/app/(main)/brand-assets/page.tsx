@@ -264,7 +264,7 @@ export default function BrandAssetsPage() {
               }}
               disabled={presetsLoading}
               className="w-9 h-9 rounded-lg border border-zinc-200 hover:bg-zinc-100 flex items-center justify-center transition-colors disabled:opacity-50"
-              title={t.common?.refresh || "刷新"}
+              title="Refresh"
             >
               <RefreshCw className={`w-4 h-4 text-zinc-600 ${presetsLoading ? 'animate-spin' : ''}`} />
             </button>
