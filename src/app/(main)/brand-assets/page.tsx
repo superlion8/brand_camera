@@ -85,11 +85,15 @@ export default function BrandAssetsPage() {
     loadPresets,
   } = usePresetStore()
   
-  // 每次进入页面强制刷新预设
+  // 每次进入页面强制刷新预设（无缓存）
   useEffect(() => {
-    console.log('[BrandAssets] Loading presets...')
-    loadPresets(true)
-  }, [loadPresets])
+    console.log('[BrandAssets] Page mounted - forcing fresh preset load')
+    // 使用 setTimeout 确保在 React StrictMode 双重渲染后执行
+    const timer = setTimeout(() => {
+      loadPresets(true)
+    }, 0)
+    return () => clearTimeout(timer)
+  }, []) // 空依赖数组，只在组件挂载时执行一次
   
   // 动态预设数据
   const modelPresets = {

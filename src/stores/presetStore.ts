@@ -109,8 +109,16 @@ export const usePresetStore = create<PresetState>((set, get) => ({
   loadPresets: async (forceRefresh = false) => {
     const state = get()
     
-    // 如果已经在加载，跳过
-    if (state.isLoading) return
+    // 强制刷新时，重置状态
+    if (forceRefresh) {
+      set({ isLoading: false, isLoaded: false, lastLoadTime: null })
+    }
+    
+    // 如果已经在加载，跳过（但强制刷新时不跳过）
+    if (!forceRefresh && state.isLoading) {
+      console.log('[PresetStore] Already loading, skipping')
+      return
+    }
     
     // 如果已加载且在 5 分钟内，跳过（除非强制刷新）
     if (!forceRefresh && state.isLoaded && state.lastLoadTime) {
@@ -122,7 +130,7 @@ export const usePresetStore = create<PresetState>((set, get) => ({
     }
     
     set({ isLoading: true, error: null })
-    console.log('[PresetStore] Loading presets from cloud...', forceRefresh ? '(forced)' : '')
+    console.log('[PresetStore] Loading presets from cloud...', forceRefresh ? '(FORCED - fetching fresh data)' : '')
     
     try {
       // 并行加载所有文件夹（API 返回完整 URL）
