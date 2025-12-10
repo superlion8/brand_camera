@@ -8,7 +8,8 @@ import { useAuth } from "@/components/providers/AuthProvider"
 import { Asset, AssetType } from "@/types"
 import { fileToBase64, generateId } from "@/lib/utils"
 import { useRouter } from "next/navigation"
-import { usePresetStore } from "@/stores/presetStore"
+// 使用硬编码预设数据（动态加载有 URL 问题）
+import { PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_PRODUCTS, STUDIO_MODELS, ALL_STUDIO_BACKGROUNDS } from "@/data/presets"
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
 import { motion, AnimatePresence } from "framer-motion"
 import { useLanguageStore } from "@/stores/languageStore"
@@ -72,44 +73,25 @@ export default function BrandAssetsPage() {
     isInitialLoading,
   } = useAssetStore()
   
-  // 动态加载预设资源
-  const {
-    visibleModels,
-    visibleBackgrounds,
-    studioModels,
-    studioBackgroundsLight,
-    studioBackgroundsSolid,
-    studioBackgroundsPattern,
-    presetProducts,
-    isLoading: presetsLoading,
-    loadPresets,
-  } = usePresetStore()
-  
-  // 每次进入页面强制刷新预设
-  useEffect(() => {
-    console.log('[BrandAssets] Force refreshing presets...')
-    loadPresets(true) // 强制刷新，忽略缓存
-  }, [loadPresets])
-  
-  // 动态预设数据（从云端加载）
+  // 使用硬编码预设数据
   const modelPresets = {
-    normal: visibleModels,
-    studio: studioModels,
+    normal: PRESET_MODELS,
+    studio: STUDIO_MODELS,
   }
   
   const backgroundPresets = {
-    normal: visibleBackgrounds,
-    studio: [...studioBackgroundsLight, ...studioBackgroundsSolid, ...studioBackgroundsPattern],
+    normal: PRESET_BACKGROUNDS,
+    studio: ALL_STUDIO_BACKGROUNDS,
   }
   
   const systemPresets: Record<AssetType, Asset[]> = {
-    model: [...visibleModels, ...studioModels],
-    background: [...visibleBackgrounds, ...studioBackgroundsLight, ...studioBackgroundsSolid, ...studioBackgroundsPattern],
-    product: presetProducts,
-    vibe: [], // 暂无预设 vibes
+    model: [...PRESET_MODELS, ...STUDIO_MODELS],
+    background: [...PRESET_BACKGROUNDS, ...ALL_STUDIO_BACKGROUNDS],
+    product: PRESET_PRODUCTS,
+    vibe: [],
   }
   
-  const isSyncing = authSyncing || storeSyncing || isInitialLoading || presetsLoading
+  const isSyncing = authSyncing || storeSyncing || isInitialLoading
   
   const getUserAssets = (type: AssetType): Asset[] => {
     switch (type) {
@@ -493,7 +475,6 @@ export default function BrandAssetsPage() {
                   width={1080}
                   height={1920}
                   style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-                  unoptimized={zoomImage?.includes('supabase.co')}
                 />
               </TransformComponent>
             </TransformWrapper>
@@ -540,10 +521,6 @@ function AssetCard({
           alt={asset.name || "Asset"}
           fill
           className="object-cover"
-          unoptimized={asset.imageUrl?.includes('supabase.co')}
-          onError={(e) => {
-            console.error('[AssetCard] Image load error:', asset.imageUrl)
-          }}
         />
         {isPreset && (
           <span className="absolute top-2 left-2 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded font-medium">
