@@ -16,9 +16,7 @@ export type PresetType =
   | 'models'              // 买家秀模特（随机池）
   | 'backgrounds'         // 买家秀背景（随机池）
   | 'studio-models'       // 专业棚拍模特
-  | 'studio-backgrounds/light'   // 专业棚拍背景-浅色
-  | 'studio-backgrounds/solid'   // 专业棚拍背景-纯色
-  | 'studio-backgrounds/pattern' // 专业棚拍背景-图案
+  | 'studio-backgrounds'  // 专业棚拍背景
 
 // 缓存（服务端短期缓存，避免每次请求都查 Storage）
 const listCache = new Map<string, { files: string[], timestamp: number }>()
@@ -152,32 +150,15 @@ export async function getRandomPresetBase64(
 }
 
 /**
- * 获取随机棚拍背景（从所有类型中随机选择）
+ * 获取随机棚拍背景
  */
 export async function getRandomStudioBackgroundBase64(
   maxAttempts = 5
 ): Promise<{ base64: string; fileName: string; url: string; type: string } | null> {
-  const bgTypes: PresetType[] = [
-    'studio-backgrounds/light',
-    'studio-backgrounds/solid',
-    'studio-backgrounds/pattern',
-  ]
-  
-  // 随机选择背景类型
-  const randomType = bgTypes[Math.floor(Math.random() * bgTypes.length)]
-  const result = await getRandomPresetBase64(randomType, maxAttempts)
+  const result = await getRandomPresetBase64('studio-backgrounds', maxAttempts)
   
   if (result) {
-    return { ...result, type: randomType }
-  }
-  
-  // 如果第一个类型失败，尝试其他类型
-  for (const bgType of bgTypes) {
-    if (bgType === randomType) continue
-    const result = await getRandomPresetBase64(bgType, maxAttempts)
-    if (result) {
-      return { ...result, type: bgType }
-    }
+    return { ...result, type: 'studio-backgrounds' }
   }
   
   return null
