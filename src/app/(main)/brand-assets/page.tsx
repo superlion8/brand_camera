@@ -1,37 +1,17 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
-import { Plus, Trash2, Users, Image as ImageIcon, Package, Upload, Home, Pin, X, ZoomIn, RefreshCw } from "lucide-react"
+import { Plus, Trash2, Users, Image as ImageIcon, Package, Upload, Home, Pin, X, ZoomIn, RefreshCw, Loader2 } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { Asset, AssetType } from "@/types"
 import { fileToBase64, generateId } from "@/lib/utils"
 import { useRouter } from "next/navigation"
-import { PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_VIBES, PRESET_PRODUCTS, STUDIO_MODELS, ALL_STUDIO_BACKGROUNDS } from "@/data/presets"
+import { usePresetStore } from "@/stores/presetStore"
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
 import { motion, AnimatePresence } from "framer-motion"
 import { useLanguageStore } from "@/stores/languageStore"
-
-// System presets from centralized data
-// 模特二级分类：普通模特 / 高级模特
-// 环境二级分类：普通背景 / 棚拍背景
-const modelPresets = {
-  normal: PRESET_MODELS,
-  studio: STUDIO_MODELS,
-}
-
-const backgroundPresets = {
-  normal: PRESET_BACKGROUNDS,
-  studio: ALL_STUDIO_BACKGROUNDS,
-}
-
-const systemPresets: Record<AssetType, Asset[]> = {
-  model: [...PRESET_MODELS, ...STUDIO_MODELS],
-  background: [...PRESET_BACKGROUNDS, ...ALL_STUDIO_BACKGROUNDS],
-  product: PRESET_PRODUCTS,
-  vibe: PRESET_VIBES,
-}
 
 type SourceTab = "user" | "preset"
 type ModelSubTab = "normal" | "studio"
@@ -92,7 +72,45 @@ export default function BrandAssetsPage() {
     isInitialLoading,
   } = useAssetStore()
   
-  const isSyncing = authSyncing || storeSyncing || isInitialLoading
+  // 动态加载预设资源
+  const {
+    visibleModels,
+    visibleBackgrounds,
+    studioModels,
+    studioBackgroundsLight,
+    studioBackgroundsSolid,
+    studioBackgroundsPattern,
+    presetProducts,
+    isLoading: presetsLoading,
+    loadPresets,
+  } = usePresetStore()
+  
+  // 每次进入页面强制刷新预设
+  useEffect(() => {
+    // 清除缓存标记，强制重新加载
+    usePresetStore.setState({ isLoaded: false, lastLoadTime: null })
+    loadPresets()
+  }, [loadPresets])
+  
+  // 动态预设数据（从云端加载）
+  const modelPresets = {
+    normal: visibleModels,
+    studio: studioModels,
+  }
+  
+  const backgroundPresets = {
+    normal: visibleBackgrounds,
+    studio: [...studioBackgroundsLight, ...studioBackgroundsSolid, ...studioBackgroundsPattern],
+  }
+  
+  const systemPresets: Record<AssetType, Asset[]> = {
+    model: [...visibleModels, ...studioModels],
+    background: [...visibleBackgrounds, ...studioBackgroundsLight, ...studioBackgroundsSolid, ...studioBackgroundsPattern],
+    product: presetProducts,
+    vibe: [], // 暂无预设 vibes
+  }
+  
+  const isSyncing = authSyncing || storeSyncing || isInitialLoading || presetsLoading
   
   const getUserAssets = (type: AssetType): Asset[] => {
     switch (type) {
