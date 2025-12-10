@@ -3,7 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
-// 获取指定文件夹下的所有文件
+// 获取指定文件夹下的所有文件（返回完整 URL）
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabase.storage
       .from('presets')
       .list(folder, {
-        limit: 1000, // 最多 1000 个文件
+        limit: 1000,
         sortBy: { column: 'name', order: 'asc' },
       })
     
@@ -28,24 +28,34 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
     
-    // 过滤出图片文件（排除子文件夹和 .emptyFolderPlaceholder）
-    const imageFiles = (data || [])
+    // 过滤出图片文件并生成完整 URL
+    const assets = (data || [])
       .filter(item => {
-        // 排除文件夹（没有 metadata 或 id 为 null）
         if (!item.id || item.id === null) return false
-        // 排除占位文件
         if (item.name === '.emptyFolderPlaceholder') return false
-        // 只保留图片文件
         return /\.(jpg|jpeg|png|webp|gif)$/i.test(item.name)
       })
-      .map(item => item.name)
+      .map(item => {
+        // 使用 Supabase SDK 生成正确的公开 URL
+        const { data: urlData } = supabase.storage
+          .from('presets')
+          .getPublicUrl(`${folder}/${item.name}`)
+        
+        const nameWithoutExt = item.name.replace(/\.(jpg|jpeg|png|webp|gif)$/i, '')
+        
+        return {
+          name: item.name,
+          displayName: nameWithoutExt,
+          url: urlData.publicUrl,
+        }
+      })
     
-    console.log(`[Presets API] Listed ${folder}: ${imageFiles.length} files`)
+    console.log(`[Presets API] Listed ${folder}: ${assets.length} files`)
     
     return NextResponse.json({ 
       folder,
-      files: imageFiles,
-      count: imageFiles.length,
+      assets,
+      count: assets.length,
     })
     
   } catch (error: any) {

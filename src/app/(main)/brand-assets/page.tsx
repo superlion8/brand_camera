@@ -8,8 +8,7 @@ import { useAuth } from "@/components/providers/AuthProvider"
 import { Asset, AssetType } from "@/types"
 import { fileToBase64, generateId } from "@/lib/utils"
 import { useRouter } from "next/navigation"
-// 使用硬编码预设数据（动态加载有 URL 问题）
-import { PRESET_MODELS, PRESET_BACKGROUNDS, PRESET_PRODUCTS, STUDIO_MODELS, ALL_STUDIO_BACKGROUNDS } from "@/data/presets"
+import { usePresetStore } from "@/stores/presetStore"
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
 import { motion, AnimatePresence } from "framer-motion"
 import { useLanguageStore } from "@/stores/languageStore"
@@ -73,25 +72,44 @@ export default function BrandAssetsPage() {
     isInitialLoading,
   } = useAssetStore()
   
-  // 使用硬编码预设数据
+  // 动态加载预设资源
+  const {
+    visibleModels,
+    visibleBackgrounds,
+    studioModels,
+    studioBackgroundsLight,
+    studioBackgroundsSolid,
+    studioBackgroundsPattern,
+    presetProducts,
+    isLoading: presetsLoading,
+    loadPresets,
+  } = usePresetStore()
+  
+  // 每次进入页面强制刷新预设
+  useEffect(() => {
+    console.log('[BrandAssets] Loading presets...')
+    loadPresets(true)
+  }, [loadPresets])
+  
+  // 动态预设数据
   const modelPresets = {
-    normal: PRESET_MODELS,
-    studio: STUDIO_MODELS,
+    normal: visibleModels,
+    studio: studioModels,
   }
   
   const backgroundPresets = {
-    normal: PRESET_BACKGROUNDS,
-    studio: ALL_STUDIO_BACKGROUNDS,
+    normal: visibleBackgrounds,
+    studio: [...studioBackgroundsLight, ...studioBackgroundsSolid, ...studioBackgroundsPattern],
   }
   
   const systemPresets: Record<AssetType, Asset[]> = {
-    model: [...PRESET_MODELS, ...STUDIO_MODELS],
-    background: [...PRESET_BACKGROUNDS, ...ALL_STUDIO_BACKGROUNDS],
-    product: PRESET_PRODUCTS,
+    model: [...visibleModels, ...studioModels],
+    background: [...visibleBackgrounds, ...studioBackgroundsLight, ...studioBackgroundsSolid, ...studioBackgroundsPattern],
+    product: presetProducts,
     vibe: [],
   }
   
-  const isSyncing = authSyncing || storeSyncing || isInitialLoading
+  const isSyncing = authSyncing || storeSyncing || isInitialLoading || presetsLoading
   
   const getUserAssets = (type: AssetType): Asset[] => {
     switch (type) {

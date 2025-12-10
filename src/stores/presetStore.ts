@@ -18,8 +18,6 @@
 import { create } from 'zustand'
 import { Asset, AssetType } from '@/types'
 
-const STORAGE_URL = 'https://cvdogeigbpussfamctsu.supabase.co/storage/v1/object/public/presets'
-
 interface PresetState {
   // 买家秀资源
   allModels: Asset[]           // 随机池
@@ -51,36 +49,42 @@ interface PresetState {
   getAllStudioBackgrounds: () => Asset[]
 }
 
-// Helper: 从文件名生成 Asset
-function fileToAsset(
-  fileName: string, 
+// API 返回的资源格式
+interface ApiAsset {
+  name: string       // 文件名（如 02.jpg）
+  displayName: string // 不含扩展名（如 02）
+  url: string        // 完整的公开 URL（由 Supabase SDK 生成）
+}
+
+// Helper: 从 API 响应转换为 Asset
+function apiAssetToAsset(
+  apiAsset: ApiAsset, 
   folder: string, 
   type: AssetType,
   category?: string
 ): Asset {
-  const nameWithoutExt = fileName.replace(/\.(jpg|jpeg|png|webp)$/i, '')
   return {
-    id: `preset-${folder.replace(/\//g, '-')}-${nameWithoutExt}`,
+    id: `preset-${folder.replace(/\//g, '-')}-${apiAsset.displayName}`,
     type,
-    name: nameWithoutExt,
-    imageUrl: `${STORAGE_URL}/${folder}/${fileName}`,
+    name: apiAsset.displayName,
+    imageUrl: apiAsset.url,  // 使用 Supabase SDK 生成的 URL
     isSystem: true,
     category,
   }
 }
 
-// Helper: 从 Supabase Storage 获取文件列表
-async function listStorageFiles(folder: string): Promise<string[]> {
+// Helper: 从 API 获取资源列表（返回完整 URL）
+async function fetchPresetAssets(folder: string): Promise<ApiAsset[]> {
   try {
-    const response = await fetch(`/api/presets/list?folder=${encodeURIComponent(folder)}`)
+    const response = await fetch(`/api/presets/list?folder=${encodeURIComponent(folder)}&t=${Date.now()}`)
     if (!response.ok) {
-      console.error(`[PresetStore] Failed to list ${folder}:`, response.status)
+      console.error(`[PresetStore] Failed to fetch ${folder}:`, response.status)
       return []
     }
     const data = await response.json()
-    return data.files || []
+    return data.assets || []
   } catch (error) {
-    console.error(`[PresetStore] Error listing ${folder}:`, error)
+    console.error(`[PresetStore] Error fetching ${folder}:`, error)
     return []
   }
 }
@@ -121,39 +125,39 @@ export const usePresetStore = create<PresetState>((set, get) => ({
     console.log('[PresetStore] Loading presets from cloud...', forceRefresh ? '(forced)' : '')
     
     try {
-      // 并行加载所有文件夹
+      // 并行加载所有文件夹（API 返回完整 URL）
       const [
-        modelFiles,
-        visibleModelFiles,
-        bgFiles,
-        visibleBgFiles,
-        studioModelFiles,
-        studioBgLightFiles,
-        studioBgSolidFiles,
-        studioBgPatternFiles,
-        productFiles,
+        modelAssets,
+        visibleModelAssets,
+        bgAssets,
+        visibleBgAssets,
+        studioModelAssets,
+        studioBgLightAssets,
+        studioBgSolidAssets,
+        studioBgPatternAssets,
+        productAssets,
       ] = await Promise.all([
-        listStorageFiles('models'),
-        listStorageFiles('models/visible'),
-        listStorageFiles('backgrounds'),
-        listStorageFiles('backgrounds/visible'),
-        listStorageFiles('studio-models'),
-        listStorageFiles('studio-backgrounds/light'),
-        listStorageFiles('studio-backgrounds/solid'),
-        listStorageFiles('studio-backgrounds/pattern'),
-        listStorageFiles('products'),
+        fetchPresetAssets('models'),
+        fetchPresetAssets('models/visible'),
+        fetchPresetAssets('backgrounds'),
+        fetchPresetAssets('backgrounds/visible'),
+        fetchPresetAssets('studio-models'),
+        fetchPresetAssets('studio-backgrounds/light'),
+        fetchPresetAssets('studio-backgrounds/solid'),
+        fetchPresetAssets('studio-backgrounds/pattern'),
+        fetchPresetAssets('products'),
       ])
       
-      // 转换为 Asset 对象
-      const allModels = modelFiles.map(f => fileToAsset(f, 'models', 'model'))
-      const visibleModels = visibleModelFiles.map(f => fileToAsset(f, 'models/visible', 'model'))
-      const allBackgrounds = bgFiles.map(f => fileToAsset(f, 'backgrounds', 'background'))
-      const visibleBackgrounds = visibleBgFiles.map(f => fileToAsset(f, 'backgrounds/visible', 'background'))
-      const studioModels = studioModelFiles.map(f => fileToAsset(f, 'studio-models', 'model', 'studio'))
-      const studioBackgroundsLight = studioBgLightFiles.map(f => fileToAsset(f, 'studio-backgrounds/light', 'background', 'studio-light'))
-      const studioBackgroundsSolid = studioBgSolidFiles.map(f => fileToAsset(f, 'studio-backgrounds/solid', 'background', 'studio-solid'))
-      const studioBackgroundsPattern = studioBgPatternFiles.map(f => fileToAsset(f, 'studio-backgrounds/pattern', 'background', 'studio-pattern'))
-      const presetProducts = productFiles.map(f => fileToAsset(f, 'products', 'product'))
+      // 转换为 Asset 对象（URL 已由 API 生成）
+      const allModels = modelAssets.map(a => apiAssetToAsset(a, 'models', 'model'))
+      const visibleModels = visibleModelAssets.map(a => apiAssetToAsset(a, 'models/visible', 'model'))
+      const allBackgrounds = bgAssets.map(a => apiAssetToAsset(a, 'backgrounds', 'background'))
+      const visibleBackgrounds = visibleBgAssets.map(a => apiAssetToAsset(a, 'backgrounds/visible', 'background'))
+      const studioModels = studioModelAssets.map(a => apiAssetToAsset(a, 'studio-models', 'model', 'studio'))
+      const studioBackgroundsLight = studioBgLightAssets.map(a => apiAssetToAsset(a, 'studio-backgrounds/light', 'background', 'studio-light'))
+      const studioBackgroundsSolid = studioBgSolidAssets.map(a => apiAssetToAsset(a, 'studio-backgrounds/solid', 'background', 'studio-solid'))
+      const studioBackgroundsPattern = studioBgPatternAssets.map(a => apiAssetToAsset(a, 'studio-backgrounds/pattern', 'background', 'studio-pattern'))
+      const presetProducts = productAssets.map(a => apiAssetToAsset(a, 'products', 'product'))
       
       console.log('[PresetStore] Loaded:', {
         allModels: allModels.length,
