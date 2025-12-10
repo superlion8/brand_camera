@@ -20,13 +20,6 @@ import { Asset, AssetType } from '@/types'
 
 const STORAGE_URL = 'https://cvdogeigbpussfamctsu.supabase.co/storage/v1/object/public/presets'
 
-// 使用短格式缓存版本（每分钟更新一次）
-const getCacheVersion = () => {
-  const now = new Date()
-  // 格式：v年月日时分，如 v202412110830
-  return `v${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`
-}
-
 interface PresetState {
   // 买家秀资源
   allModels: Asset[]           // 随机池
@@ -63,15 +56,14 @@ function fileToAsset(
   fileName: string, 
   folder: string, 
   type: AssetType,
-  category?: string,
-  cacheVersion?: string
+  category?: string
 ): Asset {
   const nameWithoutExt = fileName.replace(/\.(jpg|jpeg|png|webp)$/i, '')
   return {
     id: `preset-${folder.replace(/\//g, '-')}-${nameWithoutExt}`,
     type,
     name: nameWithoutExt,
-    imageUrl: `${STORAGE_URL}/${folder}/${fileName}?${cacheVersion || getCacheVersion()}`,
+    imageUrl: `${STORAGE_URL}/${folder}/${fileName}`,
     isSystem: true,
     category,
   }
@@ -152,19 +144,16 @@ export const usePresetStore = create<PresetState>((set, get) => ({
         listStorageFiles('products'),
       ])
       
-      // 生成统一的缓存版本，确保同一批次加载的图片版本一致
-      const cacheVersion = getCacheVersion()
-      
       // 转换为 Asset 对象
-      const allModels = modelFiles.map(f => fileToAsset(f, 'models', 'model', undefined, cacheVersion))
-      const visibleModels = visibleModelFiles.map(f => fileToAsset(f, 'models/visible', 'model', undefined, cacheVersion))
-      const allBackgrounds = bgFiles.map(f => fileToAsset(f, 'backgrounds', 'background', undefined, cacheVersion))
-      const visibleBackgrounds = visibleBgFiles.map(f => fileToAsset(f, 'backgrounds/visible', 'background', undefined, cacheVersion))
-      const studioModels = studioModelFiles.map(f => fileToAsset(f, 'studio-models', 'model', 'studio', cacheVersion))
-      const studioBackgroundsLight = studioBgLightFiles.map(f => fileToAsset(f, 'studio-backgrounds/light', 'background', 'studio-light', cacheVersion))
-      const studioBackgroundsSolid = studioBgSolidFiles.map(f => fileToAsset(f, 'studio-backgrounds/solid', 'background', 'studio-solid', cacheVersion))
-      const studioBackgroundsPattern = studioBgPatternFiles.map(f => fileToAsset(f, 'studio-backgrounds/pattern', 'background', 'studio-pattern', cacheVersion))
-      const presetProducts = productFiles.map(f => fileToAsset(f, 'products', 'product', undefined, cacheVersion))
+      const allModels = modelFiles.map(f => fileToAsset(f, 'models', 'model'))
+      const visibleModels = visibleModelFiles.map(f => fileToAsset(f, 'models/visible', 'model'))
+      const allBackgrounds = bgFiles.map(f => fileToAsset(f, 'backgrounds', 'background'))
+      const visibleBackgrounds = visibleBgFiles.map(f => fileToAsset(f, 'backgrounds/visible', 'background'))
+      const studioModels = studioModelFiles.map(f => fileToAsset(f, 'studio-models', 'model', 'studio'))
+      const studioBackgroundsLight = studioBgLightFiles.map(f => fileToAsset(f, 'studio-backgrounds/light', 'background', 'studio-light'))
+      const studioBackgroundsSolid = studioBgSolidFiles.map(f => fileToAsset(f, 'studio-backgrounds/solid', 'background', 'studio-solid'))
+      const studioBackgroundsPattern = studioBgPatternFiles.map(f => fileToAsset(f, 'studio-backgrounds/pattern', 'background', 'studio-pattern'))
+      const presetProducts = productFiles.map(f => fileToAsset(f, 'products', 'product'))
       
       console.log('[PresetStore] Loaded:', {
         allModels: allModels.length,
