@@ -493,6 +493,7 @@ export default function BrandAssetsPage() {
                   width={1080}
                   height={1920}
                   style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                  unoptimized={zoomImage?.includes('supabase.co')}
                 />
               </TransformComponent>
             </TransformWrapper>
@@ -539,6 +540,10 @@ function AssetCard({
           alt={asset.name || "Asset"}
           fill
           className="object-cover"
+          unoptimized={asset.imageUrl?.includes('supabase.co')}
+          onError={(e) => {
+            console.error('[AssetCard] Image load error:', asset.imageUrl)
+          }}
         />
         {isPreset && (
           <span className="absolute top-2 left-2 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded font-medium">

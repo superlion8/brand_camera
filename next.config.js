@@ -16,24 +16,22 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'cvdogeigbpussfamctsu.supabase.co',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.supabase.co',
+        pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'images.unsplash.com',
+        pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'lh3.googleusercontent.com',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.googleusercontent.com',
+        pathname: '/**',
       },
     ],
+    // 禁用图片优化的严格检查
+    unoptimized: false,
+    dangerouslyAllowSVG: true,
   },
   experimental: {
     serverActions: {
