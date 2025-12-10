@@ -76,12 +76,28 @@ function apiAssetToAsset(
 // Helper: 从 API 获取资源列表（返回完整 URL）
 async function fetchPresetAssets(folder: string): Promise<ApiAsset[]> {
   try {
-    const response = await fetch(`/api/presets/list?folder=${encodeURIComponent(folder)}&t=${Date.now()}`)
+    // 添加时间戳和随机数确保不走缓存
+    const cacheBuster = `t=${Date.now()}&r=${Math.random().toString(36).substring(7)}`
+    const url = `/api/presets/list?folder=${encodeURIComponent(folder)}&${cacheBuster}`
+    
+    console.log(`[PresetStore] Fetching: ${folder}`)
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      cache: 'no-store',  // 禁止浏览器缓存
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+      },
+    })
+    
     if (!response.ok) {
-      console.error(`[PresetStore] Failed to fetch ${folder}:`, response.status)
+      console.error(`[PresetStore] Failed to fetch ${folder}: HTTP ${response.status}`)
       return []
     }
+    
     const data = await response.json()
+    console.log(`[PresetStore] Got ${folder}: ${data.assets?.length || 0} items`)
     return data.assets || []
   } catch (error) {
     console.error(`[PresetStore] Error fetching ${folder}:`, error)
@@ -107,30 +123,32 @@ export const usePresetStore = create<PresetState>((set, get) => ({
   lastLoadTime: null,
   
   loadPresets: async (forceRefresh = false) => {
-    const state = get()
-    
-    // 强制刷新时，重置状态
+    // 强制刷新时，完全忽略所有缓存和状态检查
     if (forceRefresh) {
-      set({ isLoading: false, isLoaded: false, lastLoadTime: null })
-    }
-    
-    // 如果已经在加载，跳过（但强制刷新时不跳过）
-    if (!forceRefresh && state.isLoading) {
-      console.log('[PresetStore] Already loading, skipping')
-      return
-    }
-    
-    // 如果已加载且在 5 分钟内，跳过（除非强制刷新）
-    if (!forceRefresh && state.isLoaded && state.lastLoadTime) {
-      const elapsed = Date.now() - state.lastLoadTime
-      if (elapsed < 5 * 60 * 1000) {
-        console.log('[PresetStore] Using cached presets')
+      console.log('[PresetStore] FORCE REFRESH - ignoring all cache')
+      set({ isLoading: true, isLoaded: false, lastLoadTime: null, error: null })
+    } else {
+      const state = get()
+      
+      // 如果已经在加载，跳过
+      if (state.isLoading) {
+        console.log('[PresetStore] Already loading, skipping')
         return
       }
+      
+      // 如果已加载且在 5 分钟内，使用缓存
+      if (state.isLoaded && state.lastLoadTime) {
+        const elapsed = Date.now() - state.lastLoadTime
+        if (elapsed < 5 * 60 * 1000) {
+          console.log('[PresetStore] Using cached presets (age:', Math.round(elapsed/1000), 's)')
+          return
+        }
+      }
+      
+      set({ isLoading: true, error: null })
     }
     
-    set({ isLoading: true, error: null })
-    console.log('[PresetStore] Loading presets from cloud...', forceRefresh ? '(FORCED - fetching fresh data)' : '')
+    console.log('[PresetStore] Fetching presets from cloud...')
     
     try {
       // 并行加载所有文件夹（API 返回完整 URL）

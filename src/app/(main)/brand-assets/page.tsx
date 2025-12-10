@@ -85,15 +85,26 @@ export default function BrandAssetsPage() {
     loadPresets,
   } = usePresetStore()
   
+  // 用于跟踪是否已加载
+  const hasLoadedRef = useRef(false)
+  
   // 每次进入页面强制刷新预设（无缓存）
   useEffect(() => {
+    // 防止 React StrictMode 双重执行
+    if (hasLoadedRef.current) {
+      console.log('[BrandAssets] Already loaded, skipping duplicate call')
+      return
+    }
+    hasLoadedRef.current = true
+    
     console.log('[BrandAssets] Page mounted - forcing fresh preset load')
-    // 使用 setTimeout 确保在 React StrictMode 双重渲染后执行
-    const timer = setTimeout(() => {
-      loadPresets(true)
-    }, 0)
-    return () => clearTimeout(timer)
-  }, []) // 空依赖数组，只在组件挂载时执行一次
+    loadPresets(true)
+    
+    // 组件卸载时重置，以便下次进入页面时重新加载
+    return () => {
+      hasLoadedRef.current = false
+    }
+  }, [loadPresets])
   
   // 动态预设数据
   const modelPresets = {
@@ -243,13 +254,28 @@ export default function BrandAssetsPage() {
               )}
             </div>
           </div>
-          <button
-            onClick={() => handleUploadClick(activeType)}
-            className="flex items-center gap-1 px-3 py-1.5 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            {t.assets.upload}
-          </button>
+          <div className="flex items-center gap-2">
+            {/* 手动刷新预设按钮 */}
+            <button
+              onClick={() => {
+                console.log('[BrandAssets] Manual refresh triggered')
+                hasLoadedRef.current = false
+                loadPresets(true)
+              }}
+              disabled={presetsLoading}
+              className="w-9 h-9 rounded-lg border border-zinc-200 hover:bg-zinc-100 flex items-center justify-center transition-colors disabled:opacity-50"
+              title={t.common?.refresh || "刷新"}
+            >
+              <RefreshCw className={`w-4 h-4 text-zinc-600 ${presetsLoading ? 'animate-spin' : ''}`} />
+            </button>
+            <button
+              onClick={() => handleUploadClick(activeType)}
+              className="flex items-center gap-1 px-3 py-1.5 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              {t.assets.upload}
+            </button>
+          </div>
         </div>
         
         {/* Type Tabs */}
