@@ -20,8 +20,12 @@ import { Asset, AssetType } from '@/types'
 
 const STORAGE_URL = 'https://cvdogeigbpussfamctsu.supabase.co/storage/v1/object/public/presets'
 
-// 使用时间戳作为缓存版本，确保每次加载都是最新的
-const getCacheVersion = () => `v${Date.now()}`
+// 使用短格式缓存版本（每分钟更新一次）
+const getCacheVersion = () => {
+  const now = new Date()
+  // 格式：v年月日时分，如 v202412110830
+  return `v${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`
+}
 
 interface PresetState {
   // 买家秀资源
