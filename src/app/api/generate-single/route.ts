@@ -536,32 +536,50 @@ export async function POST(request: NextRequest) {
     
     // 只在第一张图时保存商品图 URL（避免重复）
     let inputImageUrl: string | undefined
+    const productImageUrls: string[] = [] // 收集所有商品图 URL
+    
     if (index === 0) {
-      // 优先使用 productImage，否则使用 outfitItems 中的第一个有效项
-      const primaryInput = productImage 
-        || outfitItems?.top 
-        || outfitItems?.pants 
-        || outfitItems?.inner 
-        || outfitItems?.hat 
-        || outfitItems?.shoes
+      // 收集所有商品图并上传
+      const allInputs = [
+        productImage,
+        productImage2,
+        outfitItems?.inner,
+        outfitItems?.top,
+        outfitItems?.pants,
+        outfitItems?.hat,
+        outfitItems?.shoes,
+      ].filter(Boolean) as string[]
       
-      if (primaryInput) {
-        // 如果已经是 URL，直接使用
-        if (primaryInput.startsWith('http')) {
-          inputImageUrl = primaryInput
-          console.log(`[${label}] Using existing product URL`)
-        } else if (primaryInput.startsWith('data:') || primaryInput.length > 1000) {
+      for (const input of allInputs) {
+        let uploadedUrl: string | undefined
+        
+        if (input.startsWith('http')) {
+          uploadedUrl = input
+        } else if (input.startsWith('data:') || input.length > 1000) {
           // 如果是 base64，上传到 storage
-          const uploadedInput = await uploadImageToStorage(primaryInput, userId, 'input_product')
-          if (uploadedInput) {
-            inputImageUrl = uploadedInput
-            console.log(`[${label}] Uploaded product image to storage`)
+          const uploaded = await uploadImageToStorage(input, userId, 'input_product')
+          if (uploaded) uploadedUrl = uploaded
+        }
+        
+        if (uploadedUrl) {
+          productImageUrls.push(uploadedUrl)
+          // 第一张商品图作为主输入图
+          if (!inputImageUrl) {
+            inputImageUrl = uploadedUrl
+            console.log(`[${label}] Primary product image: ${uploadedUrl.substring(0, 80)}...`)
           }
         }
       }
+      
+      console.log(`[${label}] Collected ${productImageUrls.length} product images`)
     }
     
-    // 写入数据库
+    // 写入数据库 - 合并 productImages 到 inputParams
+    const enrichedInputParams = index === 0 ? {
+      ...inputParams,
+      productImages: productImageUrls, // 添加所有商品图 URL
+    } : inputParams
+    
     const dbSuccess = await appendImageToGeneration({
       taskId,
       userId,
@@ -571,7 +589,7 @@ export async function POST(request: NextRequest) {
       genMode: generationMode,
       prompt: usedPrompt,
       taskType: type === 'product' ? 'product_studio' : 'model_studio',
-      inputParams,
+      inputParams: enrichedInputParams,
       inputImageUrl, // 传递商品图 URL
     })
     
