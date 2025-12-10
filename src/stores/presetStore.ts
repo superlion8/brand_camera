@@ -27,9 +27,7 @@ interface PresetState {
   
   // 专业棚拍资源
   studioModels: Asset[]
-  studioBackgroundsLight: Asset[]
-  studioBackgroundsSolid: Asset[]
-  studioBackgroundsPattern: Asset[]
+  studioBackgrounds: Asset[]   // 所有棚拍背景（合并后）
   
   // 预设商品
   presetProducts: Asset[]
@@ -46,7 +44,6 @@ interface PresetState {
   getRandomBackground: () => Asset | null
   getRandomStudioModel: () => Asset | null
   getRandomStudioBackground: () => Asset | null
-  getAllStudioBackgrounds: () => Asset[]
 }
 
 // API 返回的资源格式
@@ -112,9 +109,7 @@ export const usePresetStore = create<PresetState>((set, get) => ({
   allBackgrounds: [],
   visibleBackgrounds: [],
   studioModels: [],
-  studioBackgroundsLight: [],
-  studioBackgroundsSolid: [],
-  studioBackgroundsPattern: [],
+  studioBackgrounds: [],
   presetProducts: [],
   
   isLoading: false,
@@ -158,9 +153,7 @@ export const usePresetStore = create<PresetState>((set, get) => ({
         bgAssets,
         visibleBgAssets,
         studioModelAssets,
-        studioBgLightAssets,
-        studioBgSolidAssets,
-        studioBgPatternAssets,
+        studioBgAssets,
         productAssets,
       ] = await Promise.all([
         fetchPresetAssets('models'),
@@ -168,9 +161,7 @@ export const usePresetStore = create<PresetState>((set, get) => ({
         fetchPresetAssets('backgrounds'),
         fetchPresetAssets('backgrounds/visible'),
         fetchPresetAssets('studio-models'),
-        fetchPresetAssets('studio-backgrounds/light'),
-        fetchPresetAssets('studio-backgrounds/solid'),
-        fetchPresetAssets('studio-backgrounds/pattern'),
+        fetchPresetAssets('studio-backgrounds'),
         fetchPresetAssets('products'),
       ])
       
@@ -180,9 +171,7 @@ export const usePresetStore = create<PresetState>((set, get) => ({
       const allBackgrounds = bgAssets.map(a => apiAssetToAsset(a, 'backgrounds', 'background'))
       const visibleBackgrounds = visibleBgAssets.map(a => apiAssetToAsset(a, 'backgrounds/visible', 'background'))
       const studioModels = studioModelAssets.map(a => apiAssetToAsset(a, 'studio-models', 'model', 'studio'))
-      const studioBackgroundsLight = studioBgLightAssets.map(a => apiAssetToAsset(a, 'studio-backgrounds/light', 'background', 'studio-light'))
-      const studioBackgroundsSolid = studioBgSolidAssets.map(a => apiAssetToAsset(a, 'studio-backgrounds/solid', 'background', 'studio-solid'))
-      const studioBackgroundsPattern = studioBgPatternAssets.map(a => apiAssetToAsset(a, 'studio-backgrounds/pattern', 'background', 'studio-pattern'))
+      const studioBackgrounds = studioBgAssets.map(a => apiAssetToAsset(a, 'studio-backgrounds', 'background', 'studio'))
       const presetProducts = productAssets.map(a => apiAssetToAsset(a, 'products', 'product'))
       
       console.log('[PresetStore] Loaded:', {
@@ -191,9 +180,7 @@ export const usePresetStore = create<PresetState>((set, get) => ({
         allBackgrounds: allBackgrounds.length,
         visibleBackgrounds: visibleBackgrounds.length,
         studioModels: studioModels.length,
-        studioBackgroundsLight: studioBackgroundsLight.length,
-        studioBackgroundsSolid: studioBackgroundsSolid.length,
-        studioBackgroundsPattern: studioBackgroundsPattern.length,
+        studioBackgrounds: studioBackgrounds.length,
         presetProducts: presetProducts.length,
       })
       
@@ -203,9 +190,7 @@ export const usePresetStore = create<PresetState>((set, get) => ({
         allBackgrounds,
         visibleBackgrounds,
         studioModels,
-        studioBackgroundsLight,
-        studioBackgroundsSolid,
-        studioBackgroundsPattern,
+        studioBackgrounds,
         presetProducts,
         isLoading: false,
         isLoaded: true,
@@ -240,14 +225,9 @@ export const usePresetStore = create<PresetState>((set, get) => ({
   },
   
   getRandomStudioBackground: () => {
-    const backgrounds = get().getAllStudioBackgrounds()
-    if (backgrounds.length === 0) return null
-    return backgrounds[Math.floor(Math.random() * backgrounds.length)]
-  },
-  
-  getAllStudioBackgrounds: () => {
-    const { studioBackgroundsLight, studioBackgroundsSolid, studioBackgroundsPattern } = get()
-    return [...studioBackgroundsLight, ...studioBackgroundsSolid, ...studioBackgroundsPattern]
+    const { studioBackgrounds } = get()
+    if (studioBackgrounds.length === 0) return null
+    return studioBackgrounds[Math.floor(Math.random() * studioBackgrounds.length)]
   },
 }))
 

@@ -130,58 +130,17 @@ function BackgroundGrid({
   onUpload,
   onZoom,
   uploadLabel = "Upload",
-  labels,
-  // 动态传入背景数据
-  bgLight = [],
-  bgSolid = [],
-  bgPattern = [],
+  backgrounds = [],
 }: {
   selectedId: string | null
   onSelect: (id: string) => void
   onUpload?: () => void
   onZoom?: (url: string) => void
   uploadLabel?: string
-  labels?: { all: string; light: string; solid: string; pattern: string }
-  bgLight?: Asset[]
-  bgSolid?: Asset[]
-  bgPattern?: Asset[]
+  backgrounds?: Asset[]
 }) {
-  const [activeTab, setActiveTab] = useState<'all' | 'light' | 'solid' | 'pattern'>('all')
-  
-  const allBgs = [...bgLight, ...bgSolid, ...bgPattern]
-  
-  const bgMap = {
-    all: allBgs,
-    light: bgLight,
-    solid: bgSolid,
-    pattern: bgPattern,
-  }
-  
-  const tabs = [
-    { id: 'all', label: labels?.all || 'All', count: allBgs.length },
-    { id: 'light', label: labels?.light || 'Light', count: bgLight.length },
-    { id: 'solid', label: labels?.solid || 'Solid', count: bgSolid.length },
-    { id: 'pattern', label: labels?.pattern || 'Pattern', count: bgPattern.length },
-  ]
-  
   return (
     <div className="space-y-3">
-      <div className="flex gap-2 flex-wrap">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              activeTab === tab.id
-                ? "bg-zinc-900 text-white"
-                : "bg-white text-zinc-600 border border-zinc-200"
-            }`}
-          >
-            {tab.label}
-            <span className="ml-1 opacity-60">({tab.count})</span>
-          </button>
-        ))}
-      </div>
       <div className="grid grid-cols-3 gap-3">
         {/* Upload Button as first cell */}
         {onUpload && (
@@ -193,7 +152,7 @@ function BackgroundGrid({
             <span className="text-xs text-zinc-500 mt-1">{uploadLabel || 'Upload'}</span>
           </button>
         )}
-        {bgMap[activeTab].map(item => (
+        {backgrounds.map(item => (
           <div
             key={item.id}
             className={`aspect-square rounded-xl overflow-hidden relative border-2 transition-all ${
@@ -206,7 +165,7 @@ function BackgroundGrid({
               onClick={() => onSelect(item.id)}
               className="absolute inset-0"
             >
-              <Image src={item.imageUrl} alt={item.name || ""} fill className="object-cover" />
+              <Image src={item.imageUrl} alt={item.name || ""} fill className="object-cover" unoptimized />
             </button>
             {selectedId === item.id && (
               <div className="absolute top-2 left-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
@@ -307,9 +266,7 @@ function ProStudioPageContent() {
   // Preset Store - 动态从云端加载
   const { 
     studioModels, 
-    studioBackgroundsLight,
-    studioBackgroundsSolid,
-    studioBackgroundsPattern,
+    studioBackgrounds,
     isLoaded: presetsLoaded,
     isLoading: presetsLoading,
     loadPresets,
@@ -343,9 +300,8 @@ function ProStudioPageContent() {
   }, [mode, currentTaskId, tasks])
 
   // Combine preset + user + custom assets for selection
-  const allStudioBackgrounds = [...studioBackgroundsLight, ...studioBackgroundsSolid, ...studioBackgroundsPattern]
   const allModels = [...customModels, ...userModels, ...studioModels]
-  const allBgs = [...customBgs, ...userBackgrounds, ...allStudioBackgrounds]
+  const allBgs = [...customBgs, ...userBackgrounds, ...studioBackgrounds]
   
   // Get selected assets from combined list
   const selectedModel = selectedModelId ? allModels.find(m => m.id === selectedModelId) : null
@@ -1092,15 +1048,7 @@ function ProStudioPageContent() {
                             onUpload={() => bgUploadRef.current?.click()}
                             onZoom={(url) => setFullscreenImage(url)}
                             uploadLabel={t.common.upload}
-                            labels={{ 
-                              all: t.common.all, 
-                              light: t.proStudio?.bgLight || 'Light', 
-                              solid: t.proStudio?.bgSolid || 'Solid', 
-                              pattern: t.proStudio?.bgPattern || 'Pattern' 
-                            }}
-                            bgLight={studioBackgroundsLight}
-                            bgSolid={studioBackgroundsSolid}
-                            bgPattern={studioBackgroundsPattern}
+                            backgrounds={studioBackgrounds}
                           />
                         </div>
                       )}

@@ -67,7 +67,7 @@ export default function OutfitSelectPage() {
     : [...presetStore.visibleModels, ...userModels.filter(m => m.type === 'model')]
   
   const availableBackgrounds = shootMode === 'pro_studio'
-    ? presetStore.getAllStudioBackgrounds()
+    ? (presetStore.studioBackgrounds || [])
     : [...presetStore.visibleBackgrounds, ...userBackgrounds.filter(b => b.type === 'background')]
   
   // 开始生成

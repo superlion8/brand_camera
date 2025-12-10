@@ -141,57 +141,17 @@ function BackgroundGrid({
   onUpload,
   onZoom,
   uploadLabel = "Upload",
-  labels,
-  bgLight = [],
-  bgSolid = [],
-  bgPattern = [],
+  backgrounds = [],
 }: {
   selectedId: string | null
   onSelect: (id: string) => void
   onUpload?: () => void
   onZoom?: (url: string) => void
   uploadLabel?: string
-  labels?: { all: string; light: string; solid: string; pattern: string }
-  bgLight?: Asset[]
-  bgSolid?: Asset[]
-  bgPattern?: Asset[]
+  backgrounds?: Asset[]
 }) {
-  const [activeTab, setActiveTab] = useState<'all' | 'light' | 'solid' | 'pattern'>('all')
-  
-  const allBgs = [...bgLight, ...bgSolid, ...bgPattern]
-  
-  const bgMap = {
-    all: allBgs,
-    light: bgLight,
-    solid: bgSolid,
-    pattern: bgPattern,
-  }
-  
-  const tabs = [
-    { id: 'all', label: labels?.all || 'All', count: allBgs.length },
-    { id: 'light', label: labels?.light || 'Light', count: bgLight.length },
-    { id: 'solid', label: labels?.solid || 'Solid', count: bgSolid.length },
-    { id: 'pattern', label: labels?.pattern || 'Pattern', count: bgPattern.length },
-  ]
-  
   return (
     <div className="space-y-3">
-      <div className="flex gap-2 flex-wrap">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              activeTab === tab.id
-                ? "bg-zinc-900 text-white"
-                : "bg-white text-zinc-600 border border-zinc-200"
-            }`}
-          >
-            {tab.label}
-            <span className="ml-1 opacity-60">({tab.count})</span>
-          </button>
-        ))}
-      </div>
       <div className="grid grid-cols-3 gap-3">
         {onUpload && (
           <button
@@ -202,7 +162,7 @@ function BackgroundGrid({
             <span className="text-xs text-zinc-500 mt-1">{uploadLabel || 'Upload'}</span>
           </button>
         )}
-        {bgMap[activeTab].map(item => (
+        {backgrounds.map(item => (
           <div
             key={item.id}
             className={`aspect-square rounded-xl overflow-hidden relative border-2 transition-all ${
@@ -215,7 +175,7 @@ function BackgroundGrid({
               onClick={() => onSelect(item.id)}
               className="absolute inset-0"
             >
-              <Image src={item.imageUrl} alt={item.name || ""} fill className="object-cover" />
+              <Image src={item.imageUrl} alt={item.name || ""} fill className="object-cover" unoptimized />
             </button>
             {selectedId === item.id && (
               <div className="absolute top-2 left-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
@@ -323,11 +283,8 @@ function OutfitPageContent() {
   // 获取所有模特和背景
   // studioModels 是专业棚拍模特（用于随机选择）
   const studioModels = presetStore.studioModels || []
-  // 直接从 presetStore 获取分类背景
-  const studioBackgroundsLight = presetStore.studioBackgroundsLight || []
-  const studioBackgroundsSolid = presetStore.studioBackgroundsSolid || []
-  const studioBackgroundsPattern = presetStore.studioBackgroundsPattern || []
-  const allStudioBackgrounds = [...studioBackgroundsLight, ...studioBackgroundsSolid, ...studioBackgroundsPattern]
+  // 直接从 presetStore 获取背景
+  const studioBackgrounds = presetStore.studioBackgrounds || []
   
   // 处理模特上传
   const handleModelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -818,7 +775,7 @@ function OutfitPageContent() {
     
     // 获取选中的模特和背景信息（只获取ID和URL，不加载图片）
     const allModels = [...customModels, ...studioModels, ...userModels]
-    const allBgs = [...customBgs, ...allStudioBackgrounds, ...userBackgrounds]
+    const allBgs = [...customBgs, ...studioBackgrounds, ...userBackgrounds]
     
     const selectedModel = selectedModelId 
       ? allModels.find(m => m.id === selectedModelId)
@@ -1519,15 +1476,7 @@ function OutfitPageContent() {
                       onUpload={() => bgUploadRef.current?.click()}
                       onZoom={(url) => setFullscreenImage(url)}
                       uploadLabel={t.outfit?.upload || "上传"}
-                      labels={{ 
-                        all: t.outfit?.all || "全部", 
-                        light: "Light", 
-                        solid: "Solid", 
-                        pattern: "Pattern" 
-                      }}
-                      bgLight={studioBackgroundsLight}
-                      bgSolid={studioBackgroundsSolid}
-                      bgPattern={studioBackgroundsPattern}
+                      backgrounds={studioBackgrounds}
                     />
                   </div>
                 )}

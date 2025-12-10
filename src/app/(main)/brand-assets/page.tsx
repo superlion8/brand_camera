@@ -77,9 +77,7 @@ export default function BrandAssetsPage() {
     visibleModels,
     visibleBackgrounds,
     studioModels,
-    studioBackgroundsLight,
-    studioBackgroundsSolid,
-    studioBackgroundsPattern,
+    studioBackgrounds,
     presetProducts,
     isLoading: presetsLoading,
     loadPresets,
@@ -114,12 +112,12 @@ export default function BrandAssetsPage() {
   
   const backgroundPresets = {
     normal: visibleBackgrounds,
-    studio: [...studioBackgroundsLight, ...studioBackgroundsSolid, ...studioBackgroundsPattern],
+    studio: studioBackgrounds,
   }
   
   const systemPresets: Record<AssetType, Asset[]> = {
     model: [...visibleModels, ...studioModels],
-    background: [...visibleBackgrounds, ...studioBackgroundsLight, ...studioBackgroundsSolid, ...studioBackgroundsPattern],
+    background: [...visibleBackgrounds, ...studioBackgrounds],
     product: presetProducts,
     vibe: [],
   }
