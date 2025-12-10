@@ -107,6 +107,16 @@ export default function BrandAssetsPage() {
   }, [loadPresets])
   
   // 动态预设数据
+  // 调试：检查从 store 获取的原始数据
+  console.log('[BrandAssets] RAW STORE DATA:', {
+    visibleModels: visibleModels.length,
+    studioModels: studioModels.length,
+    visibleBackgrounds: visibleBackgrounds.length,
+    studioBackgroundsLight: studioBackgroundsLight.length,
+    studioBackgroundsSolid: studioBackgroundsSolid.length,
+    studioBackgroundsPattern: studioBackgroundsPattern.length,
+  })
+  
   const modelPresets = {
     normal: visibleModels,
     studio: studioModels,
@@ -183,14 +193,25 @@ export default function BrandAssetsPage() {
   // 获取预设资产，模特和环境使用二级分类
   const getPresetAssets = () => {
     if (activeType === 'model') {
-      return modelPresets[modelSubTab] || []
+      const assets = modelPresets[modelSubTab] || []
+      console.log(`[BrandAssets] getPresetAssets model/${modelSubTab}:`, assets.length, assets.map(a => a.name))
+      return assets
     }
     if (activeType === 'background') {
-      return backgroundPresets[backgroundSubTab] || []
+      const assets = backgroundPresets[backgroundSubTab] || []
+      console.log(`[BrandAssets] getPresetAssets background/${backgroundSubTab}:`, assets.length, assets.map(a => a.name))
+      return assets
     }
     return systemPresets[activeType] || []
   }
   const presetAssets = getPresetAssets()
+  
+  // 调试：检查是否有重复 ID
+  const presetIds = presetAssets.map(a => a.id)
+  const uniqueIds = new Set(presetIds)
+  if (presetIds.length !== uniqueIds.size) {
+    console.error('[BrandAssets] DUPLICATE IDs DETECTED!', presetIds)
+  }
   
   // Sort user assets: pinned first
   const sortedUserAssets = [...userAssets].sort((a, b) => {
@@ -209,6 +230,9 @@ export default function BrandAssetsPage() {
   })
   
   const displayAssets = activeSource === "user" ? sortedUserAssets : sortedPresetAssets
+  
+  // 调试：最终显示的资产
+  console.log(`[BrandAssets] DISPLAY: type=${activeType}, source=${activeSource}, count=${displayAssets.length}`, displayAssets.map(a => `${a.name}(${a.id.slice(-10)})`).slice(0, 10))
   
   if (!_hasHydrated) {
     return (

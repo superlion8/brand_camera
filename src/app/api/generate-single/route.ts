@@ -368,13 +368,13 @@ export async function POST(request: NextRequest) {
       } else {
         // 兼容旧模式：使用单一 product 图片
         usedPrompt = SIMPLE_MODEL_PROMPT
-        const parts: any[] = [
-          { text: SIMPLE_MODEL_PROMPT },
-          { inlineData: { mimeType: 'image/jpeg', data: productImageData } }, // {{product}}
-          { inlineData: { mimeType: 'image/jpeg', data: backgroundImageData } }, // {{background}}
-          { inlineData: { mimeType: 'image/jpeg', data: modelImageData } }, // {{model}}
-        ]
-        result = await generateImageWithFallback(client, parts, label)
+      const parts: any[] = [
+        { text: SIMPLE_MODEL_PROMPT },
+        { inlineData: { mimeType: 'image/jpeg', data: productImageData } }, // {{product}}
+        { inlineData: { mimeType: 'image/jpeg', data: backgroundImageData } }, // {{background}}
+        { inlineData: { mimeType: 'image/jpeg', data: modelImageData } }, // {{model}}
+      ]
+      result = await generateImageWithFallback(client, parts, label)
       }
       
     } else {
@@ -452,32 +452,32 @@ export async function POST(request: NextRequest) {
         
       } else {
         // 兼容旧模式
-        console.log(`[${label}] Step 1: Generating instructions...`)
-        const instructPrompt = await generateInstructions(
+      console.log(`[${label}] Step 1: Generating instructions...`)
+      const instructPrompt = await generateInstructions(
           client, productImageData!, modelImageData, backgroundImageData, label
-        )
-        
-        // Step 2: Generate image
-        const modelPrompt = buildModelPrompt({
-          instructPrompt: instructPrompt || undefined,
-        })
-        
-        // Save the full prompt used
-        usedPrompt = modelPrompt
-        if (instructPrompt) {
-          usedPrompt = `[Photography Instructions]\n${instructPrompt}\n\n[Image Generation Prompt]\n${modelPrompt}`
-        }
-        
-        // Parts order: product, model, background, prompt
-        const parts: any[] = [
-          { inlineData: { mimeType: 'image/jpeg', data: productImageData } },  // {{product}}
-          { inlineData: { mimeType: 'image/jpeg', data: modelImageData } },    // {{model}}
-          { inlineData: { mimeType: 'image/jpeg', data: backgroundImageData } }, // {{background}}
-          { text: modelPrompt },
-        ]
-        
-        console.log(`[${label}] Step 2: Generating model image...`)
-        result = await generateImageWithFallback(client, parts, label)
+      )
+      
+      // Step 2: Generate image
+      const modelPrompt = buildModelPrompt({
+        instructPrompt: instructPrompt || undefined,
+      })
+      
+      // Save the full prompt used
+      usedPrompt = modelPrompt
+      if (instructPrompt) {
+        usedPrompt = `[Photography Instructions]\n${instructPrompt}\n\n[Image Generation Prompt]\n${modelPrompt}`
+      }
+      
+      // Parts order: product, model, background, prompt
+      const parts: any[] = [
+        { inlineData: { mimeType: 'image/jpeg', data: productImageData } },  // {{product}}
+        { inlineData: { mimeType: 'image/jpeg', data: modelImageData } },    // {{model}}
+        { inlineData: { mimeType: 'image/jpeg', data: backgroundImageData } }, // {{background}}
+        { text: modelPrompt },
+      ]
+      
+      console.log(`[${label}] Step 2: Generating model image...`)
+      result = await generateImageWithFallback(client, parts, label)
       }
     }
     
