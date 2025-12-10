@@ -411,6 +411,12 @@ function CameraPageContent() {
     initImageSlots(taskId, CAMERA_NUM_IMAGES)
     setMode("processing")
     
+    // 保存 taskId 到 sessionStorage（刷新后可恢复）
+    sessionStorage.setItem('cameraTaskId', taskId)
+    
+    // 更新 URL（便于刷新后恢复状态）
+    router.replace('/camera?mode=processing')
+    
     // Reserve quota in background (don't block generation)
     fetch('/api/quota/reserve', {
       method: 'POST',
@@ -877,7 +883,12 @@ function CameraPageContent() {
           setGeneratedPrompts(data.prompts || [])
           setCurrentGenerationId(id)
           setMode("results")
+          // 更新 URL 为 results 模式
+          router.replace('/camera?mode=results')
         }
+        
+        // 清理 sessionStorage（任务完成）
+        sessionStorage.removeItem('cameraTaskId')
       } else {
         // All tasks failed - refund all reserved quota
         console.log('[Quota] All tasks failed, refunding all', NUM_IMAGES, 'images')
@@ -916,6 +927,9 @@ function CameraPageContent() {
         }
         setMode("review")
       }
+      
+      // 清理 sessionStorage（任务失败）
+      sessionStorage.removeItem('cameraTaskId')
     }
   }
   

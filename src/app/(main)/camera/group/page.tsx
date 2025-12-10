@@ -7,7 +7,7 @@ import {
   X, Home, Check, ZoomIn,
   Camera, Sparkles, Users
 } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { fileToBase64, compressBase64Image, ensureBase64 } from "@/lib/utils"
 import Image from "next/image"
 import { useQuota } from "@/hooks/useQuota"
@@ -19,6 +19,7 @@ import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { useSettingsStore } from "@/stores/settingsStore"
+import { Suspense } from "react"
 
 type PageMode = "main" | "processing" | "results"
 type StyleMode = "lifestyle" | "studio"  // 生活模式 / 棚拍模式
@@ -28,11 +29,13 @@ type ShootMode = "random"  // 只保留随意拍模式
 const RANDOM_NUM_IMAGES = 5
 const MULTIANGLE_NUM_IMAGES = 4
 
-export default function GroupShootPage() {
+// 包装组件以支持 Suspense
+function GroupShootPageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user } = useAuth()
   const t = useLanguageStore(state => state.t)
-  const { checkQuota, showExceededModal, requiredCount, closeExceededModal, quota } = useQuota()
+  const { checkQuota, showExceededModal, requiredCount, closeExceededModal, quota, refreshQuota } = useQuota()
   const { addTask, updateTaskStatus, updateImageSlot, initImageSlots, tasks } = useGenerationTaskStore()
   const { generations } = useAssetStore()
   const { debugMode } = useSettingsStore()
@@ -52,6 +55,19 @@ export default function GroupShootPage() {
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
   const [generatedImages, setGeneratedImages] = useState<string[]>([])
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
+  
+  // 从 URL 参数恢复模式和 taskId（刷新后恢复）
+  useEffect(() => {
+    const urlMode = searchParams.get('mode')
+    if (urlMode === 'processing' || urlMode === 'results') {
+      setMode(urlMode as PageMode)
+      // 从 sessionStorage 恢复 taskId
+      const savedTaskId = sessionStorage.getItem('groupTaskId')
+      if (savedTaskId) {
+        setCurrentTaskId(savedTaskId)
+      }
+    }
+  }, [searchParams])
 
   // 文件上传
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -103,6 +119,28 @@ export default function GroupShootPage() {
     const taskId = addTask('group_shoot', selectedImage, { shootMode, styleMode }, numImages)
     setCurrentTaskId(taskId)
     initImageSlots(taskId, numImages)
+    
+    // 保存 taskId 到 sessionStorage（刷新后可恢复）
+    sessionStorage.setItem('groupTaskId', taskId)
+    
+    // 更新 URL（便于刷新后恢复状态）
+    router.replace('/camera/group?mode=processing')
+    
+    // 后台调用 quota/reserve 创建 pending 记录
+    fetch('/api/quota/reserve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        taskId,
+        imageCount: numImages,
+        taskType: 'group_shoot',
+      }),
+    }).then(() => {
+      console.log('[GroupShoot] Reserved', numImages, 'images for task', taskId)
+      refreshQuota()
+    }).catch(e => {
+      console.warn('[GroupShoot] Failed to reserve quota:', e)
+    })
 
     // 不压缩，直接使用原图
     const compressedImage = selectedImage
@@ -114,7 +152,7 @@ export default function GroupShootPage() {
         body: JSON.stringify({
           startImage: compressedImage,
           mode: shootMode,
-          styleMode: styleMode, // 新增：传递风格模式
+          styleMode: styleMode,
           taskId,
         }),
       })
@@ -155,6 +193,8 @@ export default function GroupShootPage() {
                 if (!firstCompleted) {
                   firstCompleted = true
                   setMode("results")
+                  // 更新 URL 为 results 模式
+                  router.replace('/camera/group?mode=results')
                 }
               } else if (data.type === 'error') {
                 updateImageSlot(taskId, data.index, {
@@ -170,6 +210,8 @@ export default function GroupShootPage() {
       }
 
       updateTaskStatus(taskId, 'completed')
+      // 清理 sessionStorage
+      sessionStorage.removeItem('groupTaskId')
     } catch (error: any) {
       console.error('Generation error:', error)
       for (let i = 0; i < numImages; i++) {
@@ -183,6 +225,8 @@ export default function GroupShootPage() {
         }
       }
       updateTaskStatus(taskId, 'failed')
+      // 清理 sessionStorage
+      sessionStorage.removeItem('groupTaskId')
     }
   }
 
@@ -779,5 +823,14 @@ export default function GroupShootPage() {
         totalQuota={quota?.totalQuota || 0}
       />
     </div>
+  )
+}
+
+// 导出组件，包裹 Suspense 以支持 useSearchParams
+export default function GroupShootPage() {
+  return (
+    <Suspense fallback={<div className="h-full flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-gray-400" /></div>}>
+      <GroupShootPageContent />
+    </Suspense>
   )
 }
