@@ -762,7 +762,7 @@ function OutfitPageContent() {
       return
     }
     
-    const numImages = 6
+    const numImages = 4  // 4张图 (2简单 + 2扩展)
     const hasQuota = await checkQuota(numImages)
     if (!hasQuota) return
     
@@ -930,14 +930,14 @@ function OutfitPageContent() {
             }
           }
           
-          // 简单模式：3张图（index 0, 1, 2）
-          const simplePromises = [0, 1, 2].map(i => createCameraRequest(i, true))
+          // 简单模式：2张图（index 0, 1）
+          const simplePromises = [0, 1].map(i => createCameraRequest(i, true))
           
-          // 扩展模式：3张图（index 3, 4, 5）
-          const extendedPromises = [3, 4, 5].map(i => createCameraRequest(i, false))
+          // 扩展模式：2张图（index 2, 3）
+          const extendedPromises = [2, 3].map(i => createCameraRequest(i, false))
           
           // 等待所有请求完成
-          console.log('[Outfit-Camera] Sending 6 requests (3 simple + 3 extended)...')
+          console.log('[Outfit-Camera] Sending 4 requests (2 simple + 2 extended)...')
           const allResults = await Promise.allSettled([...simplePromises, ...extendedPromises])
           console.log('[Outfit-Camera] All requests completed')
           
@@ -1020,14 +1020,14 @@ function OutfitPageContent() {
             }
           }
           
-          // 简单模式：3张图（index 0, 1, 2）
-          const simplePromises = [0, 1, 2].map(i => createProStudioRequest(i, 'simple'))
+          // 简单模式：2张图（index 0, 1）
+          const simplePromises = [0, 1].map(i => createProStudioRequest(i, 'simple'))
           
-          // 扩展模式：3张图（index 3, 4, 5）
-          const extendedPromises = [3, 4, 5].map(i => createProStudioRequest(i, 'extended'))
+          // 扩展模式：2张图（index 2, 3）
+          const extendedPromises = [2, 3].map(i => createProStudioRequest(i, 'extended'))
           
           // 等待所有请求完成
-          console.log('[Outfit-ProStudio] Sending 6 requests (3 simple + 3 extended)...')
+          console.log('[Outfit-ProStudio] Sending 4 requests (2 simple + 2 extended)...')
           const allResults = await Promise.allSettled([...simplePromises, ...extendedPromises])
           console.log('[Outfit-ProStudio] All requests completed')
           

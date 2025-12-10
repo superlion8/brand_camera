@@ -26,8 +26,7 @@ type StyleMode = "lifestyle" | "studio"  // 生活模式 / 棚拍模式
 type ShootMode = "random"  // 只保留随意拍模式
 
 // 生成图片数量
-const RANDOM_NUM_IMAGES = 5
-const MULTIANGLE_NUM_IMAGES = 4
+const GROUP_NUM_IMAGES = 4
 
 // 包装组件以支持 Suspense
 function GroupShootPageContent() {
@@ -108,7 +107,7 @@ function GroupShootPageContent() {
   const handleStartGeneration = async () => {
     if (!selectedImage) return
 
-    const numImages = RANDOM_NUM_IMAGES  // 固定5张图
+    const numImages = GROUP_NUM_IMAGES  // 固定4张图
     const hasQuota = await checkQuota(numImages)
     if (!hasQuota) return
 
@@ -273,7 +272,7 @@ function GroupShootPageContent() {
     }
   }, [])
 
-  const numImages = RANDOM_NUM_IMAGES  // 固定5张图
+  const numImages = GROUP_NUM_IMAGES  // 固定4张图
 
   return (
     <div className="h-full relative flex flex-col bg-zinc-50">

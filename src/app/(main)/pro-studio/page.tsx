@@ -44,8 +44,9 @@ const getProductCategoryLabel = (cat: ProductSubTab, t: any): string => {
   }
 }
 
-// 专业棚拍生成6张图
-const PRO_STUDIO_NUM_IMAGES = 6
+// 专业棚拍生成4张图 (2简单 + 2扩展)
+const PRO_STUDIO_NUM_IMAGES = 4
+const PRO_STUDIO_NUM_SIMPLE = 2
 
 // Asset Grid Component with Upload Button
 function AssetGrid({ 
@@ -292,7 +293,7 @@ function ProStudioPageContent() {
       console.log('[ProStudio] Task has completed images, switching to results mode')
       // 更新 generatedImages 从 imageSlots
       const images = currentTask.imageSlots.map(s => s.imageUrl || '')
-      const modes = currentTask.imageSlots.map((s, i) => s.genMode || (i < 3 ? 'simple' : 'extended'))
+      const modes = currentTask.imageSlots.map((s, i) => s.genMode || (i < 2 ? 'simple' : 'extended'))
       setGeneratedImages(images)
       setGeneratedModes(modes as ('simple' | 'extended')[])
       setMode('results')
@@ -504,10 +505,10 @@ function ProStudioPageContent() {
       return randomModel.imageUrl
     }
 
-    // 简单模式：随机选择一个模特 URL（3张图共用）
+    // 简单模式：随机选择一个模特 URL（2张图共用）
     const simpleModelUrl = userSelectedModelUrl || (!selectedModel ? getRandomModelUrl() : null)
 
-    // 扩展模式：随机选择一个模特 URL（3张图共用）
+    // 扩展模式：随机选择一个模特 URL（2张图共用）
     const extendedModelUrl = userSelectedModelUrl || (!selectedModel ? getRandomModelUrl() : null)
 
     // 是否用户选择的标志
@@ -526,16 +527,14 @@ function ProStudioPageContent() {
     const bgUrl = selectedBg?.imageUrl
     const bgIsPreset = isPresetUrl(bgUrl)
 
-    // 生成任务配置：简单模式3张 + 扩展模式3张
+    // 生成任务配置：简单模式2张 + 扩展模式2张
     // 背景：如果用户选择了就用，没选择就不传（AI生成背景）
     // 直接使用 URL，后端会转换为 base64
     const taskConfigs = [
       { mode: 'simple', index: 0, model: simpleModelUrl, bg: userSelectedBgUrl },
       { mode: 'simple', index: 1, model: simpleModelUrl, bg: userSelectedBgUrl },
-      { mode: 'simple', index: 2, model: simpleModelUrl, bg: userSelectedBgUrl },
+      { mode: 'extended', index: 2, model: extendedModelUrl, bg: userSelectedBgUrl },
       { mode: 'extended', index: 3, model: extendedModelUrl, bg: userSelectedBgUrl },
-      { mode: 'extended', index: 4, model: extendedModelUrl, bg: userSelectedBgUrl },
-      { mode: 'extended', index: 5, model: extendedModelUrl, bg: userSelectedBgUrl },
     ]
 
     const results: string[] = []
@@ -612,12 +611,12 @@ function ProStudioPageContent() {
 
   // 获取模式标签
   const getModeLabel = (index: number) => {
-    if (index < 3) return t.proStudio?.simpleMode || '简单'
+    if (index < 2) return t.proStudio?.simpleMode || '简单'
     return t.proStudio?.extendedMode || '扩展'
   }
 
   const getModeColor = (index: number) => {
-    if (index < 3) return 'bg-blue-500'
+    if (index < 2) return 'bg-blue-500'
     return 'bg-purple-500'
   }
 
@@ -1475,8 +1474,8 @@ function ProStudioPageContent() {
                   </h3>
                   <span className="text-[10px] text-zinc-400">{t.proStudio?.simpleDesc || '直接生成棚拍图'}</span>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
-                  {[0, 1, 2].map((i) => {
+                <div className="grid grid-cols-2 gap-3">
+                  {[0, 1].map((i) => {
                     const currentTask = tasks.find(t => t.id === currentTaskId)
                     const slot = currentTask?.imageSlots?.[i]
                     const url = slot?.imageUrl || generatedImages[i]
@@ -1535,8 +1534,8 @@ function ProStudioPageContent() {
                   </h3>
                   <span className="text-[10px] text-zinc-400">{t.proStudio?.aiDesignScene || 'AI设计场景'}</span>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
-                  {[3, 4, 5].map((i) => {
+                <div className="grid grid-cols-2 gap-3">
+                  {[2, 3].map((i) => {
                     const currentTask = tasks.find(t => t.id === currentTaskId)
                     const slot = currentTask?.imageSlots?.[i]
                     const url = slot?.imageUrl || generatedImages[i]

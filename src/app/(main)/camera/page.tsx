@@ -57,9 +57,9 @@ const getProductCategoryLabel = (cat: ProductSubTab, t: any): string => {
   }
 }
 
-// Generation config - 6 images total (3 simple + 3 extended)
-const CAMERA_NUM_IMAGES = 6
-const CAMERA_NUM_SIMPLE = 3
+// Generation config - 4 images total (2 simple + 2 extended)
+const CAMERA_NUM_IMAGES = 4
+const CAMERA_NUM_SIMPLE = 2
 
 function CameraPageContent() {
   const router = useRouter()
@@ -1988,8 +1988,8 @@ function CameraPageContent() {
                   </h3>
                   <span className="text-[10px] text-zinc-400">{t.camera.simpleModeDesc}</span>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
-                  {[0, 1, 2].map((i) => {
+                <div className="grid grid-cols-2 gap-3">
+                  {[0, 1].map((i) => {
                     // 优先使用实时 imageSlots，回退到 generatedImages
                     const currentTask = tasks.find(t => t.id === currentTaskId)
                     const slot = currentTask?.imageSlots?.[i]
@@ -2064,8 +2064,8 @@ function CameraPageContent() {
                   </h3>
                   <span className="text-[10px] text-zinc-400">{t.camera.extendedModeDesc}</span>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
-                  {[3, 4, 5].map((actualIndex) => {
+                <div className="grid grid-cols-2 gap-3">
+                  {[2, 3].map((actualIndex) => {
                     // 优先使用实时 imageSlots，回退到 generatedImages
                     const currentTask = tasks.find(t => t.id === currentTaskId)
                     const slot = currentTask?.imageSlots?.[actualIndex]
@@ -2199,7 +2199,7 @@ function CameraPageContent() {
                                 ? "bg-green-100 text-green-700" 
                                 : "bg-blue-100 text-blue-700"
                             }`}>
-                              {selectedResultIndex < 3 ? (t.gallery?.simpleMode || "极简模式") : (t.gallery?.extendedMode || "扩展模式")}
+                              {selectedResultIndex < 2 ? (t.gallery?.simpleMode || "极简模式") : (t.gallery?.extendedMode || "扩展模式")}
                             </span>
                             {selectedModelType === 'flash' && (
                               <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700">
