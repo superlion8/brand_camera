@@ -87,9 +87,8 @@ export default function BrandAssetsPage() {
   
   // 每次进入页面强制刷新预设
   useEffect(() => {
-    // 清除缓存标记，强制重新加载
-    usePresetStore.setState({ isLoaded: false, lastLoadTime: null })
-    loadPresets()
+    console.log('[BrandAssets] Force refreshing presets...')
+    loadPresets(true) // 强制刷新，忽略缓存
   }, [loadPresets])
   
   // 动态预设数据（从云端加载）
