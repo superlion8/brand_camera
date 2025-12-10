@@ -4,7 +4,6 @@ import { createClient } from '@/lib/supabase/server'
 import { appendImageToGeneration, uploadImageToStorage } from '@/lib/supabase/generationService'
 import { 
   getRandomPresetBase64, 
-  getRandomStudioBackgroundBase64, 
   imageToBase64 
 } from '@/lib/presets/serverPresets'
 
@@ -292,33 +291,26 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 处理背景图片：支持 URL、base64、或随机选择
+    // 处理背景图片：用户选了就用，没选就让 AI 生成
     let bgImageData: string | undefined
     let actualBgUrl = bgUrl
     let actualBgName = bgName
-    let actualBgIsRandom = bgIsRandom
+    let actualBgIsRandom = false // 不再随机选择背景
     
     if (backgroundImage && backgroundImage !== 'random' && backgroundImage !== true) {
       // 用户指定了具体的背景图片
+      console.log(`${label} User selected background, converting...`)
       const converted = await imageToBase64(backgroundImage)
       if (converted) {
         bgImageData = converted
         actualBgIsRandom = false
+        console.log(`${label} Background converted successfully`)
       }
-    }
-    
-    // 如果没有背景图且需要随机选择（前端没选或明确要求随机）
-    // 条件：没有背景数据 且 (bgIsRandom 为 true 或 backgroundImage 为 'random' 或 backgroundImage 为空)
-    if (!bgImageData && (bgIsRandom || backgroundImage === 'random' || !backgroundImage)) {
-      console.log(`${label} Getting random studio background...`)
-      const randomBg = await getRandomStudioBackgroundBase64(5)
-      if (randomBg) {
-        bgImageData = randomBg.base64
-        actualBgUrl = randomBg.url
-        actualBgName = randomBg.fileName.replace(/\.[^.]+$/, '')
-        actualBgIsRandom = true
-        console.log(`${label} Got random background: ${randomBg.fileName} (${randomBg.type})`)
-      }
+    } else {
+      // 用户没有选择背景，让 AI 自己生成
+      console.log(`${label} No background selected, AI will generate`)
+      actualBgName = 'AI生成'
+      actualBgUrl = undefined
     }
 
     // 验证必需的图片数据
