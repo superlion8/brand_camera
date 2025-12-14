@@ -271,7 +271,6 @@ function ProStudioPageContent() {
     isLoaded: presetsLoaded,
     isLoading: presetsLoading,
     loadPresets,
-    getRandomStudioModel,
   } = usePresetStore()
   
   // 组件加载时获取预设
@@ -488,28 +487,10 @@ function ProStudioPageContent() {
     // ========== 预先确定每个模式使用的模特和背景 ==========
     // 直接使用 URL，后端会转换为 base64（减少前端请求体大小）
     
-    // 用户选择的模特 URL（如果有）
+    // 用户选择的模特/背景 URL（如果有）
+    // 如果用户没选，传 null 让后端从 Storage 实时随机选择
     const userSelectedModelUrl = selectedModel?.imageUrl || null
-    
-    // 用户选择的背景 URL（如果有）
     const userSelectedBgUrl = selectedBg?.imageUrl || null
-
-    // 获取随机模特 URL
-    const getRandomModelUrl = (): string | null => {
-      const randomModel = getRandomStudioModel()
-      if (!randomModel) {
-        console.error(`[ProStudio] No studio models available`)
-        return null
-      }
-      console.log(`[ProStudio] Random model:`, randomModel.name)
-      return randomModel.imageUrl
-    }
-
-    // 简单模式：随机选择一个模特 URL（2张图共用）
-    const simpleModelUrl = userSelectedModelUrl || (!selectedModel ? getRandomModelUrl() : null)
-
-    // 扩展模式：随机选择一个模特 URL（2张图共用）
-    const extendedModelUrl = userSelectedModelUrl || (!selectedModel ? getRandomModelUrl() : null)
 
     // 是否用户选择的标志
     const modelIsRandom = !selectedModel
@@ -518,23 +499,24 @@ function ProStudioPageContent() {
     // 辅助函数：检查 URL 是否是官方预设
     const isPresetUrl = (url?: string) => url?.includes('/presets/') || url?.includes('presets%2F')
     
-    // 模特/背景名称和URL（用于保存到数据库）
+    // 模特/背景名称（用于保存到数据库）
+    // 注意：如果随机选择，后端会填充实际使用的名称和 URL
     const modelName = selectedModel?.name || '专业模特 (随机)'
-    const modelUrl = selectedModel?.imageUrl
-    const modelIsPreset = isPresetUrl(modelUrl)
+    const modelUrl = selectedModel?.imageUrl || null  // 随机时传 null，后端会填充
+    const modelIsPreset = selectedModel ? isPresetUrl(modelUrl) : true  // 随机时默认是预设
     
     const bgName = selectedBg?.name || '影棚背景'
-    const bgUrl = selectedBg?.imageUrl
-    const bgIsPreset = isPresetUrl(bgUrl)
+    const bgUrl = selectedBg?.imageUrl || null  // 没选就是 null，让 AI 生成
+    const bgIsPreset = selectedBg ? isPresetUrl(bgUrl) : false
 
     // 生成任务配置：简单模式2张 + 扩展模式2张
-    // 背景：如果用户选择了就用，没选择就不传（AI生成背景）
-    // 直接使用 URL，后端会转换为 base64
+    // 模特：用户选了就用，没选传 null 让后端随机
+    // 背景：用户选了就用，没选传 null 让 AI 生成
     const taskConfigs = [
-      { mode: 'simple', index: 0, model: simpleModelUrl, bg: userSelectedBgUrl },
-      { mode: 'simple', index: 1, model: simpleModelUrl, bg: userSelectedBgUrl },
-      { mode: 'extended', index: 2, model: extendedModelUrl, bg: userSelectedBgUrl },
-      { mode: 'extended', index: 3, model: extendedModelUrl, bg: userSelectedBgUrl },
+      { mode: 'simple', index: 0, model: userSelectedModelUrl, bg: userSelectedBgUrl },
+      { mode: 'simple', index: 1, model: userSelectedModelUrl, bg: userSelectedBgUrl },
+      { mode: 'extended', index: 2, model: userSelectedModelUrl, bg: userSelectedBgUrl },
+      { mode: 'extended', index: 3, model: userSelectedModelUrl, bg: userSelectedBgUrl },
     ]
 
     const results: string[] = []
