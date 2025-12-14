@@ -808,8 +808,8 @@ export default function GalleryPage() {
           </div>
         )}
         
-        {/* 加载提示 + 骨架屏 */}
-        {isLoading && displayedHistory.length === 0 && (
+        {/* 加载提示 + 骨架屏 - 只在没有任何内容时显示 */}
+        {isLoading && displayedHistory.length === 0 && activeTasks.length === 0 && completedTasksToShow.length === 0 && (
           <>
             <div className="flex items-center justify-center gap-2 py-3 mb-3 bg-blue-50 border border-blue-100 rounded-xl">
               <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
