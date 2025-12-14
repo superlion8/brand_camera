@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { Asset, AssetType, Generation, Collection, Favorite } from '@/types'
-import { indexedDBStorage, dbPut, dbGet, dbGetAll, dbDelete, STORES, saveImage } from '@/lib/indexeddb'
+import { indexedDBStorage, dbPut, dbDelete, STORES } from '@/lib/indexeddb'
 import { generateId } from '@/lib/utils'
 import * as syncService from '@/lib/supabase/syncService'
 
@@ -251,89 +251,16 @@ export const useAssetStore = create<AssetState>()(
         return get().pinnedPresetIds.has(id)
       },
       
-      // Generation with IndexedDB and cloud sync
-      // skipCloudSync: 如果后端已经写入数据库，跳过前端的云端同步
-      addGeneration: async (generation, skipCloudSync = false) => {
-        const { currentUserId } = get()
+      // Generation - 只更新内存状态，数据库写入由后端 API 完成
+      // skipCloudSync 参数保留以保持接口兼容，但不再使用
+      addGeneration: async (generation, _skipCloudSync = false) => {
+        console.log('[Store] Adding generation to memory:', generation.id)
         
-        console.log('[Store] Adding generation, currentUserId:', currentUserId, 'generationId:', generation.id, 'skipCloudSync:', skipCloudSync)
-        
-        // 1. 立即更新内存状态（用户立即可见）
+        // 只更新内存状态，用户立即可见
+        // 后端 API 已经将数据写入数据库，无需前端重复写入
         set((state) => ({ 
           generations: [generation, ...state.generations] 
         }))
-        console.log('[Store] Generation added to memory state')
-        
-        // 2. 后台异步保存到 IndexedDB（和云端，除非 skipCloudSync）
-        // 使用 setTimeout 确保不阻塞 UI
-        setTimeout(async () => {
-          try {
-            // Save images to IndexedDB (for offline/local cache)
-            const savedOutputUrls: string[] = []
-            for (let i = 0; i < generation.outputImageUrls.length; i++) {
-              try {
-                const imageId = `${generation.id}_output_${i}`
-                await saveImage(imageId, generation.outputImageUrls[i])
-                savedOutputUrls.push(imageId)
-              } catch (e) {
-                console.warn(`[Store] Failed to save output image ${i} to IndexedDB:`, e)
-              }
-            }
-            
-            // Save input image
-            const inputImageId = `${generation.id}_input`
-            try {
-              await saveImage(inputImageId, generation.inputImageUrl)
-            } catch (e) {
-              console.warn('[Store] Failed to save input image to IndexedDB:', e)
-            }
-            
-            // Store generation metadata with image references
-            const genToStore = {
-              ...generation,
-              inputImageRef: inputImageId,
-              outputImageRefs: savedOutputUrls,
-            }
-            try {
-              await dbPut(STORES.GENERATIONS, genToStore)
-              console.log('[Store] Generation saved to IndexedDB')
-            } catch (e) {
-              console.warn('[Store] Failed to save generation to IndexedDB:', e)
-            }
-            
-            // Sync to cloud (除非 skipCloudSync，表示后端已经写入)
-            if (skipCloudSync) {
-              console.log('[Store] Skipping cloud sync - backend already saved')
-              return
-            }
-            
-            if (currentUserId) {
-              console.log('[Store] Syncing generation to cloud for user:', currentUserId)
-              try {
-                const result = await syncService.saveGeneration(currentUserId, generation)
-                if (result) {
-                  console.log('[Store] Generation sync success, cloud ID:', result.id)
-                  // 如果云端返回了不同的 ID，更新内存状态
-                  if (result.id !== generation.id) {
-                    set((state) => ({
-                      generations: state.generations.map(g => 
-                        g.id === generation.id ? { ...g, id: result.id } : g
-                      )
-                    }))
-                  }
-                } else {
-                  console.warn('[Store] Generation sync failed, data remains local')
-                }
-              } catch (e) {
-                console.error('[Store] Error syncing to cloud:', e)
-              }
-            } else {
-              console.warn('[Store] Not syncing generation - no currentUserId')
-            }
-          } catch (e) {
-            console.error('[Store] Error in background save:', e)
-          }
-        }, 0)
       },
       
       setGenerations: (generations) => set({ generations }),

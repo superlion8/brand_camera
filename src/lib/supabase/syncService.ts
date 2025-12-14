@@ -425,7 +425,19 @@ function mapTypeToTaskType(type?: string): string {
   return typeMap[type] || 'model_studio'
 }
 
+/**
+ * @deprecated 此函数已废弃，不再使用
+ * 后端 API (generate-single, generate-studio 等) 已经直接将数据写入数据库，
+ * 前端不需要重复写入。保留此函数仅为代码参考，后续版本将删除。
+ * 
+ * @see src/lib/supabase/generationService.ts - 后端写入逻辑
+ */
 export async function saveGeneration(userId: string, generation: Generation): Promise<Generation | null> {
+  // 直接返回 null，不执行任何写入操作
+  console.log('[Sync] saveGeneration is deprecated, skipping write. Generation ID:', generation.id)
+  return null
+  
+  /* === 以下为原始代码，保留仅供参考 ===
   const supabase = getSupabase()
   
   console.log('[Sync] Processing generation for upload...')
@@ -627,6 +639,7 @@ export async function saveGeneration(userId: string, generation: Generation): Pr
 
   console.log('[Sync] Generation saved successfully')
   return mapGenerationRow(data)
+  === 原始代码结束 === */
 }
 
 // Helper to map database row to Generation type
