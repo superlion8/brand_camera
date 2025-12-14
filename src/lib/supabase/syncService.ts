@@ -1,5 +1,6 @@
 import { createClient } from './client'
 import { Asset, AssetType, Generation, Favorite } from '@/types'
+import { getCanonicalType, TaskTypes } from '@/lib/taskTypes'
 
 // Singleton client for consistency
 let supabaseClient: ReturnType<typeof createClient> | null = null
@@ -409,20 +410,9 @@ export async function fetchAllGenerations(userId: string): Promise<Generation[]>
 }
 
 // Helper to map old type names to new task_type values
+// 使用集中管理的 taskTypes 映射表
 function mapTypeToTaskType(type?: string): string {
-  if (!type) return 'model_studio'
-  
-  const typeMap: Record<string, string> = {
-    'camera_product': 'product_studio',
-    'camera_model': 'model_studio',
-    'camera': 'model_studio',
-    'edit': 'edit',
-    'studio': 'product_studio',
-    'model_studio': 'model_studio',
-    'product_studio': 'product_studio',
-  }
-  
-  return typeMap[type] || 'model_studio'
+  return getCanonicalType(type) || TaskTypes.MODEL_STUDIO
 }
 
 /**

@@ -13,44 +13,32 @@ import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
 import { generateId } from "@/lib/utils"
+import { 
+  isModelRelatedType, 
+  isProStudioType as isProStudioTypeRaw, 
+  isGroupShootType as isGroupShootTypeRaw,
+  isProductType as isProductTypeRaw,
+  isEditType as isEditTypeRaw
+} from "@/lib/taskTypes"
 
 type TabType = "all" | "model" | "product" | "favorites"
 type ModelSubType = "all" | "buyer" | "prostudio" | "group"  // 买家秀 / 专业棚拍 / 组图
 
-// Helper functions for type classification - with null safety
+// 类型分类函数包装器（兼容 Generation 对象参数）
 function isModelType(gen: Generation | null | undefined): boolean {
-  if (!gen) return false
-  const type = gen.type?.toLowerCase() || ''
-  // 模特类型：买家秀 + 专业棚拍 + 组图拍摄
-  // 注意：edit/editing 是通用编辑，不属于模特分类
-  return type === 'camera_model' || type === 'model' || type === 'camera' || type === 'model_studio' || type === 'pro_studio' || type === 'prostudio' || type === 'group_shoot'
+  return gen ? isModelRelatedType(gen.type) : false
 }
-
 function isProStudioType(gen: Generation | null | undefined): boolean {
-  if (!gen) return false
-  const type = gen.type?.toLowerCase() || ''
-  // 专业棚拍类型
-  return type === 'pro_studio' || type === 'prostudio'
+  return gen ? isProStudioTypeRaw(gen.type) : false
 }
-
 function isGroupShootType(gen: Generation | null | undefined): boolean {
-  if (!gen) return false
-  const type = gen.type?.toLowerCase() || ''
-  // 组图拍摄类型
-  return type === 'group_shoot'
+  return gen ? isGroupShootTypeRaw(gen.type) : false
 }
-
 function isProductType(gen: Generation | null | undefined): boolean {
-  if (!gen) return false
-  const type = gen.type?.toLowerCase() || ''
-  // 纯商品类型（不包含 edit）
-  return type === 'studio' || type === 'camera_product' || type === 'product' || type === 'product_studio'
+  return gen ? isProductTypeRaw(gen.type) : false
 }
-
 function isEditType(gen: Generation | null | undefined): boolean {
-  if (!gen) return false
-  const type = gen.type?.toLowerCase() || ''
-  return type === 'edit' || type === 'editing'
+  return gen ? isEditTypeRaw(gen.type) : false
 }
 
 export default function GalleryPage() {

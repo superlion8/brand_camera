@@ -20,6 +20,12 @@ import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { useSettingsStore } from "@/stores/settingsStore"
 import { Suspense } from "react"
+import { 
+  isModelType as isBuyerShowType,  // 买家秀 (model_studio)
+  isProStudioType,                  // 专业棚拍 (pro_studio)
+  isGroupShootType,                 // 组图 (group_shoot)
+  isModelRelatedType                // 所有模特相关类型
+} from "@/lib/taskTypes"
 
 type PageMode = "main" | "processing" | "results"
 type StyleMode = "lifestyle" | "studio"  // 生活模式 / 棚拍模式
@@ -229,27 +235,8 @@ function GroupShootPageContent() {
     }
   }
 
-  // 辅助函数：判断是否是买家秀类型（与 gallery API 保持一致）
-  const isBuyerShowType = (type: string | undefined) => {
-    if (!type) return false
-    const t = type.toLowerCase()
-    return t === 'camera_model' || t === 'model' || t === 'camera' || t === 'model_studio' || t === 'edit' || t === 'editing'
-  }
-  
-  // 辅助函数：判断是否是专业棚拍类型
-  const isProStudioType = (type: string | undefined) => {
-    if (!type) return false
-    const t = type.toLowerCase()
-    return t === 'pro_studio' || t === 'prostudio'
-  }
-  
-  // 辅助函数：判断是否是组图类型
-  const isGroupShootType = (type: string | undefined) => {
-    if (!type) return false
-    return type.toLowerCase() === 'group_shoot'
-  }
-
   // 获取模特分类的图库图片（买家秀+专业棚拍+组图）
+  // 类型判断函数已从 @/lib/taskTypes 导入
   const modelGenerations = (generations || [])
     .filter(g => {
       if (!g) return false
@@ -259,7 +246,7 @@ function GroupShootPageContent() {
       if (!hasValidUrls) return false
       
       // 只显示模特相关的分类: 买家秀 + 专业棚拍 + 组图
-      return isBuyerShowType(g.type) || isProStudioType(g.type) || isGroupShootType(g.type)
+      return isModelRelatedType(g.type)
     })
     .slice(0, 50) // 增加到50个
 

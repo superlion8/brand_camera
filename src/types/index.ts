@@ -4,12 +4,18 @@ export type ModelGender = 'male' | 'female' | 'boy' | 'girl'
 
 export type AssetType = 'model' | 'background' | 'product' | 'vibe'
 
-// 所有可能的生成类型
-// - 买家秀: camera, camera_model, model, model_studio
-// - 模特棚拍: pro_studio, prostudio
-// - 组图拍摄: group_shoot
-// - 商品影棚: studio, camera_product, product, product_studio
-// - 通用编辑: edit, editing
+// 所有可能的生成类型（包含历史变种，保持向后兼容）
+// 规范类型定义见 @/lib/taskTypes.ts
+// 
+// 规范值 → 历史变种:
+// - model_studio → camera, camera_model, model
+// - product_studio → studio, camera_product, product
+// - pro_studio → prostudio
+// - group_shoot (无变种)
+// - edit → editing
+//
+// 新代码写入数据库时应使用 TaskTypes 常量
+// 判断类型时应使用 isModelType() 等函数（自动兼容历史数据）
 export type GenerationType = 
   | 'camera' | 'camera_model' | 'model' | 'model_studio'  // 买家秀
   | 'pro_studio' | 'prostudio'  // 模特棚拍

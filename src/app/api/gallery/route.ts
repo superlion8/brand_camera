@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { requireAuth } from '@/lib/auth'
+// 注意：类型判断函数已集中到 @/lib/taskTypes，如需使用请 import
+// import { isModelType, isProductType, isModelRelatedType } from '@/lib/taskTypes'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,19 +11,6 @@ const PAGE_SIZE = 20
 
 // 图库数据类型筛选
 type GalleryType = 'all' | 'model' | 'product' | 'favorites'
-
-// 判断是否是模特类型（买家秀 + 专业棚拍 + 组图）
-function isModelType(taskType: string): boolean {
-  const type = taskType?.toLowerCase() || ''
-  // 注意：edit/editing 是通用编辑，不属于模特分类
-  return type === 'camera_model' || type === 'model' || type === 'camera' || type === 'model_studio' || type === 'pro_studio' || type === 'prostudio' || type === 'group_shoot'
-}
-
-// 判断是否是商品类型
-function isProductType(taskType: string): boolean {
-  const type = taskType?.toLowerCase() || ''
-  return type === 'studio' || type === 'camera_product' || type === 'product' || type === 'product_studio'
-}
 
 export async function GET(request: NextRequest) {
   // 检查认证
