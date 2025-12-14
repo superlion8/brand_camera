@@ -6,7 +6,7 @@ import Image from "next/image"
 import { 
   Home, Users, BarChart3, FileText, Calendar, Filter, 
   ChevronDown, ChevronRight, Heart, Loader2, RefreshCw,
-  ImageIcon, Sparkles, Lightbulb, Wand2, CalendarDays, Download, X, ZoomIn
+  ImageIcon, Sparkles, Lightbulb, Wand2, CalendarDays, Download, X, ZoomIn, Camera
 } from "lucide-react"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { motion, AnimatePresence } from "framer-motion"
@@ -75,11 +75,15 @@ interface TaskDetail {
 type TabType = "overview" | "by-type" | "by-user" | "details"
 
 const TASK_TYPE_LABELS: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  'model_studio': { label: '模特影棚', color: 'bg-blue-500', icon: Users },
-  'camera_model': { label: '模特影棚', color: 'bg-blue-500', icon: Users },
+  'model_studio': { label: '模特棚拍', color: 'bg-blue-500', icon: Users },
+  'camera_model': { label: '模特棚拍', color: 'bg-blue-500', icon: Users },
   'product_studio': { label: '商品影棚', color: 'bg-amber-500', icon: Lightbulb },
   'studio': { label: '商品影棚', color: 'bg-amber-500', icon: Lightbulb },
   'edit': { label: '修图室', color: 'bg-purple-500', icon: Wand2 },
+  'pro_studio': { label: '专业棚拍', color: 'bg-indigo-500', icon: Camera },
+  'prostudio': { label: '专业棚拍', color: 'bg-indigo-500', icon: Camera },
+  'group_shoot': { label: '组图模式', color: 'bg-pink-500', icon: ImageIcon },
+  'outfit': { label: '搭配模式', color: 'bg-teal-500', icon: Users },
   'unknown': { label: '其他', color: 'bg-zinc-500', icon: ImageIcon },
 }
 
@@ -584,9 +588,12 @@ export default function AdminDashboard() {
                     className="w-full h-10 px-3 rounded-lg border border-zinc-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">全部</option>
-                    <option value="model_studio">模特影棚</option>
+                    <option value="model_studio">模特棚拍</option>
                     <option value="product_studio">商品影棚</option>
                     <option value="edit">修图室</option>
+                    <option value="pro_studio">专业棚拍</option>
+                    <option value="group_shoot">组图模式</option>
+                    <option value="outfit">搭配模式</option>
                   </select>
                 </div>
                 <div className="flex-1 min-w-[150px]">

@@ -10,15 +10,30 @@ function normalizeTaskType(taskType: string | null | undefined): string {
   
   const type = taskType.toLowerCase()
   
-  // Map to standard types: model_studio, product_studio, edit
-  if (type === 'camera_model' || type === 'camera' || type === 'model_studio') {
+  // Map to standard types: model_studio, product_studio, edit, pro_studio, group_shoot
+  // 模特棚拍 (买家秀风格)
+  if (type === 'camera_model' || type === 'camera' || type === 'model_studio' || type === 'model') {
     return 'model_studio'
   }
+  // 商品影棚
   if (type === 'studio' || type === 'camera_product' || type === 'product_studio' || type === 'product') {
     return 'product_studio'
   }
-  if (type === 'edit') {
+  // 修图室
+  if (type === 'edit' || type === 'editing') {
     return 'edit'
+  }
+  // 专业棚拍
+  if (type === 'pro_studio' || type === 'prostudio') {
+    return 'pro_studio'
+  }
+  // 组图模式
+  if (type === 'group_shoot' || type === 'group') {
+    return 'group_shoot'
+  }
+  // outfit 模式 (多商品搭配)
+  if (type === 'outfit') {
+    return 'outfit'
   }
   
   return 'unknown'
@@ -484,9 +499,12 @@ export async function GET(request: NextRequest) {
       // Map filter type to all possible database values (handles old and new type names)
       if (filterType) {
         const typeVariants: Record<string, string[]> = {
-          'model_studio': ['model_studio', 'camera_model', 'camera'],
-          'product_studio': ['product_studio', 'studio', 'camera_product'],
-          'edit': ['edit'],
+          'model_studio': ['model_studio', 'camera_model', 'camera', 'model'],
+          'product_studio': ['product_studio', 'studio', 'camera_product', 'product'],
+          'edit': ['edit', 'editing'],
+          'pro_studio': ['pro_studio', 'prostudio'],
+          'group_shoot': ['group_shoot', 'group'],
+          'outfit': ['outfit'],
         }
         const variants = typeVariants[filterType] || [filterType]
         query = query.in('task_type', variants)
