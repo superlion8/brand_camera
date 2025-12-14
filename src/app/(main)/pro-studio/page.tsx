@@ -502,11 +502,11 @@ function ProStudioPageContent() {
     // 模特/背景名称（用于保存到数据库）
     // 注意：如果随机选择，后端会填充实际使用的名称和 URL
     const modelName = selectedModel?.name || '专业模特 (随机)'
-    const modelUrl = selectedModel?.imageUrl || null  // 随机时传 null，后端会填充
+    const modelUrl = selectedModel?.imageUrl  // 随机时是 undefined，后端会填充
     const modelIsPreset = selectedModel ? isPresetUrl(modelUrl) : true  // 随机时默认是预设
     
     const bgName = selectedBg?.name || '影棚背景'
-    const bgUrl = selectedBg?.imageUrl || null  // 没选就是 null，让 AI 生成
+    const bgUrl = selectedBg?.imageUrl  // 没选就是 undefined，让 AI 生成
     const bgIsPreset = selectedBg ? isPresetUrl(bgUrl) : false
 
     // 生成任务配置：简单模式2张 + 扩展模式2张
