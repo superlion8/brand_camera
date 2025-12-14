@@ -58,6 +58,8 @@ interface TaskDetail {
   inputImage2Url?: string
   modelImageUrl?: string
   backgroundImageUrl?: string
+  modelWasRandom?: boolean    // true if model was randomly selected
+  bgWasRandom?: boolean       // true if background was randomly selected
   outputImageUrls: string[]
   totalImages: number
   simpleCount: number

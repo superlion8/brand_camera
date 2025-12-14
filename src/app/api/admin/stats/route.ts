@@ -4,6 +4,26 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 // Admin emails from environment variable (comma separated)
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
 
+// Normalize task type to standard names for consistent reporting
+function normalizeTaskType(taskType: string | null | undefined): string {
+  if (!taskType) return 'unknown'
+  
+  const type = taskType.toLowerCase()
+  
+  // Map to standard types: model_studio, product_studio, edit
+  if (type === 'camera_model' || type === 'camera' || type === 'model_studio') {
+    return 'model_studio'
+  }
+  if (type === 'studio' || type === 'camera_product' || type === 'product_studio' || type === 'product') {
+    return 'product_studio'
+  }
+  if (type === 'edit') {
+    return 'edit'
+  }
+  
+  return 'unknown'
+}
+
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
   
@@ -256,7 +276,8 @@ export async function GET(request: NextRequest) {
       }> = {}
       
       generations?.forEach(gen => {
-        const type = gen.task_type || 'unknown'
+        // Normalize task type to merge old and new type names
+        const type = normalizeTaskType(gen.task_type)
         if (!byType[type]) {
           byType[type] = { 
             type, 
@@ -418,7 +439,8 @@ export async function GET(request: NextRequest) {
           byUser[gen.user_id].totalPendingImages += totalCount
         }
         
-        const type = gen.task_type || 'unknown'
+        // Normalize task type to merge old and new type names
+        const type = normalizeTaskType(gen.task_type)
         if (!byUser[gen.user_id].byType[type]) {
           byUser[gen.user_id].byType[type] = { 
             tasks: 0, 
@@ -459,8 +481,15 @@ export async function GET(request: NextRequest) {
         .order('created_at', { ascending: false })
         .limit(100)
       
+      // Map filter type to all possible database values (handles old and new type names)
       if (filterType) {
-        query = query.eq('task_type', filterType)
+        const typeVariants: Record<string, string[]> = {
+          'model_studio': ['model_studio', 'camera_model', 'camera'],
+          'product_studio': ['product_studio', 'studio', 'camera_product'],
+          'edit': ['edit'],
+        }
+        const variants = typeVariants[filterType] || [filterType]
+        query = query.in('task_type', variants)
       }
       if (filterEmail) {
         query = query.ilike('user_email', `%${filterEmail}%`)
@@ -520,11 +549,25 @@ export async function GET(request: NextRequest) {
           }
         }
         
-        // Try to get input image from various sources
+        // Try to get input image from various sources (check multiple possible field names)
         const inputParams = gen.input_params || {}
-        const inputUrl = gen.input_image_url || inputParams.inputImage || inputParams.productImageUrl || ''
-        const modelUrl = gen.model_image_url || inputParams.modelImage || inputParams.modelImageUrl || ''
-        const bgUrl = gen.background_image_url || inputParams.backgroundImage || inputParams.backgroundImageUrl || ''
+        const inputUrl = gen.input_image_url 
+          || inputParams.inputImage 
+          || inputParams.productImage
+          || inputParams.productImageUrl 
+          || ''
+        const modelUrl = gen.model_image_url 
+          || inputParams.modelImage 
+          || inputParams.modelImageUrl
+          || ''
+        const bgUrl = gen.background_image_url 
+          || inputParams.backgroundImage 
+          || inputParams.backgroundImageUrl
+          || ''
+        
+        // Check if model/background was randomly selected (not user-selected)
+        const modelWasRandom = inputParams.modelIsUserSelected === false
+        const bgWasRandom = inputParams.bgIsUserSelected === false
         
         // Calculate success/failed counts
         const totalCount = gen.total_images_count || 0
@@ -535,12 +578,14 @@ export async function GET(request: NextRequest) {
           id: gen.id,
           taskId: gen.task_id,
           userEmail: gen.user_email || gen.user_id,
-          taskType: gen.task_type,
+          taskType: normalizeTaskType(gen.task_type),
           status: gen.status,
           inputImageUrl: inputUrl,
           inputImage2Url: gen.input_image2_url || inputParams.inputImage2 || inputParams.productImage2Url || '',
           modelImageUrl: modelUrl,
           backgroundImageUrl: bgUrl,
+          modelWasRandom: modelWasRandom,  // true if model was randomly selected
+          bgWasRandom: bgWasRandom,        // true if background was randomly selected
           outputImageUrls: outputUrls,
           totalImages: totalCount,
           successImages: gen.status === 'failed' ? 0 : successCount,
