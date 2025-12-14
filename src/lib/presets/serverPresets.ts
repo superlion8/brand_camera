@@ -33,7 +33,14 @@ async function listPresetFiles(folder: PresetType): Promise<string[]> {
   }
   
   try {
-    const supabase = createServiceClient()
+    let supabase
+    try {
+      supabase = createServiceClient()
+    } catch (clientError) {
+      console.error(`[ServerPresets] Failed to create service client:`, clientError)
+      if (cached) return cached.files
+      return []
+    }
     
     const { data, error } = await supabase.storage
       .from('presets')
