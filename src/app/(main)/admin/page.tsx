@@ -75,15 +75,22 @@ interface TaskDetail {
 type TabType = "overview" | "by-type" | "by-user" | "details"
 
 const TASK_TYPE_LABELS: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  'model_studio': { label: '模特棚拍', color: 'bg-blue-500', icon: Users },
-  'camera_model': { label: '模特棚拍', color: 'bg-blue-500', icon: Users },
-  'product_studio': { label: '商品影棚', color: 'bg-amber-500', icon: Lightbulb },
-  'studio': { label: '商品影棚', color: 'bg-amber-500', icon: Lightbulb },
+  // 买家秀 - /camera
+  'model_studio': { label: '买家秀', color: 'bg-blue-500', icon: Users },
+  'camera_model': { label: '买家秀', color: 'bg-blue-500', icon: Users },
+  // 模特棚拍 - /pro-studio  
+  'pro_studio': { label: '模特棚拍', color: 'bg-indigo-500', icon: Camera },
+  'prostudio': { label: '模特棚拍', color: 'bg-indigo-500', icon: Camera },
+  // 商品棚拍 - /studio
+  'product_studio': { label: '商品棚拍', color: 'bg-amber-500', icon: Lightbulb },
+  'studio': { label: '商品棚拍', color: 'bg-amber-500', icon: Lightbulb },
+  // 组图拍摄 - /camera/group
+  'group_shoot': { label: '组图拍摄', color: 'bg-pink-500', icon: ImageIcon },
+  // 修图室 - /edit
   'edit': { label: '修图室', color: 'bg-purple-500', icon: Wand2 },
-  'pro_studio': { label: '专业棚拍', color: 'bg-indigo-500', icon: Camera },
-  'prostudio': { label: '专业棚拍', color: 'bg-indigo-500', icon: Camera },
-  'group_shoot': { label: '组图模式', color: 'bg-pink-500', icon: ImageIcon },
+  // 搭配模式 - /camera/outfit, /pro-studio/outfit
   'outfit': { label: '搭配模式', color: 'bg-teal-500', icon: Users },
+  // 其他
   'unknown': { label: '其他', color: 'bg-zinc-500', icon: ImageIcon },
 }
 
@@ -588,11 +595,11 @@ export default function AdminDashboard() {
                     className="w-full h-10 px-3 rounded-lg border border-zinc-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">全部</option>
-                    <option value="model_studio">模特棚拍</option>
-                    <option value="product_studio">商品影棚</option>
+                    <option value="model_studio">买家秀</option>
+                    <option value="pro_studio">模特棚拍</option>
+                    <option value="product_studio">商品棚拍</option>
+                    <option value="group_shoot">组图拍摄</option>
                     <option value="edit">修图室</option>
-                    <option value="pro_studio">专业棚拍</option>
-                    <option value="group_shoot">组图模式</option>
                     <option value="outfit">搭配模式</option>
                   </select>
                 </div>

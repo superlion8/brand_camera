@@ -10,28 +10,27 @@ function normalizeTaskType(taskType: string | null | undefined): string {
   
   const type = taskType.toLowerCase()
   
-  // Map to standard types: model_studio, product_studio, edit, pro_studio, group_shoot
-  // 模特棚拍 (买家秀风格)
+  // 买家秀 - /camera
   if (type === 'camera_model' || type === 'camera' || type === 'model_studio' || type === 'model') {
     return 'model_studio'
   }
-  // 商品影棚
-  if (type === 'studio' || type === 'camera_product' || type === 'product_studio' || type === 'product') {
-    return 'product_studio'
-  }
-  // 修图室
-  if (type === 'edit' || type === 'editing') {
-    return 'edit'
-  }
-  // 专业棚拍
+  // 模特棚拍 - /pro-studio
   if (type === 'pro_studio' || type === 'prostudio') {
     return 'pro_studio'
   }
-  // 组图模式
+  // 商品棚拍 - /studio
+  if (type === 'studio' || type === 'camera_product' || type === 'product_studio' || type === 'product') {
+    return 'product_studio'
+  }
+  // 组图拍摄 - /camera/group
   if (type === 'group_shoot' || type === 'group') {
     return 'group_shoot'
   }
-  // outfit 模式 (多商品搭配)
+  // 修图室 - /edit
+  if (type === 'edit' || type === 'editing') {
+    return 'edit'
+  }
+  // 搭配模式 - /camera/outfit, /pro-studio/outfit
   if (type === 'outfit') {
     return 'outfit'
   }
