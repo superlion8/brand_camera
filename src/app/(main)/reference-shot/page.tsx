@@ -257,6 +257,27 @@ export default function ReferenceShotPage() {
         }
       }
       
+      // 保存到成片库
+      try {
+        await fetch('/api/reference-shot/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            taskId,
+            imageUrls: allImages.map(img => img.url),
+            referenceImageUrl: referenceImage,
+            inputParams: {
+              hasSimple: simpleResult.images?.length > 0,
+              hasExtended: extendedResult.images?.length > 0,
+              isAutoModel,
+            },
+          }),
+        })
+        console.log('[ReferenceShot] Saved to gallery')
+      } catch (e) {
+        console.warn('[ReferenceShot] Failed to save to gallery:', e)
+      }
+      
       setGeneratedImages(allImages)
       setStep('result')
       refreshQuota()

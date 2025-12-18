@@ -3,7 +3,6 @@ import { getGenAIClient, extractImage, safetySettings } from '@/lib/genai'
 import { requireAuth } from '@/lib/auth'
 import { uploadGeneratedImageServer } from '@/lib/supabase/storage-server'
 import { generateId } from '@/lib/utils'
-import { createClient } from '@/lib/supabase/server'
 
 export const maxDuration = 180
 
@@ -49,7 +48,6 @@ export async function POST(request: NextRequest) {
     return authResult.response
   }
   const userId = authResult.user.id
-  const userEmail = authResult.user.email
   
   try {
     const body = await request.json()
@@ -164,38 +162,14 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
     
-    // Save to database
-    const supabase = await createClient()
-    const { data: genData, error: genError } = await supabase
-      .from('generations')
-      .insert({
-        user_id: userId,
-        user_email: userEmail,
-        task_type: 'reference_shot',
-        status: 'completed',
-        output_image_urls: results,
-        input_image_url: referenceImageUrl || null,
-        input_params: {
-          captionPrompt: captionPrompt.substring(0, 500),
-          hasCustomModel: !!modelImage,
-        },
-        total_images_count: results.length,
-      })
-      .select()
-      .single()
-    
-    if (genError) {
-      console.error('[ReferenceShot] Failed to save generation:', genError)
-    } else {
-      console.log('[ReferenceShot] Saved generation:', genData.id)
-    }
-    
-    console.log(`[ReferenceShot] Generated ${results.length} images`)
+    // 不在这里创建 generation 记录，由前端统一调用 save API
+    // 配额记录由 quota/reserve 管理
+    console.log(`[ReferenceShot-Extended] Generated ${results.length} images`)
     
     return NextResponse.json({
       success: true,
       images: results,
-      generationId: genData?.id || generationId,
+      generationId,
       mode: 'extended',
     })
     

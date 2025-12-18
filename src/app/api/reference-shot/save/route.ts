@@ -16,8 +16,7 @@ export async function POST(request: NextRequest) {
     const { 
       taskId, // 由 quota/reserve 创建的 pending 记录的 taskId
       imageUrls, 
-      prompts, 
-      inputImageUrl,
+      referenceImageUrl,
       inputParams 
     } = body
     
@@ -43,8 +42,7 @@ export async function POST(request: NextRequest) {
           .update({
             status: 'completed',
             output_image_urls: imageUrls,
-            prompts: prompts || [],
-            input_image_url: inputImageUrl || null,
+            input_image_url: referenceImageUrl || null,
             input_params: inputParams || {},
             total_images_count: imageUrls.length,
           })
@@ -53,11 +51,11 @@ export async function POST(request: NextRequest) {
           .single()
         
         if (error) {
-          console.error('[SaveGallery] Update error:', error)
+          console.error('[ReferenceShot-Save] Update error:', error)
           return NextResponse.json({ success: false, error: '保存失败' }, { status: 500 })
         }
         
-        console.log('[SaveGallery] Updated existing generation:', data.id, 'with', imageUrls.length, 'images')
+        console.log('[ReferenceShot-Save] Updated existing generation:', data.id, 'with', imageUrls.length, 'images')
         
         return NextResponse.json({
           success: true,
@@ -73,11 +71,10 @@ export async function POST(request: NextRequest) {
         user_id: userId,
         user_email: userEmail,
         task_id: taskId || null,
-        task_type: 'create_model',
+        task_type: 'reference_shot',
         status: 'completed',
         output_image_urls: imageUrls,
-        prompts: prompts || [],
-        input_image_url: inputImageUrl || null,
+        input_image_url: referenceImageUrl || null,
         input_params: inputParams || {},
         total_images_count: imageUrls.length,
       })
@@ -85,11 +82,11 @@ export async function POST(request: NextRequest) {
       .single()
     
     if (error) {
-      console.error('[SaveGallery] Insert error:', error)
+      console.error('[ReferenceShot-Save] Insert error:', error)
       return NextResponse.json({ success: false, error: '保存失败' }, { status: 500 })
     }
     
-    console.log('[SaveGallery] Saved new generation:', data.id, 'with', imageUrls.length, 'images')
+    console.log('[ReferenceShot-Save] Saved new generation:', data.id, 'with', imageUrls.length, 'images')
     
     return NextResponse.json({
       success: true,
@@ -97,7 +94,7 @@ export async function POST(request: NextRequest) {
     })
     
   } catch (error: any) {
-    console.error('[SaveGallery] Error:', error)
+    console.error('[ReferenceShot-Save] Error:', error)
     return NextResponse.json({
       success: false,
       error: error.message || '保存失败'
