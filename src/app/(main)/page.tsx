@@ -101,6 +101,7 @@ function FadeBeforeAfterCard({
   afterImage,
   badge,
   href,
+  beforePosition = "center",
 }: {
   title: string
   subtitle: string
@@ -108,6 +109,7 @@ function FadeBeforeAfterCard({
   afterImage: string
   badge?: string
   href: string
+  beforePosition?: "center" | "top" | "bottom"
 }) {
   return (
     <Link href={href}>
@@ -117,7 +119,7 @@ function FadeBeforeAfterCard({
       >
         {/* Before Image (Base) */}
         <div className="absolute inset-0">
-          <Image src={beforeImage} alt="Before" fill className="object-cover" />
+          <Image src={beforeImage} alt="Before" fill className={`object-cover ${beforePosition === "top" ? "object-top" : beforePosition === "bottom" ? "object-bottom" : ""}`} />
         </div>
 
         {/* After Image (Fade Overlay) */}
@@ -325,11 +327,12 @@ export default function HomePage() {
             />
             <FadeBeforeAfterCard
               title={t.home.referenceShot || "参考图拍摄"}
-              subtitle={t.home.referenceShotSubtitle || "复刻风格构图"}
+              subtitle={t.home.referenceShotSubtitle || "复刻风格"}
               beforeImage={`${HOMEPAGE_STORAGE_URL}/reference-shot-before.png`}
               afterImage={`${HOMEPAGE_STORAGE_URL}/reference-shot-after.png`}
               badge="NEW"
               href="/reference-shot"
+              beforePosition="top"
             />
             <BeforeAfterCard
               title={t.home.productStudio || "商品棚拍"}

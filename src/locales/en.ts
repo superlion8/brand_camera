@@ -80,7 +80,7 @@ export const en: Translations = {
     groupShoot: "Group Shoot",
     groupShootSubtitle: "Multi-angle Sets",
     referenceShot: "Reference Shot",
-    referenceShotSubtitle: "Replicate Style & Composition",
+    referenceShotSubtitle: "Replicate Style",
     generalEdit: "General Edit",
     generalEditDesc: "Enhance, Remove BG, Magic Eraser",
     modifyMaterial: "Material & Fit",

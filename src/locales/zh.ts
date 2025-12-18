@@ -78,7 +78,7 @@ export const zh = {
     groupShoot: "组图拍摄",
     groupShootSubtitle: "多角度套图",
     referenceShot: "参考图拍摄",
-    referenceShotSubtitle: "复刻风格构图",
+    referenceShotSubtitle: "复刻风格",
     generalEdit: "通用编辑",
     generalEditDesc: "画质增强、智能抠图、消除笔",
     modifyMaterial: "改材质版型",

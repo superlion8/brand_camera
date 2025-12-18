@@ -80,7 +80,7 @@ export const ko: Translations = {
     groupShoot: "그룹 촬영",
     groupShootSubtitle: "다각도 세트",
     referenceShot: "참조 촬영",
-    referenceShotSubtitle: "스타일 및 구도 복제",
+    referenceShotSubtitle: "스타일 복제",
     generalEdit: "일반 편집",
     generalEditDesc: "화질 향상, 배경 제거, 지우개",
     modifyMaterial: "소재/핏 변경",
