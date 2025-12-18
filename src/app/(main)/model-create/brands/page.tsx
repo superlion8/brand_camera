@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { ArrowLeft, Check, ChevronRight, Search, X, Plus, Sparkles } from "lucide-react"
 import { useModelCreateStore, BrandInfo } from "@/stores/modelCreateStore"
 import { createClient } from "@/lib/supabase/client"
+import { useTranslation } from "@/stores/languageStore"
 
 // Storage base URL
 const STORAGE_URL = 'https://cvdogeigbpussfamctsu.supabase.co/storage/v1/object/public/presets/brand_logos'
@@ -32,6 +33,7 @@ export default function ModelCreateBrands() {
     removeBrand,
     setCurrentStep,
   } = useModelCreateStore()
+  const { t } = useTranslation()
   
   // 如果没有商品图，返回上一步
   useEffect(() => {
@@ -139,7 +141,7 @@ export default function ModelCreateBrands() {
           </button>
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-violet-600" />
-            <span className="font-bold text-zinc-900">选择参考品牌</span>
+            <span className="font-bold text-zinc-900">{t.modelCreate.selectBrandTitle}</span>
           </div>
           <div className="w-10" />
         </div>
@@ -156,10 +158,10 @@ export default function ModelCreateBrands() {
             ))}
           </div>
           <div className="flex justify-between mt-2 text-xs text-zinc-500">
-            <span className="text-violet-600">✓ 商品</span>
-            <span className="text-violet-600 font-medium">选品牌</span>
-            <span>选模特</span>
-            <span>生成</span>
+            <span className="text-violet-600">✓ {t.modelCreate.stepProduct}</span>
+            <span className="text-violet-600 font-medium">{t.modelCreate.stepBrand}</span>
+            <span>{t.modelCreate.stepModel}</span>
+            <span>{t.modelCreate.stepGenerate}</span>
           </div>
         </div>
       </div>
@@ -168,16 +170,16 @@ export default function ModelCreateBrands() {
       <div className="px-4 py-6">
         {/* Title */}
         <div className="text-center mb-6">
-          <h1 className="text-xl font-bold text-zinc-900 mb-2">选择参考品牌风格</h1>
+          <h1 className="text-xl font-bold text-zinc-900 mb-2">{t.modelCreate.selectBrandHeading}</h1>
           <p className="text-sm text-zinc-500">
-            选择 1-4 个品牌，帮助 AI 理解你想要的模特调性
+            {t.modelCreate.selectBrandDesc}
           </p>
         </div>
         
         {/* Selected Brands */}
         {selectedBrands.length > 0 && (
           <div className="mb-6">
-            <h3 className="text-sm font-medium text-zinc-700 mb-3">已选择 ({selectedBrands.length}/4)</h3>
+            <h3 className="text-sm font-medium text-zinc-700 mb-3">{t.modelCreate.selected} ({selectedBrands.length}/4)</h3>
             <div className="flex flex-wrap gap-2">
               <AnimatePresence mode="popLayout">
                 {selectedBrands.map((brand, index) => (
@@ -201,7 +203,7 @@ export default function ModelCreateBrands() {
                     )}
                     <span className="text-sm font-medium text-violet-900">{brand.name}</span>
                     {brand.isCustom && (
-                      <span className="text-xs text-violet-600 bg-violet-200 px-1.5 py-0.5 rounded">自定义</span>
+                      <span className="text-xs text-violet-600 bg-violet-200 px-1.5 py-0.5 rounded">{t.modelCreate.custom}</span>
                     )}
                     <button
                       onClick={() => removeBrand(index)}
@@ -221,7 +223,7 @@ export default function ModelCreateBrands() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
           <input
             type="text"
-            placeholder="搜索品牌..."
+            placeholder={t.modelCreate.searchBrand}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-3 bg-zinc-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
@@ -234,7 +236,7 @@ export default function ModelCreateBrands() {
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="输入品牌名称..."
+                placeholder={t.modelCreate.enterBrandName}
                 value={customBrand}
                 onChange={(e) => setCustomBrand(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAddCustomBrand()}
@@ -246,7 +248,7 @@ export default function ModelCreateBrands() {
                 disabled={!customBrand.trim()}
                 className="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-medium disabled:opacity-50"
               >
-                添加
+                {t.modelCreate.add}
               </button>
               <button
                 onClick={() => setShowCustomInput(false)}
@@ -263,7 +265,7 @@ export default function ModelCreateBrands() {
             className="w-full mb-4 py-3 border-2 border-dashed border-zinc-200 rounded-xl text-sm text-zinc-500 hover:border-violet-300 hover:text-violet-600 hover:bg-violet-50/50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="w-4 h-4" />
-            <span>输入自定义品牌</span>
+            <span>{t.modelCreate.enterCustomBrand}</span>
           </button>
         )}
         
@@ -317,8 +319,8 @@ export default function ModelCreateBrands() {
         
         {filteredBrands.length === 0 && !isLoading && (
           <div className="text-center py-12 text-zinc-400">
-            <p>没有找到匹配的品牌</p>
-            <p className="text-sm mt-1">试试输入自定义品牌名称</p>
+            <p>{t.modelCreate.noMatchingBrand}</p>
+            <p className="text-sm mt-1">{t.modelCreate.tryCustomBrand}</p>
           </div>
         )}
       </div>
@@ -334,7 +336,7 @@ export default function ModelCreateBrands() {
               : 'bg-zinc-300 cursor-not-allowed'
           }`}
         >
-          <span>下一步：AI 分析推荐</span>
+          <span>{t.modelCreate.nextAnalysis}</span>
           <ChevronRight className="w-5 h-5" />
         </button>
       </div>

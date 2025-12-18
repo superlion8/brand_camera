@@ -11,6 +11,7 @@ import {
 import { useModelCreateStore, GeneratedModelImage } from "@/stores/modelCreateStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { generateId, compressBase64Image } from "@/lib/utils"
+import { useTranslation } from "@/stores/languageStore"
 
 type GenerationStatus = 'idle' | 'generating-prompts' | 'generating-images' | 'completed' | 'error'
 
@@ -42,6 +43,7 @@ export default function ModelCreateGenerate() {
   } = useModelCreateStore()
   
   const { addGeneration } = useAssetStore()
+  const { t } = useTranslation()
   
   // 检查前置条件
   useEffect(() => {
@@ -233,9 +235,9 @@ export default function ModelCreateGenerate() {
             <div className="absolute inset-0 rounded-full border-4 border-violet-600 border-t-transparent animate-spin" />
             <Sparkles className="absolute inset-0 m-auto w-8 h-8 text-violet-600" />
           </div>
-          <h2 className="text-xl font-bold text-zinc-900 mb-2">生成专属模特</h2>
+          <h2 className="text-xl font-bold text-zinc-900 mb-2">{t.modelCreate.generatingModel}</h2>
           <p className="text-sm text-zinc-500">
-            AI 正在为你创建独一无二的模特形象
+            {t.modelCreate.generatingDesc}
           </p>
         </div>
       </div>
@@ -250,7 +252,7 @@ export default function ModelCreateGenerate() {
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
             <AlertCircle className="w-8 h-8 text-red-500" />
           </div>
-          <h2 className="text-xl font-bold text-zinc-900 mb-2">生成失败</h2>
+          <h2 className="text-xl font-bold text-zinc-900 mb-2">{t.modelCreate.generateFailed}</h2>
           <p className="text-sm text-zinc-500 mb-6">{errorMessage}</p>
           <div className="flex gap-3 justify-center">
             <button
@@ -261,13 +263,13 @@ export default function ModelCreateGenerate() {
               className="px-6 py-3 bg-violet-600 text-white rounded-xl font-medium flex items-center gap-2 hover:bg-violet-700 transition-colors"
             >
               <RefreshCw className="w-4 h-4" />
-              <span>重新生成</span>
+              <span>{t.modelCreate.regenerate}</span>
             </button>
             <button
               onClick={handleGoHome}
               className="px-6 py-3 bg-zinc-100 text-zinc-700 rounded-xl font-medium hover:bg-zinc-200 transition-colors"
             >
-              返回首页
+              {t.modelCreate.returnHome}
             </button>
           </div>
         </div>
@@ -289,7 +291,7 @@ export default function ModelCreateGenerate() {
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-violet-600" />
             <span className="font-bold text-zinc-900">
-              {status === 'completed' ? '生成完成' : '正在生成'}
+              {status === 'completed' ? t.modelCreate.generateComplete : t.modelCreate.generating}
             </span>
           </div>
           <div className="w-10" />
@@ -307,11 +309,11 @@ export default function ModelCreateGenerate() {
             ))}
           </div>
           <div className="flex justify-between mt-2 text-xs text-zinc-500">
-            <span className="text-violet-600">✓ 商品</span>
-            <span className="text-violet-600">✓ 品牌</span>
-            <span className="text-violet-600">✓ 模特</span>
+            <span className="text-violet-600">✓ {t.modelCreate.stepProduct}</span>
+            <span className="text-violet-600">✓ {t.modelCreate.stepBrand}</span>
+            <span className="text-violet-600">✓ {t.modelCreate.stepModel}</span>
             <span className={status === 'completed' ? 'text-violet-600 font-medium' : 'text-violet-600'}>
-              {status === 'completed' ? '✓ 完成' : '生成中'}
+              {status === 'completed' ? `✓ ${t.modelCreate.stepGenerate}` : t.modelCreate.generating}
             </span>
           </div>
         </div>
@@ -322,12 +324,12 @@ export default function ModelCreateGenerate() {
         {/* Title */}
         <div className="mb-6">
           <h1 className="text-lg font-bold text-zinc-900 mb-1">
-            {status === 'completed' ? '你的专属模特' : '正在生成专属模特...'}
+            {status === 'completed' ? t.modelCreate.yourCustomModel : t.modelCreate.generatingCustomModel}
           </h1>
           <p className="text-sm text-zinc-500">
             {status === 'completed' 
-              ? '点击保存将模特添加到你的资产库'
-              : 'AI 正在为你创建独一无二的模特形象'}
+              ? t.modelCreate.saveToAssetsHint
+              : t.modelCreate.generatingDesc}
           </p>
         </div>
         
@@ -350,7 +352,7 @@ export default function ModelCreateGenerate() {
                   />
                   <Image
                     src={imgStatus.imageUrl}
-                    alt={`生成的模特 ${index + 1}`}
+                    alt={`${t.modelCreate.generatedModel} ${index + 1}`}
                     fill
                     className="object-cover"
                   />
@@ -374,12 +376,12 @@ export default function ModelCreateGenerate() {
                         {savedImages.has(generatedImages[index]?.id) ? (
                           <>
                             <Check className="w-4 h-4" />
-                            <span>已保存</span>
+                            <span>{t.modelCreate.saved}</span>
                           </>
                         ) : (
                           <>
                             <Save className="w-4 h-4" />
-                            <span>保存</span>
+                            <span>{t.modelCreate.save}</span>
                           </>
                         )}
                       </button>
@@ -405,7 +407,7 @@ export default function ModelCreateGenerate() {
               ) : imgStatus.status === 'generating' ? (
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <Loader2 className="w-8 h-8 text-violet-500 animate-spin mb-2" />
-                  <span className="text-sm text-zinc-500">生成中...</span>
+                  <span className="text-sm text-zinc-500">{t.modelCreate.generatingImage}</span>
                 </div>
               ) : imgStatus.status === 'error' ? (
                 <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
@@ -417,7 +419,7 @@ export default function ModelCreateGenerate() {
                   <div className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center mb-2">
                     <span className="text-sm font-medium text-zinc-500">{index + 1}</span>
                   </div>
-                  <span className="text-sm text-zinc-400">等待中...</span>
+                  <span className="text-sm text-zinc-400">{t.modelCreate.waiting}</span>
                 </div>
               )}
             </motion.div>
@@ -451,7 +453,7 @@ export default function ModelCreateGenerate() {
             >
               <Image
                 src={zoomImage}
-                alt="放大图片"
+                alt={t.modelCreate.generatedModel}
                 fill
                 className="object-contain"
               />
@@ -469,14 +471,14 @@ export default function ModelCreateGenerate() {
               className="flex-1 py-3.5 rounded-xl font-medium text-violet-600 bg-violet-50 hover:bg-violet-100 transition-colors flex items-center justify-center gap-2"
             >
               <RefreshCw className="w-4 h-4" />
-              <span>再来一次</span>
+              <span>{t.modelCreate.tryAgain}</span>
             </button>
             <button
               onClick={handleGoHome}
               className="flex-1 py-3.5 rounded-xl font-bold text-white bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-lg shadow-violet-200 flex items-center justify-center gap-2"
             >
               <Home className="w-4 h-4" />
-              <span>返回首页</span>
+              <span>{t.modelCreate.returnHome}</span>
             </button>
           </div>
         </div>

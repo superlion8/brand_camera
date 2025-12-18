@@ -8,6 +8,7 @@ import { ArrowLeft, Plus, X, ImagePlus, ChevronRight, Sparkles, FolderHeart, Upl
 import { useModelCreateStore } from "@/stores/modelCreateStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { createClient } from "@/lib/supabase/client"
+import { useTranslation } from "@/stores/languageStore"
 
 export default function ModelCreateStep1() {
   const router = useRouter()
@@ -20,6 +21,7 @@ export default function ModelCreateStep1() {
   
   const { productImages, addProductImage, removeProductImage, reset } = useModelCreateStore()
   const { userProducts } = useAssetStore()
+  const { t } = useTranslation()
   
   // 产品资产
   const productAssets = userProducts
@@ -145,7 +147,7 @@ export default function ModelCreateStep1() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-violet-50 via-white to-white">
         <div className="text-center">
           <Sparkles className="w-8 h-8 text-violet-600 animate-pulse mx-auto mb-2" />
-          <p className="text-sm text-zinc-500">加载中...</p>
+          <p className="text-sm text-zinc-500">{t.modelCreate.loading}</p>
         </div>
       </div>
     )
@@ -164,7 +166,7 @@ export default function ModelCreateStep1() {
           </button>
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-violet-600" />
-            <span className="font-bold text-zinc-900">创建专属模特</span>
+            <span className="font-bold text-zinc-900">{t.modelCreate.title}</span>
           </div>
           <div className="w-10" />
         </div>
@@ -181,10 +183,10 @@ export default function ModelCreateStep1() {
             ))}
           </div>
           <div className="flex justify-between mt-2 text-xs text-zinc-500">
-            <span className="text-violet-600 font-medium">上传商品</span>
-            <span>选品牌</span>
-            <span>选模特</span>
-            <span>生成</span>
+            <span className="text-violet-600 font-medium">{t.modelCreate.stepProduct}</span>
+            <span>{t.modelCreate.stepBrand}</span>
+            <span>{t.modelCreate.stepModel}</span>
+            <span>{t.modelCreate.stepGenerate}</span>
           </div>
         </div>
       </div>
@@ -194,9 +196,9 @@ export default function ModelCreateStep1() {
         <div className="px-4 py-6 pb-32">
           {/* Title */}
           <div className="text-center mb-6">
-            <h1 className="text-xl font-bold text-zinc-900 mb-2">上传你的商品</h1>
+            <h1 className="text-xl font-bold text-zinc-900 mb-2">{t.modelCreate.uploadTitle}</h1>
             <p className="text-sm text-zinc-500">
-              上传 1-4 件商品，AI 将分析并为你推荐最合适的模特
+              {t.modelCreate.uploadDesc}
             </p>
           </div>
           
@@ -228,7 +230,7 @@ export default function ModelCreateStep1() {
                       >
                         <Image
                           src={image}
-                          alt={`商品 ${index + 1}`}
+                          alt={`${t.modelCreate.product} ${index + 1}`}
                           fill
                           className="object-cover"
                         />
@@ -239,7 +241,7 @@ export default function ModelCreateStep1() {
                           <X className="w-4 h-4 text-white" />
                         </button>
                         <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/60 backdrop-blur-sm rounded-full text-xs text-white font-medium">
-                          商品 {index + 1}
+                          {t.modelCreate.product} {index + 1}
                         </div>
                       </motion.div>
                     ))}
@@ -255,7 +257,7 @@ export default function ModelCreateStep1() {
                       <div className="w-12 h-12 rounded-full bg-violet-100 flex items-center justify-center">
                         <Plus className="w-6 h-6 text-violet-600" />
                       </div>
-                      <span className="text-sm text-zinc-500">添加商品</span>
+                      <span className="text-sm text-zinc-500">{t.modelCreate.addProduct}</span>
                       <span className="text-xs text-zinc-400">
                         {productImages.length}/4
                       </span>
@@ -272,8 +274,8 @@ export default function ModelCreateStep1() {
                     <ImagePlus className="w-8 h-8 text-violet-500" />
                   </div>
                   <div className="text-center">
-                    <p className="text-sm font-medium text-zinc-700 mb-1">点击上传商品图片</p>
-                    <p className="text-xs text-zinc-400">或拖拽图片到这里</p>
+                    <p className="text-sm font-medium text-zinc-700 mb-1">{t.modelCreate.clickToUpload}</p>
+                    <p className="text-xs text-zinc-400">{t.modelCreate.orDragHere}</p>
                   </div>
                   <span className="text-xs text-zinc-400">0/4</span>
                 </button>
@@ -291,12 +293,12 @@ export default function ModelCreateStep1() {
               {isUploading ? (
                 <>
                   <Loader2 className="w-4 h-4 text-violet-600 animate-spin" />
-                  <span className="text-sm font-medium text-violet-600">上传中 {uploadProgress}%</span>
+                  <span className="text-sm font-medium text-violet-600">{t.modelCreate.uploading} {uploadProgress}%</span>
                 </>
               ) : (
                 <>
                   <Upload className="w-4 h-4 text-zinc-600" />
-                  <span className="text-sm font-medium text-zinc-700">本地上传</span>
+                  <span className="text-sm font-medium text-zinc-700">{t.modelCreate.localUpload}</span>
                 </>
               )}
             </button>
@@ -306,7 +308,7 @@ export default function ModelCreateStep1() {
               className="flex-1 py-3 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FolderHeart className="w-4 h-4 text-zinc-600" />
-              <span className="text-sm font-medium text-zinc-700">从资产库选择</span>
+              <span className="text-sm font-medium text-zinc-700">{t.modelCreate.selectFromAssets}</span>
             </button>
           </div>
           
@@ -322,11 +324,11 @@ export default function ModelCreateStep1() {
           
           {/* Tips */}
           <div className="mt-6 p-4 bg-violet-50 rounded-xl">
-            <h3 className="text-sm font-medium text-violet-900 mb-2">💡 小提示</h3>
+            <h3 className="text-sm font-medium text-violet-900 mb-2">{t.modelCreate.tips}</h3>
             <ul className="text-xs text-violet-700 space-y-1.5">
-              <li>• 建议上传清晰的商品平铺图或挂拍图</li>
-              <li>• 多件商品可以帮助 AI 更准确地理解你的品牌风格</li>
-              <li>• 支持 JPG、PNG 格式，单张图片不超过 10MB</li>
+              <li>• {t.modelCreate.tipClear}</li>
+              <li>• {t.modelCreate.tipMultiple}</li>
+              <li>• {t.modelCreate.tipFormat}</li>
             </ul>
           </div>
         </div>
@@ -343,7 +345,7 @@ export default function ModelCreateStep1() {
               : 'bg-zinc-300 cursor-not-allowed'
           }`}
         >
-          <span>下一步：选择品牌</span>
+          <span>{t.modelCreate.nextSelectBrand}</span>
           <ChevronRight className="w-5 h-5" />
         </button>
       </div>
@@ -368,7 +370,7 @@ export default function ModelCreateStep1() {
             >
               {/* Modal Header */}
               <div className="flex items-center justify-between px-4 py-4 border-b border-zinc-100">
-                <h3 className="text-lg font-bold text-zinc-900">从资产库选择</h3>
+                <h3 className="text-lg font-bold text-zinc-900">{t.modelCreate.selectFromAssets}</h3>
                 <button
                   onClick={() => setShowAssetPicker(false)}
                   className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center"
@@ -402,7 +404,7 @@ export default function ModelCreateStep1() {
                         >
                           <Image
                             src={asset.imageUrl}
-                            alt={asset.name || '商品'}
+                            alt={asset.name || t.modelCreate.product}
                             fill
                             className="object-cover"
                           />
@@ -420,8 +422,8 @@ export default function ModelCreateStep1() {
                 ) : (
                   <div className="text-center py-12">
                     <FolderHeart className="w-12 h-12 text-zinc-300 mx-auto mb-3" />
-                    <p className="text-sm text-zinc-500">资产库中没有商品图片</p>
-                    <p className="text-xs text-zinc-400 mt-1">请先上传商品到资产库</p>
+                    <p className="text-sm text-zinc-500">{t.modelCreate.noProductsInAssets}</p>
+                    <p className="text-xs text-zinc-400 mt-1">{t.modelCreate.uploadProductsFirst}</p>
                   </div>
                 )}
               </div>
@@ -432,7 +434,7 @@ export default function ModelCreateStep1() {
                   onClick={() => setShowAssetPicker(false)}
                   className="w-full py-3 rounded-xl bg-violet-600 text-white font-medium"
                 >
-                  完成选择 ({productImages.length}/4)
+                  {t.modelCreate.finishSelection} ({productImages.length}/4)
                 </button>
               </div>
             </motion.div>

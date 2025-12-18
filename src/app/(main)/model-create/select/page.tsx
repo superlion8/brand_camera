@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { ArrowLeft, Check, ChevronRight, Loader2, Sparkles, RefreshCw, AlertCircle } from "lucide-react"
 import { useModelCreateStore, RecommendedModel } from "@/stores/modelCreateStore"
 import { compressBase64Image } from "@/lib/utils"
+import { useTranslation } from "@/stores/languageStore"
 
 export default function ModelCreateSelect() {
   const router = useRouter()
@@ -26,6 +27,7 @@ export default function ModelCreateSelect() {
     setError,
     setCurrentStep,
   } = useModelCreateStore()
+  const { t } = useTranslation()
   
   // 检查前置条件
   useEffect(() => {
@@ -124,9 +126,9 @@ export default function ModelCreateSelect() {
             <div className="absolute inset-0 rounded-full border-4 border-violet-600 border-t-transparent animate-spin" />
             <Sparkles className="absolute inset-0 m-auto w-8 h-8 text-violet-600" />
           </div>
-          <h2 className="text-xl font-bold text-zinc-900 mb-2">AI 正在分析...</h2>
+          <h2 className="text-xl font-bold text-zinc-900 mb-2">{t.modelCreate.analyzing}</h2>
           <p className="text-sm text-zinc-500">
-            正在分析你的商品和品牌风格，为你推荐最合适的模特
+            {t.modelCreate.analyzingDesc}
           </p>
         </div>
       </div>
@@ -141,14 +143,14 @@ export default function ModelCreateSelect() {
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
             <AlertCircle className="w-8 h-8 text-red-500" />
           </div>
-          <h2 className="text-xl font-bold text-zinc-900 mb-2">分析失败</h2>
+          <h2 className="text-xl font-bold text-zinc-900 mb-2">{t.modelCreate.analysisFailed}</h2>
           <p className="text-sm text-zinc-500 mb-6">{error}</p>
           <button
             onClick={runAnalysis}
             className="px-6 py-3 bg-violet-600 text-white rounded-xl font-medium flex items-center gap-2 mx-auto hover:bg-violet-700 transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
-            <span>重新分析</span>
+            <span>{t.modelCreate.reanalyze}</span>
           </button>
         </div>
       </div>
@@ -168,7 +170,7 @@ export default function ModelCreateSelect() {
           </button>
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-violet-600" />
-            <span className="font-bold text-zinc-900">选择风格</span>
+            <span className="font-bold text-zinc-900">{t.modelCreate.selectStyleTitle}</span>
           </div>
           <button
             onClick={runAnalysis}
@@ -190,10 +192,10 @@ export default function ModelCreateSelect() {
             ))}
           </div>
           <div className="flex justify-between mt-2 text-xs text-zinc-500">
-            <span className="text-violet-600">✓ 商品</span>
-            <span className="text-violet-600">✓ 品牌</span>
-            <span className="text-violet-600 font-medium">选风格</span>
-            <span>生成</span>
+            <span className="text-violet-600">✓ {t.modelCreate.stepProduct}</span>
+            <span className="text-violet-600">✓ {t.modelCreate.stepBrand}</span>
+            <span className="text-violet-600 font-medium">{t.modelCreate.stepModel}</span>
+            <span>{t.modelCreate.stepGenerate}</span>
           </div>
         </div>
       </div>
@@ -203,10 +205,10 @@ export default function ModelCreateSelect() {
         {/* Title */}
         <div className="mb-4">
           <h1 className="text-lg font-bold text-zinc-900 mb-1">
-            为你推荐的模特 ({recommendedModels.length})
+            {t.modelCreate.recommendedModels} ({recommendedModels.length})
           </h1>
           <p className="text-sm text-zinc-500">
-            选择 1-4 个喜欢的模特，AI 将为你生成专属定制模特
+            {t.modelCreate.selectModelDesc}
           </p>
         </div>
         
@@ -214,7 +216,7 @@ export default function ModelCreateSelect() {
         {selectedModels.length > 0 && (
           <div className="mb-4 flex items-center gap-2">
             <span className="text-sm font-medium text-violet-600">
-              已选择 {selectedModels.length}/4
+              {t.modelCreate.selected} {selectedModels.length}/4
             </span>
             <div className="flex -space-x-2">
               {selectedModels.slice(0, 4).map((model) => (
@@ -290,7 +292,7 @@ export default function ModelCreateSelect() {
               : 'bg-zinc-300 cursor-not-allowed'
           }`}
         >
-          <span>下一步：生成专属模特</span>
+          <span>{t.modelCreate.nextGenerate}</span>
           <ChevronRight className="w-5 h-5" />
         </button>
       </div>
