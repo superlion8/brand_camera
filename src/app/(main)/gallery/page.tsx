@@ -23,8 +23,8 @@ import {
   isReferenceShotType as isReferenceShotTypeRaw
 } from "@/lib/taskTypes"
 
-type TabType = "all" | "model" | "product" | "favorites"
-type ModelSubType = "all" | "buyer" | "prostudio" | "group" | "create_model" | "reference_shot"  // 买家秀 / 专业棚拍 / 组图 / 创建专属模特 / 参考图拍摄
+type TabType = "all" | "model" | "product" | "group" | "reference" | "favorites"
+type ModelSubType = "all" | "buyer" | "prostudio" | "create_model"  // 买家秀 / 专业棚拍 / 创建专属模特
 
 // 类型分类函数包装器（兼容 Generation 对象参数）
 function isModelType(gen: Generation | null | undefined): boolean {
@@ -568,6 +568,8 @@ export default function GalleryPage() {
     { id: "all", label: t.gallery.all },
     { id: "model", label: t.gallery.model, icon: <Users className="w-3.5 h-3.5" /> },
     { id: "product", label: t.gallery.product, icon: <Lightbulb className="w-3.5 h-3.5" /> },
+    { id: "group", label: t.gallery.groupShoot || '组图', icon: <Grid3X3 className="w-3.5 h-3.5" /> },
+    { id: "reference", label: t.gallery.referenceShot || '参考图', icon: <Palette className="w-3.5 h-3.5" /> },
     { id: "favorites", label: t.gallery.favorites, icon: <Heart className="w-3.5 h-3.5" /> },
   ]
   
@@ -640,16 +642,6 @@ export default function GalleryPage() {
               {t.gallery.proStudio || '专业棚拍'}
             </button>
             <button
-              onClick={() => setModelSubType("group")}
-              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${
-                modelSubType === "group"
-                  ? "bg-cyan-500 text-white"
-                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-              }`}
-            >
-              {t.gallery.groupShoot || '组图'}
-            </button>
-            <button
               onClick={() => setModelSubType("create_model")}
               className={`px-3 py-1 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${
                 modelSubType === "create_model"
@@ -658,16 +650,6 @@ export default function GalleryPage() {
               }`}
             >
               {t.gallery.createModel || '定制模特'}
-            </button>
-            <button
-              onClick={() => setModelSubType("reference_shot")}
-              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${
-                modelSubType === "reference_shot"
-                  ? "bg-pink-500 text-white"
-                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-              }`}
-            >
-              {t.gallery.referenceShot || '参考图'}
             </button>
           </div>
         )}
@@ -887,6 +869,10 @@ export default function GalleryPage() {
                     <Users className="w-8 h-8 text-zinc-300" />
                   ) : activeTab === "product" ? (
                     <Lightbulb className="w-8 h-8 text-zinc-300" />
+                  ) : activeTab === "group" ? (
+                    <Grid3X3 className="w-8 h-8 text-zinc-300" />
+                  ) : activeTab === "reference" ? (
+                    <Palette className="w-8 h-8 text-zinc-300" />
                   ) : (
                     <Camera className="w-8 h-8 text-zinc-300" />
                   )}
@@ -894,7 +880,9 @@ export default function GalleryPage() {
                 <p className="text-sm">
                   {activeTab === "favorites" ? t.gallery.noFavorites : 
                    activeTab === "model" ? t.gallery.noModelImages :
-                   activeTab === "product" ? t.gallery.noProductImages : t.gallery.noImages}
+                   activeTab === "product" ? t.gallery.noProductImages : 
+                   activeTab === "group" ? (t.gallery.noGroupImages || '暂无组图') :
+                   activeTab === "reference" ? (t.gallery.noReferenceImages || '暂无参考图') : t.gallery.noImages}
                 </p>
                 <p className="text-xs text-zinc-300 mt-1">
                   {activeTab !== "favorites" && (t.gallery?.startShooting || "去拍摄生成你的第一张图片吧")}

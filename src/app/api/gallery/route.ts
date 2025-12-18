@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 const PAGE_SIZE = 20
 
 // 图库数据类型筛选
-type GalleryType = 'all' | 'model' | 'product' | 'favorites'
+type GalleryType = 'all' | 'model' | 'product' | 'group' | 'reference' | 'favorites'
 
 export async function GET(request: NextRequest) {
   // 检查认证
@@ -99,8 +99,9 @@ export async function GET(request: NextRequest) {
     // 按类型筛选 - 使用 task_type 字段
     const subType = searchParams.get('subType') || ''
     
-    // model 包含：买家秀(camera/camera_model/model/model_studio)、专业棚拍(pro_studio)、组图(group_shoot)、创建专属模特(create_model)
+    // model 包含：买家秀(camera/camera_model/model/model_studio)、专业棚拍(pro_studio)、创建专属模特(create_model)
     // 注意：edit/editing 是通用编辑，只在"全部"分类中显示
+    // 组图和参考图已独立为一级分类
     if (type === 'model') {
       if (subType === 'buyer') {
         // 只显示买家秀：camera, camera_model, model, model_studio
@@ -108,22 +109,22 @@ export async function GET(request: NextRequest) {
       } else if (subType === 'prostudio') {
         // 只显示专业棚拍
         query = query.or('task_type.eq.pro_studio,task_type.eq.prostudio')
-      } else if (subType === 'group') {
-        // 只显示组图拍摄
-        query = query.or('task_type.eq.group_shoot')
       } else if (subType === 'create_model') {
         // 只显示创建专属模特
         query = query.or('task_type.eq.create_model')
-      } else if (subType === 'reference_shot') {
-        // 只显示参考图拍摄
-        query = query.or('task_type.eq.reference_shot')
       } else {
-        // 全部模特：买家秀 + 专业棚拍 + 组图 + 创建专属模特 + 参考图拍摄
-        query = query.or('task_type.eq.camera_model,task_type.eq.model,task_type.eq.camera,task_type.eq.model_studio,task_type.eq.pro_studio,task_type.eq.prostudio,task_type.eq.group_shoot,task_type.eq.create_model,task_type.eq.reference_shot')
+        // 全部模特：买家秀 + 专业棚拍 + 创建专属模特（不包含组图和参考图，它们是独立分类）
+        query = query.or('task_type.eq.camera_model,task_type.eq.model,task_type.eq.camera,task_type.eq.model_studio,task_type.eq.pro_studio,task_type.eq.prostudio,task_type.eq.create_model')
       }
     } else if (type === 'product') {
       // 纯商品类型（不包含 edit，edit 只在"全部"分类中显示）
       query = query.or('task_type.eq.studio,task_type.eq.camera_product,task_type.eq.product,task_type.eq.product_studio')
+    } else if (type === 'group') {
+      // 组图拍摄 - 独立分类
+      query = query.or('task_type.eq.group_shoot')
+    } else if (type === 'reference') {
+      // 参考图拍摄 - 独立分类
+      query = query.or('task_type.eq.reference_shot')
     }
 
     const { data: generations, error: genError, count: genCount } = await query

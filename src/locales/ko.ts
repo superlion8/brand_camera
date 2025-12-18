@@ -268,6 +268,8 @@ export const ko: Translations = {
     noImages: "이미지 없음",
     noModelImages: "모델 이미지 없음",
     noProductImages: "상품 이미지 없음",
+    noGroupImages: "그룹 사진 없음",
+    noReferenceImages: "참조 사진 없음",
     noFavorites: "즐겨찾기 없음",
     startShooting: "첫 번째 사진을 촬영하세요",
     detail: "상세",

@@ -266,6 +266,8 @@ export const zh = {
     noImages: "暂无图片",
     noModelImages: "暂无模特图",
     noProductImages: "暂无产品图",
+    noGroupImages: "暂无组图",
+    noReferenceImages: "暂无参考图",
     noFavorites: "暂无收藏图片",
     startShooting: "去拍摄生成你的第一张图片吧",
     detail: "详情",
