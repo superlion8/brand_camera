@@ -10,26 +10,25 @@ export const maxDuration = 180 // 3 minutes
 const MODEL_IMAGE_PROMPT = `[Role: World-Class E-commerce Photographer & Retoucher]
 
 # Input
-- Reference Product Image: [Provided Below]
-- Model Persona: {model_prompt}
+- Reference Product Image: [Insert Single Product Image Here]
+- Model Persona: {model_prompt} (Note: This prompt already contains anatomical constraints)
 - Product Description: {product_desc}
 
 # Task
 Generate a high-fidelity e-commerce fashion shot of the model wearing the Reference Product.
 
 # Execution Steps
-1. Subject Construction: Strictly follow the 'Model Persona' to generate the model's face, body type, and pose.
+1. Subject Construction (Priority High): strictly adhere to the anatomical proportions defined in the Model Persona prompt (e.g., 8-head figure). Do not distort limbs or body ratios.
 2. Virtual Try-On: Dress the model in the 'Reference Product'.
-   - Ensure the fabric physics are realistic (drape, wrinkles, tension).
-   - The product must look identical to the Reference Product Image in terms of pattern, logo, and cut.
+   - Ensure fabric physics are realistic (drape, wrinkles, tension).
+   - The product must fit the model's idealized body naturally.
 3. Studio Setup:
-   - Lighting: Professional studio lighting, soft shadows, highlighting fabric texture.
-   - Background: Neutral, clean studio background to emphasize the product.
-   - Framing: Full body or 3/4 body shot, vertical composition (9:16 ratio).
+   - Lighting: Professional studio lighting promoting form and texture.
+   - Framing: Full body vertical composition (9:16 ratio).
 
 # Quality Constraints
+- Maintain anatomical integrity. No weird hands, distorted legs, or incorrect head-to-body ratios.
 - Photorealistic, 8k resolution.
-- No deformities in hands or face.
 - The product is the main focus.
 
 # Output
