@@ -74,6 +74,7 @@ export const zh = {
     modelStudioSubtitle: "真实生活场景",
     proStudio: "模特棚拍",
     proStudioSubtitle: "纯色背景质感",
+    customShot: "定制拍摄",
     groupShoot: "组图拍摄",
     groupShootSubtitle: "多角度套图",
     referenceShot: "参考图拍摄",

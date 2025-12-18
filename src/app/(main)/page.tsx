@@ -26,7 +26,7 @@ function SectionHeader({ title, icon }: { title: string; icon: React.ReactNode }
   )
 }
 
-// Before-After Card with animated reveal
+// Before-After Card with animated reveal (slide effect)
 function BeforeAfterCard({
   title,
   subtitle,
@@ -74,6 +74,93 @@ function BeforeAfterCard({
           <div className="absolute top-2 left-2 w-[52px] text-center py-0.5 bg-purple-600/80 backdrop-blur-sm rounded text-[9px] font-bold text-white z-10">
             Result
           </div>
+        </motion.div>
+
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent pointer-events-none" />
+
+        {badge && (
+          <div className="absolute top-2 right-2 px-1.5 py-0.5 bg-white/20 backdrop-blur-md rounded text-[9px] font-bold text-white border border-white/20 z-20">
+            {badge}
+          </div>
+        )}
+
+        <div className="absolute bottom-0 left-0 right-0 p-3 z-20">
+          <h3 className="text-sm font-bold text-white leading-tight mb-0.5">{title}</h3>
+          <p className="text-[10px] text-white/70 font-medium">{subtitle}</p>
+        </div>
+      </motion.div>
+    </Link>
+  )
+}
+
+// Before-After Card with fade in/out effect
+function FadeBeforeAfterCard({
+  title,
+  subtitle,
+  beforeImage,
+  afterImage,
+  badge,
+  href,
+}: {
+  title: string
+  subtitle: string
+  beforeImage: string
+  afterImage: string
+  badge?: string
+  href: string
+}) {
+  return (
+    <Link href={href}>
+      <motion.div
+        whileTap={{ scale: 0.95 }}
+        className="min-w-[160px] w-[160px] h-[220px] rounded-[16px] overflow-hidden relative bg-zinc-100 shadow-sm border border-zinc-100 snap-start cursor-pointer group"
+      >
+        {/* Before Image (Base) */}
+        <div className="absolute inset-0">
+          <Image src={beforeImage} alt="Before" fill className="object-cover" />
+        </div>
+
+        {/* After Image (Fade Overlay) */}
+        <motion.div
+          className="absolute inset-0"
+          animate={{ opacity: [0, 0, 1, 1, 0] }}
+          transition={{
+            duration: 5,
+            ease: "easeInOut",
+            times: [0, 0.1, 0.4, 0.9, 1],
+            repeat: Infinity,
+            repeatDelay: 1,
+          }}
+        >
+          <Image src={afterImage} alt="After" fill className="object-cover" />
+        </motion.div>
+
+        {/* Label that changes with image */}
+        <motion.div
+          className="absolute top-2 left-2 w-[52px] text-center py-0.5 bg-black/40 backdrop-blur-sm rounded text-[9px] font-bold text-white/80 z-10"
+          animate={{ opacity: [1, 1, 0, 0, 1] }}
+          transition={{
+            duration: 5,
+            ease: "easeInOut",
+            times: [0, 0.1, 0.4, 0.9, 1],
+            repeat: Infinity,
+            repeatDelay: 1,
+          }}
+        >
+          Original
+        </motion.div>
+        <motion.div
+          className="absolute top-2 left-2 w-[52px] text-center py-0.5 bg-purple-600/80 backdrop-blur-sm rounded text-[9px] font-bold text-white z-10"
+          animate={{ opacity: [0, 0, 1, 1, 0] }}
+          transition={{
+            duration: 5,
+            ease: "easeInOut",
+            times: [0, 0.1, 0.4, 0.9, 1],
+            repeat: Infinity,
+            repeatDelay: 1,
+          }}
+        >
+          Result
         </motion.div>
 
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent pointer-events-none" />
@@ -219,14 +306,24 @@ export default function HomePage() {
               afterImage={`${HOMEPAGE_STORAGE_URL}/model-after.png`}
               href="/camera"
             />
-            <BeforeAfterCard
+          </div>
+        </motion.div>
+
+        {/* Section 1.5: 定制拍摄 Custom Shot */}
+        <motion.div className="px-4 mt-2" variants={sectionVariants}>
+          <SectionHeader
+            title={t.home.customShot || "定制拍摄"}
+            icon={<Sparkles className="w-4 h-4 text-pink-600" />}
+          />
+          <div className="flex gap-3 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide snap-x">
+            <FadeBeforeAfterCard
               title={t.home.groupShoot || "组图拍摄"}
               subtitle={t.home.groupShootSubtitle || "多角度套图"}
               beforeImage={`${HOMEPAGE_STORAGE_URL}/group-shoot-before.png`}
               afterImage={`${HOMEPAGE_STORAGE_URL}/group-shoot-after.png`}
               href="/camera/group"
             />
-            <BeforeAfterCard
+            <FadeBeforeAfterCard
               title={t.home.referenceShot || "参考图拍摄"}
               subtitle={t.home.referenceShotSubtitle || "复刻风格构图"}
               beforeImage={`${HOMEPAGE_STORAGE_URL}/reference-shot-before.png`}

@@ -76,6 +76,7 @@ export const ko: Translations = {
     modelStudioSubtitle: "실제 생활 장면",
     proStudio: "모델 스튜디오",
     proStudioSubtitle: "단색 배경 질감",
+    customShot: "커스텀 촬영",
     groupShoot: "그룹 촬영",
     groupShootSubtitle: "다각도 세트",
     referenceShot: "참조 촬영",

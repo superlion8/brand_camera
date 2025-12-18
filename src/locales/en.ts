@@ -76,6 +76,7 @@ export const en: Translations = {
     modelStudioSubtitle: "Real-life Scenes",
     proStudio: "Model Studio",
     proStudioSubtitle: "Solid Background",
+    customShot: "Custom Shot",
     groupShoot: "Group Shoot",
     groupShootSubtitle: "Multi-angle Sets",
     referenceShot: "Reference Shot",
