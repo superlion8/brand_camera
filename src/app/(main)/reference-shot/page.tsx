@@ -259,9 +259,9 @@ export default function ReferenceShotPage() {
       </div>
       
       {/* Content */}
-      <div className="p-4">
+      <div className="p-4 pb-32">
         {step === 'upload' && (
-          <div className="space-y-4 pb-24">
+          <div className="space-y-4">
             {/* Reference Image + Product Image - Side by Side */}
             <div className="grid grid-cols-2 gap-3">
               {/* Reference Image */}
@@ -392,25 +392,6 @@ export default function ReferenceShotPage() {
           </div>
         )}
         
-        {/* Fixed Generate Button at Bottom - Only show in upload step */}
-        {step === 'upload' && (
-          <div className="fixed bottom-0 left-0 right-0 p-4 pb-safe bg-white/90 backdrop-blur-lg border-t border-zinc-100">
-            <motion.button
-              onClick={handleGenerate}
-              disabled={!canGenerate}
-              whileTap={{ scale: 0.98 }}
-              className={`w-full h-12 rounded-full text-base font-semibold flex items-center justify-center gap-2 transition-colors ${
-                canGenerate
-                  ? 'bg-black text-white hover:bg-zinc-800'
-                  : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
-              }`}
-            >
-              <Wand2 className="w-5 h-5" />
-              {t.referenceShot?.generate || '开始生成'}
-            </motion.button>
-          </div>
-        )}
-        
         {step === 'generating' && (
           <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
             <div className="relative">
@@ -499,6 +480,25 @@ export default function ReferenceShotPage() {
           </div>
         )}
       </div>
+      
+      {/* Fixed Generate Button at Bottom - Only show in upload step */}
+      {step === 'upload' && (
+        <div className="fixed bottom-20 left-0 right-0 p-4 bg-white/95 backdrop-blur-lg border-t border-zinc-100 z-30">
+          <motion.button
+            onClick={handleGenerate}
+            disabled={!canGenerate}
+            whileTap={{ scale: 0.98 }}
+            className={`w-full h-12 rounded-full text-base font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg ${
+              canGenerate
+                ? 'bg-black text-white hover:bg-zinc-800'
+                : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
+            }`}
+          >
+            <Wand2 className="w-5 h-5" />
+            {t.referenceShot?.generate || '开始生成'}
+          </motion.button>
+        </div>
+      )}
       
       {/* Model Picker Modal */}
       <AnimatePresence>
