@@ -409,6 +409,7 @@ export default function ReferenceShotPage() {
               {t.referenceShot?.generate || '开始生成'}
             </motion.button>
           </div>
+        )}
         
         {step === 'generating' && (
           <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
