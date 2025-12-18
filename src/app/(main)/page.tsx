@@ -4,7 +4,9 @@ import Image from "next/image"
 import Link from "next/link"
 import { ChevronRight, FolderHeart, Images, Wand2, Users, Lightbulb, Sparkles, Grid3X3, ScanFace, Box, Settings, Palette, UserRoundPlus } from "lucide-react"
 import { motion } from "framer-motion"
+import { useRouter } from "next/navigation"
 import { useAssetStore } from "@/stores/assetStore"
+import { useModelCreateStore } from "@/stores/modelCreateStore"
 import { useTranslation } from "@/stores/languageStore"
 import { UserMenu } from "@/components/shared/UserMenu"
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher"
@@ -154,11 +156,19 @@ const sectionVariants = {
 }
 
 export default function HomePage() {
+  const router = useRouter()
   const { generations, _hasHydrated } = useAssetStore()
+  const { reset: resetModelCreate } = useModelCreateStore()
   const { t } = useTranslation()
 
   // Get recent generations (last 4)
   const recentGenerations = generations.slice(0, 4)
+
+  // 点击创建专属模特时，重置状态并导航
+  const handleCreateModelClick = () => {
+    resetModelCreate()
+    router.push('/model-create')
+  }
 
   return (
     <motion.div 
@@ -239,34 +249,33 @@ export default function HomePage() {
 
         {/* Create Custom Model Promo */}
         <motion.div className="px-4 mt-4" variants={sectionVariants}>
-          <Link href="/model-create">
-            <motion.div
-              whileTap={{ scale: 0.98 }}
-              className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 p-4 cursor-pointer"
-            >
-              {/* Background decoration */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-              <div className="absolute bottom-0 left-1/2 w-24 h-24 bg-white/5 rounded-full translate-y-1/2" />
-              
-              <div className="flex items-center gap-4 relative z-10">
-                <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shrink-0">
-                  <UserRoundPlus className="w-7 h-7 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base font-bold text-white">{t.home.createCustomModel}</h3>
-                    <span className="px-1.5 py-0.5 bg-white/20 backdrop-blur-sm rounded text-[10px] font-bold text-white">
-                      NEW
-                    </span>
-                  </div>
-                  <p className="text-sm text-white/80 mt-0.5">{t.home.createCustomModelDesc}</p>
-                </div>
-                <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shrink-0">
-                  <ChevronRight className="w-5 h-5 text-white" />
-                </div>
+          <motion.div
+            whileTap={{ scale: 0.98 }}
+            onClick={handleCreateModelClick}
+            className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 p-4 cursor-pointer"
+          >
+            {/* Background decoration */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute bottom-0 left-1/2 w-24 h-24 bg-white/5 rounded-full translate-y-1/2" />
+            
+            <div className="flex items-center gap-4 relative z-10">
+              <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shrink-0">
+                <UserRoundPlus className="w-7 h-7 text-white" />
               </div>
-            </motion.div>
-          </Link>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-bold text-white">{t.home.createCustomModel}</h3>
+                  <span className="px-1.5 py-0.5 bg-white/20 backdrop-blur-sm rounded text-[10px] font-bold text-white">
+                    NEW
+                  </span>
+                </div>
+                <p className="text-sm text-white/80 mt-0.5">{t.home.createCustomModelDesc}</p>
+              </div>
+              <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shrink-0">
+                <ChevronRight className="w-5 h-5 text-white" />
+              </div>
+            </div>
+          </motion.div>
         </motion.div>
 
         {/* Section 3: 修图室 */}
