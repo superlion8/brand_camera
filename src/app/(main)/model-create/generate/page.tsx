@@ -343,19 +343,24 @@ export default function ModelCreateGenerate() {
             >
               {imgStatus.status === 'completed' && imgStatus.imageUrl ? (
                 <>
+                  {/* 点击图片放大 */}
+                  <div 
+                    className="absolute inset-0 cursor-pointer z-10"
+                    onClick={() => setZoomImage(imgStatus.imageUrl!)}
+                  />
                   <Image
                     src={imgStatus.imageUrl}
                     alt={`生成的模特 ${index + 1}`}
                     fill
-                    className="object-cover cursor-pointer"
-                    onClick={() => setZoomImage(imgStatus.imageUrl!)}
+                    className="object-cover"
                   />
                   
-                  {/* Actions Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity">
-                    <div className="absolute bottom-3 left-3 right-3 flex gap-2">
+                  {/* Actions - 底部操作栏 */}
+                  <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent z-20">
+                    <div className="flex gap-2">
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation()
                           const img = generatedImages.find((_, i) => i === index)
                           if (img) handleSaveToAssets(img)
                         }}
@@ -379,7 +384,10 @@ export default function ModelCreateGenerate() {
                         )}
                       </button>
                       <button
-                        onClick={() => handleDownload(imgStatus.imageUrl!, index)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDownload(imgStatus.imageUrl!, index)
+                        }}
                         className="w-10 h-10 bg-white/90 rounded-lg flex items-center justify-center hover:bg-white transition-colors"
                       >
                         <Download className="w-4 h-4 text-zinc-700" />
@@ -389,7 +397,7 @@ export default function ModelCreateGenerate() {
                   
                   {/* Saved Badge */}
                   {savedImages.has(generatedImages[index]?.id) && (
-                    <div className="absolute top-2 right-2 w-7 h-7 bg-green-500 rounded-full flex items-center justify-center">
+                    <div className="absolute top-2 right-2 w-7 h-7 bg-green-500 rounded-full flex items-center justify-center z-20">
                       <Check className="w-4 h-4 text-white" />
                     </div>
                   )}
