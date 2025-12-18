@@ -273,6 +273,7 @@ export const zh = {
     buyerShow: "买家秀",
     proStudio: "模特棚拍",
     groupShoot: "组图",
+    createModel: "定制模特",
     goGroupShoot: "拍组图",
     modifyMaterial: "改材质版型",
     saveAsAsset: "存为素材",

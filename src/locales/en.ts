@@ -275,6 +275,7 @@ export const en: Translations = {
     buyerShow: "Buyer Show",
     proStudio: "Model Studio",
     groupShoot: "Group",
+    createModel: "Custom Model",
     goGroupShoot: "Group Shoot",
     modifyMaterial: "Material & Fit",
     saveAsAsset: "Save as Asset",

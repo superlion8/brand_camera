@@ -179,10 +179,10 @@ export default function ModelCreateGenerate() {
   // 保存到资产库
   const handleSaveToAssets = async (image: GeneratedModelImage) => {
     try {
-      // Add to gallery
+      // Add to gallery with create_model type
       addGeneration({
         id: image.id,
-        type: 'model_studio',
+        type: 'create_model',
         inputImageUrl: productImages[0],
         outputImageUrls: [image.imageUrl],
         prompt: image.prompt,

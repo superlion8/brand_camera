@@ -17,6 +17,7 @@ export const TaskTypes = {
   PRO_STUDIO: 'pro_studio',          // 专业棚拍
   GROUP_SHOOT: 'group_shoot',        // 组图拍摄
   EDIT: 'edit',                      // 通用编辑
+  CREATE_MODEL: 'create_model',      // 创建专属模特
 } as const
 
 export type CanonicalTaskType = typeof TaskTypes[keyof typeof TaskTypes]
@@ -46,6 +47,9 @@ const TYPE_MAP: Record<string, CanonicalTaskType> = {
   // 通用编辑 → edit
   'edit': TaskTypes.EDIT,
   'editing': TaskTypes.EDIT,
+  
+  // 创建专属模特 → create_model
+  'create_model': TaskTypes.CREATE_MODEL,
 }
 
 // ===== 核心函数 =====
@@ -101,14 +105,23 @@ export function isEditType(type?: string): boolean {
 }
 
 /**
- * 判断是否是模特相关类型（买家秀 + 专业棚拍 + 组图）
+ * 判断是否是创建专属模特类型
+ * 包含: create_model
+ */
+export function isCreateModelType(type?: string): boolean {
+  return getCanonicalType(type) === TaskTypes.CREATE_MODEL
+}
+
+/**
+ * 判断是否是模特相关类型（买家秀 + 专业棚拍 + 组图 + 创建专属模特）
  * 用于图库的"模特"分类筛选
  */
 export function isModelRelatedType(type?: string): boolean {
   const canonical = getCanonicalType(type)
   return canonical === TaskTypes.MODEL_STUDIO || 
          canonical === TaskTypes.PRO_STUDIO || 
-         canonical === TaskTypes.GROUP_SHOOT
+         canonical === TaskTypes.GROUP_SHOOT ||
+         canonical === TaskTypes.CREATE_MODEL
 }
 
 /**
@@ -122,6 +135,7 @@ export function getTypeDisplayName(type?: string): string {
     case TaskTypes.PRO_STUDIO: return '专业棚拍'
     case TaskTypes.GROUP_SHOOT: return '组图拍摄'
     case TaskTypes.EDIT: return '通用编辑'
+    case TaskTypes.CREATE_MODEL: return '创建专属模特'
     default: return '未知类型'
   }
 }

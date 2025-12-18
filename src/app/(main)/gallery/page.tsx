@@ -18,11 +18,12 @@ import {
   isProStudioType as isProStudioTypeRaw, 
   isGroupShootType as isGroupShootTypeRaw,
   isProductType as isProductTypeRaw,
-  isEditType as isEditTypeRaw
+  isEditType as isEditTypeRaw,
+  isCreateModelType as isCreateModelTypeRaw
 } from "@/lib/taskTypes"
 
 type TabType = "all" | "model" | "product" | "favorites"
-type ModelSubType = "all" | "buyer" | "prostudio" | "group"  // 买家秀 / 专业棚拍 / 组图
+type ModelSubType = "all" | "buyer" | "prostudio" | "group" | "create_model"  // 买家秀 / 专业棚拍 / 组图 / 创建专属模特
 
 // 类型分类函数包装器（兼容 Generation 对象参数）
 function isModelType(gen: Generation | null | undefined): boolean {
@@ -39,6 +40,9 @@ function isProductType(gen: Generation | null | undefined): boolean {
 }
 function isEditType(gen: Generation | null | undefined): boolean {
   return gen ? isEditTypeRaw(gen.type) : false
+}
+function isCreateModelType(gen: Generation | null | undefined): boolean {
+  return gen ? isCreateModelTypeRaw(gen.type) : false
 }
 
 export default function GalleryPage() {
@@ -150,6 +154,14 @@ export default function GalleryPage() {
     // Null safety check
     if (!gen) {
       return { label: t.gallery.model, color: 'bg-zinc-400' }
+    }
+    
+    // Create Model types (创建专属模特)
+    if (isCreateModelType(gen)) {
+      return { 
+        label: t.gallery.createModel || '定制模特', 
+        color: 'bg-violet-500',
+      }
     }
     
     // Group Shoot types (组图拍摄)
@@ -624,6 +636,16 @@ export default function GalleryPage() {
               }`}
             >
               {t.gallery.groupShoot || '组图'}
+            </button>
+            <button
+              onClick={() => setModelSubType("create_model")}
+              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${
+                modelSubType === "create_model"
+                  ? "bg-violet-500 text-white"
+                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+              }`}
+            >
+              {t.gallery.createModel || '定制模特'}
             </button>
           </div>
         )}
