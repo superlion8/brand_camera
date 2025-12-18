@@ -2,7 +2,9 @@
   "functions": {
     "src/app/api/generate/**/*.ts": {
       "maxDuration": 120
+    },
+    "src/app/api/model-create/analyze/route.ts": {
+      "maxDuration": 120
     }
   }
 }
-

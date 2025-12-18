@@ -6,6 +6,7 @@ import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
 import { ArrowLeft, Check, ChevronRight, Loader2, Sparkles, RefreshCw, AlertCircle } from "lucide-react"
 import { useModelCreateStore, RecommendedModel } from "@/stores/modelCreateStore"
+import { compressBase64Image } from "@/lib/utils"
 
 export default function ModelCreateSelect() {
   const router = useRouter()
@@ -48,11 +49,16 @@ export default function ModelCreateSelect() {
     setError(null)
     
     try {
+      // 压缩图片以避免超过 Vercel 4.5MB API 限制
+      const compressedImages = await Promise.all(
+        productImages.map(img => compressBase64Image(img, 1024))
+      )
+      
       const response = await fetch('/api/model-create/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          productImages,
+          productImages: compressedImages,
           brands: selectedBrands,
         }),
       })
