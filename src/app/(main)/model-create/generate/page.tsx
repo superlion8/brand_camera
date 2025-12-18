@@ -200,25 +200,46 @@ export default function ModelCreateGenerate() {
     }
   }
   
-  // 生成完成后自动保存所有图片到成片
+  // 生成完成后自动保存所有图片到成片（调用后端 API 写入数据库）
   const saveAllToGallery = async (images: GeneratedModelImage[]) => {
     if (images.length === 0) return
     
     try {
-      // 将所有生成的图片作为一个 generation 保存到成片
       const allImageUrls = images.map(img => img.imageUrl)
       const allPrompts = images.map(img => img.prompt)
       
-      addGeneration({
-        id: generateId(),
-        type: 'create_model',
-        inputImageUrl: productImages[0],
-        outputImageUrls: allImageUrls,
-        prompts: allPrompts,
-        createdAt: new Date().toISOString(),
+      // 调用后端 API 将 generation 保存到数据库
+      const response = await fetch('/api/model-create/save-gallery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageUrls: allImageUrls,
+          prompts: allPrompts,
+          inputImageUrl: productImages[0],
+          inputParams: {
+            brands: selectedBrands.map(b => b.name),
+            modelCount: selectedModels.length,
+          },
+        }),
       })
       
-      console.log('[ModelCreate] Saved all images to gallery:', allImageUrls.length)
+      const result = await response.json()
+      
+      if (result.success) {
+        console.log('[ModelCreate] Saved all images to database:', result.generationId)
+        
+        // 同时更新本地状态以便立即显示
+        addGeneration({
+          id: result.generationId,
+          type: 'create_model',
+          inputImageUrl: productImages[0],
+          outputImageUrls: allImageUrls,
+          prompts: allPrompts,
+          createdAt: new Date().toISOString(),
+        })
+      } else {
+        console.error('[ModelCreate] Failed to save to database:', result.error)
+      }
     } catch (err) {
       console.error('Save to gallery error:', err)
     }
@@ -381,15 +402,16 @@ export default function ModelCreateGenerate() {
           </p>
         </div>
         
-        {/* Image Grid */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* Image List - 纵向排列大卡片 */}
+        <div className="flex flex-col gap-6">
           {imageStatuses.map((imgStatus, index) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-zinc-100"
+              className="relative w-full rounded-2xl overflow-hidden bg-zinc-100 shadow-lg"
+              style={{ aspectRatio: '3/4' }}
             >
               {imgStatus.status === 'completed' && imgStatus.imageUrl ? (
                 <>
@@ -405,9 +427,14 @@ export default function ModelCreateGenerate() {
                     className="object-cover"
                   />
                   
+                  {/* 序号标签 */}
+                  <div className="absolute top-3 left-3 px-3 py-1.5 bg-black/50 backdrop-blur-sm rounded-full z-20">
+                    <span className="text-sm font-medium text-white">#{index + 1}</span>
+                  </div>
+                  
                   {/* Actions - 底部操作栏 */}
-                  <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent z-20">
-                    <div className="flex gap-2">
+                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 via-black/40 to-transparent z-20">
+                    <div className="flex gap-3">
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
@@ -415,7 +442,7 @@ export default function ModelCreateGenerate() {
                           if (img) handleSaveToAssets(img)
                         }}
                         disabled={savedImages.has(generatedImages[index]?.id)}
-                        className={`flex-1 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1.5 transition-colors ${
+                        className={`flex-1 py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
                           savedImages.has(generatedImages[index]?.id)
                             ? 'bg-green-500 text-white'
                             : 'bg-white text-zinc-900 hover:bg-zinc-100'
@@ -423,12 +450,12 @@ export default function ModelCreateGenerate() {
                       >
                         {savedImages.has(generatedImages[index]?.id) ? (
                           <>
-                            <Check className="w-4 h-4" />
+                            <Check className="w-5 h-5" />
                             <span>{t.modelCreate.saved}</span>
                           </>
                         ) : (
                           <>
-                            <Save className="w-4 h-4" />
+                            <Save className="w-5 h-5" />
                             <span>{t.modelCreate.save}</span>
                           </>
                         )}
@@ -438,12 +465,12 @@ export default function ModelCreateGenerate() {
                           e.stopPropagation()
                           handleDownload(imgStatus.imageUrl!, index)
                         }}
-                        className="w-10 h-10 bg-white/90 rounded-lg flex items-center justify-center hover:bg-white transition-colors"
+                        className="w-12 h-12 bg-white/90 rounded-xl flex items-center justify-center hover:bg-white transition-colors"
                       >
                         {isIOS ? (
-                          <Share2 className="w-4 h-4 text-zinc-700" />
+                          <Share2 className="w-5 h-5 text-zinc-700" />
                         ) : (
-                          <Download className="w-4 h-4 text-zinc-700" />
+                          <Download className="w-5 h-5 text-zinc-700" />
                         )}
                       </button>
                     </div>
@@ -451,27 +478,31 @@ export default function ModelCreateGenerate() {
                   
                   {/* Saved Badge */}
                   {savedImages.has(generatedImages[index]?.id) && (
-                    <div className="absolute top-2 right-2 w-7 h-7 bg-green-500 rounded-full flex items-center justify-center z-20">
-                      <Check className="w-4 h-4 text-white" />
+                    <div className="absolute top-3 right-3 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center z-20 shadow-lg">
+                      <Check className="w-5 h-5 text-white" />
                     </div>
                   )}
                 </>
               ) : imgStatus.status === 'generating' ? (
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <Loader2 className="w-8 h-8 text-violet-500 animate-spin mb-2" />
-                  <span className="text-sm text-zinc-500">{t.modelCreate.generatingImage}</span>
+                  <div className="relative w-16 h-16 mb-4">
+                    <div className="absolute inset-0 rounded-full border-4 border-violet-100" />
+                    <div className="absolute inset-0 rounded-full border-4 border-violet-600 border-t-transparent animate-spin" />
+                  </div>
+                  <span className="text-base font-medium text-zinc-600">{t.modelCreate.generatingImage}</span>
+                  <span className="text-sm text-zinc-400 mt-1">#{index + 1}</span>
                 </div>
               ) : imgStatus.status === 'error' ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
-                  <AlertCircle className="w-8 h-8 text-red-400 mb-2" />
-                  <span className="text-xs text-red-500 text-center">{imgStatus.error || '生成失败'}</span>
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
+                  <AlertCircle className="w-12 h-12 text-red-400 mb-3" />
+                  <span className="text-sm text-red-500 text-center">{imgStatus.error || '生成失败'}</span>
                 </div>
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <div className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center mb-2">
-                    <span className="text-sm font-medium text-zinc-500">{index + 1}</span>
+                  <div className="w-12 h-12 rounded-full bg-zinc-200 flex items-center justify-center mb-3">
+                    <span className="text-lg font-medium text-zinc-500">{index + 1}</span>
                   </div>
-                  <span className="text-sm text-zinc-400">{t.modelCreate.waiting}</span>
+                  <span className="text-base text-zinc-400">{t.modelCreate.waiting}</span>
                 </div>
               )}
             </motion.div>
