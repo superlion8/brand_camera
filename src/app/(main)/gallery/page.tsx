@@ -1054,8 +1054,10 @@ export default function GalleryPage() {
                   {/* Input Images Section - Show for all users (only user inputs, not random selections) */}
                   {(() => {
                     const productImages = selectedItem.gen.params?.productImages || []
-                    const inputImageUrl = selectedItem.gen.inputImageUrl
-                    const hasInputImages = productImages.length > 0 || inputImageUrl
+                    const inputImageUrl = selectedItem.gen.inputImageUrl      // 商品图
+                    const inputImage2Url = selectedItem.gen.inputImage2Url    // 参考图（reference_shot 专用）
+                    const isReferenceShot = isReferenceShotType(selectedItem.gen)
+                    const hasInputImages = productImages.length > 0 || inputImageUrl || inputImage2Url
                     
                     if (!hasInputImages) return null
                     
@@ -1104,13 +1106,31 @@ export default function GalleryPage() {
                               <p className="text-xs text-zinc-500 mt-1.5">{t.common.product}</p>
                             </div>
                           )}
+                          {/* Reference Image - 只为 reference_shot 类型显示 */}
+                          {isReferenceShot && inputImage2Url && (
+                            <div className="flex flex-col items-center">
+                              <div 
+                                className="w-20 h-20 rounded-xl overflow-hidden bg-zinc-100 cursor-pointer relative group shadow-sm border-2 border-pink-300"
+                                onClick={() => setFullscreenImage(inputImage2Url)}
+                              >
+                                <Image 
+                                  src={inputImage2Url} 
+                                  alt={t.gallery.referenceImage || '参考图'} 
+                                  width={80}
+                                  height={80}
+                                  className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <ZoomIn className="w-5 h-5 text-white" />
+                                </div>
+                              </div>
+                              <p className="text-xs text-pink-500 mt-1.5">{t.gallery.referenceImage || '参考图'}</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )
                   })()}
-                  
-                  {/* Generation Details - Only show in debug mode */}
-                  {debugMode && (
                   <div className="mt-6 pt-4 border-t border-zinc-100 pb-8">
                     <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.gallery.debugParams}</h3>
                     

@@ -16,7 +16,8 @@ export async function POST(request: NextRequest) {
     const { 
       taskId, // 由 quota/reserve 创建的 pending 记录的 taskId
       imageUrls, 
-      referenceImageUrl,
+      productImageUrl,    // 商品图
+      referenceImageUrl,  // 参考图
       inputParams 
     } = body
     
@@ -42,7 +43,8 @@ export async function POST(request: NextRequest) {
           .update({
             status: 'completed',
             output_image_urls: imageUrls,
-            input_image_url: referenceImageUrl || null,
+            input_image_url: productImageUrl || null,    // 商品图
+            input_image2_url: referenceImageUrl || null, // 参考图
             input_params: inputParams || {},
             total_images_count: imageUrls.length,
           })
@@ -74,7 +76,8 @@ export async function POST(request: NextRequest) {
         task_type: 'reference_shot',
         status: 'completed',
         output_image_urls: imageUrls,
-        input_image_url: referenceImageUrl || null,
+        input_image_url: productImageUrl || null,    // 商品图
+        input_image2_url: referenceImageUrl || null, // 参考图
         input_params: inputParams || {},
         total_images_count: imageUrls.length,
       })

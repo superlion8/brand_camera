@@ -265,7 +265,8 @@ export default function ReferenceShotPage() {
           body: JSON.stringify({
             taskId,
             imageUrls: allImages.map(img => img.url),
-            referenceImageUrl: referenceImage,
+            productImageUrl: productImage,    // 商品图
+            referenceImageUrl: referenceImage, // 参考图
             inputParams: {
               hasSimple: simpleResult.images?.length > 0,
               hasExtended: extendedResult.images?.length > 0,
