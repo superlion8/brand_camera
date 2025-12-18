@@ -5,6 +5,27 @@
     },
     "src/app/api/model-create/analyze/route.ts": {
       "maxDuration": 120
+    },
+    "src/app/api/model-create/generate-image/route.ts": {
+      "maxDuration": 180
+    },
+    "src/app/api/model-create/generate-prompts/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/reference-shot/generate/route.ts": {
+      "maxDuration": 180
+    },
+    "src/app/api/reference-shot/generate-simple/route.ts": {
+      "maxDuration": 180
+    },
+    "src/app/api/reference-shot/caption/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/reference-shot/remove-person/route.ts": {
+      "maxDuration": 120
+    },
+    "src/app/api/reference-shot/auto-select-model/route.ts": {
+      "maxDuration": 60
     }
   }
 }
