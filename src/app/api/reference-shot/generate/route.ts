@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
         console.log(`[ReferenceShot] Generating image ${i + 1}/2...`)
         
         const response = await client.models.generateContent({
-          model: 'gemini-2.0-flash-exp',
+          model: 'gemini-3-pro-image-preview',
           contents: [{
             role: 'user',
             parts: [
