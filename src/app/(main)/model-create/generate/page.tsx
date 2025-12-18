@@ -96,11 +96,11 @@ export default function ModelCreateGenerate() {
       setImageStatuses(initialStatuses)
       setStatus('generating-images')
       
-      // Step 2: Generate images in parallel (max 2 at a time to avoid rate limits)
+      // Step 2: Generate images in parallel (all 4 at once)
       const results: GeneratedModelImage[] = []
       
-      for (let i = 0; i < generatedPrompts.length; i += 2) {
-        const batch = generatedPrompts.slice(i, i + 2)
+      for (let i = 0; i < generatedPrompts.length; i += 4) {
+        const batch = generatedPrompts.slice(i, i + 4)
         const batchPromises = batch.map(async (prompt: string, batchIndex: number) => {
           const actualIndex = i + batchIndex
           
@@ -158,8 +158,8 @@ export default function ModelCreateGenerate() {
         const batchResults = await Promise.all(batchPromises)
         results.push(...batchResults.filter(Boolean) as GeneratedModelImage[])
         
-        // Small delay between batches
-        if (i + 2 < generatedPrompts.length) {
+        // Small delay between batches (if more than 4 prompts)
+        if (i + 4 < generatedPrompts.length) {
           await new Promise(resolve => setTimeout(resolve, 1000))
         }
       }
