@@ -323,7 +323,6 @@ export const zh = {
     lightDirection: "方向",
     bgColor: "背景色",
     syncing: "同步中...",
-    generating: "生成中...",
     prompt: "提示词",
   },
   

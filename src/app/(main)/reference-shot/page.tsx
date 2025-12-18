@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
-  ArrowLeft, Check, Plus, Upload, Wand2, Loader2, X, Camera, ZoomIn, Image as ImageIcon, Download, Share2
+  ArrowLeft, Check, Plus, Upload, Wand2, Loader2, X, Camera, ZoomIn, Image as ImageIcon, Download, Share2, Home
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
@@ -495,16 +495,93 @@ export default function ReferenceShotPage() {
         )}
         
         {step === 'generating' && (
-          <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
-            <div className="relative">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 animate-pulse" />
-              <Loader2 className="absolute inset-0 m-auto w-10 h-10 text-white animate-spin" />
+          <motion.div
+            key="generating"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex flex-col items-center justify-center min-h-[60vh] gap-6 px-8"
+          >
+            <div className="relative mb-2">
+              {/* 脉冲发光背景 */}
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-tr from-blue-500/30 to-purple-500/30 blur-2xl rounded-full"
+                animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              />
+              {/* 外圈旋转 */}
+              <motion.div
+                className="w-24 h-24 rounded-full border-4 border-transparent border-t-blue-500 border-r-purple-500"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+              />
+              {/* 内圈反向旋转 */}
+              <motion.div
+                className="absolute inset-2 rounded-full border-4 border-transparent border-b-pink-500 border-l-blue-400"
+                animate={{ rotate: -360 }}
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              />
+              {/* 中心图标 */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Wand2 className="w-8 h-8 text-blue-600" />
+              </div>
             </div>
+            
             <div className="text-center">
-              <p className="text-lg font-semibold text-zinc-800">{loadingMessage}</p>
-              <p className="text-sm text-zinc-500 mt-1">{t.common?.pleaseWait || '请稍候'}</p>
+              <motion.h3
+                className="text-xl font-bold text-zinc-800 mb-2"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                {t.referenceShot?.generating || 'AI 正在创作...'}
+              </motion.h3>
+              <motion.p
+                className="text-sm text-zinc-500"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+              >
+                {loadingMessage}
+              </motion.p>
             </div>
-          </div>
+            
+            {/* 步骤指示器 */}
+            <motion.div
+              className="flex gap-2 mt-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              {[1, 2, 3, 4].map((i) => (
+                <motion.div
+                  key={i}
+                  className="w-2 h-2 rounded-full bg-blue-500"
+                  animate={{ scale: [1, 1.5, 1], opacity: [0.3, 1, 0.3] }}
+                  transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+                />
+              ))}
+            </motion.div>
+            
+            {/* 操作按钮 */}
+            <motion.div
+              className="flex flex-col gap-3 w-full max-w-xs mt-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <p className="text-xs text-zinc-400 text-center mb-2">
+                {t.camera?.continueInBackground || '可在后台继续生成'}
+              </p>
+              <button
+                onClick={() => router.push('/')}
+                className="w-full h-12 rounded-full bg-zinc-100 text-zinc-700 font-medium flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors"
+              >
+                <Home className="w-5 h-5" />
+                {t.camera?.returnHome || '返回首页'}
+              </button>
+            </motion.div>
+          </motion.div>
         )}
         
         {step === 'result' && (
