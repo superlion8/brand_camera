@@ -42,8 +42,11 @@ export default function ModelCreateGenerate() {
     reset,
   } = useModelCreateStore()
   
-  const { addGeneration } = useAssetStore()
+  const { addGeneration, addUserAsset } = useAssetStore()
   const { t } = useTranslation()
+  
+  // 检测是否是 iOS
+  const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)
   
   // 检查前置条件
   useEffect(() => {
@@ -169,6 +172,9 @@ export default function ModelCreateGenerate() {
       setGeneratedImages(results)
       setStatus('completed')
       
+      // 自动保存所有图片到成片（成片-模特-定制模特）
+      saveAllToGallery(results)
+      
     } catch (err: any) {
       console.error('Generation error:', err)
       setErrorMessage(err.message || '生成失败，请重试')
@@ -176,17 +182,16 @@ export default function ModelCreateGenerate() {
     }
   }
   
-  // 保存到资产库
+  // 保存到资产库（我的模特）
   const handleSaveToAssets = async (image: GeneratedModelImage) => {
     try {
-      // Add to gallery with create_model type
-      addGeneration({
-        id: image.id,
-        type: 'create_model',
-        inputImageUrl: productImages[0],
-        outputImageUrls: [image.imageUrl],
-        prompt: image.prompt,
-        createdAt: new Date().toISOString(),
+      // Add to user models (资产-模特-我的模特)
+      await addUserAsset({
+        id: generateId(),
+        type: 'model',
+        name: `Custom Model`,
+        imageUrl: image.imageUrl,
+        tags: ['custom', 'ai-generated'],
       })
       
       setSavedImages(prev => new Set(Array.from(prev).concat(image.id)))
@@ -195,21 +200,64 @@ export default function ModelCreateGenerate() {
     }
   }
   
-  // 下载图片
+  // 生成完成后自动保存所有图片到成片
+  const saveAllToGallery = async (images: GeneratedModelImage[]) => {
+    if (images.length === 0) return
+    
+    try {
+      // 将所有生成的图片作为一个 generation 保存到成片
+      const allImageUrls = images.map(img => img.imageUrl)
+      const allPrompts = images.map(img => img.prompt)
+      
+      addGeneration({
+        id: generateId(),
+        type: 'create_model',
+        inputImageUrl: productImages[0],
+        outputImageUrls: allImageUrls,
+        prompts: allPrompts,
+        createdAt: new Date().toISOString(),
+      })
+      
+      console.log('[ModelCreate] Saved all images to gallery:', allImageUrls.length)
+    } catch (err) {
+      console.error('Save to gallery error:', err)
+    }
+  }
+  
+  // 下载/分享图片 (iOS 用分享，Android 用下载)
   const handleDownload = async (imageUrl: string, index: number) => {
     try {
       const response = await fetch(imageUrl)
       const blob = await response.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `custom-model-${index + 1}.png`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-    } catch (err) {
-      console.error('Download error:', err)
+      const file = new File([blob], `custom-model-${index + 1}.png`, { type: 'image/png' })
+      
+      // iOS 使用系统分享（会显示"存储图像"选项）
+      if (isIOS && navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file] })
+      } else {
+        // Android 或不支持分享的平台直接下载
+        const blobUrl = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = blobUrl
+        link.download = file.name
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(blobUrl)
+      }
+    } catch (error: any) {
+      // 用户取消分享不算错误
+      if (error.name === 'AbortError') return
+      
+      console.error('Download error:', error)
+      // 回退：直接打开链接
+      const link = document.createElement('a')
+      link.href = imageUrl
+      link.download = `custom-model-${index + 1}.png`
+      link.target = '_blank'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
     }
   }
   
@@ -392,7 +440,11 @@ export default function ModelCreateGenerate() {
                         }}
                         className="w-10 h-10 bg-white/90 rounded-lg flex items-center justify-center hover:bg-white transition-colors"
                       >
-                        <Download className="w-4 h-4 text-zinc-700" />
+                        {isIOS ? (
+                          <Share2 className="w-4 h-4 text-zinc-700" />
+                        ) : (
+                          <Download className="w-4 h-4 text-zinc-700" />
+                        )}
                       </button>
                     </div>
                   </div>
