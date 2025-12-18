@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     return authResult.response
   }
   
-  const userId = authResult.userId
+  const userId = authResult.user.id
   
   try {
     const formData = await request.formData()
