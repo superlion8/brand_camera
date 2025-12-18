@@ -638,7 +638,7 @@ export const en: Translations = {
     generatingCustomModel: "Generating custom models...",
     saveToAssetsHint: "Click save to add models to your assets",
     generatedModel: "Generated Model",
-    save: "Save",
+    save: "Save as My Model",
     saved: "Saved",
     generatingImage: "Generating...",
     waiting: "Waiting...",

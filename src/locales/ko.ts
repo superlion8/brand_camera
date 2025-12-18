@@ -638,7 +638,7 @@ export const ko: Translations = {
     generatingCustomModel: "전용 모델 생성 중...",
     saveToAssetsHint: "저장을 클릭하여 모델을 자산에 추가하세요",
     generatedModel: "생성된 모델",
-    save: "저장",
+    save: "내 모델로 저장",
     saved: "저장됨",
     generatingImage: "생성 중...",
     waiting: "대기 중...",

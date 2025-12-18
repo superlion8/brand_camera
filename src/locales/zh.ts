@@ -636,7 +636,7 @@ export const zh = {
     generatingCustomModel: "正在生成专属模特...",
     saveToAssetsHint: "点击保存将模特添加到你的资产库",
     generatedModel: "生成的模特",
-    save: "保存",
+    save: "保存为我的模特",
     saved: "已保存",
     generatingImage: "生成中...",
     waiting: "等待中...",
