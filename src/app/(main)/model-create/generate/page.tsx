@@ -431,9 +431,9 @@ export default function ModelCreateGenerate() {
         )}
       </div>
       
-      {/* Bottom Actions */}
+      {/* Bottom Actions - Above bottom nav */}
       {status === 'completed' && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-zinc-100 max-w-md mx-auto">
+        <div className="fixed bottom-20 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-white via-white to-transparent max-w-md mx-auto">
           <div className="flex gap-3">
             <button
               onClick={handleRestart}

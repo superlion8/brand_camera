@@ -283,8 +283,8 @@ export default function ModelCreateStep1() {
         </div>
       </div>
       
-      {/* Bottom Action - Fixed */}
-      <div className="sticky bottom-0 left-0 right-0 p-4 bg-white border-t border-zinc-100">
+      {/* Bottom Action - Fixed above bottom nav */}
+      <div className="sticky bottom-20 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-white via-white to-transparent">
         <button
           onClick={handleNext}
           disabled={productImages.length === 0}
