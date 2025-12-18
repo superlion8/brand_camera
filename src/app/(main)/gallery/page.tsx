@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
-import { Download, Heart, X, Wand2, Camera, Users, Home, ZoomIn, Loader2, Lightbulb, RefreshCw, Trash2, Package, FolderPlus, ChevronDown, Check, Grid3X3, Palette, Sparkles } from "lucide-react"
+import { Download, Heart, X, Wand2, Camera, Users, Home, ZoomIn, Loader2, Lightbulb, RefreshCw, Trash2, Package, FolderPlus, ChevronDown, Check, Grid3X3, Palette } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useGenerationTaskStore, GenerationTask, ImageSlot } from "@/stores/generationTaskStore"
@@ -23,9 +23,8 @@ import {
   isReferenceShotType as isReferenceShotTypeRaw
 } from "@/lib/taskTypes"
 
-type TabType = "all" | "model" | "custom" | "favorites"
+type TabType = "all" | "model" | "product" | "group" | "reference" | "favorites"
 type ModelSubType = "all" | "buyer" | "prostudio" | "create_model"  // 买家秀 / 专业棚拍 / 创建专属模特
-type CustomSubType = "all" | "group" | "reference" | "product"  // 组图 / 参考图 / 商品
 
 // 类型分类函数包装器（兼容 Generation 对象参数）
 function isModelType(gen: Generation | null | undefined): boolean {
@@ -54,7 +53,6 @@ export default function GalleryPage() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<TabType>("all")
   const [modelSubType, setModelSubType] = useState<ModelSubType>("all")  // 模特二级分类
-  const [customSubType, setCustomSubType] = useState<CustomSubType>("all")  // 定制拍摄二级分类
   const [selectedItem, setSelectedItem] = useState<{ gen: Generation; index: number } | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -90,13 +88,8 @@ export default function GalleryPage() {
       if (!append) setIsLoading(true)
       else setIsLoadingMore(true)
       
-      // 根据 tab 传递二级分类参数
-      let subType = ''
-      if (activeTab === 'model') {
-        subType = modelSubType
-      } else if (activeTab === 'custom') {
-        subType = customSubType
-      }
+      // 模特 tab 下传递二级分类参数
+      const subType = activeTab === 'model' ? modelSubType : ''
       const response = await fetch(`/api/gallery?type=${activeTab}&page=${page}&subType=${subType}`, {
         cache: 'no-store', // 禁用缓存，确保获取最新数据
       })
@@ -141,7 +134,7 @@ export default function GalleryPage() {
       setCurrentPage(1)
       fetchGalleryData(1, false)
     }
-  }, [activeTab, modelSubType, customSubType, user])
+  }, [activeTab, modelSubType, user])
   
   // 当有完成但未同步的图片时，定期刷新数据
   useEffect(() => {
@@ -576,7 +569,9 @@ export default function GalleryPage() {
   const tabs: { id: TabType; label: string; icon?: React.ReactNode }[] = [
     { id: "all", label: t.gallery.all },
     { id: "model", label: t.gallery.model, icon: <Users className="w-3.5 h-3.5" /> },
-    { id: "custom", label: t.home.customShot || '定制拍摄', icon: <Sparkles className="w-3.5 h-3.5" /> },
+    { id: "product", label: t.gallery.product, icon: <Lightbulb className="w-3.5 h-3.5" /> },
+    { id: "group", label: t.gallery.groupShoot || '组图', icon: <Grid3X3 className="w-3.5 h-3.5" /> },
+    { id: "reference", label: t.gallery.referenceShot || '参考图', icon: <Palette className="w-3.5 h-3.5" /> },
     { id: "favorites", label: t.gallery.favorites, icon: <Heart className="w-3.5 h-3.5" /> },
   ]
   
@@ -657,52 +652,6 @@ export default function GalleryPage() {
               }`}
             >
               {t.gallery.createModel || '定制模特'}
-            </button>
-          </div>
-        )}
-        
-        {/* 定制拍摄二级分类 - 组图 / 参考图 / 商品 */}
-        {activeTab === "custom" && (
-          <div className="px-4 pb-3 flex gap-2 overflow-x-auto hide-scrollbar">
-            <button
-              onClick={() => setCustomSubType("all")}
-              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${
-                customSubType === "all"
-                  ? "bg-zinc-700 text-white"
-                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-              }`}
-            >
-              {t.common.all || '全部'}
-            </button>
-            <button
-              onClick={() => setCustomSubType("group")}
-              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${
-                customSubType === "group"
-                  ? "bg-cyan-500 text-white"
-                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-              }`}
-            >
-              {t.gallery.groupShoot || '组图'}
-            </button>
-            <button
-              onClick={() => setCustomSubType("reference")}
-              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${
-                customSubType === "reference"
-                  ? "bg-pink-500 text-white"
-                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-              }`}
-            >
-              {t.gallery.referenceShot || '参考图'}
-            </button>
-            <button
-              onClick={() => setCustomSubType("product")}
-              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${
-                customSubType === "product"
-                  ? "bg-amber-500 text-white"
-                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-              }`}
-            >
-              {t.gallery.product || '商品'}
             </button>
           </div>
         )}
@@ -920,8 +869,12 @@ export default function GalleryPage() {
                     <Heart className="w-8 h-8 text-zinc-300" />
                   ) : activeTab === "model" ? (
                     <Users className="w-8 h-8 text-zinc-300" />
-                  ) : activeTab === "custom" ? (
-                    <Sparkles className="w-8 h-8 text-zinc-300" />
+                  ) : activeTab === "product" ? (
+                    <Lightbulb className="w-8 h-8 text-zinc-300" />
+                  ) : activeTab === "group" ? (
+                    <Grid3X3 className="w-8 h-8 text-zinc-300" />
+                  ) : activeTab === "reference" ? (
+                    <Palette className="w-8 h-8 text-zinc-300" />
                   ) : (
                     <Camera className="w-8 h-8 text-zinc-300" />
                   )}
@@ -929,7 +882,9 @@ export default function GalleryPage() {
                 <p className="text-sm">
                   {activeTab === "favorites" ? t.gallery.noFavorites : 
                    activeTab === "model" ? t.gallery.noModelImages :
-                   activeTab === "custom" ? (t.gallery.noCustomImages || '暂无定制拍摄') : t.gallery.noImages}
+                   activeTab === "product" ? t.gallery.noProductImages : 
+                   activeTab === "group" ? (t.gallery.noGroupImages || '暂无组图') :
+                   activeTab === "reference" ? (t.gallery.noReferenceImages || '暂无参考图') : t.gallery.noImages}
                 </p>
                 <p className="text-xs text-zinc-300 mt-1">
                   {activeTab !== "favorites" && (t.gallery?.startShooting || "去拍摄生成你的第一张图片吧")}
