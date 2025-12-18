@@ -261,65 +261,68 @@ export default function ReferenceShotPage() {
       {/* Content */}
       <div className="p-4">
         {step === 'upload' && (
-          <div className="space-y-6">
-            {/* Reference Image */}
-            <div>
-              <h3 className="text-sm font-semibold text-zinc-800 mb-2">
-                {t.referenceShot?.referenceImage || '参考图'}
-              </h3>
-              <p className="text-xs text-zinc-500 mb-3">
-                {t.referenceShot?.referenceImageDesc || '上传一张参考图，AI将学习其风格和构图'}
-              </p>
-              
-              {referenceImage ? (
-                <div className="relative w-full aspect-[3/4] rounded-xl overflow-hidden bg-zinc-100">
-                  <Image src={referenceImage} alt="Reference" fill className="object-cover" />
+          <div className="space-y-4 pb-24">
+            {/* Reference Image + Product Image - Side by Side */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Reference Image */}
+              <div>
+                <h3 className="text-xs font-semibold text-zinc-800 mb-1">
+                  {t.referenceShot?.referenceImage || '参考图'}
+                </h3>
+                <p className="text-[10px] text-zinc-500 mb-2 line-clamp-2">
+                  {t.referenceShot?.referenceImageDesc || '上传参考图，AI学习风格'}
+                </p>
+                
+                {referenceImage ? (
+                  <div className="relative w-full aspect-[3/4] rounded-xl overflow-hidden bg-zinc-100">
+                    <Image src={referenceImage} alt="Reference" fill className="object-cover" />
+                    <button
+                      onClick={() => setReferenceImage(null)}
+                      className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center"
+                    >
+                      <X className="w-3 h-3 text-white" />
+                    </button>
+                  </div>
+                ) : (
                   <button
-                    onClick={() => setReferenceImage(null)}
-                    className="absolute top-2 right-2 w-8 h-8 bg-black/60 rounded-full flex items-center justify-center"
+                    onClick={() => refImageInputRef.current?.click()}
+                    className="w-full aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 bg-zinc-50 hover:bg-blue-50 transition-all flex flex-col items-center justify-center gap-1"
                   >
-                    <X className="w-4 h-4 text-white" />
+                    <Plus className="w-8 h-8 text-zinc-400" />
+                    <span className="text-xs text-zinc-500">{t.common?.upload || '上传'}</span>
                   </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => refImageInputRef.current?.click()}
-                  className="w-full aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 bg-zinc-50 hover:bg-blue-50 transition-all flex flex-col items-center justify-center gap-2"
-                >
-                  <Plus className="w-10 h-10 text-zinc-400" />
-                  <span className="text-sm text-zinc-500">{t.common?.upload || '上传'}</span>
-                </button>
-              )}
-            </div>
-            
-            {/* Product Image */}
-            <div>
-              <h3 className="text-sm font-semibold text-zinc-800 mb-2">
-                {t.referenceShot?.productImage || '商品图'}
-              </h3>
-              <p className="text-xs text-zinc-500 mb-3">
-                {t.referenceShot?.productImageDesc || '上传商品图，模特将穿上这件商品'}
-              </p>
+                )}
+              </div>
               
-              {productImage ? (
-                <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-zinc-100">
-                  <Image src={productImage} alt="Product" fill className="object-cover" />
+              {/* Product Image */}
+              <div>
+                <h3 className="text-xs font-semibold text-zinc-800 mb-1">
+                  {t.referenceShot?.productImage || '商品图'}
+                </h3>
+                <p className="text-[10px] text-zinc-500 mb-2 line-clamp-2">
+                  {t.referenceShot?.productImageDesc || '上传商品图'}
+                </p>
+                
+                {productImage ? (
+                  <div className="relative w-full aspect-[3/4] rounded-xl overflow-hidden bg-zinc-100">
+                    <Image src={productImage} alt="Product" fill className="object-cover" />
+                    <button
+                      onClick={() => setProductImage(null)}
+                      className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center"
+                    >
+                      <X className="w-3 h-3 text-white" />
+                    </button>
+                  </div>
+                ) : (
                   <button
-                    onClick={() => setProductImage(null)}
-                    className="absolute top-2 right-2 w-8 h-8 bg-black/60 rounded-full flex items-center justify-center"
+                    onClick={() => productImageInputRef.current?.click()}
+                    className="w-full aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 bg-zinc-50 hover:bg-blue-50 transition-all flex flex-col items-center justify-center gap-1"
                   >
-                    <X className="w-4 h-4 text-white" />
+                    <Plus className="w-8 h-8 text-zinc-400" />
+                    <span className="text-xs text-zinc-500">{t.common?.upload || '上传'}</span>
                   </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => productImageInputRef.current?.click()}
-                  className="w-full aspect-square rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 bg-zinc-50 hover:bg-blue-50 transition-all flex flex-col items-center justify-center gap-2"
-                >
-                  <Plus className="w-10 h-10 text-zinc-400" />
-                  <span className="text-sm text-zinc-500">{t.common?.upload || '上传'}</span>
-                </button>
-              )}
+                )}
+              </div>
             </div>
             
             {/* Model Selection */}
@@ -386,8 +389,12 @@ export default function ReferenceShotPage() {
                 <p className="text-sm text-red-600">{error}</p>
               </div>
             )}
-            
-            {/* Generate Button */}
+          </div>
+        )}
+        
+        {/* Fixed Generate Button at Bottom - Only show in upload step */}
+        {step === 'upload' && (
+          <div className="fixed bottom-0 left-0 right-0 p-4 pb-safe bg-white/90 backdrop-blur-lg border-t border-zinc-100">
             <motion.button
               onClick={handleGenerate}
               disabled={!canGenerate}
@@ -402,7 +409,6 @@ export default function ReferenceShotPage() {
               {t.referenceShot?.generate || '开始生成'}
             </motion.button>
           </div>
-        )}
         
         {step === 'generating' && (
           <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
