@@ -70,6 +70,8 @@ export const ko: Translations = {
     shootModel: "모델 촬영",
     shootProduct: "상품 촬영",
     retouchRoom: "편집실",
+    createCustomModel: "전용 모델 생성",
+    createCustomModelDesc: "상품을 업로드하면 AI가 브랜드 전용 모델을 생성합니다",
     modelStudio: "구매후기",
     modelStudioSubtitle: "실제 생활 장면",
     proStudio: "모델 스튜디오",

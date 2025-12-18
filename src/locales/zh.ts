@@ -68,6 +68,8 @@ export const zh = {
     shootModel: "拍模特",
     shootProduct: "拍商品",
     retouchRoom: "修图室",
+    createCustomModel: "创建专属模特",
+    createCustomModelDesc: "上传商品，AI 为你定制品牌专属模特",
     modelStudio: "买家秀",
     modelStudioSubtitle: "真实生活场景",
     proStudio: "模特棚拍",
