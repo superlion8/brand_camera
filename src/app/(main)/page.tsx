@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { ChevronRight, FolderHeart, Images, Wand2, Users, Lightbulb, Sparkles, Grid3X3, ScanFace, Box, Settings, Palette } from "lucide-react"
+import { ChevronRight, FolderHeart, Images, Wand2, Users, Lightbulb, Sparkles, Grid3X3, ScanFace, Box, Settings, Palette, UserPlus } from "lucide-react"
 import { motion } from "framer-motion"
 import { useAssetStore } from "@/stores/assetStore"
 import { useTranslation } from "@/stores/languageStore"
@@ -237,7 +237,43 @@ export default function HomePage() {
           </div>
         </motion.div>
 
-        {/* Section 3: 修图室 */}
+        {/* Section 3: 创建模特 - NEW Feature */}
+        <motion.div className="px-4 mt-4" variants={sectionVariants}>
+          <Link href="/model-create">
+            <motion.div
+              whileTap={{ scale: 0.98 }}
+              className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600 p-4 shadow-lg shadow-violet-200"
+            >
+              {/* Background Pattern */}
+              <div className="absolute inset-0 opacity-10">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full -translate-y-1/2 translate-x-1/2" />
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full translate-y-1/2 -translate-x-1/2" />
+              </div>
+              
+              <div className="relative flex items-center gap-4">
+                <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                  <UserPlus className="w-7 h-7 text-white" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-base font-bold text-white">创建专属模特</h3>
+                    <span className="px-1.5 py-0.5 bg-white/20 backdrop-blur-sm rounded text-[10px] font-bold text-white">
+                      NEW
+                    </span>
+                  </div>
+                  <p className="text-xs text-white/80">
+                    上传商品，AI 为你定制品牌专属模特
+                  </p>
+                </div>
+                <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                  <ChevronRight className="w-5 h-5 text-white" />
+                </div>
+              </div>
+            </motion.div>
+          </Link>
+        </motion.div>
+
+        {/* Section 4: 修图室 */}
         <motion.div className="px-4 mt-2" variants={sectionVariants}>
           <SectionHeader
             title={t.home.retouchRoom || "修图室"}
@@ -261,7 +297,7 @@ export default function HomePage() {
           </div>
         </motion.div>
 
-        {/* Section 4: Quick Links */}
+        {/* Section 5: Quick Links */}
         <motion.div className="px-4 mt-4" variants={sectionVariants}>
           <div className="space-y-2">
             <div>
