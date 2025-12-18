@@ -112,9 +112,12 @@ export async function GET(request: NextRequest) {
       } else if (subType === 'create_model') {
         // 只显示创建专属模特
         query = query.or('task_type.eq.create_model')
+      } else if (subType === 'social') {
+        // 只显示社媒种草
+        query = query.or('task_type.eq.social')
       } else {
-        // 全部模特：买家秀 + 专业棚拍 + 创建专属模特（不包含组图和参考图，它们是独立分类）
-        query = query.or('task_type.eq.camera_model,task_type.eq.model,task_type.eq.camera,task_type.eq.model_studio,task_type.eq.pro_studio,task_type.eq.prostudio,task_type.eq.create_model')
+        // 全部模特：买家秀 + 专业棚拍 + 创建专属模特 + 社媒种草（不包含组图和参考图，它们是独立分类）
+        query = query.or('task_type.eq.camera_model,task_type.eq.model,task_type.eq.camera,task_type.eq.model_studio,task_type.eq.pro_studio,task_type.eq.prostudio,task_type.eq.create_model,task_type.eq.social')
       }
     } else if (type === 'product') {
       // 纯商品类型（不包含 edit，edit 只在"全部"分类中显示）

@@ -26,6 +26,9 @@
     },
     "src/app/api/reference-shot/auto-select-model/route.ts": {
       "maxDuration": 60
+    },
+    "src/app/api/generate-social/route.ts": {
+      "maxDuration": 300
     }
   }
 }

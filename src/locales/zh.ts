@@ -73,6 +73,8 @@ export const zh = {
     createCustomModelDesc: "上传商品，AI 为你定制品牌专属模特",
     modelStudio: "买家秀",
     modelStudioSubtitle: "真实生活场景",
+    socialMode: "社媒种草",
+    socialModeSubtitle: "小红书INS风格",
     proStudio: "模特棚拍",
     proStudioSubtitle: "纯色背景质感",
     customShot: "定制拍摄",
@@ -281,6 +283,7 @@ export const zh = {
     proStudio: "模特棚拍",
     groupShoot: "组图",
     createModel: "定制模特",
+    social: "社媒种草",
     referenceShot: "参考图",
     goGroupShoot: "拍组图",
     modifyMaterial: "改材质版型",
@@ -698,6 +701,24 @@ export const zh = {
     // 通用
     customize: "自定义",
     customizePlaceholder: "请输入自定义内容...",
+  },
+
+  // 社媒种草
+  social: {
+    productImage: "商品图",
+    model: "模特",
+    background: "背景",
+    autoSelect: "随机选择",
+    description: "生成 6 张社媒风格图",
+    descriptionDetail: "包含 4 张韩系生活感 + 2 张对镜自拍",
+    generate: "生成种草图",
+    generating: "正在生成种草图...",
+    generatingDesc: "6 张图片生成中，请稍候",
+    result: "生成结果",
+    newGeneration: "重新生成",
+    viewGallery: "查看成片",
+    selectModel: "选择模特",
+    selectBackground: "选择背景",
   },
 
   // 参考图拍摄

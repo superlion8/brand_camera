@@ -24,6 +24,7 @@ export type GenerationType =
   | 'edit' | 'editing'  // 通用编辑
   | 'create_model'  // 创建专属模特
   | 'reference_shot'  // 参考图拍摄
+  | 'social'  // 社媒种草
 
 export interface Asset {
   id: string

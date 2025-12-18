@@ -308,6 +308,14 @@ export default function HomePage() {
               afterImage={`${HOMEPAGE_STORAGE_URL}/model-after.png`}
               href="/camera"
             />
+            <BeforeAfterCard
+              title={t.home.socialMode || "社媒种草"}
+              subtitle={t.home.socialModeSubtitle || "小红书INS风格"}
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/model-before.jpg`}
+              afterImage={`${HOMEPAGE_STORAGE_URL}/model-after.png`}
+              badge="NEW"
+              href="/camera/social"
+            />
           </div>
         </motion.div>
 

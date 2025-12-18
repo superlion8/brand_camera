@@ -75,6 +75,8 @@ export const en: Translations = {
     createCustomModelDesc: "Create your exclusive models",
     modelStudio: "Buyer Show",
     modelStudioSubtitle: "Real-life Scenes",
+    socialMode: "Social",
+    socialModeSubtitle: "Instagram Style",
     proStudio: "Model Studio",
     proStudioSubtitle: "Solid Background",
     customShot: "Custom Shot",
@@ -283,6 +285,7 @@ export const en: Translations = {
     proStudio: "Model Studio",
     groupShoot: "Group",
     createModel: "Custom Model",
+    social: "Social",
     referenceShot: "Reference Shot",
     goGroupShoot: "Group Shoot",
     modifyMaterial: "Material & Fit",
@@ -700,6 +703,24 @@ export const en: Translations = {
     // Common
     customize: "Customize",
     customizePlaceholder: "Enter custom requirements...",
+  },
+
+  // Social Mode
+  social: {
+    productImage: "Product Image",
+    model: "Model",
+    background: "Background",
+    autoSelect: "Random",
+    description: "Generate 6 social-style images",
+    descriptionDetail: "4 Korean lifestyle + 2 mirror selfies",
+    generate: "Generate Social",
+    generating: "Generating social images...",
+    generatingDesc: "Generating 6 images, please wait",
+    result: "Results",
+    newGeneration: "Generate Again",
+    viewGallery: "View Photos",
+    selectModel: "Select Model",
+    selectBackground: "Select Background",
   },
 
   // Reference Shot

@@ -24,7 +24,7 @@ import {
 } from "@/lib/taskTypes"
 
 type TabType = "all" | "model" | "product" | "group" | "reference" | "favorites"
-type ModelSubType = "all" | "buyer" | "prostudio" | "create_model"  // 买家秀 / 专业棚拍 / 创建专属模特
+type ModelSubType = "all" | "buyer" | "prostudio" | "create_model" | "social"  // 买家秀 / 专业棚拍 / 创建专属模特 / 社媒种草
 
 // 类型分类函数包装器（兼容 Generation 对象参数）
 function isModelType(gen: Generation | null | undefined): boolean {
@@ -167,6 +167,17 @@ export default function GalleryPage() {
       return { 
         label: t.gallery.createModel || '定制模特', 
         color: 'bg-violet-500',
+      }
+    }
+    
+    // Social types (社媒种草)
+    if (gen.type === 'social') {
+      const imageType = imageIndex === 2 || imageIndex === 5 ? 'mirror' : 'lifestyle'
+      return { 
+        label: t.gallery.social || '社媒种草', 
+        color: 'bg-gradient-to-r from-pink-500 to-purple-500',
+        subLabel: isDebugMode ? (imageType === 'mirror' ? '对镜自拍' : '韩系生活') : undefined,
+        subColor: imageType === 'mirror' ? 'bg-purple-500' : 'bg-pink-500'
       }
     }
     
@@ -652,6 +663,16 @@ export default function GalleryPage() {
               }`}
             >
               {t.gallery.createModel || '定制模特'}
+            </button>
+            <button
+              onClick={() => setModelSubType("social")}
+              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${
+                modelSubType === "social"
+                  ? "bg-pink-500 text-white"
+                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+              }`}
+            >
+              {t.gallery.social || '社媒种草'}
             </button>
           </div>
         )}

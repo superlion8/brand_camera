@@ -75,6 +75,8 @@ export const ko: Translations = {
     createCustomModelDesc: "상품을 업로드하면 AI가 브랜드 전용 모델을 생성합니다",
     modelStudio: "구매후기",
     modelStudioSubtitle: "실제 생활 장면",
+    socialMode: "소셜 미디어",
+    socialModeSubtitle: "인스타그램 스타일",
     proStudio: "모델 스튜디오",
     proStudioSubtitle: "단색 배경 질감",
     customShot: "커스텀 촬영",
@@ -283,6 +285,7 @@ export const ko: Translations = {
     proStudio: "모델 스튜디오",
     groupShoot: "그룹",
     createModel: "커스텀 모델",
+    social: "소셜 미디어",
     referenceShot: "참조 촬영",
     goGroupShoot: "그룹 촬영",
     modifyMaterial: "소재/핏 변경",
@@ -700,6 +703,24 @@ export const ko: Translations = {
     // 공통
     customize: "사용자 정의",
     customizePlaceholder: "사용자 정의 내용 입력...",
+  },
+
+  // 소셜 미디어
+  social: {
+    productImage: "상품 이미지",
+    model: "모델",
+    background: "배경",
+    autoSelect: "무작위",
+    description: "6장의 소셜 스타일 이미지 생성",
+    descriptionDetail: "한국식 라이프스타일 4장 + 셀카 2장",
+    generate: "소셜 이미지 생성",
+    generating: "소셜 이미지 생성 중...",
+    generatingDesc: "6장의 이미지 생성 중, 잠시만 기다려주세요",
+    result: "결과",
+    newGeneration: "다시 생성",
+    viewGallery: "사진 보기",
+    selectModel: "모델 선택",
+    selectBackground: "배경 선택",
   },
 
   // 참조 촬영
