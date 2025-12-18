@@ -85,16 +85,16 @@ export default function ModelCreateBrands() {
     brand.displayName.toLowerCase().includes(searchQuery.toLowerCase())
   )
   
-  // 检查品牌是否已选中
-  const isBrandSelected = (brandName: string) => {
-    return selectedBrands.some(b => b.name.toLowerCase() === brandName.toLowerCase())
+  // 检查品牌是否已选中 - 使用 displayName 匹配（因为添加时用的是 displayName）
+  const isBrandSelected = (displayName: string) => {
+    return selectedBrands.some(b => b.name.toLowerCase() === displayName.toLowerCase())
   }
   
   // 选择品牌
   const handleSelectBrand = (brand: BrandLogo) => {
-    if (isBrandSelected(brand.name)) {
+    if (isBrandSelected(brand.displayName)) {
       const index = selectedBrands.findIndex(
-        b => b.name.toLowerCase() === brand.name.toLowerCase()
+        b => b.name.toLowerCase() === brand.displayName.toLowerCase()
       )
       if (index !== -1) removeBrand(index)
     } else if (selectedBrands.length < 4) {
@@ -277,7 +277,7 @@ export default function ModelCreateBrands() {
         ) : (
           <div className="grid grid-cols-3 gap-3">
             {filteredBrands.map((brand) => {
-              const isSelected = isBrandSelected(brand.name)
+              const isSelected = isBrandSelected(brand.displayName)
               return (
                 <motion.button
                   key={brand.name}

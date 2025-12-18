@@ -4,7 +4,7 @@ import { useRef, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
-import { ArrowLeft, Plus, X, ImagePlus, ChevronRight, Sparkles, FolderHeart, Upload } from "lucide-react"
+import { ArrowLeft, Plus, X, ImagePlus, ChevronRight, Sparkles, FolderHeart, Upload, Loader2 } from "lucide-react"
 import { useModelCreateStore } from "@/stores/modelCreateStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { createClient } from "@/lib/supabase/client"
@@ -15,6 +15,8 @@ export default function ModelCreateStep1() {
   const [isDragging, setIsDragging] = useState(false)
   const [showAssetPicker, setShowAssetPicker] = useState(false)
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<number>(0)
   
   const { productImages, addProductImage, removeProductImage, reset } = useModelCreateStore()
   const { userProducts } = useAssetStore()
@@ -40,24 +42,60 @@ export default function ModelCreateStep1() {
     checkAuth()
   }, [router])
   
+  // 上传单个文件到 Supabase
+  const uploadFileToStorage = async (file: File): Promise<string | null> => {
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      
+      const response = await fetch('/api/model-create/upload-product', {
+        method: 'POST',
+        body: formData,
+      })
+      
+      const data = await response.json()
+      
+      if (!data.success) {
+        console.error('Upload failed:', data.error)
+        return null
+      }
+      
+      return data.url
+    } catch (error) {
+      console.error('Upload error:', error)
+      return null
+    }
+  }
+  
   // 处理文件选择
   const handleFileSelect = async (files: FileList | null) => {
-    if (!files) return
+    if (!files || isUploading) return
     
     const remainingSlots = 4 - productImages.length
-    const filesToProcess = Array.from(files).slice(0, remainingSlots)
+    const filesToProcess = Array.from(files)
+      .filter(file => file.type.startsWith('image/'))
+      .slice(0, remainingSlots)
     
-    for (const file of filesToProcess) {
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          const result = e.target?.result as string
-          if (result) {
-            addProductImage(result)
-          }
+    if (filesToProcess.length === 0) return
+    
+    setIsUploading(true)
+    setUploadProgress(0)
+    
+    try {
+      for (let i = 0; i < filesToProcess.length; i++) {
+        const file = filesToProcess[i]
+        setUploadProgress(Math.round(((i) / filesToProcess.length) * 100))
+        
+        const url = await uploadFileToStorage(file)
+        if (url) {
+          addProductImage(url)
         }
-        reader.readAsDataURL(file)
+        
+        setUploadProgress(Math.round(((i + 1) / filesToProcess.length) * 100))
       }
+    } finally {
+      setIsUploading(false)
+      setUploadProgress(0)
     }
   }
   
@@ -247,14 +285,25 @@ export default function ModelCreateStep1() {
           <div className="flex gap-3 mt-4">
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="flex-1 py-3 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 transition-colors flex items-center justify-center gap-2"
+              disabled={isUploading || productImages.length >= 4}
+              className="flex-1 py-3 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Upload className="w-4 h-4 text-zinc-600" />
-              <span className="text-sm font-medium text-zinc-700">本地上传</span>
+              {isUploading ? (
+                <>
+                  <Loader2 className="w-4 h-4 text-violet-600 animate-spin" />
+                  <span className="text-sm font-medium text-violet-600">上传中 {uploadProgress}%</span>
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4 text-zinc-600" />
+                  <span className="text-sm font-medium text-zinc-700">本地上传</span>
+                </>
+              )}
             </button>
             <button
               onClick={() => setShowAssetPicker(true)}
-              className="flex-1 py-3 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 transition-colors flex items-center justify-center gap-2"
+              disabled={isUploading || productImages.length >= 4}
+              className="flex-1 py-3 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FolderHeart className="w-4 h-4 text-zinc-600" />
               <span className="text-sm font-medium text-zinc-700">从资产库选择</span>
