@@ -72,9 +72,29 @@ export async function POST(request: NextRequest) {
     const finalPrompt = buildFinalPrompt(captionPrompt)
     
     // Prepare image data
+    console.log('[ReferenceShot] Processing images...')
+    console.log('[ReferenceShot] Product image type:', productImage?.substring(0, 50))
+    console.log('[ReferenceShot] Model image type:', modelImage?.substring(0, 50))
+    console.log('[ReferenceShot] Background image type:', backgroundImage?.substring(0, 50))
+    
     const productData = await ensureBase64Data(productImage)
     const modelData = await ensureBase64Data(modelImage)
     const backgroundData = await ensureBase64Data(backgroundImage)
+    
+    // Validate base64 data lengths
+    console.log('[ReferenceShot] Product data length:', productData?.length || 0)
+    console.log('[ReferenceShot] Model data length:', modelData?.length || 0)
+    console.log('[ReferenceShot] Background data length:', backgroundData?.length || 0)
+    
+    if (!productData || productData.length < 100) {
+      return NextResponse.json({ success: false, error: '商品图片数据无效' }, { status: 400 })
+    }
+    if (!modelData || modelData.length < 100) {
+      return NextResponse.json({ success: false, error: '模特图片数据无效' }, { status: 400 })
+    }
+    if (!backgroundData || backgroundData.length < 100) {
+      return NextResponse.json({ success: false, error: '背景图片数据无效' }, { status: 400 })
+    }
     
     // Generate 2 images
     const generationId = generateId()

@@ -118,10 +118,26 @@ Important: Only output the JSON object, no other text.`
     }
     
     // 5. Get the model image URL from storage
-    // Try both .jpg and .png extensions
-    const modelImageUrl = `${ALL_MODELS_STORAGE_URL}/${modelId}.jpg`
+    // Try .jpg first, then .png
+    let modelImageUrl = `${ALL_MODELS_STORAGE_URL}/${modelId}.jpg`
     
-    console.log('[AutoSelectModel] Selected model:', modelId)
+    // Check if .jpg exists, otherwise try .png
+    try {
+      const checkResponse = await fetch(modelImageUrl, { method: 'HEAD' })
+      if (!checkResponse.ok) {
+        // Try .png
+        const pngUrl = `${ALL_MODELS_STORAGE_URL}/${modelId}.png`
+        const pngCheck = await fetch(pngUrl, { method: 'HEAD' })
+        if (pngCheck.ok) {
+          modelImageUrl = pngUrl
+          console.log('[AutoSelectModel] Using .png format for model:', modelId)
+        }
+      }
+    } catch (e) {
+      console.warn('[AutoSelectModel] Could not verify image format, using .jpg')
+    }
+    
+    console.log('[AutoSelectModel] Selected model:', modelId, 'URL:', modelImageUrl)
     
     return NextResponse.json({
       success: true,
