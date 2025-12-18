@@ -17,10 +17,10 @@ export default function ModelCreateStep1() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   
   const { productImages, addProductImage, removeProductImage, reset } = useModelCreateStore()
-  const { assets } = useAssetStore()
+  const { userProducts } = useAssetStore()
   
   // 产品资产
-  const productAssets = assets.filter(a => a.type === 'product')
+  const productAssets = userProducts
   
   // 检查登录状态
   useEffect(() => {
