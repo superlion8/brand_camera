@@ -71,7 +71,7 @@ export const en: Translations = {
     shootProduct: "Product Photo",
     retouchRoom: "Retouch Room",
     createCustomModel: "Create Custom Model",
-    createCustomModelDesc: "Creates exclusive models for your brand",
+    createCustomModelDesc: "Create your exclusive models",
     modelStudio: "Buyer Show",
     modelStudioSubtitle: "Real-life Scenes",
     proStudio: "Model Studio",
