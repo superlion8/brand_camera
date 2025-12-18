@@ -121,9 +121,13 @@ export async function POST(request: NextRequest) {
       const base64Url = `data:image/png;base64,${fallbackResult}`
       const uploadedUrl = await uploadGeneratedImageServer(base64Url, generationId, 0, userId)
       
+      if (!uploadedUrl) {
+        return NextResponse.json({ success: false, error: '图片上传失败，请重试' }, { status: 500 })
+      }
+      
       return NextResponse.json({
         success: true,
-        imageUrl: uploadedUrl || base64Url,
+        imageUrl: uploadedUrl,
         generationId,
         model: 'fallback',
       })
@@ -134,11 +138,16 @@ export async function POST(request: NextRequest) {
     const base64Url = `data:image/png;base64,${imageResult}`
     const uploadedUrl = await uploadGeneratedImageServer(base64Url, generationId, 0, userId)
     
-    console.log('[Generate Model Image] Success, uploaded to:', uploadedUrl ? 'storage' : 'base64')
+    if (!uploadedUrl) {
+      console.error('[Generate Model Image] Failed to upload to storage')
+      return NextResponse.json({ success: false, error: '图片上传失败，请重试' }, { status: 500 })
+    }
+    
+    console.log('[Generate Model Image] Success, uploaded to storage:', uploadedUrl)
     
     return NextResponse.json({
       success: true,
-      imageUrl: uploadedUrl || base64Url,
+      imageUrl: uploadedUrl,
       generationId,
       model: 'primary',
     })

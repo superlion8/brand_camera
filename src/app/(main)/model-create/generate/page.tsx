@@ -10,7 +10,7 @@ import {
 } from "lucide-react"
 import { useModelCreateStore, GeneratedModelImage } from "@/stores/modelCreateStore"
 import { useAssetStore } from "@/stores/assetStore"
-import { generateId } from "@/lib/utils"
+import { generateId, compressBase64Image } from "@/lib/utils"
 
 type GenerationStatus = 'idle' | 'generating-prompts' | 'generating-images' | 'completed' | 'error'
 
@@ -109,11 +109,16 @@ export default function ModelCreateGenerate() {
           ))
           
           try {
+            // 压缩图片以避免超过 Vercel 4.5MB API 限制
+            const compressedImages = await Promise.all(
+              productImages.map(img => compressBase64Image(img, 1024))
+            )
+            
             const imageResponse = await fetch('/api/model-create/generate-image', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                productImages,
+                productImages: compressedImages,
                 modelPrompt: prompt,
                 productDescriptions,
               }),
