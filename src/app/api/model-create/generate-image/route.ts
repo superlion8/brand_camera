@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     
     // Call Gemini image generation model
     const response = await client.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-3-pro-image-preview',
       contents: [{ role: 'user', parts }],
       config: {
         responseModalities: ['IMAGE'],
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
       // Try fallback model
       console.log('[Generate Model Image] Primary model failed, trying fallback...')
       const fallbackResponse = await client.models.generateContent({
-        model: 'gemini-2.5-flash-preview-05-20',
+        model: 'gemini-3-pro-image-preview',
         contents: [{ role: 'user', parts }],
         config: {
           responseModalities: ['IMAGE'],
