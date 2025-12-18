@@ -90,7 +90,9 @@ export default function GalleryPage() {
       
       // 模特 tab 下传递二级分类参数
       const subType = activeTab === 'model' ? modelSubType : ''
-      const response = await fetch(`/api/gallery?type=${activeTab}&page=${page}&subType=${subType}`)
+      const response = await fetch(`/api/gallery?type=${activeTab}&page=${page}&subType=${subType}`, {
+        cache: 'no-store', // 禁用缓存，确保获取最新数据
+      })
       const result = await response.json()
       
       if (result.success) {
