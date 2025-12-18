@@ -309,7 +309,7 @@ export default function HomePage() {
           </div>
         </motion.div>
 
-        {/* Section 1.5: 定制拍摄 Custom Shot */}
+        {/* Section 2: 定制拍摄 Custom Shot */}
         <motion.div className="px-4 mt-2" variants={sectionVariants}>
           <SectionHeader
             title={t.home.customShot || "定制拍摄"}
@@ -331,16 +331,6 @@ export default function HomePage() {
               badge="NEW"
               href="/reference-shot"
             />
-          </div>
-        </motion.div>
-
-        {/* Section 2: 拍商品 */}
-        <motion.div className="px-4 mt-2" variants={sectionVariants}>
-          <SectionHeader
-            title={t.home.shootProduct || "拍商品"}
-            icon={<Box className="w-4 h-4 text-orange-600" />}
-          />
-          <div className="flex gap-3 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide snap-x">
             <BeforeAfterCard
               title={t.home.productStudio || "商品棚拍"}
               subtitle={t.home.productStudioSubtitle || "电商白底图"}

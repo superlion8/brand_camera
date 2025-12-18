@@ -271,6 +271,7 @@ export const en: Translations = {
     noProductImages: "No product images",
     noGroupImages: "No group photos",
     noReferenceImages: "No reference photos",
+    noCustomImages: "No custom shots",
     referenceImage: "Reference",
     noFavorites: "No favorites",
     startShooting: "Go shoot your first photo",
