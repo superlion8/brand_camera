@@ -168,7 +168,7 @@ export default function ModelCreateSelect() {
           </button>
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-violet-600" />
-            <span className="font-bold text-zinc-900">选择喜欢的模特</span>
+            <span className="font-bold text-zinc-900">选择风格</span>
           </div>
           <button
             onClick={runAnalysis}
@@ -192,7 +192,7 @@ export default function ModelCreateSelect() {
           <div className="flex justify-between mt-2 text-xs text-zinc-500">
             <span className="text-violet-600">✓ 商品</span>
             <span className="text-violet-600">✓ 品牌</span>
-            <span className="text-violet-600 font-medium">选模特</span>
+            <span className="text-violet-600 font-medium">选风格</span>
             <span>生成</span>
           </div>
         </div>
@@ -200,21 +200,6 @@ export default function ModelCreateSelect() {
       
       {/* Content */}
       <div className="px-4 py-6">
-        {/* Analysis Result */}
-        {brandStyleAnalysis && (
-          <div className="mb-6 p-4 bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl border border-violet-100">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
-                <Sparkles className="w-4 h-4 text-violet-600" />
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-violet-900 mb-1">AI 品牌风格分析</h3>
-                <p className="text-sm text-violet-700">{brandStyleAnalysis}</p>
-              </div>
-            </div>
-          </div>
-        )}
-        
         {/* Title */}
         <div className="mb-4">
           <h1 className="text-lg font-bold text-zinc-900 mb-1">
@@ -277,9 +262,6 @@ export default function ModelCreateSelect() {
                     onError={() => handleImageError(model.model_id, model.imageUrl)}
                   />
                   
-                  {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                  
                   {/* Selection Indicator */}
                   {isSelected && (
                     <motion.div
@@ -290,21 +272,6 @@ export default function ModelCreateSelect() {
                       <Check className="w-4 h-4 text-white" />
                     </motion.div>
                   )}
-                  
-                  {/* Model Info */}
-                  <div className="absolute bottom-0 left-0 right-0 p-3">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <span className="px-1.5 py-0.5 bg-white/20 backdrop-blur-sm rounded text-[10px] text-white font-medium">
-                        {model.model_gender === 'male' ? '男' : '女'}
-                      </span>
-                      <span className="text-[10px] text-white/80 truncate">
-                        {model.model_age_group}
-                      </span>
-                    </div>
-                    <p className="text-xs text-white font-medium truncate">
-                      {model.model_style}
-                    </p>
-                  </div>
                 </motion.button>
               )
             })}
