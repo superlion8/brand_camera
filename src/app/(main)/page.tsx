@@ -229,8 +229,8 @@ export default function HomePage() {
             <BeforeAfterCard
               title={t.home.referenceShot || "参考图拍摄"}
               subtitle={t.home.referenceShotSubtitle || "复刻风格构图"}
-              beforeImage={`${HOMEPAGE_STORAGE_URL}/reference-shot-before.jpg`}
-              afterImage={`${HOMEPAGE_STORAGE_URL}/reference-shot-after.jpg`}
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/reference-shot-before.png`}
+              afterImage={`${HOMEPAGE_STORAGE_URL}/reference-shot-after.png`}
               badge="NEW"
               href="/reference-shot"
             />
