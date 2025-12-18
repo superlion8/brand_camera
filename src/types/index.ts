@@ -23,6 +23,7 @@ export type GenerationType =
   | 'studio' | 'camera_product' | 'product' | 'product_studio'  // 商品影棚
   | 'edit' | 'editing'  // 通用编辑
   | 'create_model'  // 创建专属模特
+  | 'reference_shot'  // 参考图拍摄
 
 export interface Asset {
   id: string

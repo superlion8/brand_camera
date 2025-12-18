@@ -224,8 +224,15 @@ export default function HomePage() {
               subtitle={t.home.groupShootSubtitle || "多角度套图"}
               beforeImage={`${HOMEPAGE_STORAGE_URL}/group-shoot-before.png`}
               afterImage={`${HOMEPAGE_STORAGE_URL}/group-shoot-after.png`}
-              badge="NEW"
               href="/camera/group"
+            />
+            <BeforeAfterCard
+              title={t.home.referenceShot || "参考图拍摄"}
+              subtitle={t.home.referenceShotSubtitle || "复刻风格构图"}
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/reference-shot-before.jpg`}
+              afterImage={`${HOMEPAGE_STORAGE_URL}/reference-shot-after.jpg`}
+              badge="NEW"
+              href="/reference-shot"
             />
           </div>
         </motion.div>

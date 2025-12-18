@@ -114,9 +114,12 @@ export async function GET(request: NextRequest) {
       } else if (subType === 'create_model') {
         // 只显示创建专属模特
         query = query.or('task_type.eq.create_model')
+      } else if (subType === 'reference_shot') {
+        // 只显示参考图拍摄
+        query = query.or('task_type.eq.reference_shot')
       } else {
-        // 全部模特：买家秀 + 专业棚拍 + 组图 + 创建专属模特
-        query = query.or('task_type.eq.camera_model,task_type.eq.model,task_type.eq.camera,task_type.eq.model_studio,task_type.eq.pro_studio,task_type.eq.prostudio,task_type.eq.group_shoot,task_type.eq.create_model')
+        // 全部模特：买家秀 + 专业棚拍 + 组图 + 创建专属模特 + 参考图拍摄
+        query = query.or('task_type.eq.camera_model,task_type.eq.model,task_type.eq.camera,task_type.eq.model_studio,task_type.eq.pro_studio,task_type.eq.prostudio,task_type.eq.group_shoot,task_type.eq.create_model,task_type.eq.reference_shot')
       }
     } else if (type === 'product') {
       // 纯商品类型（不包含 edit，edit 只在"全部"分类中显示）

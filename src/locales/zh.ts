@@ -76,6 +76,8 @@ export const zh = {
     proStudioSubtitle: "纯色背景质感",
     groupShoot: "组图拍摄",
     groupShootSubtitle: "多角度套图",
+    referenceShot: "参考图拍摄",
+    referenceShotSubtitle: "复刻风格构图",
     generalEdit: "通用编辑",
     generalEditDesc: "画质增强、智能抠图、消除笔",
     modifyMaterial: "改材质版型",
@@ -274,6 +276,7 @@ export const zh = {
     proStudio: "模特棚拍",
     groupShoot: "组图",
     createModel: "定制模特",
+    referenceShot: "参考图",
     goGroupShoot: "拍组图",
     modifyMaterial: "改材质版型",
     saveAsAsset: "存为素材",
@@ -688,6 +691,31 @@ export const zh = {
     // 通用
     customize: "自定义",
     customizePlaceholder: "请输入自定义内容...",
+  },
+
+  // 参考图拍摄
+  referenceShot: {
+    title: "参考图拍摄",
+    referenceImage: "参考图",
+    referenceImageDesc: "上传一张参考图，AI将学习其风格和构图",
+    productImage: "商品图",
+    productImageDesc: "上传商品图，模特将穿上这件商品",
+    modelImage: "模特",
+    modelImageDesc: "选择模特或让AI自动匹配",
+    autoMode: "智能匹配",
+    selectModel: "选择模特",
+    uploadCustomModel: "上传自定义模特",
+    noModels: "暂无模特",
+    generate: "开始生成",
+    compressing: "压缩图片中...",
+    selectingModel: "智能选择模特...",
+    analyzingReference: "分析参考图...",
+    removingPerson: "提取背景...",
+    generating: "生成图片中...",
+    resultTitle: "生成完成",
+    resultDesc: "点击图片可放大查看",
+    newGeneration: "重新生成",
+    viewGallery: "查看成片",
   },
 }
 
