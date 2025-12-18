@@ -6,7 +6,7 @@ import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
   ArrowLeft, Check, Download, Heart, Loader2, Sparkles, 
-  RefreshCw, AlertCircle, Share2, Save, ChevronRight, Home
+  RefreshCw, AlertCircle, Share2, Save, ChevronRight, Home, X
 } from "lucide-react"
 import { useModelCreateStore, GeneratedModelImage } from "@/stores/modelCreateStore"
 import { useAssetStore } from "@/stores/assetStore"
@@ -28,6 +28,7 @@ export default function ModelCreateGenerate() {
   const [prompts, setPrompts] = useState<string[]>([])
   const [errorMessage, setErrorMessage] = useState<string>('')
   const [savedImages, setSavedImages] = useState<Set<string>>(new Set())
+  const [zoomImage, setZoomImage] = useState<string | null>(null)
   
   const {
     productImages,
@@ -346,7 +347,8 @@ export default function ModelCreateGenerate() {
                     src={imgStatus.imageUrl}
                     alt={`生成的模特 ${index + 1}`}
                     fill
-                    className="object-cover"
+                    className="object-cover cursor-pointer"
+                    onClick={() => setZoomImage(imgStatus.imageUrl!)}
                   />
                   
                   {/* Actions Overlay */}
@@ -414,27 +416,41 @@ export default function ModelCreateGenerate() {
           ))}
         </div>
         
-        {/* Completion Message */}
-        {status === 'completed' && (
+      </div>
+      
+      {/* Zoom Modal */}
+      <AnimatePresence>
+        {zoomImage && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+            onClick={() => setZoomImage(null)}
           >
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-                <Check className="w-4 h-4 text-green-600" />
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-green-900 mb-1">生成完成!</h3>
-                <p className="text-sm text-green-700">
-                  已为你生成 {generatedImages.length} 个专属模特，点击保存添加到资产库
-                </p>
-              </div>
-            </div>
+            <button
+              onClick={() => setZoomImage(null)}
+              className="absolute top-4 right-4 w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
+            >
+              <X className="w-6 h-6 text-white" />
+            </button>
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="relative w-full max-w-lg aspect-[3/4] mx-4"
+              onClick={e => e.stopPropagation()}
+            >
+              <Image
+                src={zoomImage}
+                alt="放大图片"
+                fill
+                className="object-contain"
+              />
+            </motion.div>
           </motion.div>
         )}
-      </div>
+      </AnimatePresence>
       
       {/* Bottom Actions - Above bottom nav */}
       {status === 'completed' && (

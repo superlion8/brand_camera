@@ -7,24 +7,33 @@ import { uploadGeneratedImageServer } from '@/lib/supabase/storage-server'
 export const maxDuration = 180 // 3 minutes
 
 // Model image generation prompt
-const MODEL_IMAGE_PROMPT = `[Role: Professional ecommerce Photographer] 
-Task: Generate a high-fidelity e-commerce studio shot.  
+const MODEL_IMAGE_PROMPT = `[Role: World-Class E-commerce Photographer & Retoucher]
 
-Step1: Outfit Instruction
-Read and understand the model description below. Choose appropriate clothing from the product images that best matches this model's style and vibe. If there are multiple suitable clothes, select the one that creates the most cohesive look. If no product perfectly matches, imagine a professional outfit that would suit this brand aesthetic.
+# Input
+- Reference Product Image: [Provided Below]
+- Model Persona: {model_prompt}
+- Product Description: {product_desc}
 
-Step 2: Take the shot
-Technical Requirements:
-- Model Description: {model_prompt}
-- The model should naturally wear the selected product clothing
-- Physics of fabric must be realistic (wrinkles, gravity, natural draping)
-- Professional studio lighting with soft shadows
-- Clean, neutral background (white or light gray)
-- Full body shot, front-facing, slight angle for dynamism
-- High resolution, photorealistic, commercial photography quality
-- 9:16 vertical composition, fashion editorial style
+# Task
+Generate a high-fidelity e-commerce fashion shot of the model wearing the Reference Product.
 
-Output the final image only.`
+# Execution Steps
+1. Subject Construction: Strictly follow the 'Model Persona' to generate the model's face, body type, and pose.
+2. Virtual Try-On: Dress the model in the 'Reference Product'.
+   - Ensure the fabric physics are realistic (drape, wrinkles, tension).
+   - The product must look identical to the Reference Product Image in terms of pattern, logo, and cut.
+3. Studio Setup:
+   - Lighting: Professional studio lighting, soft shadows, highlighting fabric texture.
+   - Background: Neutral, clean studio background to emphasize the product.
+   - Framing: Full body or 3/4 body shot, vertical composition (9:16 ratio).
+
+# Quality Constraints
+- Photorealistic, 8k resolution.
+- No deformities in hands or face.
+- The product is the main focus.
+
+# Output
+The final image only.`
 
 // Helper to ensure base64 data
 async function ensureBase64Data(image: string): Promise<string> {
@@ -61,16 +70,14 @@ export async function POST(request: NextRequest) {
     
     const client = getGenAIClient()
     
-    // Build prompt with model description
-    let finalPrompt = MODEL_IMAGE_PROMPT.replace('{model_prompt}', modelPrompt)
+    // Build prompt with model description and product description
+    const productDesc = productDescriptions && productDescriptions.length > 0
+      ? productDescriptions.map((d: { description: string }) => d.description).join('; ')
+      : 'Fashion clothing item'
     
-    // Add product descriptions if available
-    if (productDescriptions && productDescriptions.length > 0) {
-      finalPrompt += '\n\nProduct Descriptions:\n'
-      productDescriptions.forEach((desc: { index: number; description: string }) => {
-        finalPrompt += `- Product ${desc.index + 1}: ${desc.description}\n`
-      })
-    }
+    let finalPrompt = MODEL_IMAGE_PROMPT
+      .replace('{model_prompt}', modelPrompt)
+      .replace('{product_desc}', productDesc)
     
     const parts: any[] = [{ text: finalPrompt }]
     
