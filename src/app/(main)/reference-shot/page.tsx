@@ -14,6 +14,8 @@ import { useAssetStore } from "@/stores/assetStore"
 import { useQuota } from "@/hooks/useQuota"
 import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { useSettingsStore } from "@/stores/settingsStore"
+import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
+import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { Asset } from "@/types"
 
 // Steps
@@ -35,6 +37,7 @@ export default function ReferenceShotPage() {
   const presetStore = usePresetStore()
   const { userModels } = useAssetStore()
   const { debugMode } = useSettingsStore()
+  const { addTask, initImageSlots, updateImageSlot, updateTaskStatus, removeTask } = useGenerationTaskStore()
   
   // Step state
   const [step, setStep] = useState<Step>('upload')
@@ -113,8 +116,11 @@ export default function ReferenceShotPage() {
     setError(null)
     setGeneratedImages([])
     
-    const taskId = generateId()
     const imageCount = 4
+    
+    // 创建任务到 generationTaskStore（Photos tab 会显示 loading）
+    const taskId = addTask('reference_shot', productImage!, {}, imageCount)
+    initImageSlots(taskId, imageCount)
     
     // 预扣配额
     try {
@@ -162,6 +168,11 @@ export default function ReferenceShotPage() {
       
       // Step 2: Generate images in parallel (Simple + Extended)
       setLoadingMessage(t.referenceShot?.generating || '生成图片中...')
+      
+      // 更新所有 imageSlot 为 generating 状态
+      for (let i = 0; i < imageCount; i++) {
+        updateImageSlot(taskId, i, { status: 'generating' })
+      }
       
       // Simple mode: directly use ref_img as reference (2 images)
       const simplePromise = fetch('/api/reference-shot/generate-simple', {
@@ -279,6 +290,18 @@ export default function ReferenceShotPage() {
         console.warn('[ReferenceShot] Failed to save to gallery:', e)
       }
       
+      // 更新每个 imageSlot 的状态
+      allImages.forEach((img, index) => {
+        updateImageSlot(taskId, index, {
+          status: 'completed',
+          imageUrl: img.url,
+          genMode: img.mode === 'simple' ? 'simple' : 'extended',
+        })
+      })
+      
+      // 更新整体任务状态
+      updateTaskStatus(taskId, 'completed', allImages.map(img => img.url))
+      
       setGeneratedImages(allImages)
       setStep('result')
       refreshQuota()
@@ -287,6 +310,9 @@ export default function ReferenceShotPage() {
       console.error('[ReferenceShot] Error:', err)
       setError(err.message || '生成失败')
       setStep('upload')
+      
+      // 更新任务状态为失败
+      updateTaskStatus(taskId, 'failed', undefined, err.message || '生成失败')
       
       // 生成失败，全额退还配额
       console.log('[ReferenceShot] Generation failed, refunding quota')
@@ -675,7 +701,10 @@ export default function ReferenceShotPage() {
       {step === 'upload' && (
         <div className="fixed bottom-20 left-0 right-0 p-4 bg-white/95 backdrop-blur-lg border-t border-zinc-100 z-30">
           <motion.button
-            onClick={handleGenerate}
+            onClick={(e) => {
+              triggerFlyToGallery(e)
+              handleGenerate()
+            }}
             disabled={!canGenerate}
             whileTap={{ scale: 0.98 }}
             className={`w-full h-12 rounded-full text-base font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg ${
