@@ -233,9 +233,9 @@ export default function ModelCreateGenerate() {
             <div className="absolute inset-0 rounded-full border-4 border-violet-600 border-t-transparent animate-spin" />
             <Sparkles className="absolute inset-0 m-auto w-8 h-8 text-violet-600" />
           </div>
-          <h2 className="text-xl font-bold text-zinc-900 mb-2">正在分析模特风格...</h2>
+          <h2 className="text-xl font-bold text-zinc-900 mb-2">生成专属模特</h2>
           <p className="text-sm text-zinc-500">
-            AI 正在根据你选择的模特，生成专属定制描述
+            AI 正在为你创建独一无二的模特形象
           </p>
         </div>
       </div>
