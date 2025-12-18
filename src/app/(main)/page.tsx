@@ -125,11 +125,11 @@ function FadeBeforeAfterCard({
           className="absolute inset-0"
           animate={{ opacity: [0, 0, 1, 1, 0] }}
           transition={{
-            duration: 5,
+            duration: 10,
             ease: "easeInOut",
             times: [0, 0.1, 0.4, 0.9, 1],
             repeat: Infinity,
-            repeatDelay: 1,
+            repeatDelay: 2,
           }}
         >
           <Image src={afterImage} alt="After" fill className="object-cover" />
@@ -140,11 +140,11 @@ function FadeBeforeAfterCard({
           className="absolute top-2 left-2 w-[52px] text-center py-0.5 bg-black/40 backdrop-blur-sm rounded text-[9px] font-bold text-white/80 z-10"
           animate={{ opacity: [1, 1, 0, 0, 1] }}
           transition={{
-            duration: 5,
+            duration: 10,
             ease: "easeInOut",
             times: [0, 0.1, 0.4, 0.9, 1],
             repeat: Infinity,
-            repeatDelay: 1,
+            repeatDelay: 2,
           }}
         >
           Original
@@ -153,11 +153,11 @@ function FadeBeforeAfterCard({
           className="absolute top-2 left-2 w-[52px] text-center py-0.5 bg-purple-600/80 backdrop-blur-sm rounded text-[9px] font-bold text-white z-10"
           animate={{ opacity: [0, 0, 1, 1, 0] }}
           transition={{
-            duration: 5,
+            duration: 10,
             ease: "easeInOut",
             times: [0, 0.1, 0.4, 0.9, 1],
             repeat: Infinity,
-            repeatDelay: 1,
+            repeatDelay: 2,
           }}
         >
           Result
