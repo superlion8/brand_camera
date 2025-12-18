@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 import { createClient } from '@supabase/supabase-js'
-import { v4 as uuidv4 } from 'uuid'
+import crypto from 'crypto'
 
 export const maxDuration = 60
 
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     
     // Generate unique filename
     const ext = file.name.split('.').pop() || 'jpg'
-    const filename = `${uuidv4()}.${ext}`
+    const filename = `${crypto.randomUUID()}.${ext}`
     const path = `model-create/${userId}/${filename}`
     
     // Convert file to buffer
