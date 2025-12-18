@@ -181,7 +181,7 @@ export default function ModelCreateGenerate() {
         createdAt: new Date().toISOString(),
       })
       
-      setSavedImages(prev => new Set([...prev, image.id]))
+      setSavedImages(prev => new Set(Array.from(prev).concat(image.id)))
     } catch (err) {
       console.error('Save error:', err)
     }
