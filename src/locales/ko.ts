@@ -52,6 +52,7 @@ export const ko: Translations = {
     select: "선택",
     syncing: "클라우드 동기화 중...",
     pleaseWait: "잠시만 기다려 주세요",
+    waiting: "대기 중...",
   },
   
   // Navigation
@@ -295,6 +296,9 @@ export const ko: Translations = {
     savedToModels: "내 모델에 저장됨",
     savedToProducts: "내 상품에 저장됨",
     generatingImages: "AI 생성 중",
+    generating: "생성 중...",
+    imageOfTotal: "{current} / {total} 번째 이미지",
+    imageIndex: "{index} 번째 이미지",
     productImages: "장 상품 이미지",
     modelImages: "장 모델 이미지",
     processingImage: "AI가 이미지 처리 중",

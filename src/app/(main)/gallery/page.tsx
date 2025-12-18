@@ -1810,7 +1810,7 @@ function ImageSlotCard({ task, slot, slotIndex, galleryItemsMap, onImageClick, o
             <Check className="w-5 h-5 text-green-600" />
           </div>
           <p className="text-xs text-green-700 font-medium">{t.gallery.syncing || '同步中...'}</p>
-          <p className="text-[10px] text-green-600 mt-1">第 {slotIndex + 1} 张</p>
+          <p className="text-[10px] text-green-600 mt-1">{(t.gallery.imageIndex || 'Image {index}').replace('{index}', String(slotIndex + 1))}</p>
         </div>
         {/* 标签 */}
         <div className="absolute top-2 left-2 flex gap-1">
@@ -1896,10 +1896,10 @@ function ImageSlotCard({ task, slot, slotIndex, galleryItemsMap, onImageClick, o
         </div>
         
         <p className={`text-sm font-medium ${textColor}`}>
-          {slot.status === 'generating' ? '生成中...' : '等待中...'}
+          {slot.status === 'generating' ? (t.gallery.generating || 'Generating...') : (t.common.waiting || '等待中...')}
         </p>
         <p className={`text-xs ${textColor} opacity-70 mt-1`}>
-          第 {slotIndex + 1} 张
+          {(t.gallery.imageIndex || 'Image {index}').replace('{index}', String(slotIndex + 1))}
         </p>
       </div>
       
@@ -1954,8 +1954,8 @@ function PendingTaskCard({ taskType, index, total }: { taskType: string; index: 
       </div>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <Loader2 className={`w-8 h-8 ${textColor} animate-spin mb-2`} />
-        <p className={`text-xs ${textColor} font-medium`}>{t.gallery.generating || '生成中...'}</p>
-        <p className={`text-[10px] ${textColor} opacity-70 mt-1`}>第 {index + 1} / {total} 张</p>
+        <p className={`text-xs ${textColor} font-medium`}>{t.gallery.generating || 'Generating...'}</p>
+        <p className={`text-[10px] ${textColor} opacity-70 mt-1`}>{(t.gallery.imageOfTotal || 'Image {current} / {total}').replace('{current}', String(index + 1)).replace('{total}', String(total))}</p>
       </div>
     </div>
   )

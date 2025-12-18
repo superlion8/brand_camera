@@ -52,6 +52,7 @@ export const en: Translations = {
     select: "Select",
     syncing: "Syncing with cloud...",
     pleaseWait: "Please wait",
+    waiting: "Waiting...",
   },
   
   // Navigation
@@ -295,6 +296,9 @@ export const en: Translations = {
     savedToModels: "Saved to My Models",
     savedToProducts: "Saved to My Products",
     generatingImages: "AI generating",
+    generating: "Generating...",
+    imageOfTotal: "Image {current} / {total}",
+    imageIndex: "Image {index}",
     productImages: "product images",
     modelImages: "model images",
     processingImage: "AI is processing your image",

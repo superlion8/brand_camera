@@ -50,6 +50,7 @@ export const zh = {
     select: "选择",
     syncing: "正在同步云端数据...",
     pleaseWait: "请稍候",
+    waiting: "等待中...",
   },
   
   // Navigation
@@ -293,6 +294,9 @@ export const zh = {
     savedToModels: "已保存到我的模特",
     savedToProducts: "已保存到我的商品",
     generatingImages: "AI 正在生成",
+    generating: "生成中...",
+    imageOfTotal: "第 {current} / {total} 张",
+    imageIndex: "第 {index} 张",
     productImages: "张商品图",
     modelImages: "张模特图",
     processingImage: "AI 正在处理您的图片",
