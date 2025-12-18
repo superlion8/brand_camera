@@ -3,7 +3,6 @@ import { getGenAIClient, extractImage, safetySettings } from '@/lib/genai'
 import { requireAuth } from '@/lib/auth'
 import { uploadGeneratedImageServer } from '@/lib/supabase/storage-server'
 import { generateId } from '@/lib/utils'
-import { createClient } from '@/lib/supabase/server'
 
 export const maxDuration = 180
 
@@ -20,27 +19,23 @@ async function ensureBase64Data(image: string): Promise<string> {
   return image
 }
 
-// Build the final prompt
-function buildFinalPrompt(captionPrompt: string): string {
-  return `You are an expert fashion photographer. Create a photorealistic image combining the following elements:
+// Simple mode prompt - directly use ref_img as reference
+const SIMPLE_MODE_PROMPT = `You are an expert fashion photographer. Create a photorealistic image combining the following elements:
 
 [Input Mapping]
-- Reference Structure: Use the background image as the scene and lighting reference.
+- Reference Structure: Use the reference image as the scene and lighting reference.
 - Subject ID: Use the person in the model image as the model. Keep their exact facial features, skin tone, and body proportions.
 - Apparel Detail: The model is wearing the product from the product image. Ensure the fabric texture, logo, color, and fit are identical to the product image.
 
-[Scene & Action]
-${captionPrompt}
-
 [Execution Guidelines]
-- The lighting on the model must perfectly match the background image.
+- The lighting on the model must perfectly match the reference image.
+- The vibe/pose/expression should follow the person shown in reference image, but slightly change to match the vibe of the model.
 - Blending must be seamless; shadows must fall naturally on the ground/environment.
 - Composition: Instagram-friendly vertical crop.
 - Focus: Sharp focus on the model and product, with natural depth of field matching the scene.
 
 [Negative Prompt]
 bad anatomy, distorted fingers, floating limbs, mismatched lighting, cartoonish, low resolution, blurry face, changed product color, distorted logos.`
-}
 
 export async function POST(request: NextRequest) {
   // Check authentication
@@ -49,19 +44,16 @@ export async function POST(request: NextRequest) {
     return authResult.response
   }
   const userId = authResult.user.id
-  const userEmail = authResult.user.email
   
   try {
     const body = await request.json()
     const { 
       productImage, 
       modelImage, 
-      backgroundImage, 
-      captionPrompt,
-      referenceImageUrl,
+      referenceImage,
     } = body
     
-    if (!productImage || !modelImage || !backgroundImage || !captionPrompt) {
+    if (!productImage || !modelImage || !referenceImage) {
       return NextResponse.json({ 
         success: false, 
         error: '缺少必要参数' 
@@ -69,22 +61,18 @@ export async function POST(request: NextRequest) {
     }
     
     const client = getGenAIClient()
-    const finalPrompt = buildFinalPrompt(captionPrompt)
     
     // Prepare image data
-    console.log('[ReferenceShot] Processing images...')
-    console.log('[ReferenceShot] Product image type:', productImage?.substring(0, 50))
-    console.log('[ReferenceShot] Model image type:', modelImage?.substring(0, 50))
-    console.log('[ReferenceShot] Background image type:', backgroundImage?.substring(0, 50))
+    console.log('[ReferenceShot-Simple] Processing images...')
     
     const productData = await ensureBase64Data(productImage)
     const modelData = await ensureBase64Data(modelImage)
-    const backgroundData = await ensureBase64Data(backgroundImage)
+    const referenceData = await ensureBase64Data(referenceImage)
     
     // Validate base64 data lengths
-    console.log('[ReferenceShot] Product data length:', productData?.length || 0)
-    console.log('[ReferenceShot] Model data length:', modelData?.length || 0)
-    console.log('[ReferenceShot] Background data length:', backgroundData?.length || 0)
+    console.log('[ReferenceShot-Simple] Product data length:', productData?.length || 0)
+    console.log('[ReferenceShot-Simple] Model data length:', modelData?.length || 0)
+    console.log('[ReferenceShot-Simple] Reference data length:', referenceData?.length || 0)
     
     if (!productData || productData.length < 100) {
       return NextResponse.json({ success: false, error: '商品图片数据无效' }, { status: 400 })
@@ -92,8 +80,8 @@ export async function POST(request: NextRequest) {
     if (!modelData || modelData.length < 100) {
       return NextResponse.json({ success: false, error: '模特图片数据无效' }, { status: 400 })
     }
-    if (!backgroundData || backgroundData.length < 100) {
-      return NextResponse.json({ success: false, error: '背景图片数据无效' }, { status: 400 })
+    if (!referenceData || referenceData.length < 100) {
+      return NextResponse.json({ success: false, error: '参考图片数据无效' }, { status: 400 })
     }
     
     // Generate 2 images
@@ -102,14 +90,21 @@ export async function POST(request: NextRequest) {
     
     for (let i = 0; i < 2; i++) {
       try {
-        console.log(`[ReferenceShot] Generating image ${i + 1}/2...`)
+        console.log(`[ReferenceShot-Simple] Generating image ${i + 1}/2...`)
         
         const response = await client.models.generateContent({
           model: 'gemini-3-pro-image-preview',
           contents: [{
             role: 'user',
             parts: [
-              { text: finalPrompt },
+              { text: SIMPLE_MODE_PROMPT },
+              { text: '\n\n[Reference Image]:' },
+              {
+                inlineData: {
+                  mimeType: 'image/jpeg',
+                  data: referenceData,
+                },
+              },
               { text: '\n\n[Product Image]:' },
               {
                 inlineData: {
@@ -122,13 +117,6 @@ export async function POST(request: NextRequest) {
                 inlineData: {
                   mimeType: 'image/jpeg',
                   data: modelData,
-                },
-              },
-              { text: '\n\n[Background Image]:' },
-              {
-                inlineData: {
-                  mimeType: 'image/jpeg',
-                  data: backgroundData,
                 },
               },
             ],
@@ -153,7 +141,7 @@ export async function POST(request: NextRequest) {
           }
         }
       } catch (err: any) {
-        console.error(`[ReferenceShot] Error generating image ${i + 1}:`, err.message)
+        console.error(`[ReferenceShot-Simple] Error generating image ${i + 1}:`, err.message)
       }
     }
     
@@ -164,43 +152,17 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
     
-    // Save to database
-    const supabase = await createClient()
-    const { data: genData, error: genError } = await supabase
-      .from('generations')
-      .insert({
-        user_id: userId,
-        user_email: userEmail,
-        task_type: 'reference_shot',
-        status: 'completed',
-        output_image_urls: results,
-        input_image_url: referenceImageUrl || null,
-        input_params: {
-          captionPrompt: captionPrompt.substring(0, 500),
-          hasCustomModel: !!modelImage,
-        },
-        total_images_count: results.length,
-      })
-      .select()
-      .single()
-    
-    if (genError) {
-      console.error('[ReferenceShot] Failed to save generation:', genError)
-    } else {
-      console.log('[ReferenceShot] Saved generation:', genData.id)
-    }
-    
-    console.log(`[ReferenceShot] Generated ${results.length} images`)
+    console.log(`[ReferenceShot-Simple] Generated ${results.length} images`)
     
     return NextResponse.json({
       success: true,
       images: results,
-      generationId: genData?.id || generationId,
-      mode: 'extended',
+      generationId,
+      mode: 'simple',
     })
     
   } catch (error: any) {
-    console.error('[ReferenceShot] Error:', error)
+    console.error('[ReferenceShot-Simple] Error:', error)
     return NextResponse.json({
       success: false,
       error: error.message || '生成失败'

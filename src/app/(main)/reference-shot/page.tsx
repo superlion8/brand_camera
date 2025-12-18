@@ -13,10 +13,17 @@ import { usePresetStore } from "@/stores/presetStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { useQuota } from "@/hooks/useQuota"
 import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
+import { useSettingsStore } from "@/stores/settingsStore"
 import { Asset } from "@/types"
 
 // Steps
 type Step = 'upload' | 'generating' | 'result'
+
+// Generated image with mode info
+interface GeneratedImageInfo {
+  url: string
+  mode: 'simple' | 'extended'
+}
 
 // Storage base URL for all_models
 const ALL_MODELS_STORAGE_URL = 'https://cvdogeigbpussfamctsu.supabase.co/storage/v1/object/public/presets/all_models'
@@ -27,6 +34,7 @@ export default function ReferenceShotPage() {
   const { checkQuota, showExceededModal, requiredCount, closeExceededModal, refreshQuota } = useQuota()
   const presetStore = usePresetStore()
   const { userModels } = useAssetStore()
+  const { debugMode } = useSettingsStore()
   
   // Step state
   const [step, setStep] = useState<Step>('upload')
@@ -45,8 +53,8 @@ export default function ReferenceShotPage() {
   const [error, setError] = useState<string | null>(null)
   const [zoomImage, setZoomImage] = useState<string | null>(null)
   
-  // Result states
-  const [generatedImages, setGeneratedImages] = useState<string[]>([])
+  // Result states - now with mode info
+  const [generatedImages, setGeneratedImages] = useState<GeneratedImageInfo[]>([])
   
   // Input refs
   const refImageInputRef = useRef<HTMLInputElement>(null)
@@ -97,8 +105,8 @@ export default function ReferenceShotPage() {
   const handleGenerate = async () => {
     if (!canGenerate) return
     
-    // Check quota (2 images)
-    const hasQuota = await checkQuota(2)
+    // Check quota (4 images: 2 simple + 2 extended)
+    const hasQuota = await checkQuota(4)
     if (!hasQuota) return
     
     setStep('generating')
@@ -134,59 +142,85 @@ export default function ReferenceShotPage() {
         finalModelImage = await compressBase64Image(modelImage!, 1024)
       }
       
-      // Step 2: Caption the reference image
-      setLoadingMessage(t.referenceShot?.analyzingReference || '分析参考图...')
-      const captionRes = await fetch('/api/reference-shot/caption', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ referenceImage: compressedRefImage }),
-      })
-      
-      const captionData = await captionRes.json()
-      if (!captionData.success) {
-        throw new Error(captionData.error || '分析参考图失败')
-      }
-      
-      const captionPrompt = captionData.captionPrompt
-      console.log('[ReferenceShot] Caption prompt:', captionPrompt.substring(0, 100) + '...')
-      
-      // Step 3: Remove person from reference image
-      setLoadingMessage(t.referenceShot?.removingPerson || '提取背景...')
-      const removePersonRes = await fetch('/api/reference-shot/remove-person', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ referenceImage: compressedRefImage }),
-      })
-      
-      const removePersonData = await removePersonRes.json()
-      if (!removePersonData.success) {
-        throw new Error(removePersonData.error || '提取背景失败')
-      }
-      
-      const backgroundImage = removePersonData.backgroundImage
-      console.log('[ReferenceShot] Background image generated')
-      
-      // Step 4: Generate final images
+      // Step 2: Generate images in parallel (Simple + Extended)
       setLoadingMessage(t.referenceShot?.generating || '生成图片中...')
-      const generateRes = await fetch('/api/reference-shot/generate', {
+      
+      // Simple mode: directly use ref_img as reference (2 images)
+      const simplePromise = fetch('/api/reference-shot/generate-simple', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           productImage: compressedProductImage,
           modelImage: finalModelImage,
-          backgroundImage,
-          captionPrompt,
-          referenceImageUrl: referenceImage,
+          referenceImage: compressedRefImage,
         }),
-      })
+      }).then(res => res.json())
       
-      const generateData = await generateRes.json()
-      if (!generateData.success) {
-        throw new Error(generateData.error || '生成图片失败')
+      // Extended mode: caption + remove person + generate (2 images)
+      const extendedPromise = (async () => {
+        // Caption the reference image
+        const captionRes = await fetch('/api/reference-shot/caption', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ referenceImage: compressedRefImage }),
+        })
+        const captionData = await captionRes.json()
+        if (!captionData.success) {
+          throw new Error(captionData.error || '分析参考图失败')
+        }
+        const captionPrompt = captionData.captionPrompt
+        
+        // Remove person from reference image
+        const removePersonRes = await fetch('/api/reference-shot/remove-person', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ referenceImage: compressedRefImage }),
+        })
+        const removePersonData = await removePersonRes.json()
+        if (!removePersonData.success) {
+          throw new Error(removePersonData.error || '提取背景失败')
+        }
+        const backgroundImage = removePersonData.backgroundImage
+        
+        // Generate final images
+        const generateRes = await fetch('/api/reference-shot/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            productImage: compressedProductImage,
+            modelImage: finalModelImage,
+            backgroundImage,
+            captionPrompt,
+            referenceImageUrl: referenceImage,
+          }),
+        })
+        return generateRes.json()
+      })()
+      
+      // Wait for both to complete
+      const [simpleResult, extendedResult] = await Promise.all([simplePromise, extendedPromise])
+      
+      // Collect all images with mode info
+      const allImages: GeneratedImageInfo[] = []
+      
+      if (simpleResult.success && simpleResult.images) {
+        simpleResult.images.forEach((url: string) => {
+          allImages.push({ url, mode: 'simple' })
+        })
       }
       
-      console.log('[ReferenceShot] Generated images:', generateData.images.length)
-      setGeneratedImages(generateData.images)
+      if (extendedResult.success && extendedResult.images) {
+        extendedResult.images.forEach((url: string) => {
+          allImages.push({ url, mode: 'extended' })
+        })
+      }
+      
+      if (allImages.length === 0) {
+        throw new Error('生成图片失败')
+      }
+      
+      console.log('[ReferenceShot] Generated images:', allImages.length, '(simple:', simpleResult.images?.length || 0, ', extended:', extendedResult.images?.length || 0, ')')
+      setGeneratedImages(allImages)
       setStep('result')
       refreshQuota()
       
@@ -427,17 +461,17 @@ export default function ReferenceShotPage() {
                   className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden bg-zinc-100 shadow-lg"
                 >
                   <Image
-                    src={img}
+                    src={img.url}
                     alt={`Generated ${index + 1}`}
                     fill
                     className="object-cover cursor-pointer z-10"
-                    onClick={() => setZoomImage(img)}
+                    onClick={() => setZoomImage(img.url)}
                   />
                   
                   {/* Actions */}
                   <div className="absolute top-3 right-3 flex gap-2 z-20">
                     <button
-                      onClick={() => handleDownload(img, index)}
+                      onClick={() => handleDownload(img.url, index)}
                       className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
                     >
                       {isIOS ? (
@@ -447,7 +481,7 @@ export default function ReferenceShotPage() {
                       )}
                     </button>
                     <button
-                      onClick={() => setZoomImage(img)}
+                      onClick={() => setZoomImage(img.url)}
                       className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
                     >
                       <ZoomIn className="w-5 h-5 text-zinc-700" />
@@ -458,6 +492,17 @@ export default function ReferenceShotPage() {
                   <div className="absolute top-3 left-3 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center text-sm font-bold z-20">
                     #{index + 1}
                   </div>
+                  
+                  {/* Mode badge - only visible for debug users */}
+                  {debugMode && (
+                    <div className={`absolute bottom-3 left-3 px-2 py-1 rounded-full text-xs font-semibold z-20 ${
+                      img.mode === 'simple' 
+                        ? 'bg-green-500/80 text-white' 
+                        : 'bg-purple-500/80 text-white'
+                    }`}>
+                      {img.mode === 'simple' ? 'Simple' : 'Extended'}
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </div>
