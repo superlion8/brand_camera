@@ -9,8 +9,8 @@ const NEW_MODEL_PROMPT = `# Role
 Professional AI Art Prompt Engineer
 
 # Input Data
-User Selected Reference Models: The images provided below are visual references of models the user likes.
-Goal: Create 4 distinct, high-quality text prompts to generate new fashion models that share a similar vibe/category with the references but are unique.
+User Selected Reference Models: ['image1','image2','image3','image4'] (These are visual references).
+Goal: Create 4 distinct, high-quality text prompts to generate new fashion models that share a similar vibe/category with the references but are unique. Gender and ethnicity should be consistent with the reference models.
 
 # Analysis Dimensions
 - Physique: Body type, height, skin tone.
@@ -30,7 +30,7 @@ Goal: Create 4 distinct, high-quality text prompts to generate new fashion model
 5. Background: "Professional studio backdrop" or "Minimalist architectural background".
 
 # Output Format
-Strictly return a JSON object. Do not output markdown code blocks.
+Strictly return a JSON object.
 {
   "analysis_summary": "Brief summary of the visual consensus of selected models",
   "generated_prompts": {
