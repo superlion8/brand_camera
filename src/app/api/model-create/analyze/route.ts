@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
     
     // Call Gemini
     const response = await client.models.generateContent({
-      model: 'gemini-2.5-flash-preview-05-20',
+      model: 'gemini-2.5-flash',
       contents: [{ role: 'user', parts }],
       config: {
         safetySettings,
