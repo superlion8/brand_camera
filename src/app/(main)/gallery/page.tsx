@@ -1131,6 +1131,8 @@ export default function GalleryPage() {
                       </div>
                     )
                   })()}
+                  {/* Generation Details - Only show in debug mode */}
+                  {debugMode && (
                   <div className="mt-6 pt-4 border-t border-zinc-100 pb-8">
                     <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.gallery.debugParams}</h3>
                     
