@@ -113,6 +113,24 @@ export default function ReferenceShotPage() {
     setError(null)
     setGeneratedImages([])
     
+    const taskId = generateId()
+    const imageCount = 4
+    
+    // 预扣配额
+    try {
+      await fetch('/api/quota/reserve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskId,
+          imageCount,
+          taskType: 'reference_shot',
+        }),
+      })
+    } catch (e) {
+      console.warn('[ReferenceShot] Failed to reserve quota:', e)
+    }
+    
     try {
       // Compress images before sending
       setLoadingMessage(t.referenceShot?.compressing || '压缩图片中...')
@@ -220,6 +238,25 @@ export default function ReferenceShotPage() {
       }
       
       console.log('[ReferenceShot] Generated images:', allImages.length, '(simple:', simpleResult.images?.length || 0, ', extended:', extendedResult.images?.length || 0, ')')
+      
+      // 根据实际生成数量调整配额
+      if (allImages.length < imageCount) {
+        const refundCount = imageCount - allImages.length
+        console.log('[ReferenceShot] Refunding', refundCount, 'failed images')
+        try {
+          await fetch('/api/quota/reserve', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              taskId,
+              actualImageCount: allImages.length,
+            }),
+          })
+        } catch (e) {
+          console.warn('[ReferenceShot] Failed to refund quota:', e)
+        }
+      }
+      
       setGeneratedImages(allImages)
       setStep('result')
       refreshQuota()
@@ -228,6 +265,15 @@ export default function ReferenceShotPage() {
       console.error('[ReferenceShot] Error:', err)
       setError(err.message || '生成失败')
       setStep('upload')
+      
+      // 生成失败，全额退还配额
+      console.log('[ReferenceShot] Generation failed, refunding quota')
+      try {
+        await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
+        refreshQuota()
+      } catch (e) {
+        console.warn('[ReferenceShot] Failed to refund quota:', e)
+      }
     }
   }
   

@@ -204,14 +204,29 @@ export async function PUT(request: NextRequest) {
   
   try {
     const body = await request.json()
-    const { reservationId, taskId, actualImageCount, refundCount } = body
+    const { reservationId, taskId, actualImageCount, refundCount: explicitRefund } = body
     
     if (!reservationId && !taskId) {
       return NextResponse.json({ error: 'reservationId or taskId is required' }, { status: 400 })
     }
     
+    // 0. 先查询原始预扣数量
+    let selectQuery = supabase
+      .from('generations')
+      .select('total_images_count')
+      .eq('user_id', user.id)
+    
+    if (reservationId) {
+      selectQuery = selectQuery.eq('id', reservationId)
+    } else if (taskId) {
+      selectQuery = selectQuery.eq('task_id', taskId)
+    }
+    
+    const { data: genData } = await selectQuery.single()
+    const originalCount = genData?.total_images_count || 0
+    
     // 1. 更新 generation 记录状态
-    let query = supabase
+    let updateQuery = supabase
       .from('generations')
       .update({ 
         total_images_count: actualImageCount,
@@ -220,20 +235,22 @@ export async function PUT(request: NextRequest) {
       .eq('user_id', user.id)
     
     if (reservationId) {
-      query = query.eq('id', reservationId)
+      updateQuery = updateQuery.eq('id', reservationId)
     } else if (taskId) {
-      query = query.eq('task_id', taskId)
+      updateQuery = updateQuery.eq('task_id', taskId)
     }
     
-    const { error } = await query
+    const { error } = await updateQuery
     
     if (error) {
       console.error('[Quota Update] Error:', error)
       return NextResponse.json({ error: 'Failed to update quota' }, { status: 500 })
     }
     
-    // 2. 如果有退款，退还额度
-    if (refundCount && refundCount > 0) {
+    // 2. 计算退款数量（如果没有显式提供，则自动计算）
+    const refundCount = explicitRefund ?? Math.max(0, originalCount - actualImageCount)
+    
+    if (refundCount > 0) {
       const { data: quotaData } = await supabase
         .from('user_quotas')
         .select('used_quota')
@@ -248,10 +265,10 @@ export async function PUT(request: NextRequest) {
         .update({ used_quota: newUsed })
         .eq('user_id', user.id)
       
-      console.log('[Quota Update] Refunded', refundCount, 'images, actual:', actualImageCount, 'new used:', newUsed)
+      console.log('[Quota Update] Refunded', refundCount, 'images (original:', originalCount, ', actual:', actualImageCount, '), new used:', newUsed)
     }
     
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, refundedCount: refundCount })
   } catch (error: any) {
     console.error('[Quota Update] Error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
