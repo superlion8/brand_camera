@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
-import { ArrowLeft, Check, ChevronRight, Search, X, Plus, Sparkles } from "lucide-react"
+import { ArrowLeft, Check, ChevronRight, X, Plus, Sparkles } from "lucide-react"
 import { useModelCreateStore, BrandInfo } from "@/stores/modelCreateStore"
 import { createClient } from "@/lib/supabase/client"
 import { useTranslation } from "@/stores/languageStore"
@@ -22,7 +22,6 @@ export default function ModelCreateBrands() {
   const router = useRouter()
   const [brandLogos, setBrandLogos] = useState<BrandLogo[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
   const [customBrand, setCustomBrand] = useState('')
   const [showCustomInput, setShowCustomInput] = useState(false)
   
@@ -82,10 +81,6 @@ export default function ModelCreateBrands() {
     loadBrandLogos()
   }, [])
   
-  // 搜索过滤
-  const filteredBrands = brandLogos.filter(brand =>
-    brand.displayName.toLowerCase().includes(searchQuery.toLowerCase())
-  )
   
   // 检查品牌是否已选中 - 使用 displayName 匹配（因为添加时用的是 displayName）
   const isBrandSelected = (displayName: string) => {
@@ -218,18 +213,6 @@ export default function ModelCreateBrands() {
           </div>
         )}
         
-        {/* Search */}
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
-          <input
-            type="text"
-            placeholder={t.modelCreate.searchBrand}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-zinc-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
-          />
-        </div>
-        
         {/* Custom Brand Input */}
         {showCustomInput ? (
           <div className="mb-4 p-4 bg-violet-50 rounded-xl">
@@ -278,7 +261,7 @@ export default function ModelCreateBrands() {
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-3">
-            {filteredBrands.map((brand) => {
+            {brandLogos.map((brand) => {
               const isSelected = isBrandSelected(brand.displayName)
               return (
                 <motion.button
@@ -317,7 +300,7 @@ export default function ModelCreateBrands() {
           </div>
         )}
         
-        {filteredBrands.length === 0 && !isLoading && (
+        {brandLogos.length === 0 && !isLoading && (
           <div className="text-center py-12 text-zinc-400">
             <p>{t.modelCreate.noMatchingBrand}</p>
             <p className="text-sm mt-1">{t.modelCreate.tryCustomBrand}</p>
