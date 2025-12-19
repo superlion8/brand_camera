@@ -418,7 +418,7 @@ export async function POST(request: NextRequest) {
                   imageIndex: i,
                   imageUrl: uploadedUrl,
                   modelType: 'pro',
-                  genMode: 'lifestyle',
+                  genMode: 'simple',
                   taskType: 'social',
                 })
 
