@@ -52,9 +52,14 @@ const getProductCategoryLabel = (cat: ProductSubTab, t: any): string => {
   }
 }
 
-// Social Generation config - 3 images total
-// 共用同一个模特和背景，生成 3 张不同的图
-const SOCIAL_NUM_IMAGES = 3
+// Social Generation config - 4 images total (2 groups × 2 images)
+// 每组共用模特和背景，每组生成 2 张图（prompt1 和 prompt2）
+const SOCIAL_NUM_IMAGES = 4
+const SOCIAL_NUM_GROUPS = 2
+const SOCIAL_IMAGES_PER_GROUP = 2
+
+// 组标签配置
+const GROUP_LABELS = ['A', 'B'] as const
 
 function SocialPageContent() {
   const router = useRouter()
@@ -437,30 +442,34 @@ function SocialPageContent() {
               try {
                 const data = JSON.parse(line.slice(6))
                 
-                if (data.type === 'progress') {
-                  // 新工作流：progress 事件包含 step 和 message
-                  console.log(`[Social] Progress [${data.step || data.index}]: ${data.message}`)
-                  if (typeof data.index === 'number') {
-                    updateImageSlot(taskId, data.index, { status: 'generating' })
+                if (data.type === 'start') {
+                  console.log(`[Social] Starting ${data.totalGroups} groups, ${data.totalImages} total images`)
+                } else if (data.type === 'progress') {
+                  // 新工作流：progress 事件包含 groupIndex, step, message
+                  const groupLabel = typeof data.groupIndex === 'number' ? `G${data.groupIndex}` : ''
+                  console.log(`[Social] Progress [${groupLabel}/${data.step}]: ${data.message}`)
+                  if (typeof data.globalIndex === 'number') {
+                    updateImageSlot(taskId, data.globalIndex, { status: 'generating' })
                   }
                 } else if (data.type === 'model_selected') {
-                  console.log(`[Social] AI selected model: ${data.modelId} (${data.reason})`)
+                  console.log(`[Social] G${data.groupIndex} AI selected model: ${data.modelId} (${data.reason})`)
                 } else if (data.type === 'background_selected') {
-                  console.log(`[Social] Background: ${data.fileName}`)
+                  console.log(`[Social] G${data.groupIndex} Background: ${data.fileName}`)
                 } else if (data.type === 'outfit_ready') {
-                  console.log(`[Social] Outfit instructions ready`)
+                  console.log(`[Social] G${data.groupIndex} Outfit instructions ready`)
                 } else if (data.type === 'image') {
-                  console.log(`[Social] Image ${data.index + 1}: ✓`)
+                  const globalIdx = data.globalIndex
+                  console.log(`[Social] G${data.groupIndex} Image ${data.localIndex + 1}: ✓ (global: ${globalIdx})`)
                   
-                  allImages[data.index] = data.image
-                  allModelTypes[data.index] = 'pro' // 新工作流固定使用 pro 模型
+                  allImages[globalIdx] = data.image
+                  allModelTypes[globalIdx] = 'pro' // 新工作流固定使用 pro 模型
                   successCount++
                   
-                  updateImageSlot(taskId, data.index, {
+                  updateImageSlot(taskId, globalIdx, {
                     status: 'completed',
                     imageUrl: data.image,
                     modelType: 'pro',
-                    genMode: 'simple', // 新工作流统一使用 simple
+                    genMode: 'simple', // Social 模式统一使用 simple
                   })
                   
                   // 第一张图片完成时，切换到 results 模式
@@ -470,14 +479,16 @@ function SocialPageContent() {
                     router.replace('/camera/social?mode=results')
                   }
                 } else if (data.type === 'image_error') {
-                  console.log(`[Social] Image ${data.index + 1}: ✗ (${data.error})`)
-                  updateImageSlot(taskId, data.index, {
+                  const globalIdx = data.globalIndex
+                  console.log(`[Social] G${data.groupIndex} Image ${data.localIndex + 1}: ✗ (${data.error})`)
+                  updateImageSlot(taskId, globalIdx, {
                     status: 'failed',
                     error: data.error,
                   })
                 } else if (data.type === 'error') {
-                  // 全局错误
-                  console.error(`[Social] Error: ${data.error}`)
+                  // 错误（可能是组级别或全局）
+                  const prefix = typeof data.groupIndex === 'number' ? `G${data.groupIndex} ` : ''
+                  console.error(`[Social] ${prefix}Error: ${data.error}`)
                 } else if (data.type === 'complete') {
                   console.log(`[Social] Complete: ${data.totalSuccess}/${SOCIAL_NUM_IMAGES} images`)
                 }
@@ -516,13 +527,16 @@ function SocialPageContent() {
         const savedImages = allImages.filter(Boolean) as string[]
         const savedModelTypes = allModelTypes.filter(Boolean) as ('pro' | 'flash')[]
         
+        // Social 模式统一使用 simple
+        const genModes = savedImages.map(() => 'simple' as const)
+        
         await addGeneration({
           id,
           type: "social",
           inputImageUrl: inputImage,
           outputImageUrls: savedImages,
           outputModelTypes: savedModelTypes,
-          outputGenModes: savedImages.map(() => 'simple'), // 新工作流统一为 simple
+          outputGenModes: genModes,
           createdAt: new Date().toISOString(),
           params: {
             model: model?.name,
@@ -1290,7 +1304,7 @@ function SocialPageContent() {
             
             <h3 className="text-white text-2xl font-bold mb-2">{t.social?.generating || '正在生成种草图...'}</h3>
             <div className="text-zinc-400 space-y-1 text-sm mb-8">
-              <p>{t.social?.generatingDesc || '3 张图片生成中，请稍候'}</p>
+              <p>{t.social?.generatingDesc || '4 张图片生成中，请稍候'}</p>
               {activeModel && <p>使用模特: {activeModel.name}</p>}
               {activeBg && <p>使用背景: {activeBg.name}</p>}
             </div>
@@ -1358,68 +1372,88 @@ function SocialPageContent() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 pb-8">
-              {/* 简单3图网格 */}
+              {/* 2组 × 2图 网格布局 */}
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-bold text-zinc-900 flex items-center gap-2">
                   <span className="w-1 h-4 bg-gradient-to-b from-pink-500 to-purple-500 rounded-full" />
                   {t.social?.resultTitle || '社媒种草图'}
                 </h3>
-                <span className="text-[10px] text-zinc-400">{t.social?.description || '3 张社媒风格图'}</span>
+                <span className="text-[10px] text-zinc-400">{t.social?.description || '4 张社媒风格图'}</span>
               </div>
-              <div className="grid grid-cols-3 gap-3">
-                {Array.from({ length: SOCIAL_NUM_IMAGES }).map((_, i) => {
-                  const currentTask = tasks.find(t => t.id === currentTaskId)
-                  const slot = currentTask?.imageSlots?.[i]
-                  const url = slot?.imageUrl || generatedImages[i]
-                  const status = slot?.status || (url ? 'completed' : 'failed')
-                  
-                  if (status === 'pending' || status === 'generating') {
-                    return (
-                      <div key={i} className="aspect-[3/4] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
-                        <Loader2 className="w-5 h-5 text-pink-400 animate-spin mb-1" />
-                        <span className="text-[9px] text-zinc-400">{t.common?.generating || '生成中'}</span>
-                      </div>
-                    )
-                  }
-                  
-                  if (status === 'failed' || !url) {
-                    return (
-                      <div key={i} className="aspect-[3/4] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-[10px] px-2 text-center">
-                        {slot?.error || t.camera?.generationFailed || '生成失败'}
-                      </div>
-                    )
-                  }
-                  
-                  return (
-                    <div 
-                      key={i} 
-                      className="group relative aspect-[3/4] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer"
-                      onClick={() => setSelectedResultIndex(i)}
-                    >
-                      <Image src={url} alt={`Result ${i + 1}`} fill className="object-cover" />
-                      <button 
-                        className={`absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center shadow-sm transition-colors ${
-                          currentGenerationId && isFavorited(currentGenerationId, i) 
-                            ? "bg-red-500 text-white" 
-                            : "bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500"
-                        }`}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleResultFavorite(i)
-                        }}
-                      >
-                        <Heart className={`w-3 h-3 ${currentGenerationId && isFavorited(currentGenerationId, i) ? "fill-current" : ""}`} />
-                      </button>
-                      {/* 图片序号标签 */}
-                      <div className="absolute bottom-1.5 left-1.5">
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-black/50 text-white">
-                          {i + 1}/{SOCIAL_NUM_IMAGES}
-                        </span>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
+              
+              {/* 按组显示 */}
+              {Array.from({ length: SOCIAL_NUM_GROUPS }).map((_, groupIndex) => (
+                <div key={groupIndex} className="mb-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${
+                      groupIndex === 0 
+                        ? 'bg-pink-100 text-pink-600' 
+                        : 'bg-purple-100 text-purple-600'
+                    }`}>
+                      {t.social?.group || '组'} {GROUP_LABELS[groupIndex]}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {Array.from({ length: SOCIAL_IMAGES_PER_GROUP }).map((_, localIndex) => {
+                      const globalIndex = groupIndex * SOCIAL_IMAGES_PER_GROUP + localIndex
+                      const currentTask = tasks.find(t => t.id === currentTaskId)
+                      const slot = currentTask?.imageSlots?.[globalIndex]
+                      const url = slot?.imageUrl || generatedImages[globalIndex]
+                      const status = slot?.status || (url ? 'completed' : 'failed')
+                      
+                      if (status === 'pending' || status === 'generating') {
+                        return (
+                          <div key={globalIndex} className="aspect-[3/4] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
+                            <Loader2 className="w-5 h-5 text-pink-400 animate-spin mb-1" />
+                            <span className="text-[9px] text-zinc-400">{t.common?.generating || '生成中'}</span>
+                          </div>
+                        )
+                      }
+                      
+                      if (status === 'failed' || !url) {
+                        return (
+                          <div key={globalIndex} className="aspect-[3/4] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-[10px] px-2 text-center">
+                            {slot?.error || t.camera?.generationFailed || '生成失败'}
+                          </div>
+                        )
+                      }
+                      
+                      return (
+                        <div 
+                          key={globalIndex} 
+                          className="group relative aspect-[3/4] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer"
+                          onClick={() => setSelectedResultIndex(globalIndex)}
+                        >
+                          <Image src={url} alt={`Result ${globalIndex + 1}`} fill className="object-cover" />
+                          <button 
+                            className={`absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center shadow-sm transition-colors ${
+                              currentGenerationId && isFavorited(currentGenerationId, globalIndex) 
+                                ? "bg-red-500 text-white" 
+                                : "bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500"
+                            }`}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleResultFavorite(globalIndex)
+                            }}
+                          >
+                            <Heart className={`w-3 h-3 ${currentGenerationId && isFavorited(currentGenerationId, globalIndex) ? "fill-current" : ""}`} />
+                          </button>
+                          {/* 图片标签：组+序号 */}
+                          <div className="absolute bottom-1.5 left-1.5">
+                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${
+                              groupIndex === 0 
+                                ? 'bg-pink-500/80 text-white' 
+                                : 'bg-purple-500/80 text-white'
+                            }`}>
+                              {GROUP_LABELS[groupIndex]}-{localIndex + 1}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
 
             <div className="p-4 pb-20 bg-white border-t shadow-up">
@@ -1480,9 +1514,20 @@ function SocialPageContent() {
                             <span className="px-2 py-0.5 rounded text-xs font-medium bg-gradient-to-r from-pink-100 to-purple-100 text-pink-700">
                               {t.social?.title || '社媒种草'}
                             </span>
-                            <span className="px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 text-zinc-600">
-                              {selectedResultIndex + 1}/{SOCIAL_NUM_IMAGES}
-                            </span>
+                            {/* 组标签 */}
+                            {(() => {
+                              const groupIdx = Math.floor(selectedResultIndex / SOCIAL_IMAGES_PER_GROUP)
+                              const localIdx = selectedResultIndex % SOCIAL_IMAGES_PER_GROUP
+                              return (
+                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                  groupIdx === 0 
+                                    ? 'bg-pink-100 text-pink-600' 
+                                    : 'bg-purple-100 text-purple-600'
+                                }`}>
+                                  {t.social?.group || '组'} {GROUP_LABELS[groupIdx]}-{localIdx + 1}
+                                </span>
+                              )
+                            })()}
                           </div>
                           <p className="text-xs text-zinc-400">
                             {t.common?.justNow || '刚刚'}

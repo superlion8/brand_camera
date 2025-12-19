@@ -106,7 +106,7 @@ Reference Sources (Strict Adherence)
   - PRIORITY: MAXIMUM. The logo, text, neckline, and pattern MUST be identical to the reference.
 2. THE MODEL: [模特图]
   - ACTION: Use the exact facial features, skin tone, and body shape of this specific model. The model MUST look identical.
-3. THE SCENE: [场景图]
+3. THE SCENE: [场景图] 
   - ACTION: The scene image is an atmospheric reference, not a fixed physical space. You may subtly reconstruct or extend the scene following realistic photographic and spatial logic, and redesign the composition through varied camera angles, shot scales, and framing, taking visual inspiration from editorial-style imagery commonly seen in designer fashion brands' official website.
   - The model and the product must be naturally merged with the scene, with reasonable lighting and vibe.
     
