@@ -470,6 +470,16 @@ export const ko: Translations = {
     extendedMode: "확장 모드",
     aiDesignScene: "AI 설계 장면",
     shootNextSet: "다음 세트 촬영",
+    // 촬영 유형 라벨
+    fullBody: "전신샷",
+    medium: "중간샷",
+    detail: "디테일",
+    dynamic: "다이나믹",
+    // 진행 메시지
+    analyzing: "상품 스타일 분석 중...",
+    selectingModel: "AI 모델 선택 중...",
+    selectingScene: "AI 장면 선택 중...",
+    generatingOutfit: "의상 디자인 중...",
     album: "앨범",
     assetLibrary: "자산",
     customConfig: "사용자 정의 설정",

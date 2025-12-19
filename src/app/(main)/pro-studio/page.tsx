@@ -44,9 +44,17 @@ const getProductCategoryLabel = (cat: ProductSubTab, t: any): string => {
   }
 }
 
-// 专业棚拍生成4张图 (2简单 + 2扩展)
+// 专业棚拍生成4张图（4种机位）
 const PRO_STUDIO_NUM_IMAGES = 4
-const PRO_STUDIO_NUM_SIMPLE = 2
+
+// 4 种机位配置
+const SHOT_TYPE_LABELS: Record<string, { zh: string; en: string; color: string }> = {
+  full_body: { zh: '全身照', en: 'Full Body', color: 'bg-blue-500' },
+  medium: { zh: '中景', en: 'Medium', color: 'bg-purple-500' },
+  detail: { zh: '细节', en: 'Detail', color: 'bg-amber-500' },
+  dynamic: { zh: '动态', en: 'Dynamic', color: 'bg-green-500' },
+}
+const SHOT_TYPES = ['full_body', 'medium', 'detail', 'dynamic']
 
 // Asset Grid Component with Upload Button
 function AssetGrid({ 
@@ -480,126 +488,154 @@ function ProStudioPageContent() {
     const taskId = addTask('pro_studio', capturedImage, {}, PRO_STUDIO_NUM_IMAGES)
     setCurrentTaskId(taskId)
     initImageSlots(taskId, PRO_STUDIO_NUM_IMAGES)
-
-    // 不压缩，直接使用原图
-    const compressedProduct = capturedImage
-
-    // ========== 预先确定每个模式使用的模特和背景 ==========
-    // 直接使用 URL，后端会转换为 base64（减少前端请求体大小）
     
+    // 初始化所有 slots 为 generating 状态
+    for (let i = 0; i < PRO_STUDIO_NUM_IMAGES; i++) {
+      updateImageSlot(taskId, i, { status: 'generating' })
+    }
+
     // 用户选择的模特/背景 URL（如果有）
-    // 如果用户没选，传 null 让后端从 Storage 实时随机选择
     const userSelectedModelUrl = selectedModel?.imageUrl || null
     const userSelectedBgUrl = selectedBg?.imageUrl || null
 
-    // 是否用户选择的标志
-    const modelIsRandom = !selectedModel
-    const bgIsRandom = !selectedBg
-    
-    // 辅助函数：检查 URL 是否是官方预设
-    const isPresetUrl = (url?: string) => url?.includes('/presets/') || url?.includes('presets%2F')
-    
-    // 模特/背景名称（用于保存到数据库）
-    // 注意：如果随机选择，后端会填充实际使用的名称和 URL
-    const modelName = selectedModel?.name || '专业模特 (随机)'
-    const modelUrl = selectedModel?.imageUrl  // 随机时是 undefined，后端会填充
-    const modelIsPreset = selectedModel ? isPresetUrl(modelUrl) : true  // 随机时默认是预设
-    
-    const bgName = selectedBg?.name || '影棚背景'
-    const bgUrl = selectedBg?.imageUrl  // 没选就是 undefined，让 AI 生成
-    const bgIsPreset = selectedBg ? isPresetUrl(bgUrl) : false
+    try {
+      // 使用 SSE 调用新 API
+      const response = await fetch('/api/generate-pro-studio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productImage: capturedImage,
+          modelImage: userSelectedModelUrl || 'random',
+          backgroundImage: userSelectedBgUrl || 'random',
+          taskId,
+        }),
+      })
 
-    // 生成任务配置：简单模式2张 + 扩展模式2张
-    // 模特：用户选了就用，没选传 null 让后端随机
-    // 背景：用户选了就用，没选传 null 让 AI 生成
-    const taskConfigs = [
-      { mode: 'simple', index: 0, model: userSelectedModelUrl, bg: userSelectedBgUrl },
-      { mode: 'simple', index: 1, model: userSelectedModelUrl, bg: userSelectedBgUrl },
-      { mode: 'extended', index: 2, model: userSelectedModelUrl, bg: userSelectedBgUrl },
-      { mode: 'extended', index: 3, model: userSelectedModelUrl, bg: userSelectedBgUrl },
-    ]
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || '请求失败')
+      }
 
-    const results: string[] = []
-    const modes: string[] = []
-    let firstCompleted = false
+      const reader = response.body?.getReader()
+      if (!reader) {
+        throw new Error('无法读取响应流')
+      }
 
-    // 并行生成所有图片
-    const promises = taskConfigs.map(async (task) => {
-      updateImageSlot(taskId, task.index, { status: 'generating' })
+      const decoder = new TextDecoder()
+      let buffer = ''
+      let firstImageReceived = false
 
-      try {
-        const response = await fetch('/api/generate-pro-studio', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            productImage: compressedProduct,
-            modelImage: task.model,
-            backgroundImage: task.bg,
-            mode: task.mode,
-            index: task.index,
-            taskId,
-            // 传递模特/背景信息用于数据库保存
-            modelIsRandom,
-            bgIsRandom,
-            modelName,
-            bgName,
-            modelUrl,
-            bgUrl,
-            modelIsPreset,
-            bgIsPreset,
-          }),
-        })
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
 
-        const data = await response.json()
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
 
-        if (data.success && data.image) {
-          updateImageSlot(taskId, task.index, {
-            status: 'completed',
-            imageUrl: data.image,
-            modelType: data.modelType,
-            genMode: data.genMode,
-          })
-
-          results[task.index] = data.image
-          modes[task.index] = task.mode
-
-          // 第一张完成后切换到结果页面
-          if (!firstCompleted) {
-            firstCompleted = true
-            setGeneratedImages([...results])
-            setGeneratedModes([...modes])
-            setMode("results")
-          } else {
-            setGeneratedImages([...results])
-            setGeneratedModes([...modes])
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6))
+              
+              switch (data.type) {
+                case 'progress':
+                  console.log('[ProStudio] Progress:', data.message)
+                  break
+                  
+                case 'analysis_complete':
+                  console.log('[ProStudio] Analysis:', data.productStyle, data.modelId, data.sceneId)
+                  break
+                  
+                case 'outfit_ready':
+                  console.log('[ProStudio] Outfit ready:', data.outfit?.substring(0, 100))
+                  break
+                  
+                case 'image':
+                  // 图片生成完成
+                  updateImageSlot(taskId, data.index, {
+                    status: 'completed',
+                    imageUrl: data.image,
+                    modelType: 'pro',
+                    genMode: 'simple',
+                  })
+                  
+                  // 更新 generatedImages 状态
+                  setGeneratedImages(prev => {
+                    const newImages = [...prev]
+                    newImages[data.index] = data.image
+                    return newImages
+                  })
+                  setGeneratedModes(prev => {
+                    const newModes = [...prev]
+                    newModes[data.index] = data.shotType || SHOT_TYPES[data.index]
+                    return newModes
+                  })
+                  
+                  // 第一张图片完成后切换到结果页面
+                  if (!firstImageReceived) {
+                    firstImageReceived = true
+                    setMode("results")
+                  }
+                  break
+                  
+                case 'image_error':
+                  updateImageSlot(taskId, data.index, {
+                    status: 'failed',
+                    error: data.error || '生成失败',
+                  })
+                  break
+                  
+                case 'error':
+                  console.error('[ProStudio] Error:', data.error)
+                  // 标记所有未完成的 slots 为失败
+                  for (let i = 0; i < PRO_STUDIO_NUM_IMAGES; i++) {
+                    const currentTask = tasks.find(t => t.id === taskId)
+                    const slot = currentTask?.imageSlots?.[i]
+                    if (slot?.status === 'generating' || slot?.status === 'pending') {
+                      updateImageSlot(taskId, i, {
+                        status: 'failed',
+                        error: data.error || '生成失败',
+                      })
+                    }
+                  }
+                  break
+                  
+                case 'complete':
+                  console.log('[ProStudio] Complete:', data.totalSuccess, 'images')
+                  break
+              }
+            } catch (e) {
+              console.warn('[ProStudio] Failed to parse SSE data:', line)
+            }
           }
-        } else {
-          updateImageSlot(taskId, task.index, {
-            status: 'failed',
-            error: data.error || t.camera.generationFailed || '生成失败',
-          })
         }
-      } catch (error: any) {
-        updateImageSlot(taskId, task.index, {
+      }
+    } catch (error: any) {
+      console.error('[ProStudio] Error:', error)
+      // 标记所有 slots 为失败
+      for (let i = 0; i < PRO_STUDIO_NUM_IMAGES; i++) {
+        updateImageSlot(taskId, i, {
           status: 'failed',
           error: error.message || '网络错误',
         })
       }
-    })
+    }
 
-    await Promise.allSettled(promises)
     updateTaskStatus(taskId, 'completed')
   }
 
-  // 获取模式标签
-  const getModeLabel = (index: number) => {
-    if (index < 2) return t.proStudio?.simpleMode || '简单'
-    return t.proStudio?.extendedMode || '扩展'
+  // 获取机位标签（根据 index 或 shotType）
+  const getShotLabel = (index: number, shotType?: string) => {
+    const type = shotType || SHOT_TYPES[index] || 'full_body'
+    const label = SHOT_TYPE_LABELS[type]
+    return label?.zh || type
   }
 
-  const getModeColor = (index: number) => {
-    if (index < 2) return 'bg-blue-500'
-    return 'bg-purple-500'
+  const getShotColor = (index: number, shotType?: string) => {
+    const type = shotType || SHOT_TYPES[index] || 'full_body'
+    const label = SHOT_TYPE_LABELS[type]
+    return label?.color || 'bg-blue-500'
   }
 
   // Download handler with iOS share support
@@ -1446,125 +1482,52 @@ function ProStudioPageContent() {
               <span className="font-semibold ml-2">{t.camera.results}</span>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-8">
-              {/* 简单模式 - indices 0, 1, 2 */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-1 h-4 bg-blue-500 rounded-full" />
-                    {t.proStudio?.simpleMode || '简单模式'}
-                  </h3>
-                  <span className="text-[10px] text-zinc-400">{t.proStudio?.simpleDesc || '直接生成棚拍图'}</span>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {[0, 1].map((i) => {
-                    const currentTask = tasks.find(t => t.id === currentTaskId)
-                    const slot = currentTask?.imageSlots?.[i]
-                    const url = slot?.imageUrl || generatedImages[i]
-                    const status = slot?.status || (url ? 'completed' : 'failed')
-                    const modelType = slot?.modelType
-                    
-                    if (status === 'pending' || status === 'generating') {
-                      return (
-                        <div key={i} className="aspect-[4/5] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
-                          <Loader2 className="w-6 h-6 text-zinc-400 animate-spin mb-2" />
-                          <span className="text-[10px] text-zinc-400">{t.gallery.generating}</span>
-                        </div>
-                      )
-                    }
-                    
-                    if (status === 'failed' || !url) {
-                      return (
-                        <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
-                          {slot?.error || t.camera.generationFailed}
-                        </div>
-                      )
-                    }
-                    
+            <div className="flex-1 overflow-y-auto p-4 pb-8">
+              {/* 4 种机位图片 - 2x2 网格 */}
+              <div className="grid grid-cols-2 gap-3">
+                {[0, 1, 2, 3].map((i) => {
+                  const currentTask = tasks.find(t => t.id === currentTaskId)
+                  const slot = currentTask?.imageSlots?.[i]
+                  const url = slot?.imageUrl || generatedImages[i]
+                  const status = slot?.status || (url ? 'completed' : 'failed')
+                  const shotType = generatedModes[i] || SHOT_TYPES[i]
+                  
+                  if (status === 'pending' || status === 'generating') {
                     return (
-                      <div 
-                        key={i} 
-                        className="group relative aspect-[4/5] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer"
-                        onClick={() => setSelectedResultIndex(i)}
-                      >
-                        <Image src={url} alt="Result" fill className="object-cover" />
-                        <button className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm">
-                          <Heart className="w-3.5 h-3.5 text-zinc-500" />
-                        </button>
-                        <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-blue-500 text-white">
-                            {t.proStudio?.simpleMode || '简单'}
-                          </span>
-                          {modelType === 'flash' && (
-                            <span className="px-1 py-0.5 rounded text-[8px] font-medium bg-amber-500 text-white">
-                              2.5
-                            </span>
-                          )}
-                        </div>
+                      <div key={i} className="aspect-[4/5] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
+                        <Loader2 className="w-6 h-6 text-zinc-400 animate-spin mb-2" />
+                        <span className="text-[10px] text-zinc-400">{getShotLabel(i, shotType)}</span>
                       </div>
                     )
-                  })}
-                </div>
-              </div>
-
-              {/* 扩展模式 - indices 3, 4, 5 */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-1 h-4 bg-purple-600 rounded-full" />
-                    {t.proStudio?.extendedMode || '扩展模式'}
-                  </h3>
-                  <span className="text-[10px] text-zinc-400">{t.proStudio?.aiDesignScene || 'AI设计场景'}</span>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {[2, 3].map((i) => {
-                    const currentTask = tasks.find(t => t.id === currentTaskId)
-                    const slot = currentTask?.imageSlots?.[i]
-                    const url = slot?.imageUrl || generatedImages[i]
-                    const status = slot?.status || (url ? 'completed' : 'failed')
-                    const modelType = slot?.modelType
-                    
-                    if (status === 'pending' || status === 'generating') {
-                      return (
-                        <div key={i} className="aspect-[4/5] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
-                          <Loader2 className="w-6 h-6 text-zinc-400 animate-spin mb-2" />
-                          <span className="text-[10px] text-zinc-400">{t.gallery.generating}</span>
-                        </div>
-                      )
-                    }
-                    
-                    if (status === 'failed' || !url) {
-                      return (
-                        <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
-                          {slot?.error || t.camera.generationFailed}
-                        </div>
-                      )
-                    }
-                    
+                  }
+                  
+                  if (status === 'failed' || !url) {
                     return (
-                      <div 
-                        key={i} 
-                        className="group relative aspect-[4/5] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer"
-                        onClick={() => setSelectedResultIndex(i)}
-                      >
-                        <Image src={url} alt="Result" fill className="object-cover" />
-                        <button className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm">
-                          <Heart className="w-3.5 h-3.5 text-zinc-500" />
-                        </button>
-                        <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-purple-500 text-white">
-                            {t.proStudio?.extendedMode || '扩展'}
-                          </span>
-                          {modelType === 'flash' && (
-                            <span className="px-1 py-0.5 rounded text-[8px] font-medium bg-amber-500 text-white">
-                              2.5
-                            </span>
-                          )}
-                        </div>
+                      <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl flex flex-col items-center justify-center text-zinc-400 text-xs">
+                        <span className="mb-1">{getShotLabel(i, shotType)}</span>
+                        <span>{slot?.error || t.camera.generationFailed}</span>
                       </div>
                     )
-                  })}
-                </div>
+                  }
+                  
+                  return (
+                    <div 
+                      key={i} 
+                      className="group relative aspect-[4/5] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer"
+                      onClick={() => setSelectedResultIndex(i)}
+                    >
+                      <Image src={url} alt="Result" fill className="object-cover" />
+                      <button className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm">
+                        <Heart className="w-3.5 h-3.5 text-zinc-500" />
+                      </button>
+                      <div className="absolute top-2 left-2">
+                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium text-white ${getShotColor(i, shotType)}`}>
+                          {getShotLabel(i, shotType)}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
 
@@ -1623,14 +1586,9 @@ function ProStudioPageContent() {
                       <div className="p-4 pb-8 bg-white">
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${getModeColor(selectedResultIndex)} text-white`}>
-                              {getModeLabel(selectedResultIndex)}
+                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${getShotColor(selectedResultIndex, generatedModes[selectedResultIndex])} text-white`}>
+                              {getShotLabel(selectedResultIndex, generatedModes[selectedResultIndex])}
                             </span>
-                            {selectedModelType === 'flash' && (
-                              <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">
-                                Gemini 2.5
-                              </span>
-                            )}
                           </div>
                           <div className="flex items-center gap-2">
                             <button className="w-10 h-10 rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-50 flex items-center justify-center transition-colors">

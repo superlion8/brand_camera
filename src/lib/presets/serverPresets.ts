@@ -17,6 +17,8 @@ export type PresetType =
   | 'backgrounds'         // 买家秀背景（随机池）
   | 'studio-models'       // 专业棚拍模特
   | 'studio-backgrounds'  // 专业棚拍背景
+  | 'pro-studio'          // 专业棚拍场景（pro_studio_scene_tag 对应）
+  | 'all-models'          // 所有模特（models_analysis 对应）
 
 // 缓存（服务端短期缓存，避免每次请求都查 Storage）
 const listCache = new Map<string, { files: string[], timestamp: number }>()
@@ -206,5 +208,36 @@ export function clearPresetCache(folder?: PresetType) {
     listCache.clear()
   }
   console.log(`[ServerPresets] Cache cleared: ${folder || 'all'}`)
+}
+
+/**
+ * 根据文件名获取指定预设图片的 base64 数据
+ * 支持自动尝试 .png 和 .jpg 扩展名
+ * 
+ * @param folder 预设文件夹
+ * @param fileNameWithoutExt 文件名（不含扩展名）
+ * @returns { base64: string, fileName: string, url: string } | null
+ */
+export async function getPresetByName(
+  folder: string,
+  fileNameWithoutExt: string
+): Promise<{ base64: string; fileName: string; url: string } | null> {
+  const extensions = ['.png', '.jpg', '.jpeg', '.webp']
+  
+  for (const ext of extensions) {
+    const fileName = `${fileNameWithoutExt}${ext}`
+    const url = `${STORAGE_URL}/${folder}/${fileName}`
+    
+    console.log(`[ServerPresets] Trying: ${folder}/${fileName}`)
+    
+    const base64 = await urlToBase64WithRetry(url, 1)
+    if (base64) {
+      console.log(`[ServerPresets] Found: ${folder}/${fileName}`)
+      return { base64, fileName, url }
+    }
+  }
+  
+  console.warn(`[ServerPresets] Not found: ${folder}/${fileNameWithoutExt}`)
+  return null
 }
 

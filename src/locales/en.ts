@@ -470,6 +470,16 @@ export const en: Translations = {
     extendedMode: "Extended Mode",
     aiDesignScene: "AI designed scene",
     shootNextSet: "Shoot Next Set",
+    // Shot type labels
+    fullBody: "Full Body",
+    medium: "Medium",
+    detail: "Detail",
+    dynamic: "Dynamic",
+    // Progress messages
+    analyzing: "Analyzing product style...",
+    selectingModel: "AI selecting model...",
+    selectingScene: "AI selecting scene...",
+    generatingOutfit: "Designing outfit...",
     album: "Album",
     assetLibrary: "Assets",
     customConfig: "Custom Settings",

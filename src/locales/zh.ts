@@ -468,6 +468,16 @@ export const zh = {
     extendedMode: "扩展模式",
     aiDesignScene: "AI设计场景",
     shootNextSet: "拍摄下一组",
+    // 机位标签
+    fullBody: "全身照",
+    medium: "中景",
+    detail: "细节",
+    dynamic: "动态",
+    // 进度提示
+    analyzing: "分析商品风格中...",
+    selectingModel: "智能选择模特中...",
+    selectingScene: "智能选择场景中...",
+    generatingOutfit: "设计服装搭配中...",
     album: "相册",
     assetLibrary: "资源库",
     customConfig: "自定义配置",
