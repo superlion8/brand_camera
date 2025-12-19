@@ -146,7 +146,6 @@ export default function ModelCreateGenerate() {
               body: JSON.stringify({
                 productImages: compressedImages,
                 modelPrompt: prompt,
-                productDescriptions,
               }),
             })
             

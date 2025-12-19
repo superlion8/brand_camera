@@ -10,9 +10,8 @@ export const maxDuration = 180 // 3 minutes
 const MODEL_IMAGE_PROMPT = `[Role: World-Class E-commerce Photographer & Retoucher]
 
 # Input
-- Reference Product Image: [Insert Single Product Image Here]
-- Model Persona: {model_prompt} (Note: This prompt already contains anatomical constraints)
-- Product Description: {product_desc}
+- Reference Product Image: {{product_img}}
+- Model Persona: {{current_model_prompt}} (Note: This prompt already contains anatomical constraints)
 
 # Task
 Generate a high-fidelity e-commerce fashion shot of the model wearing the Reference Product.
@@ -57,7 +56,7 @@ export async function POST(request: NextRequest) {
   
   try {
     const body = await request.json()
-    const { productImages, modelPrompt, productDescriptions } = body
+    const { productImages, modelPrompt } = body
     
     if (!productImages || productImages.length === 0) {
       return NextResponse.json({ success: false, error: '缺少商品图片' }, { status: 400 })
@@ -69,27 +68,25 @@ export async function POST(request: NextRequest) {
     
     const client = getGenAIClient()
     
-    // Build prompt with model description and product description
-    const productDesc = productDescriptions && productDescriptions.length > 0
-      ? productDescriptions.map((d: { description: string }) => d.description).join('; ')
-      : 'Fashion clothing item'
+    // Build prompt with model description
+    // {{product_img}} is implied by the image being sent
+    // {{current_model_prompt}} is replaced with the actual model prompt
+    const finalPrompt = MODEL_IMAGE_PROMPT
+      .replace('{{current_model_prompt}}', modelPrompt)
     
-    let finalPrompt = MODEL_IMAGE_PROMPT
-      .replace('{model_prompt}', modelPrompt)
-      .replace('{product_desc}', productDesc)
+    // Select one product image (randomly from the uploaded images)
+    const selectedProductImage = productImages[Math.floor(Math.random() * productImages.length)]
+    const imageData = await ensureBase64Data(selectedProductImage)
     
-    const parts: any[] = [{ text: finalPrompt }]
-    
-    // Add product images
-    for (const image of productImages) {
-      const imageData = await ensureBase64Data(image)
-      parts.push({
+    const parts: any[] = [
+      { text: finalPrompt },
+      {
         inlineData: {
           mimeType: 'image/jpeg',
           data: imageData,
         },
-      })
-    }
+      },
+    ]
     
     console.log('[Generate Model Image] Calling Gemini with prompt:', modelPrompt.substring(0, 100) + '...')
     
