@@ -35,12 +35,12 @@ const SHOT_FOCUS_CONFIGS = [
   {
     index: 2,
     name: 'detail',
-    prompt: 'Detailed Close-up Shot. Camera strictly focuses on the product texture and design details. Use a shallow depth of field (blurred background) to make the fabric and material pop.'
+    prompt: 'Detailed Close-up Shot. Cinematic Close-up. The camera zooms in to fill the frame with the main product item. Focus sharply on the fabric texture and stitching details of the product.'
   },
   {
     index: 3,
     name: 'dynamic',
-    prompt: 'Dynamic lifestyle shot, candid moment, looking slightly away from camera. Natural movement in the fabric.'
+    prompt: 'Studio shot. The model is caught in a subtle, natural movement, taking a small, gentle step forward. Not a runway walk, but a relaxed shift in weight. The clothing hangs naturally on the body. The vibe is calm, professional, and effortless.'
   },
 ]
 
