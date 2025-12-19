@@ -635,8 +635,39 @@ function ModifyMaterialContent() {
         updateImageSlot(taskId, i, { status: 'failed', error: err.message })
       }
     }
+
+    // 处理配额退款
+    const successCount = results.length
+    const failedCount = 2 - successCount
+
+    if (failedCount > 0 && successCount > 0) {
+      // 部分失败，退还失败数量
+      console.log('[ModifyMaterial] Refunding', failedCount, 'failed images')
+      try {
+        await fetch('/api/quota/reserve', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            taskId,
+            actualImageCount: successCount,
+            refundCount: failedCount,
+          }),
+        })
+      } catch (e) {
+        console.warn('[ModifyMaterial] Failed to refund:', e)
+      }
+    }
     
     if (results.length === 0) {
+      // 全部失败，全额退还
+      console.log('[ModifyMaterial] All failed, refunding all 2 images')
+      try {
+        await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
+        refreshQuota()
+      } catch (e) {
+        console.warn('[ModifyMaterial] Failed to refund on total failure:', e)
+      }
+
       setError(t.modifyMaterial?.generateFailed || '生成失败，请重试')
       updateTaskStatus(taskId, 'failed')
       setPhase('editing')

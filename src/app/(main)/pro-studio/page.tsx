@@ -494,6 +494,21 @@ function ProStudioPageContent() {
       updateImageSlot(taskId, i, { status: 'generating' })
     }
 
+    // 预扣配额
+    fetch('/api/quota/reserve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        taskId,
+        imageCount: PRO_STUDIO_NUM_IMAGES,
+        taskType: 'pro_studio',
+      }),
+    }).then(() => {
+      console.log('[ProStudio] Reserved', PRO_STUDIO_NUM_IMAGES, 'images for task', taskId)
+    }).catch(e => {
+      console.warn('[ProStudio] Failed to reserve quota:', e)
+    })
+
     // 用户选择的模特/背景 URL（如果有）
     const userSelectedModelUrl = selectedModel?.imageUrl || null
     const userSelectedBgUrl = selectedBg?.imageUrl || null
@@ -611,6 +626,37 @@ function ProStudioPageContent() {
           }
         }
       }
+
+      // 统计成功数量并处理退款
+      const currentTask = tasks.find(t => t.id === taskId)
+      const successCount = currentTask?.imageSlots?.filter(s => s.status === 'completed').length || 0
+      const failedCount = PRO_STUDIO_NUM_IMAGES - successCount
+
+      if (failedCount > 0 && successCount > 0) {
+        // 部分失败，退还失败数量
+        console.log('[ProStudio] Refunding', failedCount, 'failed images')
+        try {
+          await fetch('/api/quota/reserve', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              taskId,
+              actualImageCount: successCount,
+              refundCount: failedCount,
+            }),
+          })
+        } catch (e) {
+          console.warn('[ProStudio] Failed to refund:', e)
+        }
+      } else if (successCount === 0) {
+        // 全部失败，全额退还
+        console.log('[ProStudio] All failed, refunding all', PRO_STUDIO_NUM_IMAGES, 'images')
+        try {
+          await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
+        } catch (e) {
+          console.warn('[ProStudio] Failed to refund on total failure:', e)
+        }
+      }
     } catch (error: any) {
       console.error('[ProStudio] Error:', error)
       // 标记所有 slots 为失败
@@ -619,6 +665,14 @@ function ProStudioPageContent() {
           status: 'failed',
           error: error.message || '网络错误',
         })
+      }
+
+      // 异常情况，全额退还配额
+      console.log('[ProStudio] Error occurred, refunding reserved quota')
+      try {
+        await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
+      } catch (e) {
+        console.warn('[ProStudio] Failed to refund on error:', e)
       }
     }
 
