@@ -311,8 +311,8 @@ export default function HomePage() {
             <BeforeAfterCard
               title={t.home.socialMode || "社媒种草"}
               subtitle={t.home.socialModeSubtitle || "小红书INS风格"}
-              beforeImage={`${HOMEPAGE_STORAGE_URL}/model-before.jpg`}
-              afterImage={`${HOMEPAGE_STORAGE_URL}/model-after.png`}
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/social-before.jpg`}
+              afterImage={`${HOMEPAGE_STORAGE_URL}/social-after.jpg`}
               badge="NEW"
               href="/camera/social"
             />
