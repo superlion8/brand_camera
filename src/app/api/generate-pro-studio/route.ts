@@ -108,7 +108,7 @@ Reference Sources (Strict Adherence)
   - ACTION: Use the exact facial features, skin tone, and body shape of this specific model. The model MUST look identical. 
   - CONSTRAINT: Ignore original clothes in model reference.
 3. THE SCENE: [场景图]
-  - ACTION: Use this exact environment.
+  - ACTION: The scene image is an atmospheric reference, not a fixed physical space. You may subtly reconstruct or extend the scene following realistic photographic and spatial logic, and redesign the composition through varied camera angles, shot scales, and framing, taking visual inspiration from editorial-style imagery commonly seen in designer fashion brands' official website.
     
 Styling Instructions
 {{outfit_instruct}}
