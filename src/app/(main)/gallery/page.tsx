@@ -172,12 +172,9 @@ export default function GalleryPage() {
     
     // Social types (社媒种草)
     if (gen.type === 'social') {
-      const imageType = imageIndex === 2 || imageIndex === 5 ? 'mirror' : 'lifestyle'
       return { 
         label: t.gallery.social || '社媒种草', 
         color: 'bg-gradient-to-r from-pink-500 to-purple-500',
-        subLabel: isDebugMode ? (imageType === 'mirror' ? '对镜自拍' : '韩系生活') : undefined,
-        subColor: imageType === 'mirror' ? 'bg-purple-500' : 'bg-pink-500'
       }
     }
     
