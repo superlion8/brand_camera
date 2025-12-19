@@ -297,8 +297,8 @@ export default function HomePage() {
             <BeforeAfterCard
               title={t.home.proStudio || "专业棚拍"}
               subtitle={t.home.proStudioSubtitle || "纯色背景质感"}
-              beforeImage={`${HOMEPAGE_STORAGE_URL}/pro-studio-before.jpg`}
-              afterImage={`${HOMEPAGE_STORAGE_URL}/pro-studio-after.png`}
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/pro-studio-before.jpg?v=2`}
+              afterImage={`${HOMEPAGE_STORAGE_URL}/pro-studio-after.png?v=2`}
               href="/pro-studio"
             />
             <BeforeAfterCard
