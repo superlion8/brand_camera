@@ -596,6 +596,12 @@ function SocialPageContent() {
     router.push("/")
   }
   
+  // Handle go to edit with image
+  const handleGoToEdit = (imageUrl: string) => {
+    sessionStorage.setItem('editImage', imageUrl)
+    router.push("/edit/general")
+  }
+  
   // Handle favorite toggle for result images
   const handleResultFavorite = async (imageIndex: number) => {
     if (!currentGenerationId) return
@@ -1501,6 +1507,152 @@ function SocialPageContent() {
                           </button>
                         </div>
                       </div>
+                      
+                      {/* Debug Mode - Generation Parameters */}
+                      {debugMode && (() => {
+                        // Get generation record from store to display saved params
+                        const generation = currentGenerationId 
+                          ? generations.find(g => g.id === currentGenerationId)
+                          : null
+                        const savedParams = generation?.params
+                        
+                        return (
+                        <div className="mt-4 pt-4 border-t border-zinc-100">
+                          <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.camera?.debugParams || '生成参数'}</h3>
+                          
+                          {/* Reference images grid */}
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-3 gap-2">
+                              {/* Input Product Image */}
+                              {(capturedImage || generation?.inputImageUrl) && (
+                                <div className="flex flex-col items-center">
+                                  <div 
+                                    className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"
+                                    onClick={() => setFullscreenImage(capturedImage || generation?.inputImageUrl || '')}
+                                  >
+                                    <img 
+                                      src={capturedImage || generation?.inputImageUrl || ''} 
+                                      alt={t.camera?.productOriginal || '商品原图'} 
+                                      className="w-full h-full object-cover"
+                                    />
+                                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                      <ZoomIn className="w-4 h-4 text-white" />
+                                    </div>
+                                  </div>
+                                  <p className="text-[10px] text-zinc-500 mt-1">{t.common?.product || '商品'}</p>
+                                </div>
+                              )}
+                              
+                              {/* Model Image */}
+                              {(() => {
+                                const modelUrl = savedParams?.modelImage || activeModel?.imageUrl
+                                const modelName = savedParams?.model || activeModel?.name
+                                if (!modelUrl) return null
+                                return (
+                                  <div className="flex flex-col items-center">
+                                    <div 
+                                      className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"
+                                      onClick={() => setFullscreenImage(modelUrl)}
+                                    >
+                                      <Image 
+                                        src={modelUrl} 
+                                        alt="模特" 
+                                        width={56}
+                                        height={56}
+                                        className="w-full h-full object-cover"
+                                      />
+                                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <ZoomIn className="w-4 h-4 text-white" />
+                                      </div>
+                                    </div>
+                                    <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">
+                                      {modelName || t.common?.model || '模特'}
+                                    </p>
+                                  </div>
+                                )
+                              })()}
+                              
+                              {/* Background Image */}
+                              {(() => {
+                                const bgUrl = savedParams?.backgroundImage || activeBg?.imageUrl
+                                const bgName = savedParams?.background || activeBg?.name
+                                if (!bgUrl) return null
+                                return (
+                                  <div className="flex flex-col items-center">
+                                    <div 
+                                      className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"
+                                      onClick={() => setFullscreenImage(bgUrl)}
+                                    >
+                                      <Image 
+                                        src={bgUrl} 
+                                        alt="背景" 
+                                        width={56}
+                                        height={56}
+                                        className="w-full h-full object-cover"
+                                      />
+                                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <ZoomIn className="w-4 h-4 text-white" />
+                                      </div>
+                                    </div>
+                                    <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">
+                                      {bgName || t.common?.background || '背景'}
+                                    </p>
+                                  </div>
+                                )
+                              })()}
+                            </div>
+                            
+                            {/* Model Version (AI Model used) */}
+                            {(generatedModelTypes[selectedResultIndex] || generation?.outputModelTypes?.[selectedResultIndex]) && (
+                              <div className="mt-3 mb-3">
+                                <span className={`px-2 py-1 rounded text-[10px] font-medium ${
+                                  (generatedModelTypes[selectedResultIndex] || generation?.outputModelTypes?.[selectedResultIndex]) === 'pro' 
+                                    ? 'bg-green-100 text-green-700' 
+                                    : 'bg-amber-100 text-amber-700'
+                                }`}>
+                                  {t.gallery?.aiModel || '模型'}: Gemini {(generatedModelTypes[selectedResultIndex] || generation?.outputModelTypes?.[selectedResultIndex]) === 'pro' ? '3.0 Pro' : '2.5 Flash'}
+                                  {(generatedModelTypes[selectedResultIndex] || generation?.outputModelTypes?.[selectedResultIndex]) === 'flash' && ` (${t.gallery?.fallback || '降级'})`}
+                                </span>
+                              </div>
+                            )}
+                            
+                            {/* Model/Background selection status */}
+                            <div className="flex gap-2 flex-wrap">
+                              {savedParams?.modelIsUserSelected !== undefined && (
+                                <span className={`px-2 py-1 rounded text-[10px] font-medium ${
+                                  savedParams.modelIsUserSelected 
+                                    ? 'bg-blue-100 text-blue-700' 
+                                    : 'bg-zinc-100 text-zinc-600'
+                                }`}>
+                                  {t.common?.model || '模特'}: {savedParams.modelIsUserSelected ? (t.gallery?.userUploaded || '用户选择') : (t.social?.autoSelect || '随机')}
+                                </span>
+                              )}
+                              {savedParams?.bgIsUserSelected !== undefined && (
+                                <span className={`px-2 py-1 rounded text-[10px] font-medium ${
+                                  savedParams.bgIsUserSelected 
+                                    ? 'bg-blue-100 text-blue-700' 
+                                    : 'bg-zinc-100 text-zinc-600'
+                                }`}>
+                                  {t.common?.background || '背景'}: {savedParams.bgIsUserSelected ? (t.gallery?.userUploaded || '用户选择') : (t.social?.autoSelect || '随机')}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        )
+                      })()}
+                      
+                      {/* Go to Edit button */}
+                      <button 
+                        onClick={() => {
+                          setSelectedResultIndex(null)
+                          handleGoToEdit(selectedImageUrl)
+                        }}
+                        className="w-full h-12 mt-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2 transition-colors"
+                      >
+                        <Wand2 className="w-4 h-4" />
+                        {t.gallery?.goEdit || '去修图'}
+                      </button>
                     </div>
                   </div>
                 </div>
