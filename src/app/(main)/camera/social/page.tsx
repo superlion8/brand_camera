@@ -83,7 +83,6 @@ function SocialPageContent() {
   const [permissionChecked, setPermissionChecked] = useState(false)
   const [generatedImages, setGeneratedImages] = useState<string[]>([])
   const [generatedModelTypes, setGeneratedModelTypes] = useState<('pro' | 'flash')[]>([])
-  const [generatedGenModes, setGeneratedGenModes] = useState<('lifestyle' | 'mirror')[]>([])
   const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
   const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
@@ -213,10 +212,8 @@ function SocialPageContent() {
       console.log('[Social] Task has completed images, switching to results mode')
       const images = currentTask.imageSlots.map(s => s.imageUrl || '')
       const modelTypes = currentTask.imageSlots.map(s => (s.modelType === 'pro' || s.modelType === 'flash' ? s.modelType : 'pro') as 'pro' | 'flash')
-      const genModes = currentTask.imageSlots.map(s => (s.genMode === 'simple' ? 'lifestyle' : 'mirror') as 'lifestyle' | 'mirror')
       setGeneratedImages(images)
       setGeneratedModelTypes(modelTypes)
-      setGeneratedGenModes(genModes)
       setMode('results')
     }
   }, [mode, currentTaskId, tasks])
@@ -309,7 +306,6 @@ function SocialPageContent() {
     setCapturedImage(null)
     setGeneratedImages([])
     setGeneratedModelTypes([])
-    setGeneratedGenModes([])
     setMode("camera")
   }
   
@@ -423,7 +419,6 @@ function SocialPageContent() {
       
       const allImages: (string | null)[] = Array(SOCIAL_NUM_IMAGES).fill(null)
       const allModelTypes: (('pro' | 'flash') | null)[] = Array(SOCIAL_NUM_IMAGES).fill(null)
-      const allGenModes: (('lifestyle' | 'mirror') | null)[] = Array(SOCIAL_NUM_IMAGES).fill(null)
       let successCount = 0
       
       if (reader) {
@@ -459,7 +454,6 @@ function SocialPageContent() {
                   
                   allImages[data.index] = data.image
                   allModelTypes[data.index] = 'pro' // 新工作流固定使用 pro 模型
-                  allGenModes[data.index] = 'lifestyle'
                   successCount++
                   
                   updateImageSlot(taskId, data.index, {
@@ -521,7 +515,6 @@ function SocialPageContent() {
         const id = taskId
         const savedImages = allImages.filter(Boolean) as string[]
         const savedModelTypes = allModelTypes.filter(Boolean) as ('pro' | 'flash')[]
-        const savedGenModes = allGenModes.filter(Boolean) as ('lifestyle' | 'mirror')[]
         
         await addGeneration({
           id,
@@ -529,7 +522,7 @@ function SocialPageContent() {
           inputImageUrl: inputImage,
           outputImageUrls: savedImages,
           outputModelTypes: savedModelTypes,
-          outputGenModes: savedGenModes.map(m => m === 'lifestyle' ? 'simple' : 'extended'),
+          outputGenModes: savedImages.map(() => 'simple'), // 新工作流统一为 simple
           createdAt: new Date().toISOString(),
           params: {
             model: model?.name,
@@ -546,7 +539,6 @@ function SocialPageContent() {
         if (modeRef.current === "processing") {
           setGeneratedImages(allImages.filter(Boolean) as string[])
           setGeneratedModelTypes(savedModelTypes)
-          setGeneratedGenModes(savedGenModes)
           setCurrentGenerationId(id)
           setMode("results")
           router.replace('/camera/social?mode=results')
@@ -597,7 +589,6 @@ function SocialPageContent() {
     setCapturedImage(null)
     setGeneratedImages([])
     setGeneratedModelTypes([])
-    setGeneratedGenModes([])
     setMode("camera")
   }
   
@@ -1360,135 +1351,68 @@ function SocialPageContent() {
               <span className="font-semibold ml-2">{t.social?.result || '本次成片'}</span>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-8">
-              {/* 韩系生活感 - indices 0, 1, 3, 4 */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-1 h-4 bg-pink-500 rounded-full" />
-                    韩系生活感
-                  </h3>
-                  <span className="text-[10px] text-zinc-400">小红书/INS风格</span>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {[0, 1, 3, 4].map((i) => {
-                    const currentTask = tasks.find(t => t.id === currentTaskId)
-                    const slot = currentTask?.imageSlots?.[i]
-                    const url = slot?.imageUrl || generatedImages[i]
-                    const status = slot?.status || (url ? 'completed' : 'failed')
-                    const modelType = slot?.modelType || generatedModelTypes[i]
-                    
-                    if (status === 'pending' || status === 'generating') {
-                      return (
-                        <div key={i} className="aspect-[4/5] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
-                          <Loader2 className="w-6 h-6 text-pink-400 animate-spin mb-2" />
-                          <span className="text-[10px] text-zinc-400">生成中...</span>
-                        </div>
-                      )
-                    }
-                    
-                    if (status === 'failed' || !url) {
-                      return (
-                        <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
-                          {slot?.error || t.camera?.generationFailed || '生成失败'}
-                        </div>
-                      )
-                    }
-                    
-                    return (
-                      <div 
-                        key={i} 
-                        className="group relative aspect-[4/5] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer"
-                        onClick={() => setSelectedResultIndex(i)}
-                      >
-                        <Image src={url} alt="Result" fill className="object-cover" />
-                        <button 
-                          className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center shadow-sm transition-colors ${
-                            currentGenerationId && isFavorited(currentGenerationId, i) 
-                              ? "bg-red-500 text-white" 
-                              : "bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500"
-                          }`}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleResultFavorite(i)
-                          }}
-                        >
-                          <Heart className={`w-3.5 h-3.5 ${currentGenerationId && isFavorited(currentGenerationId, i) ? "fill-current" : ""}`} />
-                        </button>
-                        <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-pink-500 text-white">
-                            生活感
-                          </span>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
+            <div className="flex-1 overflow-y-auto p-4 pb-8">
+              {/* 简单3图网格 */}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold text-zinc-900 flex items-center gap-2">
+                  <span className="w-1 h-4 bg-gradient-to-b from-pink-500 to-purple-500 rounded-full" />
+                  {t.social?.resultTitle || '社媒种草图'}
+                </h3>
+                <span className="text-[10px] text-zinc-400">{t.social?.description || '3 张社媒风格图'}</span>
               </div>
-
-              {/* 对镜自拍 - indices 2, 5 */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-1 h-4 bg-purple-600 rounded-full" />
-                    对镜自拍
-                  </h3>
-                  <span className="text-[10px] text-zinc-400">Mirror Selfie</span>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {[2, 5].map((i) => {
-                    const currentTask = tasks.find(t => t.id === currentTaskId)
-                    const slot = currentTask?.imageSlots?.[i]
-                    const url = slot?.imageUrl || generatedImages[i]
-                    const status = slot?.status || (url ? 'completed' : 'failed')
-                    const modelType = slot?.modelType || generatedModelTypes[i]
-                    
-                    if (status === 'pending' || status === 'generating') {
-                      return (
-                        <div key={i} className="aspect-[4/5] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
-                          <Loader2 className="w-6 h-6 text-purple-400 animate-spin mb-2" />
-                          <span className="text-[10px] text-zinc-400">生成中...</span>
-                        </div>
-                      )
-                    }
-                    
-                    if (status === 'failed' || !url) {
-                      return (
-                        <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
-                          {slot?.error || t.camera?.generationFailed || '生成失败'}
-                        </div>
-                      )
-                    }
-                    
+              <div className="grid grid-cols-3 gap-3">
+                {Array.from({ length: SOCIAL_NUM_IMAGES }).map((_, i) => {
+                  const currentTask = tasks.find(t => t.id === currentTaskId)
+                  const slot = currentTask?.imageSlots?.[i]
+                  const url = slot?.imageUrl || generatedImages[i]
+                  const status = slot?.status || (url ? 'completed' : 'failed')
+                  
+                  if (status === 'pending' || status === 'generating') {
                     return (
-                      <div 
-                        key={i} 
-                        className="group relative aspect-[4/5] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer"
-                        onClick={() => setSelectedResultIndex(i)}
-                      >
-                        <Image src={url} alt="Result" fill className="object-cover" />
-                        <button 
-                          className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center shadow-sm transition-colors ${
-                            currentGenerationId && isFavorited(currentGenerationId, i) 
-                              ? "bg-red-500 text-white" 
-                              : "bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500"
-                          }`}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleResultFavorite(i)
-                          }}
-                        >
-                          <Heart className={`w-3.5 h-3.5 ${currentGenerationId && isFavorited(currentGenerationId, i) ? "fill-current" : ""}`} />
-                        </button>
-                        <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-purple-500 text-white">
-                            对镜
-                          </span>
-                        </div>
+                      <div key={i} className="aspect-[3/4] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
+                        <Loader2 className="w-5 h-5 text-pink-400 animate-spin mb-1" />
+                        <span className="text-[9px] text-zinc-400">{t.common?.generating || '生成中'}</span>
                       </div>
                     )
-                  })}
-                </div>
+                  }
+                  
+                  if (status === 'failed' || !url) {
+                    return (
+                      <div key={i} className="aspect-[3/4] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-[10px] px-2 text-center">
+                        {slot?.error || t.camera?.generationFailed || '生成失败'}
+                      </div>
+                    )
+                  }
+                  
+                  return (
+                    <div 
+                      key={i} 
+                      className="group relative aspect-[3/4] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer"
+                      onClick={() => setSelectedResultIndex(i)}
+                    >
+                      <Image src={url} alt={`Result ${i + 1}`} fill className="object-cover" />
+                      <button 
+                        className={`absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center shadow-sm transition-colors ${
+                          currentGenerationId && isFavorited(currentGenerationId, i) 
+                            ? "bg-red-500 text-white" 
+                            : "bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500"
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleResultFavorite(i)
+                        }}
+                      >
+                        <Heart className={`w-3 h-3 ${currentGenerationId && isFavorited(currentGenerationId, i) ? "fill-current" : ""}`} />
+                      </button>
+                      {/* 图片序号标签 */}
+                      <div className="absolute bottom-1.5 left-1.5">
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-black/50 text-white">
+                          {i + 1}/{SOCIAL_NUM_IMAGES}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
 
@@ -1506,8 +1430,6 @@ function SocialPageContent() {
               const currentTask = tasks.find(t => t.id === currentTaskId)
               const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
               const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
-              const selectedModelType = selectedSlot?.modelType || generatedModelTypes[selectedResultIndex]
-              const selectedGenMode = selectedResultIndex === 2 || selectedResultIndex === 5 ? 'mirror' : 'lifestyle'
               
               if (!selectedImageUrl) return null
               
@@ -1528,7 +1450,7 @@ function SocialPageContent() {
                   <div className="flex-1 overflow-y-auto bg-zinc-100 pb-24">
                     <div className="bg-zinc-900">
                       <div 
-                        className="relative aspect-[4/5] cursor-pointer group"
+                        className="relative aspect-[3/4] cursor-pointer group"
                         onClick={() => setFullscreenImage(selectedImageUrl)}
                       >
                         <img 
@@ -1549,12 +1471,11 @@ function SocialPageContent() {
                       <div className="flex items-center justify-between mb-4">
                         <div>
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                              selectedGenMode === 'lifestyle' 
-                                ? "bg-pink-100 text-pink-700" 
-                                : "bg-purple-100 text-purple-700"
-                            }`}>
-                              {selectedGenMode === 'lifestyle' ? '韩系生活感' : '对镜自拍'}
+                            <span className="px-2 py-0.5 rounded text-xs font-medium bg-gradient-to-r from-pink-100 to-purple-100 text-pink-700">
+                              {t.social?.title || '社媒种草'}
+                            </span>
+                            <span className="px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 text-zinc-600">
+                              {selectedResultIndex + 1}/{SOCIAL_NUM_IMAGES}
                             </span>
                           </div>
                           <p className="text-xs text-zinc-400">

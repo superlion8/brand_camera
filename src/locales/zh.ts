@@ -705,16 +705,18 @@ export const zh = {
 
   // 社媒种草
   social: {
+    title: "社媒种草",
     productImage: "商品图",
     model: "模特",
     background: "背景",
     autoSelect: "随机选择",
-    description: "生成 3 张社媒风格图",
+    description: "3 张社媒风格图",
     descriptionDetail: "AI 设计搭配，共用模特和场景生成 3 张",
     generate: "生成种草图",
     generating: "正在生成种草图...",
     generatingDesc: "3 张图片生成中，请稍候",
     result: "生成结果",
+    resultTitle: "社媒种草图",
     newGeneration: "重新生成",
     viewGallery: "查看成片",
     selectModel: "选择模特",

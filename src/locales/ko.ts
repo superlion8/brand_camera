@@ -707,16 +707,18 @@ export const ko: Translations = {
 
   // 소셜 미디어
   social: {
+    title: "소셜 미디어",
     productImage: "상품 이미지",
     model: "모델",
     background: "배경",
     autoSelect: "무작위",
-    description: "3장의 소셜 스타일 이미지 생성",
+    description: "3장의 소셜 스타일 이미지",
     descriptionDetail: "동일한 모델과 배경으로 3장 생성",
     generate: "소셜 이미지 생성",
     generating: "소셜 이미지 생성 중...",
     generatingDesc: "3장의 이미지 생성 중, 잠시만 기다려주세요",
     result: "결과",
+    resultTitle: "소셜 이미지",
     newGeneration: "다시 생성",
     viewGallery: "사진 보기",
     selectModel: "모델 선택",

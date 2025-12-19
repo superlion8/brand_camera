@@ -707,16 +707,18 @@ export const en: Translations = {
 
   // Social Mode
   social: {
+    title: "Social",
     productImage: "Product Image",
     model: "Model",
     background: "Background",
     autoSelect: "Random",
-    description: "Generate 3 social-style images",
+    description: "3 social-style images",
     descriptionDetail: "AI-designed outfits, same model and scene",
     generate: "Generate Social",
     generating: "Generating social images...",
     generatingDesc: "Generating 3 images, please wait",
     result: "Results",
+    resultTitle: "Social Images",
     newGeneration: "Generate Again",
     viewGallery: "View Photos",
     selectModel: "Select Model",
