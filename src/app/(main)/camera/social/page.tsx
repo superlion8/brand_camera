@@ -466,7 +466,7 @@ function SocialPageContent() {
                     status: 'completed',
                     imageUrl: data.image,
                     modelType: 'pro',
-                    genMode: 'lifestyle',
+                    genMode: 'simple', // 新工作流统一使用 simple
                   })
                   
                   // 第一张图片完成时，切换到 results 模式
