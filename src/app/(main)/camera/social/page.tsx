@@ -1290,7 +1290,7 @@ function SocialPageContent() {
             
             <h3 className="text-white text-2xl font-bold mb-2">{t.social?.generating || '正在生成种草图...'}</h3>
             <div className="text-zinc-400 space-y-1 text-sm mb-8">
-              <p>{t.social?.generatingDesc || '6 张图片生成中，请稍候'}</p>
+              <p>{t.social?.generatingDesc || '3 张图片生成中，请稍候'}</p>
               {activeModel && <p>使用模特: {activeModel.name}</p>}
               {activeBg && <p>使用背景: {activeBg.name}</p>}
             </div>
