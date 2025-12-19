@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
     const { data: modelsData, error: modelsError } = await supabase
       .from('models_analysis')
-      .select('model_id, model_gender, model_age_group, model_style, model_desc')
+      .select('model_id, model_gender, model_age_group, model_style_primary, model_desc')
     
     if (modelsError || !modelsData || modelsData.length === 0) {
       console.error('[AutoSelectModel] Failed to fetch models:', modelsError)
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       model_id: m.model_id,
       gender: m.model_gender,
       age_group: m.model_age_group,
-      style: m.model_style,
+      style: m.model_style_primary,
       description: m.model_desc?.substring(0, 200) + '...' // Truncate for token limit
     })))
     

@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     
     const { data: modelsData, error: dbError } = await supabase
       .from('models_analysis')
-      .select('model_id, model_gender, model_age_group, model_style, model_desc')
+      .select('model_id, model_gender, model_age_group, model_style_primary, model_desc')
     
     if (dbError) {
       console.error('Database error:', dbError)
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     // Format model database for prompt
     const modelDatabase = modelsData.map(m => ({
       model_id: m.model_id,
-      model_style: m.model_style,
+      model_style: m.model_style_primary,
       model_desc: m.model_desc?.substring(0, 200) + '...' // Truncate for context length
     }))
     
@@ -166,18 +166,14 @@ export async function POST(request: NextRequest) {
         const modelData = modelsData.find(m => m.model_id === modelId)
         if (!modelData) return null
         
-        // Determine file extension - check if it's jpg or png
-        // For simplicity, we'll use lowercase model_id and try common extensions
-        const baseId = modelId.toLowerCase()
-        
         return {
           model_id: modelData.model_id,
           model_gender: modelData.model_gender,
           model_age_group: modelData.model_age_group,
-          model_style: modelData.model_style,
+          model_style: modelData.model_style_primary,
           model_desc: modelData.model_desc,
-          // Try png first (most common in the uploaded data)
-          imageUrl: `${STORAGE_URL}/${baseId}.png`,
+          // Use original model_id (preserves casing like ARKET_model1)
+          imageUrl: `${STORAGE_URL}/${modelData.model_id}.png`,
         }
       })
       .filter(Boolean)
