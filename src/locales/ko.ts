@@ -472,7 +472,7 @@ export const ko: Translations = {
     shootNextSet: "다음 세트 촬영",
     // 촬영 유형 라벨
     fullBody: "전신샷",
-    medium: "중간샷",
+    coolPose: "쿨 포즈",
     detail: "디테일",
     dynamic: "다이나믹",
     // 진행 메시지

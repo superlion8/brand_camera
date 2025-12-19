@@ -470,7 +470,7 @@ export const zh = {
     shootNextSet: "拍摄下一组",
     // 机位标签
     fullBody: "全身照",
-    medium: "中景",
+    coolPose: "时尚pose",
     detail: "细节",
     dynamic: "动态",
     // 进度提示

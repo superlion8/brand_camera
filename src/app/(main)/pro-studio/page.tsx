@@ -50,11 +50,11 @@ const PRO_STUDIO_NUM_IMAGES = 4
 // 4 种机位配置
 const SHOT_TYPE_LABELS: Record<string, { zh: string; en: string; color: string }> = {
   full_body: { zh: '全身照', en: 'Full Body', color: 'bg-blue-500' },
-  medium: { zh: '中景', en: 'Medium', color: 'bg-purple-500' },
+  cool_pose: { zh: '时尚pose', en: 'Cool Pose', color: 'bg-purple-500' },
   detail: { zh: '细节', en: 'Detail', color: 'bg-amber-500' },
   dynamic: { zh: '动态', en: 'Dynamic', color: 'bg-green-500' },
 }
-const SHOT_TYPES = ['full_body', 'medium', 'detail', 'dynamic']
+const SHOT_TYPES = ['full_body', 'cool_pose', 'detail', 'dynamic']
 
 // Asset Grid Component with Upload Button
 function AssetGrid({ 

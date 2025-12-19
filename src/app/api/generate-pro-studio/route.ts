@@ -25,22 +25,22 @@ const SHOT_FOCUS_CONFIGS = [
   {
     index: 0,
     name: 'full_body',
-    prompt: 'Full body wide shot, showing the complete outfit from head to toe, ensuring the shoes are visible. Fashion catalog pose.'
+    prompt: 'Full body wide shot. Standard e-commerce catalog pose. The model is standing straight with a neutral stance, facing the camera directly. Ensure the entire outfit fits within the frame from head to toe. Clean, professional composition.'
   },
   {
     index: 1,
-    name: 'medium',
-    prompt: 'Medium shot, captured from the knees up. Focus on the fit of the garment on the body. Neutral standing pose.'
+    name: 'cool_pose',
+    prompt: "Fashion Editorial Shot. A slightly low-angle perspective to elongate the silhouette. The model is striking a confident, relaxed 'cool' pose. The framing focuses on the 'Total Look' but with more attitude than a catalog shot."
   },
   {
     index: 2,
     name: 'detail',
-    prompt: 'Close-up shot on the upper body and fabric details. Depth of field styling, slightly blurred background. Highlighting the material texture.'
+    prompt: 'Detailed Close-up Shot. Camera strictly focuses on the product texture and design details. Use a shallow depth of field (blurred background) to make the fabric and material pop.'
   },
   {
     index: 3,
     name: 'dynamic',
-    prompt: 'Dynamic lifestyle shot, model is walking or moving naturally. Candid moment, looking slightly away from camera. Natural movement in the fabric.'
+    prompt: 'Dynamic lifestyle shot, candid moment, looking slightly away from camera. Natural movement in the fabric.'
   },
 ]
 

@@ -472,7 +472,7 @@ export const en: Translations = {
     shootNextSet: "Shoot Next Set",
     // Shot type labels
     fullBody: "Full Body",
-    medium: "Medium",
+    coolPose: "Cool Pose",
     detail: "Detail",
     dynamic: "Dynamic",
     // Progress messages
