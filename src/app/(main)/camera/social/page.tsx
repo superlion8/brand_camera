@@ -1,172 +1,354 @@
 "use client"
 
-import { useState, useRef, useEffect, Suspense } from "react"
+import { useState, useRef, useCallback, useEffect, Suspense } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
+import Webcam from "react-webcam"
 import { 
-  ArrowLeft, Loader2, Image as ImageIcon, 
-  X, Home, Check, ZoomIn, Plus, Upload,
-  Camera, Sparkles, Users, Heart
+  ArrowLeft, ArrowRight, Check, Loader2, Image as ImageIcon, 
+  SlidersHorizontal, X, Wand2, Camera, Home,
+  Heart, Download, Pin, ZoomIn, FolderHeart, Plus, Upload
 } from "lucide-react"
+import { useAssetStore } from "@/stores/assetStore"
+import { useGenerationTaskStore, base64ToBlobUrl } from "@/stores/generationTaskStore"
+import { useSettingsStore } from "@/stores/settingsStore"
 import { useRouter, useSearchParams } from "next/navigation"
-import { fileToBase64, compressBase64Image } from "@/lib/utils"
+import { fileToBase64, generateId, compressBase64Image } from "@/lib/utils"
+import { Asset } from "@/types"
 import Image from "next/image"
+import { PRESET_PRODUCTS } from "@/data/presets"
+import { usePresetStore } from "@/stores/presetStore"
 import { useQuota } from "@/hooks/useQuota"
 import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { BottomNav } from "@/components/shared/BottomNav"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
-import { useGenerationTaskStore } from "@/stores/generationTaskStore"
-import { useAssetStore } from "@/stores/assetStore"
-import { usePresetStore } from "@/stores/presetStore"
-import { useSettingsStore } from "@/stores/settingsStore"
-import { Asset } from "@/types"
 
-type PageMode = "main" | "processing" | "results"
+// Helper to map API error codes to translated messages
+const getErrorMessage = (error: string, t: any): string => {
+  if (error === 'RESOURCE_BUSY') {
+    return t.errors?.resourceBusy || '资源紧张，请稀后重试'
+  }
+  return error
+}
 
-// 生成图片数量：6 张 (2 组 × 3 张)
+type SocialMode = "camera" | "review" | "processing" | "results"
+
+// 商品分类
+type ProductSubTab = "all" | "top" | "pants" | "inner" | "shoes" | "hat"
+const PRODUCT_SUB_TABS: ProductSubTab[] = ["all", "top", "pants", "inner", "shoes", "hat"]
+
+// 商品分类翻译映射
+const getProductCategoryLabel = (cat: ProductSubTab, t: any): string => {
+  switch (cat) {
+    case "all": return t.common?.all || "全部"
+    case "top": return t.assets?.productTop || "上衣"
+    case "pants": return t.assets?.productPants || "裤子"
+    case "inner": return t.assets?.productInner || "内衬"
+    case "shoes": return t.assets?.productShoes || "鞋子"
+    case "hat": return t.assets?.productHat || "帽子"
+    default: return cat
+  }
+}
+
+// Social Generation config - 6 images total (2 groups x 3)
+// 每组：2 张韩系生活感 + 1 张对镜自拍
 const SOCIAL_NUM_IMAGES = 6
 
 function SocialPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { user } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   const t = useLanguageStore(state => state.t)
-  const { checkQuota, showExceededModal, requiredCount, closeExceededModal, refreshQuota } = useQuota()
-  const { addTask, updateTaskStatus, updateImageSlot, initImageSlots, tasks } = useGenerationTaskStore()
-  const { userModels, userBackgrounds } = useAssetStore()
-  const { visibleModels, visibleBackgrounds, loadPresets } = usePresetStore()
-  const { debugMode } = useSettingsStore()
   
+  // 未登录时重定向到登录页
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace('/login')
+    }
+  }, [user, authLoading, router])
+  
+  const webcamRef = useRef<Webcam>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const modelUploadRef = useRef<HTMLInputElement>(null)
   const bgUploadRef = useRef<HTMLInputElement>(null)
   
-  // State
-  const [mode, setMode] = useState<PageMode>("main")
-  const [productImage, setProductImage] = useState<string | null>(null)
-  const [selectedModel, setSelectedModel] = useState<Asset | null>(null)
-  const [selectedBackground, setSelectedBackground] = useState<Asset | null>(null)
-  const [showModelPicker, setShowModelPicker] = useState(false)
-  const [showBgPicker, setShowBgPicker] = useState(false)
-  
-  // Results state
+  // Mode and state
+  const [mode, setMode] = useState<SocialMode>("camera")
+  const modeRef = useRef<SocialMode>("camera")
+  const [capturedImage, setCapturedImage] = useState<string | null>(null)
+  const [hasCamera, setHasCamera] = useState(true)
+  const [cameraReady, setCameraReady] = useState(false)
+  const [permissionChecked, setPermissionChecked] = useState(false)
+  const [generatedImages, setGeneratedImages] = useState<string[]>([])
+  const [generatedModelTypes, setGeneratedModelTypes] = useState<('pro' | 'flash')[]>([])
+  const [generatedGenModes, setGeneratedGenModes] = useState<('lifestyle' | 'mirror')[]>([])
+  const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
-  const [generatedImages, setGeneratedImages] = useState<(string | null)[]>(Array(SOCIAL_NUM_IMAGES).fill(null))
+  const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
   
-  // 加载预设
-  useEffect(() => {
-    loadPresets()
-  }, [loadPresets])
-
-  // 从 URL 参数恢复模式
+  // 从 URL 参数读取 mode
   useEffect(() => {
     const urlMode = searchParams.get('mode')
     if (urlMode === 'processing' || urlMode === 'results') {
-      setMode(urlMode as PageMode)
+      setMode(urlMode as SocialMode)
       const savedTaskId = sessionStorage.getItem('socialTaskId')
       if (savedTaskId) {
         setCurrentTaskId(savedTaskId)
       }
     }
   }, [searchParams])
-
-  // 监听任务完成
+  
+  // Keep modeRef in sync with mode
   useEffect(() => {
-    if (!currentTaskId) return
-    const task = tasks.find(t => t.id === currentTaskId)
-    if (!task?.imageSlots) return
+    modeRef.current = mode
+  }, [mode])
+  
+  // Check camera permission on mount
+  useEffect(() => {
+    const checkCameraPermission = async () => {
+      try {
+        const cachedPermission = localStorage.getItem('cameraPermissionGranted')
+        if (cachedPermission === 'true') {
+          setCameraReady(true)
+          setPermissionChecked(true)
+          return
+        }
+        
+        if (navigator.permissions && navigator.permissions.query) {
+          const result = await navigator.permissions.query({ name: 'camera' as PermissionName })
+          if (result.state === 'granted') {
+            setCameraReady(true)
+            localStorage.setItem('cameraPermissionGranted', 'true')
+          } else if (result.state === 'denied') {
+            setHasCamera(false)
+            localStorage.setItem('cameraPermissionGranted', 'false')
+          }
+          
+          result.addEventListener('change', () => {
+            if (result.state === 'granted') {
+              setCameraReady(true)
+              localStorage.setItem('cameraPermissionGranted', 'true')
+            } else if (result.state === 'denied') {
+              setHasCamera(false)
+              localStorage.setItem('cameraPermissionGranted', 'false')
+            }
+          })
+        }
+      } catch (e) {
+        console.log('Permission API not supported, trying direct stream access')
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+          stream.getTracks().forEach(track => track.stop())
+          setCameraReady(true)
+          localStorage.setItem('cameraPermissionGranted', 'true')
+        } catch (streamError) {
+          console.log('Camera access denied or unavailable')
+          setHasCamera(false)
+        }
+      }
+      setPermissionChecked(true)
+    }
     
-    const images = task.imageSlots.map(slot => slot.imageUrl || null)
-    setGeneratedImages(images)
+    checkCameraPermission()
+  }, [])
+  
+  // Panel states
+  const [showCustomPanel, setShowCustomPanel] = useState(false)
+  const [showProductPanel, setShowProductPanel] = useState(false)
+  const [productSubTab, setProductSubTab] = useState<ProductSubTab>("all")
+  const [zoomProductImage, setZoomProductImage] = useState<string | null>(null)
+  const [activeCustomTab, setActiveCustomTab] = useState("model")
+  const [productSourceTab, setProductSourceTab] = useState<"user" | "preset">("preset")
+  const [isLoadingAssets, setIsLoadingAssets] = useState(false)
+  
+  // Selections
+  const [selectedBg, setSelectedBg] = useState<string | null>(null)
+  const [selectedModel, setSelectedModel] = useState<string | null>(null)
+  const [modelSubcategory, setModelSubcategory] = useState<'mine' | null>(null)
+  const [bgSubcategory, setBgSubcategory] = useState<'mine' | null>(null)
+  
+  const { addGeneration, addUserAsset, userModels, userBackgrounds, userProducts, addFavorite, removeFavorite, isFavorited, favorites, generations } = useAssetStore()
+  const { addTask, updateTaskStatus, updateImageSlot, initImageSlots, tasks } = useGenerationTaskStore()
+  const { debugMode } = useSettingsStore()
+  
+  // Preset Store - 动态从云端加载
+  const { 
+    visibleModels, 
+    visibleBackgrounds,
+    isLoaded: presetsLoaded,
+    loadPresets,
+    getRandomModel,
+    getRandomBackground,
+  } = usePresetStore()
+  
+  // 组件加载时获取预设
+  useEffect(() => {
+    loadPresets()
+  }, [loadPresets])
+  
+  // Quota management
+  const { quota, checkQuota, refreshQuota, showExceededModal, requiredCount, closeExceededModal } = useQuota()
+  
+  // Helper to sort by pinned status
+  const sortByPinned = (assets: Asset[]) => 
+    [...assets].sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1
+      if (!a.isPinned && b.isPinned) return 1
+      return 0
+    })
+  
+  // 监听任务完成，自动切换到 results 模式
+  useEffect(() => {
+    if (mode !== 'processing' || !currentTaskId) return
     
-    // 检查是否有图片完成
-    const hasCompleted = task.imageSlots.some(slot => slot.status === 'completed')
-    if (hasCompleted && mode === 'processing') {
+    const currentTask = tasks.find(t => t.id === currentTaskId)
+    if (!currentTask?.imageSlots) return
+    
+    const hasAnyCompleted = currentTask.imageSlots.some(s => s.status === 'completed')
+    
+    if (hasAnyCompleted) {
+      console.log('[Social] Task has completed images, switching to results mode')
+      const images = currentTask.imageSlots.map(s => s.imageUrl || '')
+      const modelTypes = currentTask.imageSlots.map(s => (s.modelType === 'pro' || s.modelType === 'flash' ? s.modelType : 'pro') as 'pro' | 'flash')
+      const genModes = currentTask.imageSlots.map(s => (s.genMode === 'simple' ? 'lifestyle' : 'mirror') as 'lifestyle' | 'mirror')
+      setGeneratedImages(images)
+      setGeneratedModelTypes(modelTypes)
+      setGeneratedGenModes(genModes)
       setMode('results')
-      router.replace('/camera/social?mode=results')
     }
-  }, [currentTaskId, tasks, mode, router])
-
-  // 文件上传处理
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  }, [mode, currentTaskId, tasks])
+  
+  // Filter assets by category
+  const filteredModels = modelSubcategory === 'mine'
+    ? sortByPinned(userModels)
+    : [...sortByPinned(userModels), ...visibleModels]
+  
+  const filteredBackgrounds = bgSubcategory === 'mine'
+    ? sortByPinned(userBackgrounds)
+    : [...sortByPinned(userBackgrounds), ...visibleBackgrounds]
+  
+  const allModels = filteredModels
+  const allBackgrounds = filteredBackgrounds
+  
+  // Get selected assets from merged arrays
+  const activeModel = allModels.find(m => m.id === selectedModel)
+  const activeBg = allBackgrounds.find(b => b.id === selectedBg)
+  
+  // 拍照
+  const handleCapture = useCallback(() => {
+    if (webcamRef.current) {
+      const video = webcamRef.current.video
+      const videoWidth = video?.videoWidth || 1920
+      const videoHeight = video?.videoHeight || 1080
+      
+      const imageSrc = webcamRef.current.getScreenshot({ width: videoWidth, height: videoHeight })
+      if (imageSrc) {
+        setCapturedImage(imageSrc)
+        setMode("review")
+      }
+    }
+  }, [])
+  
+  const handleUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       const base64 = await fileToBase64(file)
-      const compressed = await compressBase64Image(base64, 1024)
-      setProductImage(compressed)
+      setCapturedImage(base64)
+      setMode("review")
     }
-    e.target.value = ''
-  }
-
-  // 模特上传
-  const handleModelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  }, [])
+  
+  // Upload model image directly in selector
+  const handleModelUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       const base64 = await fileToBase64(file)
-      const compressed = await compressBase64Image(base64, 1024)
-      setSelectedModel({
-        id: 'uploaded',
-        type: 'model',
-        name: '上传的模特',
-        imageUrl: compressed,
-        tags: ['uploaded'],
-      })
-      setShowModelPicker(false)
+      const newAsset = {
+        id: generateId(),
+        type: 'model' as const,
+        name: `${t.common.model} ${new Date().toLocaleDateString()}`,
+        imageUrl: base64,
+      }
+      addUserAsset(newAsset)
+      setSelectedModel(newAsset.id)
     }
-    e.target.value = ''
-  }
-
-  // 背景上传
-  const handleBgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target) e.target.value = ''
+  }, [addUserAsset, t.common.model])
+  
+  // Upload background image directly in selector
+  const handleBgUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       const base64 = await fileToBase64(file)
-      const compressed = await compressBase64Image(base64, 1024)
-      setSelectedBackground({
-        id: 'uploaded',
-        type: 'background',
-        name: '上传的背景',
-        imageUrl: compressed,
-        tags: ['uploaded'],
-      })
-      setShowBgPicker(false)
+      const newAsset = {
+        id: generateId(),
+        type: 'background' as const,
+        name: `${t.common.background} ${new Date().toLocaleDateString()}`,
+        imageUrl: base64,
+      }
+      addUserAsset(newAsset)
+      setSelectedBg(newAsset.id)
     }
-    e.target.value = ''
+    if (e.target) e.target.value = ''
+  }, [addUserAsset, t.common.background])
+  
+  const handleCameraError = useCallback(() => {
+    setHasCamera(false)
+    setCameraReady(false)
+  }, [])
+  
+  const handleCameraReady = useCallback(() => {
+    setCameraReady(true)
+    localStorage.setItem('cameraPermissionGranted', 'true')
+  }, [])
+  
+  const handleRetake = () => {
+    setCapturedImage(null)
+    setGeneratedImages([])
+    setGeneratedModelTypes([])
+    setGeneratedGenModes([])
+    setMode("camera")
   }
-
-  // 重置
-  const handleReset = () => {
-    setProductImage(null)
-    setSelectedModel(null)
-    setSelectedBackground(null)
-    setGeneratedImages(Array(SOCIAL_NUM_IMAGES).fill(null))
-    setMode("main")
-  }
-
-  // 开始生成
-  const handleStartGeneration = async () => {
-    if (!productImage) return
-
+  
+  const handleShootIt = async () => {
+    if (!capturedImage) return
+    
+    // Check quota before starting generation
     const hasQuota = await checkQuota(SOCIAL_NUM_IMAGES)
-    if (!hasQuota) return
-
-    triggerFlyToGallery()
-    setMode("processing")
-
-    // 创建任务
-    const taskId = addTask('social', productImage, {
-      model: selectedModel?.name,
-      background: selectedBackground?.name,
-    }, SOCIAL_NUM_IMAGES)
+    if (!hasQuota) {
+      return
+    }
+    
+    // Capture current selections BEFORE any async operations
+    const currentModel = activeModel
+    const currentBg = activeBg
+    
+    const modelIsUserSelected = !!activeModel
+    const bgIsUserSelected = !!activeBg
+    
+    // Create task and switch to processing mode
+    const params = {
+      model: currentModel?.name || '每张随机',
+      background: currentBg?.name || '每张随机',
+      modelIsUserSelected,
+      bgIsUserSelected,
+    }
+    
+    const taskId = addTask('social', capturedImage, params, SOCIAL_NUM_IMAGES)
     setCurrentTaskId(taskId)
     initImageSlots(taskId, SOCIAL_NUM_IMAGES)
+    setMode("processing")
     
     sessionStorage.setItem('socialTaskId', taskId)
     router.replace('/camera/social?mode=processing')
     
-    // 预扣配额
+    // Trigger fly animation
+    triggerFlyToGallery()
+    
+    // Reserve quota in background
     fetch('/api/quota/reserve', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -181,258 +363,931 @@ function SocialPageContent() {
     }).catch(e => {
       console.warn('[Social] Failed to reserve quota:', e)
     })
-
+    
+    // Start background generation
+    runBackgroundGeneration(
+      taskId,
+      capturedImage,
+      currentModel,
+      currentBg,
+      modelIsUserSelected,
+      bgIsUserSelected
+    )
+  }
+  
+  // Background generation function
+  const runBackgroundGeneration = async (
+    taskId: string,
+    inputImage: string,
+    model: Asset | undefined,
+    background: Asset | undefined,
+    modelIsUserSelected: boolean,
+    bgIsUserSelected: boolean
+  ) => {
     try {
+      console.log("[Social] Starting generation...")
+      console.log("User selected model:", model?.name || 'none (will use random)')
+      console.log("User selected background:", background?.name || 'none (will use random)')
+      
+      const userModelUrl = model?.imageUrl || null
+      const userBgUrl = background?.imageUrl || null
+      
+      // 初始化所有 slots 为 pending
+      for (let i = 0; i < SOCIAL_NUM_IMAGES; i++) {
+        updateImageSlot(taskId, i, { status: 'pending' })
+      }
+      
+      console.log(`[Social] Starting SSE generation for ${SOCIAL_NUM_IMAGES} images...`)
+      
+      // 发送 SSE 请求到 generate-social API
       const response = await fetch('/api/generate-social', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
-          productImage,
-          modelImage: selectedModel?.imageUrl || 'random',
-          backgroundImage: selectedBackground?.imageUrl || 'random',
+          productImage: inputImage,
+          modelImage: userModelUrl || 'random',
+          backgroundImage: userBgUrl || 'random',
           taskId,
         }),
       })
-
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }))
+        throw new Error(errorData.error || `HTTP ${response.status}`)
+      }
+      
+      // 处理 SSE 流
       const reader = response.body?.getReader()
-      if (!reader) throw new Error('No response body')
-
       const decoder = new TextDecoder()
-      let buffer = ''
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        buffer = lines.pop() || ''
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6))
-              
-              if (data.type === 'progress') {
-                updateImageSlot(taskId, data.index, { status: 'generating' })
-              } else if (data.type === 'image') {
-                updateImageSlot(taskId, data.index, {
-                  status: 'completed',
-                  imageUrl: data.image,
-                  modelType: data.modelType,
-                  genMode: data.imageType === 'lifestyle' ? 'simple' : 'extended',
-                })
-              } else if (data.type === 'error') {
-                updateImageSlot(taskId, data.index, {
-                  status: 'failed',
-                  error: data.error || '生成失败',
-                })
+      
+      const allImages: (string | null)[] = Array(SOCIAL_NUM_IMAGES).fill(null)
+      const allModelTypes: (('pro' | 'flash') | null)[] = Array(SOCIAL_NUM_IMAGES).fill(null)
+      const allGenModes: (('lifestyle' | 'mirror') | null)[] = Array(SOCIAL_NUM_IMAGES).fill(null)
+      let successCount = 0
+      
+      if (reader) {
+        let buffer = ''
+        
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n')
+          buffer = lines.pop() || ''
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6))
+                
+                if (data.type === 'progress') {
+                  console.log(`[Social] Progress: ${data.message}`)
+                  updateImageSlot(taskId, data.index, { status: 'generating' })
+                } else if (data.type === 'image') {
+                  console.log(`[Social] Image ${data.index + 1}: ✓ (${data.modelType}, ${data.imageType})`)
+                  
+                  allImages[data.index] = data.image
+                  allModelTypes[data.index] = data.modelType
+                  allGenModes[data.index] = data.imageType === 'lifestyle' ? 'lifestyle' : 'mirror'
+                  successCount++
+                  
+                  updateImageSlot(taskId, data.index, {
+                    status: 'completed',
+                    imageUrl: data.image,
+                    modelType: data.modelType,
+                    genMode: data.imageType === 'lifestyle' ? 'simple' : 'extended',
+                  })
+                  
+                  // 第一张图片完成时，切换到 results 模式
+                  if (modeRef.current === 'processing' && successCount === 1) {
+                    console.log('[Social] First image ready, switching to results mode')
+                    setMode('results')
+                    router.replace('/camera/social?mode=results')
+                  }
+                } else if (data.type === 'error') {
+                  console.log(`[Social] Image ${data.index + 1}: ✗ (${data.error})`)
+                  updateImageSlot(taskId, data.index, {
+                    status: 'failed',
+                    error: data.error,
+                  })
+                } else if (data.type === 'complete') {
+                  console.log(`[Social] Complete: ${data.totalSuccess}/${SOCIAL_NUM_IMAGES} images`)
+                }
+              } catch (e) {
+                console.warn('[Social] Failed to parse SSE data:', line)
               }
-            } catch (e) {
-              console.error('Failed to parse SSE data:', e)
             }
           }
         }
       }
-
-      updateTaskStatus(taskId, 'completed')
-      sessionStorage.removeItem('socialTaskId')
-    } catch (error: any) {
-      console.error('Generation error:', error)
-      for (let i = 0; i < SOCIAL_NUM_IMAGES; i++) {
-        const task = tasks.find(t => t.id === taskId)
-        const slot = task?.imageSlots?.[i]
-        if (!slot || slot.status === 'pending' || slot.status === 'generating') {
-          updateImageSlot(taskId, i, {
-            status: 'failed',
-            error: error.message || '网络错误',
+      
+      // Calculate refund for failed images
+      const failedCount = SOCIAL_NUM_IMAGES - successCount
+      if (failedCount > 0) {
+        console.log(`[Social] Refunding ${failedCount} failed images`)
+        try {
+          await fetch('/api/quota/reserve', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              taskId,
+              actualImageCount: successCount,
+              refundCount: failedCount,
+            }),
           })
+        } catch (e) {
+          console.warn('[Social] Failed to refund:', e)
         }
       }
-      updateTaskStatus(taskId, 'failed')
+      
+      if (successCount > 0) {
+        updateTaskStatus(taskId, 'completed', allImages.filter(Boolean) as string[])
+        
+        // Save to IndexedDB/history
+        const id = taskId
+        const savedImages = allImages.filter(Boolean) as string[]
+        const savedModelTypes = allModelTypes.filter(Boolean) as ('pro' | 'flash')[]
+        const savedGenModes = allGenModes.filter(Boolean) as ('lifestyle' | 'mirror')[]
+        
+        await addGeneration({
+          id,
+          type: "social",
+          inputImageUrl: inputImage,
+          outputImageUrls: savedImages,
+          outputModelTypes: savedModelTypes,
+          outputGenModes: savedGenModes.map(m => m === 'lifestyle' ? 'simple' : 'extended'),
+          createdAt: new Date().toISOString(),
+          params: {
+            model: model?.name,
+            background: background?.name,
+            modelImage: model?.imageUrl,
+            backgroundImage: background?.imageUrl,
+            modelIsUserSelected,
+            bgIsUserSelected,
+          },
+        }, true)
+        
+        await refreshQuota()
+        
+        if (modeRef.current === "processing") {
+          setGeneratedImages(allImages.filter(Boolean) as string[])
+          setGeneratedModelTypes(savedModelTypes)
+          setGeneratedGenModes(savedGenModes)
+          setCurrentGenerationId(id)
+          setMode("results")
+          router.replace('/camera/social?mode=results')
+        }
+        
+        sessionStorage.removeItem('socialTaskId')
+      } else {
+        // All tasks failed - refund all reserved quota
+        console.log('[Social] All tasks failed, refunding all', SOCIAL_NUM_IMAGES, 'images')
+        try {
+          await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
+        } catch (e) {
+          console.warn('[Social] Failed to refund on total failure:', e)
+        }
+        
+        throw new Error(t.camera?.generationFailed || '生成失败')
+      }
+    } catch (error: any) {
+      console.error("Generation error:", error)
+      updateTaskStatus(taskId, 'failed', undefined, error.message || t.camera?.generationFailed)
+      
+      // Refund quota on error
+      console.log('[Social] Error occurred, refunding reserved quota')
+      try {
+        await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
+        await refreshQuota()
+      } catch (e) {
+        console.warn('[Social] Failed to refund on error:', e)
+      }
+      
+      if (modeRef.current === "processing") {
+        const errorMsg = getErrorMessage(error.message, t) || t.errors?.generateFailed
+        alert(errorMsg)
+        setMode("review")
+      }
+      
       sessionStorage.removeItem('socialTaskId')
     }
   }
-
-  // 合并模特列表
-  const allModels = [...(visibleModels || []), ...(userModels || [])]
-  const allBackgrounds = [...(visibleBackgrounds || []), ...(userBackgrounds || [])]
-
+  
+  // Handle return during processing
+  const handleReturnDuringProcessing = () => {
+    router.push("/")
+  }
+  
+  // Handle taking new photo during processing
+  const handleNewPhotoDuringProcessing = () => {
+    setCapturedImage(null)
+    setGeneratedImages([])
+    setGeneratedModelTypes([])
+    setGeneratedGenModes([])
+    setMode("camera")
+  }
+  
+  const handleReturn = () => {
+    router.push("/")
+  }
+  
+  // Handle favorite toggle for result images
+  const handleResultFavorite = async (imageIndex: number) => {
+    if (!currentGenerationId) return
+    
+    const currentlyFavorited = isFavorited(currentGenerationId, imageIndex)
+    
+    if (currentlyFavorited) {
+      const fav = favorites.find(
+        (f) => f.generationId === currentGenerationId && f.imageIndex === imageIndex
+      )
+      if (fav) {
+        await removeFavorite(fav.id)
+      }
+    } else {
+      await addFavorite({
+        generationId: currentGenerationId,
+        imageIndex,
+        createdAt: new Date().toISOString(),
+      })
+    }
+  }
+  
+  // Handle download
+  const handleDownload = async (url: string, generationId?: string, imageIndex?: number) => {
+    fetch('/api/track/download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        imageUrl: url,
+        generationId,
+        imageIndex,
+        source: 'social',
+      }),
+    }).catch(() => {})
+    
+    try {
+      let blob: Blob
+      
+      if (url.startsWith('data:')) {
+        const response = await fetch(url)
+        blob = await response.blob()
+      } else {
+        const response = await fetch(url)
+        blob = await response.blob()
+      }
+      
+      const blobUrl = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = blobUrl
+      link.download = `social-${Date.now()}.jpg`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(blobUrl)
+    } catch (error) {
+      console.error("Download failed:", error)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = `social-${Date.now()}.jpg`
+      link.target = "_blank"
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    }
+  }
+  
+  // Asset grid component with upload card
+  const AssetGrid = ({ 
+    items, 
+    selectedId, 
+    onSelect,
+    onUpload,
+    uploadLabel = t.common?.upload || '上传'
+  }: { 
+    items: Asset[]
+    selectedId: string | null
+    onSelect: (id: string) => void
+    onUpload?: () => void
+    uploadLabel?: string
+  }) => (
+    <div className="grid grid-cols-3 gap-3 p-1 pb-20">
+      {onUpload && (
+        <button
+          onClick={onUpload}
+          className="aspect-square rounded-lg overflow-hidden relative border-2 border-dashed border-zinc-300 hover:border-pink-500 transition-all flex flex-col items-center justify-center bg-zinc-100 hover:bg-pink-50"
+        >
+          <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center mb-2">
+            <Upload className="w-5 h-5 text-pink-600" />
+          </div>
+          <span className="text-xs text-zinc-600 font-medium">{uploadLabel}</span>
+        </button>
+      )}
+      {items.map(asset => (
+        <button
+          key={asset.id}
+          onClick={() => onSelect(asset.id)}
+          className={`aspect-square rounded-lg overflow-hidden relative border-2 transition-all group ${
+            selectedId === asset.id 
+              ? "border-pink-600 ring-2 ring-pink-200" 
+              : "border-transparent hover:border-zinc-200"
+          }`}
+        >
+          <Image src={asset.imageUrl} alt={asset.name || ""} fill className="object-cover" />
+          {selectedId === asset.id && (
+            <div className="absolute inset-0 bg-pink-600/20 flex items-center justify-center">
+              <Check className="w-6 h-6 text-white drop-shadow-md" />
+            </div>
+          )}
+          {asset.isPinned && (
+            <span className="absolute top-1 right-1 w-5 h-5 bg-amber-500 text-white rounded-full flex items-center justify-center shadow-sm z-10">
+              <Pin className="w-2.5 h-2.5" />
+            </span>
+          )}
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-4">
+            <p className="text-[10px] text-white truncate text-center">{asset.name}</p>
+          </div>
+        </button>
+      ))}
+    </div>
+  )
+  
+  // 登录状态检查中或未登录时显示加载
+  if (authLoading || !user) {
+    return (
+      <div className="h-full w-full bg-black flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-white animate-spin mx-auto mb-4" />
+          <p className="text-zinc-400">{t.common?.loading || '加载中...'}</p>
+        </div>
+      </div>
+    )
+  }
+  
   return (
-    <div className="h-full relative flex flex-col bg-zinc-50">
-      <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
-      <input type="file" ref={modelUploadRef} className="hidden" accept="image/*" onChange={handleModelUpload} />
-      <input type="file" ref={bgUploadRef} className="hidden" accept="image/*" onChange={handleBgUpload} />
+    <div className="h-full relative flex flex-col bg-black">
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        className="hidden" 
+        accept="image/*" 
+        onChange={handleUpload}
+      />
+      <input 
+        type="file" 
+        ref={modelUploadRef} 
+        className="hidden" 
+        accept="image/*" 
+        onChange={handleModelUpload}
+      />
+      <input 
+        type="file" 
+        ref={bgUploadRef} 
+        className="hidden" 
+        accept="image/*" 
+        onChange={handleBgUpload}
+      />
 
       <AnimatePresence mode="wait">
-        {/* Main Page */}
-        {mode === "main" && (
+        {(mode === "camera" || mode === "review") && (
           <motion.div 
-            key="main"
+            key="camera-view"
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
             exit={{ opacity: 0 }}
-            className="flex-1 flex flex-col"
+            className="flex-1 relative overflow-hidden flex flex-col"
           >
-            {/* Header */}
-            <div className="h-14 flex items-center px-4 border-b bg-white shrink-0">
+            {/* Top Return Button */}
+            <div className="absolute top-4 left-4 z-20">
               <button
-                onClick={() => router.push("/")}
-                className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center"
+                onClick={mode === "review" ? handleRetake : handleReturn}
+                className="w-10 h-10 rounded-full bg-black/20 text-white hover:bg-black/40 backdrop-blur-md flex items-center justify-center transition-colors"
               >
-                <Home className="w-5 h-5 text-zinc-600" />
+                {mode === "review" ? <X className="w-6 h-6" /> : <Home className="w-5 h-5" />}
               </button>
-              <span className="font-semibold text-lg ml-2">{t.home?.socialMode || '社媒种草'}</span>
+            </div>
+            
+            {/* Social Mode Badge */}
+            <div className="absolute top-4 right-4 z-20">
+              <span className="px-3 py-1.5 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-xs font-semibold rounded-full">
+                {t.home?.socialMode || '社媒种草'}
+              </span>
             </div>
 
-            <div className="flex-1 overflow-y-auto pb-32 bg-zinc-50">
-              <div className="p-4 space-y-4">
-                {/* 商品图上传 */}
-                <div>
-                  <h3 className="text-sm font-semibold text-zinc-800 mb-2">
-                    {t.social?.productImage || '商品图'}
-                  </h3>
-                  {!productImage ? (
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="w-full aspect-[4/3] rounded-2xl border-2 border-dashed border-zinc-300 bg-white flex flex-col items-center justify-center gap-2 hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            {/* Viewfinder / Captured Image */}
+            <div className="flex-1 relative">
+              {mode === "camera" && hasCamera && permissionChecked ? (
+                <Webcam
+                  ref={webcamRef}
+                  audio={false}
+                  screenshotFormat="image/jpeg"
+                  screenshotQuality={0.95}
+                  videoConstraints={{
+                    facingMode: "environment",
+                    width: { min: 1080, ideal: 1920 },
+                    height: { min: 1080, ideal: 1920 }
+                  }}
+                  onUserMedia={handleCameraReady}
+                  onUserMediaError={handleCameraError}
+                  className="absolute inset-0 w-full h-full object-cover opacity-60"
+                />
+              ) : mode === "camera" && !permissionChecked ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
+                  <div className="text-center text-zinc-400">
+                    <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin opacity-50" />
+                    <p className="text-sm">正在初始化相机...</p>
+                  </div>
+                </div>
+              ) : mode === "camera" && !hasCamera ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
+                  <div className="text-center text-zinc-400">
+                    <Camera className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                    <p className="text-sm">相机不可用</p>
+                    <p className="text-xs mt-1">{t.camera?.productPlaceholder || '请上传商品图片'}</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="absolute inset-0">
+                  <img 
+                    src={capturedImage || ""} 
+                    alt="商品" 
+                    className="w-full h-full object-cover"
+                  />
+                  <span className="absolute top-2 left-2 px-2 py-1 bg-black/50 text-white text-xs rounded backdrop-blur-md">
+                    商品图
+                  </span>
+                </div>
+              )}
+              
+              {/* Selection Badges Overlay */}
+              <div className="absolute top-16 left-0 right-0 flex justify-center gap-2 z-10 px-4 flex-wrap pointer-events-none">
+                {activeModel && (
+                  <span className="px-2 py-1 bg-black/50 text-white text-xs rounded-full backdrop-blur-md">
+                    {t.common?.model || '模特'}: {activeModel.name}
+                  </span>
+                )}
+                {activeBg && (
+                  <span className="px-2 py-1 bg-black/50 text-white text-xs rounded-full backdrop-blur-md">
+                    {t.common?.background || '背景'}: {activeBg.name}
+                  </span>
+                )}
+              </div>
+
+              {mode === "camera" && (
+                <>
+                  {/* Grid Overlay */}
+                  <div className="absolute inset-0 pointer-events-none opacity-30">
+                    <div className="w-full h-full grid grid-cols-3 grid-rows-3">
+                      {[...Array(9)].map((_, i) => (
+                        <div key={i} className="border border-white/20" />
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Focus Frame */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="w-64 h-64 border border-white/50 rounded-lg relative">
+                      <div className="absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 border-pink-400" />
+                      <div className="absolute -top-1 -right-1 w-4 h-4 border-t-4 border-r-4 border-pink-400" />
+                      <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-4 border-l-4 border-pink-400" />
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-4 border-r-4 border-pink-400" />
+                    </div>
+                  </div>
+                  
+                  <div className="absolute top-8 left-0 right-0 text-center text-white/80 text-sm font-medium px-4 drop-shadow-md">
+                    {t.camera?.shootYourProduct || '拍摄你的商品'}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Bottom Controls Area */}
+            <div className="bg-black flex flex-col justify-end pb-safe pt-6 px-6 relative z-20 shrink-0 min-h-[9rem]">
+              {mode === "review" ? (
+                <div className="space-y-4 pb-4">
+                  {/* Custom button in review mode */}
+                  <div className="flex justify-center">
+                    <button 
+                      onClick={() => setShowCustomPanel(true)}
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 text-white/90 hover:bg-white/20 transition-colors border border-white/20"
                     >
-                      <Plus className="w-8 h-8 text-zinc-400" />
-                      <span className="text-sm text-zinc-500">{t.common?.upload || '上传图片'}</span>
+                      <SlidersHorizontal className="w-4 h-4" />
+                      <span className="text-sm font-medium">{t.camera?.customizeModelBg || '自定义模特和背景'}</span>
                     </button>
-                  ) : (
-                    <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden bg-zinc-100">
-                      <Image src={productImage} alt="Product" fill className="object-cover" />
-                      <button
-                        onClick={() => setProductImage(null)}
-                        className="absolute top-2 right-2 w-8 h-8 bg-black/50 rounded-full flex items-center justify-center"
+                  </div>
+                  
+                  {/* Shoot It button */}
+                  <div className="w-full flex justify-center">
+                    <motion.button
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      onClick={(e) => {
+                        triggerFlyToGallery(e)
+                        handleShootIt()
+                      }}
+                      className="w-full max-w-xs h-14 rounded-full text-lg font-semibold gap-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:from-pink-600 hover:to-purple-600 shadow-[0_0_20px_rgba(236,72,153,0.3)] flex items-center justify-center transition-colors"
+                    >
+                      <Wand2 className="w-5 h-5" />
+                      {t.social?.generate || '生成种草图'}
+                    </motion.button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-8 pb-4">
+                  {/* Album - Left of shutter */}
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
+                      <ImageIcon className="w-6 h-6" />
+                    </div>
+                    <span className="text-[10px]">{t.camera?.album || '相册'}</span>
+                  </button>
+
+                  {/* Shutter */}
+                  <button 
+                    onClick={handleCapture}
+                    disabled={!hasCamera}
+                    className="w-20 h-20 rounded-full border-4 border-pink-400/50 flex items-center justify-center relative group active:scale-95 transition-transform disabled:opacity-50"
+                  >
+                    <div className="w-[72px] h-[72px] bg-gradient-to-r from-pink-400 to-purple-400 rounded-full group-active:from-pink-500 group-active:to-purple-500 transition-colors border-2 border-black" />
+                  </button>
+
+                  {/* Asset Library - Right of shutter */}
+                  <button 
+                    onClick={() => setShowProductPanel(true)}
+                    className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
+                      <FolderHeart className="w-6 h-6" />
+                    </div>
+                    <span className="text-[10px]">{t.camera?.assetLibrary || '素材库'}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            {/* Slide-up Panel: Custom */}
+            <AnimatePresence>
+              {showCustomPanel && (
+                <>
+                  <motion.div 
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }} 
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 bg-black/60 z-40 backdrop-blur-sm"
+                    onClick={() => setShowCustomPanel(false)}
+                  />
+                  <motion.div 
+                    initial={{ y: "100%" }} 
+                    animate={{ y: 0 }} 
+                    exit={{ y: "100%" }}
+                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                    className="absolute bottom-0 left-0 right-0 h-[60%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
+                  >
+                    <div className="h-14 border-b flex items-center justify-between px-4 shrink-0">
+                      <span className="font-semibold text-lg">{t.camera?.customConfig || '自定义配置'}</span>
+                      <button 
+                        onClick={() => setShowCustomPanel(false)} 
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-pink-600 hover:bg-pink-700 text-white font-medium text-sm transition-colors"
                       >
-                        <X className="w-4 h-4 text-white" />
+                        {t.camera?.nextStep || '下一步'}
+                        <ArrowRight className="w-4 h-4" />
                       </button>
                     </div>
-                  )}
-                </div>
-
-                {/* 模特和背景选择 */}
-                <div className="grid grid-cols-2 gap-3">
-                  {/* 模特选择 */}
-                  <div>
-                    <h3 className="text-sm font-semibold text-zinc-800 mb-2">
-                      {t.social?.model || '模特'} 
-                      <span className="text-xs text-zinc-400 font-normal ml-1">({t.common?.auto || '可选'})</span>
-                    </h3>
-                    <button
-                      onClick={() => setShowModelPicker(true)}
-                      className="w-full aspect-square rounded-xl border-2 border-dashed border-zinc-300 bg-white flex flex-col items-center justify-center gap-1 hover:border-blue-400 transition-colors overflow-hidden"
-                    >
-                      {selectedModel ? (
-                        <div className="relative w-full h-full">
-                          <Image src={selectedModel.imageUrl} alt="Model" fill className="object-cover" />
-                          <div className="absolute bottom-0 left-0 right-0 bg-black/50 py-1 px-2">
-                            <span className="text-xs text-white truncate">{selectedModel.name}</span>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <Users className="w-6 h-6 text-zinc-400" />
-                          <span className="text-xs text-zinc-500">{t.social?.autoSelect || '随机选择'}</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-
-                  {/* 背景选择 */}
-                  <div>
-                    <h3 className="text-sm font-semibold text-zinc-800 mb-2">
-                      {t.social?.background || '背景'}
-                      <span className="text-xs text-zinc-400 font-normal ml-1">({t.common?.auto || '可选'})</span>
-                    </h3>
-                    <button
-                      onClick={() => setShowBgPicker(true)}
-                      className="w-full aspect-square rounded-xl border-2 border-dashed border-zinc-300 bg-white flex flex-col items-center justify-center gap-1 hover:border-blue-400 transition-colors overflow-hidden"
-                    >
-                      {selectedBackground ? (
-                        <div className="relative w-full h-full">
-                          <Image src={selectedBackground.imageUrl} alt="Background" fill className="object-cover" />
-                          <div className="absolute bottom-0 left-0 right-0 bg-black/50 py-1 px-2">
-                            <span className="text-xs text-white truncate">{selectedBackground.name}</span>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <ImageIcon className="w-6 h-6 text-zinc-400" />
-                          <span className="text-xs text-zinc-500">{t.social?.autoSelect || '随机选择'}</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {/* 说明 */}
-                <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl p-4">
-                  <div className="flex items-start gap-3">
-                    <Heart className="w-5 h-5 text-pink-500 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-zinc-800">{t.social?.description || '生成 6 张社媒风格图'}</p>
-                      <p className="text-xs text-zinc-500 mt-1">
-                        {t.social?.descriptionDetail || '包含 4 张韩系生活感 + 2 张对镜自拍'}
-                      </p>
+                    <div className="p-2 flex gap-2 border-b overflow-x-auto shrink-0">
+                      {[
+                        { id: "model", label: t.common?.model || '模特' },
+                        { id: "bg", label: t.common?.background || '背景' }
+                      ].map(tab => (
+                        <button 
+                          key={tab.id}
+                          onClick={() => setActiveCustomTab(tab.id)}
+                          className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${
+                            activeCustomTab === tab.id 
+                              ? "bg-pink-600 text-white" 
+                              : "bg-zinc-100 text-zinc-600"
+                          }`}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
                     </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 底部按钮 */}
-            <div className="fixed bottom-20 left-0 right-0 p-4 bg-white/95 backdrop-blur-lg border-t z-30">
-              <button
-                onClick={handleStartGeneration}
-                disabled={!productImage}
-                className={`w-full h-12 rounded-full text-base font-semibold flex items-center justify-center gap-2 transition-colors ${
-                  productImage
-                    ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:from-pink-600 hover:to-purple-600'
-                    : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
-                }`}
-              >
-                <Sparkles className="w-5 h-5" />
-                {t.social?.generate || '生成种草图'} ({SOCIAL_NUM_IMAGES})
-              </button>
-            </div>
-
-            <BottomNav forceShow />
+                    <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4">
+                      {activeCustomTab === "model" && (
+                        <div className="space-y-4">
+                          {/* Model Subcategory Tabs */}
+                          <div className="flex gap-2 flex-wrap">
+                            <button
+                              onClick={() => setModelSubcategory(null)}
+                              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                                !modelSubcategory
+                                  ? "bg-zinc-900 text-white"
+                                  : "bg-white text-zinc-600 border border-zinc-200"
+                              }`}
+                            >
+                              {t.camera?.allModels || '全部'}
+                            </button>
+                            <button
+                              onClick={() => setModelSubcategory(modelSubcategory === 'mine' ? null : 'mine')}
+                              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                                modelSubcategory === 'mine'
+                                  ? "bg-zinc-900 text-white"
+                                  : "bg-white text-zinc-600 border border-zinc-200"
+                              }`}
+                            >
+                              {t.camera?.myModels || '我的'}
+                              {userModels.length > 0 && <span className="ml-1 text-zinc-400">({userModels.length})</span>}
+                            </button>
+                          </div>
+                          <AssetGrid 
+                            items={allModels} 
+                            selectedId={selectedModel} 
+                            onSelect={(id) => {
+                              setSelectedModel(selectedModel === id ? null : id)
+                            }}
+                            onUpload={() => modelUploadRef.current?.click()}
+                            uploadLabel={t.camera?.uploadModel || '上传模特'}
+                          />
+                        </div>
+                      )}
+                      {activeCustomTab === "bg" && (
+                        <div className="space-y-4">
+                          {/* Background Subcategory Tabs */}
+                          <div className="flex gap-2 flex-wrap">
+                            <button
+                              onClick={() => setBgSubcategory(null)}
+                              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                                !bgSubcategory
+                                  ? "bg-zinc-900 text-white"
+                                  : "bg-white text-zinc-600 border border-zinc-200"
+                              }`}
+                            >
+                              {t.camera?.allBackgrounds || '全部'}
+                            </button>
+                            <button
+                              onClick={() => setBgSubcategory(bgSubcategory === 'mine' ? null : 'mine')}
+                              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                                bgSubcategory === 'mine'
+                                  ? "bg-zinc-900 text-white"
+                                  : "bg-white text-zinc-600 border border-zinc-200"
+                              }`}
+                            >
+                              {t.camera?.myBackgrounds || '我的'}
+                              {userBackgrounds.length > 0 && <span className="ml-1 text-zinc-400">({userBackgrounds.length})</span>}
+                            </button>
+                          </div>
+                          <AssetGrid 
+                            items={allBackgrounds} 
+                            selectedId={selectedBg} 
+                            onSelect={(id) => setSelectedBg(selectedBg === id ? null : id)}
+                            onUpload={() => bgUploadRef.current?.click()}
+                            uploadLabel={t.camera?.uploadBackground || '上传背景'}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+            
+            {/* Slide-up Panel: Product Assets */}
+            <AnimatePresence>
+              {showProductPanel && (
+                <>
+                  <motion.div 
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }} 
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 bg-black/60 z-40 backdrop-blur-sm"
+                    onClick={() => setShowProductPanel(false)}
+                  />
+                  <motion.div 
+                    initial={{ y: "100%" }} 
+                    animate={{ y: 0 }} 
+                    exit={{ y: "100%" }}
+                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                    className="absolute bottom-0 left-0 right-0 h-[80%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
+                  >
+                    <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
+                      <span className="font-semibold">{t.camera?.selectProduct || '选择商品'}</span>
+                      <button 
+                        onClick={() => setShowProductPanel(false)} 
+                        className="h-8 w-8 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    
+                    {/* Source Tabs */}
+                    <div className="px-4 py-2 border-b bg-white dark:bg-zinc-900 shrink-0">
+                      <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1">
+                        <button
+                          onClick={() => setProductSourceTab("preset")}
+                          className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${
+                            productSourceTab === "preset"
+                              ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
+                              : "text-zinc-500 hover:text-zinc-700"
+                          }`}
+                        >
+                          {t.camera?.officialExamples || '官方示例'}
+                          <span className="ml-1 text-zinc-400">({PRESET_PRODUCTS.length})</span>
+                        </button>
+                        <button
+                          onClick={() => setProductSourceTab("user")}
+                          className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${
+                            productSourceTab === "user"
+                              ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
+                              : "text-zinc-500 hover:text-zinc-700"
+                          }`}
+                        >
+                          {t.camera?.myProducts || '我的商品'}
+                          {userProducts.length > 0 && (
+                            <span className="ml-1 text-zinc-400">({userProducts.length})</span>
+                          )}
+                        </button>
+                      </div>
+                      
+                      {productSourceTab === "user" && (
+                        <div className="flex gap-2 mt-2 flex-wrap">
+                          {PRODUCT_SUB_TABS.map(cat => {
+                            const count = cat === "all" 
+                              ? userProducts.length 
+                              : userProducts.filter(p => p.category === cat).length
+                            return (
+                              <button
+                                key={cat}
+                                onClick={() => setProductSubTab(cat)}
+                                className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors ${
+                                  productSubTab === cat
+                                    ? "bg-pink-600 text-white"
+                                    : "bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-300 dark:hover:bg-zinc-600"
+                                }`}
+                              >
+                                {getProductCategoryLabel(cat, t)}
+                                <span className="ml-1 opacity-70">({count})</span>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4">
+                      {productSourceTab === "preset" ? (
+                        <div className="grid grid-cols-3 gap-3 pb-20 relative">
+                          {isLoadingAssets && (
+                            <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10 rounded-lg">
+                              <Loader2 className="w-8 h-8 text-pink-500 animate-spin" />
+                            </div>
+                          )}
+                          {PRESET_PRODUCTS.map(product => (
+                            <div key={product.id} className="relative group">
+                              <button
+                                disabled={isLoadingAssets}
+                                onClick={() => {
+                                  setCapturedImage(product.imageUrl)
+                                  setMode("review")
+                                  setShowProductPanel(false)
+                                }}
+                                className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-pink-500 transition-all disabled:opacity-50 w-full"
+                              >
+                                <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
+                                <span className="absolute top-1 left-1 bg-pink-600 text-white text-[8px] px-1 py-0.5 rounded font-medium">
+                                  {t.common?.official || '官方'}
+                                </span>
+                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-4">
+                                  <p className="text-[10px] text-white truncate text-center">{product.name}</p>
+                                </div>
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setZoomProductImage(product.imageUrl)
+                                }}
+                                className="absolute bottom-1 right-1 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <ZoomIn className="w-3 h-3 text-white" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (() => {
+                        const filteredProducts = productSubTab === "all" 
+                          ? userProducts 
+                          : userProducts.filter(p => p.category === productSubTab)
+                        
+                        return filteredProducts.length > 0 ? (
+                          <div className="grid grid-cols-3 gap-3 pb-20">
+                            {filteredProducts.map(product => (
+                              <div 
+                                key={product.id} 
+                                className="relative group cursor-pointer"
+                                style={{ touchAction: 'manipulation' }}
+                                onClick={() => {
+                                  setCapturedImage(product.imageUrl)
+                                  setMode("review")
+                                  setShowProductPanel(false)
+                                }}
+                              >
+                                <div className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-pink-500 active:border-pink-600 transition-all w-full">
+                                  <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover pointer-events-none" />
+                                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-4 pointer-events-none">
+                                    <p className="text-[10px] text-white truncate text-center">{product.name}</p>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setZoomProductImage(product.imageUrl)
+                                  }}
+                                  className="absolute bottom-1 right-1 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10"
+                                >
+                                  <ZoomIn className="w-3 h-3 text-white" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center h-full text-zinc-400">
+                            <FolderHeart className="w-12 h-12 mb-3 opacity-30" />
+                            <p className="text-sm">{t.camera?.noMyProducts || '暂无商品'}</p>
+                            <p className="text-xs mt-1">{t.camera?.uploadInAssets || '请在资产库上传'}</p>
+                            <button 
+                              onClick={() => {
+                                setShowProductPanel(false)
+                                router.push("/brand-assets")
+                              }}
+                              className="mt-4 px-4 py-2 bg-pink-600 text-white text-sm rounded-lg hover:bg-pink-700 transition-colors"
+                            >
+                              {t.camera?.goUpload || '去上传'}
+                            </button>
+                          </div>
+                        )
+                      })()}
+                    </div>
+                  </motion.div>
+                  
+                  {/* 商品放大预览 */}
+                  <AnimatePresence>
+                    {zoomProductImage && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center"
+                        onClick={() => setZoomProductImage(null)}
+                      >
+                        <button
+                          onClick={() => setZoomProductImage(null)}
+                          className="absolute top-4 right-4 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center"
+                        >
+                          <X className="w-6 h-6 text-white" />
+                        </button>
+                        <img 
+                          src={zoomProductImage} 
+                          alt="商品预览" 
+                          className="max-w-[90%] max-h-[80%] object-contain rounded-lg"
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
 
-        {/* Processing Mode */}
         {mode === "processing" && (
-          <motion.div
+          <motion.div 
             key="processing"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
             exit={{ opacity: 0 }}
-            className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-gradient-to-b from-pink-50 to-purple-50"
+            className="flex-1 bg-gradient-to-b from-zinc-950 to-purple-950 flex flex-col items-center justify-center p-8 text-center"
           >
             <div className="relative mb-6">
-              <motion.div
-                className="absolute inset-0 bg-gradient-to-tr from-pink-500/30 to-purple-500/30 blur-2xl rounded-full"
+              <motion.div 
+                className="absolute inset-0 bg-gradient-to-r from-pink-500/30 to-purple-500/30 blur-xl rounded-full"
                 animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
                 transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
               />
-              <motion.div
-                className="w-20 h-20 rounded-full border-4 border-transparent border-t-pink-500 border-r-purple-500"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-              />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Sparkles className="w-8 h-8 text-pink-600" />
-              </div>
+              <Loader2 className="w-16 h-16 text-pink-400 animate-spin relative z-10" />
             </div>
             
-            <h3 className="text-xl font-bold text-zinc-800 mb-2">{t.social?.generating || '正在生成种草图...'}</h3>
-            <p className="text-sm text-zinc-500">{t.social?.generatingDesc || '6 张图片生成中，请稍候'}</p>
-
-            {/* 进度指示 */}
-            <div className="flex gap-2 mt-6">
+            <h3 className="text-white text-2xl font-bold mb-2">{t.social?.generating || '正在生成种草图...'}</h3>
+            <div className="text-zinc-400 space-y-1 text-sm mb-8">
+              <p>{t.social?.generatingDesc || '6 张图片生成中，请稍候'}</p>
+              {activeModel && <p>使用模特: {activeModel.name}</p>}
+              {activeBg && <p>使用背景: {activeBg.name}</p>}
+            </div>
+            
+            {/* Progress dots */}
+            <div className="flex gap-2 mb-8">
               {Array.from({ length: SOCIAL_NUM_IMAGES }).map((_, i) => {
                 const task = tasks.find(t => t.id === currentTaskId)
                 const slot = task?.imageSlots?.[i]
@@ -443,7 +1298,7 @@ function SocialPageContent() {
                   <motion.div
                     key={i}
                     className={`w-3 h-3 rounded-full ${
-                      isCompleted ? 'bg-green-500' : isGenerating ? 'bg-pink-500' : 'bg-zinc-300'
+                      isCompleted ? 'bg-green-500' : isGenerating ? 'bg-pink-500' : 'bg-zinc-600'
                     }`}
                     animate={isGenerating ? { scale: [1, 1.3, 1] } : {}}
                     transition={{ duration: 0.5, repeat: Infinity }}
@@ -451,287 +1306,361 @@ function SocialPageContent() {
                 )
               })}
             </div>
-
-            <button
-              onClick={() => router.push('/')}
-              className="mt-8 px-6 py-2 bg-white rounded-full text-zinc-700 text-sm font-medium hover:bg-zinc-100 transition-colors"
-            >
-              <Home className="w-4 h-4 inline mr-2" />
-              {t.camera?.returnHome || '返回首页'}
-            </button>
-
+            
+            {/* Action buttons during processing */}
+            <div className="space-y-3 w-full max-w-xs">
+              <p className="text-zinc-500 text-xs mb-4">{t.camera?.continueInBackground || '可以继续拍摄其他商品'}</p>
+              <button
+                onClick={handleNewPhotoDuringProcessing}
+                className="w-full h-12 rounded-full bg-white text-black font-medium flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors"
+              >
+                <Camera className="w-5 h-5" />
+                {t.camera?.shootNew || '拍新的'}
+              </button>
+              <button
+                onClick={handleReturnDuringProcessing}
+                className="w-full h-12 rounded-full bg-white/10 text-white font-medium flex items-center justify-center gap-2 hover:bg-white/20 transition-colors border border-white/20"
+              >
+                <Home className="w-5 h-5" />
+                {t.camera?.returnHome || '返回首页'}
+              </button>
+            </div>
+            
             <BottomNav forceShow />
           </motion.div>
         )}
 
-        {/* Results Mode */}
         {mode === "results" && (
-          <motion.div
+          <motion.div 
             key="results"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="flex-1 flex flex-col bg-zinc-50"
+            initial={{ opacity: 0, y: 20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            exit={{ opacity: 0, y: 20 }}
+            className="flex-1 flex flex-col bg-zinc-50 overflow-hidden"
           >
-            {/* Header */}
-            <div className="h-14 flex items-center px-4 border-b bg-white shrink-0">
-              <button
-                onClick={handleReset}
+            <div className="h-14 flex items-center px-4 border-b bg-white z-10">
+              <button 
+                onClick={handleRetake} 
                 className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center"
               >
-                <ArrowLeft className="w-5 h-5 text-zinc-600" />
+                <ArrowLeft className="w-5 h-5" />
               </button>
-              <span className="font-semibold text-lg ml-2">{t.social?.result || '生成结果'}</span>
+              <span className="font-semibold ml-2">{t.social?.result || '本次成片'}</span>
             </div>
 
-            <div className="flex-1 overflow-y-auto pb-24 p-4">
-              {/* 2x3 网格 */}
-              <div className="grid grid-cols-2 gap-3">
-                {generatedImages.map((image, index) => {
-                  const task = tasks.find(t => t.id === currentTaskId)
-                  const slot = task?.imageSlots?.[index]
-                  const isLoading = slot?.status === 'generating' || slot?.status === 'pending'
-                  const isFailed = slot?.status === 'failed'
-                  const imageType = index === 2 || index === 5 ? 'mirror' : 'lifestyle'
+            <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-8">
+              {/* 韩系生活感 - indices 0, 1, 3, 4 */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
+                    <span className="w-1 h-4 bg-pink-500 rounded-full" />
+                    韩系生活感
+                  </h3>
+                  <span className="text-[10px] text-zinc-400">小红书/INS风格</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {[0, 1, 3, 4].map((i) => {
+                    const currentTask = tasks.find(t => t.id === currentTaskId)
+                    const slot = currentTask?.imageSlots?.[i]
+                    const url = slot?.imageUrl || generatedImages[i]
+                    const status = slot?.status || (url ? 'completed' : 'failed')
+                    const modelType = slot?.modelType || generatedModelTypes[i]
+                    
+                    if (status === 'pending' || status === 'generating') {
+                      return (
+                        <div key={i} className="aspect-[4/5] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
+                          <Loader2 className="w-6 h-6 text-pink-400 animate-spin mb-2" />
+                          <span className="text-[10px] text-zinc-400">生成中...</span>
+                        </div>
+                      )
+                    }
+                    
+                    if (status === 'failed' || !url) {
+                      return (
+                        <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
+                          {slot?.error || t.camera?.generationFailed || '生成失败'}
+                        </div>
+                      )
+                    }
+                    
+                    return (
+                      <div 
+                        key={i} 
+                        className="group relative aspect-[4/5] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer"
+                        onClick={() => setSelectedResultIndex(i)}
+                      >
+                        <Image src={url} alt="Result" fill className="object-cover" />
+                        <button 
+                          className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center shadow-sm transition-colors ${
+                            currentGenerationId && isFavorited(currentGenerationId, i) 
+                              ? "bg-red-500 text-white" 
+                              : "bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500"
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleResultFavorite(i)
+                          }}
+                        >
+                          <Heart className={`w-3.5 h-3.5 ${currentGenerationId && isFavorited(currentGenerationId, i) ? "fill-current" : ""}`} />
+                        </button>
+                        <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-pink-500 text-white">
+                            生活感
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
 
-                  return (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="relative aspect-[3/4] rounded-xl overflow-hidden bg-zinc-100"
+              {/* 对镜自拍 - indices 2, 5 */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
+                    <span className="w-1 h-4 bg-purple-600 rounded-full" />
+                    对镜自拍
+                  </h3>
+                  <span className="text-[10px] text-zinc-400">Mirror Selfie</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {[2, 5].map((i) => {
+                    const currentTask = tasks.find(t => t.id === currentTaskId)
+                    const slot = currentTask?.imageSlots?.[i]
+                    const url = slot?.imageUrl || generatedImages[i]
+                    const status = slot?.status || (url ? 'completed' : 'failed')
+                    const modelType = slot?.modelType || generatedModelTypes[i]
+                    
+                    if (status === 'pending' || status === 'generating') {
+                      return (
+                        <div key={i} className="aspect-[4/5] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
+                          <Loader2 className="w-6 h-6 text-purple-400 animate-spin mb-2" />
+                          <span className="text-[10px] text-zinc-400">生成中...</span>
+                        </div>
+                      )
+                    }
+                    
+                    if (status === 'failed' || !url) {
+                      return (
+                        <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
+                          {slot?.error || t.camera?.generationFailed || '生成失败'}
+                        </div>
+                      )
+                    }
+                    
+                    return (
+                      <div 
+                        key={i} 
+                        className="group relative aspect-[4/5] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer"
+                        onClick={() => setSelectedResultIndex(i)}
+                      >
+                        <Image src={url} alt="Result" fill className="object-cover" />
+                        <button 
+                          className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center shadow-sm transition-colors ${
+                            currentGenerationId && isFavorited(currentGenerationId, i) 
+                              ? "bg-red-500 text-white" 
+                              : "bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500"
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleResultFavorite(i)
+                          }}
+                        >
+                          <Heart className={`w-3.5 h-3.5 ${currentGenerationId && isFavorited(currentGenerationId, i) ? "fill-current" : ""}`} />
+                        </button>
+                        <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-purple-500 text-white">
+                            对镜
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 pb-20 bg-white border-t shadow-up">
+              <button 
+                onClick={handleRetake}
+                className="w-full h-12 text-lg rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 text-white font-semibold hover:from-pink-600 hover:to-purple-600 transition-colors"
+              >
+                {t.camera?.shootNextSet || '继续拍摄'}
+              </button>
+            </div>
+            
+            {/* Result Detail Dialog */}
+            {selectedResultIndex !== null && (() => {
+              const currentTask = tasks.find(t => t.id === currentTaskId)
+              const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+              const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
+              const selectedModelType = selectedSlot?.modelType || generatedModelTypes[selectedResultIndex]
+              const selectedGenMode = selectedResultIndex === 2 || selectedResultIndex === 5 ? 'mirror' : 'lifestyle'
+              
+              if (!selectedImageUrl) return null
+              
+              return (
+              <div className="fixed inset-0 z-50 bg-white overflow-hidden">
+                <div className="h-full flex flex-col">
+                  <div className="h-14 flex items-center justify-between px-4 bg-white border-b shrink-0">
+                    <button
+                      onClick={() => setSelectedResultIndex(null)}
+                      className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center transition-colors"
                     >
-                      {image ? (
-                        <>
-                          <Image 
-                            src={image} 
-                            alt={`Result ${index + 1}`} 
-                            fill 
-                            className="object-cover cursor-pointer"
-                            onClick={() => setFullscreenImage(image)}
-                          />
-                          {/* Badge */}
-                          <div className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                            imageType === 'mirror' 
-                              ? 'bg-purple-500 text-white' 
-                              : 'bg-pink-500 text-white'
-                          }`}>
-                            {imageType === 'mirror' ? '对镜自拍' : '韩系生活'}
+                      <X className="w-5 h-5 text-zinc-700" />
+                    </button>
+                    <span className="font-semibold text-zinc-900">{t.common?.detail || '详情'}</span>
+                    <div className="w-10" />
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto bg-zinc-100 pb-24">
+                    <div className="bg-zinc-900">
+                      <div 
+                        className="relative aspect-[4/5] cursor-pointer group"
+                        onClick={() => setFullscreenImage(selectedImageUrl)}
+                      >
+                        <img 
+                          src={selectedImageUrl} 
+                          alt="Detail" 
+                          className="w-full h-full object-contain" 
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 pointer-events-none">
+                          <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                            <ZoomIn className="w-6 h-6 text-zinc-700" />
                           </div>
-                          {/* 放大按钮 */}
+                        </div>
+                      </div>
+                      <p className="text-center text-zinc-500 text-xs py-2">{t.imageActions?.longPressSave || '长按图片可保存'}</p>
+                    </div>
+                    
+                    <div className="p-4 pb-8 bg-white">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                              selectedGenMode === 'lifestyle' 
+                                ? "bg-pink-100 text-pink-700" 
+                                : "bg-purple-100 text-purple-700"
+                            }`}>
+                              {selectedGenMode === 'lifestyle' ? '韩系生活感' : '对镜自拍'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-zinc-400">
+                            {t.common?.justNow || '刚刚'}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
                           <button
-                            onClick={() => setFullscreenImage(image)}
-                            className="absolute bottom-2 right-2 w-8 h-8 bg-black/50 rounded-full flex items-center justify-center"
+                            onClick={() => handleResultFavorite(selectedResultIndex)}
+                            className={`w-10 h-10 rounded-lg border flex items-center justify-center transition-colors ${
+                              currentGenerationId && isFavorited(currentGenerationId, selectedResultIndex)
+                                ? "bg-red-50 border-red-200 text-red-500"
+                                : "border-zinc-200 text-zinc-600 hover:bg-zinc-50"
+                            }`}
                           >
-                            <ZoomIn className="w-4 h-4 text-white" />
+                            <Heart className={`w-4 h-4 ${currentGenerationId && isFavorited(currentGenerationId, selectedResultIndex) ? "fill-current" : ""}`} />
                           </button>
-                        </>
-                      ) : isLoading ? (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <Loader2 className="w-6 h-6 text-pink-500 animate-spin" />
-                          <span className="text-xs text-zinc-500 mt-2">{t.gallery?.generating || '生成中...'}</span>
+                          <button
+                            onClick={() => handleDownload(selectedImageUrl, currentGenerationId || undefined, selectedResultIndex)}
+                            className="w-10 h-10 rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-50 flex items-center justify-center transition-colors"
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
                         </div>
-                      ) : isFailed ? (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <X className="w-6 h-6 text-red-400" />
-                          <span className="text-xs text-red-500 mt-2">{slot?.error || '生成失败'}</span>
-                        </div>
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-xs text-zinc-400">{t.common?.waiting || '等待中'}</span>
-                        </div>
-                      )}
-                    </motion.div>
-                  )
-                })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-
-            {/* 底部按钮 */}
-            <div className="fixed bottom-20 left-0 right-0 p-4 bg-white/95 backdrop-blur-lg border-t z-30">
-              <div className="flex gap-3">
-                <button
-                  onClick={handleReset}
-                  className="flex-1 h-12 rounded-full bg-zinc-100 text-zinc-700 font-semibold hover:bg-zinc-200 transition-colors"
-                >
-                  {t.social?.newGeneration || '重新生成'}
-                </button>
-                <button
-                  onClick={() => router.push('/gallery')}
-                  className="flex-1 h-12 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white font-semibold hover:from-pink-600 hover:to-purple-600 transition-colors"
-                >
-                  {t.social?.viewGallery || '查看成片'}
-                </button>
-              </div>
-            </div>
-
+              )
+            })()}
+            
             <BottomNav forceShow />
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Model Picker Modal */}
-      <AnimatePresence>
-        {showModelPicker && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 z-50"
-              onClick={() => setShowModelPicker(false)}
-            />
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 max-h-[70vh] overflow-hidden"
-            >
-              <div className="p-4 border-b flex items-center justify-between">
-                <h3 className="text-lg font-bold">{t.social?.selectModel || '选择模特'}</h3>
-                <button onClick={() => setShowModelPicker(false)}>
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              <div className="p-4 overflow-y-auto max-h-[50vh]">
-                <div className="grid grid-cols-3 gap-3">
-                  {/* 上传按钮 */}
-                  <button
-                    onClick={() => modelUploadRef.current?.click()}
-                    className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 flex flex-col items-center justify-center gap-1 hover:border-blue-400"
-                  >
-                    <Upload className="w-6 h-6 text-zinc-400" />
-                    <span className="text-xs text-zinc-500">{t.common?.upload || '上传'}</span>
-                  </button>
-                  {/* 随机选择 */}
-                  <button
-                    onClick={() => { setSelectedModel(null); setShowModelPicker(false) }}
-                    className={`aspect-[3/4] rounded-xl border-2 flex flex-col items-center justify-center gap-1 ${
-                      !selectedModel ? 'border-pink-500 bg-pink-50' : 'border-zinc-200'
-                    }`}
-                  >
-                    <Sparkles className="w-6 h-6 text-pink-500" />
-                    <span className="text-xs text-pink-600">{t.social?.autoSelect || '随机'}</span>
-                  </button>
-                  {/* 模特列表 */}
-                  {allModels.map(model => (
-                    <button
-                      key={model.id}
-                      onClick={() => { setSelectedModel(model); setShowModelPicker(false) }}
-                      className={`aspect-[3/4] rounded-xl overflow-hidden border-2 ${
-                        selectedModel?.id === model.id ? 'border-pink-500' : 'border-transparent'
-                      }`}
-                    >
-                      <Image src={model.imageUrl} alt={model.name || ''} width={100} height={133} className="w-full h-full object-cover" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-
-      {/* Background Picker Modal */}
-      <AnimatePresence>
-        {showBgPicker && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 z-50"
-              onClick={() => setShowBgPicker(false)}
-            />
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 max-h-[70vh] overflow-hidden"
-            >
-              <div className="p-4 border-b flex items-center justify-between">
-                <h3 className="text-lg font-bold">{t.social?.selectBackground || '选择背景'}</h3>
-                <button onClick={() => setShowBgPicker(false)}>
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              <div className="p-4 overflow-y-auto max-h-[50vh]">
-                <div className="grid grid-cols-3 gap-3">
-                  {/* 上传按钮 */}
-                  <button
-                    onClick={() => bgUploadRef.current?.click()}
-                    className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 flex flex-col items-center justify-center gap-1 hover:border-blue-400"
-                  >
-                    <Upload className="w-6 h-6 text-zinc-400" />
-                    <span className="text-xs text-zinc-500">{t.common?.upload || '上传'}</span>
-                  </button>
-                  {/* 随机选择 */}
-                  <button
-                    onClick={() => { setSelectedBackground(null); setShowBgPicker(false) }}
-                    className={`aspect-[3/4] rounded-xl border-2 flex flex-col items-center justify-center gap-1 ${
-                      !selectedBackground ? 'border-pink-500 bg-pink-50' : 'border-zinc-200'
-                    }`}
-                  >
-                    <Sparkles className="w-6 h-6 text-pink-500" />
-                    <span className="text-xs text-pink-600">{t.social?.autoSelect || '随机'}</span>
-                  </button>
-                  {/* 背景列表 */}
-                  {allBackgrounds.map(bg => (
-                    <button
-                      key={bg.id}
-                      onClick={() => { setSelectedBackground(bg); setShowBgPicker(false) }}
-                      className={`aspect-[3/4] rounded-xl overflow-hidden border-2 ${
-                        selectedBackground?.id === bg.id ? 'border-pink-500' : 'border-transparent'
-                      }`}
-                    >
-                      <Image src={bg.imageUrl} alt={bg.name || ''} width={100} height={133} className="w-full h-full object-cover" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-
-      {/* Fullscreen Image */}
+      
+      {/* Fullscreen Image Viewer */}
       <AnimatePresence>
         {fullscreenImage && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black flex items-center justify-center"
-            onClick={() => setFullscreenImage(null)}
+            className="fixed inset-0 z-[60] bg-black flex items-center justify-center"
           >
-            <Image src={fullscreenImage} alt="Fullscreen" fill className="object-contain" />
-            <button className="absolute top-4 right-4 w-10 h-10 bg-black/50 rounded-full flex items-center justify-center">
+            <button
+              onClick={() => setFullscreenImage(null)}
+              className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+            >
               <X className="w-6 h-6 text-white" />
             </button>
+            
+            <TransformWrapper
+              initialScale={1}
+              minScale={0.5}
+              maxScale={4}
+              centerOnInit
+              doubleClick={{ mode: "reset" }}
+              panning={{ velocityDisabled: true }}
+              onPinchingStop={(ref) => {
+                if (ref.state.scale < 1) {
+                  ref.resetTransform()
+                }
+              }}
+            >
+              {({ resetTransform }) => (
+                <TransformComponent
+                  wrapperClass="!w-full !h-full"
+                  contentClass="!w-full !h-full flex items-center justify-center"
+                >
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                    className="relative w-full h-full flex items-center justify-center"
+                  >
+                    <img
+                      src={fullscreenImage}
+                      alt="Fullscreen"
+                      className="max-w-full max-h-full object-contain"
+                      draggable={false}
+                    />
+                  </motion.div>
+                </TransformComponent>
+              )}
+            </TransformWrapper>
+            
+            <div className="absolute bottom-8 left-0 right-0 text-center pointer-events-none">
+              <span className="text-white/60 text-sm">{t.imageActions?.longPressSaveZoom || '长按可保存，双击还原'}</span>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
-
+      
       {/* Quota Exceeded Modal */}
       <QuotaExceededModal
         isOpen={showExceededModal}
         onClose={closeExceededModal}
+        usedCount={quota?.usedCount}
+        totalQuota={quota?.totalQuota}
         requiredCount={requiredCount}
+        userEmail={user?.email || ''}
       />
     </div>
   )
 }
 
+// Default export with Suspense wrapper
 export default function SocialPage() {
   return (
     <Suspense fallback={
-      <div className="h-full flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-pink-500" />
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-pink-400 animate-spin" />
       </div>
     }>
       <SocialPageContent />
     </Suspense>
   )
 }
-
