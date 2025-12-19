@@ -52,9 +52,9 @@ const getProductCategoryLabel = (cat: ProductSubTab, t: any): string => {
   }
 }
 
-// Social Generation config - 6 images total (2 groups x 3)
-// 每组：2 张韩系生活感 + 1 张对镜自拍
-const SOCIAL_NUM_IMAGES = 6
+// Social Generation config - 3 images total
+// 共用同一个模特和背景，生成 3 张不同的图
+const SOCIAL_NUM_IMAGES = 3
 
 function SocialPageContent() {
   const router = useRouter()
@@ -400,6 +400,7 @@ function SocialPageContent() {
       console.log(`[Social] Starting SSE generation for ${SOCIAL_NUM_IMAGES} images...`)
       
       // 发送 SSE 请求到 generate-social API
+      // 新工作流：背景由后端自动从 social_media 随机选择
       const response = await fetch('/api/generate-social', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -407,7 +408,6 @@ function SocialPageContent() {
         body: JSON.stringify({
           productImage: inputImage,
           modelImage: userModelUrl || 'random',
-          backgroundImage: userBgUrl || 'random',
           taskId,
         }),
       })
@@ -443,21 +443,30 @@ function SocialPageContent() {
                 const data = JSON.parse(line.slice(6))
                 
                 if (data.type === 'progress') {
-                  console.log(`[Social] Progress: ${data.message}`)
-                  updateImageSlot(taskId, data.index, { status: 'generating' })
+                  // 新工作流：progress 事件包含 step 和 message
+                  console.log(`[Social] Progress [${data.step || data.index}]: ${data.message}`)
+                  if (typeof data.index === 'number') {
+                    updateImageSlot(taskId, data.index, { status: 'generating' })
+                  }
+                } else if (data.type === 'model_selected') {
+                  console.log(`[Social] AI selected model: ${data.modelId} (${data.reason})`)
+                } else if (data.type === 'background_selected') {
+                  console.log(`[Social] Background: ${data.fileName}`)
+                } else if (data.type === 'outfit_ready') {
+                  console.log(`[Social] Outfit instructions ready`)
                 } else if (data.type === 'image') {
-                  console.log(`[Social] Image ${data.index + 1}: ✓ (${data.modelType}, ${data.imageType})`)
+                  console.log(`[Social] Image ${data.index + 1}: ✓`)
                   
                   allImages[data.index] = data.image
-                  allModelTypes[data.index] = data.modelType
-                  allGenModes[data.index] = data.imageType === 'lifestyle' ? 'lifestyle' : 'mirror'
+                  allModelTypes[data.index] = 'pro' // 新工作流固定使用 pro 模型
+                  allGenModes[data.index] = 'lifestyle'
                   successCount++
                   
                   updateImageSlot(taskId, data.index, {
                     status: 'completed',
                     imageUrl: data.image,
-                    modelType: data.modelType,
-                    genMode: data.imageType === 'lifestyle' ? 'simple' : 'extended',
+                    modelType: 'pro',
+                    genMode: 'lifestyle',
                   })
                   
                   // 第一张图片完成时，切换到 results 模式
@@ -466,12 +475,15 @@ function SocialPageContent() {
                     setMode('results')
                     router.replace('/camera/social?mode=results')
                   }
-                } else if (data.type === 'error') {
+                } else if (data.type === 'image_error') {
                   console.log(`[Social] Image ${data.index + 1}: ✗ (${data.error})`)
                   updateImageSlot(taskId, data.index, {
                     status: 'failed',
                     error: data.error,
                   })
+                } else if (data.type === 'error') {
+                  // 全局错误
+                  console.error(`[Social] Error: ${data.error}`)
                 } else if (data.type === 'complete') {
                   console.log(`[Social] Complete: ${data.totalSuccess}/${SOCIAL_NUM_IMAGES} images`)
                 }
