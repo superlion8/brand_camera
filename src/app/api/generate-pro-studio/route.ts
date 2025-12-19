@@ -10,9 +10,9 @@ export const maxDuration = 300 // 5 minutes
 // ============================================
 // 模型配置
 // ============================================
-const FLASH_MODEL = 'gemini-2.5-flash-preview-05-20'  // 分析用（快速）
-const VLM_MODEL = 'gemini-2.5-pro-preview-06-05'           // 生成 outfit
-const IMAGE_MODEL = 'gemini-2.0-flash-preview-image-generation' // 图像生成
+const FLASH_MODEL = 'gemini-3-flash-preview'      // 分析用（快速）
+const VLM_MODEL = 'gemini-3-pro-preview'          // 生成 outfit
+const IMAGE_MODEL = 'gemini-3-pro-image-preview'  // 图像生成
 
 // Storage URL
 const ALL_MODELS_URL = 'https://cvdogeigbpussfamctsu.supabase.co/storage/v1/object/public/presets/all_models'
