@@ -49,13 +49,22 @@ const SHOT_FOCUS_CONFIGS = [
 // ============================================
 
 // 步骤1: 服装风格分析 + 智能选择模特/背景
-const MATCH_PROMPT = `1. 请分析商品的材质、版型、色彩和风格
+const MATCH_PROMPT = `1. 请分析商品{{product_img}}的材质、版型、色彩和风格
 2. 在 model_analysis表中选择出一个 model_id，按优先级：
-  1. 气质匹配：模特整体气质/风格(model_style_all字段)与商品相符
+  1. 气质匹配：模特整体气质/风格(model_style_all字段)与商品{{product_img}}相符
   2. 性别和年龄品牌：商品的性别和年龄属性与模特相匹配
   3. 身材/比例适配：模特身形与商品版型更合适（oversized 更适合骨架感/衣架感；修身更适合线条利落；高腰阔腿更适合比例好）
-  4. 商业展示友好：优先能把商品穿得高级、不抢戏、不违和的模特
-3. 读取pro_studio_scene_tag表中所有场景的标签，进行商品和场景的匹配度打分，选出一个 scene_id，背景颜色要适配商品的颜色，背景的色系也要适配商品的风格，商品和模特出现在该背景内不违和
+3. 读取pro_studio_scene_tag表中所有场景的标签，进行商品和场景的匹配度打分，选出一个 scene_id，按优先级：
+  1. 风格匹配：优先选择 style_all 覆盖商品风格的背景；例如商品风格为 Y2K，则筛选 style_all 中包含 Y2K 的背景场景。
+    1. 兜底规则：若 style_all 为空或命中数量过少，可放宽为 style = Unknown/Minimal/Casual 等更通用风格进入候选，但整体降权，作为备选。
+  2. 色系匹配：在风格匹配的候选背景中，选择与商品色系协调且突出主体的背景——优先保证明度/对比度足够让服饰轮廓清晰，并避免背景色偏或反光对肤色与浅色服饰造成染色，从而呈现更"高级"的整体观感。
+    - 明度优先规则：
+      - 浅色服饰（白/奶油/浅灰/浅粉等）→ 背景优先 中/深明度；
+      - 深色服饰（黑/藏蓝/深棕等）→ 背景优先 浅明度；
+      - 中间调服饰 → 避免选择与服饰 同明度档 的背景。
+    - 背景复杂度规则（color_variation）：电商模特棚拍默认优先 low（干净、统一、少抢戏）；只有在服饰本身为纯色/极简时，才允许 medium 作为次选，high 一般降权。
+    - 光线一致性规则（shadow_strength）：主图导向优先 none/light（更稳定、更易统一店铺质感）；medium/strong 更偏 lookbook/editorial，除非你明确要这种风格，否则降权。
+    - 冲突惩罚规则：若服饰与背景"同明度"同时背景 color_variation 又是 medium/high，属于高风险组合（轮廓不清、主体不突出），应显著降分或直接剔除
 请严格按照以下 JSON 格式输出结果，不要包含 markdown 标记（如 \`\`\`json），也不要输出任何解释性文字：
 {
 "product_style":"Y2K | Casual | Business | Girly | Retro | High-Fashion | Streetwear | Minimal | Sporty | Workwear | Preppy | AvantGarde | Boho | Unknown",
