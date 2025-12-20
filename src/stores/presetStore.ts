@@ -8,10 +8,7 @@
  * ├── backgrounds/               # 买家秀背景（随机池）
  * │   └── visible/               # 用户可见的背景
  * ├── studio-models/             # 专业棚拍模特
- * ├── studio-backgrounds/
- * │   ├── light/
- * │   ├── solid/
- * │   └── pattern/
+ * ├── pro_studio/                # 专业棚拍背景（pro_scene_1~61.jpg）
  * └── products/                  # 预设商品
  */
 
@@ -161,7 +158,7 @@ export const usePresetStore = create<PresetState>((set, get) => ({
         fetchPresetAssets('backgrounds'),
         fetchPresetAssets('backgrounds/visible'),
         fetchPresetAssets('studio-models'),
-        fetchPresetAssets('studio-backgrounds'),
+        fetchPresetAssets('pro_studio'),
         fetchPresetAssets('products'),
       ])
       
@@ -171,7 +168,7 @@ export const usePresetStore = create<PresetState>((set, get) => ({
       const allBackgrounds = bgAssets.map(a => apiAssetToAsset(a, 'backgrounds', 'background'))
       const visibleBackgrounds = visibleBgAssets.map(a => apiAssetToAsset(a, 'backgrounds/visible', 'background'))
       const studioModels = studioModelAssets.map(a => apiAssetToAsset(a, 'studio-models', 'model', 'studio'))
-      const studioBackgrounds = studioBgAssets.map(a => apiAssetToAsset(a, 'studio-backgrounds', 'background', 'studio'))
+      const studioBackgrounds = studioBgAssets.map(a => apiAssetToAsset(a, 'pro_studio', 'background', 'studio'))
       const presetProducts = productAssets.map(a => apiAssetToAsset(a, 'products', 'product'))
       
       console.log('[PresetStore] Loaded:', {
