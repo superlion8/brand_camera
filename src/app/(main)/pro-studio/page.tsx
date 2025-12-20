@@ -236,6 +236,9 @@ function ProStudioPageContent() {
   const modelUploadRef = useRef<HTMLInputElement>(null)
   const bgUploadRef = useRef<HTMLInputElement>(null)
   
+  // AbortController for SSE cleanup
+  const abortControllerRef = useRef<AbortController | null>(null)
+  
   // State
   const [mode, setMode] = useState<PageMode>("camera")
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
@@ -289,6 +292,16 @@ function ProStudioPageContent() {
   useEffect(() => {
     loadPresets()
   }, [loadPresets])
+  
+  // Cleanup SSE connection on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+        abortControllerRef.current = null
+      }
+    }
+  }, [])
   
   // 监听任务完成，自动切换到 results 模式（从 outfit 页面跳转过来时）
   useEffect(() => {
@@ -506,6 +519,10 @@ function ProStudioPageContent() {
     setCurrentTaskId(taskId)
     initImageSlots(taskId, PRO_STUDIO_NUM_IMAGES)
     
+    // 保存 taskId 到 sessionStorage（刷新后可恢复）
+    sessionStorage.setItem('proStudioTaskId', taskId)
+    router.replace('/pro-studio?mode=processing')
+    
     // 初始化所有 slots 为 generating 状态
     for (let i = 0; i < PRO_STUDIO_NUM_IMAGES; i++) {
       updateImageSlot(taskId, i, { status: 'generating' })
@@ -531,10 +548,14 @@ function ProStudioPageContent() {
     const userSelectedBgUrl = selectedBg?.imageUrl || null
 
     try {
+      // Create AbortController for this request
+      abortControllerRef.current = new AbortController()
+      
       // 使用 SSE 调用新 API
       const response = await fetch('/api/generate-pro-studio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: abortControllerRef.current.signal,
         body: JSON.stringify({
           productImage: capturedImage,
           modelImage: userSelectedModelUrl || 'random',
@@ -608,6 +629,10 @@ function ProStudioPageContent() {
                   if (!firstImageReceived) {
                     firstImageReceived = true
                     setMode("results")
+                    // 检查是否仍在pro-studio页面，避免用户离开后强制跳转
+                    if (window.location.pathname === '/pro-studio') {
+                      router.replace('/pro-studio?mode=results')
+                    }
                   }
                   break
                   
@@ -674,6 +699,9 @@ function ProStudioPageContent() {
           console.warn('[ProStudio] Failed to refund on total failure:', e)
         }
       }
+      
+      // 清理 sessionStorage
+      sessionStorage.removeItem('proStudioTaskId')
     } catch (error: any) {
       console.error('[ProStudio] Error:', error)
       // 标记所有 slots 为失败
@@ -691,6 +719,9 @@ function ProStudioPageContent() {
       } catch (e) {
         console.warn('[ProStudio] Failed to refund on error:', e)
       }
+      
+      // 清理 sessionStorage
+      sessionStorage.removeItem('proStudioTaskId')
     }
 
     updateTaskStatus(taskId, 'completed')

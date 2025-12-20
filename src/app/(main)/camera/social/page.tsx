@@ -79,6 +79,9 @@ function SocialPageContent() {
   const modelUploadRef = useRef<HTMLInputElement>(null)
   const bgUploadRef = useRef<HTMLInputElement>(null)
   
+  // AbortController for SSE cleanup
+  const abortControllerRef = useRef<AbortController | null>(null)
+  
   // Mode and state
   const [mode, setMode] = useState<SocialMode>("camera")
   const modeRef = useRef<SocialMode>("camera")
@@ -109,6 +112,16 @@ function SocialPageContent() {
   useEffect(() => {
     modeRef.current = mode
   }, [mode])
+  
+  // Cleanup SSE connection on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+        abortControllerRef.current = null
+      }
+    }
+  }, [])
   
   // Check camera permission on mount
   useEffect(() => {
@@ -400,12 +413,16 @@ function SocialPageContent() {
       
       console.log(`[Social] Starting SSE generation for ${SOCIAL_NUM_IMAGES} images...`)
       
+      // Create AbortController for this request
+      abortControllerRef.current = new AbortController()
+      
       // 发送 SSE 请求到 generate-social API
       // 新工作流：背景由后端自动从 social_media 随机选择
       const response = await fetch('/api/generate-social', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
+        signal: abortControllerRef.current.signal,
         body: JSON.stringify({
           productImage: inputImage,
           modelImage: userModelUrl || 'random',
@@ -473,10 +490,13 @@ function SocialPageContent() {
                   })
                   
                   // 第一张图片完成时，切换到 results 模式
+                  // 检查是否仍在social页面，避免用户离开后强制跳转
                   if (modeRef.current === 'processing' && successCount === 1) {
                     console.log('[Social] First image ready, switching to results mode')
                     setMode('results')
-                    router.replace('/camera/social?mode=results')
+                    if (window.location.pathname === '/camera/social') {
+                      router.replace('/camera/social?mode=results')
+                    }
                   }
                 } else if (data.type === 'image_error') {
                   const globalIdx = data.globalIndex
@@ -555,7 +575,10 @@ function SocialPageContent() {
           setGeneratedModelTypes(savedModelTypes)
           setCurrentGenerationId(id)
           setMode("results")
-          router.replace('/camera/social?mode=results')
+          // 检查是否仍在social页面，避免用户离开后强制跳转
+          if (window.location.pathname === '/camera/social') {
+            router.replace('/camera/social?mode=results')
+          }
         }
         
         sessionStorage.removeItem('socialTaskId')

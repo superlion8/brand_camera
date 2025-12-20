@@ -246,8 +246,12 @@ function CameraPageContent() {
       setGeneratedModelTypes(modelTypes)
       setGeneratedGenModes(genModes)
       setMode('results')
+      // 检查是否仍在camera页面，避免用户离开后强制跳转
+      if (window.location.pathname === '/camera') {
+        router.replace('/camera?mode=results')
+      }
     }
-  }, [mode, currentTaskId, tasks])
+  }, [mode, currentTaskId, tasks, router])
   
   // Filter assets by category - 'mine' shows only user assets
   const filteredModels = modelSubcategory === 'mine'
@@ -875,8 +879,10 @@ function CameraPageContent() {
           setGeneratedPrompts(data.prompts || [])
           setCurrentGenerationId(id)
           setMode("results")
-          // 更新 URL 为 results 模式
-          router.replace('/camera?mode=results')
+          // 更新 URL 为 results 模式（检查是否仍在camera页面）
+          if (window.location.pathname === '/camera') {
+            router.replace('/camera?mode=results')
+          }
         }
         
         // 清理 sessionStorage（任务完成）
