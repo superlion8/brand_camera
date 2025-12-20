@@ -236,8 +236,6 @@ function ProStudioPageContent() {
   const modelUploadRef = useRef<HTMLInputElement>(null)
   const bgUploadRef = useRef<HTMLInputElement>(null)
   
-  // AbortController for SSE cleanup
-  const abortControllerRef = useRef<AbortController | null>(null)
   
   // State
   const [mode, setMode] = useState<PageMode>("camera")
@@ -293,15 +291,9 @@ function ProStudioPageContent() {
     loadPresets()
   }, [loadPresets])
   
-  // Cleanup SSE connection on unmount
-  useEffect(() => {
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-        abortControllerRef.current = null
-      }
-    }
-  }, [])
+  // 注意：不在组件卸载时中止 SSE 请求
+  // 用户离开页面后，后端会继续生成并保存到数据库
+  // 用户可以在历史记录中查看结果
   
   // 监听任务完成，自动切换到 results 模式（从 outfit 页面跳转过来时）
   useEffect(() => {
@@ -548,14 +540,11 @@ function ProStudioPageContent() {
     const userSelectedBgUrl = selectedBg?.imageUrl || null
 
     try {
-      // Create AbortController for this request
-      abortControllerRef.current = new AbortController()
-      
       // 使用 SSE 调用新 API
+      // 注意：不使用 AbortController，用户离开页面后后端继续生成
       const response = await fetch('/api/generate-pro-studio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        signal: abortControllerRef.current.signal,
         body: JSON.stringify({
           productImage: capturedImage,
           modelImage: userSelectedModelUrl || 'random',
