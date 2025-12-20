@@ -9,7 +9,7 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Webcam from "react-webcam"
-import { fileToBase64, compressBase64Image, generateId, ensureBase64 } from "@/lib/utils"
+import { fileToBase64, compressBase64Image, generateId, ensureBase64, saveProductToAssets } from "@/lib/utils"
 import { useAssetStore } from "@/stores/assetStore"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { useSettingsStore } from "@/stores/settingsStore"
@@ -137,6 +137,7 @@ export default function StudioPage() {
   useEffect(() => { modeRef.current = mode }, [mode])
   
   const [productImage, setProductImage] = useState<string | null>(null)
+  const [productFromPhone, setProductFromPhone] = useState(false) // Track if product came from phone upload
   const [generatedImages, setGeneratedImages] = useState<string[]>([])
   const [generatedModelTypes, setGeneratedModelTypes] = useState<('pro' | 'flash')[]>([])
   const [showProductPanel, setShowProductPanel] = useState(false)
@@ -163,7 +164,7 @@ export default function StudioPage() {
   const [saturation, setSaturation] = useState(0)
   const [brightness, setBrightness] = useState(1)
   
-  const { addGeneration, addFavorite, removeFavorite, isFavorited, favorites, userProducts, generations } = useAssetStore()
+  const { addGeneration, addFavorite, removeFavorite, isFavorited, favorites, userProducts, generations, addUserAsset } = useAssetStore()
   const { addTask, updateTaskStatus } = useGenerationTaskStore()
   const { debugMode } = useSettingsStore()
   const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
@@ -214,6 +215,7 @@ export default function StudioPage() {
     if (file) {
       const base64 = await fileToBase64(file)
       setProductImage(base64)
+      setProductFromPhone(true) // Mark as uploaded from phone
       setMode('main')
     }
   }, [])
@@ -221,6 +223,7 @@ export default function StudioPage() {
   const handleSelectFromAsset = useCallback(async (imageUrl: string) => {
     // 直接使用 URL，后端会转换为 base64
     setProductImage(imageUrl)
+    setProductFromPhone(false) // From asset library, don't save again
     setShowProductPanel(false)
     setMode('main')
   }, [])
@@ -236,6 +239,7 @@ export default function StudioPage() {
       const imageSrc = webcamRef.current.getScreenshot({ width: videoWidth, height: videoHeight })
       if (imageSrc) {
         setProductImage(imageSrc)
+        setProductFromPhone(true) // Mark as captured from camera (phone)
         setMode('main')
       }
     }
@@ -263,6 +267,12 @@ export default function StudioPage() {
     const hasQuota = await checkQuota(2)
     if (!hasQuota) {
       return // Modal will be shown by the hook
+    }
+    
+    // Save phone-uploaded product image to asset library BEFORE generation
+    // This ensures product is saved even if generation fails
+    if (productFromPhone && productImage) {
+      saveProductToAssets(productImage, addUserAsset, t.common?.product || '商品')
     }
     
     // Capture current settings before async operations
@@ -488,6 +498,7 @@ export default function StudioPage() {
   // Navigation handlers during processing
   const handleNewProductDuringProcessing = () => {
     setProductImage(null)
+    setProductFromPhone(false)
     setGeneratedImages([])
     setGeneratedModelTypes([])
     setMode('main')
@@ -553,6 +564,7 @@ export default function StudioPage() {
   
   const handleReset = () => {
     setProductImage(null)
+    setProductFromPhone(false)
     setGeneratedImages([])
     setGeneratedModelTypes([])
     setMode('main')
@@ -641,7 +653,10 @@ export default function StudioPage() {
                     className="w-full rounded-xl shadow-lg object-contain bg-white"
                   />
                   <button
-                    onClick={() => setProductImage(null)}
+                    onClick={() => {
+                      setProductImage(null)
+                      setProductFromPhone(false)
+                    }}
                     className="absolute bottom-2 right-2 px-3 py-1.5 bg-white/90 hover:bg-white text-zinc-700 text-sm font-medium rounded-lg shadow transition-colors"
                   >
                     {t.edit.editNew}
@@ -1374,6 +1389,7 @@ export default function StudioPage() {
                             setIsLoadingAsset(true)
                             // 直接使用 URL，后端会转换为 base64
                             setProductImage(url)
+                            setProductFromPhone(false) // From gallery, don't save again
                             setShowGalleryPanel(false)
                             setIsLoadingAsset(false)
                           }}

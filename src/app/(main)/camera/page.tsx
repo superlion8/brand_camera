@@ -14,7 +14,7 @@ import { useAssetStore } from "@/stores/assetStore"
 import { useGenerationTaskStore, base64ToBlobUrl } from "@/stores/generationTaskStore"
 import { useSettingsStore } from "@/stores/settingsStore"
 import { useRouter, useSearchParams } from "next/navigation"
-import { fileToBase64, generateId, compressBase64Image, fetchWithTimeout, ensureBase64 } from "@/lib/utils"
+import { fileToBase64, generateId, compressBase64Image, fetchWithTimeout, ensureBase64, saveProductToAssets } from "@/lib/utils"
 import { ensureImageUrl } from "@/lib/supabase/storage"
 import { Asset, ModelStyle, ModelGender } from "@/types"
 import Image from "next/image"
@@ -393,6 +393,15 @@ function CameraPageContent() {
     
     // Note: Random model/background selection now happens per-image in runBackgroundGeneration
     // This ensures each of the 6 images can have different random model/background
+    
+    // Save phone-uploaded product images to asset library BEFORE generation
+    // This ensures products are saved even if generation fails
+    if (currentProductFromPhone && capturedImage) {
+      saveProductToAssets(capturedImage, addUserAsset, t.common.product)
+    }
+    if (currentProduct2FromPhone && currentProduct2) {
+      saveProductToAssets(currentProduct2, addUserAsset, t.common.product)
+    }
     
     // Create task and switch to processing mode
     const params = {
@@ -799,25 +808,8 @@ function CameraPageContent() {
         // Update task with results
         updateTaskStatus(taskId, 'completed', data.images)
         
-        // Save phone-uploaded product images to asset library
-        if (fromPhone && inputImage) {
-          console.log('Saving phone-uploaded product to asset library...')
-          addUserAsset({
-            id: generateId(),
-            type: 'product',
-            name: `${t.common.product} ${new Date().toLocaleDateString()}`,
-            imageUrl: inputImage,
-          })
-        }
-        if (fromPhone2 && inputImage2) {
-          console.log('Saving phone-uploaded product 2 to asset library...')
-          addUserAsset({
-            id: generateId(),
-            type: 'product',
-            name: `${t.common.product} ${new Date().toLocaleDateString()}`,
-            imageUrl: inputImage2,
-          })
-        }
+        // Note: Product images are now saved in handleShootIt() before generation starts
+        // This ensures products are saved even if generation fails
         
         // Save to IndexedDB/history - filter out empty strings (failed images)
         const id = taskId

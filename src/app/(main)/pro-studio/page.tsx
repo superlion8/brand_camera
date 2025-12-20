@@ -9,7 +9,7 @@ import {
   Heart, Download, FolderHeart, Check, ZoomIn, Plus, Grid3X3
 } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { fileToBase64, generateId, compressBase64Image, ensureBase64 } from "@/lib/utils"
+import { fileToBase64, generateId, compressBase64Image, ensureBase64, saveProductToAssets } from "@/lib/utils"
 import { ensureImageUrl } from "@/lib/supabase/storage"
 import { Asset } from "@/types"
 import Image from "next/image"
@@ -207,7 +207,7 @@ function ProStudioPageContent() {
   const t = useLanguageStore(state => state.t)
   const { checkQuota, showExceededModal, requiredCount, closeExceededModal, quota } = useQuota()
   const { addTask, updateTaskStatus, updateImageSlot, initImageSlots, tasks } = useGenerationTaskStore()
-  const { userProducts, userModels, userBackgrounds } = useAssetStore()
+  const { userProducts, userModels, userBackgrounds, addUserAsset } = useAssetStore()
   const { debugMode } = useSettingsStore()
   
   // 未登录时重定向到登录页
@@ -243,6 +243,10 @@ function ProStudioPageContent() {
   const [hasCamera, setHasCamera] = useState(true)
   const [cameraReady, setCameraReady] = useState(false)
   const [permissionChecked, setPermissionChecked] = useState(false)
+  
+  // Track if product images came from phone upload (not asset library)
+  const [productFromPhone, setProductFromPhone] = useState(false)
+  const [product2FromPhone, setProduct2FromPhone] = useState(false)
   
   // Selection state
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null)
@@ -395,6 +399,7 @@ function ProStudioPageContent() {
       const imageSrc = webcamRef.current.getScreenshot({ width: videoWidth, height: videoHeight })
       if (imageSrc) {
         setCapturedImage(imageSrc)
+        setProductFromPhone(true) // Mark as captured from camera (phone)
         setMode("review")
       }
     }
@@ -407,10 +412,12 @@ function ProStudioPageContent() {
       const base64 = await fileToBase64(file)
       if (!capturedImage) {
         setCapturedImage(base64)
+        setProductFromPhone(true) // Mark as uploaded from phone
         setMode("review")
       } else {
         // 第二张商品图片
         setCapturedImage2(base64)
+        setProduct2FromPhone(true) // Mark as uploaded from phone
         // 不立即分析，等用户点击"下一步"时再分析
       }
     }
@@ -422,6 +429,7 @@ function ProStudioPageContent() {
     if (file) {
       const base64 = await fileToBase64(file)
       setCapturedImage2(base64)
+      setProduct2FromPhone(true) // Mark as uploaded from phone
       // 不立即分析，等用户点击"下一步"时再分析
     }
   }
@@ -448,6 +456,9 @@ function ProStudioPageContent() {
   // 重拍
   const handleRetake = () => {
     setCapturedImage(null)
+    setCapturedImage2(null)
+    setProductFromPhone(false)
+    setProduct2FromPhone(false)
     setSelectedModelId(null)
     setSelectedBgId(null)
     setGeneratedImages([])
@@ -480,6 +491,12 @@ function ProStudioPageContent() {
 
     const hasQuota = await checkQuota(PRO_STUDIO_NUM_IMAGES)
     if (!hasQuota) return
+
+    // Save phone-uploaded product images to asset library BEFORE generation
+    // This ensures products are saved even if generation fails
+    if (productFromPhone && capturedImage) {
+      saveProductToAssets(capturedImage, addUserAsset, t.common?.product || '商品')
+    }
 
     triggerFlyToGallery()
     setMode("processing")
@@ -1227,6 +1244,7 @@ function ProStudioPageContent() {
                               onClick={() => {
                                 // 直接使用 URL，后端会转换为 base64
                                 setCapturedImage(product.imageUrl)
+                                setProductFromPhone(false) // From asset library, don't save again
                                 setMode("review")
                                 setShowProductPanel(false)
                               }}
@@ -1268,6 +1286,7 @@ function ProStudioPageContent() {
                                 style={{ touchAction: 'manipulation' }}
                                 onClick={() => {
                                   setCapturedImage(product.imageUrl)
+                                  setProductFromPhone(false) // From asset library, don't save again
                                   setMode("review")
                                   setShowProductPanel(false)
                                 }}
@@ -1419,6 +1438,7 @@ function ProStudioPageContent() {
                               onClick={() => {
                                 // 直接使用 URL，后端会转换为 base64
                                 setCapturedImage2(product.imageUrl)
+                                setProduct2FromPhone(false) // From asset library, don't save again
                                 setShowProduct2Panel(false)
                               }}
                               className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all disabled:opacity-50"
@@ -1435,6 +1455,7 @@ function ProStudioPageContent() {
                               key={product.id}
                               onClick={() => {
                                 setCapturedImage2(product.imageUrl)
+                                setProduct2FromPhone(false) // From asset library, don't save again
                                 setShowProduct2Panel(false)
                               }}
                               className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all"
@@ -1452,6 +1473,7 @@ function ProStudioPageContent() {
                               onClick={() => {
                                 // 直接使用 URL，后端会转换为 base64
                                 setCapturedImage2(product.imageUrl)
+                                setProduct2FromPhone(false) // From asset library, don't save again
                                 setShowProduct2Panel(false)
                               }}
                               className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all disabled:opacity-50"

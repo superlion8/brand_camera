@@ -368,6 +368,10 @@ export async function fetchGenerations(userId: string, page: number = 0): Promis
         type: row.type || row.task_type,
         inputImageUrl: row.input_image_url || '',
         inputImage2Url: row.input_image2_url,
+        // 模特图URL：优先数据库单独字段，回退到 input_params 中提取
+        modelImageUrl: row.model_image_url || row.input_params?.modelImage || row.input_params?.perImageModels?.[0]?.imageUrl,
+        // 背景图URL：优先数据库单独字段，回退到 input_params 中提取
+        backgroundImageUrl: row.background_image_url || row.input_params?.backgroundImage || row.input_params?.perImageBackgrounds?.[0]?.imageUrl,
         outputImageUrls: outputUrls,
         outputModelTypes: row.output_model_types || [],
         outputGenModes: row.output_gen_modes || [],

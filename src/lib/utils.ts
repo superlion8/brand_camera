@@ -269,3 +269,39 @@ export async function ensureBase64(imageSource: string | undefined | null): Prom
   return imageSource
 }
 
+// Check if image is valid (base64 or URL)
+export function isValidImage(image: string | null | undefined): boolean {
+  if (!image) return false
+  return image.startsWith('data:image/') || image.startsWith('http://') || image.startsWith('https://') || image.length > 1000
+}
+
+// Save product image to user assets (shared utility for camera, pro-studio, studio)
+// Returns true if saved successfully, false if skipped or failed
+export async function saveProductToAssets(
+  imageUrl: string,
+  addUserAsset: (asset: { id: string; type: 'product'; name: string; imageUrl: string }) => Promise<void>,
+  productLabel: string = '商品'
+): Promise<boolean> {
+  if (!isValidImage(imageUrl)) {
+    console.log('[saveProductToAssets] Invalid or empty image, skipping')
+    return false
+  }
+  
+  try {
+    const asset = {
+      id: generateId(),
+      type: 'product' as const,
+      name: `${productLabel} ${new Date().toLocaleDateString()}`,
+      imageUrl: imageUrl,
+    }
+    
+    console.log('[saveProductToAssets] Saving product to assets:', asset.id)
+    await addUserAsset(asset)
+    console.log('[saveProductToAssets] Product saved successfully')
+    return true
+  } catch (error) {
+    console.error('[saveProductToAssets] Failed to save product:', error)
+    return false
+  }
+}
+
