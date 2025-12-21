@@ -152,7 +152,7 @@ export default function GalleryPage() {
       
       return () => clearInterval(intervalId)
     }
-  }, [tasks, user])
+  }, [tasks, user, activeTab, modelSubType]) // 添加 tab 依赖，确保切换 tab 时 interval 使用正确的参数
   
   // Helper to get display label for generation type
   // debugMode controls whether to show sub-labels (极简/扩展)
