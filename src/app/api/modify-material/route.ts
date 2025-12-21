@@ -64,47 +64,69 @@ const CATEGORY_MAP: Record<string, string> = {
   '신발': 'shoes',
 }
 
-// V2 新版参数结构
+// V2 新版参数结构（所有参数都是可选的）
 interface ModifyTarget {
   category: string
-  params: {
-    silhouette: string        // 版型廓形
-    fit_tightness: string     // 松紧度
-    length: string            // 长度
-    waist_line?: string       // 腰线（裤子/裙子）
-    fit_customize?: string    // 其他版型要求
-    material_category: string // 面料大类
-    stiffness_drape: string   // 软硬度
-    surface_texture: string   // 表面肌理
-    visual_luster: string     // 光泽
+  params?: {
+    silhouette?: string        // 版型廓形
+    fit_tightness?: string     // 松紧度
+    length?: string            // 长度
+    waist_line?: string        // 腰线（裤子/裙子）
+    fit_customize?: string     // 其他版型要求
+    material_category?: string // 面料大类
+    stiffness_drape?: string   // 软硬度
+    surface_texture?: string   // 表面肌理
+    visual_luster?: string     // 光泽
     material_customize?: string // 其他材质要求
   }
 }
 
 // 构建单个商品的修改指令 - V2 新版更自然的语法
 function buildItemInstruction(target: ModifyTarget): string {
-  const { category, params } = target
+  const { category, params = {} } = target
   const categoryEn = CATEGORY_MAP[category] || category
   
-  // 构建长度描述（如果有）
-  const lengthPart = params.length ? `${params.length}款式` : '原长度款式'
+  // 收集版型相关描述
+  const fitParts: string[] = []
+  if (params.silhouette) fitParts.push(`${params.silhouette}廓形`)
+  if (params.length) fitParts.push(`${params.length}款式`)
+  if (params.fit_tightness) fitParts.push(`松紧度为${params.fit_tightness}`)
   
   // 构建腰线描述（裤子/裙子适用）
-  const waistPart = params.waist_line && 
+  if (params.waist_line && 
     (category.includes('裤') || category.includes('裙') || 
-     category.toLowerCase().includes('pants') || category.toLowerCase().includes('skirt')) 
-    ? `，腰线为${params.waist_line}` : ''
+     category.toLowerCase().includes('pants') || category.toLowerCase().includes('skirt'))) {
+    fitParts.push(`腰线为${params.waist_line}`)
+  }
   
   // 构建自定义版型要求
-  const fitCustomPart = params.fit_customize ? `\n   额外版型要求：${params.fit_customize}` : ''
+  if (params.fit_customize) fitParts.push(params.fit_customize)
   
-  // 构建自定义材质要求
-  const materialCustomPart = params.material_customize ? `\n   额外材质要求：${params.material_customize}` : ''
+  // 收集材质相关描述
+  const materialParts: string[] = []
+  if (params.material_category) materialParts.push(`${params.material_category}面料`)
+  if (params.stiffness_drape) materialParts.push(`${params.stiffness_drape}的物理质感`)
+  if (params.surface_texture) materialParts.push(`${params.surface_texture}的表面肌理`)
+  if (params.visual_luster) materialParts.push(`${params.visual_luster}`)
+  if (params.material_customize) materialParts.push(params.material_customize)
   
-  return `请重绘图中模特穿的【${category}/${categoryEn}】：
-1. [版型结构]：将其修改为${params.silhouette}廓形的${lengthPart}${waistPart}，整体松紧度调整为${params.fit_tightness}。${fitCustomPart}
-2. [面料材质]：材质改为${params.material_category}面料。
-3. [质感细节]：面料表现出${params.stiffness_drape}的物理质感，表面具有${params.surface_texture}的肌理细节，并呈现${params.visual_luster}。${materialCustomPart}`
+  // 构建指令
+  let instruction = `请重绘图中模特穿的【${category}/${categoryEn}】：`
+  
+  if (fitParts.length > 0) {
+    instruction += `\n1. [版型结构]：将其修改为${fitParts.join('，')}。`
+  }
+  
+  if (materialParts.length > 0) {
+    instruction += `\n2. [面料材质]：材质调整为${materialParts.join('，')}。`
+  }
+  
+  // 如果没有任何具体参数，给一个通用指令
+  if (fitParts.length === 0 && materialParts.length === 0) {
+    instruction += `\n请保持该商品的整体设计，仅进行细节优化。`
+  }
+  
+  return instruction
 }
 
 // 构建完整的修改 prompt - V2 新版
@@ -209,22 +231,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 验证 targets 格式 (V2)
-    const requiredParams = ['silhouette', 'fit_tightness', 'length', 'material_category', 'stiffness_drape', 'surface_texture', 'visual_luster']
+    // 验证 targets 基本格式（不强制要求所有参数）
     for (const target of targets) {
-      if (!target.category || !target.params) {
+      if (!target.category) {
         return NextResponse.json(
-          { success: false, error: '修改参数格式错误' },
+          { success: false, error: '缺少商品类别' },
           { status: 400 }
         )
       }
-      for (const param of requiredParams) {
-        if (!target.params[param]) {
-          return NextResponse.json(
-            { success: false, error: `缺少参数: ${param}` },
-            { status: 400 }
-          )
-        }
+      // params 可以为空或部分填写
+      if (!target.params) {
+        target.params = {}
       }
     }
 
