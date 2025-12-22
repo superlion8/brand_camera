@@ -150,3 +150,140 @@ export interface CameraState {
   setGeneratedImages: (images: string[]) => void
   reset: () => void
 }
+
+// ============================================
+// LifeStyle 模式相关类型
+// ============================================
+
+// 上装属性
+export interface UpperAttributes {
+  category: string
+  design_intent: string
+  fit: string
+  upper_length: string
+  neck_collar: string
+  sleeve: string
+  sleeve_cut: string
+  front: string
+  hem: string
+  material_family: string
+  texture: string
+  finish: string
+  pattern: string
+  color_family: string
+  color_depth: string
+  color_temp: string
+  signature_details: string[]
+  occlusion: string
+}
+
+// 下装属性
+export interface LowerAttributes {
+  category: string
+  design_intent: string
+  fit: string
+  lower_length: string
+  waist_rise: string
+  leg_or_skirt_shape: string
+  waistband: string
+  front_detail: string
+  pocket_style: string
+  hem_finish: string
+  material_family: string
+  texture: string
+  finish: string
+  pattern: string
+  color_family: string
+  color_depth: string
+  color_temp: string
+  signature_details: string[]
+  occlusion: string
+}
+
+// 连体装属性
+export interface OnepieceAttributes {
+  category: string
+  design_intent: string
+  fit: string
+  onepiece_length: string
+  neck_collar: string
+  sleeve: string
+  sleeve_cut: string
+  front: string
+  material_family: string
+  texture: string
+  finish: string
+  pattern: string
+  color_family: string
+  color_depth: string
+  color_temp: string
+  signature_details: string[]
+  occlusion: string
+}
+
+// 商品分析结果 (VLM 输出)
+export interface ProductTag {
+  product_id: string
+  outfit_type: 'two_piece' | 'one_piece'
+  upper: UpperAttributes | null
+  lower: LowerAttributes | null
+  onepiece: OnepieceAttributes | null
+}
+
+// 场景标签 (lifestyle_scene_tags 表)
+export interface LifestyleSceneTag {
+  scene_id: string
+  schema_version?: string
+  outfit_type: string
+  lower_category?: string
+  upper_category?: string
+  onepiece_category?: string
+  lower?: string
+  onepiece?: string
+  upper?: string
+  outfit_style_primary?: string
+  outfit_style_all?: string
+  choose_reason?: string
+}
+
+// 模特分析数据 (models_analysis 表)
+export interface ModelAnalysis {
+  model_id: string
+  model_gender?: string
+  model_ethnicity?: string
+  model_age_group?: string
+  model_primary_brand?: string
+  model_all_brand?: string[]
+  brand_fit_reason?: string
+  brand_confidence?: number
+  model_style_primary?: string
+  model_style_all?: string[]
+  style_fit_reason?: string
+  style_confidence?: number
+  height_range?: string
+  body_shape?: string
+  shoulder_type?: string
+  leg_ratio?: string
+  fit_preference?: string
+  hair_length?: string
+  hair_color?: string
+  makeup_intensity?: string
+  facial_hair?: string
+  expression_intensity?: string
+  pose_energy?: string
+  best_use_cases?: string[]
+  outfit_sweet_spots?: string[]
+  model_desc?: string
+}
+
+// AI 匹配结果
+export interface LifestyleMatchResult {
+  model_id_1: string
+  model_id_2: string
+  model_id_3: string
+  model_id_4: string
+  scene_id_1: string
+  scene_id_2: string
+  scene_id_3: string
+  scene_id_4: string
+}
