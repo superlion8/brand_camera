@@ -410,6 +410,7 @@ function LifestylePageContent() {
             <button onClick={() => router.push("/")} className="px-8 py-3 rounded-full bg-white/10 text-white text-sm">
               在后台继续，返回首页
             </button>
+            <BottomNav forceShow />
           </motion.div>
         )}
 
@@ -450,6 +451,7 @@ function LifestylePageContent() {
                 拍摄下一组
               </button>
             </div>
+            <BottomNav forceShow />
           </motion.div>
         )}
       </AnimatePresence>
@@ -506,7 +508,6 @@ function LifestylePageContent() {
         usedCount={quota?.usedCount || 0}
         totalQuota={quota?.totalQuota || 0}
       />
-      <BottomNav forceShow />
     </div>
   )
 }
