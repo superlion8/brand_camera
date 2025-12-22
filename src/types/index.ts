@@ -83,6 +83,7 @@ export interface GenerationParams {
   bgIsUserSelected?: boolean     // true = user selected, false = system random
   // Edit params
   customPrompt?: string
+  inputImageCount?: number         // 通用编辑输入图片数量
   // Group shoot params
   shootMode?: 'random' | 'multiangle'
   styleMode?: 'lifestyle' | 'studio'

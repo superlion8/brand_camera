@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react"
 import Image from "next/image"
-import { Wand2, X, Loader2, Home, ArrowLeft, Camera, FolderHeart, Upload, Images } from "lucide-react"
+import { Wand2, X, Loader2, Home, ArrowLeft, Camera, FolderHeart, Upload, Images, Plus, Trash2 } from "lucide-react"
 import { fileToBase64, compressBase64Image, fetchWithTimeout, generateId, ensureBase64 } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { useAssetStore } from "@/stores/assetStore"
@@ -30,7 +30,11 @@ export default function GeneralEditPage() {
   const t = useLanguageStore(state => state.t)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const webcamRef = useRef<Webcam>(null)
-  const [inputImage, setInputImage] = useState<string | null>(null)
+  
+  // Multi-image support: array of up to 5 images
+  const MAX_IMAGES = 5
+  const [inputImages, setInputImages] = useState<(string | null)[]>([])
+  const [activeImageSlot, setActiveImageSlot] = useState<number>(0) // Which slot is being filled
   
   // Ref to track generating state for async callbacks
   const [isGenerating, setIsGenerating] = useState(false)
@@ -52,7 +56,7 @@ export default function GeneralEditPage() {
   useEffect(() => {
     const editImage = sessionStorage.getItem('editImage')
     if (editImage) {
-      setInputImage(editImage)
+      setInputImages([editImage])
       sessionStorage.removeItem('editImage') // Clean up
     }
   }, [])
@@ -77,12 +81,21 @@ export default function GeneralEditPage() {
       
       const imageSrc = webcamRef.current.getScreenshot({ width: videoWidth, height: videoHeight })
       if (imageSrc) {
-        setInputImage(imageSrc)
+        // Add to current active slot or append if slot is full
+        setInputImages(prev => {
+          const newImages = [...prev]
+          if (activeImageSlot < prev.length) {
+            newImages[activeImageSlot] = imageSrc
+          } else if (prev.length < MAX_IMAGES) {
+            newImages.push(imageSrc)
+          }
+          return newImages
+        })
         setShowCamera(false)
         setResultImage(null)
       }
     }
-  }, [])
+  }, [activeImageSlot])
   
   const handleCameraError = useCallback(() => {
     setHasCamera(false)
@@ -95,17 +108,33 @@ export default function GeneralEditPage() {
   
   const handleSelectFromAsset = useCallback((imageUrl: string) => {
     // 直接使用 URL，后端会转换为 base64
-    setInputImage(imageUrl)
+    setInputImages(prev => {
+      const newImages = [...prev]
+      if (activeImageSlot < prev.length) {
+        newImages[activeImageSlot] = imageUrl
+      } else if (prev.length < MAX_IMAGES) {
+        newImages.push(imageUrl)
+      }
+      return newImages
+    })
     setShowProductPanel(false)
     setResultImage(null)
-  }, [])
+  }, [activeImageSlot])
   
   const handleSelectFromGallery = useCallback((imageUrl: string) => {
     // 直接使用 URL，后端会转换为 base64
-    setInputImage(imageUrl)
+    setInputImages(prev => {
+      const newImages = [...prev]
+      if (activeImageSlot < prev.length) {
+        newImages[activeImageSlot] = imageUrl
+      } else if (prev.length < MAX_IMAGES) {
+        newImages.push(imageUrl)
+      }
+      return newImages
+    })
     setShowGalleryPanel(false)
     setResultImage(null)
-  }, [])
+  }, [activeImageSlot])
   
   const videoConstraints = {
     width: { ideal: 1920 },
@@ -117,13 +146,35 @@ export default function GeneralEditPage() {
     const file = e.target.files?.[0]
     if (file) {
       const base64 = await fileToBase64(file)
-      setInputImage(base64)
+      setInputImages(prev => {
+        const newImages = [...prev]
+        if (activeImageSlot < prev.length) {
+          newImages[activeImageSlot] = base64
+        } else if (prev.length < MAX_IMAGES) {
+          newImages.push(base64)
+        }
+        return newImages
+      })
       setResultImage(null)
     }
+    // Reset file input
+    if (e.target) e.target.value = ''
+  }
+  
+  // Remove image from a specific slot
+  const handleRemoveImage = (index: number) => {
+    setInputImages(prev => prev.filter((_, i) => i !== index))
+    setResultImage(null)
+  }
+  
+  // Add image - open selection for new slot
+  const handleAddImage = () => {
+    setActiveImageSlot(inputImages.length)
   }
   
   const handleGenerate = async () => {
-    if (!inputImage || !customPrompt.trim()) return
+    const validImages = inputImages.filter((img): img is string => img !== null)
+    if (validImages.length === 0 || !customPrompt.trim()) return
     
     // Check quota before starting generation (1 image)
     const hasQuota = await checkQuota(1)
@@ -132,11 +183,11 @@ export default function GeneralEditPage() {
     }
     
     // Capture current state before async operations
-    const currentInputImage = inputImage
+    const currentInputImages = validImages
     const currentCustomPrompt = customPrompt
     
     // Create task (edit generates 1 image)
-    const taskId = addTask('edit', currentInputImage, { customPrompt: currentCustomPrompt }, 1)
+    const taskId = addTask('edit', currentInputImages[0], { customPrompt: currentCustomPrompt, inputImageCount: currentInputImages.length }, 1)
     setCurrentTaskId(taskId)
     updateTaskStatus(taskId, 'generating')
     setIsGenerating(true)
@@ -159,25 +210,22 @@ export default function GeneralEditPage() {
     }
     
     // Run generation in background
-    runEditGeneration(taskId, currentInputImage, currentCustomPrompt)
+    runEditGeneration(taskId, currentInputImages, currentCustomPrompt)
   }
   
   // Background edit generation - simplified for general edit
   const runEditGeneration = async (
     taskId: string,
-    inputImg: string,
+    inputImgs: string[],
     prompt: string
   ) => {
     try {
-      // 不压缩，直接使用原图
-      const compressedInput = inputImg
-      
-      console.log("Sending general edit request...")
+      console.log(`Sending general edit request with ${inputImgs.length} images...`)
       const response = await fetchWithTimeout("/api/edit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          inputImage: compressedInput,
+          inputImages: inputImgs, // 传递图片数组
           customPrompt: prompt,
           taskId, // 传递 taskId，让后端直接写入数据库
           // No model/background/vibe for general edit
@@ -196,12 +244,13 @@ export default function GeneralEditPage() {
         await addGeneration({
           id: taskId,
           type: "edit",
-          inputImageUrl: inputImg,
+          inputImageUrl: inputImgs[0], // 使用第一张作为预览
           outputImageUrls: [data.image],
           prompt: prompt,
           createdAt: new Date().toISOString(),
           params: {
             customPrompt: prompt,
+            inputImageCount: inputImgs.length,
           },
         }, skipCloudSync)
         
@@ -252,9 +301,10 @@ export default function GeneralEditPage() {
   // Navigation handlers during processing
   const handleNewEditDuringProcessing = () => {
     setIsGenerating(false)
-    setInputImage(null)
+    setInputImages([])
     setResultImage(null)
     setCustomPrompt("")
+    setActiveImageSlot(0)
   }
   
   const handleReturnHomeDuringProcessing = () => {
@@ -263,9 +313,10 @@ export default function GeneralEditPage() {
   }
   
   const handleReset = () => {
-    setInputImage(null)
+    setInputImages([])
     setResultImage(null)
     setCustomPrompt("")
+    setActiveImageSlot(0)
   }
   
   return (
@@ -289,11 +340,14 @@ export default function GeneralEditPage() {
       <div className="flex-1 overflow-y-auto pb-24">
         {/* Image Area */}
         <div className="bg-zinc-100 min-h-[280px] flex items-center justify-center relative p-4">
-          {!inputImage ? (
+          {inputImages.length === 0 ? (
             <div className="w-full max-w-sm space-y-2">
               {/* Camera */}
               <button
-                onClick={() => setShowCamera(true)}
+                onClick={() => {
+                  setActiveImageSlot(0)
+                  setShowCamera(true)
+                }}
                 className="w-full h-16 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white flex items-center justify-center gap-3 transition-colors shadow-lg shadow-purple-200"
               >
                 <Camera className="w-5 h-5" />
@@ -303,7 +357,10 @@ export default function GeneralEditPage() {
               <div className="grid grid-cols-3 gap-2">
                 {/* Album */}
                 <button
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => {
+                    setActiveImageSlot(0)
+                    fileInputRef.current?.click()
+                  }}
                   className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <Upload className="w-4 h-4 text-zinc-500" />
@@ -312,7 +369,10 @@ export default function GeneralEditPage() {
                 
                 {/* Asset library */}
                 <button
-                  onClick={() => setShowProductPanel(true)}
+                  onClick={() => {
+                    setActiveImageSlot(0)
+                    setShowProductPanel(true)
+                  }}
                   className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <FolderHeart className="w-4 h-4 text-zinc-500" />
@@ -321,7 +381,10 @@ export default function GeneralEditPage() {
                 
                 {/* Gallery */}
                 <button
-                  onClick={() => setShowGalleryPanel(true)}
+                  onClick={() => {
+                    setActiveImageSlot(0)
+                    setShowGalleryPanel(true)
+                  }}
                   className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <Images className="w-4 h-4 text-zinc-500" />
@@ -329,28 +392,114 @@ export default function GeneralEditPage() {
                 </button>
               </div>
             </div>
-          ) : (
+          ) : resultImage ? (
+            // Show result image when generation is complete
             <div className="relative w-full max-w-xs">
               <Image 
-                src={resultImage || inputImage} 
-                alt="Preview"
+                src={resultImage} 
+                alt="Result"
                 width={400}
                 height={500}
                 className="w-full rounded-xl shadow-lg"
               />
-              {resultImage && (
-                <span className="absolute top-2 left-2 px-2 py-1 bg-green-500 text-white text-xs rounded font-medium">{t.edit.generationResult}</span>
-              )}
-              {!resultImage && (
-                <span className="absolute top-2 left-2 px-2 py-1 bg-zinc-500 text-white text-xs rounded font-medium">原图</span>
-              )}
-              
+              <span className="absolute top-2 left-2 px-2 py-1 bg-green-500 text-white text-xs rounded font-medium">{t.edit.generationResult}</span>
               <button
                 onClick={handleReset}
                 className="absolute bottom-2 right-2 px-3 py-1.5 bg-white/90 hover:bg-white text-zinc-700 text-sm font-medium rounded-lg shadow transition-colors"
               >
                 重选
               </button>
+            </div>
+          ) : (
+            // Show multi-image grid with numbered labels
+            <div className="w-full max-w-md">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm text-zinc-600 font-medium">
+                  已选择 {inputImages.filter(Boolean).length} 张图片（最多 {MAX_IMAGES} 张）
+                </span>
+                <button
+                  onClick={handleReset}
+                  className="text-xs text-purple-600 hover:text-purple-700 font-medium"
+                >
+                  清空全部
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-3">
+                {/* Render existing images with labels */}
+                {inputImages.map((img, index) => img && (
+                  <div key={index} className="relative aspect-square group">
+                    <Image 
+                      src={img} 
+                      alt={`图${index + 1}`}
+                      fill
+                      className="object-cover rounded-xl shadow-md"
+                    />
+                    {/* Image number label - prominent for reference in prompts */}
+                    <div className="absolute top-1.5 left-1.5 w-6 h-6 bg-purple-600 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg">
+                      {index + 1}
+                    </div>
+                    <span className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 bg-black/70 text-white text-[10px] rounded font-medium backdrop-blur-sm">
+                      图{index + 1}
+                    </span>
+                    {/* Delete button */}
+                    <button
+                      onClick={() => handleRemoveImage(index)}
+                      className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+                
+                {/* Add more button - if less than MAX_IMAGES */}
+                {inputImages.filter(Boolean).length < MAX_IMAGES && (
+                  <div className="aspect-square">
+                    <div className="w-full h-full border-2 border-dashed border-zinc-300 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-purple-400 hover:bg-purple-50/50 transition-colors">
+                      <div className="flex gap-1.5">
+                        <button
+                          onClick={() => {
+                            setActiveImageSlot(inputImages.length)
+                            fileInputRef.current?.click()
+                          }}
+                          className="w-8 h-8 bg-zinc-100 hover:bg-zinc-200 rounded-full flex items-center justify-center transition-colors"
+                          title="从相册上传"
+                        >
+                          <Upload className="w-4 h-4 text-zinc-500" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setActiveImageSlot(inputImages.length)
+                            setShowCamera(true)
+                          }}
+                          className="w-8 h-8 bg-zinc-100 hover:bg-zinc-200 rounded-full flex items-center justify-center transition-colors"
+                          title="拍照"
+                        >
+                          <Camera className="w-4 h-4 text-zinc-500" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setActiveImageSlot(inputImages.length)
+                            setShowProductPanel(true)
+                          }}
+                          className="w-8 h-8 bg-zinc-100 hover:bg-zinc-200 rounded-full flex items-center justify-center transition-colors"
+                          title="从素材库选择"
+                        >
+                          <FolderHeart className="w-4 h-4 text-zinc-500" />
+                        </button>
+                      </div>
+                      <span className="text-[10px] text-zinc-400">添加图{inputImages.length + 1}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Hint about referencing images */}
+              <div className="mt-3 p-2.5 bg-purple-50 rounded-lg border border-purple-100">
+                <p className="text-xs text-purple-700">
+                  💡 在描述中使用"图1"、"图2"等来引用对应的图片
+                </p>
+              </div>
             </div>
           )}
           <input
@@ -387,9 +536,9 @@ export default function GeneralEditPage() {
                 triggerFlyToGallery(e)
                 handleGenerate()
               }}
-              disabled={!inputImage || !customPrompt.trim() || isGenerating}
+              disabled={inputImages.filter(Boolean).length === 0 || !customPrompt.trim() || isGenerating}
               className={`w-full h-14 rounded-full text-base font-semibold gap-2 flex items-center justify-center transition-all ${
-                !inputImage || !customPrompt.trim() || isGenerating
+                inputImages.filter(Boolean).length === 0 || !customPrompt.trim() || isGenerating
                   ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
                   : "bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white shadow-lg shadow-purple-200"
               }`}

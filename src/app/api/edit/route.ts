@@ -112,7 +112,8 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { 
-      inputImage, 
+      inputImage,  // 兼容旧版单图
+      inputImages, // 新版多图支持
       modelImage, 
       modelStyle, 
       modelGender, 
@@ -122,16 +123,32 @@ export async function POST(request: NextRequest) {
       taskId, // 任务 ID，用于数据库写入
     } = body
     
-    if (!inputImage) {
+    // 兼容处理：支持单图 inputImage 和多图 inputImages
+    const images: string[] = inputImages || (inputImage ? [inputImage] : [])
+    
+    if (images.length === 0) {
       return NextResponse.json({ success: false, error: '缺少输入图片' }, { status: 400 })
     }
     
     const client = getGenAIClient()
     
-    // Build prompt
+    // Build prompt with image reference support for multi-image
     let prompt = ''
+    const imageCount = images.length
+    
     if (customPrompt) {
-      prompt = EDIT_PROMPT_PREFIX + customPrompt
+      // 多图时添加引用说明前缀
+      if (imageCount > 1) {
+        const imageRefs = images.map((_, i) => `图${i + 1}`).join('、')
+        prompt = `${EDIT_PROMPT_PREFIX}
+
+以下是用户提供的 ${imageCount} 张图片，分别标记为：${imageRefs}。
+用户可以在指令中用"图1"、"图2"等来引用对应的图片。
+
+用户指令：${customPrompt}`
+      } else {
+        prompt = EDIT_PROMPT_PREFIX + customPrompt
+      }
     } else {
       prompt = buildEditPrompt({
         hasModel: !!modelImage,
@@ -158,14 +175,20 @@ export async function POST(request: NextRequest) {
     // Add prompt
     parts.push({ text: prompt })
     
-    // Add input image (convert URL to base64 if needed)
-    const inputData = await ensureBase64Data(inputImage)
-    parts.push({
-      inlineData: {
-        mimeType: 'image/jpeg',
-        data: inputData,
-      },
-    })
+    // Add all input images with labels (convert URL to base64 if needed)
+    for (let i = 0; i < images.length; i++) {
+      const inputData = await ensureBase64Data(images[i])
+      // Add image label for multi-image case
+      if (imageCount > 1) {
+        parts.push({ text: `\n[图${i + 1}]:` })
+      }
+      parts.push({
+        inlineData: {
+          mimeType: 'image/jpeg',
+          data: inputData,
+        },
+      })
+    }
     
     // Add background reference
     if (backgroundImage) {
@@ -189,7 +212,7 @@ export async function POST(request: NextRequest) {
       })
     }
     
-    console.log('[Edit] Generating edited image...')
+    console.log(`[Edit] Generating edited image with ${images.length} input image(s)...`)
     const result = await generateImageWithFallback(client, parts, 'Edit')
     const duration = Date.now() - startTime
     
@@ -237,6 +260,7 @@ export async function POST(request: NextRequest) {
             modelStyle,
             modelGender,
             customPrompt,
+            inputImageCount: images.length, // 记录输入图片数量
             hasModel: !!modelImage,
             hasBackground: !!backgroundImage,
             hasVibe: !!vibeImage,
@@ -244,7 +268,7 @@ export async function POST(request: NextRequest) {
         })
         
         if (saveResult.success) {
-          console.log(`[Edit] Saved to database, dbId: ${saveResult.dbId}`)
+          console.log(`[Edit] Saved to database, dbId: ${saveResult.dbId}, inputImages: ${images.length}`)
         } else {
           console.warn('[Edit] Failed to save to database')
         }
