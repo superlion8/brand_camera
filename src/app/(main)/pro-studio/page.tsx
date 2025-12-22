@@ -271,6 +271,7 @@ function ProStudioPageContent() {
   
   // Results state
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
+  const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null) // 数据库 UUID，用于收藏
   const [generatedImages, setGeneratedImages] = useState<string[]>([])
   const [generatedModes, setGeneratedModes] = useState<string[]>([])
   const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
@@ -619,6 +620,11 @@ function ProStudioPageContent() {
                   if (!firstImageReceived) {
                     firstImageReceived = true
                     setMode("results")
+                    // 设置 currentGenerationId 为数据库 UUID，用于收藏功能
+                    if (data.dbId) {
+                      setCurrentGenerationId(data.dbId)
+                      console.log(`[ProStudio] Set currentGenerationId to dbId: ${data.dbId}`)
+                    }
                     // 检查是否仍在pro-studio页面，避免用户离开后强制跳转
                     if (window.location.pathname === '/pro-studio') {
                       router.replace('/pro-studio?mode=results')

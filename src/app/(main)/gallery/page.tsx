@@ -148,7 +148,8 @@ export default function GalleryPage() {
       
       if (result.success) {
         if (append) {
-          const newItems = [...galleryItems, ...result.data.items]
+          // 使用 ref 获取最新的 galleryItems，避免 stale closure 问题
+          const newItems = [...galleryItemsRef.current, ...result.data.items]
           setGalleryItems(newItems)
           // 更新缓存
           setCache(cacheKey, {
