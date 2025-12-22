@@ -95,15 +95,26 @@ export default function GalleryPage() {
   
   // 标记从服务器获取的图片对应的 slots 为已处理
   // 这样可以防止 append useEffect 重复添加相同的图片
+  // 注意：不能用 imageUrl 匹配，因为 slot.imageUrl 可能是 blob URL，而 item.imageUrl 是存储 URL
+  // 应该用 task.dbId (数据库 UUID) 和 imageIndex 匹配
   const markServerItemsAsProcessed = (serverItems: any[]) => {
     serverItems.forEach(item => {
       tasksRef.current.forEach(task => {
+        // 方法1：使用 task.dbId（数据库 UUID）匹配 item.generationId
+        if (task.dbId && item.generationId && task.dbId === item.generationId) {
+          const slotKey = `${task.id}-${item.imageIndex}`
+          if (!processedSlotsRef.current.has(slotKey)) {
+            processedSlotsRef.current.add(slotKey)
+            console.log(`[Gallery] Marked as processed (dbId match): ${slotKey}`)
+          }
+        }
+        // 方法2：遍历 slots 检查每个 slot 的 dbId
         task.imageSlots?.forEach((slot, slotIndex) => {
-          if (slot.imageUrl === item.imageUrl) {
+          if (slot.dbId && item.generationId && slot.dbId === item.generationId && slotIndex === item.imageIndex) {
             const slotKey = `${task.id}-${slotIndex}`
             if (!processedSlotsRef.current.has(slotKey)) {
               processedSlotsRef.current.add(slotKey)
-              console.log(`[Gallery] Marked as processed (from server): ${slotKey}`)
+              console.log(`[Gallery] Marked as processed (slot.dbId match): ${slotKey}`)
             }
           }
         })

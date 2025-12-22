@@ -241,6 +241,9 @@ function OutfitPageContent() {
   const [customModels, setCustomModels] = useState<Asset[]>([])
   const [customBgs, setCustomBgs] = useState<Asset[]>([])
   
+  // 数据库 UUID，用于收藏功能
+  const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
+  
   // 加载预设资源
   useEffect(() => {
     presetStore.loadPresets()
@@ -1050,9 +1053,11 @@ function OutfitPageContent() {
                         })
                         successCount++
                         
-                        // 捕获第一个有效的 dbId
+                        // 捕获第一个有效的 dbId，设置 currentGenerationId 用于收藏功能
                         if (data.dbId && !firstDbId) {
                           firstDbId = data.dbId
+                          setCurrentGenerationId(data.dbId)
+                          console.log(`[Outfit-ProStudio] Set currentGenerationId to: ${data.dbId}`)
                         }
                         break
                         
