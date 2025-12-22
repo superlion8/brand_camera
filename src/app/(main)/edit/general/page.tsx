@@ -427,30 +427,34 @@ export default function GeneralEditPage() {
               
               <div className="grid grid-cols-3 gap-3">
                 {/* Render existing images with labels */}
-                {inputImages.map((img, index) => img && (
-                  <div key={index} className="relative aspect-square group">
-                    <Image 
-                      src={img} 
-                      alt={`图${index + 1}`}
-                      fill
-                      className="object-cover rounded-xl shadow-md"
-                    />
-                    {/* Image number label - prominent for reference in prompts */}
-                    <div className="absolute top-1.5 left-1.5 w-6 h-6 bg-purple-600 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg">
-                      {index + 1}
+                {inputImages.map((img, index) => {
+                  // 确保 img 是有效的字符串
+                  if (!img || typeof img !== 'string') return null
+                  return (
+                    <div key={index} className="relative aspect-square group">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img 
+                        src={img} 
+                        alt={`图${index + 1}`}
+                        className="absolute inset-0 w-full h-full object-cover rounded-xl shadow-md"
+                      />
+                      {/* Image number label - prominent for reference in prompts */}
+                      <div className="absolute top-1.5 left-1.5 w-6 h-6 bg-purple-600 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg">
+                        {index + 1}
+                      </div>
+                      <span className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 bg-black/70 text-white text-[10px] rounded font-medium backdrop-blur-sm">
+                        图{index + 1}
+                      </span>
+                      {/* Delete button */}
+                      <button
+                        onClick={() => handleRemoveImage(index)}
+                        className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
                     </div>
-                    <span className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 bg-black/70 text-white text-[10px] rounded font-medium backdrop-blur-sm">
-                      图{index + 1}
-                    </span>
-                    {/* Delete button */}
-                    <button
-                      onClick={() => handleRemoveImage(index)}
-                      className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
+                  )
+                })}
                 
                 {/* Add more button - if less than MAX_IMAGES */}
                 {inputImages.filter(Boolean).length < MAX_IMAGES && (
