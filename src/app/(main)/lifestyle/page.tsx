@@ -131,15 +131,20 @@ function LifestylePageContent() {
     setMode("processing")
     
     // Reserve quota
-    fetch('/api/quota/reserve', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        taskId,
-        imageCount: LIFESTYLE_NUM_IMAGES,
-        taskType: 'lifestyle',
-      }),
-    }).then(() => refreshQuota()).catch(e => console.warn('[Quota] Failed to reserve:', e))
+    try {
+      await fetch('/api/quota/reserve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskId,
+          imageCount: LIFESTYLE_NUM_IMAGES,
+          taskType: 'lifestyle',
+        }),
+      })
+      refreshQuota()
+    } catch (e) {
+      console.warn('[Quota] Failed to reserve:', e)
+    }
     
     await runLifestyleGeneration(taskId, capturedImage)
   }
