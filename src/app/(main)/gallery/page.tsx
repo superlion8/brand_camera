@@ -22,6 +22,7 @@ import {
   isCreateModelType as isCreateModelTypeRaw,
   isReferenceShotType as isReferenceShotTypeRaw
 } from "@/lib/taskTypes"
+import { useGalleryStore, getCacheKey } from "@/stores/galleryStore"
 
 type TabType = "all" | "model" | "product" | "group" | "reference" | "favorites"
 type ModelSubType = "all" | "buyer" | "prostudio" | "create_model" | "social"  // 买家秀 / 专业棚拍 / 创建专属模特 / 社媒种草
@@ -80,35 +81,27 @@ export default function GalleryPage() {
   const { debugMode } = useSettingsStore()
   const { t } = useTranslation()
   
-  // 内存缓存：存储每个 tab 的数据，避免重复从服务器获取
-  const galleryCacheRef = useRef<Record<string, {
-    items: any[]
-    hasMore: boolean
-    currentPage: number
-    pendingTasks: any[]
-  }>>({})
+  // 使用全局 galleryStore 缓存（支持预加载）
+  const { getCache, setCache, updateCacheItems } = useGalleryStore()
   
-  // 生成缓存 key
-  const getCacheKey = (tab: string, subType: string) => {
-    return tab === 'model' ? `${tab}_${subType}` : tab
-  }
-  
-  // 从 API 获取图库数据
+  // 从 API 获取图库数据（优先使用预加载的缓存）
   const fetchGalleryData = async (page: number = 1, append: boolean = false, forceRefresh: boolean = false) => {
     if (!user) return
     
     const cacheKey = getCacheKey(activeTab, modelSubType)
     
-    // 如果不是强制刷新且有缓存，直接使用缓存
-    if (!forceRefresh && !append && galleryCacheRef.current[cacheKey]) {
-      const cached = galleryCacheRef.current[cacheKey]
-      console.log(`[Gallery] Using cache for ${cacheKey}, ${cached.items.length} items`)
-      setGalleryItems(cached.items)
-      setHasMore(cached.hasMore)
-      setCurrentPage(cached.currentPage)
-      setPendingTasksFromDb(cached.pendingTasks)
-      setIsLoading(false)
-      return
+    // 如果不是强制刷新且有缓存（包括预加载的），直接使用缓存
+    if (!forceRefresh && !append) {
+      const cached = getCache(cacheKey)
+      if (cached) {
+        console.log(`[Gallery] Using cache for ${cacheKey}, ${cached.items.length} items`)
+        setGalleryItems(cached.items)
+        setHasMore(cached.hasMore)
+        setCurrentPage(cached.currentPage)
+        setPendingTasksFromDb(cached.pendingTasks)
+        setIsLoading(false)
+        return
+      }
     }
     
     try {
@@ -129,12 +122,13 @@ export default function GalleryPage() {
           const newItems = [...galleryItems, ...result.data.items]
           setGalleryItems(newItems)
           // 更新缓存
-          galleryCacheRef.current[cacheKey] = {
+          setCache(cacheKey, {
             items: newItems,
             hasMore: result.data.hasMore,
             currentPage: page,
             pendingTasks: pendingTasksFromDb,
-          }
+            fetchedAt: Date.now(),
+          })
         } else {
           setGalleryItems(result.data.items)
           // 第一页时更新 pending 任务
@@ -142,12 +136,13 @@ export default function GalleryPage() {
             setPendingTasksFromDb(result.data.pendingTasks)
           }
           // 更新缓存
-          galleryCacheRef.current[cacheKey] = {
+          setCache(cacheKey, {
             items: result.data.items,
             hasMore: result.data.hasMore,
             currentPage: page,
             pendingTasks: result.data.pendingTasks || [],
-          }
+            fetchedAt: Date.now(),
+          })
         }
         setHasMore(result.data.hasMore)
         setCurrentPage(page)
@@ -252,11 +247,9 @@ export default function GalleryPage() {
         console.log(`[Gallery] Appending completed image to local list: ${slotKey}`)
         setGalleryItems(prev => {
           const newItems = [newItem, ...prev]
-          // 同步更新缓存
+          // 同步更新全局缓存
           const cacheKey = getCacheKey(activeTab, modelSubType)
-          if (galleryCacheRef.current[cacheKey]) {
-            galleryCacheRef.current[cacheKey].items = newItems
-          }
+          updateCacheItems(cacheKey, newItems)
           return newItems
         })
         processedSlotsRef.current.add(slotKey)
@@ -657,11 +650,9 @@ export default function GalleryPage() {
       const newItems = prev.filter(item => 
         item.generationId !== generationId && item.generation?.dbId !== generationId
       )
-      // 同步更新缓存
+      // 同步更新全局缓存
       const cacheKey = getCacheKey(activeTab, modelSubType)
-      if (galleryCacheRef.current[cacheKey]) {
-        galleryCacheRef.current[cacheKey].items = newItems
-      }
+      updateCacheItems(cacheKey, newItems)
       return newItems
     })
     
@@ -684,11 +675,9 @@ export default function GalleryPage() {
       // 4. 失败时回滚：重新添加被删除的项目
       setGalleryItems(prev => {
         const newItems = [...removedItems, ...prev]
-        // 同步更新缓存
+        // 同步更新全局缓存
         const cacheKey = getCacheKey(activeTab, modelSubType)
-        if (galleryCacheRef.current[cacheKey]) {
-          galleryCacheRef.current[cacheKey].items = newItems
-        }
+        updateCacheItems(cacheKey, newItems)
         return newItems
       })
     }

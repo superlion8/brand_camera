@@ -1,6 +1,7 @@
 import { BottomNav } from "@/components/shared/BottomNav"
 import { VersionChecker } from "@/components/shared/VersionChecker"
 import { FlyToGallery } from "@/components/shared/FlyToGallery"
+import { GalleryPreloader } from "@/components/shared/GalleryPreloader"
 
 export default function MainLayout({
   children,
@@ -17,6 +18,8 @@ export default function MainLayout({
       <VersionChecker />
       {/* Fly to gallery animation */}
       <FlyToGallery />
+      {/* Silent preload gallery data */}
+      <GalleryPreloader />
     </div>
   )
 }
