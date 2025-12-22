@@ -11,7 +11,7 @@ interface GalleryCache {
 interface GalleryStoreState {
   cache: Record<string, GalleryCache>
   isPreloading: boolean
-  preloadedTabs: Set<string>
+  preloadedTabs: string[]
   
   // Actions
   setCache: (key: string, data: GalleryCache) => void
@@ -29,7 +29,7 @@ const CACHE_TTL = 5 * 60 * 1000
 export const useGalleryStore = create<GalleryStoreState>((set, get) => ({
   cache: {},
   isPreloading: false,
-  preloadedTabs: new Set(),
+  preloadedTabs: [],
   
   setCache: (key, data) => {
     set(state => ({
@@ -84,12 +84,14 @@ export const useGalleryStore = create<GalleryStoreState>((set, get) => ({
   
   markTabPreloaded: (key) => {
     set(state => ({
-      preloadedTabs: new Set([...state.preloadedTabs, key])
+      preloadedTabs: state.preloadedTabs.includes(key) 
+        ? state.preloadedTabs 
+        : [...state.preloadedTabs, key]
     }))
   },
   
   isTabPreloaded: (key) => {
-    return get().preloadedTabs.has(key)
+    return get().preloadedTabs.includes(key)
   },
 }))
 
