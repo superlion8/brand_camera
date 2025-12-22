@@ -166,9 +166,8 @@ export default function GalleryPage() {
   // 当 tab 切换、二级分类切换或用户登录时加载数据（优先使用缓存）
   useEffect(() => {
     if (user) {
-      // 切换 tab 时先显示 loading
-      setIsLoading(true)
-      // 使用缓存或从服务器获取
+      // 不在这里设置 loading，让 fetchGalleryData 自己管理
+      // 这样缓存命中时不会出现 loading 闪烁
       fetchGalleryData(1, false, false)
     }
   }, [activeTab, modelSubType, user])
