@@ -406,13 +406,30 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const {
-      productImage,
-      modelImage,      // 用户选择的模特图（可选）
-      backgroundImage, // 用户选择的背景图（可选）
+      productImage,      // 单商品模式
+      productImages,     // 多商品模式（数组格式）
+      outfitItems,       // 多商品模式（outfit 格式：{ top?, pants?, inner?, hat?, shoes? }）
+      modelImage,        // 用户选择的模特图（可选）
+      backgroundImage,   // 用户选择的背景图（可选）
       taskId,
     } = body
 
-    if (!productImage) {
+    // 支持两种模式：单商品 (productImage) 和多商品 (productImages/outfitItems)
+    // 获取主商品图片（用于 AI 分析）
+    const mainProductImage = productImage 
+      || (productImages && productImages[0]?.imageUrl)
+      || (outfitItems && Object.values(outfitItems)[0]?.imageUrl)
+    
+    // 获取所有商品图片 URL（用于保存记录）
+    const allProductImageUrls: string[] = productImage 
+      ? [productImage]
+      : productImages 
+        ? productImages.map((p: any) => typeof p === 'string' ? p : p.imageUrl).filter(Boolean)
+        : outfitItems 
+          ? Object.values(outfitItems).map((p: any) => p?.imageUrl).filter(Boolean)
+          : []
+
+    if (!mainProductImage) {
       return new Response(JSON.stringify({ success: false, error: '缺少商品图片' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
@@ -425,6 +442,15 @@ export async function POST(request: NextRequest) {
         headers: { 'Content-Type': 'application/json' },
       })
     }
+
+    console.log('[ProStudio] Request params:', {
+      hasProductImage: !!productImage,
+      hasProductImages: !!productImages,
+      hasOutfitItems: !!outfitItems,
+      mainProductImage: mainProductImage?.substring(0, 50) + '...',
+      allProductCount: allProductImageUrls.length,
+      taskId,
+    })
 
     const client = getGenAIClient()
     
@@ -439,7 +465,7 @@ export async function POST(request: NextRequest) {
         try {
           // 1. 处理商品图片
           sendEvent({ type: 'progress', step: 'product', message: '处理商品图片...' })
-          const productData = await imageToBase64(productImage)
+          const productData = await imageToBase64(mainProductImage)
           if (!productData) {
             sendEvent({ type: 'error', error: '商品图片处理失败' })
             controller.close()
@@ -607,6 +633,7 @@ export async function POST(request: NextRequest) {
                   genMode: 'simple',
                   taskType: 'pro_studio',
                   inputParams: config.index === 0 ? {
+                    productImages: allProductImageUrls,  // 记录所有商品图片 URL
                     modelUrl,
                     sceneUrl,
                     modelIsAI,
