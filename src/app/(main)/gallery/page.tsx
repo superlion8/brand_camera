@@ -176,6 +176,9 @@ export default function GalleryPage() {
   // 任务完成时，本地 append 到 galleryItems（不再定时刷新）
   // 使用 ref 追踪已处理的 slot，避免重复 append
   const processedSlotsRef = useRef<Set<string>>(new Set())
+  // 使用 ref 存储 galleryItems 的最新值，避免依赖循环
+  const galleryItemsRef = useRef<any[]>([])
+  galleryItemsRef.current = galleryItems
   
   useEffect(() => {
     // 定义 task.type 到 tab 的映射
@@ -196,6 +199,25 @@ export default function GalleryPage() {
       }
     }
     
+    // 判断当前 tab 是否应该显示该任务的图片
+    const shouldShowInCurrentTab = (taskMapping: { tabs: string[], subType: string | null }): boolean => {
+      // 1. 首先检查 tab 是否匹配
+      if (!taskMapping.tabs.includes(activeTab)) return false
+      
+      // 2. 如果当前是 "model" tab，需要检查 subType
+      if (activeTab === 'model') {
+        // 如果任务有指定的 subType，必须匹配
+        if (taskMapping.subType) {
+          return taskMapping.subType === modelSubType
+        }
+        // 如果任务没有指定 subType（如 group_shoot），则显示在所有 model 子分类中
+        return true
+      }
+      
+      // 3. 其他 tab（all, product, favorites）直接显示
+      return true
+    }
+    
     // 遍历所有任务，找到已完成但未 append 的 slot
     tasks.forEach(task => {
       if (!task.dbId || !task.imageSlots) return
@@ -208,14 +230,11 @@ export default function GalleryPage() {
         const slotKey = `${task.id}-${slotIndex}`
         if (processedSlotsRef.current.has(slotKey)) return
         
-        // 检查当前 tab 是否匹配
-        const tabMatches = taskMapping.tabs.includes(activeTab)
-        const subTypeMatches = !taskMapping.subType || taskMapping.subType === modelSubType || activeTab === 'all'
+        // 检查当前 tab 是否应该显示
+        if (!shouldShowInCurrentTab(taskMapping)) return
         
-        if (!tabMatches || !subTypeMatches) return
-        
-        // 检查是否已在 galleryItems 中（避免重复）
-        const alreadyInGallery = galleryItems.some(item => 
+        // 检查是否已在 galleryItems 中（避免重复）- 使用 ref 避免依赖循环
+        const alreadyInGallery = galleryItemsRef.current.some(item => 
           item.imageUrl === slot.imageUrl
         )
         if (alreadyInGallery) {
@@ -247,15 +266,25 @@ export default function GalleryPage() {
         console.log(`[Gallery] Appending completed image to local list: ${slotKey}`)
         setGalleryItems(prev => {
           const newItems = [newItem, ...prev]
-          // 同步更新全局缓存
-          const cacheKey = getCacheKey(activeTab, modelSubType)
-          updateCacheItems(cacheKey, newItems)
+          // 同步更新所有相关 tab 的缓存（Bug 3 修复）
+          taskMapping.tabs.forEach(tab => {
+            if (tab === 'model' && taskMapping.subType) {
+              // model tab 需要带上 subType
+              updateCacheItems(getCacheKey(tab, taskMapping.subType), newItems)
+            } else if (tab === 'model') {
+              // 没有 subType 的 model 项目，更新所有 model 子分类
+              updateCacheItems(getCacheKey(tab, 'buyer'), newItems)
+              updateCacheItems(getCacheKey(tab, 'prostudio'), newItems)
+            } else {
+              updateCacheItems(getCacheKey(tab, ''), newItems)
+            }
+          })
           return newItems
         })
         processedSlotsRef.current.add(slotKey)
       })
     })
-  }, [tasks, activeTab, modelSubType, galleryItems])
+  }, [tasks, activeTab, modelSubType, updateCacheItems]) // 移除 galleryItems 依赖，使用 ref 代替
   
   // Helper to get display label for generation type
   // debugMode controls whether to show sub-labels (极简/扩展)
@@ -641,6 +670,27 @@ export default function GalleryPage() {
     
     const deletedItem = selectedItem
     const generationId = deletedItem.gen.dbId || deletedItem.gen.id
+    const itemType = deletedItem.gen.type
+    
+    // 根据 item type 确定需要更新的缓存
+    const getAffectedCacheKeys = (type: string): string[] => {
+      switch (type) {
+        case 'camera':
+        case 'social':
+          return ['all', 'model_buyer']
+        case 'pro_studio':
+          return ['all', 'model_prostudio']
+        case 'studio':
+          return ['all', 'product']
+        case 'group_shoot':
+        case 'reference_shot':
+          return ['all', 'model_buyer', 'model_prostudio'] // 显示在所有 model 子分类
+        default:
+          return ['all']
+      }
+    }
+    
+    const affectedCacheKeys = getAffectedCacheKeys(itemType)
     
     // 1. 乐观更新：立即从本地列表移除该 generation 的所有图片
     const removedItems = galleryItems.filter(item => 
@@ -650,9 +700,10 @@ export default function GalleryPage() {
       const newItems = prev.filter(item => 
         item.generationId !== generationId && item.generation?.dbId !== generationId
       )
-      // 同步更新全局缓存
-      const cacheKey = getCacheKey(activeTab, modelSubType)
-      updateCacheItems(cacheKey, newItems)
+      // 同步更新所有相关 tab 的缓存
+      affectedCacheKeys.forEach(cacheKey => {
+        updateCacheItems(cacheKey, newItems)
+      })
       return newItems
     })
     
@@ -675,9 +726,10 @@ export default function GalleryPage() {
       // 4. 失败时回滚：重新添加被删除的项目
       setGalleryItems(prev => {
         const newItems = [...removedItems, ...prev]
-        // 同步更新全局缓存
-        const cacheKey = getCacheKey(activeTab, modelSubType)
-        updateCacheItems(cacheKey, newItems)
+        // 同步更新所有相关 tab 的缓存
+        affectedCacheKeys.forEach(cacheKey => {
+          updateCacheItems(cacheKey, newItems)
+        })
         return newItems
       })
     }
