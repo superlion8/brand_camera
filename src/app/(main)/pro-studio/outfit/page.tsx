@@ -1104,6 +1104,10 @@ function OutfitPageContent() {
               } catch (e) {
                 console.warn('[Outfit] Failed to refund quota:', e)
               }
+            } else if (!firstDbId) {
+              // 有成功的图片但没有收到 dbId（后端保存都失败），使用 taskId 作为 fallback
+              setCurrentGenerationId(taskId)
+              console.log(`[Outfit-ProStudio] No dbId received, using taskId as fallback: ${taskId}`)
             }
             
           } catch (e: any) {
