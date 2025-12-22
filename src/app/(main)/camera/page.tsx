@@ -684,6 +684,7 @@ function CameraPageContent() {
                   imageUrl: imageUrl,
                   modelType: result.modelType,
                   genMode: genMode,
+                  dbId: result.dbId, // 存储数据库 UUID
                 })
                 
                 // 第一张图片完成时，立即切换到 results 模式
@@ -691,6 +692,11 @@ function CameraPageContent() {
                 if (modeRef.current === "processing") {
                   console.log(`[Camera] First image ready, switching to results mode`)
                   setMode("results")
+                  // 设置 currentGenerationId 为数据库 UUID，用于收藏
+                  if (result.dbId) {
+                    setCurrentGenerationId(result.dbId)
+                    console.log(`[Camera] Set currentGenerationId to dbId: ${result.dbId}`)
+                  }
                 }
                 
                 resolve({ 
@@ -702,6 +708,7 @@ function CameraPageContent() {
                   prompt: result.prompt,
                   duration: result.duration,
                   savedToDb: result.savedToDb, // 后端是否已写入数据库
+                  dbId: result.dbId, // 数据库 UUID
                 })
               } else {
                 const errorMsg = result.error || '生成失败'
@@ -877,7 +884,8 @@ function CameraPageContent() {
           setGeneratedModelTypes(data.modelTypes || [])
           setGeneratedGenModes(data.genModes || [])
           setGeneratedPrompts(data.prompts || [])
-          setCurrentGenerationId(id)
+          // currentGenerationId 已在第一张图片返回时设置为 dbId
+          // 无需再设置为前端临时 taskId
           setMode("results")
           // 更新 URL 为 results 模式（检查是否仍在camera页面）
           if (window.location.pathname === '/camera') {

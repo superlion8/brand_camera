@@ -373,6 +373,7 @@ export default function StudioPage() {
       const modelTypes: (('pro' | 'flash') | null)[] = [null, null]
       let usedPrompt: string = ''
       let allSavedToDb = true // 检查是否所有成功的图片都已被后端保存
+      let firstDbId: string | null = null // 第一个成功的数据库 UUID
       
       for (let i = 0; i < responses.length; i++) {
         const response = responses[i]
@@ -397,7 +398,11 @@ export default function StudioPage() {
               if (!result.savedToDb) {
                 allSavedToDb = false
               }
-              console.log(`Studio ${result.index + 1}: ✓ (${result.modelType}, ${result.duration}ms, savedToDb: ${result.savedToDb})`)
+              // 第一张成功的图片，设置 currentGenerationId 为数据库 UUID
+              if (result.dbId && !firstDbId) {
+                firstDbId = result.dbId
+              }
+              console.log(`Studio ${result.index + 1}: ✓ (${result.modelType}, ${result.duration}ms, savedToDb: ${result.savedToDb}, dbId: ${result.dbId})`)
             } else {
               console.log(`Studio ${i + 1}: ✗ (${result.error || 'No image'})`)
             }
@@ -436,8 +441,11 @@ export default function StudioPage() {
         // Update task with results
         updateTaskStatus(taskId, 'completed', finalImages)
         
-        const id = taskId
-        setCurrentGenerationId(id)
+        // 使用数据库 UUID 作为 currentGenerationId（用于收藏功能）
+        // 如果没有 dbId（后端保存失败），则使用临时 taskId
+        const generationId = firstDbId || taskId
+        setCurrentGenerationId(generationId)
+        console.log(`[Studio] Set currentGenerationId to: ${generationId} (dbId: ${firstDbId})`)
         
         await addGeneration({
           id,

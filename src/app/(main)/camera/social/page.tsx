@@ -463,11 +463,18 @@ function SocialPageContent() {
                   console.log(`[Social] G${data.groupIndex} Outfit instructions ready`)
                 } else if (data.type === 'image') {
                   const globalIdx = data.globalIndex
-                  console.log(`[Social] G${data.groupIndex} Image ${data.localIndex + 1}: ✓ (global: ${globalIdx})`)
+                  console.log(`[Social] G${data.groupIndex} Image ${data.localIndex + 1}: ✓ (global: ${globalIdx}, dbId: ${data.dbId})`)
                   
                   allImages[globalIdx] = data.image
                   allModelTypes[globalIdx] = 'pro' // 新工作流固定使用 pro 模型
                   successCount++
+                  
+                  // 第一张图片返回 dbId 时，设置 currentGenerationId 为数据库 UUID
+                  // 这样收藏时使用的是正确的数据库 ID，而不是前端临时 taskId
+                  if (data.dbId && successCount === 1) {
+                    setCurrentGenerationId(data.dbId)
+                    console.log(`[Social] Set currentGenerationId to dbId: ${data.dbId}`)
+                  }
                   
                   updateImageSlot(taskId, globalIdx, {
                     status: 'completed',
@@ -561,7 +568,8 @@ function SocialPageContent() {
         if (modeRef.current === "processing") {
           setGeneratedImages(allImages.filter(Boolean) as string[])
           setGeneratedModelTypes(savedModelTypes)
-          setCurrentGenerationId(id)
+          // currentGenerationId 已在第一张图片返回时设置为 dbId
+          // 无需再设置为前端临时 taskId
           setMode("results")
           // 检查是否仍在social页面，避免用户离开后强制跳转
           if (window.location.pathname === '/camera/social') {

@@ -580,7 +580,7 @@ export async function POST(request: NextRequest) {
       productImages: productImageUrls, // 添加所有商品图 URL
     } : inputParams
     
-    const dbSuccess = await appendImageToGeneration({
+    const saveResult = await appendImageToGeneration({
       taskId,
       userId,
       imageIndex: index || 0,
@@ -593,8 +593,8 @@ export async function POST(request: NextRequest) {
       inputImageUrl, // 传递商品图 URL
     })
     
-    if (dbSuccess) {
-      console.log(`[${label}] Saved to database`)
+    if (saveResult.success) {
+      console.log(`[${label}] Saved to database, dbId: ${saveResult.dbId}`)
     } else {
       console.warn(`[${label}] Failed to save to database, but image is uploaded`)
     }
@@ -612,6 +612,7 @@ export async function POST(request: NextRequest) {
       prompt: usedPrompt,
       duration: totalDuration,
       savedToDb: !!taskId, // 告诉前端是否已保存到数据库
+      ...(saveResult.dbId ? { dbId: saveResult.dbId } : {}), // 返回数据库 UUID 用于收藏
     })
     
   } catch (error: any) {
