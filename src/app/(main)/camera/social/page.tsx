@@ -429,6 +429,7 @@ function SocialPageContent() {
       const allImages: (string | null)[] = Array(SOCIAL_NUM_IMAGES).fill(null)
       const allModelTypes: (('pro' | 'flash') | null)[] = Array(SOCIAL_NUM_IMAGES).fill(null)
       let successCount = 0
+      let firstDbId: string | null = null // 跟踪第一个有效的 dbId
       
       if (reader) {
         let buffer = ''
@@ -469,9 +470,10 @@ function SocialPageContent() {
                   allModelTypes[globalIdx] = 'pro' // 新工作流固定使用 pro 模型
                   successCount++
                   
-                  // 第一张图片返回 dbId 时，设置 currentGenerationId 为数据库 UUID
-                  // 这样收藏时使用的是正确的数据库 ID，而不是前端临时 taskId
-                  if (data.dbId && successCount === 1) {
+                  // 捕获第一个有效的 dbId，用于收藏功能
+                  // 使用 !firstDbId 而不是 successCount === 1，以处理图片乱序返回或第一张没有 dbId 的情况
+                  if (data.dbId && !firstDbId) {
+                    firstDbId = data.dbId
                     setCurrentGenerationId(data.dbId)
                     console.log(`[Social] Set currentGenerationId to dbId: ${data.dbId}`)
                   }
@@ -568,8 +570,11 @@ function SocialPageContent() {
         if (modeRef.current === "processing") {
           setGeneratedImages(allImages.filter(Boolean) as string[])
           setGeneratedModelTypes(savedModelTypes)
-          // currentGenerationId 已在第一张图片返回时设置为 dbId
-          // 无需再设置为前端临时 taskId
+          // 如果没有任何图片返回 dbId（后端保存都失败），使用 taskId 作为 fallback
+          if (!firstDbId) {
+            setCurrentGenerationId(taskId)
+            console.log(`[Social] No dbId received, using taskId as fallback: ${taskId}`)
+          }
           setMode("results")
           // 检查是否仍在social页面，避免用户离开后强制跳转
           if (window.location.pathname === '/camera/social') {

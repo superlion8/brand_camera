@@ -694,10 +694,10 @@ function CameraPageContent() {
                   console.log(`[Camera] First image ready, switching to results mode`)
                   setMode("results")
                   // 设置 currentGenerationId 为数据库 UUID，用于收藏
-                  if (result.dbId) {
-                    setCurrentGenerationId(result.dbId)
-                    console.log(`[Camera] Set currentGenerationId to dbId: ${result.dbId}`)
-                  }
+                  // 如果没有 dbId（后端保存失败），则使用临时 taskId 作为 fallback
+                  const generationId = result.dbId || taskId
+                  setCurrentGenerationId(generationId)
+                  console.log(`[Camera] Set currentGenerationId to: ${generationId} (dbId: ${result.dbId})`)
                 }
                 
                 resolve({ 
