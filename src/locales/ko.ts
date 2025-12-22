@@ -79,6 +79,8 @@ export const ko: Translations = {
     socialModeSubtitle: "인스타그램 스타일",
     proStudio: "모델 스튜디오",
     proStudioSubtitle: "단색 배경 질감",
+    lifestyleMode: "라이프스타일 촬영",
+    lifestyleModeSubtitle: "AI 모델 & 거리 매칭",
     customShot: "커스텀 촬영",
     groupShoot: "그룹 촬영",
     groupShootSubtitle: "다각도 세트",
