@@ -10,7 +10,7 @@ export const maxDuration = 300 // 5 minutes
 
 // Model names
 const VLM_MODEL = 'gemini-3-flash-preview'
-const PRIMARY_IMAGE_MODEL = 'gemini-3-pro-preview-image'
+const PRIMARY_IMAGE_MODEL = 'gemini-3-pro-image-preview'
 const FALLBACK_IMAGE_MODEL = 'gemini-2.5-flash-image'
 
 // Storage base URLs
@@ -516,7 +516,7 @@ export async function POST(request: NextRequest) {
         }
         
         // Generate images in parallel
-        const generatePromises = Array.from({ length: NUM_IMAGES }, async (_, i) => {
+        const generatePromises = Array.from({ length: NUM_IMAGES }, (_, i) => i).map(async (i) => {
           send({ type: 'progress', index: i })
           
           const modelImageData = modelImages[i]

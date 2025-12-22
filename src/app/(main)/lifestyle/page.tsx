@@ -52,6 +52,7 @@ function LifestylePageContent() {
   const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
   const [generatedImages, setGeneratedImages] = useState<string[]>([])
   const [generatedModelTypes, setGeneratedModelTypes] = useState<string[]>([])
+  const [generatedGenModes, setGeneratedGenModes] = useState<('simple' | 'extended')[]>([])
   const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
 
@@ -103,6 +104,7 @@ function LifestylePageContent() {
     setProductFromPhone(false)
     setGeneratedImages([])
     setGeneratedModelTypes([])
+    setGeneratedGenModes([])
     setSelectedResultIndex(null)
     setMode("camera")
   }
@@ -139,7 +141,7 @@ function LifestylePageContent() {
       }),
     }).then(() => refreshQuota()).catch(e => console.warn('[Quota] Failed to reserve:', e))
     
-    runLifestyleGeneration(taskId, capturedImage)
+    await runLifestyleGeneration(taskId, capturedImage)
   }
 
   const runLifestyleGeneration = async (taskId: string, productImage: string) => {
@@ -221,6 +223,11 @@ function LifestylePageContent() {
                   newTypes[event.index] = event.modelType
                   return newTypes
                 })
+                setGeneratedGenModes(prev => {
+                  const newModes = [...prev]
+                  newModes[event.index] = 'simple'
+                  return newModes
+                })
                 
                 if (mode === 'processing') {
                   setMode('results')
@@ -254,6 +261,7 @@ function LifestylePageContent() {
                       inputImageUrl: productImage,
                       outputImageUrls: outputUrls,
                       outputModelTypes: completedTask.imageSlots.map(s => s.modelType || 'pro'),
+                      outputGenModes: completedTask.imageSlots.map(s => s.genMode || 'simple'),
                       createdAt: new Date().toISOString(),
                       params: { type: 'lifestyle' },
                     })
