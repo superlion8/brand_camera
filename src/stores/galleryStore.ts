@@ -61,7 +61,8 @@ export const useGalleryStore = create<GalleryStoreState>((set, get) => ({
       return {
         cache: {
           ...state.cache,
-          [key]: { ...existing, items }
+          // 更新 items 时同时更新 fetchedAt，避免缓存过早过期
+          [key]: { ...existing, items, fetchedAt: Date.now() }
         }
       }
     })
