@@ -25,6 +25,7 @@ export type GenerationType =
   | 'create_model'  // 创建专属模特
   | 'reference_shot'  // 参考图拍摄
   | 'social'  // 社媒种草
+  | 'lifestyle'  // LifeStyle 街拍
 
 export interface Asset {
   id: string
