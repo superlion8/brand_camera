@@ -1472,7 +1472,7 @@ export default function GalleryPage() {
                           const perImageModel = selectedItem.gen.params?.perImageModels?.[selectedItem.index] 
                             || selectedItem.gen.params?.perImageModels?.[0]
                           // Pro Studio 使用 modelUrl，其他模式使用 modelImage
-                          const modelUrl = perImageModel?.imageUrl || selectedItem.gen.params?.modelImage || selectedItem.gen.params?.modelUrl || selectedItem.gen.modelImageUrl
+                          const modelUrl = perImageModel?.imageUrl || selectedItem.gen.params?.modelImage || (selectedItem.gen.params as any)?.modelUrl || selectedItem.gen.modelImageUrl
                           const rawModelName = perImageModel?.name || selectedItem.gen.params?.model
                           // Pro Studio 使用 modelIsAI 表示 AI 选择的模特
                           const modelIsRandom = perImageModel?.isRandom === true || (selectedItem.gen.params as any)?.modelIsRandom === true || (selectedItem.gen.params as any)?.modelIsAI === true || rawModelName?.includes('(随机)') || rawModelName?.includes('随机')
@@ -1538,7 +1538,7 @@ export default function GalleryPage() {
                           const perImageBg = selectedItem.gen.params?.perImageBackgrounds?.[selectedItem.index]
                             || selectedItem.gen.params?.perImageBackgrounds?.[0]
                           // Pro Studio 使用 sceneUrl，其他模式使用 backgroundImage
-                          const bgUrl = perImageBg?.imageUrl || selectedItem.gen.params?.backgroundImage || selectedItem.gen.params?.sceneUrl || selectedItem.gen.backgroundImageUrl
+                          const bgUrl = perImageBg?.imageUrl || selectedItem.gen.params?.backgroundImage || (selectedItem.gen.params as any)?.sceneUrl || selectedItem.gen.backgroundImageUrl
                           const rawBgName = perImageBg?.name || selectedItem.gen.params?.background
                           // Pro Studio 使用 sceneIsAI 表示 AI 选择的背景
                           const bgIsRandom = perImageBg?.isRandom === true || (selectedItem.gen.params as any)?.bgIsRandom === true || (selectedItem.gen.params as any)?.sceneIsAI === true || rawBgName?.includes('(随机)') || rawBgName?.includes('随机')
