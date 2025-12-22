@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/components/providers/AuthProvider'
 import { useGalleryStore, getCacheKey } from '@/stores/galleryStore'
 
 // 预加载的 tab 配置
