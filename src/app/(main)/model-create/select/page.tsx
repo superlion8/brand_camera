@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
-import { ArrowLeft, Check, ChevronRight, Loader2, Sparkles, RefreshCw, AlertCircle } from "lucide-react"
+import { ArrowLeft, Check, ChevronRight, Loader2, Sparkles, RefreshCw, AlertCircle, ZoomIn, X } from "lucide-react"
 import { useModelCreateStore, RecommendedModel } from "@/stores/modelCreateStore"
 import { compressBase64Image } from "@/lib/utils"
 import { useTranslation } from "@/stores/languageStore"
@@ -12,6 +12,7 @@ import { useTranslation } from "@/stores/languageStore"
 export default function ModelCreateSelect() {
   const router = useRouter()
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({})
+  const [zoomImageUrl, setZoomImageUrl] = useState<string | null>(null) // 放大查看的图片 URL
   
   const {
     productImages,
@@ -243,38 +244,53 @@ export default function ModelCreateSelect() {
             {recommendedModels.map((model, index) => {
               const isSelected = selectedModels.some(m => m.model_id === model.model_id)
               return (
-                <motion.button
+                <motion.div
                   key={model.model_id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  onClick={() => toggleModelSelection(model)}
-                  disabled={!isSelected && selectedModels.length >= 4}
-                  className={`relative aspect-[3/4] rounded-xl overflow-hidden group transition-all ${
-                    isSelected
-                      ? 'ring-3 ring-violet-600 ring-offset-2'
-                      : 'hover:ring-2 hover:ring-violet-200 disabled:opacity-50'
-                  }`}
+                  className="relative"
                 >
-                  <Image
-                    src={model.imageUrl}
-                    alt={model.model_id}
-                    fill
-                    className="object-cover"
-                    onError={() => handleImageError(model.model_id, model.imageUrl)}
-                  />
+                  <button
+                    onClick={() => toggleModelSelection(model)}
+                    disabled={!isSelected && selectedModels.length >= 4}
+                    className={`relative aspect-[3/4] w-full rounded-xl overflow-hidden group transition-all ${
+                      isSelected
+                        ? 'ring-3 ring-violet-600 ring-offset-2'
+                        : 'hover:ring-2 hover:ring-violet-200 disabled:opacity-50'
+                    }`}
+                  >
+                    <Image
+                      src={model.imageUrl}
+                      alt={model.model_id}
+                      fill
+                      className="object-cover"
+                      onError={() => handleImageError(model.model_id, model.imageUrl)}
+                    />
+                    
+                    {/* Selection Indicator */}
+                    {isSelected && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="absolute top-2 right-2 w-7 h-7 bg-violet-600 rounded-full flex items-center justify-center shadow-lg"
+                      >
+                        <Check className="w-4 h-4 text-white" />
+                      </motion.div>
+                    )}
+                  </button>
                   
-                  {/* Selection Indicator */}
-                  {isSelected && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute top-2 right-2 w-7 h-7 bg-violet-600 rounded-full flex items-center justify-center shadow-lg"
-                    >
-                      <Check className="w-4 h-4 text-white" />
-                    </motion.div>
-                  )}
-                </motion.button>
+                  {/* 放大按钮 */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setZoomImageUrl(model.imageUrl)
+                    }}
+                    className="absolute bottom-2 right-2 w-8 h-8 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-black/70 transition-colors z-10"
+                  >
+                    <ZoomIn className="w-4 h-4 text-white" />
+                  </button>
+                </motion.div>
               )
             })}
           </AnimatePresence>
@@ -296,6 +312,43 @@ export default function ModelCreateSelect() {
           <ChevronRight className="w-5 h-5" />
         </button>
       </div>
+      
+      {/* 图片放大查看 Modal */}
+      <AnimatePresence>
+        {zoomImageUrl && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+            onClick={() => setZoomImageUrl(null)}
+          >
+            {/* 关闭按钮 */}
+            <button
+              onClick={() => setZoomImageUrl(null)}
+              className="absolute top-4 right-4 w-10 h-10 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/20 transition-colors z-10"
+            >
+              <X className="w-6 h-6 text-white" />
+            </button>
+            
+            {/* 图片 */}
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              className="relative w-full h-full max-w-lg max-h-[80vh] m-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Image
+                src={zoomImageUrl}
+                alt="Zoomed model"
+                fill
+                className="object-contain"
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
