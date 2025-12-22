@@ -448,7 +448,7 @@ export default function StudioPage() {
         console.log(`[Studio] Set currentGenerationId to: ${generationId} (dbId: ${firstDbId})`)
         
         await addGeneration({
-          id,
+          id: taskId,
           type: "studio",
           inputImageUrl: inputImage,
           outputImageUrls: finalImages,
