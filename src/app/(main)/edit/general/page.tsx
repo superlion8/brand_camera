@@ -65,7 +65,7 @@ export default function GeneralEditPage() {
   const [customPrompt, setCustomPrompt] = useState("")
   const [resultImage, setResultImage] = useState<string | null>(null)
   
-  const { addGeneration, userProducts, generations } = useAssetStore()
+  const { addGeneration, userProducts, generations, isInitialLoading: isAssetLoading } = useAssetStore()
   const { addTask, updateTaskStatus } = useGenerationTaskStore()
   
   // Quota management
@@ -824,16 +824,16 @@ export default function GeneralEditPage() {
               
               <div className="flex-1 overflow-y-auto bg-zinc-50 p-4 relative">
                 {/* Loading overlay */}
-                {isLoadingAsset && (
+                {(isLoadingAsset || isAssetLoading) && (
                   <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
                     <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
                   </div>
                 )}
-                {generations.length > 0 ? (
+                {!isAssetLoading && generations.length > 0 ? (
                   <div className="grid grid-cols-3 gap-3">
                     {generations
                       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                      .flatMap(gen => gen.outputImageUrls.map((url, idx) => ({ url, gen, idx })))
+                      .flatMap(gen => gen.outputImageUrls?.map((url, idx) => ({ url, gen, idx })) || [])
                       .map((item, index) => (
                         <button
                           key={`${item.gen.id}-${item.idx}`}
@@ -847,16 +847,16 @@ export default function GeneralEditPage() {
                             item.gen.type === 'edit' ? 'bg-purple-500' : 'bg-blue-500'
                           }`}>
                             {item.gen.type === 'studio' ? '影棚' :
-                             item.gen.type === 'edit' ? t.nav.edit : t.common.model}
+                             item.gen.type === 'edit' ? t.nav?.edit : t.common?.model}
                           </span>
                         </button>
                       ))}
                   </div>
-                ) : (
+                ) : !isAssetLoading ? (
                   <div className="flex flex-col items-center justify-center h-full text-zinc-400">
                     <Images className="w-12 h-12 mb-3 opacity-30" />
-                    <p className="text-sm">{t.edit.noGallery}</p>
-                    <p className="text-xs mt-1">{t.studio.goShootToGenerate}</p>
+                    <p className="text-sm">{t.edit?.noGallery || '暂无生成记录'}</p>
+                    <p className="text-xs mt-1">{t.studio?.goShootToGenerate || '去拍摄生成图片'}</p>
                     <button
                       onClick={() => {
                         setShowGalleryPanel(false)
@@ -864,10 +864,10 @@ export default function GeneralEditPage() {
                       }}
                       className="mt-4 px-4 py-2 bg-purple-500 text-white text-sm rounded-lg hover:bg-purple-600"
                     >
-                      {t.edit.goShoot}
+                      {t.edit?.goShoot || '去拍摄'}
                     </button>
                   </div>
-                )}
+                ) : null}
               </div>
             </motion.div>
           </>
