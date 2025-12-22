@@ -523,6 +523,10 @@ function CameraPageContent() {
       
       const staggerDelay = 1000 // 1 second between each request
       
+      // 使用同步标志防止多张图片同时完成时重复设置 currentGenerationId
+      // modeRef.current 通过 useEffect 异步更新，不能可靠地防止并发
+      let firstImageReceived = false
+      
       // Track per-image model/background for saving later
       const perImageModels: { name: string; imageUrl: string; isRandom: boolean; isPreset: boolean }[] = Array(NUM_IMAGES).fill(null)
       const perImageBackgrounds: { name: string; imageUrl: string; isRandom: boolean; isPreset: boolean }[] = Array(NUM_IMAGES).fill(null)
@@ -541,6 +545,7 @@ function CameraPageContent() {
         duration?: number
         error?: string
         savedToDb?: boolean // 后端是否已写入数据库
+        dbId?: string // 数据库 UUID，用于收藏功能
       }
       
       // Helper to create a delayed request for model images
@@ -684,13 +689,20 @@ function CameraPageContent() {
                   imageUrl: imageUrl,
                   modelType: result.modelType,
                   genMode: genMode,
+                  dbId: result.dbId, // 存储数据库 UUID
                 })
                 
                 // 第一张图片完成时，立即切换到 results 模式
-                // 用户可以边看结果边等待其他图片
-                if (modeRef.current === "processing") {
+                // 使用 firstImageReceived 同步标志（而非 modeRef）防止并发图片重复触发
+                if (!firstImageReceived && modeRef.current === "processing") {
+                  firstImageReceived = true
                   console.log(`[Camera] First image ready, switching to results mode`)
                   setMode("results")
+                  // 设置 currentGenerationId 为数据库 UUID，用于收藏
+                  // 如果没有 dbId（后端保存失败），则使用临时 taskId 作为 fallback
+                  const generationId = result.dbId || taskId
+                  setCurrentGenerationId(generationId)
+                  console.log(`[Camera] Set currentGenerationId to: ${generationId} (dbId: ${result.dbId})`)
                 }
                 
                 resolve({ 
@@ -702,6 +714,7 @@ function CameraPageContent() {
                   prompt: result.prompt,
                   duration: result.duration,
                   savedToDb: result.savedToDb, // 后端是否已写入数据库
+                  dbId: result.dbId, // 数据库 UUID
                 })
               } else {
                 const errorMsg = result.error || '生成失败'
@@ -752,6 +765,7 @@ function CameraPageContent() {
       const allGenModes: (('extended' | 'simple') | null)[] = Array(NUM_IMAGES).fill(null)
       let maxDuration = 0
       let allSavedToDb = true // 检查是否所有成功的图片都已被后端保存
+      let firstDbId: string | null = null // 追踪第一个有效的 dbId，用于 fallback
       
       for (const result of results) {
         if (result.success && result.image) {
@@ -762,6 +776,10 @@ function CameraPageContent() {
           maxDuration = Math.max(maxDuration, result.duration || 0)
           if (!result.savedToDb) {
             allSavedToDb = false
+          }
+          // 追踪第一个有效的 dbId（无论是哪张图片返回的）
+          if (result.dbId && !firstDbId) {
+            firstDbId = result.dbId
           }
         }
       }
@@ -877,7 +895,12 @@ function CameraPageContent() {
           setGeneratedModelTypes(data.modelTypes || [])
           setGeneratedGenModes(data.genModes || [])
           setGeneratedPrompts(data.prompts || [])
-          setCurrentGenerationId(id)
+          // 只有当第一张图片成功时没有设置 currentGenerationId（即 firstDbId 为 null）时才设置 fallback
+          // 这避免了重复调用 setCurrentGenerationId 和潜在的 race condition
+          if (!firstDbId) {
+            setCurrentGenerationId(taskId)
+            console.log(`[Camera] Fallback: No dbId received, using taskId: ${taskId}`)
+          }
           setMode("results")
           // 更新 URL 为 results 模式（检查是否仍在camera页面）
           if (window.location.pathname === '/camera') {

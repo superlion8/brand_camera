@@ -241,6 +241,9 @@ function OutfitPageContent() {
   const [customModels, setCustomModels] = useState<Asset[]>([])
   const [customBgs, setCustomBgs] = useState<Asset[]>([])
   
+  // 数据库 UUID，用于收藏功能
+  const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
+  
   // 加载预设资源
   useEffect(() => {
     presetStore.loadPresets()
@@ -953,93 +956,175 @@ function OutfitPageContent() {
             }
           }
         } else {
-          // 模特棚拍模式：使用 /api/generate-pro-studio，outfitItems 格式
-          // Helper function to create a single request with response handling
-          const createProStudioRequest = async (index: number, mode: 'simple' | 'extended') => {
-            console.log(`[Outfit-ProStudio] Starting image ${index + 1} (${mode})`)
-            updateImageSlot(taskId, index, { status: 'generating' })
-            
-            try {
-              const response = await fetch('/api/generate-pro-studio', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  outfitItems, // 新格式：独立的服装项 { inner?, top?, pants?, hat?, shoes? }
-                  productImages: products, // 向后兼容
-                  modelImage: modelImageUrl,  // 发送 URL，后端转换 base64
-                  backgroundImage: bgImageUrl,  // 发送 URL，后端转换 base64
-                  mode,
-                  index,
-                  taskId,
-                  modelIsRandom: isModelRandom,
-                  bgIsRandom: isBgRandom,
-                  modelName: selectedModel?.name || '专业模特',
-                  bgName: selectedBg?.name || '影棚背景',
-                  modelUrl: selectedModel?.imageUrl,
-                  bgUrl: selectedBg?.imageUrl,
-                  modelIsPreset: selectedModel ? !customModels.find(m => m.id === selectedModel.id) : true,
-                  bgIsPreset: selectedBg ? !customBgs.find(b => b.id === selectedBg.id) : true,
-                })
+          // 模特棚拍模式：使用 /api/generate-pro-studio，返回 SSE 流
+          // API 一次性生成 4 张图片（4 种机位），通过 SSE 流返回
+          console.log('[Outfit-ProStudio] Starting SSE request for 4 images...')
+          
+          try {
+            const response = await fetch('/api/generate-pro-studio', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                outfitItems, // 新格式：独立的服装项 { inner?, top?, pants?, hat?, shoes? }
+                productImages: products, // 向后兼容
+                modelImage: modelImageUrl,  // 发送 URL，后端转换 base64
+                backgroundImage: bgImageUrl,  // 发送 URL，后端转换 base64
+                taskId,
+                modelIsRandom: isModelRandom,
+                bgIsRandom: isBgRandom,
+                modelName: selectedModel?.name || '专业模特',
+                bgName: selectedBg?.name || '影棚背景',
+                modelUrl: selectedModel?.imageUrl,
+                bgUrl: selectedBg?.imageUrl,
+                modelIsPreset: selectedModel ? !customModels.find(m => m.id === selectedModel.id) : true,
+                bgIsPreset: selectedBg ? !customBgs.find(b => b.id === selectedBg.id) : true,
               })
-              
-              if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }))
-                console.log(`[Outfit-ProStudio] Image ${index + 1}: ✗ HTTP ${response.status}`)
-                updateImageSlot(taskId, index, { 
+            })
+            
+            if (!response.ok) {
+              const errorText = await response.text()
+              console.log(`[Outfit-ProStudio] HTTP ${response.status}: ${errorText}`)
+              // 标记所有图片为失败
+              for (let i = 0; i < numImages; i++) {
+                updateImageSlot(taskId, i, { 
                   status: 'failed', 
-                  error: errorData.error || `HTTP ${response.status}` 
-                })
-                return
-              }
-              
-              const result = await response.json()
-              if (result.success && result.image) {
-                const imageUrl = result.image.startsWith('data:') 
-                  ? base64ToBlobUrl(result.image) 
-                  : result.image
-                console.log(`[Outfit-ProStudio] Image ${index + 1}: ✓ (${result.modelType}, ${mode})`)
-                updateImageSlot(taskId, index, {
-                  status: 'completed',
-                  imageUrl: imageUrl,
-                  modelType: result.modelType,
-                  genMode: mode,
-                })
-              } else {
-                console.log(`[Outfit-ProStudio] Image ${index + 1}: ✗ (${result.error})`)
-                updateImageSlot(taskId, index, { 
-                  status: 'failed', 
-                  error: result.error || '生成失败' 
+                  error: `HTTP ${response.status}` 
                 })
               }
-            } catch (e: any) {
-              console.log(`[Outfit-ProStudio] Image ${index + 1}: ✗ (${e.message})`)
-              updateImageSlot(taskId, index, { 
+              // 退还额度
+              try {
+                await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
+                refreshQuota()
+              } catch (e) {
+                console.warn('[Outfit] Failed to refund quota:', e)
+              }
+              return
+            }
+            
+            // 处理 SSE 流
+            const reader = response.body?.getReader()
+            if (!reader) {
+              throw new Error('无法读取响应流')
+            }
+            
+            const decoder = new TextDecoder()
+            let buffer = ''
+            let successCount = 0
+            let firstDbId: string | null = null
+            
+            while (true) {
+              const { done, value } = await reader.read()
+              if (done) break
+              
+              buffer += decoder.decode(value, { stream: true })
+              const lines = buffer.split('\n')
+              buffer = lines.pop() || ''
+              
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  try {
+                    const data = JSON.parse(line.slice(6))
+                    
+                    switch (data.type) {
+                      case 'progress':
+                        console.log('[Outfit-ProStudio] Progress:', data.message)
+                        break
+                        
+                      case 'analysis_complete':
+                        console.log('[Outfit-ProStudio] Analysis:', data.productStyle, data.modelId, data.sceneId)
+                        break
+                        
+                      case 'outfit_ready':
+                        console.log('[Outfit-ProStudio] Outfit ready')
+                        break
+                        
+                      case 'image':
+                        // 图片生成完成
+                        const imageUrl = data.image.startsWith('data:') 
+                          ? base64ToBlobUrl(data.image) 
+                          : data.image
+                        console.log(`[Outfit-ProStudio] Image ${data.index + 1}: ✓ (${data.shotType}, dbId: ${data.dbId})`)
+                        updateImageSlot(taskId, data.index, {
+                          status: 'completed',
+                          imageUrl: imageUrl,
+                          modelType: 'pro',
+                          genMode: 'simple',
+                          dbId: data.dbId,
+                        })
+                        successCount++
+                        
+                        // 捕获第一个有效的 dbId，设置 currentGenerationId 用于收藏功能
+                        if (data.dbId && !firstDbId) {
+                          firstDbId = data.dbId
+                          setCurrentGenerationId(data.dbId)
+                          console.log(`[Outfit-ProStudio] Set currentGenerationId to: ${data.dbId}`)
+                        }
+                        break
+                        
+                      case 'image_error':
+                        console.log(`[Outfit-ProStudio] Image ${data.index + 1}: ✗ (${data.error})`)
+                        updateImageSlot(taskId, data.index, {
+                          status: 'failed',
+                          error: data.error || '生成失败',
+                        })
+                        break
+                        
+                      case 'error':
+                        console.error('[Outfit-ProStudio] Error:', data.error)
+                        // 标记所有未完成的图片为失败
+                        for (let i = 0; i < numImages; i++) {
+                          const task = useGenerationTaskStore.getState().tasks.find(t => t.id === taskId)
+                          const slot = task?.imageSlots?.[i]
+                          if (slot?.status !== 'completed') {
+                            updateImageSlot(taskId, i, { 
+                              status: 'failed', 
+                              error: data.error || '生成失败' 
+                            })
+                          }
+                        }
+                        break
+                        
+                      case 'complete':
+                        console.log(`[Outfit-ProStudio] Complete: ${data.totalSuccess}/${numImages} images`)
+                        break
+                    }
+                  } catch (e) {
+                    console.warn('[Outfit-ProStudio] Failed to parse SSE data:', line)
+                  }
+                }
+              }
+            }
+            
+            // 检查是否全部失败，退还额度
+            if (successCount === 0) {
+              console.log('[Outfit] All pro-studio tasks failed, refunding quota')
+              try {
+                await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
+                refreshQuota()
+              } catch (e) {
+                console.warn('[Outfit] Failed to refund quota:', e)
+              }
+            } else if (!firstDbId) {
+              // 有成功的图片但没有收到 dbId（后端保存都失败），使用 taskId 作为 fallback
+              setCurrentGenerationId(taskId)
+              console.log(`[Outfit-ProStudio] No dbId received, using taskId as fallback: ${taskId}`)
+            }
+            
+          } catch (e: any) {
+            console.error('[Outfit-ProStudio] Request failed:', e.message)
+            // 标记所有图片为失败
+            for (let i = 0; i < numImages; i++) {
+              updateImageSlot(taskId, i, { 
                 status: 'failed', 
                 error: e.message || '网络错误' 
               })
             }
-          }
-          
-          // 简单模式：2张图（index 0, 1）
-          const simplePromises = [0, 1].map(i => createProStudioRequest(i, 'simple'))
-          
-          // 扩展模式：2张图（index 2, 3）
-          const extendedPromises = [2, 3].map(i => createProStudioRequest(i, 'extended'))
-          
-          // 等待所有请求完成
-          console.log('[Outfit-ProStudio] Sending 4 requests (2 simple + 2 extended)...')
-          const allResults = await Promise.allSettled([...simplePromises, ...extendedPromises])
-          console.log('[Outfit-ProStudio] All requests completed')
-          
-          // 检查是否全部失败，退还额度
-          const allFailed = allResults.every(r => r.status === 'rejected')
-          if (allFailed) {
-            console.log('[Outfit] All pro-studio tasks failed, refunding quota')
+            // 退还额度
             try {
               await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
               refreshQuota()
-            } catch (e) {
-              console.warn('[Outfit] Failed to refund quota:', e)
+            } catch (refundError) {
+              console.warn('[Outfit] Failed to refund quota:', refundError)
             }
           }
         }

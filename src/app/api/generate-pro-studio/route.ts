@@ -300,10 +300,11 @@ async function analyzeAndSelect(
 
 /**
  * 步骤3: 生成服装搭配指令
+ * productDataList: 支持多件商品图片
  */
 async function generateOutfitInstruct(
   client: ReturnType<typeof getGenAIClient>,
-  productData: string,
+  productDataList: string[],  // 改为数组，支持多件商品
   modelData: string,
   sceneData: string,
   productStyle: string
@@ -311,22 +312,26 @@ async function generateOutfitInstruct(
   try {
     const prompt = OUTFIT_PROMPT.replace('{{product_style}}', productStyle)
     
-    console.log('[ProStudio] Generating outfit instructions...')
+    console.log(`[ProStudio] Generating outfit instructions with ${productDataList.length} products...`)
+    
+    // 构建 parts，支持多件商品图片
+    const parts: any[] = [{ text: prompt }]
+    
+    // 添加所有商品图片
+    productDataList.forEach((productData, index) => {
+      parts.push({ text: `\n\n[商品图${index + 1}]:` })
+      parts.push({ inlineData: { mimeType: 'image/jpeg', data: productData } })
+    })
+    
+    // 添加模特和场景
+    parts.push({ text: '\n\n[模特图]:' })
+    parts.push({ inlineData: { mimeType: 'image/jpeg', data: modelData } })
+    parts.push({ text: '\n\n[场景图]:' })
+    parts.push({ inlineData: { mimeType: 'image/jpeg', data: sceneData } })
     
     const response = await client.models.generateContent({
       model: VLM_MODEL,
-      contents: [{
-        role: 'user',
-        parts: [
-          { text: prompt },
-          { text: '\n\n[商品图]:' },
-          { inlineData: { mimeType: 'image/jpeg', data: productData } },
-          { text: '\n\n[模特图]:' },
-          { inlineData: { mimeType: 'image/jpeg', data: modelData } },
-          { text: '\n\n[场景图]:' },
-          { inlineData: { mimeType: 'image/jpeg', data: sceneData } },
-        ],
-      }],
+      contents: [{ role: 'user', parts }],
       config: { safetySettings },
     })
     
@@ -343,10 +348,11 @@ async function generateOutfitInstruct(
 
 /**
  * 步骤4: 生成单张图片（带机位）
+ * productDataList: 支持多件商品图片
  */
 async function generateImageWithShotFocus(
   client: ReturnType<typeof getGenAIClient>,
-  productData: string,
+  productDataList: string[],  // 改为数组，支持多件商品
   modelData: string,
   sceneData: string,
   outfitInstruct: string,
@@ -358,22 +364,26 @@ async function generateImageWithShotFocus(
       .replace('{{outfit_instruct}}', outfitInstruct)
       .replace('{{shot_focus}}', shotFocus)
     
-    console.log(`[${label}] Generating image with shot focus: ${shotFocus.substring(0, 30)}...`)
+    console.log(`[${label}] Generating image with ${productDataList.length} products, shot focus: ${shotFocus.substring(0, 30)}...`)
+    
+    // 构建 parts，支持多件商品图片
+    const parts: any[] = [{ text: prompt }]
+    
+    // 添加所有商品图片
+    productDataList.forEach((productData, index) => {
+      parts.push({ text: `\n\n[商品图${index + 1}]:` })
+      parts.push({ inlineData: { mimeType: 'image/jpeg', data: productData } })
+    })
+    
+    // 添加模特和场景
+    parts.push({ text: '\n\n[模特图]:' })
+    parts.push({ inlineData: { mimeType: 'image/jpeg', data: modelData } })
+    parts.push({ text: '\n\n[场景图]:' })
+    parts.push({ inlineData: { mimeType: 'image/jpeg', data: sceneData } })
     
     const response = await client.models.generateContent({
       model: IMAGE_MODEL,
-      contents: [{
-        role: 'user',
-        parts: [
-          { text: prompt },
-          { text: '\n\n[商品图]:' },
-          { inlineData: { mimeType: 'image/jpeg', data: productData } },
-          { text: '\n\n[模特图]:' },
-          { inlineData: { mimeType: 'image/jpeg', data: modelData } },
-          { text: '\n\n[场景图]:' },
-          { inlineData: { mimeType: 'image/jpeg', data: sceneData } },
-        ],
-      }],
+      contents: [{ role: 'user', parts }],
       config: {
         responseModalities: ['IMAGE'],
         safetySettings,
@@ -415,10 +425,19 @@ export async function POST(request: NextRequest) {
     } = body
 
     // 支持两种模式：单商品 (productImage) 和多商品 (productImages/outfitItems)
+    // outfitItems 支持两种格式：
+    //   - 直接 URL 字符串：{ top: "https://..." }
+    //   - 对象格式：{ top: { imageUrl: "https://..." } }
+    const getOutfitItemUrl = (item: any): string | undefined => {
+      if (!item) return undefined
+      if (typeof item === 'string') return item
+      return item.imageUrl
+    }
+    
     // 获取主商品图片（用于 AI 分析）
     const mainProductImage = productImage 
       || (productImages && (productImages as any[])[0]?.imageUrl)
-      || (outfitItems && (Object.values(outfitItems) as any[])[0]?.imageUrl)
+      || (outfitItems && getOutfitItemUrl(Object.values(outfitItems)[0]))
     
     // 获取所有商品图片 URL（用于保存记录）
     const allProductImageUrls: string[] = productImage 
@@ -426,7 +445,7 @@ export async function POST(request: NextRequest) {
       : productImages 
         ? (productImages as any[]).map((p: any) => typeof p === 'string' ? p : p.imageUrl).filter(Boolean)
         : outfitItems 
-          ? (Object.values(outfitItems) as any[]).map((p: any) => p?.imageUrl).filter(Boolean)
+          ? (Object.values(outfitItems) as any[]).map((p: any) => getOutfitItemUrl(p)).filter(Boolean) as string[]
           : []
 
     if (!mainProductImage) {
@@ -463,16 +482,53 @@ export async function POST(request: NextRequest) {
         }
 
         try {
-          // 1. 处理商品图片
+          // 1. 处理所有商品图片（支持多件商品 outfit 模式）
           sendEvent({ type: 'progress', step: 'product', message: '处理商品图片...' })
-          const productData = await imageToBase64(mainProductImage)
-          if (!productData) {
+          
+          // 收集所有需要处理的商品图片 URL
+          const productUrls: string[] = []
+          if (outfitItems) {
+            // outfit 模式：按顺序收集所有商品
+            const slots = ['inner', 'top', 'pants', 'hat', 'shoes'] as const
+            for (const slot of slots) {
+              const item = outfitItems[slot]
+              const url = getOutfitItemUrl(item)
+              if (url) productUrls.push(url)
+            }
+          } else if (productImages && Array.isArray(productImages)) {
+            // 数组模式
+            for (const p of productImages) {
+              const url = typeof p === 'string' ? p : p?.imageUrl
+              if (url) productUrls.push(url)
+            }
+          } else if (mainProductImage) {
+            // 单商品模式
+            productUrls.push(mainProductImage)
+          }
+          
+          console.log(`[ProStudio] Processing ${productUrls.length} product images...`)
+          
+          // 转换所有商品图片为 base64
+          const productDataList: string[] = []
+          for (const url of productUrls) {
+            const data = await imageToBase64(url)
+            if (data) {
+              productDataList.push(data)
+            } else {
+              console.warn(`[ProStudio] Failed to convert product image: ${url.substring(0, 50)}...`)
+            }
+          }
+          
+          if (productDataList.length === 0) {
             sendEvent({ type: 'error', error: '商品图片处理失败' })
             controller.close()
             return
           }
+          
+          console.log(`[ProStudio] Successfully converted ${productDataList.length} product images to base64`)
 
-          // 2. 判断是否需要 AI 分析
+          // 2. 判断是否需要 AI 分析（使用第一张商品图）
+          const mainProductData = productDataList[0]
           const needModel = !modelImage || modelImage === 'random'
           const needScene = !backgroundImage || backgroundImage === 'random'
           
@@ -492,7 +548,7 @@ export async function POST(request: NextRequest) {
               message: `智能分析中${needModel ? '（选择模特）' : ''}${needScene ? '（选择场景）' : ''}...` 
             })
             
-            const analysis = await analyzeAndSelect(client, productData, needModel, needScene)
+            const analysis = await analyzeAndSelect(client, mainProductData, needModel, needScene)
             productStyle = analysis.productStyle
             
             sendEvent({ 
@@ -577,10 +633,10 @@ export async function POST(request: NextRequest) {
             return
           }
 
-          // 7. 步骤3: 生成服装搭配
-          sendEvent({ type: 'progress', step: 'outfit', message: '设计服装搭配方案...' })
+          // 7. 步骤3: 生成服装搭配（传递所有商品图片）
+          sendEvent({ type: 'progress', step: 'outfit', message: `设计服装搭配方案（${productDataList.length}件商品）...` })
           const outfitInstruct = await generateOutfitInstruct(
-            client, productData, modelData, sceneData, productStyle
+            client, productDataList, modelData, sceneData, productStyle
           )
           
           if (!outfitInstruct) {
@@ -605,7 +661,7 @@ export async function POST(request: NextRequest) {
             
             const imageResult = await generateImageWithShotFocus(
               client,
-              productData,
+              productDataList,  // 传递所有商品图片
               modelData!,
               sceneData!,
               outfitInstruct,
@@ -623,8 +679,8 @@ export async function POST(request: NextRequest) {
               )
 
               if (uploadedUrl) {
-                // 保存到数据库
-                await appendImageToGeneration({
+                // 保存到数据库，获取 dbId
+                const saveResult = await appendImageToGeneration({
                   taskId,
                   userId,
                   imageIndex: config.index,
@@ -645,11 +701,13 @@ export async function POST(request: NextRequest) {
                 })
 
                 successCount++
+                // Bug 2 修复：只有保存成功时才发送 dbId
                 sendEvent({
                   type: 'image',
                   index: config.index,
                   image: uploadedUrl,
                   shotType: config.name,
+                  ...(saveResult.dbId ? { dbId: saveResult.dbId } : {}),
                 })
               } else {
                 sendEvent({ type: 'image_error', index: config.index, error: '图片上传失败', shotType: config.name })

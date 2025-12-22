@@ -229,6 +229,15 @@ export async function POST(request: NextRequest) {
       inputParams, // 生成参数（modelStyle, modelGender 等）
       // 新增：outfit 模式的服装项
       outfitItems, // { inner, top, pants, hat, shoes }
+      // Outfit 模式传递的顶层参数（用于合并到 inputParams）
+      modelUrl: topLevelModelUrl,
+      bgUrl: topLevelBgUrl,
+      modelName: topLevelModelName,
+      bgName: topLevelBgName,
+      modelIsRandom: topLevelModelIsRandom,
+      bgIsRandom: topLevelBgIsRandom,
+      modelIsPreset: topLevelModelIsPreset,
+      bgIsPreset: topLevelBgIsPreset,
     } = body
     
     // outfit 模式检查
@@ -574,13 +583,26 @@ export async function POST(request: NextRequest) {
       console.log(`[${label}] Collected ${productImageUrls.length} product images`)
     }
     
-    // 写入数据库 - 合并 productImages 到 inputParams
-    const enrichedInputParams = index === 0 ? {
+    // 写入数据库 - 合并 productImages 和顶层参数到 inputParams
+    // Outfit 模式传递参数在顶层，需要合并
+    const mergedInputParams = {
       ...inputParams,
+      // 合并顶层参数（outfit 模式使用）
+      ...(topLevelModelUrl && { modelImage: topLevelModelUrl }),
+      ...(topLevelBgUrl && { backgroundImage: topLevelBgUrl }),
+      ...(topLevelModelName && { model: topLevelModelName }),
+      ...(topLevelBgName && { background: topLevelBgName }),
+      ...(topLevelModelIsRandom !== undefined && { modelIsRandom: topLevelModelIsRandom }),
+      ...(topLevelBgIsRandom !== undefined && { bgIsRandom: topLevelBgIsRandom }),
+      ...(topLevelModelIsPreset !== undefined && { modelIsPreset: topLevelModelIsPreset }),
+      ...(topLevelBgIsPreset !== undefined && { bgIsPreset: topLevelBgIsPreset }),
+    }
+    const enrichedInputParams = index === 0 ? {
+      ...mergedInputParams,
       productImages: productImageUrls, // 添加所有商品图 URL
-    } : inputParams
+    } : mergedInputParams
     
-    const dbSuccess = await appendImageToGeneration({
+    const saveResult = await appendImageToGeneration({
       taskId,
       userId,
       imageIndex: index || 0,
@@ -593,8 +615,8 @@ export async function POST(request: NextRequest) {
       inputImageUrl, // 传递商品图 URL
     })
     
-    if (dbSuccess) {
-      console.log(`[${label}] Saved to database`)
+    if (saveResult.success) {
+      console.log(`[${label}] Saved to database, dbId: ${saveResult.dbId}`)
     } else {
       console.warn(`[${label}] Failed to save to database, but image is uploaded`)
     }
@@ -612,6 +634,7 @@ export async function POST(request: NextRequest) {
       prompt: usedPrompt,
       duration: totalDuration,
       savedToDb: !!taskId, // 告诉前端是否已保存到数据库
+      ...(saveResult.dbId ? { dbId: saveResult.dbId } : {}), // 返回数据库 UUID 用于收藏
     })
     
   } catch (error: any) {

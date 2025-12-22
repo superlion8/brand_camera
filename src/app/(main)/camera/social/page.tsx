@@ -429,6 +429,7 @@ function SocialPageContent() {
       const allImages: (string | null)[] = Array(SOCIAL_NUM_IMAGES).fill(null)
       const allModelTypes: (('pro' | 'flash') | null)[] = Array(SOCIAL_NUM_IMAGES).fill(null)
       let successCount = 0
+      let firstDbId: string | null = null // 跟踪第一个有效的 dbId
       
       if (reader) {
         let buffer = ''
@@ -463,17 +464,26 @@ function SocialPageContent() {
                   console.log(`[Social] G${data.groupIndex} Outfit instructions ready`)
                 } else if (data.type === 'image') {
                   const globalIdx = data.globalIndex
-                  console.log(`[Social] G${data.groupIndex} Image ${data.localIndex + 1}: ✓ (global: ${globalIdx})`)
+                  console.log(`[Social] G${data.groupIndex} Image ${data.localIndex + 1}: ✓ (global: ${globalIdx}, dbId: ${data.dbId})`)
                   
                   allImages[globalIdx] = data.image
                   allModelTypes[globalIdx] = 'pro' // 新工作流固定使用 pro 模型
                   successCount++
+                  
+                  // 捕获第一个有效的 dbId，用于收藏功能
+                  // 使用 !firstDbId 而不是 successCount === 1，以处理图片乱序返回或第一张没有 dbId 的情况
+                  if (data.dbId && !firstDbId) {
+                    firstDbId = data.dbId
+                    setCurrentGenerationId(data.dbId)
+                    console.log(`[Social] Set currentGenerationId to dbId: ${data.dbId}`)
+                  }
                   
                   updateImageSlot(taskId, globalIdx, {
                     status: 'completed',
                     imageUrl: data.image,
                     modelType: 'pro',
                     genMode: 'simple', // Social 模式统一使用 simple
+                    dbId: data.dbId,  // 存储数据库 UUID
                   })
                   
                   // 第一张图片完成时，切换到 results 模式
@@ -560,7 +570,11 @@ function SocialPageContent() {
         if (modeRef.current === "processing") {
           setGeneratedImages(allImages.filter(Boolean) as string[])
           setGeneratedModelTypes(savedModelTypes)
-          setCurrentGenerationId(id)
+          // 如果没有任何图片返回 dbId（后端保存都失败），使用 taskId 作为 fallback
+          if (!firstDbId) {
+            setCurrentGenerationId(taskId)
+            console.log(`[Social] No dbId received, using taskId as fallback: ${taskId}`)
+          }
           setMode("results")
           // 检查是否仍在social页面，避免用户离开后强制跳转
           if (window.location.pathname === '/camera/social') {

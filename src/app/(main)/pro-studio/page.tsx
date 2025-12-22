@@ -271,6 +271,7 @@ function ProStudioPageContent() {
   
   // Results state
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
+  const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null) // 数据库 UUID，用于收藏
   const [generatedImages, setGeneratedImages] = useState<string[]>([])
   const [generatedModes, setGeneratedModes] = useState<string[]>([])
   const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
@@ -600,16 +601,20 @@ function ProStudioPageContent() {
                     imageUrl: data.image,
                     modelType: 'pro',
                     genMode: 'simple',
+                    dbId: data.dbId,  // 存储数据库 UUID
                   })
                   
                   // 更新 generatedImages 状态
+                  // 创建固定长度数组，同时保留已有数据
                   setGeneratedImages(prev => {
-                    const newImages = [...prev]
+                    // 创建完整长度数组，保留 prev 中已有的数据
+                    const newImages = Array(PRO_STUDIO_NUM_IMAGES).fill('').map((_, i) => prev[i] || '')
                     newImages[data.index] = data.image
                     return newImages
                   })
                   setGeneratedModes(prev => {
-                    const newModes = [...prev]
+                    // 创建完整长度数组，保留 prev 中已有的数据
+                    const newModes = Array(PRO_STUDIO_NUM_IMAGES).fill('').map((_, i) => prev[i] || '')
                     newModes[data.index] = data.shotType || SHOT_TYPES[data.index]
                     return newModes
                   })
@@ -618,6 +623,11 @@ function ProStudioPageContent() {
                   if (!firstImageReceived) {
                     firstImageReceived = true
                     setMode("results")
+                    // 设置 currentGenerationId 为数据库 UUID，用于收藏功能
+                    // 如果没有 dbId（后端保存失败），使用 taskId 作为 fallback
+                    const generationId = data.dbId || taskId
+                    setCurrentGenerationId(generationId)
+                    console.log(`[ProStudio] Set currentGenerationId to: ${generationId} (dbId: ${data.dbId})`)
                     // 检查是否仍在pro-studio页面，避免用户离开后强制跳转
                     if (window.location.pathname === '/pro-studio') {
                       router.replace('/pro-studio?mode=results')

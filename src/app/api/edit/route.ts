@@ -224,9 +224,9 @@ export async function POST(request: NextRequest) {
       
       // 写入数据库
       if (taskId) {
-        const dbSuccess = await appendImageToGeneration({
+        const saveResult = await appendImageToGeneration({
           taskId,
-      userId,
+          userId,
           imageIndex: 0,
           imageUrl: storageUrl,
           modelType: result.model,
@@ -234,17 +234,17 @@ export async function POST(request: NextRequest) {
           prompt: prompt,
           taskType: 'edit',
           inputParams: {
-        modelStyle,
-        modelGender,
-        customPrompt,
+            modelStyle,
+            modelGender,
+            customPrompt,
             hasModel: !!modelImage,
             hasBackground: !!backgroundImage,
             hasVibe: !!vibeImage,
           },
         })
         
-        if (dbSuccess) {
-          console.log('[Edit] Saved to database')
+        if (saveResult.success) {
+          console.log(`[Edit] Saved to database, dbId: ${saveResult.dbId}`)
         } else {
           console.warn('[Edit] Failed to save to database')
         }

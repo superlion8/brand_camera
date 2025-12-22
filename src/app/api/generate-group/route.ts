@@ -458,7 +458,7 @@ export async function POST(request: NextRequest) {
                 
                 const promptForDb = `Shot Type: ${poseInstruct.shot_type}\nPose: ${poseInstruct.pose_instruction}\nExpression: ${poseInstruct.facial_expression}\nCamera: ${poseInstruct.camera_position}\nComposition: ${poseInstruct.composition}`
                 
-                await appendImageToGeneration({
+                const saveResult = await appendImageToGeneration({
                   taskId,
                   userId,
                   imageIndex: i,
@@ -475,7 +475,8 @@ export async function POST(request: NextRequest) {
                   } : undefined,
                 })
                 
-                send({ type: 'image', index: i, image: uploaded, modelType: result.model })
+                // Bug 2 修复：只有保存成功时才发送 dbId
+                send({ type: 'image', index: i, image: uploaded, modelType: result.model, ...(saveResult.dbId ? { dbId: saveResult.dbId } : {}) })
               } else {
                 send({ type: 'error', index: i, error: '生成失败' })
               }
@@ -544,7 +545,7 @@ export async function POST(request: NextRequest) {
                 
                 const promptForDb = `产品重点: ${poseInstruct.product_focus}\n姿势: ${poseInstruct.pose_instruction}\n相机位置: ${poseInstruct.camera_position}\n构图: ${poseInstruct.composition}`
                 
-                await appendImageToGeneration({
+                const saveResult = await appendImageToGeneration({
                   taskId,
                   userId,
                   imageIndex: i,
@@ -561,7 +562,8 @@ export async function POST(request: NextRequest) {
                   } : undefined,
                 })
                 
-                send({ type: 'image', index: i, image: uploaded, modelType: result.model })
+                // Bug 2 修复：只有保存成功时才发送 dbId
+                send({ type: 'image', index: i, image: uploaded, modelType: result.model, ...(saveResult.dbId ? { dbId: saveResult.dbId } : {}) })
               } else {
                 send({ type: 'error', index: i, error: '生成失败' })
               }
@@ -623,7 +625,7 @@ export async function POST(request: NextRequest) {
                 if (inputUploaded) inputImageUrlToSave = inputUploaded
               }
               
-              await appendImageToGeneration({
+              const saveResult = await appendImageToGeneration({
                 taskId,
                 userId,
                 imageIndex: i,
@@ -640,7 +642,8 @@ export async function POST(request: NextRequest) {
                 } : undefined,
               })
               
-              send({ type: 'image', index: i, image: uploaded, modelType: result.model })
+              // Bug 2 修复：只有保存成功时才发送 dbId
+              send({ type: 'image', index: i, image: uploaded, modelType: result.model, ...(saveResult.dbId ? { dbId: saveResult.dbId } : {}) })
             } else {
               send({ type: 'error', index: i, error: '生成失败' })
             }

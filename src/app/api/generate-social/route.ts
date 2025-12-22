@@ -407,7 +407,7 @@ async function processGroup(
         )
 
         if (uploadedUrl) {
-          await appendImageToGeneration({
+          const saveResult = await appendImageToGeneration({
             taskId,
             userId,
             imageIndex: globalIndex,
@@ -417,6 +417,7 @@ async function processGroup(
             taskType: 'social',
           })
 
+          // Bug 3 修复：只有保存成功时才发送 dbId
           sendEvent({
             type: 'image',
             groupIndex,
@@ -424,6 +425,7 @@ async function processGroup(
             globalIndex,
             image: uploadedUrl,
             promptType,
+            ...(saveResult.dbId ? { dbId: saveResult.dbId } : {}),
           })
 
           return { index: globalIndex, url: uploadedUrl, promptType }

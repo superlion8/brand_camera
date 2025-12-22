@@ -240,6 +240,7 @@ export async function POST(request: NextRequest) {
     // 上传图片到 Storage
     const base64Image = `data:image/png;base64,${result.image}`
     let uploadedUrl = base64Image
+    let saveResult: { success: boolean; dbId?: string } | undefined
     
     if (taskId) {
       const uploaded = await uploadImageToStorage(base64Image, userId, `studio_${index}`)
@@ -247,8 +248,8 @@ export async function POST(request: NextRequest) {
         uploadedUrl = uploaded
         console.log(`[${label}] Uploaded to storage`)
         
-        // 写入数据库
-        const dbSuccess = await appendImageToGeneration({
+        // 写入数据库，获取 dbId
+        saveResult = await appendImageToGeneration({
           taskId,
           userId,
           imageIndex: index,
@@ -260,8 +261,8 @@ export async function POST(request: NextRequest) {
           inputParams: inputParams || { photoType, lightType, lightDirection, lightColor, aspectRatio },
         })
         
-        if (dbSuccess) {
-          console.log(`[${label}] Saved to database`)
+        if (saveResult.success) {
+          console.log(`[${label}] Saved to database, dbId: ${saveResult.dbId}`)
         } else {
           console.warn(`[${label}] Failed to save to database`)
         }
@@ -281,6 +282,7 @@ export async function POST(request: NextRequest) {
       prompt: prompt,
       duration: totalDuration,
       savedToDb: !!taskId,
+      ...(saveResult?.dbId ? { dbId: saveResult.dbId } : {}), // 返回数据库 UUID 用于收藏
     })
     
   } catch (error: any) {

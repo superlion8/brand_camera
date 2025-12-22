@@ -22,6 +22,7 @@ import {
   isCreateModelType as isCreateModelTypeRaw,
   isReferenceShotType as isReferenceShotTypeRaw
 } from "@/lib/taskTypes"
+import { useGalleryStore, getCacheKey } from "@/stores/galleryStore"
 
 type TabType = "all" | "model" | "product" | "group" | "reference" | "favorites"
 type ModelSubType = "all" | "buyer" | "prostudio" | "create_model" | "social"  // 买家秀 / 专业棚拍 / 创建专属模特 / 社媒种草
@@ -76,17 +77,78 @@ export default function GalleryPage() {
   
   const { addUserAsset, favorites, addFavorite, removeFavorite } = useAssetStore()
   const { user } = useAuth()
-  const { tasks, removeTask } = useGenerationTaskStore()
+  const { tasks, removeTask, _hasHydrated: tasksHydrated } = useGenerationTaskStore()
   const { debugMode } = useSettingsStore()
   const { t } = useTranslation()
   
-  // 从 API 获取图库数据
-  const fetchGalleryData = async (page: number = 1, append: boolean = false) => {
+  // 使用全局 galleryStore 缓存（支持预加载）
+  const { getCache, setCache, updateCacheItems, clearCache } = useGalleryStore()
+  
+  // 使用 ref 追踪已处理的 slot，避免重复 append
+  const processedSlotsRef = useRef<Set<string>>(new Set())
+  // 使用 ref 存储 galleryItems 的最新值，避免依赖循环
+  const galleryItemsRef = useRef<any[]>([])
+  galleryItemsRef.current = galleryItems
+  // 使用 ref 存储 tasks 的最新值，用于在 fetchGalleryData 中标记已处理的 slots
+  const tasksRef = useRef<typeof tasks>([])
+  tasksRef.current = tasks
+  
+  // 标记从服务器获取的图片对应的 slots 为已处理
+  // 这样可以防止 append useEffect 重复添加相同的图片
+  // 注意：不能用 imageUrl 匹配，因为 slot.imageUrl 可能是 blob URL，而 item.imageUrl 是存储 URL
+  // 应该用 task.dbId (数据库 UUID) 和 imageIndex 匹配
+  const markServerItemsAsProcessed = (serverItems: any[]) => {
+    serverItems.forEach(item => {
+      tasksRef.current.forEach(task => {
+        // 方法1：使用 task.dbId（数据库 UUID）匹配 item.generationId
+        if (task.dbId && item.generationId && task.dbId === item.generationId) {
+          const slotKey = `${task.id}-${item.imageIndex}`
+          if (!processedSlotsRef.current.has(slotKey)) {
+            processedSlotsRef.current.add(slotKey)
+            console.log(`[Gallery] Marked as processed (dbId match): ${slotKey}`)
+          }
+        }
+        // 方法2：遍历 slots 检查每个 slot 的 dbId
+        task.imageSlots?.forEach((slot, slotIndex) => {
+          if (slot.dbId && item.generationId && slot.dbId === item.generationId && slotIndex === item.imageIndex) {
+            const slotKey = `${task.id}-${slotIndex}`
+            if (!processedSlotsRef.current.has(slotKey)) {
+              processedSlotsRef.current.add(slotKey)
+              console.log(`[Gallery] Marked as processed (slot.dbId match): ${slotKey}`)
+            }
+          }
+        })
+      })
+    })
+  }
+  
+  // 从 API 获取图库数据（优先使用预加载的缓存）
+  const fetchGalleryData = async (page: number = 1, append: boolean = false, forceRefresh: boolean = false) => {
     if (!user) return
+    
+    const cacheKey = getCacheKey(activeTab, modelSubType)
+    
+    // 如果不是强制刷新且有缓存（包括预加载的），直接使用缓存
+    if (!forceRefresh && !append) {
+      const cached = getCache(cacheKey)
+      if (cached) {
+        console.log(`[Gallery] Using cache for ${cacheKey}, ${cached.items.length} items`)
+        setGalleryItems(cached.items)
+        // 标记缓存的图片为已处理，防止第二个 useEffect 重复 append
+        markServerItemsAsProcessed(cached.items)
+        setHasMore(cached.hasMore)
+        setCurrentPage(cached.currentPage)
+        setPendingTasksFromDb(cached.pendingTasks)
+        setIsLoading(false)
+        return
+      }
+    }
     
     try {
       if (!append) setIsLoading(true)
       else setIsLoadingMore(true)
+      
+      console.log(`[Gallery] Fetching from server: ${cacheKey}, page=${page}, forceRefresh=${forceRefresh}`)
       
       // 模特 tab 下传递二级分类参数
       const subType = activeTab === 'model' ? modelSubType : ''
@@ -97,13 +159,33 @@ export default function GalleryPage() {
       
       if (result.success) {
         if (append) {
-          setGalleryItems(prev => [...prev, ...result.data.items])
+          // 使用 ref 获取最新的 galleryItems，避免 stale closure 问题
+          const newItems = [...galleryItemsRef.current, ...result.data.items]
+          setGalleryItems(newItems)
+          // 更新缓存
+          setCache(cacheKey, {
+            items: newItems,
+            hasMore: result.data.hasMore,
+            currentPage: page,
+            pendingTasks: pendingTasksFromDb,
+            fetchedAt: Date.now(),
+          })
         } else {
           setGalleryItems(result.data.items)
+          // 标记从服务器获取的图片为已处理，防止第二个 useEffect 重复 append
+          markServerItemsAsProcessed(result.data.items)
           // 第一页时更新 pending 任务
           if (result.data.pendingTasks) {
             setPendingTasksFromDb(result.data.pendingTasks)
           }
+          // 更新缓存
+          setCache(cacheKey, {
+            items: result.data.items,
+            hasMore: result.data.hasMore,
+            currentPage: page,
+            pendingTasks: result.data.pendingTasks || [],
+            fetchedAt: Date.now(),
+          })
         }
         setHasMore(result.data.hasMore)
         setCurrentPage(page)
@@ -120,39 +202,151 @@ export default function GalleryPage() {
   // 加载更多
   const loadMore = () => {
     if (!isLoadingMore && hasMore) {
-      fetchGalleryData(currentPage + 1, true)
+      fetchGalleryData(currentPage + 1, true, false)
     }
   }
   
-  // 当 tab 切换、二级分类切换或用户登录时重新加载
+  // 当 tab 切换、二级分类切换或用户登录时加载数据（优先使用缓存）
   useEffect(() => {
     if (user) {
-      // 切换 tab 时立即清空旧数据，显示骨架屏
-      setGalleryItems([])
-      setIsLoading(true)
-      setHasMore(false)
-      setCurrentPage(1)
-      fetchGalleryData(1, false)
+      // 不在这里设置 loading，让 fetchGalleryData 自己管理
+      // 这样缓存命中时不会出现 loading 闪烁
+      fetchGalleryData(1, false, false)
     }
   }, [activeTab, modelSubType, user])
   
-  // 当有完成但未同步的图片时，定期刷新数据
+  // 任务完成时，本地 append 到 galleryItems（不再定时刷新）
   useEffect(() => {
-    const hasUnsyncedCompleted = tasks.some(task => 
-      task.imageSlots?.some(slot => 
-        slot.status === 'completed' && slot.imageUrl
-      )
-    )
-    
-    if (hasUnsyncedCompleted && user) {
-      const intervalId = setInterval(() => {
-        console.log('[Gallery] Refreshing data for unsynced images...')
-        fetchGalleryData(1, false)
-      }, 3000) // 每 3 秒刷新一次
-      
-      return () => clearInterval(intervalId)
+    // 定义 task.type 到 tab 的映射
+    const getTabsForType = (type: string): { tabs: string[], subType: string | null } => {
+      switch (type) {
+        case 'camera':
+        case 'social':
+          return { tabs: ['all', 'model'], subType: 'buyer' }
+        case 'pro_studio':
+          return { tabs: ['all', 'model'], subType: 'prostudio' }
+        case 'studio':
+          return { tabs: ['all', 'product'], subType: null }
+        case 'group_shoot':
+        case 'reference_shot':
+          return { tabs: ['all', 'model'], subType: null }
+        default:
+          return { tabs: ['all'], subType: null }
+      }
     }
-  }, [tasks, user, activeTab, modelSubType]) // 添加 tab 依赖，确保切换 tab 时 interval 使用正确的参数
+    
+    // 判断当前 tab 是否应该显示该任务的图片
+    const shouldShowInCurrentTab = (taskMapping: { tabs: string[], subType: string | null }): boolean => {
+      // 1. 首先检查 tab 是否匹配
+      if (!taskMapping.tabs.includes(activeTab)) return false
+      
+      // 2. 如果当前是 "model" tab，需要检查 subType
+      if (activeTab === 'model') {
+        // 如果任务有指定的 subType，必须匹配
+        if (taskMapping.subType) {
+          return taskMapping.subType === modelSubType
+        }
+        // 如果任务没有指定 subType（如 group_shoot），则显示在所有 model 子分类中
+        return true
+      }
+      
+      // 3. 其他 tab（all, product, favorites）直接显示
+      return true
+    }
+    
+    // 遍历所有任务，找到已完成但未 append 的 slot
+    tasks.forEach(task => {
+      // Bug 1 修复：移除 !task.dbId 检查，改为使用 slot.dbId
+      // task.dbId 只在 index 0 完成时设置，如果图片乱序完成会导致问题
+      if (!task.imageSlots) return
+      
+      const taskMapping = getTabsForType(task.type)
+      
+      task.imageSlots.forEach((slot, slotIndex) => {
+        if (slot.status !== 'completed' || !slot.imageUrl) return
+        
+        // 需要 slot.dbId 才能正确构建 galleryItem
+        // 如果 slot.dbId 不存在，说明后端还没返回，等待下次更新
+        if (!slot.dbId) return
+        
+        const slotKey = `${task.id}-${slotIndex}`
+        if (processedSlotsRef.current.has(slotKey)) return
+        
+        // 检查当前 tab 是否应该显示
+        if (!shouldShowInCurrentTab(taskMapping)) return
+        
+        // 检查是否已在 galleryItems 中（避免重复）- 使用 ref 避免依赖循环
+        const alreadyInGallery = galleryItemsRef.current.some(item => 
+          item.imageUrl === slot.imageUrl
+        )
+        if (alreadyInGallery) {
+          processedSlotsRef.current.add(slotKey)
+          return
+        }
+        
+        // 使用 slot.dbId 作为 generationId（每个 slot 都有独立的数据库记录）
+        // 或者使用 task.dbId 作为后备（如果 slot.dbId 与 task.dbId 相同）
+        const generationDbId = slot.dbId || task.dbId
+        
+        // 构建 galleryItem 格式的数据
+        const newItem = {
+          id: `${generationDbId}-${slotIndex}`,
+          generationId: generationDbId,
+          imageIndex: slotIndex,
+          imageUrl: slot.imageUrl,
+          type: task.type,
+          createdAt: task.createdAt,
+          generation: {
+            id: task.id,
+            dbId: generationDbId,
+            type: task.type,
+            outputImageUrls: task.outputImageUrls || task.imageSlots?.map(s => s.imageUrl || '').filter(Boolean) || [],
+            outputGenModes: task.imageSlots?.map(s => s.genMode).filter(Boolean) || [],
+            outputModelTypes: task.imageSlots?.map(s => s.modelType).filter(Boolean) || [],
+            inputImageUrl: task.inputImageUrl,
+            params: task.params,
+            createdAt: task.createdAt,
+          }
+        }
+        
+        console.log(`[Gallery] Appending completed image to local list: ${slotKey}`)
+        
+        // Bug 1 & 2 修复：只更新当前 tab 的列表和缓存
+        // 不再用当前 tab 的数据覆盖其他 tab 的缓存
+        // 其他相关 tab 的缓存直接清除，让下次访问时重新加载正确的数据
+        const currentCacheKey = getCacheKey(activeTab, modelSubType)
+        
+        setGalleryItems(prev => {
+          const newItems = [newItem, ...prev]
+          // 只更新当前 tab 的缓存
+          updateCacheItems(currentCacheKey, newItems)
+          return newItems
+        })
+        
+        // 清除其他相关 tab 的缓存（避免用错误数据覆盖）
+        // Bug 1 修复：完整清除所有 model 子分类缓存
+        const allModelSubTypes = ['all', 'buyer', 'prostudio', 'create_model', 'social']
+        
+        taskMapping.tabs.forEach(tab => {
+          if (tab === 'model' && taskMapping.subType) {
+            // 有特定 subType 的任务，只清除该 subType 的缓存
+            const cacheKey = getCacheKey(tab, taskMapping.subType)
+            if (cacheKey !== currentCacheKey) clearCache(cacheKey)
+          } else if (tab === 'model') {
+            // 没有 subType 的 model 项目（如 group_shoot），清除所有 model 子分类缓存
+            allModelSubTypes.forEach(subType => {
+              const cacheKey = getCacheKey(tab, subType)
+              if (cacheKey !== currentCacheKey) clearCache(cacheKey)
+            })
+          } else {
+            const cacheKey = getCacheKey(tab, '')
+            if (cacheKey !== currentCacheKey) clearCache(cacheKey)
+          }
+        })
+        processedSlotsRef.current.add(slotKey)
+      })
+    })
+  }, [tasks, activeTab, modelSubType, updateCacheItems, clearCache]) // 移除 galleryItems 依赖，使用 ref 代替
   
   // Helper to get display label for generation type
   // debugMode controls whether to show sub-labels (极简/扩展)
@@ -520,7 +714,8 @@ export default function GalleryPage() {
       setPullDistance(PULL_THRESHOLD) // Keep at threshold during refresh
       
       try {
-        await fetchGalleryData(1, false)
+        // 下拉刷新时强制从服务器获取，忽略缓存
+        await fetchGalleryData(1, false, true)
       } catch (error) {
         console.error('Refresh failed:', error)
       } finally {
@@ -535,20 +730,91 @@ export default function GalleryPage() {
   const handleDelete = async () => {
     if (!selectedItem) return
     
+    const deletedItem = selectedItem
+    const generationId = deletedItem.gen.dbId || deletedItem.gen.id
+    const itemType = deletedItem.gen.type
+    
+    // 根据 item type 确定需要清除的缓存
+    const getAffectedCacheKeys = (type: string): string[] => {
+      switch (type) {
+        case 'camera':
+        case 'social':
+          return ['all', 'model_buyer']
+        case 'pro_studio':
+          return ['all', 'model_prostudio']
+        case 'studio':
+          return ['all', 'product']
+        case 'group_shoot':
+        case 'reference_shot':
+          return ['all', 'model_buyer', 'model_prostudio'] // 显示在所有 model 子分类
+        default:
+          return ['all']
+      }
+    }
+    
+    const affectedCacheKeys = getAffectedCacheKeys(itemType)
+    const currentCacheKey = getCacheKey(activeTab, modelSubType)
+    
+    // 确保当前 tab 的缓存键也被处理（Bug 1 修复：处理 model_all 等情况）
+    const allCacheKeysToProcess = affectedCacheKeys.includes(currentCacheKey) 
+      ? affectedCacheKeys 
+      : [...affectedCacheKeys, currentCacheKey]
+    
+    // Bug 3 修复：保存删除前的完整列表，用于回滚时恢复原始顺序
+    const originalItems = [...galleryItems]
+    
+    // 1. 乐观更新：立即从本地列表移除该 generation 的所有图片
+    const newItems = galleryItems.filter(item => 
+      item.generationId !== generationId && item.generation?.dbId !== generationId
+    )
+    setGalleryItems(newItems)
+    
+    // 清除所有相关 tab 的缓存（确保即使缓存不存在也能处理）
+    // 当前 tab：更新缓存为新数据；其他 tab：清除缓存，下次访问时重新加载
+    allCacheKeysToProcess.forEach(cacheKey => {
+      if (cacheKey === currentCacheKey) {
+        // 当前 tab：更新缓存为新数据
+        setCache(cacheKey, {
+          items: newItems,
+          hasMore: hasMore,
+          currentPage: currentPage,
+          pendingTasks: pendingTasksFromDb,
+          fetchedAt: Date.now(),
+        })
+      } else {
+        // 其他 tab：清除缓存，下次访问时重新加载
+        clearCache(cacheKey)
+      }
+    })
+    
+    // 2. 关闭确认框和详情面板
+    setSelectedItem(null)
+    setShowDeleteConfirm(false)
+    
+    // 3. 异步调用 DELETE API
     try {
-      // 软删除整个 generation
-      const response = await fetch(`/api/generations/${selectedItem.gen.id}`, {
+      const response = await fetch(`/api/generations/${generationId}`, {
         method: 'DELETE'
       })
       
-      if (response.ok) {
-        // 刷新列表
-        fetchGalleryData(1, false)
-        setSelectedItem(null)
-        setShowDeleteConfirm(false)
+      if (!response.ok) {
+        throw new Error('Delete failed')
       }
+      console.log(`[Gallery] Deleted generation ${generationId}`)
     } catch (error) {
       console.error("Delete failed:", error)
+      // 4. 失败时回滚：恢复原始列表（Bug 3 修复：保持原始顺序）
+      setGalleryItems(originalItems)
+      
+      // 恢复当前 tab 的缓存
+      setCache(currentCacheKey, {
+        items: originalItems,
+        hasMore: hasMore,
+        currentPage: currentPage,
+        pendingTasks: pendingTasksFromDb,
+        fetchedAt: Date.now(),
+      })
+      // 其他 tab 的缓存保持清除状态，下次访问会重新加载
     }
   }
   
@@ -728,7 +994,8 @@ export default function GalleryPage() {
           style={{ transform: `translateY(${pullDistance}px)` }}
         >
           {/* 显示从数据库获取的 pending 任务（刷新后恢复的生成中任务） */}
-          {activeTab === "all" && pendingTasksFromDb
+          {/* 只有在 tasksHydrated 后才显示，避免 hydration 前 tasks 为空导致重复渲染 */}
+          {activeTab === "all" && tasksHydrated && pendingTasksFromDb
             .filter(pt => !tasks.some(t => t.id === pt.id)) // 排除已在本地 store 中的任务
             .map((pendingTask) => (
               Array.from({ length: pendingTask.totalImages || 4 }).map((_, idx) => (
@@ -742,9 +1009,19 @@ export default function GalleryPage() {
             ))}
           
           {/* Show cards for active tasks - each imageSlot gets its own card */}
+          {/* 过滤掉已经在 galleryItems 中的图片，避免重复渲染 */}
           {activeTab === "all" && activeTasks.map((task) => (
             task.imageSlots && task.imageSlots.length > 0 
-              ? task.imageSlots.map((slot) => (
+              ? task.imageSlots
+                  .filter(slot => {
+                    // 如果 slot 已完成且图片已在 galleryItems 中，跳过渲染（避免重复）
+                    if (slot.status === 'completed' && slot.imageUrl) {
+                      const alreadyInGallery = galleryItems.some(item => item.imageUrl === slot.imageUrl)
+                      if (alreadyInGallery) return false
+                    }
+                    return true
+                  })
+                  .map((slot) => (
                   <ImageSlotCard 
                     key={`${task.id}-slot-${slot.index}`} 
                     task={task} 
@@ -1217,9 +1494,11 @@ export default function GalleryPage() {
                           // 优先使用当前 index 的数据，如果没有则 fallback 到 index 0（所有图片共用同一个模特信息）
                           const perImageModel = selectedItem.gen.params?.perImageModels?.[selectedItem.index] 
                             || selectedItem.gen.params?.perImageModels?.[0]
-                          const modelUrl = perImageModel?.imageUrl || selectedItem.gen.params?.modelImage || selectedItem.gen.modelImageUrl
+                          // Pro Studio 使用 modelUrl，其他模式使用 modelImage
+                          const modelUrl = perImageModel?.imageUrl || selectedItem.gen.params?.modelImage || (selectedItem.gen.params as any)?.modelUrl || selectedItem.gen.modelImageUrl
                           const rawModelName = perImageModel?.name || selectedItem.gen.params?.model
-                          const modelIsRandom = perImageModel?.isRandom === true || (selectedItem.gen.params as any)?.modelIsRandom === true || rawModelName?.includes('(随机)') || rawModelName?.includes('随机')
+                          // Pro Studio 使用 modelIsAI 表示 AI 选择的模特
+                          const modelIsRandom = perImageModel?.isRandom === true || (selectedItem.gen.params as any)?.modelIsRandom === true || (selectedItem.gen.params as any)?.modelIsAI === true || rawModelName?.includes('(随机)') || rawModelName?.includes('随机')
                           const modelIsPreset = perImageModel?.isPreset === true || (selectedItem.gen.params as any)?.modelIsPreset === true || modelUrl?.includes('/presets/') || modelUrl?.includes('presets%2F')
                           const modelName = rawModelName?.replace(' (随机)', '').replace('(随机)', '').replace('随机', '') || t.common.model
                           
@@ -1281,9 +1560,11 @@ export default function GalleryPage() {
                           // 优先使用当前 index 的数据，如果没有则 fallback 到 index 0（所有图片共用同一个背景信息）
                           const perImageBg = selectedItem.gen.params?.perImageBackgrounds?.[selectedItem.index]
                             || selectedItem.gen.params?.perImageBackgrounds?.[0]
-                          const bgUrl = perImageBg?.imageUrl || selectedItem.gen.params?.backgroundImage || selectedItem.gen.backgroundImageUrl
+                          // Pro Studio 使用 sceneUrl，其他模式使用 backgroundImage
+                          const bgUrl = perImageBg?.imageUrl || selectedItem.gen.params?.backgroundImage || (selectedItem.gen.params as any)?.sceneUrl || selectedItem.gen.backgroundImageUrl
                           const rawBgName = perImageBg?.name || selectedItem.gen.params?.background
-                          const bgIsRandom = perImageBg?.isRandom === true || (selectedItem.gen.params as any)?.bgIsRandom === true || rawBgName?.includes('(随机)') || rawBgName?.includes('随机')
+                          // Pro Studio 使用 sceneIsAI 表示 AI 选择的背景
+                          const bgIsRandom = perImageBg?.isRandom === true || (selectedItem.gen.params as any)?.bgIsRandom === true || (selectedItem.gen.params as any)?.sceneIsAI === true || rawBgName?.includes('(随机)') || rawBgName?.includes('随机')
                           const bgIsPreset = perImageBg?.isPreset === true || (selectedItem.gen.params as any)?.bgIsPreset === true || bgUrl?.includes('/presets/') || bgUrl?.includes('presets%2F')
                           const bgName = rawBgName?.replace(' (随机)', '').replace('(随机)', '').replace('随机', '') || t.common.background
                           
