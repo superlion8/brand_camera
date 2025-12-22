@@ -274,27 +274,37 @@ export default function GalleryPage() {
         }
         
         console.log(`[Gallery] Appending completed image to local list: ${slotKey}`)
+        
+        // Bug 1 & 2 修复：只更新当前 tab 的列表和缓存
+        // 不再用当前 tab 的数据覆盖其他 tab 的缓存
+        // 其他相关 tab 的缓存直接清除，让下次访问时重新加载正确的数据
+        const currentCacheKey = getCacheKey(activeTab, modelSubType)
+        
         setGalleryItems(prev => {
           const newItems = [newItem, ...prev]
-          // 同步更新所有相关 tab 的缓存（Bug 3 修复）
-          taskMapping.tabs.forEach(tab => {
-            if (tab === 'model' && taskMapping.subType) {
-              // model tab 需要带上 subType
-              updateCacheItems(getCacheKey(tab, taskMapping.subType), newItems)
-            } else if (tab === 'model') {
-              // 没有 subType 的 model 项目，更新所有 model 子分类
-              updateCacheItems(getCacheKey(tab, 'buyer'), newItems)
-              updateCacheItems(getCacheKey(tab, 'prostudio'), newItems)
-            } else {
-              updateCacheItems(getCacheKey(tab, ''), newItems)
-            }
-          })
+          // 只更新当前 tab 的缓存
+          updateCacheItems(currentCacheKey, newItems)
           return newItems
+        })
+        
+        // 清除其他相关 tab 的缓存（避免用错误数据覆盖）
+        taskMapping.tabs.forEach(tab => {
+          if (tab === 'model' && taskMapping.subType) {
+            const cacheKey = getCacheKey(tab, taskMapping.subType)
+            if (cacheKey !== currentCacheKey) clearCache(cacheKey)
+          } else if (tab === 'model') {
+            // 没有 subType 的 model 项目，清除所有 model 子分类缓存
+            if (getCacheKey(tab, 'buyer') !== currentCacheKey) clearCache(getCacheKey(tab, 'buyer'))
+            if (getCacheKey(tab, 'prostudio') !== currentCacheKey) clearCache(getCacheKey(tab, 'prostudio'))
+          } else {
+            const cacheKey = getCacheKey(tab, '')
+            if (cacheKey !== currentCacheKey) clearCache(cacheKey)
+          }
         })
         processedSlotsRef.current.add(slotKey)
       })
     })
-  }, [tasks, activeTab, modelSubType, updateCacheItems]) // 移除 galleryItems 依赖，使用 ref 代替
+  }, [tasks, activeTab, modelSubType, updateCacheItems, clearCache]) // 移除 galleryItems 依赖，使用 ref 代替
   
   // Helper to get display label for generation type
   // debugMode controls whether to show sub-labels (极简/扩展)
@@ -708,10 +718,10 @@ export default function GalleryPage() {
       ? affectedCacheKeys 
       : [...affectedCacheKeys, currentCacheKey]
     
+    // Bug 3 修复：保存删除前的完整列表，用于回滚时恢复原始顺序
+    const originalItems = [...galleryItems]
+    
     // 1. 乐观更新：立即从本地列表移除该 generation 的所有图片
-    const removedItems = galleryItems.filter(item => 
-      item.generationId === generationId || item.generation?.dbId === generationId
-    )
     const newItems = galleryItems.filter(item => 
       item.generationId !== generationId && item.generation?.dbId !== generationId
     )
@@ -751,13 +761,12 @@ export default function GalleryPage() {
       console.log(`[Gallery] Deleted generation ${generationId}`)
     } catch (error) {
       console.error("Delete failed:", error)
-      // 4. 失败时回滚：重新添加被删除的项目
-      const restoredItems = [...removedItems, ...newItems]
-      setGalleryItems(restoredItems)
+      // 4. 失败时回滚：恢复原始列表（Bug 3 修复：保持原始顺序）
+      setGalleryItems(originalItems)
       
       // 恢复当前 tab 的缓存
       setCache(currentCacheKey, {
-        items: restoredItems,
+        items: originalItems,
         hasMore: hasMore,
         currentPage: currentPage,
         pendingTasks: pendingTasksFromDb,
