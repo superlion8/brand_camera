@@ -356,8 +356,10 @@ export const useAssetStore = create<AssetState>()(
         
         console.log('[Store] Adding favorite, currentUserId:', currentUserId, 'data:', favoriteData, 'skipCloudSync:', skipCloudSync)
         
+        // 使用临时 ID 先保存到本地
+        const tempId = favoriteData.id || `temp-${Date.now()}`
         const favorite: Favorite = {
-          id: favoriteData.id || generateId(), // 使用传入的 id 或自动生成
+          id: tempId,
           generationId: favoriteData.generationId,
           imageIndex: favoriteData.imageIndex,
           createdAt: favoriteData.createdAt || new Date().toISOString(),
@@ -375,6 +377,21 @@ export const useAssetStore = create<AssetState>()(
           console.log('[Store] Syncing favorite to cloud for user:', currentUserId)
           const result = await syncService.saveFavorite(currentUserId, favorite)
           console.log('[Store] Favorite sync result:', result ? 'success' : 'failed')
+          
+          // 如果同步成功，用云端返回的 UUID 更新本地记录
+          if (result && result.id !== tempId) {
+            console.log('[Store] Updating local favorite ID from', tempId, 'to', result.id)
+            // 先删除临时 ID 的记录
+            await dbDelete(STORES.FAVORITES, tempId)
+            // 用云端 ID 保存
+            await dbPut(STORES.FAVORITES, result)
+            // 更新状态
+            set((state) => ({
+              favorites: state.favorites.map(f => 
+                f.id === tempId ? { ...f, id: result.id } : f
+              )
+            }))
+          }
         }
       },
       

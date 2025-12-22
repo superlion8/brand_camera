@@ -605,13 +605,18 @@ function ProStudioPageContent() {
                   })
                   
                   // 更新 generatedImages 状态
+                  // 使用固定长度数组，避免稀疏数组导致的渲染问题
                   setGeneratedImages(prev => {
-                    const newImages = [...prev]
+                    const newImages = prev.length === PRO_STUDIO_NUM_IMAGES 
+                      ? [...prev] 
+                      : Array(PRO_STUDIO_NUM_IMAGES).fill('')
                     newImages[data.index] = data.image
                     return newImages
                   })
                   setGeneratedModes(prev => {
-                    const newModes = [...prev]
+                    const newModes = prev.length === PRO_STUDIO_NUM_IMAGES 
+                      ? [...prev] 
+                      : Array(PRO_STUDIO_NUM_IMAGES).fill('')
                     newModes[data.index] = data.shotType || SHOT_TYPES[data.index]
                     return newModes
                   })
