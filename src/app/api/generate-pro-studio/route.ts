@@ -415,10 +415,19 @@ export async function POST(request: NextRequest) {
     } = body
 
     // 支持两种模式：单商品 (productImage) 和多商品 (productImages/outfitItems)
+    // outfitItems 支持两种格式：
+    //   - 直接 URL 字符串：{ top: "https://..." }
+    //   - 对象格式：{ top: { imageUrl: "https://..." } }
+    const getOutfitItemUrl = (item: any): string | undefined => {
+      if (!item) return undefined
+      if (typeof item === 'string') return item
+      return item.imageUrl
+    }
+    
     // 获取主商品图片（用于 AI 分析）
     const mainProductImage = productImage 
       || (productImages && (productImages as any[])[0]?.imageUrl)
-      || (outfitItems && (Object.values(outfitItems) as any[])[0]?.imageUrl)
+      || (outfitItems && getOutfitItemUrl(Object.values(outfitItems)[0]))
     
     // 获取所有商品图片 URL（用于保存记录）
     const allProductImageUrls: string[] = productImage 
@@ -426,7 +435,7 @@ export async function POST(request: NextRequest) {
       : productImages 
         ? (productImages as any[]).map((p: any) => typeof p === 'string' ? p : p.imageUrl).filter(Boolean)
         : outfitItems 
-          ? (Object.values(outfitItems) as any[]).map((p: any) => p?.imageUrl).filter(Boolean)
+          ? (Object.values(outfitItems) as any[]).map((p: any) => getOutfitItemUrl(p)).filter(Boolean) as string[]
           : []
 
     if (!mainProductImage) {
