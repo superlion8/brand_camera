@@ -220,12 +220,18 @@ export default function GalleryPage() {
     
     // 遍历所有任务，找到已完成但未 append 的 slot
     tasks.forEach(task => {
-      if (!task.dbId || !task.imageSlots) return
+      // Bug 1 修复：移除 !task.dbId 检查，改为使用 slot.dbId
+      // task.dbId 只在 index 0 完成时设置，如果图片乱序完成会导致问题
+      if (!task.imageSlots) return
       
       const taskMapping = getTabsForType(task.type)
       
       task.imageSlots.forEach((slot, slotIndex) => {
         if (slot.status !== 'completed' || !slot.imageUrl) return
+        
+        // 需要 slot.dbId 才能正确构建 galleryItem
+        // 如果 slot.dbId 不存在，说明后端还没返回，等待下次更新
+        if (!slot.dbId) return
         
         const slotKey = `${task.id}-${slotIndex}`
         if (processedSlotsRef.current.has(slotKey)) return
@@ -242,17 +248,21 @@ export default function GalleryPage() {
           return
         }
         
+        // 使用 slot.dbId 作为 generationId（每个 slot 都有独立的数据库记录）
+        // 或者使用 task.dbId 作为后备（如果 slot.dbId 与 task.dbId 相同）
+        const generationDbId = slot.dbId || task.dbId
+        
         // 构建 galleryItem 格式的数据
         const newItem = {
-          id: `${task.dbId}-${slotIndex}`,
-          generationId: task.dbId,
+          id: `${generationDbId}-${slotIndex}`,
+          generationId: generationDbId,
           imageIndex: slotIndex,
           imageUrl: slot.imageUrl,
           type: task.type,
           createdAt: task.createdAt,
           generation: {
             id: task.id,
-            dbId: task.dbId,
+            dbId: generationDbId,
             type: task.type,
             outputImageUrls: task.outputImageUrls || task.imageSlots?.map(s => s.imageUrl || '').filter(Boolean) || [],
             outputGenModes: task.imageSlots?.map(s => s.genMode).filter(Boolean) || [],
