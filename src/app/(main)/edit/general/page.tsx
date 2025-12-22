@@ -52,6 +52,10 @@ export default function GeneralEditPage() {
   const [cameraReady, setCameraReady] = useState(false)
   const [isLoadingAsset, setIsLoadingAsset] = useState(false)
   
+  // Gallery panel data (fetched from API, not store)
+  const [galleryPhotos, setGalleryPhotos] = useState<any[]>([])
+  const [isLoadingGallery, setIsLoadingGallery] = useState(false)
+  
   // Check for image passed from gallery page
   useEffect(() => {
     const editImage = sessionStorage.getItem('editImage')
@@ -61,11 +65,33 @@ export default function GeneralEditPage() {
     }
   }, [])
   
+  // Fetch gallery photos when panel opens
+  useEffect(() => {
+    if (showGalleryPanel && user) {
+      const fetchGalleryPhotos = async () => {
+        setIsLoadingGallery(true)
+        try {
+          const response = await fetch('/api/gallery?type=all&page=1')
+          const result = await response.json()
+          if (result.success && result.data?.items) {
+            setGalleryPhotos(result.data.items)
+            console.log('[GeneralEdit] Fetched gallery photos:', result.data.items.length)
+          }
+        } catch (error) {
+          console.error('[GeneralEdit] Failed to fetch gallery:', error)
+        } finally {
+          setIsLoadingGallery(false)
+        }
+      }
+      fetchGalleryPhotos()
+    }
+  }, [showGalleryPanel, user])
+  
   // Edit state - only prompt for general edit
   const [customPrompt, setCustomPrompt] = useState("")
   const [resultImage, setResultImage] = useState<string | null>(null)
   
-  const { addGeneration, userProducts, generations, isInitialLoading: isAssetLoading } = useAssetStore()
+  const { addGeneration, userProducts } = useAssetStore()
   const { addTask, updateTaskStatus } = useGenerationTaskStore()
   
   // Quota management
@@ -824,35 +850,32 @@ export default function GeneralEditPage() {
               
               <div className="flex-1 overflow-y-auto bg-zinc-50 p-4 relative">
                 {/* Loading overlay */}
-                {(isLoadingAsset || isAssetLoading) && (
+                {isLoadingGallery && (
                   <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
                     <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
                   </div>
                 )}
-                {!isAssetLoading && generations.length > 0 ? (
+                {!isLoadingGallery && galleryPhotos.length > 0 ? (
                   <div className="grid grid-cols-3 gap-3">
-                    {generations
-                      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                      .flatMap(gen => gen.outputImageUrls?.map((url, idx) => ({ url, gen, idx })) || [])
-                      .map((item, index) => (
-                        <button
-                          key={`${item.gen.id}-${item.idx}`}
-                          disabled={isLoadingAsset}
-                          onClick={() => handleSelectFromGallery(item.url)}
-                          className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-purple-500 transition-all bg-white disabled:opacity-50"
-                        >
-                          <Image src={item.url} alt={`${t.edit.generationResult} ${index + 1}`} fill className="object-cover" />
-                          <span className={`absolute top-1 left-1 text-white text-[8px] px-1 py-0.5 rounded font-medium ${
-                            item.gen.type === 'studio' ? 'bg-amber-500' :
-                            item.gen.type === 'edit' ? 'bg-purple-500' : 'bg-blue-500'
-                          }`}>
-                            {item.gen.type === 'studio' ? '影棚' :
-                             item.gen.type === 'edit' ? t.nav?.edit : t.common?.model}
-                          </span>
-                        </button>
-                      ))}
+                    {galleryPhotos.map((item, index) => (
+                      <button
+                        key={item.id || `gallery-${index}`}
+                        disabled={isLoadingAsset}
+                        onClick={() => handleSelectFromGallery(item.imageUrl)}
+                        className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-purple-500 transition-all bg-white disabled:opacity-50"
+                      >
+                        <Image src={item.imageUrl} alt={`${t.edit?.generationResult || '生成结果'} ${index + 1}`} fill className="object-cover" />
+                        <span className={`absolute top-1 left-1 text-white text-[8px] px-1 py-0.5 rounded font-medium ${
+                          item.generation?.type === 'studio' ? 'bg-amber-500' :
+                          item.generation?.type === 'edit' ? 'bg-purple-500' : 'bg-blue-500'
+                        }`}>
+                          {item.generation?.type === 'studio' ? '影棚' :
+                           item.generation?.type === 'edit' ? (t.nav?.edit || '编辑') : (t.common?.model || '模特')}
+                        </span>
+                      </button>
+                    ))}
                   </div>
-                ) : !isAssetLoading ? (
+                ) : !isLoadingGallery ? (
                   <div className="flex flex-col items-center justify-center h-full text-zinc-400">
                     <Images className="w-12 h-12 mb-3 opacity-30" />
                     <p className="text-sm">{t.edit?.noGallery || '暂无生成记录'}</p>
