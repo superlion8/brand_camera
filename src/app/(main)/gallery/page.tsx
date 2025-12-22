@@ -1471,9 +1471,11 @@ export default function GalleryPage() {
                           // 优先使用当前 index 的数据，如果没有则 fallback 到 index 0（所有图片共用同一个模特信息）
                           const perImageModel = selectedItem.gen.params?.perImageModels?.[selectedItem.index] 
                             || selectedItem.gen.params?.perImageModels?.[0]
-                          const modelUrl = perImageModel?.imageUrl || selectedItem.gen.params?.modelImage || selectedItem.gen.modelImageUrl
+                          // Pro Studio 使用 modelUrl，其他模式使用 modelImage
+                          const modelUrl = perImageModel?.imageUrl || selectedItem.gen.params?.modelImage || selectedItem.gen.params?.modelUrl || selectedItem.gen.modelImageUrl
                           const rawModelName = perImageModel?.name || selectedItem.gen.params?.model
-                          const modelIsRandom = perImageModel?.isRandom === true || (selectedItem.gen.params as any)?.modelIsRandom === true || rawModelName?.includes('(随机)') || rawModelName?.includes('随机')
+                          // Pro Studio 使用 modelIsAI 表示 AI 选择的模特
+                          const modelIsRandom = perImageModel?.isRandom === true || (selectedItem.gen.params as any)?.modelIsRandom === true || (selectedItem.gen.params as any)?.modelIsAI === true || rawModelName?.includes('(随机)') || rawModelName?.includes('随机')
                           const modelIsPreset = perImageModel?.isPreset === true || (selectedItem.gen.params as any)?.modelIsPreset === true || modelUrl?.includes('/presets/') || modelUrl?.includes('presets%2F')
                           const modelName = rawModelName?.replace(' (随机)', '').replace('(随机)', '').replace('随机', '') || t.common.model
                           
@@ -1535,9 +1537,11 @@ export default function GalleryPage() {
                           // 优先使用当前 index 的数据，如果没有则 fallback 到 index 0（所有图片共用同一个背景信息）
                           const perImageBg = selectedItem.gen.params?.perImageBackgrounds?.[selectedItem.index]
                             || selectedItem.gen.params?.perImageBackgrounds?.[0]
-                          const bgUrl = perImageBg?.imageUrl || selectedItem.gen.params?.backgroundImage || selectedItem.gen.backgroundImageUrl
+                          // Pro Studio 使用 sceneUrl，其他模式使用 backgroundImage
+                          const bgUrl = perImageBg?.imageUrl || selectedItem.gen.params?.backgroundImage || selectedItem.gen.params?.sceneUrl || selectedItem.gen.backgroundImageUrl
                           const rawBgName = perImageBg?.name || selectedItem.gen.params?.background
-                          const bgIsRandom = perImageBg?.isRandom === true || (selectedItem.gen.params as any)?.bgIsRandom === true || rawBgName?.includes('(随机)') || rawBgName?.includes('随机')
+                          // Pro Studio 使用 sceneIsAI 表示 AI 选择的背景
+                          const bgIsRandom = perImageBg?.isRandom === true || (selectedItem.gen.params as any)?.bgIsRandom === true || (selectedItem.gen.params as any)?.sceneIsAI === true || rawBgName?.includes('(随机)') || rawBgName?.includes('随机')
                           const bgIsPreset = perImageBg?.isPreset === true || (selectedItem.gen.params as any)?.bgIsPreset === true || bgUrl?.includes('/presets/') || bgUrl?.includes('presets%2F')
                           const bgName = rawBgName?.replace(' (随机)', '').replace('(随机)', '').replace('随机', '') || t.common.background
                           
