@@ -82,7 +82,7 @@ export default function GalleryPage() {
   const { t } = useTranslation()
   
   // 使用全局 galleryStore 缓存（支持预加载）
-  const { getCache, setCache, updateCacheItems } = useGalleryStore()
+  const { getCache, setCache, updateCacheItems, clearCache } = useGalleryStore()
   
   // 从 API 获取图库数据（优先使用预加载的缓存）
   const fetchGalleryData = async (page: number = 1, append: boolean = false, forceRefresh: boolean = false) => {
@@ -672,7 +672,7 @@ export default function GalleryPage() {
     const generationId = deletedItem.gen.dbId || deletedItem.gen.id
     const itemType = deletedItem.gen.type
     
-    // 根据 item type 确定需要更新的缓存
+    // 根据 item type 确定需要清除的缓存
     const getAffectedCacheKeys = (type: string): string[] => {
       switch (type) {
         case 'camera':
@@ -691,20 +691,33 @@ export default function GalleryPage() {
     }
     
     const affectedCacheKeys = getAffectedCacheKeys(itemType)
+    const currentCacheKey = getCacheKey(activeTab, modelSubType)
     
     // 1. 乐观更新：立即从本地列表移除该 generation 的所有图片
     const removedItems = galleryItems.filter(item => 
       item.generationId === generationId || item.generation?.dbId === generationId
     )
-    setGalleryItems(prev => {
-      const newItems = prev.filter(item => 
-        item.generationId !== generationId && item.generation?.dbId !== generationId
-      )
-      // 同步更新所有相关 tab 的缓存
-      affectedCacheKeys.forEach(cacheKey => {
-        updateCacheItems(cacheKey, newItems)
-      })
-      return newItems
+    const newItems = galleryItems.filter(item => 
+      item.generationId !== generationId && item.generation?.dbId !== generationId
+    )
+    setGalleryItems(newItems)
+    
+    // 清除所有相关 tab 的缓存（确保即使缓存不存在也能处理）
+    // 然后只更新当前 tab 的缓存（因为我们知道当前 tab 的数据）
+    affectedCacheKeys.forEach(cacheKey => {
+      if (cacheKey === currentCacheKey) {
+        // 当前 tab：更新缓存为新数据
+        setCache(cacheKey, {
+          items: newItems,
+          hasMore: hasMore,
+          currentPage: currentPage,
+          pendingTasks: pendingTasksFromDb,
+          fetchedAt: Date.now(),
+        })
+      } else {
+        // 其他 tab：清除缓存，下次访问时重新加载
+        clearCache(cacheKey)
+      }
     })
     
     // 2. 关闭确认框和详情面板
@@ -724,14 +737,18 @@ export default function GalleryPage() {
     } catch (error) {
       console.error("Delete failed:", error)
       // 4. 失败时回滚：重新添加被删除的项目
-      setGalleryItems(prev => {
-        const newItems = [...removedItems, ...prev]
-        // 同步更新所有相关 tab 的缓存
-        affectedCacheKeys.forEach(cacheKey => {
-          updateCacheItems(cacheKey, newItems)
-        })
-        return newItems
+      const restoredItems = [...removedItems, ...newItems]
+      setGalleryItems(restoredItems)
+      
+      // 恢复当前 tab 的缓存
+      setCache(currentCacheKey, {
+        items: restoredItems,
+        hasMore: hasMore,
+        currentPage: currentPage,
+        pendingTasks: pendingTasksFromDb,
+        fetchedAt: Date.now(),
       })
+      // 其他 tab 的缓存保持清除状态，下次访问会重新加载
     }
   }
   
