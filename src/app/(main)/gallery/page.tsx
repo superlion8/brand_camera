@@ -15,6 +15,7 @@ import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
 import { generateId } from "@/lib/utils"
 import { 
   isModelRelatedType, 
+  isModelType as isBuyerShowTypeRaw,
   isProStudioType as isProStudioTypeRaw, 
   isGroupShootType as isGroupShootTypeRaw,
   isProductType as isProductTypeRaw,
@@ -29,8 +30,8 @@ type TabType = "all" | "model" | "product" | "group" | "reference" | "favorites"
 type ModelSubType = "all" | "buyer" | "prostudio" | "create_model" | "social" | "lifestyle"  // 买家秀 / 专业棚拍 / 创建专属模特 / 社媒种草 / LifeStyle 街拍
 
 // 类型分类函数包装器（兼容 Generation 对象参数）
-function isModelType(gen: Generation | null | undefined): boolean {
-  return gen ? isModelRelatedType(gen.type) : false
+function isBuyerShowType(gen: Generation | null | undefined): boolean {
+  return gen ? isBuyerShowTypeRaw(gen.type) : false
 }
 function isProStudioType(gen: Generation | null | undefined): boolean {
   return gen ? isProStudioTypeRaw(gen.type) : false
@@ -430,8 +431,16 @@ export default function GalleryPage() {
       return { label: t.gallery.editRoom, color: 'bg-purple-500' }
     }
     
+    // LifeStyle types (LifeStyle 街拍)
+    if (isLifestyleType(gen)) {
+      return { 
+        label: t.gallery.lifestyleShot || 'LifeStyle 街拍', 
+        color: 'bg-purple-600',
+      }
+    }
+
     // Model/camera types (买家秀)
-    if (isModelType(gen)) {
+    if (isBuyerShowType(gen)) {
       const mode = gen.outputGenModes?.[imageIndex]
       // Only show sub-labels in debug mode
       const subLabel = isDebugMode && mode ? (mode === 'simple' ? t.common.simple : t.common.extended) : undefined
@@ -440,14 +449,6 @@ export default function GalleryPage() {
         color: 'bg-blue-500',
         subLabel,
         subColor: mode === 'simple' ? 'bg-green-500' : 'bg-purple-500'
-      }
-    }
-
-    // LifeStyle types (LifeStyle 街拍)
-    if (isLifestyleType(gen)) {
-      return { 
-        label: t.gallery.lifestyleShot || 'LifeStyle 街拍', 
-        color: 'bg-purple-600',
       }
     }
     
