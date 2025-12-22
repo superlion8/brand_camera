@@ -541,6 +541,7 @@ function CameraPageContent() {
         duration?: number
         error?: string
         savedToDb?: boolean // 后端是否已写入数据库
+        dbId?: string // 数据库 UUID，用于收藏功能
       }
       
       // Helper to create a delayed request for model images
