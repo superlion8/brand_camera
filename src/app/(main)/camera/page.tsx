@@ -523,6 +523,10 @@ function CameraPageContent() {
       
       const staggerDelay = 1000 // 1 second between each request
       
+      // 使用同步标志防止多张图片同时完成时重复设置 currentGenerationId
+      // modeRef.current 通过 useEffect 异步更新，不能可靠地防止并发
+      let firstImageReceived = false
+      
       // Track per-image model/background for saving later
       const perImageModels: { name: string; imageUrl: string; isRandom: boolean; isPreset: boolean }[] = Array(NUM_IMAGES).fill(null)
       const perImageBackgrounds: { name: string; imageUrl: string; isRandom: boolean; isPreset: boolean }[] = Array(NUM_IMAGES).fill(null)
@@ -689,8 +693,9 @@ function CameraPageContent() {
                 })
                 
                 // 第一张图片完成时，立即切换到 results 模式
-                // 用户可以边看结果边等待其他图片
-                if (modeRef.current === "processing") {
+                // 使用 firstImageReceived 同步标志（而非 modeRef）防止并发图片重复触发
+                if (!firstImageReceived && modeRef.current === "processing") {
+                  firstImageReceived = true
                   console.log(`[Camera] First image ready, switching to results mode`)
                   setMode("results")
                   // 设置 currentGenerationId 为数据库 UUID，用于收藏
