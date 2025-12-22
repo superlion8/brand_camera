@@ -31,8 +31,8 @@ function LifestylePageContent() {
   const { user, isLoading: authLoading } = useAuth()
   const t = useLanguageStore(state => state.t)
   const { checkQuota, refreshQuota, showExceededModal, requiredCount, closeExceededModal, quota } = useQuota()
-  const { addTask, updateTaskStatus, updateImageSlot, initImageSlots, tasks, addGeneration } = useGenerationTaskStore()
-  const { userProducts, addUserAsset } = useAssetStore()
+  const { addTask, updateTaskStatus, updateImageSlot, initImageSlots, tasks } = useGenerationTaskStore()
+  const { userProducts, addUserAsset, addGeneration } = useAssetStore()
   
   const webcamRef = useRef<Webcam>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
