@@ -323,7 +323,7 @@ function LifestylePageContent() {
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
             exit={{ opacity: 0 }}
-            className="flex-1 relative flex flex-col"
+            className="flex-1 relative overflow-hidden flex flex-col"
           >
             {/* Header */}
             <div className="absolute top-4 left-4 right-4 z-20 flex justify-between items-center">
@@ -364,34 +364,53 @@ function LifestylePageContent() {
               )}
             </div>
 
-            {/* Bottom Controls */}
-            <div className="p-6 pb-safe bg-black">
+            {/* Bottom Controls Area */}
+            <div className="bg-black flex flex-col justify-end pb-safe pt-6 px-6 relative z-20 shrink-0 min-h-[9rem]">
               {mode === "review" ? (
-                <div className="flex flex-col gap-4">
+                <div className="space-y-4 pb-4">
                   <div className="text-center text-white/60 text-xs px-4">
                     AI 将自动分析这件服装，并为您匹配最佳的街拍模特和城市场景
                   </div>
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={handleLifestyleGenerate}
-                    className="w-full h-14 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold text-lg flex items-center justify-center gap-2"
-                  >
-                    <Wand2 className="w-5 h-5" />
-                    开始生成
-                  </motion.button>
+                  <div className="w-full flex justify-center">
+                    <motion.button
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handleLifestyleGenerate}
+                      className="w-full max-w-xs h-14 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold text-lg flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(168,85,247,0.4)]"
+                    >
+                      <Wand2 className="w-5 h-5" />
+                      开始生成
+                    </motion.button>
+                  </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-center gap-12">
-                  <button onClick={() => fileInputRef.current?.click()} className="flex flex-col items-center gap-2 text-white/70">
+                <div className="flex items-center justify-center gap-8 pb-4">
+                  {/* Album - Left of shutter */}
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors"
+                  >
                     <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
                       <ImageIcon className="w-6 h-6" />
                     </div>
                     <span className="text-[10px]">相册</span>
                   </button>
-                  <button onClick={handleCapture} className="w-20 h-20 rounded-full border-4 border-white/30 flex items-center justify-center">
-                    <div className="w-16 h-16 bg-white rounded-full" />
+
+                  {/* Shutter */}
+                  <button 
+                    onClick={handleCapture}
+                    disabled={!hasCamera}
+                    className="w-20 h-20 rounded-full border-4 border-white/30 flex items-center justify-center relative group active:scale-95 transition-transform disabled:opacity-50"
+                  >
+                    <div className="w-[72px] h-[72px] bg-white rounded-full group-active:bg-gray-200 transition-colors border-2 border-black" />
                   </button>
-                  <button onClick={() => setShowProductPanel(true)} className="flex flex-col items-center gap-2 text-white/70">
+
+                  {/* Examples - Right of shutter */}
+                  <button 
+                    onClick={() => setShowProductPanel(true)}
+                    className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors"
+                  >
                     <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
                       <Sparkles className="w-6 h-6" />
                     </div>
