@@ -998,9 +998,19 @@ export default function GalleryPage() {
             ))}
           
           {/* Show cards for active tasks - each imageSlot gets its own card */}
+          {/* 过滤掉已经在 galleryItems 中的图片，避免重复渲染 */}
           {activeTab === "all" && activeTasks.map((task) => (
             task.imageSlots && task.imageSlots.length > 0 
-              ? task.imageSlots.map((slot) => (
+              ? task.imageSlots
+                  .filter(slot => {
+                    // 如果 slot 已完成且图片已在 galleryItems 中，跳过渲染（避免重复）
+                    if (slot.status === 'completed' && slot.imageUrl) {
+                      const alreadyInGallery = galleryItems.some(item => item.imageUrl === slot.imageUrl)
+                      if (alreadyInGallery) return false
+                    }
+                    return true
+                  })
+                  .map((slot) => (
                   <ImageSlotCard 
                     key={`${task.id}-slot-${slot.index}`} 
                     task={task} 
