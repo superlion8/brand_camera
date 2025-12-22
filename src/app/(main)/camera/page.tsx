@@ -760,6 +760,7 @@ function CameraPageContent() {
       const allGenModes: (('extended' | 'simple') | null)[] = Array(NUM_IMAGES).fill(null)
       let maxDuration = 0
       let allSavedToDb = true // 检查是否所有成功的图片都已被后端保存
+      let firstDbId: string | null = null // 追踪第一个有效的 dbId，用于 fallback
       
       for (const result of results) {
         if (result.success && result.image) {
@@ -770,6 +771,10 @@ function CameraPageContent() {
           maxDuration = Math.max(maxDuration, result.duration || 0)
           if (!result.savedToDb) {
             allSavedToDb = false
+          }
+          // 追踪第一个有效的 dbId（无论是哪张图片返回的）
+          if (result.dbId && !firstDbId) {
+            firstDbId = result.dbId
           }
         }
       }
@@ -885,8 +890,15 @@ function CameraPageContent() {
           setGeneratedModelTypes(data.modelTypes || [])
           setGeneratedGenModes(data.genModes || [])
           setGeneratedPrompts(data.prompts || [])
-          // currentGenerationId 已在第一张图片返回时设置为 dbId
-          // 无需再设置为前端临时 taskId
+          // 如果第一张图片失败了（currentGenerationId 没有被设置），使用收集到的 firstDbId 或 taskId 作为 fallback
+          // 这确保即使第一张图片失败，后续成功的图片仍然可以使用收藏功能
+          if (firstDbId) {
+            setCurrentGenerationId(firstDbId)
+            console.log(`[Camera] Fallback: Set currentGenerationId to firstDbId: ${firstDbId}`)
+          } else {
+            setCurrentGenerationId(taskId)
+            console.log(`[Camera] Fallback: No dbId received, using taskId: ${taskId}`)
+          }
           setMode("results")
           // 更新 URL 为 results 模式（检查是否仍在camera页面）
           if (window.location.pathname === '/camera') {
