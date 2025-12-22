@@ -84,6 +84,33 @@ export default function GalleryPage() {
   // 使用全局 galleryStore 缓存（支持预加载）
   const { getCache, setCache, updateCacheItems, clearCache } = useGalleryStore()
   
+  // 使用 ref 追踪已处理的 slot，避免重复 append
+  const processedSlotsRef = useRef<Set<string>>(new Set())
+  // 使用 ref 存储 galleryItems 的最新值，避免依赖循环
+  const galleryItemsRef = useRef<any[]>([])
+  galleryItemsRef.current = galleryItems
+  // 使用 ref 存储 tasks 的最新值，用于在 fetchGalleryData 中标记已处理的 slots
+  const tasksRef = useRef<typeof tasks>([])
+  tasksRef.current = tasks
+  
+  // 标记从服务器获取的图片对应的 slots 为已处理
+  // 这样可以防止 append useEffect 重复添加相同的图片
+  const markServerItemsAsProcessed = (serverItems: any[]) => {
+    serverItems.forEach(item => {
+      tasksRef.current.forEach(task => {
+        task.imageSlots?.forEach((slot, slotIndex) => {
+          if (slot.imageUrl === item.imageUrl) {
+            const slotKey = `${task.id}-${slotIndex}`
+            if (!processedSlotsRef.current.has(slotKey)) {
+              processedSlotsRef.current.add(slotKey)
+              console.log(`[Gallery] Marked as processed (from server): ${slotKey}`)
+            }
+          }
+        })
+      })
+    })
+  }
+  
   // 从 API 获取图库数据（优先使用预加载的缓存）
   const fetchGalleryData = async (page: number = 1, append: boolean = false, forceRefresh: boolean = false) => {
     if (!user) return
@@ -96,6 +123,8 @@ export default function GalleryPage() {
       if (cached) {
         console.log(`[Gallery] Using cache for ${cacheKey}, ${cached.items.length} items`)
         setGalleryItems(cached.items)
+        // 标记缓存的图片为已处理，防止第二个 useEffect 重复 append
+        markServerItemsAsProcessed(cached.items)
         setHasMore(cached.hasMore)
         setCurrentPage(cached.currentPage)
         setPendingTasksFromDb(cached.pendingTasks)
@@ -131,6 +160,8 @@ export default function GalleryPage() {
           })
         } else {
           setGalleryItems(result.data.items)
+          // 标记从服务器获取的图片为已处理，防止第二个 useEffect 重复 append
+          markServerItemsAsProcessed(result.data.items)
           // 第一页时更新 pending 任务
           if (result.data.pendingTasks) {
             setPendingTasksFromDb(result.data.pendingTasks)
@@ -173,12 +204,6 @@ export default function GalleryPage() {
   }, [activeTab, modelSubType, user])
   
   // 任务完成时，本地 append 到 galleryItems（不再定时刷新）
-  // 使用 ref 追踪已处理的 slot，避免重复 append
-  const processedSlotsRef = useRef<Set<string>>(new Set())
-  // 使用 ref 存储 galleryItems 的最新值，避免依赖循环
-  const galleryItemsRef = useRef<any[]>([])
-  galleryItemsRef.current = galleryItems
-  
   useEffect(() => {
     // 定义 task.type 到 tab 的映射
     const getTabsForType = (type: string): { tabs: string[], subType: string | null } => {
