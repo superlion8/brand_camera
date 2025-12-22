@@ -489,7 +489,7 @@ function LifestylePageContent() {
                       setMode("review")
                       setShowProductPanel(false)
                     }}>
-                      <Image src={p.imageUrl} alt={p.name} fill className="object-cover" />
+                      <Image src={p.imageUrl} alt={p.name || 'Product'} fill className="object-cover" />
                     </div>
                   ))}
                 </div>
