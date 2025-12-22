@@ -19,6 +19,7 @@ export const TaskTypes = {
   EDIT: 'edit',                      // 通用编辑
   CREATE_MODEL: 'create_model',      // 创建专属模特
   REFERENCE_SHOT: 'reference_shot',  // 参考图拍摄
+  LIFESTYLE: 'lifestyle',            // LifeStyle 街拍
 } as const
 
 export type CanonicalTaskType = typeof TaskTypes[keyof typeof TaskTypes]
@@ -54,6 +55,9 @@ const TYPE_MAP: Record<string, CanonicalTaskType> = {
   
   // 参考图拍摄 → reference_shot
   'reference_shot': TaskTypes.REFERENCE_SHOT,
+  
+  // LifeStyle 街拍 → lifestyle
+  'lifestyle': TaskTypes.LIFESTYLE,
 }
 
 // ===== 核心函数 =====
@@ -125,6 +129,14 @@ export function isReferenceShotType(type?: string): boolean {
 }
 
 /**
+ * 判断是否是 LifeStyle 街拍类型
+ * 包含: lifestyle
+ */
+export function isLifestyleType(type?: string): boolean {
+  return getCanonicalType(type) === TaskTypes.LIFESTYLE
+}
+
+/**
  * 判断是否是模特相关类型（买家秀 + 专业棚拍 + 组图 + 创建专属模特 + 参考图拍摄）
  * 用于图库的"模特"分类筛选
  */
@@ -134,7 +146,8 @@ export function isModelRelatedType(type?: string): boolean {
          canonical === TaskTypes.PRO_STUDIO || 
          canonical === TaskTypes.GROUP_SHOOT ||
          canonical === TaskTypes.CREATE_MODEL ||
-         canonical === TaskTypes.REFERENCE_SHOT
+         canonical === TaskTypes.REFERENCE_SHOT ||
+         canonical === TaskTypes.LIFESTYLE
 }
 
 /**
@@ -150,6 +163,7 @@ export function getTypeDisplayName(type?: string): string {
     case TaskTypes.EDIT: return '通用编辑'
     case TaskTypes.CREATE_MODEL: return '创建专属模特'
     case TaskTypes.REFERENCE_SHOT: return '参考图拍摄'
+    case TaskTypes.LIFESTYLE: return 'LifeStyle 街拍'
     default: return '未知类型'
   }
 }

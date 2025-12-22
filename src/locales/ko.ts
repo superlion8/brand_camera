@@ -285,6 +285,7 @@ export const ko: Translations = {
     modelStudio: "구매후기",
     buyerShow: "구매후기",
     proStudio: "모델 스튜디오",
+    lifestyleShot: "라이프스타일 촬영",
     groupShoot: "그룹",
     createModel: "커스텀 모델",
     social: "소셜 미디어",

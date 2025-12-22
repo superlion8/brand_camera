@@ -20,12 +20,13 @@ import {
   isProductType as isProductTypeRaw,
   isEditType as isEditTypeRaw,
   isCreateModelType as isCreateModelTypeRaw,
-  isReferenceShotType as isReferenceShotTypeRaw
+  isReferenceShotType as isReferenceShotTypeRaw,
+  isLifestyleType as isLifestyleTypeRaw
 } from "@/lib/taskTypes"
 import { useGalleryStore, getCacheKey } from "@/stores/galleryStore"
 
 type TabType = "all" | "model" | "product" | "group" | "reference" | "favorites"
-type ModelSubType = "all" | "buyer" | "prostudio" | "create_model" | "social"  // 买家秀 / 专业棚拍 / 创建专属模特 / 社媒种草
+type ModelSubType = "all" | "buyer" | "prostudio" | "create_model" | "social" | "lifestyle"  // 买家秀 / 专业棚拍 / 创建专属模特 / 社媒种草 / LifeStyle 街拍
 
 // 类型分类函数包装器（兼容 Generation 对象参数）
 function isModelType(gen: Generation | null | undefined): boolean {
@@ -48,6 +49,9 @@ function isCreateModelType(gen: Generation | null | undefined): boolean {
 }
 function isReferenceShotType(gen: Generation | null | undefined): boolean {
   return gen ? isReferenceShotTypeRaw(gen.type) : false
+}
+function isLifestyleType(gen: Generation | null | undefined): boolean {
+  return gen ? isLifestyleTypeRaw(gen.type) : false
 }
 
 export default function GalleryPage() {
@@ -230,6 +234,8 @@ export default function GalleryPage() {
         case 'group_shoot':
         case 'reference_shot':
           return { tabs: ['all', 'model'], subType: null }
+        case 'lifestyle':
+          return { tabs: ['all', 'model'], subType: 'lifestyle' }
         default:
           return { tabs: ['all'], subType: null }
       }
@@ -325,7 +331,7 @@ export default function GalleryPage() {
         
         // 清除其他相关 tab 的缓存（避免用错误数据覆盖）
         // Bug 1 修复：完整清除所有 model 子分类缓存
-        const allModelSubTypes = ['all', 'buyer', 'prostudio', 'create_model', 'social']
+        const allModelSubTypes = ['all', 'buyer', 'prostudio', 'create_model', 'social', 'lifestyle']
         
         taskMapping.tabs.forEach(tab => {
           if (tab === 'model' && taskMapping.subType) {
@@ -434,6 +440,14 @@ export default function GalleryPage() {
         color: 'bg-blue-500',
         subLabel,
         subColor: mode === 'simple' ? 'bg-green-500' : 'bg-purple-500'
+      }
+    }
+
+    // LifeStyle types (LifeStyle 街拍)
+    if (isLifestyleType(gen)) {
+      return { 
+        label: t.gallery.lifestyleShot || 'LifeStyle 街拍', 
+        color: 'bg-purple-600',
       }
     }
     
@@ -936,6 +950,16 @@ export default function GalleryPage() {
               }`}
             >
               {t.gallery.social || '社媒种草'}
+            </button>
+            <button
+              onClick={() => setModelSubType("lifestyle")}
+              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${
+                modelSubType === "lifestyle"
+                  ? "bg-purple-600 text-white"
+                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+              }`}
+            >
+              {t.gallery.lifestyleShot || 'LifeStyle 街拍'}
             </button>
           </div>
         )}

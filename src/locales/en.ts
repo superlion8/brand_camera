@@ -285,6 +285,7 @@ export const en: Translations = {
     modelStudio: "Buyer Show",
     buyerShow: "Buyer Show",
     proStudio: "Model Studio",
+    lifestyleShot: "LifeStyle Shot",
     groupShoot: "Group",
     createModel: "Custom Model",
     social: "Social",

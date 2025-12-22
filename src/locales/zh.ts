@@ -283,6 +283,7 @@ export const zh = {
     modelStudio: "买家秀",
     buyerShow: "买家秀",
     proStudio: "模特棚拍",
+    lifestyleShot: "LifeStyle 街拍",
     groupShoot: "组图",
     createModel: "定制模特",
     social: "社媒种草",
