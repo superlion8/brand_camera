@@ -77,6 +77,8 @@ export const zh = {
     socialModeSubtitle: "小红书INS风格",
     proStudio: "模特棚拍",
     proStudioSubtitle: "纯色背景质感",
+    lifestyleMode: "LifeStyle 街拍",
+    lifestyleModeSubtitle: "AI 智能匹配模特与街景",
     customShot: "定制拍摄",
     groupShoot: "组图拍摄",
     groupShootSubtitle: "多角度套图",

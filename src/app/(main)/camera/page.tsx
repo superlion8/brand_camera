@@ -102,10 +102,6 @@ function CameraPageContent() {
   const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
   
-  // LifeStyle 模式状态
-  const [shootMode, setShootMode] = useState<'normal' | 'lifestyle'>('normal')
-  const [lifestyleStatus, setLifestyleStatus] = useState<string>('')
-  
   // 从 URL 参数读取 mode（从 outfit 页面跳转过来时）
   useEffect(() => {
     const urlMode = searchParams.get('mode')
@@ -464,223 +460,6 @@ function CameraPageContent() {
       modelIsUserSelected,
       bgIsUserSelected
     )
-  }
-  
-  // LifeStyle 模式生成函数
-  const handleLifestyleGenerate = async () => {
-    if (!capturedImage) return
-    
-    // Check quota before starting generation
-    const LIFESTYLE_NUM_IMAGES = 4
-    const hasQuota = await checkQuota(LIFESTYLE_NUM_IMAGES)
-    if (!hasQuota) {
-      return // Modal will be shown by the hook
-    }
-    
-    // Save phone-uploaded product image to asset library
-    if (productFromPhone && capturedImage) {
-      saveProductToAssets(capturedImage, addUserAsset, t.common.product)
-    }
-    
-    // Create task
-    const params = {
-      type: 'lifestyle',
-      modelId: activeModel?.id || null,
-      sceneId: null, // Auto select
-    }
-    
-    const taskId = addTask('lifestyle', capturedImage, params, LIFESTYLE_NUM_IMAGES)
-    setCurrentTaskId(taskId)
-    initImageSlots(taskId, LIFESTYLE_NUM_IMAGES)
-    setMode("processing")
-    
-    // Save to sessionStorage
-    sessionStorage.setItem('cameraTaskId', taskId)
-    router.replace('/camera?mode=processing')
-    
-    // Reserve quota
-    fetch('/api/quota/reserve', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        taskId,
-        imageCount: LIFESTYLE_NUM_IMAGES,
-        taskType: 'lifestyle',
-      }),
-    }).then(() => {
-      console.log('[Quota] Reserved', LIFESTYLE_NUM_IMAGES, 'images for lifestyle task', taskId)
-      refreshQuota()
-    }).catch(e => {
-      console.warn('[Quota] Failed to reserve quota:', e)
-    })
-    
-    // Start LifeStyle generation
-    runLifestyleGeneration(taskId, capturedImage, activeModel?.id)
-  }
-  
-  // LifeStyle background generation
-  const runLifestyleGeneration = async (
-    taskId: string,
-    productImage: string,
-    modelId?: string
-  ) => {
-    let firstDbId: string | null = null
-    
-    try {
-      setLifestyleStatus('正在连接服务器...')
-      
-      const response = await fetch('/api/generate-lifestyle', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          productImage,
-          modelId: modelId || undefined, // Use selected model if any
-          sceneId: undefined, // Let AI select
-          taskId,
-        }),
-      })
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || `HTTP ${response.status}`)
-      }
-      
-      // Process SSE stream
-      const reader = response.body?.getReader()
-      if (!reader) throw new Error('No response body')
-      
-      const decoder = new TextDecoder()
-      let buffer = ''
-      
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        buffer = lines.pop() || ''
-        
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue
-          const jsonStr = line.slice(6).trim()
-          if (!jsonStr) continue
-          
-          try {
-            const event = JSON.parse(jsonStr)
-            
-            switch (event.type) {
-              case 'status':
-                setLifestyleStatus(event.message)
-                break
-                
-              case 'analysis_complete':
-                console.log('[Lifestyle] Product analysis:', event.productTag?.outfit_type)
-                setLifestyleStatus('分析完成，正在匹配...')
-                break
-                
-              case 'materials_ready':
-                console.log('[Lifestyle] Materials ready:', event.models, event.scenes)
-                setLifestyleStatus('素材准备完成，开始生成...')
-                break
-                
-              case 'progress':
-                setLifestyleStatus(`正在生成第 ${event.index + 1} 张图片...`)
-                break
-                
-              case 'image':
-                console.log(`[Lifestyle] Image ${event.index} complete`)
-                
-                // Update task store
-                updateImageSlot(taskId, event.index, {
-                  imageUrl: event.image,
-                  status: 'completed',
-                  modelType: event.modelType,
-                  genMode: 'simple',
-                  dbId: event.dbId,
-                })
-                
-                // Track first dbId
-                if (event.dbId && !firstDbId) {
-                  firstDbId = event.dbId
-                  setCurrentGenerationId(event.dbId)
-                }
-                
-                // Update generated images for display
-                setGeneratedImages(prev => {
-                  const newImages = [...prev]
-                  newImages[event.index] = event.image
-                  return newImages
-                })
-                setGeneratedModelTypes(prev => {
-                  const newTypes = [...prev]
-                  newTypes[event.index] = event.modelType
-                  return newTypes
-                })
-                
-                // Switch to results mode on first image
-                if (modeRef.current === 'processing') {
-                  setMode('results')
-                  router.replace('/camera?mode=results')
-                }
-                break
-                
-              case 'image_error':
-                console.error(`[Lifestyle] Image ${event.index} error:`, event.error)
-                updateImageSlot(taskId, event.index, {
-                  status: 'failed',
-                  error: event.error,
-                })
-                break
-                
-              case 'error':
-                console.error('[Lifestyle] Error:', event.error)
-                setLifestyleStatus(`错误: ${event.error}`)
-                updateTaskStatus(taskId, 'failed')
-                break
-                
-              case 'complete':
-                console.log('[Lifestyle] Generation complete')
-                setLifestyleStatus('')
-                updateTaskStatus(taskId, 'completed')
-                
-                // Fallback: set currentGenerationId to taskId if no dbId received
-                if (!firstDbId) {
-                  setCurrentGenerationId(taskId)
-                }
-                
-                // Add to gallery
-                const completedTask = tasks.find(t => t.id === taskId)
-                if (completedTask?.imageSlots) {
-                  const outputUrls = completedTask.imageSlots
-                    .filter(s => s.status === 'completed' && s.imageUrl)
-                    .map(s => s.imageUrl!)
-                  
-                  if (outputUrls.length > 0) {
-                    addGeneration({
-                      id: firstDbId || taskId,
-                      type: 'lifestyle' as any,
-                      inputImageUrl: productImage,
-                      outputImageUrls: outputUrls,
-                      outputModelTypes: completedTask.imageSlots.map(s => s.modelType || 'pro'),
-                      createdAt: new Date().toISOString(),
-                      params: { type: 'lifestyle' },
-                    })
-                  }
-                }
-                
-                refreshQuota()
-                break
-            }
-          } catch (e) {
-            console.warn('[Lifestyle] Failed to parse event:', jsonStr)
-          }
-        }
-      }
-    } catch (error: any) {
-      console.error('[Lifestyle] Generation error:', error)
-      setLifestyleStatus(`生成失败: ${error.message}`)
-      updateTaskStatus(taskId, 'failed')
-    }
   }
   
   // Background generation function (runs async, doesn't block UI)
@@ -1528,51 +1307,16 @@ function CameraPageContent() {
             <div className="bg-black flex flex-col justify-end pb-safe pt-6 px-6 relative z-20 shrink-0 min-h-[9rem]">
               {mode === "review" ? (
                 <div className="space-y-4 pb-4">
-                  {/* Mode selector tabs */}
+                  {/* Custom button */}
                   <div className="flex justify-center">
-                    <div className="flex bg-white/10 rounded-full p-1">
-                      <button
-                        onClick={() => setShootMode('normal')}
-                        className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                          shootMode === 'normal'
-                            ? 'bg-white text-black'
-                            : 'text-white/70 hover:text-white'
-                        }`}
-                      >
-                        买家秀
-                      </button>
-                      <button
-                        onClick={() => setShootMode('lifestyle')}
-                        className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                          shootMode === 'lifestyle'
-                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                            : 'text-white/70 hover:text-white'
-                        }`}
-                      >
-                        LifeStyle
-                      </button>
-                    </div>
+                    <button 
+                      onClick={() => setShowCustomPanel(true)}
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 text-white/90 hover:bg-white/20 transition-colors border border-white/20"
+                    >
+                      <SlidersHorizontal className="w-4 h-4" />
+                      <span className="text-sm font-medium">{t.camera.customizeModelBg}</span>
+                    </button>
                   </div>
-                  
-                  {/* Custom button - only show in normal mode */}
-                  {shootMode === 'normal' && (
-                    <div className="flex justify-center">
-                      <button 
-                        onClick={() => setShowCustomPanel(true)}
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 text-white/90 hover:bg-white/20 transition-colors border border-white/20"
-                      >
-                        <SlidersHorizontal className="w-4 h-4" />
-                        <span className="text-sm font-medium">{t.camera.customizeModelBg}</span>
-                      </button>
-                    </div>
-                  )}
-                  
-                  {/* LifeStyle mode description */}
-                  {shootMode === 'lifestyle' && (
-                    <div className="text-center text-white/60 text-xs px-4">
-                      AI 自动分析服装风格，匹配最佳模特和场景，生成时尚街拍大片
-                    </div>
-                  )}
                   
                   {/* Generate button */}
                   <div className="w-full flex justify-center">
@@ -1581,20 +1325,12 @@ function CameraPageContent() {
                       animate={{ opacity: 1, y: 0 }}
                       onClick={(e) => {
                         triggerFlyToGallery(e)
-                        if (shootMode === 'lifestyle') {
-                          handleLifestyleGenerate()
-                        } else {
-                          handleShootIt()
-                        }
+                        handleShootIt()
                       }}
-                      className={`w-full max-w-xs h-14 rounded-full text-lg font-semibold gap-2 shadow-[0_0_20px_rgba(255,255,255,0.3)] flex items-center justify-center transition-colors ${
-                        shootMode === 'lifestyle'
-                          ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600'
-                          : 'bg-white text-black hover:bg-zinc-200'
-                      }`}
+                      className="w-full max-w-xs h-14 rounded-full text-lg font-semibold gap-2 shadow-[0_0_20px_rgba(255,255,255,0.3)] flex items-center justify-center bg-white text-black hover:bg-zinc-200 transition-colors"
                     >
                       <Wand2 className="w-5 h-5" />
-                      {shootMode === 'lifestyle' ? 'LifeStyle 街拍' : 'Shoot It'}
+                      Shoot It
                     </motion.button>
                   </div>
                 </div>

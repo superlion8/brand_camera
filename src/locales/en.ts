@@ -79,6 +79,8 @@ export const en: Translations = {
     socialModeSubtitle: "Instagram Style",
     proStudio: "Model Studio",
     proStudioSubtitle: "Solid Background",
+    lifestyleMode: "LifeStyle Shot",
+    lifestyleModeSubtitle: "AI model & street matching",
     customShot: "Custom Shot",
     groupShoot: "Group Shoot",
     groupShootSubtitle: "Multi-angle Sets",
