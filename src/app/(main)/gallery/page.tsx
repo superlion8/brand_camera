@@ -80,13 +80,42 @@ export default function GalleryPage() {
   const { debugMode } = useSettingsStore()
   const { t } = useTranslation()
   
+  // 内存缓存：存储每个 tab 的数据，避免重复从服务器获取
+  const galleryCacheRef = useRef<Record<string, {
+    items: any[]
+    hasMore: boolean
+    currentPage: number
+    pendingTasks: any[]
+  }>>({})
+  
+  // 生成缓存 key
+  const getCacheKey = (tab: string, subType: string) => {
+    return tab === 'model' ? `${tab}_${subType}` : tab
+  }
+  
   // 从 API 获取图库数据
-  const fetchGalleryData = async (page: number = 1, append: boolean = false) => {
+  const fetchGalleryData = async (page: number = 1, append: boolean = false, forceRefresh: boolean = false) => {
     if (!user) return
+    
+    const cacheKey = getCacheKey(activeTab, modelSubType)
+    
+    // 如果不是强制刷新且有缓存，直接使用缓存
+    if (!forceRefresh && !append && galleryCacheRef.current[cacheKey]) {
+      const cached = galleryCacheRef.current[cacheKey]
+      console.log(`[Gallery] Using cache for ${cacheKey}, ${cached.items.length} items`)
+      setGalleryItems(cached.items)
+      setHasMore(cached.hasMore)
+      setCurrentPage(cached.currentPage)
+      setPendingTasksFromDb(cached.pendingTasks)
+      setIsLoading(false)
+      return
+    }
     
     try {
       if (!append) setIsLoading(true)
       else setIsLoadingMore(true)
+      
+      console.log(`[Gallery] Fetching from server: ${cacheKey}, page=${page}, forceRefresh=${forceRefresh}`)
       
       // 模特 tab 下传递二级分类参数
       const subType = activeTab === 'model' ? modelSubType : ''
@@ -97,12 +126,27 @@ export default function GalleryPage() {
       
       if (result.success) {
         if (append) {
-          setGalleryItems(prev => [...prev, ...result.data.items])
+          const newItems = [...galleryItems, ...result.data.items]
+          setGalleryItems(newItems)
+          // 更新缓存
+          galleryCacheRef.current[cacheKey] = {
+            items: newItems,
+            hasMore: result.data.hasMore,
+            currentPage: page,
+            pendingTasks: pendingTasksFromDb,
+          }
         } else {
           setGalleryItems(result.data.items)
           // 第一页时更新 pending 任务
           if (result.data.pendingTasks) {
             setPendingTasksFromDb(result.data.pendingTasks)
+          }
+          // 更新缓存
+          galleryCacheRef.current[cacheKey] = {
+            items: result.data.items,
+            hasMore: result.data.hasMore,
+            currentPage: page,
+            pendingTasks: result.data.pendingTasks || [],
           }
         }
         setHasMore(result.data.hasMore)
@@ -120,19 +164,17 @@ export default function GalleryPage() {
   // 加载更多
   const loadMore = () => {
     if (!isLoadingMore && hasMore) {
-      fetchGalleryData(currentPage + 1, true)
+      fetchGalleryData(currentPage + 1, true, false)
     }
   }
   
-  // 当 tab 切换、二级分类切换或用户登录时重新加载
+  // 当 tab 切换、二级分类切换或用户登录时加载数据（优先使用缓存）
   useEffect(() => {
     if (user) {
-      // 切换 tab 时立即清空旧数据，显示骨架屏
-      setGalleryItems([])
+      // 切换 tab 时先显示 loading
       setIsLoading(true)
-      setHasMore(false)
-      setCurrentPage(1)
-      fetchGalleryData(1, false)
+      // 使用缓存或从服务器获取
+      fetchGalleryData(1, false, false)
     }
   }, [activeTab, modelSubType, user])
   
@@ -208,7 +250,15 @@ export default function GalleryPage() {
         }
         
         console.log(`[Gallery] Appending completed image to local list: ${slotKey}`)
-        setGalleryItems(prev => [newItem, ...prev])
+        setGalleryItems(prev => {
+          const newItems = [newItem, ...prev]
+          // 同步更新缓存
+          const cacheKey = getCacheKey(activeTab, modelSubType)
+          if (galleryCacheRef.current[cacheKey]) {
+            galleryCacheRef.current[cacheKey].items = newItems
+          }
+          return newItems
+        })
         processedSlotsRef.current.add(slotKey)
       })
     })
@@ -580,7 +630,8 @@ export default function GalleryPage() {
       setPullDistance(PULL_THRESHOLD) // Keep at threshold during refresh
       
       try {
-        await fetchGalleryData(1, false)
+        // 下拉刷新时强制从服务器获取，忽略缓存
+        await fetchGalleryData(1, false, true)
       } catch (error) {
         console.error('Refresh failed:', error)
       } finally {
@@ -602,9 +653,17 @@ export default function GalleryPage() {
     const removedItems = galleryItems.filter(item => 
       item.generationId === generationId || item.generation?.dbId === generationId
     )
-    setGalleryItems(prev => prev.filter(item => 
-      item.generationId !== generationId && item.generation?.dbId !== generationId
-    ))
+    setGalleryItems(prev => {
+      const newItems = prev.filter(item => 
+        item.generationId !== generationId && item.generation?.dbId !== generationId
+      )
+      // 同步更新缓存
+      const cacheKey = getCacheKey(activeTab, modelSubType)
+      if (galleryCacheRef.current[cacheKey]) {
+        galleryCacheRef.current[cacheKey].items = newItems
+      }
+      return newItems
+    })
     
     // 2. 关闭确认框和详情面板
     setSelectedItem(null)
@@ -623,7 +682,15 @@ export default function GalleryPage() {
     } catch (error) {
       console.error("Delete failed:", error)
       // 4. 失败时回滚：重新添加被删除的项目
-      setGalleryItems(prev => [...removedItems, ...prev])
+      setGalleryItems(prev => {
+        const newItems = [...removedItems, ...prev]
+        // 同步更新缓存
+        const cacheKey = getCacheKey(activeTab, modelSubType)
+        if (galleryCacheRef.current[cacheKey]) {
+          galleryCacheRef.current[cacheKey].items = newItems
+        }
+        return newItems
+      })
     }
   }
   
