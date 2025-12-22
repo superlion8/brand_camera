@@ -378,8 +378,9 @@ export const useAssetStore = create<AssetState>()(
           const result = await syncService.saveFavorite(currentUserId, favorite)
           console.log('[Store] Favorite sync result:', result ? 'success' : 'failed')
           
-          // 如果同步成功，用云端返回的 UUID 更新本地记录
-          if (result && result.id !== tempId) {
+          // 如果同步成功且云端返回了有效的 UUID，更新本地记录
+          // 必须检查 result.id 存在，因为 saveFavorite 可能返回 { success: true } 而没有 id
+          if (result && result.id && result.id !== tempId) {
             console.log('[Store] Updating local favorite ID from', tempId, 'to', result.id)
             // 先删除临时 ID 的记录
             await dbDelete(STORES.FAVORITES, tempId)
