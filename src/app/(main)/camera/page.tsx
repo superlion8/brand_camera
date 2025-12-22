@@ -890,12 +890,9 @@ function CameraPageContent() {
           setGeneratedModelTypes(data.modelTypes || [])
           setGeneratedGenModes(data.genModes || [])
           setGeneratedPrompts(data.prompts || [])
-          // 如果第一张图片失败了（currentGenerationId 没有被设置），使用收集到的 firstDbId 或 taskId 作为 fallback
-          // 这确保即使第一张图片失败，后续成功的图片仍然可以使用收藏功能
-          if (firstDbId) {
-            setCurrentGenerationId(firstDbId)
-            console.log(`[Camera] Fallback: Set currentGenerationId to firstDbId: ${firstDbId}`)
-          } else {
+          // 只有当第一张图片成功时没有设置 currentGenerationId（即 firstDbId 为 null）时才设置 fallback
+          // 这避免了重复调用 setCurrentGenerationId 和潜在的 race condition
+          if (!firstDbId) {
             setCurrentGenerationId(taskId)
             console.log(`[Camera] Fallback: No dbId received, using taskId: ${taskId}`)
           }
