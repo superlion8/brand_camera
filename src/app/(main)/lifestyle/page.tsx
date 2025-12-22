@@ -228,10 +228,6 @@ function LifestylePageContent() {
                   newModes[event.index] = 'simple'
                   return newModes
                 })
-                
-                if (mode === 'processing') {
-                  setMode('results')
-                }
                 break
               case 'image_error':
                 updateImageSlot(taskId, event.index, {
@@ -248,11 +244,14 @@ function LifestylePageContent() {
                 updateTaskStatus(taskId, 'completed')
                 if (!firstDbId) setCurrentGenerationId(taskId)
                 
+                // Switch to results mode when all images are done
+                setMode('results')
+                
                 const completedTask = tasks.find(t => t.id === taskId)
                 if (completedTask?.imageSlots) {
-                  const outputUrls = completedTask.imageSlots
-                    .filter(s => s.status === 'completed' && s.imageUrl)
-                    .map(s => s.imageUrl!)
+                  // Filter to only include completed images
+                  const completedSlots = completedTask.imageSlots.filter(s => s.status === 'completed' && s.imageUrl)
+                  const outputUrls = completedSlots.map(s => s.imageUrl!)
                   
                   if (outputUrls.length > 0) {
                     addGeneration({
@@ -260,8 +259,8 @@ function LifestylePageContent() {
                       type: 'lifestyle',
                       inputImageUrl: productImage,
                       outputImageUrls: outputUrls,
-                      outputModelTypes: completedTask.imageSlots.map(s => s.modelType || 'pro'),
-                      outputGenModes: completedTask.imageSlots.map(s => s.genMode || 'simple'),
+                      outputModelTypes: completedSlots.map(s => s.modelType || 'pro'),
+                      outputGenModes: completedSlots.map(s => s.genMode || 'simple'),
                       createdAt: new Date().toISOString(),
                       params: { type: 'lifestyle' },
                     })
