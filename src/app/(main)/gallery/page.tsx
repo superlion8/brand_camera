@@ -288,14 +288,20 @@ export default function GalleryPage() {
         })
         
         // 清除其他相关 tab 的缓存（避免用错误数据覆盖）
+        // Bug 1 修复：完整清除所有 model 子分类缓存
+        const allModelSubTypes = ['all', 'buyer', 'prostudio', 'create_model', 'social']
+        
         taskMapping.tabs.forEach(tab => {
           if (tab === 'model' && taskMapping.subType) {
+            // 有特定 subType 的任务，只清除该 subType 的缓存
             const cacheKey = getCacheKey(tab, taskMapping.subType)
             if (cacheKey !== currentCacheKey) clearCache(cacheKey)
           } else if (tab === 'model') {
-            // 没有 subType 的 model 项目，清除所有 model 子分类缓存
-            if (getCacheKey(tab, 'buyer') !== currentCacheKey) clearCache(getCacheKey(tab, 'buyer'))
-            if (getCacheKey(tab, 'prostudio') !== currentCacheKey) clearCache(getCacheKey(tab, 'prostudio'))
+            // 没有 subType 的 model 项目（如 group_shoot），清除所有 model 子分类缓存
+            allModelSubTypes.forEach(subType => {
+              const cacheKey = getCacheKey(tab, subType)
+              if (cacheKey !== currentCacheKey) clearCache(cacheKey)
+            })
           } else {
             const cacheKey = getCacheKey(tab, '')
             if (cacheKey !== currentCacheKey) clearCache(cacheKey)
