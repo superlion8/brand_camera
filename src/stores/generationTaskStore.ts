@@ -155,9 +155,10 @@ export const useGenerationTaskStore = create<GenerationTaskState>()(
               newOutputUrls[index] = update.imageUrl
             }
             
-            // 如果是第一张图且有 dbId，更新到 task 级别
+            // 如果有 dbId 且 task.dbId 还没被设置，更新到 task 级别
+            // 不限制 index === 0，因为图片可能乱序返回或第一张失败
             let newDbId = task.dbId
-            if (index === 0 && update.dbId) {
+            if (update.dbId && !task.dbId) {
               newDbId = update.dbId
             }
             
