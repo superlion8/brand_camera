@@ -489,7 +489,7 @@ function CameraPageContent() {
       sceneId: null, // Auto select
     }
     
-    const taskId = addTask('lifestyle' as any, capturedImage, params, LIFESTYLE_NUM_IMAGES)
+    const taskId = addTask('lifestyle', capturedImage, params, LIFESTYLE_NUM_IMAGES)
     setCurrentTaskId(taskId)
     initImageSlots(taskId, LIFESTYLE_NUM_IMAGES)
     setMode("processing")
@@ -515,14 +515,14 @@ function CameraPageContent() {
     })
     
     // Start LifeStyle generation
-    runLifestyleGeneration(taskId, capturedImage, activeModel?.imageUrl)
+    runLifestyleGeneration(taskId, capturedImage, activeModel?.id)
   }
   
   // LifeStyle background generation
   const runLifestyleGeneration = async (
     taskId: string,
     productImage: string,
-    modelImageUrl?: string
+    modelId?: string
   ) => {
     let firstDbId: string | null = null
     
@@ -534,7 +534,7 @@ function CameraPageContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           productImage,
-          modelId: modelImageUrl ? undefined : undefined, // Let AI select
+          modelId: modelId || undefined, // Use selected model if any
           sceneId: undefined, // Let AI select
           taskId,
         }),

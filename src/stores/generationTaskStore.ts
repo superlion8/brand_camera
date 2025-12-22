@@ -31,7 +31,7 @@ export function base64ToBlobUrl(base64: string): string {
   }
 }
 
-export type TaskType = 'camera' | 'studio' | 'edit' | 'pro_studio' | 'group_shoot' | 'reference_shot' | 'create_model' | 'social'
+export type TaskType = 'camera' | 'studio' | 'edit' | 'pro_studio' | 'group_shoot' | 'reference_shot' | 'create_model' | 'social' | 'lifestyle'
 export type ImageStatus = 'pending' | 'generating' | 'completed' | 'failed'
 
 // 每张图的独立状态

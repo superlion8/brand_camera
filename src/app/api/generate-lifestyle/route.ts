@@ -9,9 +9,9 @@ import type { ProductTag, LifestyleSceneTag, ModelAnalysis, LifestyleMatchResult
 export const maxDuration = 300 // 5 minutes
 
 // Model names
-const VLM_MODEL = 'gemini-2.5-flash-preview-05-20'
-const PRIMARY_IMAGE_MODEL = 'gemini-2.0-flash-exp'
-const FALLBACK_IMAGE_MODEL = 'gemini-2.0-flash-exp'
+const VLM_MODEL = 'gemini-3-flash-preview'
+const PRIMARY_IMAGE_MODEL = 'gemini-3-pro-preview-image'
+const FALLBACK_IMAGE_MODEL = 'gemini-2.5-flash-image'
 
 // Storage base URLs
 const ALL_MODELS_STORAGE_URL = 'https://cvdogeigbpussfamctsu.supabase.co/storage/v1/object/public/presets/all_models'
