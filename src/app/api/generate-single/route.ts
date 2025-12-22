@@ -229,6 +229,15 @@ export async function POST(request: NextRequest) {
       inputParams, // 生成参数（modelStyle, modelGender 等）
       // 新增：outfit 模式的服装项
       outfitItems, // { inner, top, pants, hat, shoes }
+      // Outfit 模式传递的顶层参数（用于合并到 inputParams）
+      modelUrl: topLevelModelUrl,
+      bgUrl: topLevelBgUrl,
+      modelName: topLevelModelName,
+      bgName: topLevelBgName,
+      modelIsRandom: topLevelModelIsRandom,
+      bgIsRandom: topLevelBgIsRandom,
+      modelIsPreset: topLevelModelIsPreset,
+      bgIsPreset: topLevelBgIsPreset,
     } = body
     
     // outfit 模式检查
@@ -574,11 +583,24 @@ export async function POST(request: NextRequest) {
       console.log(`[${label}] Collected ${productImageUrls.length} product images`)
     }
     
-    // 写入数据库 - 合并 productImages 到 inputParams
-    const enrichedInputParams = index === 0 ? {
+    // 写入数据库 - 合并 productImages 和顶层参数到 inputParams
+    // Outfit 模式传递参数在顶层，需要合并
+    const mergedInputParams = {
       ...inputParams,
+      // 合并顶层参数（outfit 模式使用）
+      ...(topLevelModelUrl && { modelImage: topLevelModelUrl }),
+      ...(topLevelBgUrl && { backgroundImage: topLevelBgUrl }),
+      ...(topLevelModelName && { model: topLevelModelName }),
+      ...(topLevelBgName && { background: topLevelBgName }),
+      ...(topLevelModelIsRandom !== undefined && { modelIsRandom: topLevelModelIsRandom }),
+      ...(topLevelBgIsRandom !== undefined && { bgIsRandom: topLevelBgIsRandom }),
+      ...(topLevelModelIsPreset !== undefined && { modelIsPreset: topLevelModelIsPreset }),
+      ...(topLevelBgIsPreset !== undefined && { bgIsPreset: topLevelBgIsPreset }),
+    }
+    const enrichedInputParams = index === 0 ? {
+      ...mergedInputParams,
       productImages: productImageUrls, // 添加所有商品图 URL
-    } : inputParams
+    } : mergedInputParams
     
     const saveResult = await appendImageToGeneration({
       taskId,
