@@ -475,7 +475,8 @@ export async function POST(request: NextRequest) {
                   } : undefined,
                 })
                 
-                send({ type: 'image', index: i, image: uploaded, modelType: result.model, dbId: saveResult.dbId })
+                // Bug 2 修复：只有保存成功时才发送 dbId
+                send({ type: 'image', index: i, image: uploaded, modelType: result.model, ...(saveResult.dbId ? { dbId: saveResult.dbId } : {}) })
               } else {
                 send({ type: 'error', index: i, error: '生成失败' })
               }
@@ -561,7 +562,8 @@ export async function POST(request: NextRequest) {
                   } : undefined,
                 })
                 
-                send({ type: 'image', index: i, image: uploaded, modelType: result.model, dbId: saveResult.dbId })
+                // Bug 2 修复：只有保存成功时才发送 dbId
+                send({ type: 'image', index: i, image: uploaded, modelType: result.model, ...(saveResult.dbId ? { dbId: saveResult.dbId } : {}) })
               } else {
                 send({ type: 'error', index: i, error: '生成失败' })
               }
@@ -640,7 +642,8 @@ export async function POST(request: NextRequest) {
                 } : undefined,
               })
               
-              send({ type: 'image', index: i, image: uploaded, modelType: result.model, dbId: saveResult.dbId })
+              // Bug 2 修复：只有保存成功时才发送 dbId
+              send({ type: 'image', index: i, image: uploaded, modelType: result.model, ...(saveResult.dbId ? { dbId: saveResult.dbId } : {}) })
             } else {
               send({ type: 'error', index: i, error: '生成失败' })
             }

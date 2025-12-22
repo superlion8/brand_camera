@@ -417,6 +417,7 @@ async function processGroup(
             taskType: 'social',
           })
 
+          // Bug 3 修复：只有保存成功时才发送 dbId
           sendEvent({
             type: 'image',
             groupIndex,
@@ -424,7 +425,7 @@ async function processGroup(
             globalIndex,
             image: uploadedUrl,
             promptType,
-            dbId: saveResult.dbId,  // 返回数据库 UUID
+            ...(saveResult.dbId ? { dbId: saveResult.dbId } : {}),
           })
 
           return { index: globalIndex, url: uploadedUrl, promptType }

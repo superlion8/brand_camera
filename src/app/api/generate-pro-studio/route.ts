@@ -645,12 +645,13 @@ export async function POST(request: NextRequest) {
                 })
 
                 successCount++
+                // Bug 2 修复：只有保存成功时才发送 dbId
                 sendEvent({
                   type: 'image',
                   index: config.index,
                   image: uploadedUrl,
                   shotType: config.name,
-                  dbId: saveResult.dbId,  // 返回数据库 UUID
+                  ...(saveResult.dbId ? { dbId: saveResult.dbId } : {}),
                 })
               } else {
                 sendEvent({ type: 'image_error', index: config.index, error: '图片上传失败', shotType: config.name })

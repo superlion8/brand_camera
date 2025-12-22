@@ -693,6 +693,11 @@ export default function GalleryPage() {
     const affectedCacheKeys = getAffectedCacheKeys(itemType)
     const currentCacheKey = getCacheKey(activeTab, modelSubType)
     
+    // 确保当前 tab 的缓存键也被处理（Bug 1 修复：处理 model_all 等情况）
+    const allCacheKeysToProcess = affectedCacheKeys.includes(currentCacheKey) 
+      ? affectedCacheKeys 
+      : [...affectedCacheKeys, currentCacheKey]
+    
     // 1. 乐观更新：立即从本地列表移除该 generation 的所有图片
     const removedItems = galleryItems.filter(item => 
       item.generationId === generationId || item.generation?.dbId === generationId
@@ -703,8 +708,8 @@ export default function GalleryPage() {
     setGalleryItems(newItems)
     
     // 清除所有相关 tab 的缓存（确保即使缓存不存在也能处理）
-    // 然后只更新当前 tab 的缓存（因为我们知道当前 tab 的数据）
-    affectedCacheKeys.forEach(cacheKey => {
+    // 当前 tab：更新缓存为新数据；其他 tab：清除缓存，下次访问时重新加载
+    allCacheKeysToProcess.forEach(cacheKey => {
       if (cacheKey === currentCacheKey) {
         // 当前 tab：更新缓存为新数据
         setCache(cacheKey, {
