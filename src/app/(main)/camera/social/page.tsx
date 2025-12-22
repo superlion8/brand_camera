@@ -474,6 +474,7 @@ function SocialPageContent() {
                     imageUrl: data.image,
                     modelType: 'pro',
                     genMode: 'simple', // Social 模式统一使用 simple
+                    dbId: data.dbId,  // 存储数据库 UUID
                   })
                   
                   // 第一张图片完成时，切换到 results 模式

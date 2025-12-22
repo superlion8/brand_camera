@@ -600,6 +600,7 @@ function ProStudioPageContent() {
                     imageUrl: data.image,
                     modelType: 'pro',
                     genMode: 'simple',
+                    dbId: data.dbId,  // 存储数据库 UUID
                   })
                   
                   // 更新 generatedImages 状态

@@ -136,23 +136,83 @@ export default function GalleryPage() {
     }
   }, [activeTab, modelSubType, user])
   
-  // 当有完成但未同步的图片时，定期刷新数据
+  // 任务完成时，本地 append 到 galleryItems（不再定时刷新）
+  // 使用 ref 追踪已处理的 slot，避免重复 append
+  const processedSlotsRef = useRef<Set<string>>(new Set())
+  
   useEffect(() => {
-    const hasUnsyncedCompleted = tasks.some(task => 
-      task.imageSlots?.some(slot => 
-        slot.status === 'completed' && slot.imageUrl
-      )
-    )
-    
-    if (hasUnsyncedCompleted && user) {
-      const intervalId = setInterval(() => {
-        console.log('[Gallery] Refreshing data for unsynced images...')
-        fetchGalleryData(1, false)
-      }, 3000) // 每 3 秒刷新一次
-      
-      return () => clearInterval(intervalId)
+    // 定义 task.type 到 tab 的映射
+    const getTabsForType = (type: string): { tabs: string[], subType: string | null } => {
+      switch (type) {
+        case 'camera':
+        case 'social':
+          return { tabs: ['all', 'model'], subType: 'buyer' }
+        case 'pro_studio':
+          return { tabs: ['all', 'model'], subType: 'prostudio' }
+        case 'studio':
+          return { tabs: ['all', 'product'], subType: null }
+        case 'group_shoot':
+        case 'reference_shot':
+          return { tabs: ['all', 'model'], subType: null }
+        default:
+          return { tabs: ['all'], subType: null }
+      }
     }
-  }, [tasks, user, activeTab, modelSubType]) // 添加 tab 依赖，确保切换 tab 时 interval 使用正确的参数
+    
+    // 遍历所有任务，找到已完成但未 append 的 slot
+    tasks.forEach(task => {
+      if (!task.dbId || !task.imageSlots) return
+      
+      const taskMapping = getTabsForType(task.type)
+      
+      task.imageSlots.forEach((slot, slotIndex) => {
+        if (slot.status !== 'completed' || !slot.imageUrl) return
+        
+        const slotKey = `${task.id}-${slotIndex}`
+        if (processedSlotsRef.current.has(slotKey)) return
+        
+        // 检查当前 tab 是否匹配
+        const tabMatches = taskMapping.tabs.includes(activeTab)
+        const subTypeMatches = !taskMapping.subType || taskMapping.subType === modelSubType || activeTab === 'all'
+        
+        if (!tabMatches || !subTypeMatches) return
+        
+        // 检查是否已在 galleryItems 中（避免重复）
+        const alreadyInGallery = galleryItems.some(item => 
+          item.imageUrl === slot.imageUrl
+        )
+        if (alreadyInGallery) {
+          processedSlotsRef.current.add(slotKey)
+          return
+        }
+        
+        // 构建 galleryItem 格式的数据
+        const newItem = {
+          id: `${task.dbId}-${slotIndex}`,
+          generationId: task.dbId,
+          imageIndex: slotIndex,
+          imageUrl: slot.imageUrl,
+          type: task.type,
+          createdAt: task.createdAt,
+          generation: {
+            id: task.id,
+            dbId: task.dbId,
+            type: task.type,
+            outputImageUrls: task.outputImageUrls || task.imageSlots?.map(s => s.imageUrl || '').filter(Boolean) || [],
+            outputGenModes: task.imageSlots?.map(s => s.genMode).filter(Boolean) || [],
+            outputModelTypes: task.imageSlots?.map(s => s.modelType).filter(Boolean) || [],
+            inputImageUrl: task.inputImageUrl,
+            params: task.params,
+            createdAt: task.createdAt,
+          }
+        }
+        
+        console.log(`[Gallery] Appending completed image to local list: ${slotKey}`)
+        setGalleryItems(prev => [newItem, ...prev])
+        processedSlotsRef.current.add(slotKey)
+      })
+    })
+  }, [tasks, activeTab, modelSubType, galleryItems])
   
   // Helper to get display label for generation type
   // debugMode controls whether to show sub-labels (极简/扩展)
@@ -535,20 +595,35 @@ export default function GalleryPage() {
   const handleDelete = async () => {
     if (!selectedItem) return
     
+    const deletedItem = selectedItem
+    const generationId = deletedItem.gen.dbId || deletedItem.gen.id
+    
+    // 1. 乐观更新：立即从本地列表移除该 generation 的所有图片
+    const removedItems = galleryItems.filter(item => 
+      item.generationId === generationId || item.generation?.dbId === generationId
+    )
+    setGalleryItems(prev => prev.filter(item => 
+      item.generationId !== generationId && item.generation?.dbId !== generationId
+    ))
+    
+    // 2. 关闭确认框和详情面板
+    setSelectedItem(null)
+    setShowDeleteConfirm(false)
+    
+    // 3. 异步调用 DELETE API
     try {
-      // 软删除整个 generation
-      const response = await fetch(`/api/generations/${selectedItem.gen.id}`, {
+      const response = await fetch(`/api/generations/${generationId}`, {
         method: 'DELETE'
       })
       
-      if (response.ok) {
-        // 刷新列表
-        fetchGalleryData(1, false)
-        setSelectedItem(null)
-        setShowDeleteConfirm(false)
+      if (!response.ok) {
+        throw new Error('Delete failed')
       }
+      console.log(`[Gallery] Deleted generation ${generationId}`)
     } catch (error) {
       console.error("Delete failed:", error)
+      // 4. 失败时回滚：重新添加被删除的项目
+      setGalleryItems(prev => [...removedItems, ...prev])
     }
   }
   

@@ -41,11 +41,13 @@ export interface ImageSlot {
   imageUrl?: string
   modelType?: 'pro' | 'flash'
   genMode?: 'simple' | 'extended'
+  dbId?: string  // 数据库 UUID，用于收藏等功能
   error?: string
 }
 
 export interface GenerationTask {
   id: string
+  dbId?: string  // 数据库 UUID（第一张图保存后获得）
   type: TaskType
   status: 'pending' | 'generating' | 'completed' | 'failed' // 整体状态
   inputImageUrl: string
@@ -153,6 +155,12 @@ export const useGenerationTaskStore = create<GenerationTaskState>()(
               newOutputUrls[index] = update.imageUrl
             }
             
+            // 如果是第一张图且有 dbId，更新到 task 级别
+            let newDbId = task.dbId
+            if (index === 0 && update.dbId) {
+              newDbId = update.dbId
+            }
+            
             // 检查是否所有图片都已完成/失败
             const allDone = newSlots.every(s => s.status === 'completed' || s.status === 'failed')
             const anyCompleted = newSlots.some(s => s.status === 'completed')
@@ -165,6 +173,7 @@ export const useGenerationTaskStore = create<GenerationTaskState>()(
             
             return {
               ...task,
+              dbId: newDbId,
               imageSlots: newSlots,
               outputImageUrls: newOutputUrls,
               status: newStatus,

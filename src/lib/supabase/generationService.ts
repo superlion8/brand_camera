@@ -91,6 +91,7 @@ export async function uploadImageToStorage(
 
 // 追加单张图片到 generation 记录
 // 用于 generate-single API，每生成一张图就追加到数据库
+// 返回 { success, dbId } 以便前端存储数据库 UUID
 export async function appendImageToGeneration(params: {
   taskId: string
   userId: string
@@ -103,7 +104,7 @@ export async function appendImageToGeneration(params: {
   inputImageUrl?: string
   inputImage2Url?: string
   inputParams?: Record<string, any>
-}): Promise<boolean> {
+}): Promise<{ success: boolean; dbId?: string }> {
   const supabase = await createClient()
   
   const { 
@@ -132,7 +133,7 @@ export async function appendImageToGeneration(params: {
   
   if (findError && findError.code !== 'PGRST116') { // PGRST116 = not found
     console.error('[GenService] Find error:', findError)
-    return false
+    return { success: false }
   }
   
   if (existingRecord) {
@@ -202,11 +203,11 @@ export async function appendImageToGeneration(params: {
     
     if (updateError) {
       console.error('[GenService] Update error:', updateError)
-      return false
+      return { success: false }
     }
     
-    console.log(`[GenService] Updated task ${taskId}, image ${imageIndex} appended`)
-    return true
+    console.log(`[GenService] Updated task ${taskId}, image ${imageIndex} appended, dbId: ${existingRecord.id}`)
+    return { success: true, dbId: existingRecord.id }
     
   } else {
     // INSERT: 创建新记录（理论上不应该走到这里，因为 quota/reserve 应该已经创建了）
@@ -250,17 +251,19 @@ export async function appendImageToGeneration(params: {
       }
     }
     
-    const { error: insertError } = await supabase
+    const { data: insertedData, error: insertError } = await supabase
       .from('generations')
       .insert(insertData)
+      .select('id')
+      .single()
     
     if (insertError) {
       console.error('[GenService] Insert error:', insertError)
-      return false
+      return { success: false }
     }
     
-    console.log(`[GenService] Created new task ${taskId} with image ${imageIndex}`)
-    return true
+    console.log(`[GenService] Created new task ${taskId} with image ${imageIndex}, dbId: ${insertedData?.id}`)
+    return { success: true, dbId: insertedData?.id }
   }
 }
 

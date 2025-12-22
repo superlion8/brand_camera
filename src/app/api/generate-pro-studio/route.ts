@@ -623,8 +623,8 @@ export async function POST(request: NextRequest) {
               )
 
               if (uploadedUrl) {
-                // 保存到数据库
-                await appendImageToGeneration({
+                // 保存到数据库，获取 dbId
+                const saveResult = await appendImageToGeneration({
                   taskId,
                   userId,
                   imageIndex: config.index,
@@ -650,6 +650,7 @@ export async function POST(request: NextRequest) {
                   index: config.index,
                   image: uploadedUrl,
                   shotType: config.name,
+                  dbId: saveResult.dbId,  // 返回数据库 UUID
                 })
               } else {
                 sendEvent({ type: 'image_error', index: config.index, error: '图片上传失败', shotType: config.name })

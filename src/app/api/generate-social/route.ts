@@ -407,7 +407,7 @@ async function processGroup(
         )
 
         if (uploadedUrl) {
-          await appendImageToGeneration({
+          const saveResult = await appendImageToGeneration({
             taskId,
             userId,
             imageIndex: globalIndex,
@@ -424,6 +424,7 @@ async function processGroup(
             globalIndex,
             image: uploadedUrl,
             promptType,
+            dbId: saveResult.dbId,  // 返回数据库 UUID
           })
 
           return { index: globalIndex, url: uploadedUrl, promptType }
