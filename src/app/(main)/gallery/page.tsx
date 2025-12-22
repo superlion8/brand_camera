@@ -77,7 +77,7 @@ export default function GalleryPage() {
   
   const { addUserAsset, favorites, addFavorite, removeFavorite } = useAssetStore()
   const { user } = useAuth()
-  const { tasks, removeTask } = useGenerationTaskStore()
+  const { tasks, removeTask, _hasHydrated: tasksHydrated } = useGenerationTaskStore()
   const { debugMode } = useSettingsStore()
   const { t } = useTranslation()
   
@@ -983,7 +983,8 @@ export default function GalleryPage() {
           style={{ transform: `translateY(${pullDistance}px)` }}
         >
           {/* 显示从数据库获取的 pending 任务（刷新后恢复的生成中任务） */}
-          {activeTab === "all" && pendingTasksFromDb
+          {/* 只有在 tasksHydrated 后才显示，避免 hydration 前 tasks 为空导致重复渲染 */}
+          {activeTab === "all" && tasksHydrated && pendingTasksFromDb
             .filter(pt => !tasks.some(t => t.id === pt.id)) // 排除已在本地 store 中的任务
             .map((pendingTask) => (
               Array.from({ length: pendingTask.totalImages || 4 }).map((_, idx) => (
