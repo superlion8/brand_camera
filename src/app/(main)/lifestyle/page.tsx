@@ -4,14 +4,16 @@ import { useState, useRef, useEffect, Suspense } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import Webcam from "react-webcam"
 import { 
-  ArrowLeft, Loader2, Image as ImageIcon, 
+  ArrowLeft, ArrowRight, Loader2, Image as ImageIcon, 
   X, Wand2, Camera, Home,
-  Heart, Download, ZoomIn, Plus, Sparkles
+  Heart, Download, ZoomIn, Plus, Sparkles,
+  FolderHeart, SlidersHorizontal, Check
 } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { fileToBase64, saveProductToAssets } from "@/lib/utils"
 import Image from "next/image"
 import { PRESET_PRODUCTS } from "@/data/presets"
+import { Asset } from "@/types"
 import { useQuota } from "@/hooks/useQuota"
 import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { BottomNav } from "@/components/shared/BottomNav"
@@ -20,6 +22,7 @@ import { useLanguageStore } from "@/stores/languageStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { useAssetStore } from "@/stores/assetStore"
+import { usePresetStore } from "@/stores/presetStore"
 
 type PageMode = "camera" | "review" | "processing" | "results"
 
@@ -36,6 +39,19 @@ function LifestylePageContent() {
   
   const webcamRef = useRef<Webcam>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const modelUploadRef = useRef<HTMLInputElement>(null)
+  const sceneUploadRef = useRef<HTMLInputElement>(null)
+  
+  // Preset Store
+  const { 
+    lifestyleModels, 
+    lifestyleScenes,
+    loadPresets,
+  } = usePresetStore()
+  
+  useEffect(() => {
+    loadPresets()
+  }, [loadPresets])
   
   // State
   const [mode, setMode] = useState<PageMode>("camera")
@@ -47,6 +63,15 @@ function LifestylePageContent() {
   const [showProductPanel, setShowProductPanel] = useState(false)
   const [lifestyleStatus, setLifestyleStatus] = useState<string>('')
   
+  // Custom model/scene selection
+  const [selectedModelId, setSelectedModelId] = useState<string | null>(null)
+  const [selectedSceneId, setSelectedSceneId] = useState<string | null>(null)
+  const [customModels, setCustomModels] = useState<Asset[]>([])
+  const [customScenes, setCustomScenes] = useState<Asset[]>([])
+  const [showCustomPanel, setShowCustomPanel] = useState(false)
+  const [activeCustomTab, setActiveCustomTab] = useState<'model' | 'scene'>('model')
+  const [productSourceTab, setProductSourceTab] = useState<'preset' | 'user'>('preset')
+  
   // Results state
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
   const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
@@ -55,6 +80,12 @@ function LifestylePageContent() {
   const [generatedGenModes, setGeneratedGenModes] = useState<('simple' | 'extended')[]>([])
   const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
+  
+  // Combined assets
+  const allModels = [...customModels, ...lifestyleModels]
+  const allScenes = [...customScenes, ...lifestyleScenes]
+  const selectedModel = selectedModelId ? allModels.find(m => m.id === selectedModelId) : null
+  const selectedScene = selectedSceneId ? allScenes.find(s => s.id === selectedSceneId) : null
 
   // Auth check
   useEffect(() => {
@@ -102,11 +133,47 @@ function LifestylePageContent() {
   const handleRetake = () => {
     setCapturedImage(null)
     setProductFromPhone(false)
+    setSelectedModelId(null)
+    setSelectedSceneId(null)
     setGeneratedImages([])
     setGeneratedModelTypes([])
     setGeneratedGenModes([])
     setSelectedResultIndex(null)
     setMode("camera")
+  }
+  
+  // Handle model upload
+  const handleModelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const base64 = await fileToBase64(file)
+      const newModel: Asset = {
+        id: `custom-lifestyle-model-${Date.now()}`,
+        type: 'model',
+        name: t.lifestyle?.streetModel || '街拍模特',
+        imageUrl: base64,
+      }
+      setCustomModels(prev => [newModel, ...prev])
+      setSelectedModelId(newModel.id)
+    }
+    e.target.value = ''
+  }
+  
+  // Handle scene upload
+  const handleSceneUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const base64 = await fileToBase64(file)
+      const newScene: Asset = {
+        id: `custom-lifestyle-scene-${Date.now()}`,
+        type: 'background',
+        name: t.lifestyle?.streetScene || '街拍场景',
+        imageUrl: base64,
+      }
+      setCustomScenes(prev => [newScene, ...prev])
+      setSelectedSceneId(newScene.id)
+    }
+    e.target.value = ''
   }
 
   const handleLifestyleGenerate = async () => {
@@ -119,15 +186,21 @@ function LifestylePageContent() {
       saveProductToAssets(capturedImage, addUserAsset, t.common.product)
     }
     
+    // Get user selected model/scene URLs
+    const userModelUrl = selectedModel?.imageUrl || null
+    const userSceneUrl = selectedScene?.imageUrl || null
+    
     const params = {
       type: 'lifestyle',
-      modelId: null,
-      sceneId: null,
+      modelId: selectedModelId,
+      sceneId: selectedSceneId,
     }
     
     const taskId = addTask('lifestyle', capturedImage, params, LIFESTYLE_NUM_IMAGES)
     setCurrentTaskId(taskId)
     initImageSlots(taskId, LIFESTYLE_NUM_IMAGES)
+    
+    triggerFlyToGallery()
     setMode("processing")
     
     // Reserve quota
@@ -146,14 +219,19 @@ function LifestylePageContent() {
       console.warn('[Quota] Failed to reserve:', e)
     }
     
-    await runLifestyleGeneration(taskId, capturedImage)
+    await runLifestyleGeneration(taskId, capturedImage, userModelUrl, userSceneUrl)
   }
 
-  const runLifestyleGeneration = async (taskId: string, productImage: string) => {
+  const runLifestyleGeneration = async (
+    taskId: string, 
+    productImage: string,
+    userModelUrl?: string | null,
+    userSceneUrl?: string | null
+  ) => {
     let firstDbId: string | null = null
     
     try {
-      setLifestyleStatus('正在连接服务器...')
+      setLifestyleStatus(t.common?.loading || '正在连接服务器...')
       
       const response = await fetch('/api/generate-lifestyle', {
         method: 'POST',
@@ -161,6 +239,8 @@ function LifestylePageContent() {
         body: JSON.stringify({
           productImage,
           taskId,
+          modelImage: userModelUrl || 'auto',
+          sceneImage: userSceneUrl || 'auto',
         }),
       })
       
@@ -196,13 +276,13 @@ function LifestylePageContent() {
                 setLifestyleStatus(event.message)
                 break
               case 'analysis_complete':
-                setLifestyleStatus('分析完成，正在匹配...')
+                setLifestyleStatus(t.lifestyle?.matchingModel || '分析完成，正在匹配...')
                 break
               case 'materials_ready':
-                setLifestyleStatus('素材准备完成，开始生成...')
+                setLifestyleStatus(t.lifestyle?.generatingPhoto || '素材准备完成，开始生成...')
                 break
               case 'progress':
-                setLifestyleStatus(`正在生成第 ${event.index + 1} 张图片...`)
+                setLifestyleStatus(`${t.common?.generating || '正在生成'} ${event.index + 1}/${LIFESTYLE_NUM_IMAGES}...`)
                 break
               case 'image':
                 updateImageSlot(taskId, event.index, {
@@ -319,6 +399,20 @@ function LifestylePageContent() {
         accept="image/*" 
         onChange={handleFileUpload}
       />
+      <input 
+        type="file" 
+        ref={modelUploadRef} 
+        className="hidden" 
+        accept="image/*" 
+        onChange={handleModelUpload}
+      />
+      <input 
+        type="file" 
+        ref={sceneUploadRef} 
+        className="hidden" 
+        accept="image/*" 
+        onChange={handleSceneUpload}
+      />
 
       <AnimatePresence mode="wait">
         {(mode === "camera" || mode === "review") && (
@@ -339,10 +433,26 @@ function LifestylePageContent() {
               </button>
               <div className="px-3 py-1.5 rounded-full bg-black/20 backdrop-blur-md border border-white/10 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-purple-400" />
-                <span className="text-white text-xs font-medium">LifeStyle 街拍</span>
+                <span className="text-white text-xs font-medium">{t.lifestyle?.title || 'LifeStyle 街拍'}</span>
               </div>
               <div className="w-10" />
             </div>
+            
+            {/* Selection Badges */}
+            {mode === "review" && (selectedModel || selectedScene) && (
+              <div className="absolute top-16 left-0 right-0 flex justify-center gap-2 z-10 px-4 flex-wrap pointer-events-none">
+                {selectedModel && (
+                  <span className="px-2 py-1 bg-black/50 text-white text-xs rounded-full backdrop-blur-md">
+                    {t.lifestyle?.streetModel || '模特'}: {selectedModel.name}
+                  </span>
+                )}
+                {selectedScene && (
+                  <span className="px-2 py-1 bg-black/50 text-white text-xs rounded-full backdrop-blur-md">
+                    {t.lifestyle?.streetScene || '场景'}: {selectedScene.name}
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* Viewfinder */}
             <div className="flex-1 relative bg-zinc-900">
@@ -359,7 +469,7 @@ function LifestylePageContent() {
                   <div className="absolute inset-0 flex items-center justify-center p-8">
                     <div className="text-center text-zinc-500">
                       <Camera className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                      <p className="text-sm">相机未准备好，请从相册上传商品图</p>
+                      <p className="text-sm">{t.lifestyle?.cameraNotReady || '相机未准备好，请从相册上传商品图'}</p>
                     </div>
                   </div>
                 )
@@ -372,9 +482,18 @@ function LifestylePageContent() {
             <div className="bg-black flex flex-col justify-end pb-safe pt-6 px-6 relative z-20 shrink-0 min-h-[9rem]">
               {mode === "review" ? (
                 <div className="space-y-4 pb-4">
-                  <div className="text-center text-white/60 text-xs px-4">
-                    AI 将自动分析这件服装，并为您匹配最佳的街拍模特和城市场景
+                  {/* Custom model/scene button */}
+                  <div className="flex justify-center">
+                    <button 
+                      onClick={() => setShowCustomPanel(true)}
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 text-white/90 hover:bg-white/20 transition-colors border border-white/20"
+                    >
+                      <SlidersHorizontal className="w-4 h-4" />
+                      <span className="text-sm font-medium">{t.lifestyle?.customizeModelScene || '自定义模特/场景'}</span>
+                    </button>
                   </div>
+                  
+                  {/* Generate button */}
                   <div className="w-full flex justify-center">
                     <motion.button
                       initial={{ opacity: 0, y: 20 }}
@@ -384,7 +503,7 @@ function LifestylePageContent() {
                       className="w-full max-w-xs h-14 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold text-lg flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(168,85,247,0.4)]"
                     >
                       <Wand2 className="w-5 h-5" />
-                      开始生成
+                      {t.lifestyle?.startGenerate || '开始生成'}
                     </motion.button>
                   </div>
                 </div>
@@ -398,7 +517,7 @@ function LifestylePageContent() {
                     <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
                       <ImageIcon className="w-6 h-6" />
                     </div>
-                    <span className="text-[10px]">相册</span>
+                    <span className="text-[10px]">{t.lifestyle?.album || '相册'}</span>
                   </button>
 
                   {/* Shutter */}
@@ -410,15 +529,15 @@ function LifestylePageContent() {
                     <div className="w-[72px] h-[72px] bg-white rounded-full group-active:bg-gray-200 transition-colors border-2 border-black" />
                   </button>
 
-                  {/* Examples - Right of shutter */}
+                  {/* Asset Library - Right of shutter */}
                   <button 
                     onClick={() => setShowProductPanel(true)}
                     className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors"
                   >
                     <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-                      <Sparkles className="w-6 h-6" />
+                      <FolderHeart className="w-6 h-6" />
                     </div>
-                    <span className="text-[10px]">示例</span>
+                    <span className="text-[10px]">{t.lifestyle?.assetLibrary || '资源库'}</span>
                   </button>
                 </div>
               )}
@@ -436,11 +555,28 @@ function LifestylePageContent() {
               <div className="absolute inset-0 bg-purple-500/20 blur-2xl rounded-full animate-pulse" />
               <Loader2 className="w-full h-full text-purple-500 animate-spin" />
             </div>
-            <h3 className="text-white text-2xl font-bold mb-4">正在创作街拍大片</h3>
-            <p className="text-zinc-400 text-sm mb-12">{lifestyleStatus}</p>
-            <button onClick={() => router.push("/")} className="px-8 py-3 rounded-full bg-white/10 text-white text-sm">
-              在后台继续，返回首页
-            </button>
+            <h3 className="text-white text-2xl font-bold mb-4">{t.lifestyle?.creating || '正在创作街拍大片'}</h3>
+            <p className="text-zinc-400 text-sm mb-8">{lifestyleStatus}</p>
+            
+            {/* Action buttons */}
+            <div className="space-y-3 w-full max-w-xs">
+              <p className="text-zinc-500 text-xs mb-4">{t.lifestyle?.continueInBackground || '生成将在后台继续，您可以：'}</p>
+              <button
+                onClick={handleRetake}
+                className="w-full h-12 rounded-full bg-white text-black font-medium flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors"
+              >
+                <Camera className="w-5 h-5" />
+                {t.lifestyle?.shootMore || '拍摄新一组'}
+              </button>
+              <button
+                onClick={() => router.push("/")}
+                className="w-full h-12 rounded-full bg-white/10 text-white font-medium flex items-center justify-center gap-2 hover:bg-white/20 transition-colors border border-white/20"
+              >
+                <Home className="w-5 h-5" />
+                {t.lifestyle?.returnHome || '返回首页'}
+              </button>
+            </div>
+            
             <BottomNav forceShow />
           </motion.div>
         )}
@@ -454,19 +590,36 @@ function LifestylePageContent() {
             <div className="h-14 flex items-center justify-between px-4 border-b bg-white">
               <button onClick={handleRetake} className="flex items-center gap-2 font-medium">
                 <ArrowLeft className="w-5 h-5" />
-                <span>重拍</span>
+                <span>{t.lifestyle?.retake || '重拍'}</span>
               </button>
-              <span className="font-bold">LifeStyle 成片</span>
+              <span className="font-bold">{t.lifestyle?.results || 'LifeStyle 成片'}</span>
               <div className="w-10" />
             </div>
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-4 pb-8">
               <div className="grid grid-cols-2 gap-3">
                 {Array.from({ length: LIFESTYLE_NUM_IMAGES }).map((_, i) => {
                   const url = generatedImages[i]
+                  const currentTask = tasks.find(t => t.id === currentTaskId)
+                  const slot = currentTask?.imageSlots?.[i]
+                  const status = slot?.status || (url ? 'completed' : 'generating')
+                  
                   return (
-                    <div key={i} className="aspect-[3/4] rounded-xl bg-zinc-200 overflow-hidden relative" onClick={() => setSelectedResultIndex(i)}>
+                    <div 
+                      key={i} 
+                      className="aspect-[3/4] rounded-xl bg-zinc-200 overflow-hidden relative cursor-pointer" 
+                      onClick={() => url && setSelectedResultIndex(i)}
+                    >
                       {url ? (
-                        <Image src={url} alt="Result" fill className="object-cover" />
+                        <>
+                          <Image src={url} alt="Result" fill className="object-cover" />
+                          <button className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm">
+                            <Heart className="w-3.5 h-3.5 text-zinc-500" />
+                          </button>
+                        </>
+                      ) : status === 'failed' ? (
+                        <div className="absolute inset-0 flex items-center justify-center text-zinc-400">
+                          <span className="text-xs">{t.camera?.generationFailed || '生成失败'}</span>
+                        </div>
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center">
                           <Loader2 className="w-6 h-6 text-zinc-400 animate-spin" />
@@ -477,9 +630,9 @@ function LifestylePageContent() {
                 })}
               </div>
             </div>
-            <div className="p-6 pb-safe bg-white border-t">
-              <button onClick={handleRetake} className="w-full h-14 rounded-xl bg-zinc-900 text-white font-bold">
-                拍摄下一组
+            <div className="p-4 pb-20 bg-white border-t shadow-up">
+              <button onClick={handleRetake} className="w-full h-12 rounded-lg bg-zinc-900 text-white font-semibold hover:bg-zinc-800 transition-colors">
+                {t.lifestyle?.shootNextSet || '拍摄下一组'}
               </button>
             </div>
             <BottomNav forceShow />
@@ -489,16 +642,47 @@ function LifestylePageContent() {
 
       {/* Result Detail */}
       <AnimatePresence>
-        {selectedResultIndex !== null && (
+        {selectedResultIndex !== null && generatedImages[selectedResultIndex] && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-white flex flex-col">
             <div className="h-14 flex items-center justify-between px-4 border-b">
-              <button onClick={() => setSelectedResultIndex(null)}><X className="w-6 h-6" /></button>
-              <span className="font-bold">详情</span>
-              <button onClick={() => handleDownload(generatedImages[selectedResultIndex!])}><Download className="w-6 h-6" /></button>
+              <button onClick={() => setSelectedResultIndex(null)} className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center">
+                <X className="w-5 h-5" />
+              </button>
+              <span className="font-semibold">{t.lifestyle?.detail || '详情'}</span>
+              <button 
+                onClick={() => handleDownload(generatedImages[selectedResultIndex!])}
+                className="w-10 h-10 -mr-2 rounded-full hover:bg-zinc-100 flex items-center justify-center"
+              >
+                <Download className="w-5 h-5" />
+              </button>
             </div>
-            <div className="flex-1 bg-zinc-100 flex items-center justify-center p-4">
-              <img src={generatedImages[selectedResultIndex!]} alt="Detail" className="max-w-full max-h-full object-contain rounded-lg shadow-xl" />
+            <div className="flex-1 bg-zinc-900 flex items-center justify-center overflow-hidden">
+              <img 
+                src={generatedImages[selectedResultIndex!]} 
+                alt="Detail" 
+                className="max-w-full max-h-full object-contain"
+                onClick={() => setFullscreenImage(generatedImages[selectedResultIndex!])} 
+              />
             </div>
+            <p className="text-center text-zinc-500 text-xs py-2 bg-zinc-900">{t.imageActions?.longPressSave || '长按图片保存'}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Fullscreen Image */}
+      <AnimatePresence>
+        {fullscreenImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black flex items-center justify-center"
+            onClick={() => setFullscreenImage(null)}
+          >
+            <img src={fullscreenImage} alt="Fullscreen" className="max-w-full max-h-full object-contain" />
+            <button className="absolute top-4 right-4 w-10 h-10 bg-black/50 rounded-full flex items-center justify-center">
+              <X className="w-6 h-6 text-white" />
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -508,24 +692,258 @@ function LifestylePageContent() {
         {showProductPanel && (
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 z-40 backdrop-blur-sm" onClick={() => setShowProductPanel(false)} />
-            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} className="absolute bottom-0 left-0 right-0 h-[70%] bg-white rounded-t-3xl z-50 flex flex-col">
-              <div className="p-4 border-b flex justify-between items-center">
-                <span className="font-bold text-lg">选择商品示例</span>
-                <button onClick={() => setShowProductPanel(false)}><X className="w-6 h-6" /></button>
+            <motion.div 
+              initial={{ y: "100%" }} 
+              animate={{ y: 0 }} 
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="absolute bottom-0 left-0 right-0 h-[80%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
+            >
+              <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
+                <span className="font-semibold">{t.lifestyle?.selectProduct || '选择商品'}</span>
+                <button 
+                  onClick={() => setShowProductPanel(false)} 
+                  className="h-8 w-8 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-              <div className="flex-1 overflow-y-auto p-4">
-                <div className="grid grid-cols-3 gap-3">
-                  {PRESET_PRODUCTS.map(p => (
-                    <div key={p.id} className="aspect-square rounded-xl overflow-hidden bg-zinc-100 relative" onClick={() => {
-                      setCapturedImage(p.imageUrl)
-                      setProductFromPhone(false)
-                      setMode("review")
-                      setShowProductPanel(false)
-                    }}>
-                      <Image src={p.imageUrl} alt={p.name || 'Product'} fill className="object-cover" />
-                    </div>
-                  ))}
+              
+              <div className="px-4 py-2 border-b bg-white dark:bg-zinc-900 shrink-0">
+                <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1">
+                  <button
+                    onClick={() => setProductSourceTab("preset")}
+                    className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${
+                      productSourceTab === "preset"
+                        ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
+                        : "text-zinc-500 hover:text-zinc-700"
+                    }`}
+                  >
+                    {t.lifestyle?.officialExample || '官方示例'}
+                    <span className="ml-1 text-zinc-400">({PRESET_PRODUCTS.length})</span>
+                  </button>
+                  <button
+                    onClick={() => setProductSourceTab("user")}
+                    className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${
+                      productSourceTab === "user"
+                        ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
+                        : "text-zinc-500 hover:text-zinc-700"
+                    }`}
+                  >
+                    {t.lifestyle?.myProducts || '我的商品'}
+                    {userProducts.length > 0 && (
+                      <span className="ml-1 text-zinc-400">({userProducts.length})</span>
+                    )}
+                  </button>
                 </div>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4">
+                {productSourceTab === "preset" ? (
+                  <div className="grid grid-cols-3 gap-3 pb-20">
+                    {PRESET_PRODUCTS.map(product => (
+                      <div 
+                        key={product.id} 
+                        className="relative group cursor-pointer"
+                        onClick={() => {
+                          setCapturedImage(product.imageUrl)
+                          setProductFromPhone(false)
+                          setMode("review")
+                          setShowProductPanel(false)
+                        }}
+                      >
+                        <div className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-purple-500 active:border-purple-600 transition-all w-full">
+                          <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover pointer-events-none" />
+                          <span className="absolute top-1 left-1 bg-purple-600 text-white text-[8px] px-1 py-0.5 rounded font-medium pointer-events-none">
+                            {t.common?.official || '官方'}
+                          </span>
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-4 pointer-events-none">
+                            <p className="text-[10px] text-white truncate text-center">{product.name}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : userProducts.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-3 pb-20">
+                    {userProducts.map(product => (
+                      <div 
+                        key={product.id} 
+                        className="relative group cursor-pointer"
+                        onClick={() => {
+                          setCapturedImage(product.imageUrl)
+                          setProductFromPhone(false)
+                          setMode("review")
+                          setShowProductPanel(false)
+                        }}
+                      >
+                        <div className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-purple-500 active:border-purple-600 transition-all w-full">
+                          <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover pointer-events-none" />
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-4 pointer-events-none">
+                            <p className="text-[10px] text-white truncate text-center">{product.name}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-zinc-400">
+                    <FolderHeart className="w-12 h-12 mb-3 opacity-30" />
+                    <p className="text-sm">{t.lifestyle?.noMyProducts || '暂无我的商品'}</p>
+                    <p className="text-xs mt-1">{t.lifestyle?.uploadInAssets || '请先在资源库上传商品'}</p>
+                    <button 
+                      onClick={() => {
+                        setShowProductPanel(false)
+                        router.push("/brand-assets")
+                      }}
+                      className="mt-4 px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors"
+                    >
+                      {t.lifestyle?.goUpload || '去上传'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Custom Panel - Model/Scene Selection */}
+      <AnimatePresence>
+        {showCustomPanel && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 z-40 backdrop-blur-sm"
+              onClick={() => setShowCustomPanel(false)}
+            />
+            <motion.div 
+              initial={{ y: "100%" }} 
+              animate={{ y: 0 }} 
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="absolute bottom-0 left-0 right-0 h-[80%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
+            >
+              <div className="h-14 border-b flex items-center justify-between px-4 shrink-0">
+                <span className="font-semibold text-lg">{t.lifestyle?.customConfig || '自定义配置'}</span>
+                <button 
+                  onClick={() => setShowCustomPanel(false)} 
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-medium text-sm transition-colors"
+                >
+                  {t.lifestyle?.nextStep || '下一步'}
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="p-2 flex gap-2 border-b overflow-x-auto shrink-0">
+                {[
+                  { id: "model", label: t.lifestyle?.streetModel || "街拍模特" },
+                  { id: "scene", label: t.lifestyle?.streetScene || "街拍场景" }
+                ].map(tab => (
+                  <button 
+                    key={tab.id}
+                    onClick={() => setActiveCustomTab(tab.id as 'model' | 'scene')}
+                    className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${
+                      activeCustomTab === tab.id 
+                        ? "bg-black text-white" 
+                        : "bg-zinc-100 text-zinc-600"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4">
+                {activeCustomTab === "model" && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-zinc-600">{t.lifestyle?.selectModel || '选择模特（不选则AI匹配）'}</span>
+                      {selectedModelId && (
+                        <button 
+                          onClick={() => setSelectedModelId(null)}
+                          className="text-xs text-purple-600"
+                        >
+                          {t.lifestyle?.clearSelection || '清除选择'}
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Upload Button */}
+                      <button
+                        onClick={() => modelUploadRef.current?.click()}
+                        className="aspect-[3/4] rounded-xl overflow-hidden relative border-2 border-dashed border-zinc-300 hover:border-purple-400 transition-all flex flex-col items-center justify-center bg-zinc-50 hover:bg-purple-50"
+                      >
+                        <Plus className="w-10 h-10 text-zinc-400" />
+                        <span className="text-sm text-zinc-500 mt-2">{t.common?.upload || '上传'}</span>
+                      </button>
+                      {allModels.map(item => (
+                        <div
+                          key={item.id}
+                          className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all cursor-pointer ${
+                            selectedModelId === item.id 
+                              ? "border-purple-500 ring-2 ring-purple-500/30" 
+                              : "border-transparent hover:border-purple-300"
+                          }`}
+                          onClick={() => setSelectedModelId(selectedModelId === item.id ? null : item.id)}
+                        >
+                          <Image src={item.imageUrl} alt={item.name || ""} fill className="object-cover" />
+                          {selectedModelId === item.id && (
+                            <div className="absolute top-2 left-2 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                              <Check className="w-4 h-4 text-white" />
+                            </div>
+                          )}
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 pt-6 pointer-events-none">
+                            <p className="text-xs text-white truncate text-center">{item.name}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {activeCustomTab === "scene" && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-zinc-600">{t.lifestyle?.selectScene || '选择场景（不选则AI匹配）'}</span>
+                      {selectedSceneId && (
+                        <button 
+                          onClick={() => setSelectedSceneId(null)}
+                          className="text-xs text-purple-600"
+                        >
+                          {t.lifestyle?.clearSelection || '清除选择'}
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      {/* Upload Button */}
+                      <button
+                        onClick={() => sceneUploadRef.current?.click()}
+                        className="aspect-square rounded-xl overflow-hidden relative border-2 border-dashed border-zinc-300 hover:border-purple-400 transition-all flex flex-col items-center justify-center bg-zinc-50 hover:bg-purple-50"
+                      >
+                        <Plus className="w-8 h-8 text-zinc-400" />
+                        <span className="text-xs text-zinc-500 mt-1">{t.common?.upload || '上传'}</span>
+                      </button>
+                      {allScenes.map(item => (
+                        <div
+                          key={item.id}
+                          className={`aspect-square rounded-xl overflow-hidden relative border-2 transition-all cursor-pointer ${
+                            selectedSceneId === item.id 
+                              ? "border-purple-500 ring-2 ring-purple-500/30" 
+                              : "border-transparent hover:border-purple-300"
+                          }`}
+                          onClick={() => setSelectedSceneId(selectedSceneId === item.id ? null : item.id)}
+                        >
+                          <Image src={item.imageUrl} alt={item.name || ""} fill className="object-cover" unoptimized />
+                          {selectedSceneId === item.id && (
+                            <div className="absolute top-2 left-2 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                              <Check className="w-4 h-4 text-white" />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
           </>

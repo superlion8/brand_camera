@@ -367,7 +367,14 @@ export async function POST(request: NextRequest) {
       
       try {
         const body = await request.json()
-        const { productImage, modelId, sceneId, taskId } = body
+        const { productImage, modelImage, sceneImage, taskId } = body
+        
+        // modelImage and sceneImage can be:
+        // - 'auto': AI will match automatically
+        // - base64 string: User uploaded custom image
+        // - URL string: User selected from preset
+        const useAutoModel = !modelImage || modelImage === 'auto'
+        const useAutoScene = !sceneImage || sceneImage === 'auto'
         
         // Auth check
         const supabase = await createClient()
@@ -417,27 +424,39 @@ export async function POST(request: NextRequest) {
         send({ type: 'analysis_complete', productTag })
         
         // ========== Step 2 & 3: Filter and Match ==========
-        let matchResult: LifestyleMatchResult
+        let matchResult: LifestyleMatchResult | null = null
+        let userModelImageData: string | null = null
+        let userSceneImageData: string | null = null
         
-        // Check if user provided specific model/scene
-        const userProvidedModel = !!modelId
-        const userProvidedScene = !!sceneId
+        // Convert user-provided images to base64 if provided
+        if (!useAutoModel && modelImage) {
+          send({ type: 'status', message: '正在处理自定义模特图...' })
+          userModelImageData = await ensureBase64Data(modelImage)
+          console.log('[Lifestyle] User provided custom model image')
+        }
         
-        if (userProvidedModel && userProvidedScene) {
-          // User provided both, skip matching
+        if (!useAutoScene && sceneImage) {
+          send({ type: 'status', message: '正在处理自定义场景图...' })
+          userSceneImageData = await ensureBase64Data(sceneImage)
+          console.log('[Lifestyle] User provided custom scene image')
+        }
+        
+        // If user provided both custom images, skip AI matching entirely
+        if (userModelImageData && userSceneImageData) {
+          console.log('[Lifestyle] Using both custom model and scene, skipping AI match')
+          // Create a dummy match result - images will be overridden anyway
           matchResult = {
-            model_id_1: modelId,
-            model_id_2: modelId,
-            model_id_3: modelId,
-            model_id_4: modelId,
-            scene_id_1: sceneId,
-            scene_id_2: sceneId,
-            scene_id_3: sceneId,
-            scene_id_4: sceneId,
+            model_id_1: 'custom',
+            model_id_2: 'custom',
+            model_id_3: 'custom',
+            model_id_4: 'custom',
+            scene_id_1: 'custom',
+            scene_id_2: 'custom',
+            scene_id_3: 'custom',
+            scene_id_4: 'custom',
           }
-          console.log('[Lifestyle] Using user-provided model and scene')
         } else {
-          // Auto mode: filter and match
+          // Need AI matching for at least one of model/scene
           send({ type: 'status', message: '正在筛选匹配的场景...' })
           const sceneIdList = await filterScenesByTag(supabase, productTag)
           
@@ -462,46 +481,54 @@ export async function POST(request: NextRequest) {
             return
           }
           
-          // If user provided model, override AI selection
-          if (userProvidedModel) {
-            matchResult = {
-              ...aiMatchResult,
-              model_id_1: modelId,
-              model_id_2: modelId,
-              model_id_3: modelId,
-              model_id_4: modelId,
-            }
-          } else if (userProvidedScene) {
-            matchResult = {
-              ...aiMatchResult,
-              scene_id_1: sceneId,
-              scene_id_2: sceneId,
-              scene_id_3: sceneId,
-              scene_id_4: sceneId,
-            }
-          } else {
-            matchResult = aiMatchResult
-          }
+          matchResult = aiMatchResult
         }
         
         // ========== Step 4: Fetch Materials ==========
         send({ type: 'status', message: '正在获取模特和场景素材...' })
-        const { modelImages, sceneImages } = await fetchMaterialImages(matchResult)
+        
+        let modelImages: (string | null)[]
+        let sceneImages: (string | null)[]
+        
+        if (userModelImageData && userSceneImageData) {
+          // Both custom: use same image for all 4 slots
+          modelImages = [userModelImageData, userModelImageData, userModelImageData, userModelImageData]
+          sceneImages = [userSceneImageData, userSceneImageData, userSceneImageData, userSceneImageData]
+          console.log('[Lifestyle] Using custom images for all slots')
+        } else if (userModelImageData) {
+          // Custom model, AI scenes
+          const fetched = await fetchMaterialImages(matchResult!)
+          modelImages = [userModelImageData, userModelImageData, userModelImageData, userModelImageData]
+          sceneImages = fetched.sceneImages
+          console.log('[Lifestyle] Using custom model + AI scenes')
+        } else if (userSceneImageData) {
+          // AI models, custom scene
+          const fetched = await fetchMaterialImages(matchResult!)
+          modelImages = fetched.modelImages
+          sceneImages = [userSceneImageData, userSceneImageData, userSceneImageData, userSceneImageData]
+          console.log('[Lifestyle] Using AI models + custom scene')
+        } else {
+          // Full AI mode
+          const fetched = await fetchMaterialImages(matchResult!)
+          modelImages = fetched.modelImages
+          sceneImages = fetched.sceneImages
+          console.log('[Lifestyle] Using full AI matching')
+        }
         
         // Send materials ready event
         send({
           type: 'materials_ready',
-          models: [
-            matchResult.model_id_1,
-            matchResult.model_id_2,
-            matchResult.model_id_3,
-            matchResult.model_id_4,
+          models: userModelImageData ? ['custom', 'custom', 'custom', 'custom'] : [
+            matchResult!.model_id_1,
+            matchResult!.model_id_2,
+            matchResult!.model_id_3,
+            matchResult!.model_id_4,
           ],
-          scenes: [
-            matchResult.scene_id_1,
-            matchResult.scene_id_2,
-            matchResult.scene_id_3,
-            matchResult.scene_id_4,
+          scenes: userSceneImageData ? ['custom', 'custom', 'custom', 'custom'] : [
+            matchResult!.scene_id_1,
+            matchResult!.scene_id_2,
+            matchResult!.scene_id_3,
+            matchResult!.scene_id_4,
           ],
         })
         
