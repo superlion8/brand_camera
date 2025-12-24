@@ -899,7 +899,7 @@ export default function GalleryPage() {
           ))}
         </div>
         
-        {/* 模特二级分类 - 买家秀 / 专业棚拍 / 组图 */}
+        {/* 模特二级分类 - Model Studio / LifeStyle / Buyer Show / Social / Custom Model */}
         {activeTab === "model" && (
           <div className="px-4 pb-3 flex gap-2 overflow-x-auto hide-scrollbar">
             <button
@@ -913,16 +913,6 @@ export default function GalleryPage() {
               {t.common.all || '全部'}
             </button>
             <button
-              onClick={() => setModelSubType("buyer")}
-              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${
-                modelSubType === "buyer"
-                  ? "bg-blue-500 text-white"
-                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-              }`}
-            >
-              {t.gallery.buyerShow || '买家秀'}
-            </button>
-            <button
               onClick={() => setModelSubType("prostudio")}
               className={`px-3 py-1 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${
                 modelSubType === "prostudio"
@@ -933,14 +923,24 @@ export default function GalleryPage() {
               {t.gallery.proStudio || '专业棚拍'}
             </button>
             <button
-              onClick={() => setModelSubType("create_model")}
+              onClick={() => setModelSubType("lifestyle")}
               className={`px-3 py-1 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${
-                modelSubType === "create_model"
-                  ? "bg-violet-500 text-white"
+                modelSubType === "lifestyle"
+                  ? "bg-purple-600 text-white"
                   : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
               }`}
             >
-              {t.gallery.createModel || '定制模特'}
+              {t.gallery.lifestyleShot || 'LifeStyle 街拍'}
+            </button>
+            <button
+              onClick={() => setModelSubType("buyer")}
+              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${
+                modelSubType === "buyer"
+                  ? "bg-blue-500 text-white"
+                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+              }`}
+            >
+              {t.gallery.buyerShow || '买家秀'}
             </button>
             <button
               onClick={() => setModelSubType("social")}
@@ -953,14 +953,14 @@ export default function GalleryPage() {
               {t.gallery.social || '社媒种草'}
             </button>
             <button
-              onClick={() => setModelSubType("lifestyle")}
+              onClick={() => setModelSubType("create_model")}
               className={`px-3 py-1 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${
-                modelSubType === "lifestyle"
-                  ? "bg-purple-600 text-white"
+                modelSubType === "create_model"
+                  ? "bg-violet-500 text-white"
                   : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
               }`}
             >
-              {t.gallery.lifestyleShot || 'LifeStyle 街拍'}
+              {t.gallery.createModel || '定制模特'}
             </button>
           </div>
         )}
