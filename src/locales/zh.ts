@@ -775,6 +775,7 @@ export const zh = {
     matchingModel: "智能匹配模特...",
     matchingScene: "智能匹配场景...",
     generatingPhoto: "生成街拍图...",
+    outfitMode: "搭配",
   },
 
   // 参考图拍摄

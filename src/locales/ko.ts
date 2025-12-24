@@ -777,6 +777,7 @@ export const ko: Translations = {
     matchingModel: "모델 매칭 중...",
     matchingScene: "배경 매칭 중...",
     generatingPhoto: "스트릿 샷 생성 중...",
+    outfitMode: "코디",
   },
 
   // 참조 촬영

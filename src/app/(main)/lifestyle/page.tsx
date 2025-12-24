@@ -493,14 +493,33 @@ function LifestylePageContent() {
                     </button>
                   </div>
                   
-                  {/* Generate button */}
-                  <div className="w-full flex justify-center">
+                  {/* Generate and Outfit buttons */}
+                  <div className="w-full flex gap-3 max-w-sm mx-auto">
+                    {/* Outfit Mode Button */}
+                    <motion.button
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        // Save product image to sessionStorage and go to outfit page
+                        if (capturedImage) {
+                          sessionStorage.setItem('lifestyleProduct1Image', capturedImage)
+                          router.push('/lifestyle/outfit')
+                        }
+                      }}
+                      className="h-14 px-6 rounded-full bg-white/10 text-white font-bold text-sm flex items-center justify-center gap-2 border border-white/20 hover:bg-white/20 transition-colors"
+                    >
+                      <Plus className="w-5 h-5" />
+                      {t.lifestyle?.outfitMode || '搭配'}
+                    </motion.button>
+                    
+                    {/* Generate button */}
                     <motion.button
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={handleLifestyleGenerate}
-                      className="w-full max-w-xs h-14 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold text-lg flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(168,85,247,0.4)]"
+                      className="flex-1 h-14 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold text-lg flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(168,85,247,0.4)]"
                     >
                       <Wand2 className="w-5 h-5" />
                       {t.lifestyle?.startGenerate || '开始生成'}

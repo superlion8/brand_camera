@@ -777,6 +777,7 @@ export const en: Translations = {
     matchingModel: "Matching model...",
     matchingScene: "Matching scene...",
     generatingPhoto: "Generating street shot...",
+    outfitMode: "Outfit",
   },
 
   // Reference Shot

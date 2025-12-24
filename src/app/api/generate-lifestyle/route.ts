@@ -291,22 +291,43 @@ async function generateLifestyleImage(
   productImageData: string,
   modelImageData: string,
   sceneImageData: string,
-  index: number
+  index: number,
+  outfitProductImages?: { slot: string; data: string }[]
 ): Promise<{ image: string; model: 'pro' | 'flash' } | null> {
   const label = `[Lifestyle-${index}]`
   
   try {
     console.log(`${label} Generating image...`)
     
-    const parts = [
-      { text: LIFESTYLE_FINAL_PROMPT },
-      { text: '\n\n[商品图]:' },
-      { inlineData: { mimeType: 'image/jpeg', data: productImageData } },
-      { text: '\n\n[模特图]:' },
-      { inlineData: { mimeType: 'image/jpeg', data: modelImageData } },
-      { text: '\n\n[参考场景图]:' },
-      { inlineData: { mimeType: 'image/jpeg', data: sceneImageData } },
-    ]
+    // Build parts dynamically based on whether it's outfit mode
+    const parts: any[] = [{ text: LIFESTYLE_FINAL_PROMPT }]
+    
+    if (outfitProductImages && outfitProductImages.length > 1) {
+      // Outfit mode: include all product images with labels
+      const slotLabels: Record<string, string> = {
+        'top': '上衣',
+        'pants': '裤子/裙子',
+        'inner': '内衬',
+        'hat': '帽子',
+        'shoes': '鞋子'
+      }
+      
+      parts.push({ text: '\n\n【搭配模式 - 多件商品】\n请让模特同时穿上以下所有商品:' })
+      
+      for (const item of outfitProductImages) {
+        parts.push({ text: `\n\n[${slotLabels[item.slot] || item.slot}]:` })
+        parts.push({ inlineData: { mimeType: 'image/jpeg', data: item.data } })
+      }
+    } else {
+      // Single product mode
+      parts.push({ text: '\n\n[商品图]:' })
+      parts.push({ inlineData: { mimeType: 'image/jpeg', data: productImageData } })
+    }
+    
+    parts.push({ text: '\n\n[模特图]:' })
+    parts.push({ inlineData: { mimeType: 'image/jpeg', data: modelImageData } })
+    parts.push({ text: '\n\n[参考场景图]:' })
+    parts.push({ inlineData: { mimeType: 'image/jpeg', data: sceneImageData } })
     
     // Try primary model
     try {
@@ -367,7 +388,11 @@ export async function POST(request: NextRequest) {
       
       try {
         const body = await request.json()
-        const { productImage, modelImage, sceneImage, taskId } = body
+        const { productImage, modelImage, sceneImage, taskId, outfitItems } = body
+        
+        // Support both single product (productImage) and multiple products (outfitItems)
+        // outfitItems format: { inner?: string, top?: string, pants?: string, hat?: string, shoes?: string }
+        const isOutfitMode = !!outfitItems && Object.keys(outfitItems).length > 0
         
         // modelImage and sceneImage can be:
         // - 'auto': AI will match automatically
@@ -389,7 +414,8 @@ export async function POST(request: NextRequest) {
         const userId = user.id
         const client = getGenAIClient()
         
-        if (!productImage) {
+        // Validate input: need either productImage or outfitItems
+        if (!productImage && !isOutfitMode) {
           send({ type: 'error', error: '缺少商品图片' })
           controller.close()
           return
@@ -401,9 +427,40 @@ export async function POST(request: NextRequest) {
           return
         }
         
-        // Convert product image to base64
+        // Convert product image(s) to base64
         send({ type: 'status', message: '正在处理商品图片...' })
-        const productImageData = await ensureBase64Data(productImage)
+        
+        // For outfit mode, collect all product images
+        let allProductImageData: { slot: string; data: string }[] = []
+        let primaryProductImageData: string | null = null
+        
+        if (isOutfitMode) {
+          // Process all outfit items
+          const slotOrder = ['top', 'pants', 'inner', 'hat', 'shoes']
+          for (const slot of slotOrder) {
+            const imageUrl = outfitItems[slot]
+            if (imageUrl) {
+              const base64 = await ensureBase64Data(imageUrl)
+              if (base64) {
+                allProductImageData.push({ slot, data: base64 })
+                if (!primaryProductImageData) {
+                  primaryProductImageData = base64 // First valid image as primary
+                }
+              }
+            }
+          }
+          
+          if (allProductImageData.length === 0) {
+            send({ type: 'error', error: '服装图片处理失败' })
+            controller.close()
+            return
+          }
+          
+          console.log(`[Lifestyle] Outfit mode: ${allProductImageData.length} items - ${allProductImageData.map(p => p.slot).join(', ')}`)
+        }
+        
+        // Single product mode or fallback
+        const productImageData = primaryProductImageData || await ensureBase64Data(productImage)
         
         if (!productImageData) {
           send({ type: 'error', error: '商品图片处理失败' })
@@ -560,7 +617,8 @@ export async function POST(request: NextRequest) {
             productImageData,
             modelImageData,
             sceneImageData,
-            i
+            i,
+            isOutfitMode ? allProductImageData : undefined
           )
           
           if (!result) {
@@ -588,7 +646,7 @@ export async function POST(request: NextRequest) {
             imageUrl: uploaded,
             modelType: result.model,
             genMode: 'simple',
-            prompt: `LifeStyle Mode - Model: ${modelIds[i]}, Scene: ${sceneIds[i]}`,
+            prompt: `LifeStyle Mode${isOutfitMode ? ' (Outfit)' : ''} - Model: ${modelIds[i]}, Scene: ${sceneIds[i]}`,
             taskType: 'lifestyle',
             inputImageUrl: i === 0 ? inputImageUrl : undefined,
             inputParams: i === 0 ? {
@@ -597,6 +655,8 @@ export async function POST(request: NextRequest) {
               modelId: modelIds[i],
               sceneId: sceneIds[i],
               productTag: JSON.stringify(productTag),
+              isOutfitMode,
+              outfitSlots: isOutfitMode ? allProductImageData.map(p => p.slot) : undefined,
             } : undefined,
           })
           
