@@ -47,14 +47,13 @@ const getProductCategoryLabel = (cat: ProductSubTab, t: any): string => {
 // 专业棚拍生成4张图（4种机位）
 const PRO_STUDIO_NUM_IMAGES = 4
 
-// 4 种机位配置
-const SHOT_TYPE_LABELS: Record<string, { zh: string; en: string; color: string }> = {
-  full_body: { zh: '全身照', en: 'Full Body', color: 'bg-blue-500' },
-  cool_pose: { zh: '时尚pose', en: 'Cool Pose', color: 'bg-purple-500' },
-  detail: { zh: '细节', en: 'Detail', color: 'bg-amber-500' },
-  dynamic: { zh: '动态', en: 'Dynamic', color: 'bg-green-500' },
-}
-const SHOT_TYPES = ['full_body', 'cool_pose', 'detail', 'dynamic']
+// 4 张图片的标签配置
+const IMAGE_LABELS: { zh: string; en: string; color: string }[] = [
+  { zh: '图片 1', en: 'Image 1', color: 'bg-blue-500' },
+  { zh: '图片 2', en: 'Image 2', color: 'bg-purple-500' },
+  { zh: '图片 3', en: 'Image 3', color: 'bg-amber-500' },
+  { zh: '图片 4', en: 'Image 4', color: 'bg-green-500' },
+]
 
 // Asset Grid Component with Upload Button
 function AssetGrid({ 
@@ -615,7 +614,7 @@ function ProStudioPageContent() {
                   setGeneratedModes(prev => {
                     // 创建完整长度数组，保留 prev 中已有的数据
                     const newModes = Array(PRO_STUDIO_NUM_IMAGES).fill('').map((_, i) => prev[i] || '')
-                    newModes[data.index] = data.shotType || SHOT_TYPES[data.index]
+                    newModes[data.index] = `image_${data.index + 1}`
                     return newModes
                   })
                   
@@ -726,17 +725,15 @@ function ProStudioPageContent() {
     updateTaskStatus(taskId, 'completed')
   }
 
-  // 获取机位标签（根据 index 或 shotType）
-  const getShotLabel = (index: number, shotType?: string) => {
-    const type = shotType || SHOT_TYPES[index] || 'full_body'
-    const label = SHOT_TYPE_LABELS[type]
-    return label?.zh || type
+  // 获取图片标签
+  const getImageLabel = (index: number) => {
+    const label = IMAGE_LABELS[index] || IMAGE_LABELS[0]
+    return label.zh
   }
 
-  const getShotColor = (index: number, shotType?: string) => {
-    const type = shotType || SHOT_TYPES[index] || 'full_body'
-    const label = SHOT_TYPE_LABELS[type]
-    return label?.color || 'bg-blue-500'
+  const getImageColor = (index: number) => {
+    const label = IMAGE_LABELS[index] || IMAGE_LABELS[0]
+    return label.color
   }
 
   // Download handler with iOS share support
@@ -1596,13 +1593,12 @@ function ProStudioPageContent() {
                   const slot = currentTask?.imageSlots?.[i]
                   const url = slot?.imageUrl || generatedImages[i]
                   const status = slot?.status || (url ? 'completed' : 'failed')
-                  const shotType = generatedModes[i] || SHOT_TYPES[i]
                   
                   if (status === 'pending' || status === 'generating') {
                     return (
                       <div key={i} className="aspect-[4/5] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
                         <Loader2 className="w-6 h-6 text-zinc-400 animate-spin mb-2" />
-                        <span className="text-[10px] text-zinc-400">{getShotLabel(i, shotType)}</span>
+                        <span className="text-[10px] text-zinc-400">{getImageLabel(i)}</span>
                       </div>
                     )
                   }
@@ -1610,7 +1606,7 @@ function ProStudioPageContent() {
                   if (status === 'failed' || !url) {
                     return (
                       <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl flex flex-col items-center justify-center text-zinc-400 text-xs">
-                        <span className="mb-1">{getShotLabel(i, shotType)}</span>
+                        <span className="mb-1">{getImageLabel(i)}</span>
                         <span>{slot?.error || t.camera.generationFailed}</span>
                       </div>
                     )
@@ -1627,8 +1623,8 @@ function ProStudioPageContent() {
                         <Heart className="w-3.5 h-3.5 text-zinc-500" />
                       </button>
                       <div className="absolute top-2 left-2">
-                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium text-white ${getShotColor(i, shotType)}`}>
-                          {getShotLabel(i, shotType)}
+                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium text-white ${getImageColor(i)}`}>
+                          {getImageLabel(i)}
                         </span>
                       </div>
                     </div>
@@ -1692,8 +1688,8 @@ function ProStudioPageContent() {
                       <div className="p-4 pb-8 bg-white">
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${getShotColor(selectedResultIndex, generatedModes[selectedResultIndex])} text-white`}>
-                              {getShotLabel(selectedResultIndex, generatedModes[selectedResultIndex])}
+                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${getImageColor(selectedResultIndex)} text-white`}>
+                              {getImageLabel(selectedResultIndex)}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">

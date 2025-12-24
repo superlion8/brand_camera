@@ -10,8 +10,7 @@ export const maxDuration = 300 // 5 minutes
 // ============================================
 // 模型配置
 // ============================================
-const FLASH_MODEL = 'gemini-3-flash-preview'      // 分析用（快速）
-const VLM_MODEL = 'gemini-3-pro-preview'          // 生成 outfit
+const FLASH_MODEL = 'gemini-3-flash-preview'      // 分析、outfit、shot_instruct
 const IMAGE_MODEL = 'gemini-3-pro-image-preview'  // 图像生成
 
 // Storage URL
@@ -19,42 +18,16 @@ const ALL_MODELS_URL = 'https://cvdogeigbpussfamctsu.supabase.co/storage/v1/obje
 const PRO_STUDIO_URL = 'https://cvdogeigbpussfamctsu.supabase.co/storage/v1/object/public/presets/pro_studio'
 
 // ============================================
-// 4 种机位配置
-// ============================================
-const SHOT_FOCUS_CONFIGS = [
-  {
-    index: 0,
-    name: 'full_body',
-    prompt: 'Full body wide shot. Standard e-commerce catalog pose. The model is standing straight with a neutral stance, facing the camera directly. Ensure the entire outfit fits within the frame from head to toe. Clean, professional composition.'
-  },
-  {
-    index: 1,
-    name: 'cool_pose',
-    prompt: "Fashion Editorial Shot. A slightly low-angle perspective to elongate the silhouette. The model is striking a confident, relaxed 'cool' pose. The framing focuses on the 'Total Look' but with more attitude than a catalog shot."
-  },
-  {
-    index: 2,
-    name: 'detail',
-    prompt: 'Detailed Close-up Shot. Cinematic Close-up. The camera zooms in to fill the frame with the main product item. Focus sharply on the fabric texture and stitching details of the product.'
-  },
-  {
-    index: 3,
-    name: 'dynamic',
-    prompt: 'Studio shot. The model is caught in a subtle, natural movement, taking a small, gentle step forward. Not a runway walk, but a relaxed shift in weight. The clothing hangs naturally on the body. The vibe is calm, professional, and effortless.'
-  },
-]
-
-// ============================================
 // Prompts
 // ============================================
 
-// 步骤1: 服装风格分析 + 智能选择模特/背景
+// 步骤1: 服装风格分析 + 智能选择4个模特/4个背景
 const MATCH_PROMPT = `1. 请分析商品{{product_img}}的材质、版型、色彩和风格
-2. 在 model_analysis表中选择出一个 model_id，按优先级：
+2. 在 model_analysis表中选择出4个合适的 model_id，按优先级：
   1. 气质匹配：模特整体气质/风格(model_style_all字段)与商品{{product_img}}相符
   2. 性别和年龄品牌：商品的性别和年龄属性与模特相匹配
   3. 身材/比例适配：模特身形与商品版型更合适（oversized 更适合骨架感/衣架感；修身更适合线条利落；高腰阔腿更适合比例好）
-3. 读取pro_studio_scene_tag表中所有场景的标签，进行商品和场景的匹配度打分，选出一个 scene_id，按优先级：
+3. 读取pro_studio_scene_tag表中所有场景的标签，进行商品和场景的匹配度打分，选出4个合适的 scene_id，按优先级：
   1. 风格匹配：优先选择 style_all 覆盖商品风格的背景；例如商品风格为 Y2K，则筛选 style_all 中包含 Y2K 的背景场景。
     1. 兜底规则：若 style_all 为空或命中数量过少，可放宽为 style = Unknown/Minimal/Casual 等更通用风格进入候选，但整体降权，作为备选。
   2. 色系匹配：在风格匹配的候选背景中，选择与商品色系协调且突出主体的背景——优先保证明度/对比度足够让服饰轮廓清晰，并避免背景色偏或反光对肤色与浅色服饰造成染色，从而呈现更"高级"的整体观感。
@@ -68,12 +41,17 @@ const MATCH_PROMPT = `1. 请分析商品{{product_img}}的材质、版型、色�
 请严格按照以下 JSON 格式输出结果，不要包含 markdown 标记（如 \`\`\`json），也不要输出任何解释性文字：
 {
 "product_style":"Y2K | Casual | Business | Girly | Retro | High-Fashion | Streetwear | Minimal | Sporty | Workwear | Preppy | AvantGarde | Boho | Unknown",
-"model_id":"选择的模特id" ,
-"model_reason": "", 
-"scene_id": "选择的场景id", 
-"scene_reason":"选择场景的原因" }`
+"model_id1":"选择的模特id 1",
+"model_id2":"选择的模特id 2",
+"model_id3":"选择的模特id 3",
+"model_id4":"选择的模特id 4",
+"scene_id1":"选择的场景id 1",
+"scene_id2":"选择的场景id 2",
+"scene_id3":"选择的场景id 3",
+"scene_id4":"选择的场景id 4"
+}`
 
-// 步骤3: 生成服装搭配
+// 步骤2: 生成服装搭配
 const OUTFIT_PROMPT = `# Role
 你是由《Vogue》和《GQ》特聘的资深时尚造型总监。你的任务是基于核心单品，为电商拍摄设计一套极具高级感、符合当下流行趋势的服装搭配（Look）。
 
@@ -105,6 +83,19 @@ const OUTFIT_PROMPT = `# Role
 
 现在，请开始为商品进行搭配设计：`
 
+// 步骤3: 生成拍摄指令
+const SHOT_INSTRUCT_PROMPT = `你现在是一个专门拍摄电商商品棚拍图的职业摄影师，请你基于你要拍摄的商品[商品图]，和展示这个商品的模特[模特图]，为这个模特选择一身合适商品风格的服装造型搭配，搭配要和谐、有风格、有高级感；
+再为这个模特和这身装扮选择一个合适的影棚拍摄背景和拍摄pose，输出1段拍摄指令。
+拍摄背景不要出现打光灯等拍摄设施，按成片图的标准来塑造。
+服装风格参考：{{product_style}}
+请你严格用英文按照下面这个格式来写，不需要输出其他额外的东西：
+{
+"background":"",
+"model_pose":"",
+"composition":"",
+"camera_setting":""
+}`
+
 // 步骤4: 最终图像生成
 const FINAL_PROMPT = `[Role: Professional Commercial Photographer]
 [Task: High-Fidelity Fashion Photography]
@@ -114,16 +105,18 @@ Reference Sources (Strict Adherence)
   - ACTION: Reconstruct this exact garment.
   - PRIORITY: MAXIMUM. The logo, text, neckline, and pattern MUST be identical to the reference.
 2. THE MODEL: [模特图]
-  - ACTION: Use the exact facial features, skin tone, and body shape of this specific model. The model MUST look identical.
-3. THE SCENE: [场景图] 
-  - ACTION: The scene image is an atmospheric reference, not a fixed physical space. You may subtly reconstruct or extend the scene following realistic photographic and spatial logic, and redesign the composition through varied camera angles, shot scales, and framing, taking visual inspiration from editorial-style imagery commonly seen in designer fashion brands' official website.
-  - The model and the product must be naturally merged with the scene, with reasonable lighting and vibe.
+  - ACTION: Use the exact facial features, skin tone, and body shape of this specific model. The model MUST look identical. 
+  - CONSTRAINT: Ignore original clothes in model reference.
+3. THE SCENE: [场景图]
+  - ACTION: Use this exact environment.
     
 Styling Instructions
 {{outfit_instruct}}
 
 Camera & Shot Settings
-- SHOT FOCUS: {{shot_focus}}
+{{shot_instruct}}
+
+Additional Settings:
 - Lighting: Professional studio lighting blended with the environment's natural light sources. Soft shadows, commercial aesthetics.
 - Quality: 8k resolution, raw photo, realistic skin texture, realistic fabric physics (wrinkles, drape).
   
@@ -178,7 +171,7 @@ async function getSceneImage(sceneId: string): Promise<{ base64: string; url: st
 }
 
 /**
- * 步骤1: 服装风格分析 + 智能选择模特/背景
+ * 步骤1: 服装风格分析 + 智能选择4个模特/4个背景
  */
 async function analyzeAndSelect(
   client: ReturnType<typeof getGenAIClient>,
@@ -186,11 +179,9 @@ async function analyzeAndSelect(
   needModel: boolean,
   needScene: boolean
 ): Promise<{
-  modelId: string | null;
-  sceneId: string | null;
+  modelIds: string[];
+  sceneIds: string[];
   productStyle: string;
-  modelReason?: string;
-  sceneReason?: string;
 }> {
   try {
     // 获取数据库数据
@@ -199,7 +190,7 @@ async function analyzeAndSelect(
     
     if (!supabaseUrl || !supabaseKey) {
       console.error('[ProStudio] Missing Supabase credentials')
-      return { modelId: null, sceneId: null, productStyle: 'Unknown' }
+      return { modelIds: [], sceneIds: [], productStyle: 'Unknown' }
     }
     
     const supabase = createClient(supabaseUrl, supabaseKey)
@@ -232,7 +223,7 @@ async function analyzeAndSelect(
       }))
       promptParts.push(`\n\nmodel_analysis表数据：\n${JSON.stringify(modelDatabase, null, 2)}`)
     } else if (!needModel) {
-      promptParts.push(`\n\n注意：用户已选择模特，不需要选择 model_id，请在输出中将 model_id 设为 null`)
+      promptParts.push(`\n\n注意：用户已选择模特，不需要选择 model_id，请在输出中将所有 model_id1-4 设为 null`)
     }
     
     if (needScene && scenesResult.data) {
@@ -247,12 +238,12 @@ async function analyzeAndSelect(
       }))
       promptParts.push(`\n\npro_studio_scene_tag表数据：\n${JSON.stringify(sceneDatabase, null, 2)}`)
     } else if (!needScene) {
-      promptParts.push(`\n\n注意：用户已选择场景，不需要选择 scene_id，请在输出中将 scene_id 设为 null`)
+      promptParts.push(`\n\n注意：用户已选择场景，不需要选择 scene_id，请在输出中将所有 scene_id1-4 设为 null`)
     }
     
     const fullPrompt = promptParts.join('')
     
-    console.log('[ProStudio] Analyzing product and selecting model/scene...')
+    console.log('[ProStudio] Analyzing product and selecting 4 models/scenes...')
     console.log(`[ProStudio] needModel: ${needModel}, needScene: ${needScene}`)
     
     const response = await client.models.generateContent({
@@ -271,40 +262,55 @@ async function analyzeAndSelect(
     const textResult = extractText(response)
     if (!textResult) {
       console.error('[ProStudio] No text result from analysis')
-      return { modelId: null, sceneId: null, productStyle: 'Unknown' }
+      return { modelIds: [], sceneIds: [], productStyle: 'Unknown' }
     }
     
-    console.log('[ProStudio] Analysis result:', textResult.substring(0, 300))
+    console.log('[ProStudio] Analysis result:', textResult.substring(0, 500))
     
     // 解析 JSON 结果
     const jsonMatch = textResult.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
       console.error('[ProStudio] Failed to parse JSON from result')
-      return { modelId: null, sceneId: null, productStyle: 'Unknown' }
+      return { modelIds: [], sceneIds: [], productStyle: 'Unknown' }
     }
     
     const parsed = JSON.parse(jsonMatch[0])
     
+    // 提取4个模特ID和4个场景ID
+    const modelIds: string[] = []
+    const sceneIds: string[] = []
+    
+    if (needModel) {
+      for (let i = 1; i <= 4; i++) {
+        const id = parsed[`model_id${i}`]
+        if (id && id !== 'null') modelIds.push(id)
+      }
+    }
+    
+    if (needScene) {
+      for (let i = 1; i <= 4; i++) {
+        const id = parsed[`scene_id${i}`]
+        if (id && id !== 'null') sceneIds.push(id)
+      }
+    }
+    
     return {
-      modelId: needModel ? parsed.model_id : null,
-      sceneId: needScene ? parsed.scene_id : null,
+      modelIds,
+      sceneIds,
       productStyle: parsed.product_style || 'Unknown',
-      modelReason: parsed.model_reason,
-      sceneReason: parsed.scene_reason,
     }
   } catch (e) {
     console.error('[ProStudio] Analysis error:', e)
-    return { modelId: null, sceneId: null, productStyle: 'Unknown' }
+    return { modelIds: [], sceneIds: [], productStyle: 'Unknown' }
   }
 }
 
 /**
- * 步骤3: 生成服装搭配指令
- * productDataList: 支持多件商品图片
+ * 步骤2: 生成服装搭配指令
  */
 async function generateOutfitInstruct(
   client: ReturnType<typeof getGenAIClient>,
-  productDataList: string[],  // 改为数组，支持多件商品
+  productDataList: string[],
   modelData: string,
   sceneData: string,
   productStyle: string
@@ -330,7 +336,7 @@ async function generateOutfitInstruct(
     parts.push({ inlineData: { mimeType: 'image/jpeg', data: sceneData } })
     
     const response = await client.models.generateContent({
-      model: VLM_MODEL,
+      model: FLASH_MODEL,
       contents: [{ role: 'user', parts }],
       config: { safetySettings },
     })
@@ -347,24 +353,70 @@ async function generateOutfitInstruct(
 }
 
 /**
- * 步骤4: 生成单张图片（带机位）
- * productDataList: 支持多件商品图片
+ * 步骤3: 生成拍摄指令
  */
-async function generateImageWithShotFocus(
+async function generateShotInstruct(
   client: ReturnType<typeof getGenAIClient>,
-  productDataList: string[],  // 改为数组，支持多件商品
+  productDataList: string[],
+  modelData: string,
+  sceneData: string,
+  productStyle: string
+): Promise<string | null> {
+  try {
+    const prompt = SHOT_INSTRUCT_PROMPT.replace('{{product_style}}', productStyle)
+    
+    console.log(`[ProStudio] Generating shot instructions...`)
+    
+    // 构建 parts
+    const parts: any[] = [{ text: prompt }]
+    
+    // 添加所有商品图片
+    productDataList.forEach((productData, index) => {
+      parts.push({ text: `\n\n[商品图${index + 1}]:` })
+      parts.push({ inlineData: { mimeType: 'image/jpeg', data: productData } })
+    })
+    
+    // 添加模特和场景
+    parts.push({ text: '\n\n[模特图]:' })
+    parts.push({ inlineData: { mimeType: 'image/jpeg', data: modelData } })
+    parts.push({ text: '\n\n[场景图]:' })
+    parts.push({ inlineData: { mimeType: 'image/jpeg', data: sceneData } })
+    
+    const response = await client.models.generateContent({
+      model: FLASH_MODEL,
+      contents: [{ role: 'user', parts }],
+      config: { safetySettings },
+    })
+    
+    const result = extractText(response)
+    if (result) {
+      console.log('[ProStudio] Shot instructions:', result.substring(0, 150) + '...')
+    }
+    return result
+  } catch (e) {
+    console.error('[ProStudio] Failed to generate shot instructions:', e)
+    return null
+  }
+}
+
+/**
+ * 步骤4: 生成单张图片
+ */
+async function generateImage(
+  client: ReturnType<typeof getGenAIClient>,
+  productDataList: string[],
   modelData: string,
   sceneData: string,
   outfitInstruct: string,
-  shotFocus: string,
+  shotInstruct: string,
   label: string
 ): Promise<string | null> {
   try {
     const prompt = FINAL_PROMPT
       .replace('{{outfit_instruct}}', outfitInstruct)
-      .replace('{{shot_focus}}', shotFocus)
+      .replace('{{shot_instruct}}', shotInstruct)
     
-    console.log(`[${label}] Generating image with ${productDataList.length} products, shot focus: ${shotFocus.substring(0, 30)}...`)
+    console.log(`[${label}] Generating image with ${productDataList.length} products...`)
     
     // 构建 parts，支持多件商品图片
     const parts: any[] = [{ text: prompt }]
@@ -425,9 +477,6 @@ export async function POST(request: NextRequest) {
     } = body
 
     // 支持两种模式：单商品 (productImage) 和多商品 (productImages/outfitItems)
-    // outfitItems 支持两种格式：
-    //   - 直接 URL 字符串：{ top: "https://..." }
-    //   - 对象格式：{ top: { imageUrl: "https://..." } }
     const getOutfitItemUrl = (item: any): string | undefined => {
       if (!item) return undefined
       if (typeof item === 'string') return item
@@ -482,13 +531,12 @@ export async function POST(request: NextRequest) {
         }
 
         try {
-          // 1. 处理所有商品图片（支持多件商品 outfit 模式）
+          // 1. 处理所有商品图片
           sendEvent({ type: 'progress', step: 'product', message: '处理商品图片...' })
           
           // 收集所有需要处理的商品图片 URL
           const productUrls: string[] = []
           if (outfitItems) {
-            // outfit 模式：按顺序收集所有商品
             const slots = ['inner', 'top', 'pants', 'hat', 'shoes'] as const
             for (const slot of slots) {
               const item = outfitItems[slot]
@@ -496,13 +544,11 @@ export async function POST(request: NextRequest) {
               if (url) productUrls.push(url)
             }
           } else if (productImages && Array.isArray(productImages)) {
-            // 数组模式
             for (const p of productImages) {
               const url = typeof p === 'string' ? p : p?.imageUrl
               if (url) productUrls.push(url)
             }
           } else if (mainProductImage) {
-            // 单商品模式
             productUrls.push(mainProductImage)
           }
           
@@ -527,25 +573,21 @@ export async function POST(request: NextRequest) {
           
           console.log(`[ProStudio] Successfully converted ${productDataList.length} product images to base64`)
 
-          // 2. 判断是否需要 AI 分析（使用第一张商品图）
+          // 2. 判断是否需要 AI 分析选择模特/背景
           const mainProductData = productDataList[0]
           const needModel = !modelImage || modelImage === 'random'
           const needScene = !backgroundImage || backgroundImage === 'random'
           
-          let modelData: string | null = null
-          let modelUrl: string | undefined
-          let sceneData: string | null = null
-          let sceneUrl: string | undefined
+          let modelDataList: { base64: string; url: string }[] = []
+          let sceneDataList: { base64: string; url: string }[] = []
           let productStyle = 'Unknown'
-          let modelIsAI = false
-          let sceneIsAI = false
 
-          // 3. 如果需要，执行 AI 分析选择
+          // 3. 如果需要，执行 AI 分析选择4个模特/场景
           if (needModel || needScene) {
             sendEvent({ 
               type: 'progress', 
               step: 'analyze', 
-              message: `智能分析中${needModel ? '（选择模特）' : ''}${needScene ? '（选择场景）' : ''}...` 
+              message: `智能分析中${needModel ? '（选择4个模特）' : ''}${needScene ? '（选择4个场景）' : ''}...` 
             })
             
             const analysis = await analyzeAndSelect(client, mainProductData, needModel, needScene)
@@ -554,119 +596,155 @@ export async function POST(request: NextRequest) {
             sendEvent({ 
               type: 'analysis_complete', 
               productStyle,
-              modelId: analysis.modelId,
-              sceneId: analysis.sceneId,
-              modelReason: analysis.modelReason,
-              sceneReason: analysis.sceneReason,
+              modelIds: analysis.modelIds,
+              sceneIds: analysis.sceneIds,
             })
             
-            // 获取 AI 选择的模特图片
-            if (needModel && analysis.modelId) {
-              sendEvent({ type: 'progress', step: 'model', message: `获取模特图片: ${analysis.modelId}...` })
-              const modelResult = await getModelImage(analysis.modelId)
-              if (modelResult) {
-                modelData = modelResult.base64
-                modelUrl = modelResult.url
-                modelIsAI = true
+            // 获取 AI 选择的4个模特图片
+            if (needModel && analysis.modelIds.length > 0) {
+              sendEvent({ type: 'progress', step: 'model', message: `获取${analysis.modelIds.length}个模特图片...` })
+              for (const modelId of analysis.modelIds) {
+                const modelResult = await getModelImage(modelId)
+                if (modelResult) {
+                  modelDataList.push(modelResult)
+                }
               }
+              console.log(`[ProStudio] Got ${modelDataList.length} model images`)
             }
             
-            // 获取 AI 选择的场景图片
-            if (needScene && analysis.sceneId) {
-              sendEvent({ type: 'progress', step: 'scene', message: `获取场景图片: ${analysis.sceneId}...` })
-              const sceneResult = await getSceneImage(analysis.sceneId)
-              if (sceneResult) {
-                sceneData = sceneResult.base64
-                sceneUrl = sceneResult.url
-                sceneIsAI = true
+            // 获取 AI 选择的4个场景图片
+            if (needScene && analysis.sceneIds.length > 0) {
+              sendEvent({ type: 'progress', step: 'scene', message: `获取${analysis.sceneIds.length}个场景图片...` })
+              for (const sceneId of analysis.sceneIds) {
+                const sceneResult = await getSceneImage(sceneId)
+                if (sceneResult) {
+                  sceneDataList.push(sceneResult)
+                }
               }
+              console.log(`[ProStudio] Got ${sceneDataList.length} scene images`)
             }
           }
 
-          // 4. 处理用户选择的图片
+          // 4. 处理用户选择的图片（复制4份）
           if (!needModel && modelImage) {
             sendEvent({ type: 'progress', step: 'model', message: '处理用户选择的模特图片...' })
-            modelData = await imageToBase64(modelImage)
-            modelUrl = modelImage.startsWith('http') ? modelImage : undefined
+            const modelData = await imageToBase64(modelImage)
+            if (modelData) {
+              const modelUrl = modelImage.startsWith('http') ? modelImage : undefined
+              // 复制4份用于4次生成
+              for (let i = 0; i < 4; i++) {
+                modelDataList.push({ base64: modelData, url: modelUrl || '' })
+              }
+            }
           }
           
           if (!needScene && backgroundImage) {
             sendEvent({ type: 'progress', step: 'scene', message: '处理用户选择的场景图片...' })
-            sceneData = await imageToBase64(backgroundImage)
-            sceneUrl = backgroundImage.startsWith('http') ? backgroundImage : undefined
+            const sceneData = await imageToBase64(backgroundImage)
+            if (sceneData) {
+              const sceneUrl = backgroundImage.startsWith('http') ? backgroundImage : undefined
+              // 复制4份用于4次生成
+              for (let i = 0; i < 4; i++) {
+                sceneDataList.push({ base64: sceneData, url: sceneUrl || '' })
+              }
+            }
           }
 
-          // 5. Fallback: 如果 AI 选择失败，随机选择
-          if (!modelData) {
-            sendEvent({ type: 'progress', step: 'model', message: '随机选择模特...' })
-            const randomModel = await getRandomPresetBase64('studio-models', 5)
-            if (randomModel) {
-              modelData = randomModel.base64
-              modelUrl = randomModel.url
-              modelIsAI = true
+          // 5. Fallback: 如果 AI 选择失败或数量不足，随机补充
+          if (modelDataList.length < 4) {
+            sendEvent({ type: 'progress', step: 'model', message: '随机补充模特...' })
+            const needed = 4 - modelDataList.length
+            for (let i = 0; i < needed; i++) {
+              const randomModel = await getRandomPresetBase64('studio-models', 5)
+              if (randomModel) {
+                modelDataList.push({ base64: randomModel.base64, url: randomModel.url })
+              }
             }
           }
           
-          if (!sceneData) {
-            sendEvent({ type: 'progress', step: 'scene', message: '随机选择场景...' })
-            // 从 pro_studio 文件夹随机选择
+          if (sceneDataList.length < 4) {
+            sendEvent({ type: 'progress', step: 'scene', message: '随机补充场景...' })
             const sceneFiles = ['background01', 'background02', 'background03', 'background04', 'background05',
                                'background06', 'background07', 'background08', 'background09', 'background10', 'background11']
-            const randomSceneId = sceneFiles[Math.floor(Math.random() * sceneFiles.length)]
-            const sceneResult = await getSceneImage(randomSceneId)
-            if (sceneResult) {
-              sceneData = sceneResult.base64
-              sceneUrl = sceneResult.url
-              sceneIsAI = true
+            const needed = 4 - sceneDataList.length
+            const usedScenes = new Set(sceneDataList.map(s => s.url))
+            for (let i = 0; i < needed; i++) {
+              // 随机选择一个未使用的场景
+              const availableScenes = sceneFiles.filter(s => !usedScenes.has(`${PRO_STUDIO_URL}/${s}.jpg`))
+              if (availableScenes.length === 0) break
+              const randomSceneId = availableScenes[Math.floor(Math.random() * availableScenes.length)]
+              const sceneResult = await getSceneImage(randomSceneId)
+              if (sceneResult) {
+                sceneDataList.push(sceneResult)
+                usedScenes.add(sceneResult.url)
+              }
             }
           }
 
           // 6. 验证必需数据
-          if (!modelData) {
+          if (modelDataList.length === 0) {
             sendEvent({ type: 'error', error: '无法获取模特图片' })
             controller.close()
             return
           }
-          if (!sceneData) {
+          if (sceneDataList.length === 0) {
             sendEvent({ type: 'error', error: '无法获取场景图片' })
             controller.close()
             return
           }
 
-          // 7. 步骤3: 生成服装搭配（传递所有商品图片）
-          sendEvent({ type: 'progress', step: 'outfit', message: `设计服装搭配方案（${productDataList.length}件商品）...` })
-          const outfitInstruct = await generateOutfitInstruct(
-            client, productDataList, modelData, sceneData, productStyle
-          )
-          
-          if (!outfitInstruct) {
-            sendEvent({ type: 'error', error: '生成搭配方案失败' })
-            controller.close()
-            return
+          // 确保有4个模特和4个场景
+          while (modelDataList.length < 4) {
+            modelDataList.push(modelDataList[modelDataList.length - 1])
           }
-          
-          sendEvent({ type: 'outfit_ready', outfit: outfitInstruct })
+          while (sceneDataList.length < 4) {
+            sceneDataList.push(sceneDataList[sceneDataList.length - 1])
+          }
 
-          // 8. 步骤4: 并行生成 4 张图片（4 种机位）
+          // 7. 并行生成 4 张图片（每张使用不同的模特/场景组合）
           sendEvent({ type: 'progress', step: 'generate', message: '开始生成 4 张图片...' })
           
           let successCount = 0
-          const generatePromises = SHOT_FOCUS_CONFIGS.map(async (config) => {
+          const generatePromises = [0, 1, 2, 3].map(async (index) => {
+            const modelData = modelDataList[index]
+            const sceneData = sceneDataList[index]
+            
             sendEvent({ 
               type: 'progress', 
               step: 'image', 
-              index: config.index, 
-              message: `生成第 ${config.index + 1}/4 张图片 (${config.name})...` 
+              index, 
+              message: `生成第 ${index + 1}/4 张图片...` 
             })
             
-            const imageResult = await generateImageWithShotFocus(
+            // 步骤2: 生成服装搭配
+            const outfitInstruct = await generateOutfitInstruct(
+              client, productDataList, modelData.base64, sceneData.base64, productStyle
+            )
+            
+            if (!outfitInstruct) {
+              sendEvent({ type: 'image_error', index, error: '生成搭配方案失败' })
+              return { index, success: false }
+            }
+            
+            // 步骤3: 生成拍摄指令
+            const shotInstruct = await generateShotInstruct(
+              client, productDataList, modelData.base64, sceneData.base64, productStyle
+            )
+            
+            if (!shotInstruct) {
+              sendEvent({ type: 'image_error', index, error: '生成拍摄指令失败' })
+              return { index, success: false }
+            }
+            
+            // 步骤4: 生成图片
+            const imageResult = await generateImage(
               client,
-              productDataList,  // 传递所有商品图片
-              modelData!,
-              sceneData!,
+              productDataList,
+              modelData.base64,
+              sceneData.base64,
               outfitInstruct,
-              config.prompt,
-              `ProStudio-${config.name}`
+              shotInstruct,
+              `ProStudio-${index}`
             )
 
             if (imageResult) {
@@ -683,40 +761,43 @@ export async function POST(request: NextRequest) {
                 const saveResult = await appendImageToGeneration({
                   taskId,
                   userId,
-                  imageIndex: config.index,
+                  imageIndex: index,
                   imageUrl: uploadedUrl,
                   modelType: 'pro',
                   genMode: 'simple',
                   taskType: 'pro_studio',
-                  inputParams: config.index === 0 ? {
-                    productImages: allProductImageUrls,  // 记录所有商品图片 URL
-                    modelUrl,
-                    sceneUrl,
-                    modelIsAI,
-                    sceneIsAI,
+                  inputParams: index === 0 ? {
+                    productImages: allProductImageUrls,
+                    modelUrl: modelData.url,
+                    sceneUrl: sceneData.url,
+                    modelIsAI: needModel,
+                    sceneIsAI: needScene,
                     productStyle,
                     outfitInstruct,
-                    shotType: config.name,
-                  } : { shotType: config.name },
+                    shotInstruct,
+                  } : { 
+                    modelUrl: modelData.url,
+                    sceneUrl: sceneData.url,
+                  },
                 })
 
                 successCount++
-                // Bug 2 修复：只有保存成功时才发送 dbId
                 sendEvent({
                   type: 'image',
-                  index: config.index,
+                  index,
                   image: uploadedUrl,
-                  shotType: config.name,
+                  modelUrl: modelData.url,
+                  sceneUrl: sceneData.url,
                   ...(saveResult.dbId ? { dbId: saveResult.dbId } : {}),
                 })
               } else {
-                sendEvent({ type: 'image_error', index: config.index, error: '图片上传失败', shotType: config.name })
+                sendEvent({ type: 'image_error', index, error: '图片上传失败' })
               }
             } else {
-              sendEvent({ type: 'image_error', index: config.index, error: '图片生成失败', shotType: config.name })
+              sendEvent({ type: 'image_error', index, error: '图片生成失败' })
             }
             
-            return { index: config.index, success: !!imageResult }
+            return { index, success: !!imageResult }
           })
 
           await Promise.allSettled(generatePromises)
@@ -724,12 +805,9 @@ export async function POST(request: NextRequest) {
           sendEvent({ 
             type: 'complete', 
             totalSuccess: successCount,
-            modelIsAI,
-            sceneIsAI,
-            modelUrl,
-            sceneUrl,
+            modelIsAI: needModel,
+            sceneIsAI: needScene,
             productStyle,
-            outfitInstruct,
           })
           
         } catch (err: any) {

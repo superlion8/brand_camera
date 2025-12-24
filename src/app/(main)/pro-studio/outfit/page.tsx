@@ -1043,7 +1043,7 @@ function OutfitPageContent() {
                         const imageUrl = data.image.startsWith('data:') 
                           ? base64ToBlobUrl(data.image) 
                           : data.image
-                        console.log(`[Outfit-ProStudio] Image ${data.index + 1}: ✓ (${data.shotType}, dbId: ${data.dbId})`)
+                        console.log(`[Outfit-ProStudio] Image ${data.index + 1}: ✓ (dbId: ${data.dbId})`)
                         updateImageSlot(taskId, data.index, {
                           status: 'completed',
                           imageUrl: imageUrl,
