@@ -93,8 +93,10 @@ export interface GenerationParams {
   productImages?: string[]        // 多商品图数组（outfit模式）
   inputImage?: string             // 输入图片 URL
   // Modify material params
-  type?: string                   // 任务类型（如 'modify_material'）
+  type?: string                   // 任务类型（如 'modify_material', 'lifestyle'）
   targets?: string                // 修改目标描述
+  // Lifestyle params
+  outfit?: boolean                // 是否为 outfit 模式（多商品搭配）
 }
 
 export interface Collection {
