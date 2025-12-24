@@ -302,19 +302,19 @@ export default function HomePage() {
               href="/pro-studio"
             />
             <BeforeAfterCard
-              title={t.home.modelStudio || "买家秀"}
-              subtitle={t.home.modelStudioSubtitle || "真实生活场景"}
-              beforeImage={`${HOMEPAGE_STORAGE_URL}/model-before.jpg`}
-              afterImage={`${HOMEPAGE_STORAGE_URL}/model-after.png`}
-              href="/camera"
-            />
-            <BeforeAfterCard
               title={t.home.lifestyleMode || "LifeStyle 街拍"}
               subtitle={t.home.lifestyleModeSubtitle || "AI 智能匹配模特与街景"}
               beforeImage={`${HOMEPAGE_STORAGE_URL}/lifestyle-before.jpg`}
               afterImage={`${HOMEPAGE_STORAGE_URL}/lifestyle-after.jpg`}
               badge="NEW"
               href="/lifestyle"
+            />
+            <BeforeAfterCard
+              title={t.home.modelStudio || "买家秀"}
+              subtitle={t.home.modelStudioSubtitle || "真实生活场景"}
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/model-before.jpg`}
+              afterImage={`${HOMEPAGE_STORAGE_URL}/model-after.png`}
+              href="/camera"
             />
             <BeforeAfterCard
               title={t.home.socialMode || "社媒种草"}
