@@ -19,6 +19,7 @@ export type PresetType =
   | 'studio-backgrounds'  // 专业棚拍背景
   | 'pro-studio'          // 专业棚拍场景（pro_studio_scene_tag 对应）
   | 'all-models'          // 所有模特（models_analysis 对应）
+  | 'lifestyle_scene'     // LifeStyle 场景（lifestyle_scene_tags 对应）
 
 // 缓存（服务端短期缓存，避免每次请求都查 Storage）
 const listCache = new Map<string, { files: string[], timestamp: number }>()

@@ -9,6 +9,7 @@ const PRELOAD_TABS = [
   { tab: 'all', subType: '' },
   { tab: 'model', subType: 'buyer' },
   { tab: 'model', subType: 'prostudio' },
+  { tab: 'model', subType: 'lifestyle' },
   { tab: 'product', subType: '' },
   { tab: 'favorites', subType: '' },
 ]

@@ -1307,7 +1307,7 @@ function CameraPageContent() {
             <div className="bg-black flex flex-col justify-end pb-safe pt-6 px-6 relative z-20 shrink-0 min-h-[9rem]">
               {mode === "review" ? (
                 <div className="space-y-4 pb-4">
-                  {/* Custom button in review mode */}
+                  {/* Custom button */}
                   <div className="flex justify-center">
                     <button 
                       onClick={() => setShowCustomPanel(true)}
@@ -1318,7 +1318,7 @@ function CameraPageContent() {
                     </button>
                   </div>
                   
-                  {/* Shoot It button */}
+                  {/* Generate button */}
                   <div className="w-full flex justify-center">
                     <motion.button
                       initial={{ opacity: 0, y: 20 }}
@@ -1327,7 +1327,7 @@ function CameraPageContent() {
                         triggerFlyToGallery(e)
                         handleShootIt()
                       }}
-                      className="w-full max-w-xs h-14 rounded-full text-lg font-semibold gap-2 bg-white text-black hover:bg-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.3)] flex items-center justify-center transition-colors"
+                      className="w-full max-w-xs h-14 rounded-full text-lg font-semibold gap-2 shadow-[0_0_20px_rgba(255,255,255,0.3)] flex items-center justify-center bg-white text-black hover:bg-zinc-200 transition-colors"
                     >
                       <Wand2 className="w-5 h-5" />
                       Shoot It

@@ -9,6 +9,8 @@
  * │   └── visible/               # 用户可见的背景
  * ├── studio-models/             # 专业棚拍模特
  * ├── pro_studio/                # 专业棚拍背景（pro_scene_1~61.jpg）
+ * ├── all_models/                # LifeStyle 街拍模特
+ * ├── lifestyle_scene/           # LifeStyle 街拍场景
  * └── products/                  # 预设商品
  */
 
@@ -26,6 +28,10 @@ interface PresetState {
   studioModels: Asset[]
   studioBackgrounds: Asset[]   // 所有棚拍背景（合并后）
   
+  // LifeStyle 街拍资源
+  lifestyleModels: Asset[]     // 街拍模特
+  lifestyleScenes: Asset[]     // 街拍场景
+  
   // 预设商品
   presetProducts: Asset[]
   
@@ -41,6 +47,8 @@ interface PresetState {
   getRandomBackground: () => Asset | null
   getRandomStudioModel: () => Asset | null
   getRandomStudioBackground: () => Asset | null
+  getRandomLifestyleModel: () => Asset | null
+  getRandomLifestyleScene: () => Asset | null
 }
 
 // API 返回的资源格式
@@ -107,6 +115,8 @@ export const usePresetStore = create<PresetState>((set, get) => ({
   visibleBackgrounds: [],
   studioModels: [],
   studioBackgrounds: [],
+  lifestyleModels: [],
+  lifestyleScenes: [],
   presetProducts: [],
   
   isLoading: false,
@@ -151,6 +161,8 @@ export const usePresetStore = create<PresetState>((set, get) => ({
         visibleBgAssets,
         studioModelAssets,
         studioBgAssets,
+        lifestyleModelAssets,
+        lifestyleSceneAssets,
         productAssets,
       ] = await Promise.all([
         fetchPresetAssets('models'),
@@ -159,6 +171,8 @@ export const usePresetStore = create<PresetState>((set, get) => ({
         fetchPresetAssets('backgrounds/visible'),
         fetchPresetAssets('studio-models'),
         fetchPresetAssets('pro_studio'),
+        fetchPresetAssets('all_models'),
+        fetchPresetAssets('lifestyle_scene'),
         fetchPresetAssets('products'),
       ])
       
@@ -169,6 +183,8 @@ export const usePresetStore = create<PresetState>((set, get) => ({
       const visibleBackgrounds = visibleBgAssets.map(a => apiAssetToAsset(a, 'backgrounds/visible', 'background'))
       const studioModels = studioModelAssets.map(a => apiAssetToAsset(a, 'studio-models', 'model', 'studio'))
       const studioBackgrounds = studioBgAssets.map(a => apiAssetToAsset(a, 'pro_studio', 'background', 'studio'))
+      const lifestyleModels = lifestyleModelAssets.map(a => apiAssetToAsset(a, 'all_models', 'model', 'lifestyle'))
+      const lifestyleScenes = lifestyleSceneAssets.map(a => apiAssetToAsset(a, 'lifestyle_scene', 'background', 'lifestyle'))
       const presetProducts = productAssets.map(a => apiAssetToAsset(a, 'products', 'product'))
       
       console.log('[PresetStore] Loaded:', {
@@ -178,6 +194,8 @@ export const usePresetStore = create<PresetState>((set, get) => ({
         visibleBackgrounds: visibleBackgrounds.length,
         studioModels: studioModels.length,
         studioBackgrounds: studioBackgrounds.length,
+        lifestyleModels: lifestyleModels.length,
+        lifestyleScenes: lifestyleScenes.length,
         presetProducts: presetProducts.length,
       })
       
@@ -188,6 +206,8 @@ export const usePresetStore = create<PresetState>((set, get) => ({
         visibleBackgrounds,
         studioModels,
         studioBackgrounds,
+        lifestyleModels,
+        lifestyleScenes,
         presetProducts,
         isLoading: false,
         isLoaded: true,
@@ -226,6 +246,18 @@ export const usePresetStore = create<PresetState>((set, get) => ({
     if (studioBackgrounds.length === 0) return null
     return studioBackgrounds[Math.floor(Math.random() * studioBackgrounds.length)]
   },
+  
+  getRandomLifestyleModel: () => {
+    const { lifestyleModels } = get()
+    if (lifestyleModels.length === 0) return null
+    return lifestyleModels[Math.floor(Math.random() * lifestyleModels.length)]
+  },
+  
+  getRandomLifestyleScene: () => {
+    const { lifestyleScenes } = get()
+    if (lifestyleScenes.length === 0) return null
+    return lifestyleScenes[Math.floor(Math.random() * lifestyleScenes.length)]
+  },
 }))
 
 // 导出便捷函数（兼容旧代码）
@@ -243,5 +275,13 @@ export function getRandomStudioModel(): Asset | null {
 
 export function getRandomStudioBackground(): Asset | null {
   return usePresetStore.getState().getRandomStudioBackground()
+}
+
+export function getRandomLifestyleModel(): Asset | null {
+  return usePresetStore.getState().getRandomLifestyleModel()
+}
+
+export function getRandomLifestyleScene(): Asset | null {
+  return usePresetStore.getState().getRandomLifestyleScene()
 }
 
