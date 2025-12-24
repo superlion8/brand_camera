@@ -94,65 +94,63 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: '背景图片数据无效' }, { status: 400 })
     }
     
-    // Generate 2 images
+    // Generate 1 image (extended mode)
     const generationId = generateId()
     const results: string[] = []
     
-    for (let i = 0; i < 2; i++) {
-      try {
-        console.log(`[ReferenceShot] Generating image ${i + 1}/2...`)
-        
-        const response = await client.models.generateContent({
-          model: 'gemini-3-pro-image-preview',
-          contents: [{
-            role: 'user',
-            parts: [
-              { text: finalPrompt },
-              { text: '\n\n[Product Image]:' },
-              {
-                inlineData: {
-                  mimeType: 'image/jpeg',
-                  data: productData,
-                },
+    try {
+      console.log('[ReferenceShot-Extended] Generating image...')
+      
+      const response = await client.models.generateContent({
+        model: 'gemini-3-pro-image-preview',
+        contents: [{
+          role: 'user',
+          parts: [
+            { text: finalPrompt },
+            { text: '\n\n[Product Image]:' },
+            {
+              inlineData: {
+                mimeType: 'image/jpeg',
+                data: productData,
               },
-              { text: '\n\n[Model Image]:' },
-              {
-                inlineData: {
-                  mimeType: 'image/jpeg',
-                  data: modelData,
-                },
+            },
+            { text: '\n\n[Model Image]:' },
+            {
+              inlineData: {
+                mimeType: 'image/jpeg',
+                data: modelData,
               },
-              { text: '\n\n[Background Image]:' },
-              {
-                inlineData: {
-                  mimeType: 'image/jpeg',
-                  data: backgroundData,
-                },
+            },
+            { text: '\n\n[Background Image]:' },
+            {
+              inlineData: {
+                mimeType: 'image/jpeg',
+                data: backgroundData,
               },
-            ],
-          }],
-          config: {
-            responseModalities: ['IMAGE'],
-            safetySettings,
-          },
-        })
+            },
+          ],
+        }],
+        config: {
+          responseModalities: ['IMAGE'],
+          safetySettings,
+        },
+      })
+      
+      const imageResult = extractImage(response)
+      
+      if (imageResult) {
+        // Upload to storage
+        const base64Url = `data:image/png;base64,${imageResult}`
+        const uploadedUrl = await uploadGeneratedImageServer(base64Url, generationId, 0, userId)
         
-        const imageResult = extractImage(response)
-        
-        if (imageResult) {
-          // Upload to storage
-          const base64Url = `data:image/png;base64,${imageResult}`
-          const uploadedUrl = await uploadGeneratedImageServer(base64Url, generationId, i, userId)
-          
-          if (uploadedUrl) {
-            results.push(uploadedUrl)
-          } else {
-            results.push(base64Url) // Fallback to base64
-          }
+        if (uploadedUrl) {
+          results.push(uploadedUrl)
+        } else {
+          results.push(base64Url) // Fallback to base64
         }
-      } catch (err: any) {
-        console.error(`[ReferenceShot] Error generating image ${i + 1}:`, err.message)
       }
+    } catch (err: any) {
+      console.error('[ReferenceShot-Extended] Error generating image:', err.message)
     }
     
     if (results.length === 0) {
@@ -164,7 +162,7 @@ export async function POST(request: NextRequest) {
     
     // 不在这里创建 generation 记录，由前端统一调用 save API
     // 配额记录由 quota/reserve 管理
-    console.log(`[ReferenceShot-Extended] Generated ${results.length} images`)
+    console.log('[ReferenceShot-Extended] Generated 1 image')
     
     return NextResponse.json({
       success: true,

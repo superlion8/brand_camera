@@ -108,15 +108,15 @@ export default function ReferenceShotPage() {
   const handleGenerate = async () => {
     if (!canGenerate) return
     
-    // Check quota (4 images: 2 simple + 2 extended)
-    const hasQuota = await checkQuota(4)
+    // Check quota (2 images: 1 simple + 1 extended)
+    const hasQuota = await checkQuota(2)
     if (!hasQuota) return
     
     setStep('generating')
     setError(null)
     setGeneratedImages([])
     
-    const imageCount = 4
+    const imageCount = 2
     
     // 创建任务到 generationTaskStore（Photos tab 会显示 loading）
     const taskId = addTask('reference_shot', productImage!, {}, imageCount)
@@ -579,7 +579,7 @@ export default function ReferenceShotPage() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
             >
-              {[1, 2, 3, 4].map((i) => (
+              {[1, 2].map((i) => (
                 <motion.div
                   key={i}
                   className="w-2 h-2 rounded-full bg-blue-500"
