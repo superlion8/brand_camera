@@ -304,7 +304,7 @@ export default function HomePage() {
             <BeforeAfterCard
               title={t.home.lifestyleMode || "LifeStyle 街拍"}
               subtitle={t.home.lifestyleModeSubtitle || "AI 智能匹配模特与街景"}
-              beforeImage={`${HOMEPAGE_STORAGE_URL}/lifestyle-before.jpg`}
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/lifestyle-before.png`}
               afterImage={`${HOMEPAGE_STORAGE_URL}/lifestyle-after.jpg`}
               badge="NEW"
               href="/lifestyle"
