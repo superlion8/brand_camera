@@ -26,6 +26,7 @@ export type GenerationType =
   | 'reference_shot'  // 参考图拍摄
   | 'social'  // 社媒种草
   | 'lifestyle'  // LifeStyle 街拍
+  | 'try_on'  // 虚拟换装
 
 export interface Asset {
   id: string

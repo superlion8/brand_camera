@@ -199,7 +199,7 @@ export default function TryOnPage() {
     
     // Create task
     const personImageUrl = personImage.startsWith('data:') ? personImage : `data:image/jpeg;base64,${personImage}`
-    const taskId = addTask('try_on', personImageUrl, { prompt }, 2)
+    const taskId = addTask('try_on', personImageUrl, { customPrompt: prompt }, 2)
     initImageSlots(taskId, 2)
     setCurrentTaskId(taskId)
     
@@ -239,10 +239,11 @@ export default function TryOnPage() {
         const lines = buffer.split('\n')
         buffer = lines.pop() || ''
         
-        for (const line of lines) {
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i]
           if (line.startsWith('event: ')) {
             const eventType = line.slice(7)
-            const dataLine = lines[lines.indexOf(line) + 1]
+            const dataLine = lines[i + 1]
             if (dataLine?.startsWith('data: ')) {
               const data = JSON.parse(dataLine.slice(6))
               
@@ -276,10 +277,10 @@ export default function TryOnPage() {
                   type: 'try_on',
                   outputImageUrls: data.images,
                   createdAt: new Date().toISOString(),
-                  inputImageUrl: personImage.startsWith('data:') ? personImage : `data:image/jpeg;base64,${personImage}`,
+                  inputImageUrl: personImageUrl,
                   params: {
                     productImages: clothingWithPrefix,
-                    prompt,
+                    customPrompt: prompt,
                   },
                 })
                 
@@ -737,7 +738,6 @@ export default function TryOnPage() {
         isOpen={showExceededModal}
         onClose={closeExceededModal}
         requiredCount={requiredCount}
-        currentQuota={quota?.remaining || 0}
       />
     </div>
   )
