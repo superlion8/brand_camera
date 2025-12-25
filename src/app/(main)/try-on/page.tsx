@@ -667,7 +667,7 @@ export default function TryOnPage() {
                 onClick={() => router.push('/edit')}
                 className="flex-1 h-12 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-xl font-medium hover:from-pink-600 hover:to-purple-600 transition-colors"
               >
-                {t.studio?.returnHome || '返回编辑页'}
+                {t.edit?.title || '修图工具'}
               </button>
             </div>
             
