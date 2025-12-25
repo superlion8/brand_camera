@@ -203,10 +203,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: '选择模特失败' }, { status: 500 })
     }
     
-    // 构建模特图片 URL（尝试 .png 和 .jpg）
-    const modelImageUrl = `${ALL_MODELS_URL}/${selectedModel.model_id}.png`
+    // 构建模特图片 URL - 先尝试 .png，如果不存在则用 .jpg
+    let modelImageUrl = `${ALL_MODELS_URL}/${selectedModel.model_id}.png`
     
-    console.log(`[MatchModels] Selected model: ${selectedModel.model_id}`)
+    // 验证图片是否存在
+    try {
+      const checkResponse = await fetch(modelImageUrl, { method: 'HEAD' })
+      if (!checkResponse.ok) {
+        // 尝试 .jpg
+        const jpgUrl = `${ALL_MODELS_URL}/${selectedModel.model_id}.jpg`
+        const jpgCheck = await fetch(jpgUrl, { method: 'HEAD' })
+        if (jpgCheck.ok) {
+          modelImageUrl = jpgUrl
+          console.log(`[MatchModels] Using JPG format for model: ${selectedModel.model_id}`)
+        } else {
+          console.warn(`[MatchModels] Image not found for model: ${selectedModel.model_id}`)
+        }
+      }
+    } catch (e) {
+      console.warn(`[MatchModels] Failed to verify image URL:`, e)
+    }
+    
+    console.log(`[MatchModels] Selected model: ${selectedModel.model_id}, imageUrl: ${modelImageUrl}`)
     
     return NextResponse.json({
       success: true,

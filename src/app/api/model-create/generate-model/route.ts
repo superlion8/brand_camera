@@ -56,8 +56,28 @@ async function ensureBase64Data(image: string): Promise<string> {
     return image.split(',')[1] || image
   }
   if (image.startsWith('http')) {
-    const response = await fetch(image)
+    console.log('[GenerateModel] Fetching image from URL:', image)
+    
+    // 尝试获取图片，如果 .png 失败则尝试 .jpg
+    let response = await fetch(image)
+    
+    if (!response.ok && image.endsWith('.png')) {
+      const jpgUrl = image.replace('.png', '.jpg')
+      console.log('[GenerateModel] PNG failed, trying JPG:', jpgUrl)
+      response = await fetch(jpgUrl)
+    }
+    
+    if (!response.ok) {
+      console.error('[GenerateModel] Failed to fetch image:', response.status, response.statusText)
+      throw new Error(`无法获取参考图片: ${response.status}`)
+    }
+    
     const buffer = await response.arrayBuffer()
+    if (buffer.byteLength === 0) {
+      throw new Error('获取的图片为空')
+    }
+    
+    console.log('[GenerateModel] Image fetched, size:', buffer.byteLength)
     return Buffer.from(buffer).toString('base64')
   }
   return image
