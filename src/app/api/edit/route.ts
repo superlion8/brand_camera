@@ -247,6 +247,21 @@ export async function POST(request: NextRequest) {
       
       // 写入数据库
       if (taskId) {
+        // 获取第一张输入图的 URL（如果是 URL 则直接用，否则上传后获取）
+        let inputImageUrlForDb: string | undefined
+        const firstImage = images[0]
+        if (firstImage?.startsWith('http')) {
+          inputImageUrlForDb = firstImage
+        } else if (firstImage) {
+          // 上传第一张输入图到存储
+          const inputUrl = await uploadImageToStorage(
+            firstImage.startsWith('data:') ? firstImage : `data:image/jpeg;base64,${firstImage}`,
+            userId,
+            'edit_input'
+          )
+          inputImageUrlForDb = inputUrl || undefined
+        }
+        
         const saveResult = await appendImageToGeneration({
           taskId,
           userId,
@@ -256,6 +271,7 @@ export async function POST(request: NextRequest) {
           genMode: 'extended',
           prompt: prompt,
           taskType: 'edit',
+          inputImageUrl: inputImageUrlForDb,
           inputParams: {
             modelStyle,
             modelGender,
