@@ -360,8 +360,8 @@ export default function HomePage() {
             <FadeBeforeAfterCard
               title={t.home.tryOn || "虚拟换装"}
               subtitle={t.home.tryOnSubtitle || "AI 智能换装"}
-              beforeImage={`${HOMEPAGE_STORAGE_URL}/model-before.jpg`}
-              afterImage={`${HOMEPAGE_STORAGE_URL}/model-after.png`}
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/try-on-before.png`}
+              afterImage={`${HOMEPAGE_STORAGE_URL}/try-on-after.png`}
               badge="NEW"
               href="/try-on"
             />
