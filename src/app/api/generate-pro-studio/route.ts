@@ -105,9 +105,9 @@ Reference Sources (Strict Adherence)
   - ACTION: Reconstruct this exact garment.
   - PRIORITY: MAXIMUM. The logo, text, neckline, and pattern MUST be identical to the reference.
 2. THE MODEL: [模特图]
-  - ACTION: Use the exact facial features, skin tone, and body shape of this specific model. The model MUST look identical. 
+  - ACTION: Use the exact facial features, skin tone, and body shape of this specific model. The model MUST look identical.
   - CONSTRAINT: Ignore original clothes in model reference.
-3. THE SCENE: [场景图]
+3. THE SCENE: [场景图] 
   - ACTION: Use this exact environment.
     
 Styling Instructions
@@ -605,7 +605,7 @@ export async function POST(request: NextRequest) {
               sendEvent({ type: 'progress', step: 'model', message: `获取${analysis.modelIds.length}个模特图片...` })
               for (const modelId of analysis.modelIds) {
                 const modelResult = await getModelImage(modelId)
-                if (modelResult) {
+              if (modelResult) {
                   modelDataList.push(modelResult)
                 }
               }
@@ -617,7 +617,7 @@ export async function POST(request: NextRequest) {
               sendEvent({ type: 'progress', step: 'scene', message: `获取${analysis.sceneIds.length}个场景图片...` })
               for (const sceneId of analysis.sceneIds) {
                 const sceneResult = await getSceneImage(sceneId)
-                if (sceneResult) {
+              if (sceneResult) {
                   sceneDataList.push(sceneResult)
                 }
               }
@@ -655,8 +655,8 @@ export async function POST(request: NextRequest) {
             sendEvent({ type: 'progress', step: 'model', message: '随机补充模特...' })
             const needed = 4 - modelDataList.length
             for (let i = 0; i < needed; i++) {
-              const randomModel = await getRandomPresetBase64('studio-models', 5)
-              if (randomModel) {
+            const randomModel = await getRandomPresetBase64('studio-models', 5)
+            if (randomModel) {
                 modelDataList.push({ base64: randomModel.base64, url: randomModel.url })
               }
             }
@@ -673,8 +673,8 @@ export async function POST(request: NextRequest) {
               const availableScenes = sceneFiles.filter(s => !usedScenes.has(`${PRO_STUDIO_URL}/${s}.jpg`))
               if (availableScenes.length === 0) break
               const randomSceneId = availableScenes[Math.floor(Math.random() * availableScenes.length)]
-              const sceneResult = await getSceneImage(randomSceneId)
-              if (sceneResult) {
+            const sceneResult = await getSceneImage(randomSceneId)
+            if (sceneResult) {
                 sceneDataList.push(sceneResult)
                 usedScenes.add(sceneResult.url)
               }

@@ -88,58 +88,58 @@ export async function POST(request: NextRequest) {
     const generationId = generateId()
     const results: string[] = []
     
-    try {
+      try {
       console.log('[ReferenceShot-Simple] Generating image...')
-      
-      const response = await client.models.generateContent({
-        model: 'gemini-3-pro-image-preview',
-        contents: [{
-          role: 'user',
-          parts: [
-            { text: SIMPLE_MODE_PROMPT },
-            { text: '\n\n[Reference Image]:' },
-            {
-              inlineData: {
-                mimeType: 'image/jpeg',
-                data: referenceData,
-              },
-            },
-            { text: '\n\n[Product Image]:' },
-            {
-              inlineData: {
-                mimeType: 'image/jpeg',
-                data: productData,
-              },
-            },
-            { text: '\n\n[Model Image]:' },
-            {
-              inlineData: {
-                mimeType: 'image/jpeg',
-                data: modelData,
-              },
-            },
-          ],
-        }],
-        config: {
-          responseModalities: ['IMAGE'],
-          safetySettings,
-        },
-      })
-      
-      const imageResult = extractImage(response)
-      
-      if (imageResult) {
-        // Upload to storage
-        const base64Url = `data:image/png;base64,${imageResult}`
-        const uploadedUrl = await uploadGeneratedImageServer(base64Url, generationId, 0, userId)
         
-        if (uploadedUrl) {
-          results.push(uploadedUrl)
-        } else {
-          results.push(base64Url) // Fallback to base64
+        const response = await client.models.generateContent({
+          model: 'gemini-3-pro-image-preview',
+          contents: [{
+            role: 'user',
+            parts: [
+              { text: SIMPLE_MODE_PROMPT },
+              { text: '\n\n[Reference Image]:' },
+              {
+                inlineData: {
+                  mimeType: 'image/jpeg',
+                  data: referenceData,
+                },
+              },
+              { text: '\n\n[Product Image]:' },
+              {
+                inlineData: {
+                  mimeType: 'image/jpeg',
+                  data: productData,
+                },
+              },
+              { text: '\n\n[Model Image]:' },
+              {
+                inlineData: {
+                  mimeType: 'image/jpeg',
+                  data: modelData,
+                },
+              },
+            ],
+          }],
+          config: {
+            responseModalities: ['IMAGE'],
+            safetySettings,
+          },
+        })
+        
+        const imageResult = extractImage(response)
+        
+        if (imageResult) {
+          // Upload to storage
+          const base64Url = `data:image/png;base64,${imageResult}`
+        const uploadedUrl = await uploadGeneratedImageServer(base64Url, generationId, 0, userId)
+          
+          if (uploadedUrl) {
+            results.push(uploadedUrl)
+          } else {
+            results.push(base64Url) // Fallback to base64
+          }
         }
-      }
-    } catch (err: any) {
+      } catch (err: any) {
       console.error('[ReferenceShot-Simple] Error generating image:', err.message)
     }
     
