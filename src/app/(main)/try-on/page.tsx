@@ -18,11 +18,9 @@ import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 
-// 动态导入重量级组件，减少初始加载时间
-const Webcam = dynamic(() => import("react-webcam").then(mod => mod.default), { 
-  ssr: false,
-  loading: () => <div className="w-full h-full bg-zinc-900 flex items-center justify-center"><Loader2 className="w-8 h-8 text-white animate-spin" /></div>
-}) as any // Type assertion to avoid complex generic issues
+// 直接导入 Webcam（类型问题无法用 dynamic 解决）
+import Webcam from "react-webcam"
+// 动态导入 zoom-pan-pinch 组件，减少初始加载时间
 const TransformWrapper = dynamic(() => import("react-zoom-pan-pinch").then(mod => mod.TransformWrapper), { ssr: false })
 const TransformComponent = dynamic(() => import("react-zoom-pan-pinch").then(mod => mod.TransformComponent), { ssr: false })
 
