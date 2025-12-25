@@ -66,6 +66,14 @@ export default function GalleryPage() {
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null)
   const [navigatingTo, setNavigatingTo] = useState<string | null>(null) // 跳转中状态
   
+  // 预加载常用跳转页面
+  useEffect(() => {
+    router.prefetch('/try-on')
+    router.prefetch('/edit/general')
+    router.prefetch('/camera/group')
+    router.prefetch('/gallery/modify-material')
+  }, [router])
+  
   // Pull to refresh states
   const [pullDistance, setPullDistance] = useState(0)
   const [isRefreshing, setIsRefreshing] = useState(false)

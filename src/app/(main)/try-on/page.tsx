@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react"
 import Image from "next/image"
+import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
@@ -16,8 +17,14 @@ import { useLanguageStore } from "@/stores/languageStore"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
-import Webcam from "react-webcam"
-import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
+
+// 动态导入重量级组件，减少初始加载时间
+const Webcam = dynamic(() => import("react-webcam"), { 
+  ssr: false,
+  loading: () => <div className="w-full h-full bg-zinc-900 flex items-center justify-center"><Loader2 className="w-8 h-8 text-white animate-spin" /></div>
+})
+const TransformWrapper = dynamic(() => import("react-zoom-pan-pinch").then(mod => mod.TransformWrapper), { ssr: false })
+const TransformComponent = dynamic(() => import("react-zoom-pan-pinch").then(mod => mod.TransformComponent), { ssr: false })
 
 const MAX_CLOTHING_IMAGES = 5
 
