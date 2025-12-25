@@ -198,7 +198,15 @@ export async function POST(request: NextRequest) {
             
             // 如果有 generationId，追加到生成记录
             if (generationId) {
-              await appendImageToGeneration(generationId, imageUrl, i, 'pro')
+              await appendImageToGeneration({
+                taskId: generationId,
+                userId,
+                imageIndex: i,
+                imageUrl,
+                modelType: 'pro',
+                genMode: 'simple',
+                taskType: 'try_on',
+              })
             }
 
             await sendEvent('image', { 
