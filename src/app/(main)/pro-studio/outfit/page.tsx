@@ -230,6 +230,7 @@ function OutfitPageContent() {
   const [touchDragSlotId, setTouchDragSlotId] = useState<ProductCategory | null>(null) // 触摸拖拽
   const touchDragSlotIdRef = useRef<ProductCategory | null>(null) // 用ref避免闭包问题
   const [dropTargetSlotId, setDropTargetSlotId] = useState<ProductCategory | null>(null) // 当前悬停的目标槽位
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null) // 长按计时器
   
   // 模特和背景选择
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null)
@@ -525,15 +526,12 @@ function OutfitPageContent() {
     const isDragging = draggedSlotId === slot.id || touchDragSlotId === slot.id
     const isDropTarget = dropTargetSlotId === slot.id && !isDragging
     
-    // 长按计时器
-    const longPressTimer = useRef<NodeJS.Timeout | null>(null)
-    
     // 触摸拖拽事件 - 支持Safari
     const handleTouchStart = (e: React.TouchEvent) => {
       if (!slot.product) return
       
       // 长按300ms后开始拖拽
-      longPressTimer.current = setTimeout(() => {
+      longPressTimerRef.current = setTimeout(() => {
         touchDragSlotIdRef.current = slot.id
         setTouchDragSlotId(slot.id)
         // 震动反馈（如果支持）
@@ -545,9 +543,9 @@ function OutfitPageContent() {
     
     const handleTouchMove = (e: React.TouchEvent) => {
       // 如果还没开始拖拽，取消长按计时
-      if (!touchDragSlotIdRef.current && longPressTimer.current) {
-        clearTimeout(longPressTimer.current)
-        longPressTimer.current = null
+      if (!touchDragSlotIdRef.current && longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current)
+        longPressTimerRef.current = null
       }
       
       // 如果正在拖拽
@@ -574,9 +572,9 @@ function OutfitPageContent() {
     
     const handleTouchEnd = (e: React.TouchEvent) => {
       // 清除长按计时器
-      if (longPressTimer.current) {
-        clearTimeout(longPressTimer.current)
-        longPressTimer.current = null
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current)
+        longPressTimerRef.current = null
       }
       
       const currentDragSlotId = touchDragSlotIdRef.current
@@ -615,9 +613,9 @@ function OutfitPageContent() {
     }
     
     const handleTouchCancel = () => {
-      if (longPressTimer.current) {
-        clearTimeout(longPressTimer.current)
-        longPressTimer.current = null
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current)
+        longPressTimerRef.current = null
       }
       touchDragSlotIdRef.current = null
       setTouchDragSlotId(null)

@@ -608,14 +608,50 @@ export const ko: Translations = {
   // 전용 모델 생성
   modelCreate: {
     // 공통
-    title: "전용 모델 생성",
+    title: "맞춤 모델",
     loading: "로딩 중...",
-    // 단계 이름
+    // 모드 선택
+    selectMode: "생성 방식 선택",
+    selectModeDesc: "적합한 모델 생성 방식을 선택하세요",
+    modeReference: "참조 모델 업로드",
+    modeReferenceDesc: "모델 사진을 업로드하면 AI가 분석하여 비슷한 스타일의 새 모델을 생성합니다",
+    modeSelector: "속성 선택기",
+    modeSelectorDesc: "성별, 나이, 인종 등을 선택하면 AI가 매칭하여 모델을 생성합니다",
+    // 모드 1: 참조 이미지 업로드
+    uploadReference: "참조 모델 업로드",
+    uploadReferenceTitle: "참조 모델 사진 업로드",
+    uploadReferenceDesc: "모델 사진을 업로드하면 AI가 분석하여 비슷한 스타일의 새 모델을 생성합니다",
+    clickToUploadReference: "클릭하여 참조 모델 사진 업로드",
+    // 모드 2: 속성 선택기
+    attributeSelector: "속성 선택기",
+    selectAttributes: "모델 속성 선택",
+    selectAttributesDesc: "성별, 나이, 인종을 선택하면 AI가 매칭하여 모델을 생성합니다",
+    genderLabel: "성별",
+    genderRequired: "성별",
+    ageGroupLabel: "연령대 (선택)",
+    ethnicityLabel: "인종 (선택)",
+    noLimit: "제한 없음",
+    // 성별 옵션
+    genderMale: "남성",
+    genderFemale: "여성",
+    // 추가 설명
+    extraDescription: "추가 설명 (선택)",
+    extraDescriptionPlaceholder: "예: 더 쿨하고 패셔너블한 느낌을 원합니다...",
+    // 생성
+    generateModel: "모델 생성",
+    generatingModel: "생성 중...",
+    generateComplete: "생성 완료",
+    regenerate: "다시 생성",
+    viewGallery: "갤러리 보기",
+    noMatchingModels: "조건에 맞는 모델이 없습니다. 필터를 조정해 주세요",
+    loadingOptions: "옵션 로딩 중...",
+    loadOptionsFailed: "옵션 로딩 실패, 다시 시도해 주세요",
+    // 단계 이름 (레거시 호환)
     stepProduct: "상품 업로드",
     stepBrand: "브랜드",
     stepModel: "스타일",
     stepGenerate: "생성",
-    // 1단계: 상품 업로드
+    // 1단계: 상품 업로드 (레거시 호환)
     uploadTitle: "상품을 업로드하세요",
     uploadDesc: "1-4개의 상품을 업로드하면 AI가 분석하여 최적의 모델을 추천해 드립니다",
     product: "상품",
@@ -656,12 +692,9 @@ export const ko: Translations = {
     selectModelDesc: "1-4개의 좋아하는 모델을 선택하면 AI가 맞춤 모델을 생성합니다",
     nextGenerate: "다음: 전용 모델 생성",
     // 4단계: 생성
-    generatingModel: "전용 모델 생성 중",
     generatingDesc: "AI가 당신만을 위한 독특한 모델 이미지를 생성하고 있습니다",
     generateFailed: "생성 실패",
-    regenerate: "다시 생성",
     returnHome: "홈으로 돌아가기",
-    generateComplete: "생성 완료",
     generating: "생성 중",
     yourCustomModel: "당신의 전용 모델",
     generatingCustomModel: "전용 모델 생성 중...",

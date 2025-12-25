@@ -606,14 +606,50 @@ export const zh = {
   // 创建专属模特
   modelCreate: {
     // 通用
-    title: "创建专属模特",
+    title: "定制模特",
     loading: "加载中...",
-    // 步骤名称
+    // 模式选择
+    selectMode: "选择创建方式",
+    selectModeDesc: "选择适合你的模特创建模式",
+    modeReference: "上传参考模特",
+    modeReferenceDesc: "上传一张模特照片，AI 将分析并生成相似风格的新模特",
+    modeSelector: "属性选择器",
+    modeSelectorDesc: "选择性别、年龄、人种等属性，AI 将匹配并生成模特",
+    // 模式1：上传参考图
+    uploadReference: "上传参考模特",
+    uploadReferenceTitle: "上传参考模特图",
+    uploadReferenceDesc: "上传一张模特照片，AI 将分析并生成相似风格的新模特",
+    clickToUploadReference: "点击上传参考模特图",
+    // 模式2：属性选择器
+    attributeSelector: "属性选择器",
+    selectAttributes: "选择模特属性",
+    selectAttributesDesc: "选择性别、年龄、人种，AI 将匹配并生成模特",
+    genderLabel: "性别",
+    genderRequired: "性别",
+    ageGroupLabel: "年龄组（可选）",
+    ethnicityLabel: "人种（可选）",
+    noLimit: "不限",
+    // 性别选项
+    genderMale: "男性",
+    genderFemale: "女性",
+    // 额外描述
+    extraDescription: "额外描述（可选）",
+    extraDescriptionPlaceholder: "例如：希望模特更加高冷、时尚感更强...",
+    // 生成
+    generateModel: "生成模特",
+    generatingModel: "生成中...",
+    generateComplete: "生成完成",
+    regenerate: "重新生成",
+    viewGallery: "查看成片",
+    noMatchingModels: "没有找到符合条件的模特，请调整筛选条件",
+    loadingOptions: "加载选项中...",
+    loadOptionsFailed: "加载选项失败，请重试",
+    // 步骤名称（旧版兼容）
     stepProduct: "上传商品",
     stepBrand: "选品牌",
     stepModel: "选风格",
     stepGenerate: "生成",
-    // 步骤1：上传商品
+    // 步骤1：上传商品（旧版兼容）
     uploadTitle: "上传你的商品",
     uploadDesc: "上传 1-4 件商品，AI 将分析并为你推荐最合适的模特",
     product: "商品",
@@ -654,12 +690,9 @@ export const zh = {
     selectModelDesc: "选择 1-4 个喜欢的模特，AI 将为你生成专属定制模特",
     nextGenerate: "下一步：生成专属模特",
     // 步骤4：生成
-    generatingModel: "生成专属模特",
     generatingDesc: "AI 正在为你创建独一无二的模特形象",
     generateFailed: "生成失败",
-    regenerate: "重新生成",
     returnHome: "返回首页",
-    generateComplete: "生成完成",
     generating: "正在生成",
     yourCustomModel: "你的专属模特",
     generatingCustomModel: "正在生成专属模特...",

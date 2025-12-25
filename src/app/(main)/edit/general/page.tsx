@@ -527,7 +527,7 @@ export default function GeneralEditPage() {
               {/* Hint about referencing images */}
               <div className="mt-3 p-2.5 bg-purple-50 rounded-lg border border-purple-100">
                 <p className="text-xs text-purple-700">
-                  💡 在描述中使用"图1"、"图2"等来引用对应的图片
+                  💡 在描述中使用&ldquo;图1&rdquo;、&ldquo;图2&rdquo;等来引用对应的图片
                 </p>
               </div>
             </div>

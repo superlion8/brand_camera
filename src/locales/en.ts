@@ -608,14 +608,50 @@ export const en: Translations = {
   // Create Custom Model
   modelCreate: {
     // Common
-    title: "Create Custom Model",
+    title: "Custom Model",
     loading: "Loading...",
-    // Step names
+    // Mode selection
+    selectMode: "Select Creation Mode",
+    selectModeDesc: "Choose the model creation mode that suits you",
+    modeReference: "Upload Reference Model",
+    modeReferenceDesc: "Upload a model photo, AI will analyze and generate a new model with similar style",
+    modeSelector: "Attribute Selector",
+    modeSelectorDesc: "Select gender, age, ethnicity, and AI will match and generate a model",
+    // Mode 1: Upload Reference
+    uploadReference: "Upload Reference Model",
+    uploadReferenceTitle: "Upload Reference Model Photo",
+    uploadReferenceDesc: "Upload a model photo, AI will analyze and generate a new model with similar style",
+    clickToUploadReference: "Click to upload reference model photo",
+    // Mode 2: Attribute Selector
+    attributeSelector: "Attribute Selector",
+    selectAttributes: "Select Model Attributes",
+    selectAttributesDesc: "Select gender, age, ethnicity, and AI will match and generate a model",
+    genderLabel: "Gender",
+    genderRequired: "Gender",
+    ageGroupLabel: "Age Group (Optional)",
+    ethnicityLabel: "Ethnicity (Optional)",
+    noLimit: "Any",
+    // Gender options
+    genderMale: "Male",
+    genderFemale: "Female",
+    // Extra description
+    extraDescription: "Extra Description (Optional)",
+    extraDescriptionPlaceholder: "E.g., prefer a cooler, more fashionable look...",
+    // Generate
+    generateModel: "Generate Model",
+    generatingModel: "Generating...",
+    generateComplete: "Generation Complete",
+    regenerate: "Regenerate",
+    viewGallery: "View Gallery",
+    noMatchingModels: "No matching models found, please adjust filters",
+    loadingOptions: "Loading options...",
+    loadOptionsFailed: "Failed to load options, please retry",
+    // Step names (legacy compatibility)
     stepProduct: "Upload Product",
     stepBrand: "Brand",
     stepModel: "Style",
     stepGenerate: "Generate",
-    // Step 1: Upload Product
+    // Step 1: Upload Product (legacy compatibility)
     uploadTitle: "Upload Your Products",
     uploadDesc: "Upload 1-4 products, AI will analyze and recommend the best models for you",
     product: "Product",
@@ -656,12 +692,9 @@ export const en: Translations = {
     selectModelDesc: "Select 1-4 favorite models, AI will generate custom models for you",
     nextGenerate: "Next: Generate Custom Model",
     // Step 4: Generate
-    generatingModel: "Generating Custom Model",
     generatingDesc: "AI is creating unique model images just for you",
     generateFailed: "Generation Failed",
-    regenerate: "Regenerate",
     returnHome: "Return Home",
-    generateComplete: "Generation Complete",
     generating: "Generating",
     yourCustomModel: "Your Custom Models",
     generatingCustomModel: "Generating custom models...",

@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
-  ArrowLeft, Plus, X, ImagePlus, ChevronRight, Sparkles, FolderHeart, 
-  Upload, Loader2, Camera, Users, Sliders
+  ArrowLeft, X, ImagePlus, ChevronRight, Sparkles, FolderHeart, 
+  Upload, Loader2, Camera, Sliders
 } from "lucide-react"
 import { useModelCreateStore } from "@/stores/modelCreateStore"
 import { useAssetStore } from "@/stores/assetStore"
@@ -15,6 +15,72 @@ import { useTranslation } from "@/stores/languageStore"
 
 // 创建模式类型
 type CreateMode = 'reference' | 'selector' | null
+
+// 性别显示名映射
+const GENDER_LABELS: Record<string, Record<string, string>> = {
+  zh: { male: '男性', female: '女性' },
+  en: { male: 'Male', female: 'Female' },
+  ko: { male: '남성', female: '여성' },
+}
+
+// 年龄组显示名映射
+const AGE_GROUP_LABELS: Record<string, Record<string, string>> = {
+  zh: { 
+    YoungAdult: '青年', 
+    Adult: '成年', 
+    Mature: '中年',
+    Senior: '老年',
+    Teen: '青少年',
+  },
+  en: { 
+    YoungAdult: 'Young Adult', 
+    Adult: 'Adult', 
+    Mature: 'Mature',
+    Senior: 'Senior',
+    Teen: 'Teen',
+  },
+  ko: { 
+    YoungAdult: '청년', 
+    Adult: '성인', 
+    Mature: '중년',
+    Senior: '노년',
+    Teen: '청소년',
+  },
+}
+
+// 人种显示名映射
+const ETHNICITY_LABELS: Record<string, Record<string, string>> = {
+  zh: { 
+    White: '白人', 
+    Black: '黑人', 
+    EastAsian: '东亚人',
+    SouthAsian: '南亚人',
+    SoutheastAsian: '东南亚人',
+    MiddleEastern: '中东人',
+    Latino_Hispanic: '拉丁裔',
+    Mixed: '混血',
+  },
+  en: { 
+    White: 'White', 
+    Black: 'Black', 
+    EastAsian: 'East Asian',
+    SouthAsian: 'South Asian',
+    SoutheastAsian: 'Southeast Asian',
+    MiddleEastern: 'Middle Eastern',
+    Latino_Hispanic: 'Latino/Hispanic',
+    Mixed: 'Mixed',
+  },
+  ko: { 
+    White: '백인', 
+    Black: '흑인', 
+    EastAsian: '동아시아인',
+    SouthAsian: '남아시아인',
+    SoutheastAsian: '동남아시아인',
+    MiddleEastern: '중동인',
+    Latino_Hispanic: '라틴계',
+    Mixed: '혼혈',
+  },
+}
 
 export default function ModelCreatePage() {
   const router = useRouter()
@@ -25,7 +91,7 @@ export default function ModelCreatePage() {
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<number>(0)
   
-  // 新增：模式选择
+  // 模式选择
   const [createMode, setCreateMode] = useState<CreateMode>(null)
   const [referenceImage, setReferenceImage] = useState<string | null>(null)
   const [userPrompt, setUserPrompt] = useState('')
@@ -45,13 +111,20 @@ export default function ModelCreatePage() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedImage, setGeneratedImage] = useState<string | null>(null)
   const [analysisSummary, setAnalysisSummary] = useState<string>('')
+  const [errorMessage, setErrorMessage] = useState<string>('')
   
   const { reset } = useModelCreateStore()
-  const { userProducts } = useAssetStore()
-  const { t } = useTranslation()
+  const { userModels } = useAssetStore()
+  const { t, language } = useTranslation()
   
-  // 产品资产
-  const productAssets = userProducts
+  // 模特资产（用于选择参考图）
+  const modelAssets = userModels
+  
+  // 获取当前语言的标签
+  const lang = language || 'zh'
+  const genderLabels = GENDER_LABELS[lang] || GENDER_LABELS.zh
+  const ageGroupLabels = AGE_GROUP_LABELS[lang] || AGE_GROUP_LABELS.zh
+  const ethnicityLabels = ETHNICITY_LABELS[lang] || ETHNICITY_LABELS.zh
   
   // 检查登录状态
   useEffect(() => {
@@ -75,15 +148,19 @@ export default function ModelCreatePage() {
     if (selectorOptions) return
     
     setIsLoadingOptions(true)
+    setErrorMessage('')
     try {
       const response = await fetch('/api/model-create/match-models')
       const data = await response.json()
       
       if (data.success) {
         setSelectorOptions(data.options)
+      } else {
+        setErrorMessage(data.error || t.modelCreate?.loadOptionsFailed || '加载选项失败')
       }
     } catch (err) {
       console.error('Failed to load selector options:', err)
+      setErrorMessage(t.modelCreate?.loadOptionsFailed || '加载选项失败')
     } finally {
       setIsLoadingOptions(false)
     }
@@ -166,6 +243,7 @@ export default function ModelCreatePage() {
     
     setIsGenerating(true)
     setGeneratedImage(null)
+    setErrorMessage('')
     
     try {
       const response = await fetch('/api/model-create/generate-model', {
@@ -183,11 +261,11 @@ export default function ModelCreatePage() {
         setGeneratedImage(data.imageUrl)
         setAnalysisSummary(data.analysisSummary || '')
       } else {
-        alert(data.error || '生成失败，请重试')
+        setErrorMessage(data.error || t.modelCreate?.generateFailed || '生成失败')
       }
     } catch (err: any) {
       console.error('Generate error:', err)
-      alert(err.message || '生成失败，请重试')
+      setErrorMessage(err.message || t.modelCreate?.generateFailed || '生成失败')
     } finally {
       setIsGenerating(false)
     }
@@ -196,12 +274,13 @@ export default function ModelCreatePage() {
   // 模式2：使用选择器生成
   const handleGenerateWithSelector = async () => {
     if (!selectedGender) {
-      alert('请选择性别')
+      setErrorMessage(t.modelCreate?.genderRequired || '请选择性别')
       return
     }
     
     setIsGenerating(true)
     setGeneratedImage(null)
+    setErrorMessage('')
     
     try {
       // Step 1: 匹配模特
@@ -219,7 +298,7 @@ export default function ModelCreatePage() {
       const matchData = await matchResponse.json()
       
       if (!matchData.success) {
-        alert(matchData.error || '匹配模特失败')
+        setErrorMessage(matchData.error || t.modelCreate?.noMatchingModels || '没有找到符合条件的模特')
         setIsGenerating(false)
         return
       }
@@ -240,23 +319,29 @@ export default function ModelCreatePage() {
         setGeneratedImage(generateData.imageUrl)
         setAnalysisSummary(generateData.analysisSummary || '')
       } else {
-        alert(generateData.error || '生成失败，请重试')
+        setErrorMessage(generateData.error || t.modelCreate?.generateFailed || '生成失败')
       }
     } catch (err: any) {
       console.error('Generate error:', err)
-      alert(err.message || '生成失败，请重试')
+      setErrorMessage(err.message || t.modelCreate?.generateFailed || '生成失败')
     } finally {
       setIsGenerating(false)
     }
   }
   
-  // 返回首页
+  // 返回
   const handleBack = () => {
-    if (createMode) {
+    if (generatedImage) {
+      setGeneratedImage(null)
+      setAnalysisSummary('')
+    } else if (createMode) {
       setCreateMode(null)
       setReferenceImage(null)
-      setGeneratedImage(null)
       setUserPrompt('')
+      setSelectedGender('')
+      setSelectedAgeGroup('')
+      setSelectedEthnicity('')
+      setErrorMessage('')
     } else {
       reset()
       router.push('/')
@@ -266,6 +351,7 @@ export default function ModelCreatePage() {
   // 重新生成
   const handleRegenerate = () => {
     setGeneratedImage(null)
+    setErrorMessage('')
     if (createMode === 'reference') {
       handleGenerateWithReference()
     } else {
@@ -279,7 +365,7 @@ export default function ModelCreatePage() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-violet-50 via-white to-white">
         <div className="text-center">
           <Sparkles className="w-8 h-8 text-violet-600 animate-pulse mx-auto mb-2" />
-          <p className="text-sm text-zinc-500">{t.modelCreate?.loading || '加载中...'}</p>
+          <p className="text-sm text-zinc-500">{t.modelCreate?.loading || t.common?.loading || '加载中...'}</p>
         </div>
       </div>
     )
@@ -309,8 +395,8 @@ export default function ModelCreatePage() {
         {/* Content */}
         <div className="flex-1 px-4 py-8">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-zinc-900 mb-2">选择创建方式</h1>
-            <p className="text-sm text-zinc-500">选择适合你的模特创建模式</p>
+            <h1 className="text-2xl font-bold text-zinc-900 mb-2">{t.modelCreate?.selectMode || '选择创建方式'}</h1>
+            <p className="text-sm text-zinc-500">{t.modelCreate?.selectModeDesc || '选择适合你的模特创建模式'}</p>
           </div>
           
           <div className="space-y-4 max-w-md mx-auto">
@@ -324,8 +410,8 @@ export default function ModelCreatePage() {
                   <Camera className="w-7 h-7 text-violet-600" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-zinc-900 mb-1">上传参考模特</h3>
-                  <p className="text-sm text-zinc-500">上传一张模特照片，AI 将分析并生成相似风格的新模特</p>
+                  <h3 className="font-bold text-zinc-900 mb-1">{t.modelCreate?.modeReference || '上传参考模特'}</h3>
+                  <p className="text-sm text-zinc-500">{t.modelCreate?.modeReferenceDesc || '上传一张模特照片，AI 将分析并生成相似风格的新模特'}</p>
                 </div>
                 <ChevronRight className="w-5 h-5 text-zinc-400 group-hover:text-violet-600 transition-colors mt-4" />
               </div>
@@ -344,8 +430,8 @@ export default function ModelCreatePage() {
                   <Sliders className="w-7 h-7 text-purple-600" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-zinc-900 mb-1">属性选择器</h3>
-                  <p className="text-sm text-zinc-500">选择性别、年龄、人种等属性，AI 将匹配并生成模特</p>
+                  <h3 className="font-bold text-zinc-900 mb-1">{t.modelCreate?.modeSelector || '属性选择器'}</h3>
+                  <p className="text-sm text-zinc-500">{t.modelCreate?.modeSelectorDesc || '选择性别、年龄、人种等属性，AI 将匹配并生成模特'}</p>
                 </div>
                 <ChevronRight className="w-5 h-5 text-zinc-400 group-hover:text-purple-600 transition-colors mt-4" />
               </div>
@@ -371,7 +457,7 @@ export default function ModelCreatePage() {
             </button>
             <div className="flex items-center gap-2">
               <Camera className="w-5 h-5 text-violet-600" />
-              <span className="font-bold text-zinc-900">上传参考模特</span>
+              <span className="font-bold text-zinc-900">{t.modelCreate?.uploadReference || '上传参考模特'}</span>
             </div>
             <div className="w-10" />
           </div>
@@ -384,7 +470,7 @@ export default function ModelCreatePage() {
             {generatedImage ? (
               <div className="space-y-4">
                 <div className="text-center mb-4">
-                  <h2 className="text-lg font-bold text-zinc-900">生成完成</h2>
+                  <h2 className="text-lg font-bold text-zinc-900">{t.modelCreate?.generateComplete || '生成完成'}</h2>
                   {analysisSummary && (
                     <p className="text-sm text-zinc-500 mt-2">{analysisSummary}</p>
                   )}
@@ -404,13 +490,13 @@ export default function ModelCreatePage() {
                     onClick={handleRegenerate}
                     className="flex-1 py-3 rounded-xl border border-violet-200 text-violet-600 font-medium hover:bg-violet-50 transition-colors"
                   >
-                    重新生成
+                    {t.modelCreate?.regenerate || '重新生成'}
                   </button>
                   <button
                     onClick={() => router.push('/gallery')}
                     className="flex-1 py-3 rounded-xl bg-violet-600 text-white font-medium hover:bg-violet-700 transition-colors"
                   >
-                    查看成片
+                    {t.modelCreate?.viewGallery || '查看成片'}
                   </button>
                 </div>
               </div>
@@ -418,9 +504,16 @@ export default function ModelCreatePage() {
               <>
                 {/* Title */}
                 <div className="text-center mb-6">
-                  <h1 className="text-xl font-bold text-zinc-900 mb-2">上传参考模特图</h1>
-                  <p className="text-sm text-zinc-500">上传一张模特照片，AI 将分析并生成相似风格的新模特</p>
+                  <h1 className="text-xl font-bold text-zinc-900 mb-2">{t.modelCreate?.uploadReferenceTitle || '上传参考模特图'}</h1>
+                  <p className="text-sm text-zinc-500">{t.modelCreate?.uploadReferenceDesc || '上传一张模特照片，AI 将分析并生成相似风格的新模特'}</p>
                 </div>
+                
+                {/* Error Message */}
+                {errorMessage && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
+                    {errorMessage}
+                  </div>
+                )}
                 
                 {/* Upload Area */}
                 <div
@@ -458,8 +551,8 @@ export default function ModelCreatePage() {
                           <ImagePlus className="w-8 h-8 text-violet-500" />
                         </div>
                         <div className="text-center">
-                          <p className="text-sm font-medium text-zinc-700 mb-1">点击上传参考模特图</p>
-                          <p className="text-xs text-zinc-400">或拖拽图片到此处</p>
+                          <p className="text-sm font-medium text-zinc-700 mb-1">{t.modelCreate?.clickToUploadReference || '点击上传参考模特图'}</p>
+                          <p className="text-xs text-zinc-400">{t.modelCreate?.orDragHere || '或拖拽图片到这里'}</p>
                         </div>
                       </button>
                     )}
@@ -476,12 +569,12 @@ export default function ModelCreatePage() {
                     {isUploading ? (
                       <>
                         <Loader2 className="w-4 h-4 text-violet-600 animate-spin" />
-                        <span className="text-sm font-medium text-violet-600">上传中 {uploadProgress}%</span>
+                        <span className="text-sm font-medium text-violet-600">{t.modelCreate?.uploading || '上传中'} {uploadProgress}%</span>
                       </>
                     ) : (
                       <>
                         <Upload className="w-4 h-4 text-zinc-600" />
-                        <span className="text-sm font-medium text-zinc-700">本地上传</span>
+                        <span className="text-sm font-medium text-zinc-700">{t.modelCreate?.localUpload || '本地上传'}</span>
                       </>
                     )}
                   </button>
@@ -491,7 +584,7 @@ export default function ModelCreatePage() {
                     className="flex-1 py-3 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     <FolderHeart className="w-4 h-4 text-zinc-600" />
-                    <span className="text-sm font-medium text-zinc-700">从资产库选择</span>
+                    <span className="text-sm font-medium text-zinc-700">{t.modelCreate?.selectFromAssets || '从资产库选择'}</span>
                   </button>
                 </div>
                 
@@ -507,12 +600,12 @@ export default function ModelCreatePage() {
                 {/* User Prompt */}
                 <div className="mt-6">
                   <label className="block text-sm font-medium text-zinc-700 mb-2">
-                    额外描述（可选）
+                    {t.modelCreate?.extraDescription || '额外描述（可选）'}
                   </label>
                   <textarea
                     value={userPrompt}
                     onChange={(e) => setUserPrompt(e.target.value)}
-                    placeholder="例如：希望模特更加高冷、时尚感更强..."
+                    placeholder={t.modelCreate?.extraDescriptionPlaceholder || '例如：希望模特更加高冷、时尚感更强...'}
                     className="w-full h-24 px-4 py-3 rounded-xl border border-zinc-200 bg-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                   />
                 </div>
@@ -536,12 +629,12 @@ export default function ModelCreatePage() {
               {isGenerating ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>生成中...</span>
+                  <span>{t.modelCreate?.generatingModel || '生成中...'}</span>
                 </>
               ) : (
                 <>
                   <Sparkles className="w-5 h-5" />
-                  <span>生成模特</span>
+                  <span>{t.modelCreate?.generateModel || '生成模特'}</span>
                 </>
               )}
             </button>
@@ -567,7 +660,7 @@ export default function ModelCreatePage() {
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between px-4 py-4 border-b border-zinc-100">
-                  <h3 className="text-lg font-bold text-zinc-900">从资产库选择</h3>
+                  <h3 className="text-lg font-bold text-zinc-900">{t.modelCreate?.selectFromAssets || '从资产库选择'}</h3>
                   <button
                     onClick={() => setShowAssetPicker(false)}
                     className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center"
@@ -577,9 +670,9 @@ export default function ModelCreatePage() {
                 </div>
                 
                 <div className="flex-1 overflow-y-auto p-4">
-                  {productAssets.length > 0 ? (
+                  {modelAssets && modelAssets.length > 0 ? (
                     <div className="grid grid-cols-3 gap-2">
-                      {productAssets.map((asset) => (
+                      {modelAssets.map((asset) => (
                         <button
                           key={asset.id}
                           onClick={() => handleAddFromAssets(asset.imageUrl)}
@@ -587,7 +680,7 @@ export default function ModelCreatePage() {
                         >
                           <Image
                             src={asset.imageUrl}
-                            alt={asset.name || '资产'}
+                            alt={asset.name || '模特'}
                             fill
                             className="object-cover"
                           />
@@ -597,7 +690,7 @@ export default function ModelCreatePage() {
                   ) : (
                     <div className="text-center py-12">
                       <FolderHeart className="w-12 h-12 text-zinc-300 mx-auto mb-3" />
-                      <p className="text-sm text-zinc-500">资产库为空</p>
+                      <p className="text-sm text-zinc-500">{t.modelCreate?.noProductsInAssets || '资产库为空'}</p>
                     </div>
                   )}
                 </div>
@@ -624,7 +717,7 @@ export default function ModelCreatePage() {
             </button>
             <div className="flex items-center gap-2">
               <Sliders className="w-5 h-5 text-purple-600" />
-              <span className="font-bold text-zinc-900">属性选择器</span>
+              <span className="font-bold text-zinc-900">{t.modelCreate?.attributeSelector || '属性选择器'}</span>
             </div>
             <div className="w-10" />
           </div>
@@ -637,7 +730,7 @@ export default function ModelCreatePage() {
             {generatedImage ? (
               <div className="space-y-4">
                 <div className="text-center mb-4">
-                  <h2 className="text-lg font-bold text-zinc-900">生成完成</h2>
+                  <h2 className="text-lg font-bold text-zinc-900">{t.modelCreate?.generateComplete || '生成完成'}</h2>
                   {analysisSummary && (
                     <p className="text-sm text-zinc-500 mt-2">{analysisSummary}</p>
                   )}
@@ -657,13 +750,13 @@ export default function ModelCreatePage() {
                     onClick={handleRegenerate}
                     className="flex-1 py-3 rounded-xl border border-purple-200 text-purple-600 font-medium hover:bg-purple-50 transition-colors"
                   >
-                    重新生成
+                    {t.modelCreate?.regenerate || '重新生成'}
                   </button>
                   <button
                     onClick={() => router.push('/gallery')}
                     className="flex-1 py-3 rounded-xl bg-purple-600 text-white font-medium hover:bg-purple-700 transition-colors"
                   >
-                    查看成片
+                    {t.modelCreate?.viewGallery || '查看成片'}
                   </button>
                 </div>
               </div>
@@ -671,20 +764,28 @@ export default function ModelCreatePage() {
               <>
                 {/* Title */}
                 <div className="text-center mb-6">
-                  <h1 className="text-xl font-bold text-zinc-900 mb-2">选择模特属性</h1>
-                  <p className="text-sm text-zinc-500">选择性别、年龄、人种，AI 将匹配并生成模特</p>
+                  <h1 className="text-xl font-bold text-zinc-900 mb-2">{t.modelCreate?.selectAttributes || '选择模特属性'}</h1>
+                  <p className="text-sm text-zinc-500">{t.modelCreate?.selectAttributesDesc || '选择性别、年龄、人种，AI 将匹配并生成模特'}</p>
                 </div>
+                
+                {/* Error Message */}
+                {errorMessage && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
+                    {errorMessage}
+                  </div>
+                )}
                 
                 {isLoadingOptions ? (
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
+                    <span className="ml-2 text-sm text-zinc-500">{t.modelCreate?.loadingOptions || '加载选项中...'}</span>
                   </div>
                 ) : selectorOptions ? (
                   <div className="space-y-6">
                     {/* 性别选择 */}
                     <div>
                       <label className="block text-sm font-medium text-zinc-700 mb-3">
-                        性别 <span className="text-red-500">*</span>
+                        {t.modelCreate?.genderLabel || '性别'} <span className="text-red-500">*</span>
                       </label>
                       <div className="flex gap-3">
                         {selectorOptions.genders.map((gender) => (
@@ -697,7 +798,7 @@ export default function ModelCreatePage() {
                                 : 'border-zinc-200 bg-white text-zinc-700 hover:border-purple-300'
                             }`}
                           >
-                            {gender === 'male' ? '男性' : gender === 'female' ? '女性' : gender}
+                            {genderLabels[gender] || gender}
                           </button>
                         ))}
                       </div>
@@ -706,7 +807,7 @@ export default function ModelCreatePage() {
                     {/* 年龄组选择 */}
                     <div>
                       <label className="block text-sm font-medium text-zinc-700 mb-3">
-                        年龄组（可选）
+                        {t.modelCreate?.ageGroupLabel || '年龄组（可选）'}
                       </label>
                       <div className="flex flex-wrap gap-2">
                         <button
@@ -717,7 +818,7 @@ export default function ModelCreatePage() {
                               : 'border-zinc-200 bg-white text-zinc-700 hover:border-purple-300'
                           }`}
                         >
-                          不限
+                          {t.modelCreate?.noLimit || '不限'}
                         </button>
                         {selectorOptions.ageGroups.map((age) => (
                           <button
@@ -729,7 +830,7 @@ export default function ModelCreatePage() {
                                 : 'border-zinc-200 bg-white text-zinc-700 hover:border-purple-300'
                             }`}
                           >
-                            {age}
+                            {ageGroupLabels[age] || age}
                           </button>
                         ))}
                       </div>
@@ -738,7 +839,7 @@ export default function ModelCreatePage() {
                     {/* 人种选择 */}
                     <div>
                       <label className="block text-sm font-medium text-zinc-700 mb-3">
-                        人种（可选）
+                        {t.modelCreate?.ethnicityLabel || '人种（可选）'}
                       </label>
                       <div className="flex flex-wrap gap-2">
                         <button
@@ -749,7 +850,7 @@ export default function ModelCreatePage() {
                               : 'border-zinc-200 bg-white text-zinc-700 hover:border-purple-300'
                           }`}
                         >
-                          不限
+                          {t.modelCreate?.noLimit || '不限'}
                         </button>
                         {selectorOptions.ethnicities.map((eth) => (
                           <button
@@ -761,7 +862,7 @@ export default function ModelCreatePage() {
                                 : 'border-zinc-200 bg-white text-zinc-700 hover:border-purple-300'
                             }`}
                           >
-                            {eth}
+                            {ethnicityLabels[eth] || eth}
                           </button>
                         ))}
                       </div>
@@ -770,19 +871,25 @@ export default function ModelCreatePage() {
                     {/* User Prompt */}
                     <div>
                       <label className="block text-sm font-medium text-zinc-700 mb-2">
-                        额外描述（可选）
+                        {t.modelCreate?.extraDescription || '额外描述（可选）'}
                       </label>
                       <textarea
                         value={userPrompt}
                         onChange={(e) => setUserPrompt(e.target.value)}
-                        placeholder="例如：希望模特更加高冷、时尚感更强..."
+                        placeholder={t.modelCreate?.extraDescriptionPlaceholder || '例如：希望模特更加高冷、时尚感更强...'}
                         className="w-full h-24 px-4 py-3 rounded-xl border border-zinc-200 bg-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       />
                     </div>
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    <p className="text-sm text-zinc-500">加载选项失败，请重试</p>
+                    <p className="text-sm text-zinc-500">{t.modelCreate?.loadOptionsFailed || '加载选项失败，请重试'}</p>
+                    <button
+                      onClick={loadSelectorOptions}
+                      className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm"
+                    >
+                      {t.common?.retry || '重试'}
+                    </button>
                   </div>
                 )}
               </>
@@ -805,12 +912,12 @@ export default function ModelCreatePage() {
               {isGenerating ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>生成中...</span>
+                  <span>{t.modelCreate?.generatingModel || '生成中...'}</span>
                 </>
               ) : (
                 <>
                   <Sparkles className="w-5 h-5" />
-                  <span>生成模特</span>
+                  <span>{t.modelCreate?.generateModel || '生成模特'}</span>
                 </>
               )}
             </button>

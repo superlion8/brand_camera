@@ -10,7 +10,7 @@
     "upload-presets": "ts-node --project tsconfig.scripts.json scripts/upload-presets.ts"
   },
   "dependencies": {
-    "@alicloud/dysmsapi20170525": "^4.3.0",
+    "@alicloud/dysmsapi20170525": "^4.3.1",
     "@alicloud/openapi-client": "^0.4.15",
     "@google/genai": "^0.7.0",
     "@radix-ui/react-dialog": "^1.1.6",

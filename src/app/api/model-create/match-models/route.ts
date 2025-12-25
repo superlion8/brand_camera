@@ -54,19 +54,19 @@ export async function POST(request: NextRequest) {
       .from('models_analysis')
       .select('model_id, model_gender, model_age_group, model_ethnicity, model_style_primary, model_desc')
     
-    // 性别筛选
+    // 性别筛选（使用 ilike 进行大小写不敏感匹配）
     if (gender) {
-      query = query.eq('model_gender', gender)
+      query = query.ilike('model_gender', gender)
     }
     
-    // 年龄组筛选
+    // 年龄组筛选（使用 ilike 进行大小写不敏感匹配）
     if (ageGroup) {
-      query = query.eq('model_age_group', ageGroup)
+      query = query.ilike('model_age_group', ageGroup)
     }
     
-    // 人种筛选
+    // 人种筛选（使用 ilike 进行大小写不敏感匹配）
     if (ethnicity) {
-      query = query.eq('model_ethnicity', ethnicity)
+      query = query.ilike('model_ethnicity', ethnicity)
     }
     
     const { data: matchedModels, error: dbError } = await query

@@ -426,7 +426,7 @@ export default function PresetsManagement() {
           <div className="flex flex-col items-center justify-center py-20 text-zinc-400">
             <FolderOpen className="w-16 h-16 mb-4" />
             <p className="text-lg font-medium">此文件夹为空</p>
-            <p className="text-sm">点击"上传"添加新资源</p>
+            <p className="text-sm">点击&ldquo;上传&rdquo;添加新资源</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
