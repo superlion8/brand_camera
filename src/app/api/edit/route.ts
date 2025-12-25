@@ -247,19 +247,20 @@ export async function POST(request: NextRequest) {
       
       // 写入数据库
       if (taskId) {
-        // 获取第一张输入图的 URL（如果是 URL 则直接用，否则上传后获取）
-        let inputImageUrlForDb: string | undefined
-        const firstImage = images[0]
-        if (firstImage?.startsWith('http')) {
-          inputImageUrlForDb = firstImage
-        } else if (firstImage) {
-          // 上传第一张输入图到存储
-          const inputUrl = await uploadImageToStorage(
-            firstImage.startsWith('data:') ? firstImage : `data:image/jpeg;base64,${firstImage}`,
-            userId,
-            'edit_input'
-          )
-          inputImageUrlForDb = inputUrl || undefined
+        // 上传所有输入图到存储，获取 URL 列表
+        const inputImageUrls: string[] = []
+        for (let i = 0; i < images.length; i++) {
+          const img = images[i]
+          if (img?.startsWith('http')) {
+            inputImageUrls.push(img)
+          } else if (img) {
+            const inputUrl = await uploadImageToStorage(
+              img.startsWith('data:') ? img : `data:image/jpeg;base64,${img}`,
+              userId,
+              `edit_input_${i}`
+            )
+            if (inputUrl) inputImageUrls.push(inputUrl)
+          }
         }
         
         const saveResult = await appendImageToGeneration({
@@ -271,12 +272,13 @@ export async function POST(request: NextRequest) {
           genMode: 'extended',
           prompt: prompt,
           taskType: 'edit',
-          inputImageUrl: inputImageUrlForDb,
+          inputImageUrl: inputImageUrls[0], // 第一张图存到 input_image_url
           inputParams: {
             modelStyle,
             modelGender,
             customPrompt,
-            inputImageCount: images.length, // 记录输入图片数量
+            inputImageCount: images.length,
+            inputImages: inputImageUrls, // 所有输入图 URL 存到 inputParams
             hasModel: !!modelImage,
             hasBackground: !!backgroundImage,
             hasVibe: !!vibeImage,

@@ -860,15 +860,36 @@ export default function AdminDashboard() {
                   </div>
                 )}
                 
-                {/* Input Images (Product + Reference) */}
+                {/* Input Images (Product + Reference + Edit inputs) */}
                 <div>
                   <p className="text-sm font-medium text-zinc-700 mb-2">输入图片</p>
                   <div className="flex gap-2 flex-wrap">
-                    {/* 优先显示多商品图（outfit模式） */}
-                    {selectedTask.inputParams?.productImages && selectedTask.inputParams.productImages.length > 0 ? (
+                    {/* 修图室多图输入 (inputImages) */}
+                    {selectedTask.inputParams?.inputImages && selectedTask.inputParams.inputImages.length > 0 ? (
+                      selectedTask.inputParams.inputImages.map((imgUrl: string, idx: number) => (
+                        <div 
+                          key={`input-${idx}`}
+                          className="relative cursor-pointer group"
+                          onClick={() => setFullscreenImage(imgUrl)}
+                        >
+                          <img 
+                            src={imgUrl} 
+                            alt={`输入图 ${idx + 1}`} 
+                            className="w-20 h-20 object-cover rounded-lg"
+                          />
+                          <span className="absolute bottom-1 left-1 px-1 py-0.5 bg-purple-500 text-white text-[8px] rounded">
+                            图{idx + 1}
+                          </span>
+                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                            <ZoomIn className="w-5 h-5 text-white" />
+                          </div>
+                        </div>
+                      ))
+                    ) : /* 多商品图（outfit模式） */
+                    selectedTask.inputParams?.productImages && selectedTask.inputParams.productImages.length > 0 ? (
                       selectedTask.inputParams.productImages.map((productUrl: string, idx: number) => (
                         <div 
-                          key={idx}
+                          key={`product-${idx}`}
                           className="relative cursor-pointer group"
                           onClick={() => setFullscreenImage(productUrl)}
                         >
@@ -885,7 +906,8 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                       ))
-                    ) : (selectedTask.inputImageUrl || selectedTask.inputParams?.inputImage) ? (
+                    ) : /* 单张输入图 */
+                    (selectedTask.inputImageUrl || selectedTask.inputParams?.inputImage) ? (
                       <div 
                         className="relative cursor-pointer group"
                         onClick={() => setFullscreenImage(selectedTask.inputImageUrl || selectedTask.inputParams?.inputImage || '')}
@@ -922,7 +944,9 @@ export default function AdminDashboard() {
                     
                     {/* 无输入图片 */}
                     {!selectedTask.inputImageUrl && !selectedTask.inputParams?.inputImage && 
-                     !(selectedTask.inputParams?.productImages?.length > 0) && !selectedTask.inputImage2Url && (
+                     !(selectedTask.inputParams?.productImages?.length > 0) && 
+                     !(selectedTask.inputParams?.inputImages?.length > 0) &&
+                     !selectedTask.inputImage2Url && (
                       <p className="text-sm text-zinc-400">无输入图片记录</p>
                     )}
                   </div>
