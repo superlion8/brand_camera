@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { Wand2, Lightbulb, Home, ChevronRight, Palette } from "lucide-react"
+import { Wand2, Lightbulb, Home, ChevronRight, Palette, Sparkles } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useLanguageStore } from "@/stores/languageStore"
 import { motion } from "framer-motion"
@@ -97,6 +97,15 @@ export default function EditHubPage() {
       href: '/gallery/modify-material',
       color: 'bg-purple-600',
       image: 'https://images.unsplash.com/photo-1558171813-4c088753af8f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600',
+    },
+    {
+      id: 'try-on',
+      title: t.tryOn?.title || '虚拟换装',
+      description: t.tryOn?.subtitle || 'AI 智能换装体验',
+      icon: <Sparkles className="w-5 h-5" />,
+      href: '/try-on',
+      color: 'bg-pink-600',
+      image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=600',
     },
   ]
 

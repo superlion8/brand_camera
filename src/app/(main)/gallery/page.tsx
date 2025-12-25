@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
-import { Download, Heart, X, Wand2, Camera, Users, Home, ZoomIn, Loader2, Lightbulb, RefreshCw, Trash2, Package, FolderPlus, ChevronDown, Check, Grid3X3, Palette } from "lucide-react"
+import { Download, Heart, X, Wand2, Camera, Users, Home, ZoomIn, Loader2, Lightbulb, RefreshCw, Trash2, Package, FolderPlus, ChevronDown, Check, Grid3X3, Palette, Sparkles } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useGenerationTaskStore, GenerationTask, ImageSlot } from "@/stores/generationTaskStore"
@@ -1312,6 +1312,18 @@ export default function GalleryPage() {
                     <button 
                       onClick={() => {
                         const imageUrl = selectedItem.gen.outputImageUrls[selectedItem.index]
+                        sessionStorage.setItem('tryOnImage', imageUrl)
+                        setSelectedItem(null)
+                        router.push("/try-on")
+                      }}
+                      className="flex-1 h-12 rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-medium flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      {t.gallery.goTryOn || '去换装'}
+                    </button>
+                    <button 
+                      onClick={() => {
+                        const imageUrl = selectedItem.gen.outputImageUrls[selectedItem.index]
                         sessionStorage.setItem('editImage', imageUrl)
                         setSelectedItem(null)
                         router.push("/edit/general")
@@ -1321,6 +1333,8 @@ export default function GalleryPage() {
                       <Wand2 className="w-4 h-4" />
                       {t.gallery.goEdit}
                     </button>
+                  </div>
+                  <div className="flex gap-3 mt-3">
                     <button 
                       onClick={() => {
                         const imageUrl = selectedItem.gen.outputImageUrls[selectedItem.index]

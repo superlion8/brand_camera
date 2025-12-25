@@ -357,6 +357,14 @@ export default function HomePage() {
               afterImage={`${HOMEPAGE_STORAGE_URL}/product-after.jpg`}
               href="/studio"
             />
+            <FadeBeforeAfterCard
+              title={t.home.tryOn || "虚拟换装"}
+              subtitle={t.home.tryOnSubtitle || "AI 智能换装"}
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/model-before.jpg`}
+              afterImage={`${HOMEPAGE_STORAGE_URL}/model-after.png`}
+              badge="NEW"
+              href="/try-on"
+            />
           </div>
         </motion.div>
 
