@@ -27,7 +27,7 @@ export default function TryOnPage() {
   const router = useRouter()
   const { user } = useAuth()
   const t = useLanguageStore(state => state.t)
-  const { addTask, updateTaskStatus, updateTaskSlot } = useGenerationTaskStore()
+  const { addTask, updateTaskStatus, updateImageSlot, initImageSlots } = useGenerationTaskStore()
   const { addGeneration } = useAssetStore()
   
   // Input states
@@ -198,20 +198,10 @@ export default function TryOnPage() {
     setResultImages([])
     
     // Create task
-    const taskId = generateId()
+    const personImageUrl = personImage.startsWith('data:') ? personImage : `data:image/jpeg;base64,${personImage}`
+    const taskId = addTask('try_on', personImageUrl, { prompt }, 2)
+    initImageSlots(taskId, 2)
     setCurrentTaskId(taskId)
-    
-    addTask({
-      id: taskId,
-      type: 'try_on',
-      status: 'processing',
-      inputImageUrl: personImage.startsWith('data:') ? personImage : `data:image/jpeg;base64,${personImage}`,
-      createdAt: new Date().toISOString(),
-      imageSlots: [
-        { status: 'generating' },
-        { status: 'generating' },
-      ],
-    })
     
     try {
       // Prepare clothing images with data URI prefix if needed
@@ -268,7 +258,7 @@ export default function TryOnPage() {
                   return newResults
                 })
                 
-                updateTaskSlot(taskId, data.index, {
+                updateImageSlot(taskId, data.index, {
                   status: 'completed',
                   imageUrl: data.url,
                   modelType: 'pro',
