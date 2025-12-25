@@ -109,14 +109,11 @@ async function generateImage(
 
 export async function POST(request: NextRequest) {
   // 验证用户
-  const authResult = await requireAuth()
-  if ('error' in authResult) {
-    return new Response(JSON.stringify({ error: authResult.error }), {
-      status: authResult.status,
-      headers: { 'Content-Type': 'application/json' },
-    })
+  const authResult = await requireAuth(request)
+  if ('response' in authResult) {
+    return authResult.response
   }
-  const userId = authResult.userId
+  const userId = authResult.user.id
 
   // 创建 SSE 流
   const encoder = new TextEncoder()
