@@ -528,7 +528,7 @@ export default function TryOnPage() {
             
             {/* Result Images */}
             <div className="grid grid-cols-2 gap-3 mb-6">
-              {resultImages.map((url, index) => (
+              {resultImages.filter((url): url is string => !!url).map((url, index) => (
                 <button
                   key={index}
                   onClick={() => setFullscreenImage(url)}
