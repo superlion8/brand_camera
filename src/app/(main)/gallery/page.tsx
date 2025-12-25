@@ -64,6 +64,7 @@ export default function GalleryPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showSaveMenu, setShowSaveMenu] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null)
+  const [navigatingTo, setNavigatingTo] = useState<string | null>(null) // 跳转中状态
   
   // Pull to refresh states
   const [pullDistance, setPullDistance] = useState(0)
@@ -1228,7 +1229,10 @@ export default function GalleryPage() {
               {/* Header */}
               <div className="h-14 flex items-center justify-between px-4 bg-white border-b shrink-0">
                 <button
-                  onClick={() => setSelectedItem(null)}
+                  onClick={() => {
+                    setSelectedItem(null)
+                    setNavigatingTo(null)
+                  }}
                   className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center transition-colors"
                 >
                   <X className="w-5 h-5 text-zinc-700" />
@@ -1310,41 +1314,44 @@ export default function GalleryPage() {
                   {/* Action buttons */}
                   <div className="flex gap-3">
                     <button 
+                      disabled={!!navigatingTo}
                       onClick={() => {
                         const imageUrl = selectedItem.gen.outputImageUrls[selectedItem.index]
                         sessionStorage.setItem('tryOnImage', imageUrl)
-                        setSelectedItem(null)
+                        setNavigatingTo('try-on')
                         router.push("/try-on")
                       }}
-                      className="flex-1 h-12 rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-medium flex items-center justify-center gap-2 transition-colors"
+                      className="flex-1 h-12 rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-70"
                     >
-                      <Sparkles className="w-4 h-4" />
+                      {navigatingTo === 'try-on' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                       {t.gallery.goTryOn || '去换装'}
                     </button>
                     <button 
+                      disabled={!!navigatingTo}
                       onClick={() => {
                         const imageUrl = selectedItem.gen.outputImageUrls[selectedItem.index]
                         sessionStorage.setItem('editImage', imageUrl)
-                        setSelectedItem(null)
+                        setNavigatingTo('edit')
                         router.push("/edit/general")
                       }}
-                      className="flex-1 h-12 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2 transition-colors"
+                      className="flex-1 h-12 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-70"
                     >
-                      <Wand2 className="w-4 h-4" />
+                      {navigatingTo === 'edit' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
                       {t.gallery.goEdit}
                     </button>
                   </div>
                   <div className="flex gap-3 mt-3">
                     <button 
+                      disabled={!!navigatingTo}
                       onClick={() => {
                         const imageUrl = selectedItem.gen.outputImageUrls[selectedItem.index]
                         sessionStorage.setItem('groupShootImage', imageUrl)
-                        setSelectedItem(null)
+                        setNavigatingTo('group')
                         router.push("/camera/group")
                       }}
-                      className="flex-1 h-12 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-medium flex items-center justify-center gap-2 transition-colors"
+                      className="flex-1 h-12 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-70"
                     >
-                      <Grid3X3 className="w-4 h-4" />
+                      {navigatingTo === 'group' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Grid3X3 className="w-4 h-4" />}
                       {t.gallery.goGroupShoot || '拍组图'}
                     </button>
                   </div>
@@ -1352,6 +1359,7 @@ export default function GalleryPage() {
                   {selectedItem.gen && (
                     <div className="flex gap-3 mt-3">
                       <button 
+                        disabled={!!navigatingTo}
                         onClick={() => {
                           const imageUrl = selectedItem.gen.outputImageUrls[selectedItem.index]
                           // 收集原始商品图
@@ -1367,12 +1375,12 @@ export default function GalleryPage() {
                           // 保存到 sessionStorage
                           sessionStorage.setItem('modifyMaterial_outputImage', imageUrl)
                           sessionStorage.setItem('modifyMaterial_inputImages', JSON.stringify(inputImages))
-                          setSelectedItem(null)
+                          setNavigatingTo('material')
                           router.push("/gallery/modify-material")
                         }}
-                        className="flex-1 h-12 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium flex items-center justify-center gap-2 transition-colors"
+                        className="flex-1 h-12 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-70"
                       >
-                        <Palette className="w-4 h-4" />
+                        {navigatingTo === 'material' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Palette className="w-4 h-4" />}
                         {t.gallery.modifyMaterial || '改材质版型'}
                       </button>
                     </div>
