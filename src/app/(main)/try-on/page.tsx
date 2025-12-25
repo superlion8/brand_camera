@@ -56,6 +56,9 @@ export default function TryOnPage() {
   const [galleryTarget, setGalleryTarget] = useState<'person' | 'clothing'>('person')
   const [isLoadingGallery, setIsLoadingGallery] = useState(false)
   
+  // Clothing upload panel
+  const [showClothingPanel, setShowClothingPanel] = useState(false)
+  
   // File input refs
   const personFileInputRef = useRef<HTMLInputElement>(null)
   const clothingFileInputRef = useRef<HTMLInputElement>(null)
@@ -72,7 +75,7 @@ export default function TryOnPage() {
     }
   }, [])
   
-  // Handle file upload
+  // Handle single file upload (for person image)
   const handleFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     target: 'person' | 'clothing'
@@ -93,6 +96,30 @@ export default function TryOnPage() {
       }
     } catch (error) {
       console.error('[TryOn] Failed to process file:', error)
+    }
+    
+    e.target.value = ''
+  }
+  
+  // Handle multiple file upload (for clothing images)
+  const handleMultiFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    
+    const remainingSlots = MAX_CLOTHING_IMAGES - clothingImages.length
+    const filesToProcess = Array.from(files).slice(0, remainingSlots)
+    
+    try {
+      const newImages: string[] = []
+      for (const file of filesToProcess) {
+        const base64 = await fileToBase64(file)
+        const compressed = await compressBase64Image(base64, 1200)
+        newImages.push(compressed)
+      }
+      setClothingImages(prev => [...prev, ...newImages])
+      setShowClothingPanel(false)
+    } catch (error) {
+      console.error('[TryOn] Failed to process files:', error)
     }
     
     e.target.value = ''
@@ -345,8 +372,9 @@ export default function TryOnPage() {
         ref={clothingFileInputRef}
         type="file" 
         className="hidden" 
-        accept="image/*" 
-        onChange={(e) => handleFileUpload(e, 'clothing')}
+        accept="image/*"
+        multiple
+        onChange={(e) => handleMultiFileUpload(e)}
       />
       
       <AnimatePresence mode="wait">
@@ -444,7 +472,7 @@ export default function TryOnPage() {
                   
                   {clothingImages.length < MAX_CLOTHING_IMAGES && (
                     <button
-                      onClick={() => clothingFileInputRef.current?.click()}
+                      onClick={() => setShowClothingPanel(true)}
                       className="w-20 h-20 rounded-xl border-2 border-dashed border-zinc-300 hover:border-pink-400 hover:bg-pink-50/50 transition-colors flex flex-col items-center justify-center gap-1 shrink-0"
                     >
                       <Plus className="w-5 h-5 text-zinc-400" />
@@ -675,6 +703,81 @@ export default function TryOnPage() {
               </div>
             )}
           </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Clothing Upload Panel */}
+      <AnimatePresence>
+        {showClothingPanel && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
+              onClick={() => setShowClothingPanel(false)}
+            />
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl z-50 overflow-hidden"
+            >
+              <div className="p-4 border-b flex items-center justify-between">
+                <span className="font-semibold">{t.tryOn?.addClothing || '添加服装'}</span>
+                <button
+                  onClick={() => setShowClothingPanel(false)}
+                  className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              
+              <div className="p-4 space-y-3">
+                {/* Camera */}
+                <button
+                  onClick={() => {
+                    setShowClothingPanel(false)
+                    setCameraTarget('clothing')
+                    setMode('camera')
+                  }}
+                  className="w-full h-14 rounded-xl bg-pink-500 hover:bg-pink-600 text-white flex items-center justify-center gap-3 transition-colors"
+                >
+                  <Camera className="w-5 h-5" />
+                  <span className="font-medium">{t.tryOn?.takePhoto || '拍摄服装'}</span>
+                </button>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Album - multiple */}
+                  <button
+                    onClick={() => clothingFileInputRef.current?.click()}
+                    className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-pink-400 flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <Upload className="w-4 h-4 text-zinc-500" />
+                    <span className="text-sm text-zinc-700">{t.tryOn?.fromAlbum || '相册'}</span>
+                  </button>
+                  
+                  {/* Gallery */}
+                  <button
+                    onClick={() => {
+                      setShowClothingPanel(false)
+                      setGalleryTarget('clothing')
+                      setShowGalleryPanel(true)
+                    }}
+                    className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-pink-400 flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <FolderHeart className="w-4 h-4 text-zinc-500" />
+                    <span className="text-sm text-zinc-700">{t.tryOn?.fromGallery || '成片'}</span>
+                  </button>
+                </div>
+                
+                <p className="text-xs text-zinc-400 text-center pt-2">
+                  {t.tryOn?.clothingImagesDesc || `还可添加 ${MAX_CLOTHING_IMAGES - clothingImages.length} 件服装`}
+                </p>
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
       
