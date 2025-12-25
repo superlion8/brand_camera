@@ -371,9 +371,9 @@ async function processGroup(
     result.outfitInstruct = outfitInstruct
     sendEvent({ type: 'outfit_ready', groupIndex, outfit: outfitInstruct })
 
-    // 4. 生成 2 张图片（并行）
+    // 4. 生成 2 张图片（并行），都使用 FINAL_PROMPT_2
     const imagePromises = [
-      { promptType: 1 as const, localIndex: 0 },
+      { promptType: 2 as const, localIndex: 0 },
       { promptType: 2 as const, localIndex: 1 },
     ].map(async ({ promptType, localIndex }) => {
       const globalIndex = groupIndex * IMAGES_PER_GROUP + localIndex
