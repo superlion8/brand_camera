@@ -840,7 +840,7 @@ export default function TryOnPage() {
                 </button>
               </div>
               
-              <div className="p-4 space-y-3">
+              <div className="p-4 pb-24 space-y-3">
                 {/* Camera */}
                 <button
                   onClick={() => {
@@ -879,7 +879,7 @@ export default function TryOnPage() {
                 </div>
                 
                 <p className="text-xs text-zinc-400 text-center pt-2">
-                  {t.tryOn?.clothingImagesDesc || `还可添加 ${MAX_CLOTHING_IMAGES - clothingImages.length} 件服装`}
+                  还可添加 {MAX_CLOTHING_IMAGES - clothingImages.length} 件服装
                 </p>
               </div>
             </motion.div>
