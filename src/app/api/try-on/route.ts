@@ -57,56 +57,41 @@ async function ensureBase64Data(image: string | null | undefined): Promise<strin
 
 // 生成单张图片
 async function generateImage(
+  client: ReturnType<typeof getGenAIClient>,
   personImageBase64: string,
   clothingImagesBase64: string[],
   userPrompt: string,
   imageIndex: number
 ): Promise<{ success: boolean; imageData?: string; error?: string }> {
   try {
-    const genAI = getGenAIClient()
-    const model = genAI.getGenerativeModel({
-      model: IMAGE_MODEL,
-      safetySettings,
-      generationConfig: {
-        temperature: 1,
-        topP: 0.95,
-        topK: 40,
-        // @ts-ignore - responseModalities is valid for image generation
-        responseModalities: ['image', 'text'],
-      },
-    })
-
     // 构建 prompt
     const finalPrompt = TRY_ON_PROMPT.replace('{{user_prompt}}', userPrompt || 'No additional instructions.')
 
     // 构建内容数组
-    const contents: any[] = [
+    const parts: any[] = [
       { text: finalPrompt },
       { text: '\n\n[Person Photo]:' },
-      {
-        inlineData: {
-          mimeType: 'image/jpeg',
-          data: personImageBase64,
-        },
-      },
+      { inlineData: { mimeType: 'image/jpeg', data: personImageBase64 } },
     ]
 
     // 添加所有服装图片
     clothingImagesBase64.forEach((clothingBase64, idx) => {
-      contents.push({ text: `\n\n[Clothing Item ${idx + 1}]:` })
-      contents.push({
-        inlineData: {
-          mimeType: 'image/jpeg',
-          data: clothingBase64,
-        },
-      })
+      parts.push({ text: `\n\n[Clothing Item ${idx + 1}]:` })
+      parts.push({ inlineData: { mimeType: 'image/jpeg', data: clothingBase64 } })
     })
 
-    contents.push({ text: `\n\nGenerate try-on result image ${imageIndex + 1}:` })
+    parts.push({ text: `\n\nGenerate try-on result image ${imageIndex + 1}:` })
 
     console.log(`[Try-on] Generating image ${imageIndex + 1}...`)
-    const result = await model.generateContent(contents)
-    const response = result.response
+    const response = await client.models.generateContent({
+      model: IMAGE_MODEL,
+      contents: [{ role: 'user', parts }],
+      config: {
+        responseModalities: ['IMAGE'],
+        safetySettings,
+      },
+    })
+    
     const imageData = extractImage(response)
 
     if (!imageData) {
@@ -187,6 +172,9 @@ export async function POST(request: NextRequest) {
 
       await sendEvent('progress', { step: 'generating', message: 'Generating try-on images...' })
 
+      // 获取 GenAI 客户端
+      const client = getGenAIClient()
+
       // 生成 2 张图片
       const results: string[] = []
       for (let i = 0; i < 2; i++) {
@@ -198,6 +186,7 @@ export async function POST(request: NextRequest) {
         })
 
         const result = await generateImage(
+          client,
           personImageBase64,
           clothingImagesBase64,
           prompt || '',
