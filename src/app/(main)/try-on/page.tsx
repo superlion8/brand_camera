@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
   Home, Upload, X, Plus, Loader2, Camera, 
-  Sparkles, Check, ArrowLeft, FolderHeart, Download, Wand2, ZoomIn
+  Sparkles, Check, ArrowLeft, FolderHeart, Download, Wand2, ZoomIn, Grid3X3, Palette
 } from "lucide-react"
 import { fileToBase64, compressBase64Image } from "@/lib/utils"
 import { useQuota } from "@/hooks/useQuota"
@@ -745,29 +745,69 @@ export default function TryOnPage() {
 
                       {/* Action buttons */}
                       <div className="space-y-3">
+                        {/* Row 1: 继续换装 + 去修图 */}
+                        <div className="flex gap-3">
+                          <button 
+                            onClick={() => {
+                              const imageUrl = resultImages[selectedResultIndex]
+                              setPersonImage(imageUrl)
+                              setClothingImages([])
+                              setSelectedResultIndex(null)
+                              setMode('main')
+                            }}
+                            className="flex-1 h-12 rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-medium flex items-center justify-center gap-2 transition-colors"
+                          >
+                            <Sparkles className="w-4 h-4" />
+                            {t.gallery?.goTryOn || '继续换装'}
+                          </button>
+                          <button 
+                            onClick={() => {
+                              const imageUrl = resultImages[selectedResultIndex]
+                              sessionStorage.setItem('editImage', imageUrl)
+                              router.push("/edit/general")
+                            }}
+                            className="flex-1 h-12 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2 transition-colors"
+                          >
+                            <Wand2 className="w-4 h-4" />
+                            {t.gallery?.goEdit || '去修图'}
+                          </button>
+                        </div>
+                        
+                        {/* Row 2: 拍组图 */}
                         <button 
                           onClick={() => {
                             const imageUrl = resultImages[selectedResultIndex]
-                            setPersonImage(imageUrl)
-                            setClothingImages([])
+                            sessionStorage.setItem('groupShootImage', imageUrl)
                             setSelectedResultIndex(null)
-                            setMode('main')
+                            router.push("/camera/group")
                           }}
-                          className="w-full h-12 rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-medium flex items-center justify-center gap-2 transition-colors"
+                          className="w-full h-12 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-medium flex items-center justify-center gap-2 transition-colors"
                         >
-                          <Sparkles className="w-4 h-4" />
-                          {t.gallery?.goTryOn || '继续换装'}
+                          <Grid3X3 className="w-4 h-4" />
+                          {t.gallery?.goGroupShoot || '拍组图'}
                         </button>
+                        
+                        {/* Row 3: 改材质版型 */}
                         <button 
                           onClick={() => {
                             const imageUrl = resultImages[selectedResultIndex]
-                            sessionStorage.setItem('editImage', imageUrl)
-                            router.push("/edit/general")
+                            // 收集原始输入图
+                            const inputImages: string[] = []
+                            if (clothingImages.length > 0) {
+                              inputImages.push(...clothingImages)
+                            }
+                            if (personImage) {
+                              inputImages.push(personImage)
+                            }
+                            sessionStorage.setItem('modifyMaterial_outputImage', imageUrl)
+                            sessionStorage.setItem('modifyMaterial_inputImages', JSON.stringify(inputImages))
+                            setSelectedResultIndex(null)
+                            router.push("/gallery/modify-material")
                           }}
-                          className="w-full h-12 rounded-lg border-2 border-zinc-200 text-zinc-700 font-medium flex items-center justify-center gap-2 hover:bg-zinc-50 transition-colors"
+                          className="w-full h-12 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium flex items-center justify-center gap-2 transition-colors"
                         >
-                          <Wand2 className="w-4 h-4" />
-                          {t.gallery?.goEdit || '去修图'}
+                          <Palette className="w-4 h-4" />
+                          {t.gallery?.modifyMaterial || '改材质版型'}
                         </button>
                       </div>
                     </div>
