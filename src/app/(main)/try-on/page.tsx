@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
   Home, Upload, X, Plus, Loader2, Camera, 
-  Sparkles, Check, ArrowLeft, FolderHeart
+  Sparkles, Check, ArrowLeft, FolderHeart, Download, Wand2, ZoomIn
 } from "lucide-react"
 import { fileToBase64, compressBase64Image } from "@/lib/utils"
 import { useQuota } from "@/hooks/useQuota"
@@ -44,6 +44,7 @@ export default function TryOnPage() {
   const [resultImages, setResultImages] = useState<string[]>([])
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
+  const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
   
   // Camera states
   const [cameraTarget, setCameraTarget] = useState<'person' | 'clothing'>('person')
@@ -634,7 +635,7 @@ export default function TryOnPage() {
                   <Check className="w-5 h-5 text-green-600" />
                 </div>
                 <h3 className="text-lg font-bold text-zinc-800">{t.tryOn?.resultTitle || '换装完成'}</h3>
-                <p className="text-xs text-zinc-500">{t.tryOn?.resultDesc || '点击图片可放大查看'}</p>
+                <p className="text-xs text-zinc-500">{t.tryOn?.resultDesc || '点击图片查看详情'}</p>
               </div>
               
               <div className="grid grid-cols-2 gap-3">
@@ -642,7 +643,7 @@ export default function TryOnPage() {
                   <button
                     key={i}
                     className="relative aspect-[3/4] bg-zinc-100 rounded-xl overflow-hidden cursor-pointer group"
-                    onClick={() => setFullscreenImage(url)}
+                    onClick={() => setSelectedResultIndex(i)}
                   >
                     <Image src={url} alt={`Result ${i + 1}`} fill className="object-cover" />
                     <div className="absolute top-2 left-2">
@@ -660,15 +661,120 @@ export default function TryOnPage() {
                 onClick={() => setMode('main')}
                 className="flex-1 h-12 border border-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 transition-colors"
               >
-                {t.studio?.adjustParams || '调整参数'}
-              </button>
-              <button
-                onClick={handleReset}
-                className="flex-1 h-12 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-xl font-medium hover:from-pink-600 hover:to-purple-600 transition-colors"
-              >
                 {t.tryOn?.newGeneration || '重新换装'}
               </button>
+              <button
+                onClick={() => router.push('/edit')}
+                className="flex-1 h-12 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-xl font-medium hover:from-pink-600 hover:to-purple-600 transition-colors"
+              >
+                {t.studio?.returnHome || '返回编辑页'}
+              </button>
             </div>
+            
+            {/* Result Detail Dialog */}
+            {selectedResultIndex !== null && resultImages[selectedResultIndex] && (
+              <div className="fixed inset-0 z-50 bg-white overflow-hidden">
+                <div className="h-full flex flex-col">
+                  {/* Header */}
+                  <div className="h-14 flex items-center justify-between px-4 bg-white border-b shrink-0">
+                    <button
+                      onClick={() => setSelectedResultIndex(null)}
+                      className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center transition-colors"
+                    >
+                      <X className="w-5 h-5 text-zinc-700" />
+                    </button>
+                    <span className="font-semibold text-zinc-900">{t.common?.detail || '详情'}</span>
+                    <div className="w-10" />
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 overflow-y-auto bg-zinc-100 pb-24">
+                    <div 
+                      className="relative aspect-[3/4] bg-zinc-900 cursor-pointer group"
+                      onClick={() => setFullscreenImage(resultImages[selectedResultIndex])}
+                    >
+                      <Image 
+                        src={resultImages[selectedResultIndex]} 
+                        alt="Detail" 
+                        fill 
+                        className="object-contain" 
+                      />
+                      {/* Zoom hint */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
+                        <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                          <ZoomIn className="w-6 h-6 text-zinc-700" />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 bg-white">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="px-2 py-0.5 rounded text-xs font-medium bg-pink-100 text-pink-700">
+                              {t.tryOn?.title || '虚拟换装'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-zinc-400">
+                            {t.common?.justNow || '刚刚'}
+                          </p>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            const url = resultImages[selectedResultIndex]
+                            try {
+                              const response = await fetch(url)
+                              const blob = await response.blob()
+                              const blobUrl = URL.createObjectURL(blob)
+                              const link = document.createElement("a")
+                              link.href = blobUrl
+                              link.download = `try-on-${Date.now()}.jpg`
+                              document.body.appendChild(link)
+                              link.click()
+                              document.body.removeChild(link)
+                              URL.revokeObjectURL(blobUrl)
+                            } catch (error) {
+                              console.error("Download failed:", error)
+                            }
+                          }}
+                          className="w-10 h-10 rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-50 flex items-center justify-center transition-colors"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="space-y-3">
+                        <button 
+                          onClick={() => {
+                            const imageUrl = resultImages[selectedResultIndex]
+                            setPersonImage(imageUrl)
+                            setClothingImages([])
+                            setSelectedResultIndex(null)
+                            setMode('main')
+                          }}
+                          className="w-full h-12 rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-medium flex items-center justify-center gap-2 transition-colors"
+                        >
+                          <Sparkles className="w-4 h-4" />
+                          {t.gallery?.goTryOn || '继续换装'}
+                        </button>
+                        <button 
+                          onClick={() => {
+                            const imageUrl = resultImages[selectedResultIndex]
+                            sessionStorage.setItem('editImage', imageUrl)
+                            router.push("/edit/general")
+                          }}
+                          className="w-full h-12 rounded-lg border-2 border-zinc-200 text-zinc-700 font-medium flex items-center justify-center gap-2 hover:bg-zinc-50 transition-colors"
+                        >
+                          <Wand2 className="w-4 h-4" />
+                          {t.gallery?.goEdit || '去修图'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             
             {/* Fullscreen Image Viewer */}
             {fullscreenImage && (
