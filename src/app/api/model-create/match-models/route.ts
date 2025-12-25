@@ -203,9 +203,9 @@ export async function GET(request: NextRequest) {
     }
     
     // 提取唯一值
-    const genders = [...new Set(models?.map(m => m.model_gender).filter(Boolean))]
-    const ageGroups = [...new Set(models?.map(m => m.model_age_group).filter(Boolean))]
-    const ethnicities = [...new Set(models?.map(m => m.model_ethnicity).filter(Boolean))]
+    const genders = Array.from(new Set(models?.map(m => m.model_gender).filter(Boolean)))
+    const ageGroups = Array.from(new Set(models?.map(m => m.model_age_group).filter(Boolean)))
+    const ethnicities = Array.from(new Set(models?.map(m => m.model_ethnicity).filter(Boolean)))
     
     return NextResponse.json({
       success: true,
