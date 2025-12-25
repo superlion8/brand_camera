@@ -644,6 +644,8 @@ export const zh = {
     noMatchingModels: "没有找到符合条件的模特，请调整筛选条件",
     loadingOptions: "加载选项中...",
     loadOptionsFailed: "加载选项失败，请重试",
+    analyzingReference: "正在分析参考模特...",
+    matchingModels: "正在匹配模特...",
     // 步骤名称（旧版兼容）
     stepProduct: "上传商品",
     stepBrand: "选品牌",

@@ -646,6 +646,8 @@ export const ko: Translations = {
     noMatchingModels: "조건에 맞는 모델이 없습니다. 필터를 조정해 주세요",
     loadingOptions: "옵션 로딩 중...",
     loadOptionsFailed: "옵션 로딩 실패, 다시 시도해 주세요",
+    analyzingReference: "참조 모델 분석 중...",
+    matchingModels: "모델 매칭 중...",
     // 단계 이름 (레거시 호환)
     stepProduct: "상품 업로드",
     stepBrand: "브랜드",

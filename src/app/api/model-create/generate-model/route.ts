@@ -3,8 +3,11 @@ import { getGenAIClient, extractImage, extractText, safetySettings } from '@/lib
 import { requireAuth } from '@/lib/auth'
 import { generateId } from '@/lib/utils'
 import { uploadGeneratedImageServer } from '@/lib/supabase/storage-server'
+import { createClient } from '@/lib/supabase/server'
 
 export const maxDuration = 180 // 3 minutes
+
+const IMAGE_COUNT = 2 // 生成 2 张图片
 
 // 反推 Prompt
 const ANALYZE_REFERENCE_PROMPT = `你是一位顶尖时尚杂志的选角导演。请忽略输入图片中的排版、拼接、穿搭或背景元素，只聚焦于画面中的模特本人的特征。
@@ -157,48 +160,111 @@ export async function POST(request: NextRequest) {
       console.log('[GenerateModel] Analysis complete:', analysisSummary?.substring(0, 50) + '...')
     }
     
-    // Step 2: 生成新模特图片
-    console.log('[GenerateModel] Generating new model image...')
+    // Step 2: 生成新模特图片（2 张）
+    console.log(`[GenerateModel] Generating ${IMAGE_COUNT} new model images...`)
     
     // 拼接 subject_description 和 user_prompt
     const finalPrompt = GENERATE_MODEL_PROMPT
       .replace('{subject_description}', finalSubjectDescription)
       .replace('{user_prompt}', userPrompt || 'No additional requirements.')
     
-    const generateResponse = await client.models.generateContent({
-      model: 'gemini-3-pro-image-preview',
-      contents: [{
-        role: 'user',
-        parts: [{ text: finalPrompt }],
-      }],
-      config: {
-        responseModalities: ['IMAGE'],
-        safetySettings,
-      },
+    const generationId = generateId()
+    const imageUrls: string[] = []
+    const errors: string[] = []
+    
+    // 并行生成多张图片
+    const generatePromises = Array.from({ length: IMAGE_COUNT }, async (_, index) => {
+      try {
+        console.log(`[GenerateModel] Generating image ${index + 1}/${IMAGE_COUNT}...`)
+        
+        const generateResponse = await client.models.generateContent({
+          model: 'gemini-3-pro-image-preview',
+          contents: [{
+            role: 'user',
+            parts: [{ text: finalPrompt }],
+          }],
+          config: {
+            responseModalities: ['IMAGE'],
+            safetySettings,
+          },
+        })
+        
+        const imageResult = extractImage(generateResponse)
+        
+        if (!imageResult) {
+          errors.push(`图片 ${index + 1} 生成失败`)
+          return null
+        }
+        
+        // Upload to storage
+        const base64Url = `data:image/png;base64,${imageResult}`
+        const uploadedUrl = await uploadGeneratedImageServer(base64Url, generationId, index, userId)
+        
+        if (!uploadedUrl) {
+          errors.push(`图片 ${index + 1} 上传失败`)
+          return null
+        }
+        
+        console.log(`[GenerateModel] Image ${index + 1} uploaded:`, uploadedUrl)
+        return { index, url: uploadedUrl }
+      } catch (err: any) {
+        console.error(`[GenerateModel] Image ${index + 1} error:`, err)
+        errors.push(`图片 ${index + 1}: ${err.message}`)
+        return null
+      }
     })
     
-    const imageResult = extractImage(generateResponse)
+    const results = await Promise.all(generatePromises)
     
-    if (!imageResult) {
-      return NextResponse.json({ success: false, error: 'AI 图片生成失败，请重试' }, { status: 500 })
+    // 按索引排序并提取 URL
+    results
+      .filter((r): r is { index: number; url: string } => r !== null)
+      .sort((a, b) => a.index - b.index)
+      .forEach(r => imageUrls.push(r.url))
+    
+    if (imageUrls.length === 0) {
+      return NextResponse.json({ 
+        success: false, 
+        error: errors.join('; ') || 'AI 图片生成失败，请重试' 
+      }, { status: 500 })
     }
     
-    // Upload to storage
-    const generationId = generateId()
-    const base64Url = `data:image/png;base64,${imageResult}`
-    const uploadedUrl = await uploadGeneratedImageServer(base64Url, generationId, 0, userId)
+    // 保存到数据库（成片-模特-定制模特）
+    const supabase = await createClient()
+    const { data: genRecord, error: dbError } = await supabase
+      .from('generations')
+      .insert({
+        user_id: userId,
+        task_id: generationId,
+        task_type: 'create_model',
+        status: 'completed',
+        output_image_urls: imageUrls,
+        prompts: [finalPrompt],
+        input_image_url: referenceImage,
+        input_params: {
+          userPrompt,
+          subjectDescription: finalSubjectDescription,
+          analysisSummary,
+        },
+        total_images_count: imageUrls.length,
+      })
+      .select()
+      .single()
     
-    if (!uploadedUrl) {
-      console.error('[GenerateModel] Failed to upload to storage')
-      return NextResponse.json({ success: false, error: '图片上传失败，请重试' }, { status: 500 })
+    if (dbError) {
+      console.error('[GenerateModel] Database error:', dbError)
+      // 不阻止返回，图片已生成
+    } else {
+      console.log('[GenerateModel] Saved to database:', genRecord.id)
     }
     
-    console.log('[GenerateModel] Success, uploaded to storage:', uploadedUrl)
+    console.log(`[GenerateModel] Success, generated ${imageUrls.length} images`)
     
     return NextResponse.json({
       success: true,
-      imageUrl: uploadedUrl,
+      imageUrls,
       generationId,
+      dbId: genRecord?.id,
       analysisSummary,
       subjectDescription: finalSubjectDescription,
     })

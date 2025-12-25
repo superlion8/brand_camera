@@ -646,6 +646,8 @@ export const en: Translations = {
     noMatchingModels: "No matching models found, please adjust filters",
     loadingOptions: "Loading options...",
     loadOptionsFailed: "Failed to load options, please retry",
+    analyzingReference: "Analyzing reference model...",
+    matchingModels: "Matching models...",
     // Step names (legacy compatibility)
     stepProduct: "Upload Product",
     stepBrand: "Brand",
