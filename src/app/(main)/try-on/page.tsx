@@ -104,7 +104,7 @@ export default function TryOnPage() {
     
     try {
       const base64 = await fileToBase64(file)
-      const compressed = await compressBase64Image(base64, 1200, 0.85)
+      const compressed = await compressBase64Image(base64, 1200)
       
       if (target === 'person') {
         setPersonImage(compressed)
@@ -130,7 +130,7 @@ export default function TryOnPage() {
     
     try {
       const base64 = imageSrc.replace(/^data:image\/\w+;base64,/, '')
-      const compressed = await compressBase64Image(base64, 1200, 0.85)
+      const compressed = await compressBase64Image(base64, 1200)
       
       if (cameraTarget === 'person') {
         setPersonImage(compressed)
@@ -162,7 +162,7 @@ export default function TryOnPage() {
         reader.readAsDataURL(blob)
       })
       
-      const compressed = await compressBase64Image(base64, 1200, 0.85)
+      const compressed = await compressBase64Image(base64, 1200)
       
       if (galleryTarget === 'person') {
         setPersonImage(compressed)
