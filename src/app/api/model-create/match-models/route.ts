@@ -39,6 +39,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: '请选择性别' }, { status: 400 })
     }
     
+    console.log(`[MatchModels] Query params - gender: ${gender}, ageGroup: ${ageGroup}, ethnicity: ${ethnicity}`)
+    
     // Fetch models_analysis from database
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -50,6 +52,7 @@ export async function POST(request: NextRequest) {
     const supabase = createClient(supabaseUrl, supabaseKey)
     
     // Step 1: 精确匹配 - 召回符合条件的模特
+    // 尝试完全匹配
     let query = supabase
       .from('models_analysis')
       .select('model_id, model_gender, model_age_group, model_ethnicity, model_style_primary, model_desc')
@@ -69,17 +72,72 @@ export async function POST(request: NextRequest) {
       query = query.ilike('model_ethnicity', ethnicity)
     }
     
-    const { data: matchedModels, error: dbError } = await query
+    let { data: matchedModels, error: dbError } = await query
     
     if (dbError) {
       console.error('[MatchModels] Database error:', dbError)
       return NextResponse.json({ success: false, error: '获取模特数据失败' }, { status: 500 })
     }
     
+    // 如果完全匹配没有结果，尝试逐步放宽条件
+    let matchStrategy = 'exact'
+    
     if (!matchedModels || matchedModels.length === 0) {
+      console.log(`[MatchModels] No exact match for: gender=${gender}, ageGroup=${ageGroup}, ethnicity=${ethnicity}`)
+      
+      // 尝试 性别 + 人种（放宽年龄）
+      if (ethnicity) {
+        const { data: genderEthnicityModels } = await supabase
+          .from('models_analysis')
+          .select('model_id, model_gender, model_age_group, model_ethnicity, model_style_primary, model_desc')
+          .ilike('model_gender', gender)
+          .ilike('model_ethnicity', ethnicity)
+        
+        if (genderEthnicityModels && genderEthnicityModels.length > 0) {
+          matchedModels = genderEthnicityModels
+          matchStrategy = 'gender+ethnicity'
+          console.log(`[MatchModels] Found ${matchedModels.length} models with gender+ethnicity`)
+        }
+      }
+    }
+    
+    if (!matchedModels || matchedModels.length === 0) {
+      // 尝试 性别 + 年龄（放宽人种）
+      if (ageGroup) {
+        const { data: genderAgeModels } = await supabase
+          .from('models_analysis')
+          .select('model_id, model_gender, model_age_group, model_ethnicity, model_style_primary, model_desc')
+          .ilike('model_gender', gender)
+          .ilike('model_age_group', ageGroup)
+        
+        if (genderAgeModels && genderAgeModels.length > 0) {
+          matchedModels = genderAgeModels
+          matchStrategy = 'gender+age'
+          console.log(`[MatchModels] Found ${matchedModels.length} models with gender+age`)
+        }
+      }
+    }
+    
+    if (!matchedModels || matchedModels.length === 0) {
+      // 最后只用性别
+      const { data: genderOnlyModels } = await supabase
+        .from('models_analysis')
+        .select('model_id, model_gender, model_age_group, model_ethnicity, model_style_primary, model_desc')
+        .ilike('model_gender', gender)
+      
+      if (genderOnlyModels && genderOnlyModels.length > 0) {
+        matchedModels = genderOnlyModels
+        matchStrategy = 'gender-only'
+        console.log(`[MatchModels] Found ${matchedModels.length} models with gender only`)
+      }
+    }
+    
+    if (!matchedModels || matchedModels.length === 0) {
+      console.log(`[MatchModels] No models found even with gender=${gender} only`)
+      
       return NextResponse.json({ 
         success: false, 
-        error: '没有找到符合条件的模特，请调整筛选条件' 
+        error: '没有找到符合条件的模特，请调整筛选条件'
       }, { status: 404 })
     }
     
@@ -162,6 +220,7 @@ export async function POST(request: NextRequest) {
         imageUrl: modelImageUrl,
       },
       totalMatched: matchedModels.length,
+      matchStrategy,
       usedVLM: !!(userPrompt && userPrompt.trim()),
     })
     
@@ -207,6 +266,9 @@ export async function GET(request: NextRequest) {
     const ageGroups = Array.from(new Set(models?.map(m => m.model_age_group).filter(Boolean)))
     const ethnicities = Array.from(new Set(models?.map(m => m.model_ethnicity).filter(Boolean)))
     
+    console.log(`[MatchModels] Available options - genders: ${JSON.stringify(genders)}, ageGroups: ${JSON.stringify(ageGroups)}, ethnicities: ${JSON.stringify(ethnicities)}`)
+    console.log(`[MatchModels] Total models in database: ${models?.length || 0}`)
+    
     return NextResponse.json({
       success: true,
       options: {
@@ -214,6 +276,7 @@ export async function GET(request: NextRequest) {
         ageGroups,
         ethnicities,
       },
+      totalModels: models?.length || 0,
     })
     
   } catch (error: any) {
