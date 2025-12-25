@@ -34,6 +34,26 @@ function normalizeTaskType(taskType: string | null | undefined): string {
   if (type === 'outfit') {
     return 'outfit'
   }
+  // 参考图拍摄 - /reference-shot
+  if (type === 'reference_shot' || type === 'referenceshot' || type === 'reference') {
+    return 'reference_shot'
+  }
+  // 社交模式 - /camera social mode
+  if (type === 'social') {
+    return 'social'
+  }
+  // 生活方式 - /lifestyle
+  if (type === 'lifestyle') {
+    return 'lifestyle'
+  }
+  // 虚拟换装 - /try-on
+  if (type === 'try_on' || type === 'tryon') {
+    return 'try_on'
+  }
+  // 模特创建 - /model-create
+  if (type === 'create_model' || type === 'model_create') {
+    return 'create_model'
+  }
   
   return 'unknown'
 }
@@ -504,6 +524,11 @@ export async function GET(request: NextRequest) {
           'pro_studio': ['pro_studio', 'prostudio'],
           'group_shoot': ['group_shoot', 'group'],
           'outfit': ['outfit'],
+          'reference_shot': ['reference_shot', 'referenceshot', 'reference'],
+          'social': ['social'],
+          'lifestyle': ['lifestyle'],
+          'try_on': ['try_on', 'tryon'],
+          'create_model': ['create_model', 'model_create'],
         }
         const variants = typeVariants[filterType] || [filterType]
         query = query.in('task_type', variants)

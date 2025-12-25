@@ -90,6 +90,16 @@ const TASK_TYPE_LABELS: Record<string, { label: string; color: string; icon: Rea
   'edit': { label: '修图室', color: 'bg-purple-500', icon: Wand2 },
   // 搭配模式 - /camera/outfit, /pro-studio/outfit
   'outfit': { label: '搭配模式', color: 'bg-teal-500', icon: Users },
+  // 参考图拍摄 - /reference-shot
+  'reference_shot': { label: '参考图拍摄', color: 'bg-cyan-500', icon: ImageIcon },
+  // 社交模式 - /camera social mode
+  'social': { label: '社交模式', color: 'bg-rose-500', icon: Sparkles },
+  // 生活方式 - /lifestyle
+  'lifestyle': { label: '生活方式', color: 'bg-emerald-500', icon: ImageIcon },
+  // 虚拟换装 - /try-on
+  'try_on': { label: '虚拟换装', color: 'bg-fuchsia-500', icon: Sparkles },
+  // 模特创建 - /model-create
+  'create_model': { label: '模特创建', color: 'bg-violet-500', icon: Users },
   // 其他
   'unknown': { label: '其他', color: 'bg-zinc-500', icon: ImageIcon },
 }
@@ -601,6 +611,11 @@ export default function AdminDashboard() {
                     <option value="group_shoot">组图拍摄</option>
                     <option value="edit">修图室</option>
                     <option value="outfit">搭配模式</option>
+                    <option value="reference_shot">参考图拍摄</option>
+                    <option value="social">社交模式</option>
+                    <option value="lifestyle">生活方式</option>
+                    <option value="try_on">虚拟换装</option>
+                    <option value="create_model">模特创建</option>
                   </select>
                 </div>
                 <div className="flex-1 min-w-[150px]">
@@ -835,12 +850,19 @@ export default function AdminDashboard() {
                         </span>
                       )}
                     </div>
+                    {/* 用户输入的 Prompt（修图室） */}
+                    {selectedTask.inputParams.customPrompt && (
+                      <div className="mt-2 p-2 bg-white rounded border border-zinc-200">
+                        <p className="text-[10px] text-zinc-500 mb-1">用户输入 Prompt:</p>
+                        <p className="text-xs text-zinc-700 whitespace-pre-wrap">{selectedTask.inputParams.customPrompt}</p>
+                      </div>
+                    )}
                   </div>
                 )}
                 
-                {/* Input Image (Product only - model/bg shown per output image) */}
+                {/* Input Images (Product + Reference) */}
                 <div>
-                  <p className="text-sm font-medium text-zinc-700 mb-2">输入商品图</p>
+                  <p className="text-sm font-medium text-zinc-700 mb-2">输入图片</p>
                   <div className="flex gap-2 flex-wrap">
                     {/* 优先显示多商品图（outfit模式） */}
                     {selectedTask.inputParams?.productImages && selectedTask.inputParams.productImages.length > 0 ? (
@@ -878,7 +900,29 @@ export default function AdminDashboard() {
                           <ZoomIn className="w-5 h-5 text-white" />
                         </div>
                       </div>
-                    ) : (
+                    ) : null}
+                    
+                    {/* 参考图（reference shot 的 input_image2_url） */}
+                    {selectedTask.inputImage2Url && (
+                      <div 
+                        className="relative cursor-pointer group"
+                        onClick={() => setFullscreenImage(selectedTask.inputImage2Url || '')}
+                      >
+                        <img 
+                          src={selectedTask.inputImage2Url} 
+                          alt="Reference" 
+                          className="w-20 h-20 object-cover rounded-lg"
+                        />
+                        <span className="absolute bottom-1 left-1 px-1 py-0.5 bg-cyan-500 text-white text-[8px] rounded">参考图</span>
+                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                          <ZoomIn className="w-5 h-5 text-white" />
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* 无输入图片 */}
+                    {!selectedTask.inputImageUrl && !selectedTask.inputParams?.inputImage && 
+                     !(selectedTask.inputParams?.productImages?.length > 0) && !selectedTask.inputImage2Url && (
                       <p className="text-sm text-zinc-400">无输入图片记录</p>
                     )}
                   </div>
