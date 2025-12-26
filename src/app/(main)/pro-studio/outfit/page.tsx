@@ -893,17 +893,35 @@ function OutfitPageContent() {
                 })
               })
               
-              if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }))
-                console.log(`[Outfit-Camera] Image ${index + 1}: ✗ HTTP ${response.status}`)
+              // 先获取响应文本，处理非 JSON 响应
+              const responseText = await response.text()
+              let result: any
+              
+              try {
+                result = JSON.parse(responseText)
+              } catch (parseError) {
+                console.error(`[Outfit-Camera] Image ${index + 1}: Non-JSON response:`, responseText.substring(0, 100))
+                let errorMsg = '服务器返回格式错误'
+                if (response.status === 413) {
+                  errorMsg = '图片太大，请使用较小的图片'
+                } else if (response.status >= 500) {
+                  errorMsg = '服务器繁忙，请稍后重试'
+                }
                 updateImageSlot(taskId, index, { 
                   status: 'failed', 
-                  error: errorData.error || `HTTP ${response.status}` 
+                  error: errorMsg 
                 })
                 return
               }
               
-              const result = await response.json()
+              if (!response.ok) {
+                console.log(`[Outfit-Camera] Image ${index + 1}: ✗ HTTP ${response.status}`)
+                updateImageSlot(taskId, index, { 
+                  status: 'failed', 
+                  error: result.error || `HTTP ${response.status}` 
+                })
+                return
+              }
               if (result.success && result.image) {
                 const imageUrl = result.image.startsWith('data:') 
                   ? base64ToBlobUrl(result.image) 

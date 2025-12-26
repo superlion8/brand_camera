@@ -664,10 +664,23 @@ function CameraPageContent() {
               })
               
               // 处理响应并立即更新状态
-              if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }))
-                const errorMsg = getErrorMessage(errorData.error || 'Unknown error', t)
-                console.log(`Image ${index + 1}: ✗ HTTP ${response.status} (${errorMsg})`)
+              // 先获取响应文本，以便处理非 JSON 响应
+              const responseText = await response.text()
+              let result: any
+              
+              try {
+                result = JSON.parse(responseText)
+              } catch (parseError) {
+                // 响应不是有效的 JSON
+                console.error(`Image ${index + 1}: Response is not JSON:`, responseText.substring(0, 100))
+                let errorMsg = '服务器返回格式错误'
+                if (response.status === 413) {
+                  errorMsg = '图片太大，请使用较小的图片'
+                } else if (response.status >= 500) {
+                  errorMsg = '服务器繁忙，请稍后重试'
+                } else if (responseText.toLowerCase().includes('rate') || responseText.toLowerCase().includes('limit')) {
+                  errorMsg = '请求太频繁，请稍后再试'
+                }
                 updateImageSlot(taskId, index, { 
                   status: 'failed', 
                   error: errorMsg 
@@ -676,7 +689,16 @@ function CameraPageContent() {
                 return
               }
               
-              const result = await response.json()
+              if (!response.ok) {
+                const errorMsg = getErrorMessage(result.error || 'Unknown error', t)
+                console.log(`Image ${index + 1}: ✗ HTTP ${response.status} (${errorMsg})`)
+                updateImageSlot(taskId, index, { 
+                  status: 'failed', 
+                  error: errorMsg 
+                })
+                resolve({ index, success: false, error: errorMsg })
+                return
+              }
               if (result.success && result.image) {
                 const genMode = result.generationMode || (simpleMode ? 'simple' : 'extended')
                 // 如果是 Storage URL 直接用，如果是 base64 转换为 Blob URL

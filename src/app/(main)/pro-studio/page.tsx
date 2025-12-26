@@ -554,8 +554,22 @@ function ProStudioPageContent() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || '请求失败')
+        // 尝试解析错误响应，处理非 JSON 情况
+        const text = await response.text()
+        let errorMsg = '请求失败'
+        try {
+          const errorData = JSON.parse(text)
+          errorMsg = errorData.error || errorMsg
+        } catch {
+          // 响应不是 JSON
+          console.error('[ProStudio] Non-JSON error response:', text.substring(0, 100))
+          if (response.status === 413) {
+            errorMsg = '图片太大，请使用较小的图片'
+          } else if (response.status >= 500) {
+            errorMsg = '服务器繁忙，请稍后重试'
+          }
+        }
+        throw new Error(errorMsg)
       }
 
       const reader = response.body?.getReader()
