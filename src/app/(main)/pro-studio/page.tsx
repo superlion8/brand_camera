@@ -540,13 +540,18 @@ function ProStudioPageContent() {
     const userSelectedBgUrl = selectedBg?.imageUrl || null
 
     try {
+      // 压缩图片以减少请求体大小（Vercel 限制 4.5MB）
+      console.log("[ProStudio] Compressing product image...")
+      const compressedImage = await compressBase64Image(capturedImage, 1280)
+      console.log(`[ProStudio] Compressed: ${(capturedImage.length / 1024).toFixed(0)}KB -> ${(compressedImage.length / 1024).toFixed(0)}KB`)
+      
       // 使用 SSE 调用新 API
       // 注意：不使用 AbortController，用户离开页面后后端继续生成
       const response = await fetch('/api/generate-pro-studio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          productImage: capturedImage,
+          productImage: compressedImage,
           modelImage: userSelectedModelUrl || 'random',
           backgroundImage: userSelectedBgUrl || 'random',
           taskId,

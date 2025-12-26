@@ -10,7 +10,7 @@ import {
   FolderHeart, SlidersHorizontal, Check
 } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { fileToBase64, saveProductToAssets } from "@/lib/utils"
+import { fileToBase64, saveProductToAssets, compressBase64Image } from "@/lib/utils"
 import Image from "next/image"
 import { PRESET_PRODUCTS } from "@/data/presets"
 import { Asset } from "@/types"
@@ -219,7 +219,12 @@ function LifestylePageContent() {
       console.warn('[Quota] Failed to reserve:', e)
     }
     
-    await runLifestyleGeneration(taskId, capturedImage, userModelUrl, userSceneUrl)
+    // 压缩图片以减少请求体大小
+    console.log("[Lifestyle] Compressing product image...")
+    const compressedImage = await compressBase64Image(capturedImage, 1280)
+    console.log(`[Lifestyle] Compressed: ${(capturedImage.length / 1024).toFixed(0)}KB -> ${(compressedImage.length / 1024).toFixed(0)}KB`)
+    
+    await runLifestyleGeneration(taskId, compressedImage, userModelUrl, userSceneUrl)
   }
 
   const runLifestyleGeneration = async (

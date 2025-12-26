@@ -484,9 +484,11 @@ function CameraPageContent() {
       console.log("User selected background:", background?.name || 'none (will use random per image)')
       console.log("Has second product:", !!inputImage2)
       
-      // 不压缩，直接使用原图
-      const compressedProduct = inputImage
-      const compressedProduct2 = inputImage2 || null
+      // 压缩图片以减少请求体大小（Vercel 限制 4.5MB）
+      console.log("[Camera] Compressing product images...")
+      const compressedProduct = await compressBase64Image(inputImage, 1280)
+      const compressedProduct2 = inputImage2 ? await compressBase64Image(inputImage2, 1280) : null
+      console.log(`[Camera] Compressed: ${(inputImage.length / 1024).toFixed(0)}KB -> ${(compressedProduct.length / 1024).toFixed(0)}KB`)
       
       // 直接使用 URL，后端会转换为 base64（减少前端请求体大小）
       const userModelUrl = model?.imageUrl || null
