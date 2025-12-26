@@ -394,6 +394,11 @@ function SocialPageContent() {
       console.log("User selected model:", model?.name || 'none (will use random)')
       console.log("User selected background:", background?.name || 'none (will use random)')
       
+      // 压缩图片以减少请求体大小（Vercel 限制 4.5MB）
+      console.log("[Social] Compressing product image...")
+      const compressedImage = await compressBase64Image(inputImage, 1280)
+      console.log(`[Social] Compressed: ${(inputImage.length / 1024).toFixed(0)}KB -> ${(compressedImage.length / 1024).toFixed(0)}KB`)
+      
       const userModelUrl = model?.imageUrl || null
       const userBgUrl = background?.imageUrl || null
       
@@ -411,7 +416,7 @@ function SocialPageContent() {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          productImage: inputImage,
+          productImage: compressedImage,
           modelImage: userModelUrl || 'random',
           taskId,
         }),
