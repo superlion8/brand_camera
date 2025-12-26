@@ -137,6 +137,78 @@ export default function ModelCreatePage() {
   // 检测 iOS
   const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)
   
+  // 压缩图片函数
+  const compressImage = async (file: File, maxSizeMB: number = 2): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const img = document.createElement('img')
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          let { width, height } = img
+          
+          // 计算压缩比例，限制最大尺寸
+          const MAX_DIMENSION = 2048
+          if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+            if (width > height) {
+              height = Math.round((height * MAX_DIMENSION) / width)
+              width = MAX_DIMENSION
+            } else {
+              width = Math.round((width * MAX_DIMENSION) / height)
+              height = MAX_DIMENSION
+            }
+          }
+          
+          canvas.width = width
+          canvas.height = height
+          
+          const ctx = canvas.getContext('2d')
+          if (!ctx) {
+            resolve(file)
+            return
+          }
+          
+          ctx.drawImage(img, 0, 0, width, height)
+          
+          // 动态调整质量以达到目标大小
+          let quality = 0.85
+          const targetSize = maxSizeMB * 1024 * 1024
+          
+          const tryCompress = () => {
+            canvas.toBlob(
+              (blob) => {
+                if (!blob) {
+                  resolve(file)
+                  return
+                }
+                
+                if (blob.size > targetSize && quality > 0.3) {
+                  quality -= 0.1
+                  tryCompress()
+                } else {
+                  const compressedFile = new File([blob], file.name, {
+                    type: 'image/jpeg',
+                    lastModified: Date.now(),
+                  })
+                  console.log(`[Compress] ${(file.size / 1024 / 1024).toFixed(2)}MB -> ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`)
+                  resolve(compressedFile)
+                }
+              },
+              'image/jpeg',
+              quality
+            )
+          }
+          
+          tryCompress()
+        }
+        img.onerror = () => resolve(file)
+        img.src = e.target?.result as string
+      }
+      reader.onerror = () => resolve(file)
+      reader.readAsDataURL(file)
+    })
+  }
+  
   // 检查登录状态
   useEffect(() => {
     const checkAuth = async () => {
@@ -206,13 +278,20 @@ export default function ModelCreatePage() {
   const handleFileSelect = async (files: FileList | null) => {
     if (!files || isUploading || files.length === 0) return
     
-    const file = files[0]
+    let file = files[0]
     if (!file.type.startsWith('image/')) return
     
     setIsUploading(true)
     setUploadProgress(0)
     
     try {
+      // 如果文件大于 2MB，先压缩
+      if (file.size > 2 * 1024 * 1024) {
+        setUploadProgress(20)
+        console.log(`[Upload] Compressing large image: ${(file.size / 1024 / 1024).toFixed(2)}MB`)
+        file = await compressImage(file, 2)
+      }
+      
       setUploadProgress(50)
       const url = await uploadFileToStorage(file)
       if (url) {
