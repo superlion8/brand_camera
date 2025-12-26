@@ -234,6 +234,14 @@ export default function ModelCreatePage() {
     setErrorMessage('')
     try {
       const response = await fetch('/api/model-create/match-models')
+      
+      if (!response.ok) {
+        const text = await response.text()
+        console.error('Load options error:', response.status, text)
+        setErrorMessage(t.modelCreate?.loadOptionsFailed || '加载选项失败')
+        return
+      }
+      
       const data = await response.json()
       
       if (data.success) {
@@ -260,16 +268,29 @@ export default function ModelCreatePage() {
         body: formData,
       })
       
+      if (!response.ok) {
+        const text = await response.text()
+        console.error('Upload error:', response.status, text)
+        if (response.status === 413) {
+          setErrorMessage('图片太大，请使用较小的图片')
+        } else {
+          setErrorMessage('上传失败，请重试')
+        }
+        return null
+      }
+      
       const data = await response.json()
       
       if (!data.success) {
         console.error('Upload failed:', data.error)
+        setErrorMessage(data.error || '上传失败')
         return null
       }
       
       return data.url
     } catch (error) {
       console.error('Upload error:', error)
+      setErrorMessage('上传失败，请重试')
       return null
     }
   }
@@ -346,6 +367,29 @@ export default function ModelCreatePage() {
         }),
       })
       
+      // 检查响应状态
+      if (!response.ok) {
+        const text = await response.text()
+        console.error('Generate API error:', response.status, text)
+        let errorMsg = t.modelCreate?.generateFailed || '生成失败'
+        try {
+          const errData = JSON.parse(text)
+          errorMsg = errData.error || errorMsg
+        } catch {
+          // 无法解析为 JSON
+          if (response.status === 413) {
+            errorMsg = '图片太大，请使用较小的图片'
+          } else if (response.status === 401) {
+            errorMsg = '请先登录'
+          } else if (response.status >= 500) {
+            errorMsg = '服务器繁忙，请稍后重试'
+          }
+        }
+        setErrorMessage(errorMsg)
+        setPageState('reference-input')
+        return
+      }
+      
       const data = await response.json()
       
       if (data.success) {
@@ -374,6 +418,34 @@ export default function ModelCreatePage() {
     }
   }
   
+  // 安全解析 JSON 响应
+  const safeParseResponse = async (response: Response, defaultError: string): Promise<{ ok: boolean; data?: any; error?: string }> => {
+    if (!response.ok) {
+      const text = await response.text()
+      console.error('API error:', response.status, text)
+      try {
+        const errData = JSON.parse(text)
+        return { ok: false, error: errData.error || defaultError }
+      } catch {
+        if (response.status === 413) {
+          return { ok: false, error: '请求数据太大' }
+        } else if (response.status === 401) {
+          return { ok: false, error: '请先登录' }
+        } else if (response.status >= 500) {
+          return { ok: false, error: '服务器繁忙，请稍后重试' }
+        }
+        return { ok: false, error: defaultError }
+      }
+    }
+    try {
+      const data = await response.json()
+      return { ok: true, data }
+    } catch (e) {
+      console.error('JSON parse error:', e)
+      return { ok: false, error: '响应解析失败' }
+    }
+  }
+  
   // 模式2：使用选择器生成
   const handleGenerateWithSelector = async () => {
     if (!selectedGender) {
@@ -399,14 +471,15 @@ export default function ModelCreatePage() {
         }),
       })
       
-      const matchData = await matchResponse.json()
+      const matchResult = await safeParseResponse(matchResponse, t.modelCreate?.noMatchingModels || '匹配模特失败')
       
-      if (!matchData.success) {
-        setErrorMessage(matchData.error || t.modelCreate?.noMatchingModels || '没有找到符合条件的模特')
+      if (!matchResult.ok || !matchResult.data?.success) {
+        setErrorMessage(matchResult.error || matchResult.data?.error || t.modelCreate?.noMatchingModels || '没有找到符合条件的模特')
         setPageState('selector-input')
         return
       }
       
+      const matchData = matchResult.data
       setGenerationProgress(t.modelCreate?.generatingModel || '正在生成模特...')
       
       // Step 2: 使用匹配的模特图生成新模特
@@ -419,26 +492,28 @@ export default function ModelCreatePage() {
         }),
       })
       
-      const generateData = await generateResponse.json()
+      const generateResult = await safeParseResponse(generateResponse, t.modelCreate?.generateFailed || '生成失败')
       
-      if (generateData.success) {
-        setGeneratedImages(generateData.imageUrls || [generateData.imageUrl])
-        setAnalysisSummary(generateData.analysisSummary || '')
-        setPageState('result')
-        
-        // 更新本地状态
-        if (generateData.dbId) {
-          addGeneration({
-            id: generateData.dbId,
-            type: 'create_model',
-            inputImageUrl: matchData.selectedModel.imageUrl,
-            outputImageUrls: generateData.imageUrls || [generateData.imageUrl],
-            createdAt: new Date().toISOString(),
-          })
-        }
-      } else {
-        setErrorMessage(generateData.error || t.modelCreate?.generateFailed || '生成失败')
+      if (!generateResult.ok || !generateResult.data?.success) {
+        setErrorMessage(generateResult.error || generateResult.data?.error || t.modelCreate?.generateFailed || '生成失败')
         setPageState('selector-input')
+        return
+      }
+      
+      const generateData = generateResult.data
+      setGeneratedImages(generateData.imageUrls || [generateData.imageUrl])
+      setAnalysisSummary(generateData.analysisSummary || '')
+      setPageState('result')
+      
+      // 更新本地状态
+      if (generateData.dbId) {
+        addGeneration({
+          id: generateData.dbId,
+          type: 'create_model',
+          inputImageUrl: matchData.selectedModel.imageUrl,
+          outputImageUrls: generateData.imageUrls || [generateData.imageUrl],
+          createdAt: new Date().toISOString(),
+        })
       }
     } catch (err: any) {
       console.error('Generate error:', err)
