@@ -3,7 +3,7 @@ import { getGenAIClient, extractImage, extractText, safetySettings } from '@/lib
 import { requireAuth } from '@/lib/auth'
 import { generateId } from '@/lib/utils'
 import { uploadGeneratedImageServer } from '@/lib/supabase/storage-server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 
 export const maxDuration = 180 // 3 minutes
 
@@ -230,32 +230,47 @@ export async function POST(request: NextRequest) {
     }
     
     // 保存到数据库（成片-模特-定制模特）
-    const supabase = await createClient()
-    const { data: genRecord, error: dbError } = await supabase
-      .from('generations')
-      .insert({
-        user_id: userId,
-        task_id: generationId,
-        task_type: 'create_model',
-        status: 'completed',
-        output_image_urls: imageUrls,
-        prompts: [finalPrompt],
-        input_image_url: referenceImage,
-        input_params: {
-          userPrompt,
-          subjectDescription: finalSubjectDescription,
-          analysisSummary,
-        },
-        total_images_count: imageUrls.length,
-      })
-      .select()
-      .single()
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
     
-    if (dbError) {
-      console.error('[GenerateModel] Database error:', dbError)
-      // 不阻止返回，图片已生成
+    let genRecord: { id: string } | null = null
+    
+    if (supabaseUrl && supabaseKey) {
+      try {
+        const supabase = createClient(supabaseUrl, supabaseKey)
+        const { data, error: dbError } = await supabase
+          .from('generations')
+          .insert({
+            user_id: userId,
+            task_id: generationId,
+            task_type: 'create_model',
+            status: 'completed',
+            output_image_urls: imageUrls,
+            prompts: [finalPrompt],
+            input_image_url: referenceImage,
+            input_params: {
+              userPrompt,
+              subjectDescription: finalSubjectDescription,
+              analysisSummary,
+            },
+            total_images_count: imageUrls.length,
+          })
+          .select()
+          .single()
+        
+        if (dbError) {
+          console.error('[GenerateModel] Database error:', dbError)
+          // 不阻止返回，图片已生成
+        } else if (data) {
+          genRecord = data
+          console.log('[GenerateModel] Saved to database:', data.id)
+        }
+      } catch (dbErr) {
+        console.error('[GenerateModel] Database save failed:', dbErr)
+        // 不阻止返回，图片已生成
+      }
     } else {
-      console.log('[GenerateModel] Saved to database:', genRecord.id)
+      console.warn('[GenerateModel] Supabase not configured, skipping database save')
     }
     
     console.log(`[GenerateModel] Success, generated ${imageUrls.length} images`)
