@@ -247,18 +247,44 @@ export default function GeneralEditPage() {
   ) => {
     try {
       console.log(`Sending general edit request with ${inputImgs.length} images...`)
+      
+      // 压缩图片以避免 HTTP 413 错误
+      const compressedImages = await Promise.all(
+        inputImgs.map(async (img) => {
+          try {
+            const compressed = await compressBase64Image(img, 1024)
+            console.log(`[Edit] Compressed image: ${(img.length / 1024).toFixed(0)}KB -> ${(compressed.length / 1024).toFixed(0)}KB`)
+            return compressed
+          } catch (e) {
+            console.warn('[Edit] Compression failed, using original:', e)
+            return img
+          }
+        })
+      )
+      
       const response = await fetchWithTimeout("/api/edit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          inputImages: inputImgs, // 传递图片数组
+          inputImages: compressedImages, // 传递压缩后的图片数组
           customPrompt: prompt,
           taskId, // 传递 taskId，让后端直接写入数据库
           // No model/background/vibe for general edit
         }),
       }, 180000) // 增加超时时间，因为后端现在会上传图片
       
-      const data = await response.json()
+      // 处理非 JSON 响应（如 413 错误）
+      const responseText = await response.text()
+      let data: any
+      try {
+        data = JSON.parse(responseText)
+      } catch (parseError) {
+        console.error('[Edit] Non-JSON response:', responseText.substring(0, 200))
+        if (response.status === 413 || responseText.includes('Request Entity Too Large')) {
+          throw new Error('图片太大，请使用较小的图片')
+        }
+        throw new Error(`服务器错误: ${response.status}`)
+      }
       
       if (data.success && data.image) {
         updateTaskStatus(taskId, 'completed', [data.image])
