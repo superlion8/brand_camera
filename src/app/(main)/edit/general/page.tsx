@@ -90,6 +90,7 @@ export default function GeneralEditPage() {
   // Edit state - only prompt for general edit
   const [customPrompt, setCustomPrompt] = useState("")
   const [resultImage, setResultImage] = useState<string | null>(null)
+  const [zoomImage, setZoomImage] = useState<string | null>(null)
   
   const { addGeneration, userProducts } = useAssetStore()
   const { addTask, updateTaskStatus } = useGenerationTaskStore()
@@ -446,18 +447,30 @@ export default function GeneralEditPage() {
             </div>
           ) : resultImage ? (
             // Show result image when generation is complete
-            <div className="relative w-full max-w-xs">
-              <Image 
-                src={resultImage} 
-                alt="Result"
-                width={400}
-                height={500}
-                className="w-full rounded-xl shadow-lg"
-              />
+            <div className="relative w-full max-w-xs group">
+              {/* 点击放大 */}
+              <button
+                onClick={() => setZoomImage(resultImage)}
+                className="w-full"
+              >
+                <Image 
+                  src={resultImage} 
+                  alt="Result"
+                  width={400}
+                  height={500}
+                  className="w-full rounded-xl shadow-lg cursor-pointer hover:opacity-95 transition-opacity"
+                />
+              </button>
               <span className="absolute top-2 left-2 px-2 py-1 bg-green-500 text-white text-xs rounded font-medium">{t.edit.generationResult}</span>
+              {/* 点击提示 */}
+              <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/10 transition-colors rounded-xl pointer-events-none">
+                <span className="text-white text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 px-3 py-1.5 rounded-full">
+                  点击放大
+                </span>
+              </div>
               <button
                 onClick={handleReset}
-                className="absolute bottom-2 right-2 px-3 py-1.5 bg-white/90 hover:bg-white text-zinc-700 text-sm font-medium rounded-lg shadow transition-colors"
+                className="absolute bottom-2 right-2 px-3 py-1.5 bg-white/90 hover:bg-white text-zinc-700 text-sm font-medium rounded-lg shadow transition-colors z-10"
               >
                 重选
               </button>
@@ -932,6 +945,40 @@ export default function GeneralEditPage() {
         requiredCount={requiredCount}
         userEmail={user?.email || ''}
       />
+      
+      {/* Zoom Modal */}
+      <AnimatePresence>
+        {zoomImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+            onClick={() => setZoomImage(null)}
+          >
+            <button
+              onClick={() => setZoomImage(null)}
+              className="absolute top-4 right-4 w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors z-10"
+            >
+              <X className="w-6 h-6 text-white" />
+            </button>
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="relative w-full max-w-lg aspect-[3/4] mx-4"
+              onClick={e => e.stopPropagation()}
+            >
+              <Image
+                src={zoomImage}
+                alt={t.edit?.generationResult || '生成结果'}
+                fill
+                className="object-contain"
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
