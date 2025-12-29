@@ -453,13 +453,13 @@ export default function GeneralEditPage() {
                 onClick={() => setZoomImage(resultImage)}
                 className="w-full"
               >
-                <Image 
-                  src={resultImage} 
-                  alt="Result"
-                  width={400}
-                  height={500}
+              <Image 
+                src={resultImage} 
+                alt="Result"
+                width={400}
+                height={500}
                   className="w-full rounded-xl shadow-lg cursor-pointer hover:opacity-95 transition-opacity"
-                />
+              />
               </button>
               <span className="absolute top-2 left-2 px-2 py-1 bg-green-500 text-white text-xs rounded font-medium">{t.edit.generationResult}</span>
               {/* 点击提示 */}

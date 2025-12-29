@@ -225,9 +225,44 @@ function ProStudioPageContent() {
       const savedTaskId = sessionStorage.getItem('proStudioTaskId')
       if (savedTaskId) {
         setCurrentTaskId(savedTaskId)
+        
+        // 如果是 results 模式且 tasks 为空（刷新后），从数据库恢复图片
+        if (urlMode === 'results' && tasks.length === 0) {
+          console.log('[ProStudio] Recovering images from database for task:', savedTaskId)
+          fetch(`/api/generations?taskId=${savedTaskId}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.success && data.data) {
+                const gen = data.data
+                const images = gen.output_image_urls || []
+                const modes = gen.output_gen_modes || []
+                if (images.length > 0) {
+                  console.log('[ProStudio] Recovered', images.length, 'images from database')
+                  setGeneratedImages(images)
+                  setGeneratedModes(modes)
+                  setCurrentGenerationId(gen.id)
+                } else {
+                  // 没有图片，可能任务失败了，返回相机模式
+                  console.log('[ProStudio] No images found in database, returning to camera')
+                  setMode('camera')
+                  sessionStorage.removeItem('proStudioTaskId')
+                }
+              } else {
+                // 任务不存在，返回相机模式
+                console.log('[ProStudio] Task not found in database, returning to camera')
+                setMode('camera')
+                sessionStorage.removeItem('proStudioTaskId')
+              }
+            })
+            .catch(err => {
+              console.error('[ProStudio] Failed to recover images:', err)
+              setMode('camera')
+              sessionStorage.removeItem('proStudioTaskId')
+            })
+        }
       }
     }
-  }, [searchParams])
+  }, [searchParams, tasks.length])
   
   const webcamRef = useRef<Webcam>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
