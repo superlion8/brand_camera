@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useRef, useCallback, useEffect } from "react"
+import { useState, useRef, useCallback, useEffect, Suspense } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
 import { 
   ArrowLeft, Upload, Loader2, Download, Heart, 
   Sun, Sparkles, Lightbulb, Zap, Home, FolderHeart, X, Camera, ZoomIn, Wand2
 } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Webcam from "react-webcam"
 import { fileToBase64, compressBase64Image, generateId, ensureBase64, saveProductToAssets } from "@/lib/utils"
 import { useAssetStore } from "@/stores/assetStore"
@@ -107,8 +107,9 @@ function hexToHsv(hex: string): [number, number, number] {
 
 type StudioMode = 'main' | 'camera' | 'processing' | 'results'
 
-export default function StudioPage() {
+function StudioPageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user } = useAuth()
   const t = useLanguageStore(state => state.t)
   
@@ -165,12 +166,57 @@ export default function StudioPage() {
   const [brightness, setBrightness] = useState(1)
   
   const { addGeneration, addFavorite, removeFavorite, isFavorited, favorites, userProducts, generations, addUserAsset } = useAssetStore()
-  const { addTask, updateTaskStatus } = useGenerationTaskStore()
+  const { addTask, updateTaskStatus, tasks } = useGenerationTaskStore()
   const { debugMode } = useSettingsStore()
   const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
   
   // Quota management
   const { quota, checkQuota, refreshQuota, showExceededModal, requiredCount, closeExceededModal } = useQuota()
+  
+  // 从 URL 参数恢复模式和 taskId（刷新后恢复）
+  useEffect(() => {
+    const urlMode = searchParams.get('mode')
+    if (urlMode === 'processing' || urlMode === 'results') {
+      setMode(urlMode as StudioMode)
+      const savedTaskId = sessionStorage.getItem('studioTaskId')
+      if (savedTaskId) {
+        setCurrentTaskId(savedTaskId)
+        
+        // 如果是 results 模式且 tasks 为空（刷新后），从数据库恢复图片
+        if (urlMode === 'results' && tasks.length === 0) {
+          console.log('[Studio] Recovering images from database for task:', savedTaskId)
+          fetch(`/api/generations?taskId=${savedTaskId}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.success && data.data) {
+                const gen = data.data
+                const images = gen.output_image_urls || []
+                const modelTypes = gen.output_model_types || []
+                if (images.length > 0) {
+                  console.log('[Studio] Recovered', images.length, 'images from database')
+                  setGeneratedImages(images)
+                  setGeneratedModelTypes(modelTypes)
+                  setCurrentGenerationId(gen.id)
+                } else {
+                  console.log('[Studio] No images found in database, returning to main')
+                  setMode('main')
+                  sessionStorage.removeItem('studioTaskId')
+                }
+              } else {
+                console.log('[Studio] Task not found in database, returning to main')
+                setMode('main')
+                sessionStorage.removeItem('studioTaskId')
+              }
+            })
+            .catch(err => {
+              console.error('[Studio] Failed to recover images:', err)
+              setMode('main')
+              sessionStorage.removeItem('studioTaskId')
+            })
+        }
+      }
+    }
+  }, [searchParams, tasks.length])
   
   // Update bgColor when HSV changes
   const updateColorFromHSV = useCallback((h: number, s: number, v: number) => {
@@ -288,6 +334,10 @@ export default function StudioPage() {
     const taskId = addTask('studio', currentProductImage, params, 2)
     setCurrentTaskId(taskId)
     updateTaskStatus(taskId, 'generating')
+    
+    // 保存 taskId 到 sessionStorage（刷新后可恢复）
+    sessionStorage.setItem('studioTaskId', taskId)
+    router.replace('/studio?mode=processing')
     
     setMode('processing')
     setGeneratedImages([])
@@ -465,6 +515,7 @@ export default function StudioPage() {
           setGeneratedImages(finalImages)
           setGeneratedModelTypes(finalModelTypes)
           setMode('results')
+          router.replace('/studio?mode=results')
         }
       } else {
         // All failed - full refund
@@ -1434,3 +1485,15 @@ export default function StudioPage() {
   )
 }
 
+// Default export with Suspense wrapper for useSearchParams
+export default function StudioPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-zinc-400 animate-spin" />
+      </div>
+    }>
+      <StudioPageContent />
+    </Suspense>
+  )
+}

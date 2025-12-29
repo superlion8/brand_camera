@@ -102,19 +102,6 @@ function CameraPageContent() {
   const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
   
-  // 从 URL 参数读取 mode（从 outfit 页面跳转过来时）
-  useEffect(() => {
-    const urlMode = searchParams.get('mode')
-    if (urlMode === 'processing' || urlMode === 'results') {
-      setMode(urlMode as CameraMode)
-      // 从 sessionStorage 恢复 taskId
-      const savedTaskId = sessionStorage.getItem('cameraTaskId')
-      if (savedTaskId) {
-        setCurrentTaskId(savedTaskId)
-      }
-    }
-  }, [searchParams])
-  
   // Keep modeRef in sync with mode
   useEffect(() => {
     modeRef.current = mode
@@ -199,6 +186,54 @@ function CameraPageContent() {
   const { addGeneration, addUserAsset, userModels, userBackgrounds, userProducts, addFavorite, removeFavorite, isFavorited, favorites, generations } = useAssetStore()
   const { addTask, updateTaskStatus, updateImageSlot, initImageSlots, tasks } = useGenerationTaskStore()
   const { debugMode } = useSettingsStore()
+  
+  // 从 URL 参数读取 mode（从 outfit 页面跳转过来时）
+  useEffect(() => {
+    const urlMode = searchParams.get('mode')
+    if (urlMode === 'processing' || urlMode === 'results') {
+      setMode(urlMode as CameraMode)
+      // 从 sessionStorage 恢复 taskId
+      const savedTaskId = sessionStorage.getItem('cameraTaskId')
+      if (savedTaskId) {
+        setCurrentTaskId(savedTaskId)
+        
+        // 如果是 results 模式且 tasks 为空（刷新后），从数据库恢复图片
+        if (urlMode === 'results' && tasks.length === 0) {
+          console.log('[Camera] Recovering images from database for task:', savedTaskId)
+          fetch(`/api/generations?taskId=${savedTaskId}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.success && data.data) {
+                const gen = data.data
+                const images = gen.output_image_urls || []
+                const modelTypes = gen.output_model_types || []
+                const genModes = gen.output_gen_modes || []
+                if (images.length > 0) {
+                  console.log('[Camera] Recovered', images.length, 'images from database')
+                  setGeneratedImages(images)
+                  setGeneratedModelTypes(modelTypes)
+                  setGeneratedGenModes(genModes)
+                  setCurrentGenerationId(gen.id)
+                } else {
+                  console.log('[Camera] No images found in database, returning to camera')
+                  setMode('camera')
+                  sessionStorage.removeItem('cameraTaskId')
+                }
+              } else {
+                console.log('[Camera] Task not found in database, returning to camera')
+                setMode('camera')
+                sessionStorage.removeItem('cameraTaskId')
+              }
+            })
+            .catch(err => {
+              console.error('[Camera] Failed to recover images:', err)
+              setMode('camera')
+              sessionStorage.removeItem('cameraTaskId')
+            })
+        }
+      }
+    }
+  }, [searchParams, tasks.length])
   
   // Preset Store - 动态从云端加载
   const { 

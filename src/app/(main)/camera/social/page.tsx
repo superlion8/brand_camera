@@ -94,18 +94,6 @@ function SocialPageContent() {
   const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
   
-  // 从 URL 参数读取 mode
-  useEffect(() => {
-    const urlMode = searchParams.get('mode')
-    if (urlMode === 'processing' || urlMode === 'results') {
-      setMode(urlMode as SocialMode)
-      const savedTaskId = sessionStorage.getItem('socialTaskId')
-      if (savedTaskId) {
-        setCurrentTaskId(savedTaskId)
-      }
-    }
-  }, [searchParams])
-  
   // Keep modeRef in sync with mode
   useEffect(() => {
     modeRef.current = mode
@@ -181,6 +169,51 @@ function SocialPageContent() {
   const { addGeneration, addUserAsset, userModels, userBackgrounds, userProducts, addFavorite, removeFavorite, isFavorited, favorites, generations } = useAssetStore()
   const { addTask, updateTaskStatus, updateImageSlot, initImageSlots, tasks } = useGenerationTaskStore()
   const { debugMode } = useSettingsStore()
+  
+  // 从 URL 参数读取 mode（刷新后恢复）
+  useEffect(() => {
+    const urlMode = searchParams.get('mode')
+    if (urlMode === 'processing' || urlMode === 'results') {
+      setMode(urlMode as SocialMode)
+      const savedTaskId = sessionStorage.getItem('socialTaskId')
+      if (savedTaskId) {
+        setCurrentTaskId(savedTaskId)
+        
+        // 如果是 results 模式且 tasks 为空（刷新后），从数据库恢复图片
+        if (urlMode === 'results' && tasks.length === 0) {
+          console.log('[Social] Recovering images from database for task:', savedTaskId)
+          fetch(`/api/generations?taskId=${savedTaskId}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.success && data.data) {
+                const gen = data.data
+                const images = gen.output_image_urls || []
+                const modelTypes = gen.output_model_types || []
+                if (images.length > 0) {
+                  console.log('[Social] Recovered', images.length, 'images from database')
+                  setGeneratedImages(images)
+                  setGeneratedModelTypes(modelTypes)
+                  setCurrentGenerationId(gen.id)
+                } else {
+                  console.log('[Social] No images found in database, returning to camera')
+                  setMode('camera')
+                  sessionStorage.removeItem('socialTaskId')
+                }
+              } else {
+                console.log('[Social] Task not found in database, returning to camera')
+                setMode('camera')
+                sessionStorage.removeItem('socialTaskId')
+              }
+            })
+            .catch(err => {
+              console.error('[Social] Failed to recover images:', err)
+              setMode('camera')
+              sessionStorage.removeItem('socialTaskId')
+            })
+        }
+      }
+    }
+  }, [searchParams, tasks.length])
   
   // Preset Store - 动态从云端加载
   const { 

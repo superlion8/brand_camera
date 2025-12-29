@@ -87,6 +87,53 @@ function LifestylePageContent() {
   const selectedModel = selectedModelId ? allModels.find(m => m.id === selectedModelId) : null
   const selectedScene = selectedSceneId ? allScenes.find(s => s.id === selectedSceneId) : null
 
+  // 从 URL 参数恢复模式和 taskId（刷新后恢复）
+  useEffect(() => {
+    const urlMode = searchParams.get('mode')
+    if (urlMode === 'processing' || urlMode === 'results') {
+      setMode(urlMode as PageMode)
+      const savedTaskId = sessionStorage.getItem('lifestyleTaskId')
+      if (savedTaskId) {
+        setCurrentTaskId(savedTaskId)
+        
+        // 如果是 results 模式且 tasks 为空（刷新后），从数据库恢复图片
+        if (urlMode === 'results' && tasks.length === 0) {
+          console.log('[Lifestyle] Recovering images from database for task:', savedTaskId)
+          fetch(`/api/generations?taskId=${savedTaskId}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.success && data.data) {
+                const gen = data.data
+                const images = gen.output_image_urls || []
+                const modelTypes = gen.output_model_types || []
+                const genModes = gen.output_gen_modes || []
+                if (images.length > 0) {
+                  console.log('[Lifestyle] Recovered', images.length, 'images from database')
+                  setGeneratedImages(images)
+                  setGeneratedModelTypes(modelTypes)
+                  setGeneratedGenModes(genModes)
+                  setCurrentGenerationId(gen.id)
+                } else {
+                  console.log('[Lifestyle] No images found in database, returning to camera')
+                  setMode('camera')
+                  sessionStorage.removeItem('lifestyleTaskId')
+                }
+              } else {
+                console.log('[Lifestyle] Task not found in database, returning to camera')
+                setMode('camera')
+                sessionStorage.removeItem('lifestyleTaskId')
+              }
+            })
+            .catch(err => {
+              console.error('[Lifestyle] Failed to recover images:', err)
+              setMode('camera')
+              sessionStorage.removeItem('lifestyleTaskId')
+            })
+        }
+      }
+    }
+  }, [searchParams, tasks.length])
+
   // Auth check
   useEffect(() => {
     if (!authLoading && !user) {
@@ -199,6 +246,10 @@ function LifestylePageContent() {
     const taskId = addTask('lifestyle', capturedImage, params, LIFESTYLE_NUM_IMAGES)
     setCurrentTaskId(taskId)
     initImageSlots(taskId, LIFESTYLE_NUM_IMAGES)
+    
+    // 保存 taskId 到 sessionStorage（刷新后可恢复）
+    sessionStorage.setItem('lifestyleTaskId', taskId)
+    router.replace('/lifestyle?mode=processing')
     
     triggerFlyToGallery()
     setMode("processing")
@@ -336,6 +387,7 @@ function LifestylePageContent() {
                 
                 // Switch to results mode when all images are done
                 setMode('results')
+                router.replace('/lifestyle?mode=results')
                 
                 const completedTask = tasks.find(t => t.id === taskId)
                 if (completedTask?.imageSlots) {

@@ -70,9 +70,39 @@ function GroupShootPageContent() {
       const savedTaskId = sessionStorage.getItem('groupTaskId')
       if (savedTaskId) {
         setCurrentTaskId(savedTaskId)
+        
+        // 如果是 results 模式且 tasks 为空（刷新后），从数据库恢复图片
+        if (urlMode === 'results' && tasks.length === 0) {
+          console.log('[GroupShoot] Recovering images from database for task:', savedTaskId)
+          fetch(`/api/generations?taskId=${savedTaskId}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.success && data.data) {
+                const gen = data.data
+                const images = gen.output_image_urls || []
+                if (images.length > 0) {
+                  console.log('[GroupShoot] Recovered', images.length, 'images from database')
+                  setGeneratedImages(images)
+                } else {
+                  console.log('[GroupShoot] No images found in database, returning to main')
+                  setMode('main')
+                  sessionStorage.removeItem('groupTaskId')
+                }
+              } else {
+                console.log('[GroupShoot] Task not found in database, returning to main')
+                setMode('main')
+                sessionStorage.removeItem('groupTaskId')
+              }
+            })
+            .catch(err => {
+              console.error('[GroupShoot] Failed to recover images:', err)
+              setMode('main')
+              sessionStorage.removeItem('groupTaskId')
+            })
+        }
       }
     }
-  }, [searchParams])
+  }, [searchParams, tasks.length])
 
   // 文件上传
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
