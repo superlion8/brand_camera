@@ -154,6 +154,17 @@ export default function ReferenceShotPage() {
           body: JSON.stringify({ productImage: compressedProductImage }),
         })
         
+        // Handle non-JSON responses (e.g., Cloudflare timeout errors)
+        const contentType = autoSelectRes.headers.get('content-type')
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await autoSelectRes.text()
+          console.error('[ReferenceShot] Non-JSON response from auto-select:', text.substring(0, 200))
+          if (autoSelectRes.status === 504 || text.includes('gateway') || text.includes('timeout')) {
+            throw new Error('服务器响应超时，请稍后重试')
+          }
+          throw new Error(`服务器错误 (${autoSelectRes.status})`)
+        }
+        
         const autoSelectData = await autoSelectRes.json()
         if (!autoSelectData.success) {
           throw new Error(autoSelectData.error || '自动选择模特失败')
@@ -174,6 +185,20 @@ export default function ReferenceShotPage() {
         updateImageSlot(taskId, i, { status: 'generating' })
       }
       
+      // Helper function to safely parse JSON response
+      const safeJsonParse = async (res: Response, apiName: string) => {
+        const contentType = res.headers.get('content-type')
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await res.text()
+          console.error(`[ReferenceShot] Non-JSON response from ${apiName}:`, text.substring(0, 200))
+          if (res.status === 504 || text.includes('gateway') || text.includes('timeout')) {
+            return { success: false, error: '服务器响应超时' }
+          }
+          return { success: false, error: `服务器错误 (${res.status})` }
+        }
+        return res.json()
+      }
+      
       // Simple mode: directly use ref_img as reference (2 images)
       const simplePromise = fetch('/api/reference-shot/generate-simple', {
         method: 'POST',
@@ -183,7 +208,7 @@ export default function ReferenceShotPage() {
           modelImage: finalModelImage,
           referenceImage: compressedRefImage,
         }),
-      }).then(res => res.json())
+      }).then(res => safeJsonParse(res, 'generate-simple'))
       
       // Extended mode: caption + remove person + generate (2 images)
       const extendedPromise = (async () => {
@@ -193,9 +218,10 @@ export default function ReferenceShotPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ referenceImage: compressedRefImage }),
         })
-        const captionData = await captionRes.json()
+        const captionData = await safeJsonParse(captionRes, 'caption')
         if (!captionData.success) {
-          throw new Error(captionData.error || '分析参考图失败')
+          console.warn('[ReferenceShot] Caption failed:', captionData.error)
+          return { success: false, error: captionData.error || '分析参考图失败' }
         }
         const captionPrompt = captionData.captionPrompt
         
@@ -205,9 +231,10 @@ export default function ReferenceShotPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ referenceImage: compressedRefImage }),
         })
-        const removePersonData = await removePersonRes.json()
+        const removePersonData = await safeJsonParse(removePersonRes, 'remove-person')
         if (!removePersonData.success) {
-          throw new Error(removePersonData.error || '提取背景失败')
+          console.warn('[ReferenceShot] Remove person failed:', removePersonData.error)
+          return { success: false, error: removePersonData.error || '提取背景失败' }
         }
         const backgroundImage = removePersonData.backgroundImage
         
@@ -223,7 +250,7 @@ export default function ReferenceShotPage() {
             referenceImageUrl: referenceImage,
           }),
         })
-        return generateRes.json()
+        return safeJsonParse(generateRes, 'generate')
       })()
       
       // Wait for both to complete
