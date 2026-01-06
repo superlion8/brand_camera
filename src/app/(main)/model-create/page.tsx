@@ -13,6 +13,7 @@ import { useAssetStore } from "@/stores/assetStore"
 import { createClient } from "@/lib/supabase/client"
 import { useTranslation } from "@/stores/languageStore"
 import { generateId } from "@/lib/utils"
+import { useIsMobile } from "@/hooks/useIsMobile"
 
 // 创建模式类型
 type CreateMode = 'reference' | 'selector' | null
@@ -94,6 +95,10 @@ export default function ModelCreatePage() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<number>(0)
+  
+  // Device detection
+  const isMobile = useIsMobile(1024)
+  const isDesktop = isMobile === false
   
   // 页面状态
   const [pageState, setPageState] = useState<PageState>('mode-select')

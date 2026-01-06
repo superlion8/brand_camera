@@ -12,6 +12,7 @@ import { usePresetStore } from "@/stores/presetStore"
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
 import { motion, AnimatePresence } from "framer-motion"
 import { useLanguageStore } from "@/stores/languageStore"
+import { useIsMobile } from "@/hooks/useIsMobile"
 
 type SourceTab = "user" | "preset"
 type ModelSubTab = "normal" | "studio"
@@ -36,6 +37,10 @@ const getProductCategoryLabel = (cat: ProductSubTab, t: any): string => {
 export default function BrandAssetsPage() {
   const router = useRouter()
   const t = useLanguageStore(state => state.t)
+  
+  // Device detection
+  const isMobile = useIsMobile(1024)
+  const isDesktop = isMobile === false
   
   // Type tabs with translated labels
   const typeTabs = [

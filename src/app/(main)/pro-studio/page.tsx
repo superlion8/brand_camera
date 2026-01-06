@@ -24,6 +24,7 @@ import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { useSettingsStore } from "@/stores/settingsStore"
+import { useIsMobile } from "@/hooks/useIsMobile"
 
 type PageMode = "camera" | "review" | "processing" | "results"
 
@@ -270,6 +271,10 @@ function ProStudioPageContent() {
   const modelUploadRef = useRef<HTMLInputElement>(null)
   const bgUploadRef = useRef<HTMLInputElement>(null)
   
+  
+  // Device detection
+  const isMobile = useIsMobile(1024)
+  const isDesktop = isMobile === false
   
   // State
   const [mode, setMode] = useState<PageMode>("camera")
@@ -873,11 +878,15 @@ function ProStudioPageContent() {
             exit={{ opacity: 0 }}
             className="flex-1 relative overflow-hidden flex flex-col"
           >
-            {/* Top Return Button */}
-            <div className="absolute top-4 left-4 z-20">
+            {/* Top Return Button - Hide home button on desktop, show retake in review mode */}
+            <div className={`absolute top-4 left-4 z-20 ${mode === "camera" && isDesktop ? 'hidden' : ''}`}>
               <button
                 onClick={mode === "review" ? handleRetake : () => router.push("/")}
-                className="w-10 h-10 rounded-full bg-black/20 text-white hover:bg-black/40 backdrop-blur-md flex items-center justify-center transition-colors"
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                  isDesktop
+                    ? 'bg-zinc-200 text-zinc-700 hover:bg-zinc-300'
+                    : 'bg-black/20 text-white hover:bg-black/40 backdrop-blur-md'
+                }`}
               >
                 {mode === "review" ? <X className="w-6 h-6" /> : <Home className="w-5 h-5" />}
               </button>
@@ -885,7 +894,34 @@ function ProStudioPageContent() {
 
             {/* Viewfinder / Captured Image */}
             <div className="flex-1 relative">
-              {mode === "camera" && hasCamera && permissionChecked ? (
+              {/* PC Desktop: Show upload interface */}
+              {mode === "camera" && isDesktop ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-zinc-100 lg:bg-zinc-50">
+                  <div className="text-center p-8 max-w-md">
+                    <div className="w-24 h-24 mx-auto mb-6 bg-white rounded-2xl shadow-lg flex items-center justify-center">
+                      <ImageIcon className="w-12 h-12 text-zinc-400" />
+                    </div>
+                    <h2 className="text-xl font-bold text-zinc-900 mb-2">{t.proStudio?.uploadProduct || '上传商品图片'}</h2>
+                    <p className="text-zinc-500 mb-6">{t.proStudio?.uploadProductDesc || '选择商品图片开始专业棚拍'}</p>
+                    <div className="flex gap-3 justify-center">
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
+                      >
+                        <ImageIcon className="w-5 h-5" />
+                        {t.proStudio?.selectFromAlbum || '从相册选择'}
+                      </button>
+                      <button
+                        onClick={() => setShowProductPanel(true)}
+                        className="px-6 py-3 bg-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-300 transition-colors flex items-center gap-2"
+                      >
+                        <FolderHeart className="w-5 h-5" />
+                        {t.proStudio?.assetLibrary || '素材库'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : mode === "camera" && hasCamera && permissionChecked && !isDesktop ? (
                 <Webcam
                   ref={webcamRef}
                   audio={false}
@@ -898,14 +934,14 @@ function ProStudioPageContent() {
                   }}
                   className="absolute inset-0 w-full h-full object-cover"
                 />
-              ) : mode === "camera" && !permissionChecked ? (
+              ) : mode === "camera" && !permissionChecked && !isDesktop ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
                   <div className="text-center text-zinc-400">
                     <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin opacity-50" />
                     <p className="text-sm">正在初始化相机...</p>
                   </div>
                 </div>
-              ) : mode === "camera" && !hasCamera ? (
+              ) : mode === "camera" && !hasCamera && !isDesktop ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
                   <div className="text-center text-zinc-400">
                     <Camera className="w-12 h-12 mx-auto mb-4 opacity-30" />
@@ -1016,8 +1052,8 @@ function ProStudioPageContent() {
                 </div>
               )}
 
-              {/* Camera Overlays */}
-              {mode === "camera" && (
+              {/* Camera Overlays - Mobile only */}
+              {mode === "camera" && !isDesktop && (
                 <>
                   <div className="absolute inset-0 pointer-events-none opacity-30">
                     <div className="w-full h-full grid grid-cols-3 grid-rows-3">
@@ -1042,14 +1078,22 @@ function ProStudioPageContent() {
             </div>
 
             {/* Bottom Controls */}
-            <div className="bg-black flex flex-col justify-end pb-safe pt-6 px-6 relative z-20 shrink-0 min-h-[9rem]">
+            <div className={`flex flex-col justify-end pb-safe pt-6 px-6 relative z-20 shrink-0 ${
+              isDesktop 
+                ? 'bg-white border-t border-zinc-200 min-h-[6rem]' 
+                : 'bg-black min-h-[9rem]'
+            }`}>
               {mode === "review" ? (
-                <div className="space-y-4 pb-4">
+                <div className="space-y-4 pb-4 lg:flex lg:items-center lg:justify-center lg:gap-4 lg:space-y-0">
                   {/* Custom button */}
-                  <div className="flex justify-center">
+                  <div className="flex justify-center lg:order-1">
                     <button 
                       onClick={() => setShowCustomPanel(true)}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 text-white/90 hover:bg-white/20 transition-colors border border-white/20"
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-full transition-colors border ${
+                        isDesktop 
+                          ? 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border-zinc-300'
+                          : 'bg-white/10 text-white/90 hover:bg-white/20 border-white/20'
+                      }`}
                     >
                       <SlidersHorizontal className="w-4 h-4" />
                       <span className="text-sm font-medium">{t.proStudio?.customizeModelBg || '自定义模特/背景'}</span>
@@ -1057,7 +1101,7 @@ function ProStudioPageContent() {
                   </div>
                   
                   {/* Shoot It button */}
-                  <div className="w-full flex justify-center">
+                  <div className="w-full flex justify-center lg:w-auto lg:order-2">
                     <motion.button
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -1085,13 +1129,20 @@ function ProStudioPageContent() {
                           handleShootIt()
                         }
                       }}
-                      className="w-full max-w-xs h-14 rounded-full text-lg font-semibold gap-2 bg-white text-black hover:bg-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.3)] flex items-center justify-center transition-colors"
+                      className={`w-full max-w-xs h-14 rounded-full text-lg font-semibold gap-2 flex items-center justify-center transition-colors ${
+                        isDesktop
+                          ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg'
+                          : 'bg-white text-black hover:bg-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.3)]'
+                      }`}
                     >
                       <Wand2 className="w-5 h-5" />
                       {capturedImage2 ? '去搭配' : 'Shoot It'}
                     </motion.button>
                   </div>
                 </div>
+              ) : isDesktop ? (
+                /* Desktop: Hide bottom controls in camera mode - buttons are in the upload area */
+                <div className="hidden" />
               ) : (
                 <div className="flex items-center justify-center gap-8 pb-4">
                   {/* Album */}
@@ -1105,7 +1156,7 @@ function ProStudioPageContent() {
                     <span className="text-[10px]">{t.proStudio?.album || '相册'}</span>
                   </button>
 
-                  {/* Shutter */}
+                  {/* Shutter - Mobile only */}
                   <button 
                     onClick={handleCapture}
                     disabled={!hasCamera}

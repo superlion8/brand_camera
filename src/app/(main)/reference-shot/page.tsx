@@ -17,6 +17,7 @@ import { useSettingsStore } from "@/stores/settingsStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { Asset } from "@/types"
+import { useIsMobile } from "@/hooks/useIsMobile"
 
 // Steps
 type Step = 'upload' | 'generating' | 'result'
@@ -38,6 +39,10 @@ export default function ReferenceShotPage() {
   const { userModels } = useAssetStore()
   const { debugMode } = useSettingsStore()
   const { addTask, initImageSlots, updateImageSlot, updateTaskStatus, removeTask } = useGenerationTaskStore()
+  
+  // Device detection
+  const isMobile = useIsMobile(1024)
+  const isDesktop = isMobile === false
   
   // Step state
   const [step, setStep] = useState<Step>('upload')

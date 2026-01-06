@@ -108,6 +108,9 @@ export const zh = {
     takePhoto: "拍摄",
     album: "相册",
     assetLibrary: "资产库",
+    uploadProduct: "上传商品图片",
+    uploadProductDesc: "选择商品图片开始买家秀拍摄",
+    selectFromAlbum: "从相册选择",
     shootProduct: "拍摄商品",
     addProduct2: "添加商品 2",
     customizeModelBg: "自定义模特和背景",
@@ -219,6 +222,8 @@ export const zh = {
     noGallery: "暂无生成记录",
     goShoot: "去拍摄",
     generationResult: "生成结果",
+    uploadImage: "上传图片",
+    uploadImageDesc: "选择需要修图的图片",
   },
   
   // Studio Page
@@ -266,6 +271,9 @@ export const zh = {
     fromAlbum: "从相册上传",
     generationFailed: "生成失败，请重试",
     officialExamples: "官方示例",
+    uploadProduct: "上传商品图片",
+    uploadProductDesc: "选择商品图片开始棚拍",
+    assetLibrary: "素材库",
   },
   
   // Gallery Page
@@ -490,6 +498,9 @@ export const zh = {
     generatingOutfit: "设计服装搭配中...",
     album: "相册",
     assetLibrary: "资源库",
+    uploadProduct: "上传商品图片",
+    uploadProductDesc: "选择商品图片开始专业棚拍",
+    selectFromAlbum: "从相册选择",
     customConfig: "自定义配置",
     nextStep: "下一步",
     selectModel: "选择模特（不选则随机）",
@@ -761,6 +772,10 @@ export const zh = {
   // 社媒种草
   social: {
     title: "社媒种草",
+    uploadProduct: "上传商品图片",
+    uploadProductDesc: "选择商品图片开始社媒种草拍摄",
+    selectFromAlbum: "从相册选择",
+    assetLibrary: "素材库",
     productImage: "商品图",
     model: "模特",
     background: "背景",
@@ -788,6 +803,9 @@ export const zh = {
     album: "相册",
     examples: "示例",
     assetLibrary: "资源库",
+    uploadProduct: "上传商品图片",
+    uploadProductDesc: "选择商品图片开始 Lifestyle 街拍",
+    selectFromAlbum: "从相册选择",
     creating: "正在创作街拍大片",
     continueInBackground: "生成将在后台继续，您可以：",
     returnHome: "返回首页",
@@ -869,6 +887,7 @@ export const zh = {
     fromGallery: "从成片选择",
     fromAlbum: "从相册选择",
     takePhoto: "拍照",
+    uploadDesc: "选择图片开始虚拟试穿",
   },
 }
 

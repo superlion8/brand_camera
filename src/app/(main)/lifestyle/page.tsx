@@ -23,6 +23,7 @@ import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { usePresetStore } from "@/stores/presetStore"
+import { useIsMobile } from "@/hooks/useIsMobile"
 
 type PageMode = "camera" | "review" | "processing" | "results"
 
@@ -52,6 +53,10 @@ function LifestylePageContent() {
   useEffect(() => {
     loadPresets()
   }, [loadPresets])
+  
+  // Device detection
+  const isMobile = useIsMobile(1024)
+  const isDesktop = isMobile === false
   
   // State
   const [mode, setMode] = useState<PageMode>("camera")
@@ -512,8 +517,35 @@ function LifestylePageContent() {
             )}
 
             {/* Viewfinder */}
-            <div className="flex-1 relative bg-zinc-900">
-              {mode === "camera" ? (
+            <div className={`flex-1 relative ${isDesktop ? 'bg-zinc-50' : 'bg-zinc-900'}`}>
+              {mode === "camera" && isDesktop ? (
+                /* PC Desktop: Show upload interface */
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center p-8 max-w-md">
+                    <div className="w-24 h-24 mx-auto mb-6 bg-white rounded-2xl shadow-lg flex items-center justify-center">
+                      <ImageIcon className="w-12 h-12 text-zinc-400" />
+                    </div>
+                    <h2 className="text-xl font-bold text-zinc-900 mb-2">{t.lifestyle?.uploadProduct || '上传商品图片'}</h2>
+                    <p className="text-zinc-500 mb-6">{t.lifestyle?.uploadProductDesc || '选择商品图片开始 Lifestyle 街拍'}</p>
+                    <div className="flex gap-3 justify-center">
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-6 py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors flex items-center gap-2"
+                      >
+                        <ImageIcon className="w-5 h-5" />
+                        {t.lifestyle?.selectFromAlbum || '从相册选择'}
+                      </button>
+                      <button
+                        onClick={() => setShowProductPanel(true)}
+                        className="px-6 py-3 bg-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-300 transition-colors flex items-center gap-2"
+                      >
+                        <FolderHeart className="w-5 h-5" />
+                        {t.lifestyle?.assetLibrary || '素材库'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : mode === "camera" ? (
                 hasCamera && permissionChecked ? (
                   <Webcam
                     ref={webcamRef}
@@ -536,14 +568,22 @@ function LifestylePageContent() {
             </div>
 
             {/* Bottom Controls Area */}
-            <div className="bg-black flex flex-col justify-end pb-safe pt-6 px-6 relative z-20 shrink-0 min-h-[9rem]">
+            <div className={`flex flex-col justify-end pb-safe pt-6 px-6 relative z-20 shrink-0 ${
+              isDesktop 
+                ? 'bg-white border-t border-zinc-200 min-h-[6rem]' 
+                : 'bg-black min-h-[9rem]'
+            }`}>
               {mode === "review" ? (
-                <div className="space-y-4 pb-4">
+                <div className="space-y-4 pb-4 lg:flex lg:items-center lg:justify-center lg:gap-4 lg:space-y-0">
                   {/* Custom model/scene button */}
-                  <div className="flex justify-center">
+                  <div className="flex justify-center lg:order-1">
                     <button 
                       onClick={() => setShowCustomPanel(true)}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 text-white/90 hover:bg-white/20 transition-colors border border-white/20"
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-full transition-colors border ${
+                        isDesktop 
+                          ? 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border-zinc-300'
+                          : 'bg-white/10 text-white/90 hover:bg-white/20 border-white/20'
+                      }`}
                     >
                       <SlidersHorizontal className="w-4 h-4" />
                       <span className="text-sm font-medium">{t.lifestyle?.customizeModelScene || '自定义模特/场景'}</span>
@@ -551,7 +591,7 @@ function LifestylePageContent() {
                   </div>
                   
                   {/* Generate and Outfit buttons */}
-                  <div className="w-full flex gap-3 max-w-sm mx-auto">
+                  <div className="w-full flex gap-3 max-w-sm mx-auto lg:w-auto lg:order-2">
                     {/* Outfit Mode Button */}
                     <motion.button
                       initial={{ opacity: 0, y: 20 }}
@@ -564,7 +604,11 @@ function LifestylePageContent() {
                           router.push('/lifestyle/outfit')
                         }
                       }}
-                      className="h-14 px-6 rounded-full bg-white/10 text-white font-bold text-sm flex items-center justify-center gap-2 border border-white/20 hover:bg-white/20 transition-colors"
+                      className={`h-14 px-6 rounded-full font-bold text-sm flex items-center justify-center gap-2 border transition-colors ${
+                        isDesktop
+                          ? 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border-zinc-300'
+                          : 'bg-white/10 text-white border-white/20 hover:bg-white/20'
+                      }`}
                     >
                       <Plus className="w-5 h-5" />
                       {t.lifestyle?.outfitMode || '搭配'}
@@ -576,13 +620,16 @@ function LifestylePageContent() {
                       animate={{ opacity: 1, y: 0 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={handleLifestyleGenerate}
-                      className="flex-1 h-14 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold text-lg flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(168,85,247,0.4)]"
+                      className="flex-1 lg:flex-none lg:px-8 h-14 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold text-lg flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(168,85,247,0.4)]"
                     >
                       <Wand2 className="w-5 h-5" />
                       {t.lifestyle?.startGenerate || '开始生成'}
                     </motion.button>
                   </div>
                 </div>
+              ) : isDesktop ? (
+                /* Desktop: Hide bottom controls in camera mode */
+                <div className="hidden" />
               ) : (
                 <div className="flex items-center justify-center gap-8 pb-4">
                   {/* Album - Left of shutter */}
@@ -596,7 +643,7 @@ function LifestylePageContent() {
                     <span className="text-[10px]">{t.lifestyle?.album || '相册'}</span>
                   </button>
 
-                  {/* Shutter */}
+                  {/* Shutter - Mobile only */}
                   <button 
                     onClick={handleCapture}
                     disabled={!hasCamera}

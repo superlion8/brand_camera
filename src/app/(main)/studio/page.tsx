@@ -20,6 +20,7 @@ import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
+import { useIsMobile } from "@/hooks/useIsMobile"
 
 // Helper to map API error codes to translated messages
 const getErrorMessage = (error: string, t: any): string => {
@@ -132,6 +133,10 @@ function StudioPageContent() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const colorPickerRef = useRef<HTMLDivElement>(null)
   const webcamRef = useRef<Webcam>(null)
+  
+  // Device detection
+  const isMobile = useIsMobile(1024)
+  const isDesktop = isMobile === false
   
   const [mode, setMode] = useState<StudioMode>('main')
   const modeRef = useRef(mode) // Ref to track latest mode for async callbacks
@@ -940,17 +945,46 @@ function StudioPageContent() {
             exit={{ opacity: 0 }}
             className="flex-1 flex flex-col bg-black relative"
           >
-            {/* Back button */}
-            <button
-              onClick={() => setMode('main')}
-              className="absolute top-4 left-4 z-20 w-10 h-10 rounded-full bg-black/30 text-white backdrop-blur-md flex items-center justify-center"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
+            {/* Back button - hidden on desktop */}
+            {!isDesktop && (
+              <button
+                onClick={() => setMode('main')}
+                className="absolute top-4 left-4 z-20 w-10 h-10 rounded-full bg-black/30 text-white backdrop-blur-md flex items-center justify-center"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+            )}
             
-            {/* Camera view */}
-            <div className="flex-1 relative">
-              {hasCamera ? (
+            {/* Camera view / Upload interface */}
+            <div className={`flex-1 relative ${isDesktop ? 'bg-zinc-50' : ''}`}>
+              {isDesktop ? (
+                /* PC Desktop: Show upload interface */
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center p-8 max-w-md">
+                    <div className="w-24 h-24 mx-auto mb-6 bg-white rounded-2xl shadow-lg flex items-center justify-center">
+                      <Camera className="w-12 h-12 text-zinc-400" />
+                    </div>
+                    <h2 className="text-xl font-bold text-zinc-900 mb-2">{t.studio?.uploadProduct || '上传商品图片'}</h2>
+                    <p className="text-zinc-500 mb-6">{t.studio?.uploadProductDesc || '选择商品图片开始棚拍'}</p>
+                    <div className="flex gap-3 justify-center">
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-6 py-3 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 transition-colors flex items-center gap-2"
+                      >
+                        <Upload className="w-5 h-5" />
+                        {t.studio?.fromAlbum || '从相册选择'}
+                      </button>
+                      <button
+                        onClick={() => setShowProductPanel(true)}
+                        className="px-6 py-3 bg-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-300 transition-colors flex items-center gap-2"
+                      >
+                        <FolderHeart className="w-5 h-5" />
+                        {t.studio?.assetLibrary || '素材库'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : hasCamera ? (
                 <Webcam
                   ref={webcamRef}
                   audio={false}
@@ -979,32 +1013,38 @@ function StudioPageContent() {
                 </div>
               )}
               
-              {/* Grid overlay */}
-              <div className="absolute inset-0 pointer-events-none opacity-30">
-                <div className="w-full h-full grid grid-cols-3 grid-rows-3">
-                  {[...Array(9)].map((_, i) => (
-                    <div key={i} className="border border-white/20" />
-                  ))}
+              {/* Grid overlay - hidden on desktop */}
+              {!isDesktop && (
+                <div className="absolute inset-0 pointer-events-none opacity-30">
+                  <div className="w-full h-full grid grid-cols-3 grid-rows-3">
+                    {[...Array(9)].map((_, i) => (
+                      <div key={i} className="border border-white/20" />
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
               
-              {/* Focus frame */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-64 h-64 border border-white/50 rounded-lg relative">
-                  <div className="absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 border-amber-400" />
-                  <div className="absolute -top-1 -right-1 w-4 h-4 border-t-4 border-r-4 border-amber-400" />
-                  <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-4 border-l-4 border-amber-400" />
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-4 border-r-4 border-amber-400" />
+              {/* Focus frame - hidden on desktop */}
+              {!isDesktop && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-64 h-64 border border-white/50 rounded-lg relative">
+                    <div className="absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 border-amber-400" />
+                    <div className="absolute -top-1 -right-1 w-4 h-4 border-t-4 border-r-4 border-amber-400" />
+                    <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-4 border-l-4 border-amber-400" />
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-4 border-r-4 border-amber-400" />
+                  </div>
                 </div>
-              </div>
+              )}
               
-              <div className="absolute top-16 left-0 right-0 text-center text-white/80 text-sm font-medium">
-                {t.camera.shootYourProduct}
-              </div>
+              {!isDesktop && (
+                <div className="absolute top-16 left-0 right-0 text-center text-white/80 text-sm font-medium">
+                  {t.camera.shootYourProduct}
+                </div>
+              )}
             </div>
             
-            {/* Capture button - positioned above BottomNav */}
-            <div className="bg-black py-8 pb-24 flex justify-center">
+            {/* Capture button - positioned above BottomNav, hidden on desktop in camera mode */}
+            <div className={`py-8 pb-24 flex justify-center ${isDesktop ? 'bg-white border-t border-zinc-200' : 'bg-black'}`}>
               <button
                 onClick={handleCapture}
                 disabled={!cameraReady}

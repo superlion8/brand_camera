@@ -110,6 +110,9 @@ export const en: Translations = {
     takePhoto: "Photo",
     album: "Album",
     assetLibrary: "Library",
+    uploadProduct: "Upload Product Image",
+    uploadProductDesc: "Select a product image to start buyer show",
+    selectFromAlbum: "Select from Album",
     shootProduct: "Shoot Product",
     addProduct2: "Add Product 2",
     customizeModelBg: "Customize Model & Background",
@@ -221,6 +224,8 @@ export const en: Translations = {
     noGallery: "No generations yet",
     goShoot: "Go Shoot",
     generationResult: "Generation Result",
+    uploadImage: "Upload Image",
+    uploadImageDesc: "Select an image to edit",
   },
   
   // Studio Page
@@ -268,6 +273,9 @@ export const en: Translations = {
     fromAlbum: "Upload from Album",
     generationFailed: "Generation failed, please retry",
     officialExamples: "Official Examples",
+    uploadProduct: "Upload Product Image",
+    uploadProductDesc: "Select a product image to start studio shoot",
+    assetLibrary: "Asset Library",
   },
   
   // Gallery Page
@@ -492,6 +500,9 @@ export const en: Translations = {
     generatingOutfit: "Designing outfit...",
     album: "Album",
     assetLibrary: "Assets",
+    uploadProduct: "Upload Product Image",
+    uploadProductDesc: "Select a product image to start pro studio shoot",
+    selectFromAlbum: "Select from Album",
     customConfig: "Custom Settings",
     nextStep: "Next",
     selectModel: "Select Model (random if not selected)",
@@ -763,6 +774,10 @@ export const en: Translations = {
   // Social Mode
   social: {
     title: "Social",
+    uploadProduct: "Upload Product Image",
+    uploadProductDesc: "Select a product image to start social media shoot",
+    selectFromAlbum: "Select from Album",
+    assetLibrary: "Assets",
     productImage: "Product Image",
     model: "Model",
     background: "Background",
@@ -790,6 +805,9 @@ export const en: Translations = {
     album: "Album",
     examples: "Examples",
     assetLibrary: "Assets",
+    uploadProduct: "Upload Product Image",
+    uploadProductDesc: "Select a product image to start Lifestyle street photography",
+    selectFromAlbum: "Select from Album",
     creating: "Creating street style photos",
     continueInBackground: "Generation continues in background, you can:",
     returnHome: "Return Home",
@@ -871,5 +889,6 @@ export const en: Translations = {
     fromGallery: "From Photos",
     fromAlbum: "From Album",
     takePhoto: "Take Photo",
+    uploadDesc: "Select images to start virtual try-on",
   },
 }

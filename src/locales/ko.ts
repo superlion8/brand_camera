@@ -110,6 +110,9 @@ export const ko: Translations = {
     takePhoto: "촬영",
     album: "앨범",
     assetLibrary: "라이브러리",
+    uploadProduct: "상품 이미지 업로드",
+    uploadProductDesc: "구매자 쇼를 시작하려면 상품 이미지를 선택하세요",
+    selectFromAlbum: "앨범에서 선택",
     shootProduct: "상품 촬영",
     addProduct2: "상품 2 추가",
     customizeModelBg: "모델 및 배경 사용자 정의",
@@ -221,6 +224,8 @@ export const ko: Translations = {
     noGallery: "생성 기록 없음",
     goShoot: "촬영하기",
     generationResult: "생성 결과",
+    uploadImage: "이미지 업로드",
+    uploadImageDesc: "편집할 이미지 선택",
   },
   
   // Studio Page
@@ -268,6 +273,9 @@ export const ko: Translations = {
     fromAlbum: "앨범에서 업로드",
     generationFailed: "생성 실패, 다시 시도하세요",
     officialExamples: "공식 예시",
+    uploadProduct: "상품 이미지 업로드",
+    uploadProductDesc: "스튜디오 촬영을 위한 상품 이미지 선택",
+    assetLibrary: "자산 라이브러리",
   },
   
   // Gallery Page
@@ -492,6 +500,9 @@ export const ko: Translations = {
     generatingOutfit: "의상 디자인 중...",
     album: "앨범",
     assetLibrary: "자산",
+    uploadProduct: "상품 이미지 업로드",
+    uploadProductDesc: "전문 스튜디오 촬영을 시작하려면 상품 이미지를 선택하세요",
+    selectFromAlbum: "앨범에서 선택",
     customConfig: "사용자 정의 설정",
     nextStep: "다음",
     selectModel: "모델 선택 (선택 안 하면 랜덤)",
@@ -763,6 +774,10 @@ export const ko: Translations = {
   // 소셜 미디어
   social: {
     title: "소셜 미디어",
+    uploadProduct: "상품 이미지 업로드",
+    uploadProductDesc: "소셜 미디어 촬영을 시작하려면 상품 이미지를 선택하세요",
+    selectFromAlbum: "앨범에서 선택",
+    assetLibrary: "자료실",
     productImage: "상품 이미지",
     model: "모델",
     background: "배경",
@@ -790,6 +805,9 @@ export const ko: Translations = {
     album: "앨범",
     examples: "예시",
     assetLibrary: "자료실",
+    uploadProduct: "상품 이미지 업로드",
+    uploadProductDesc: "라이프스타일 스트릿 촬영을 시작하려면 상품 이미지를 선택하세요",
+    selectFromAlbum: "앨범에서 선택",
     creating: "스트릿 스타일 사진 제작 중",
     continueInBackground: "생성이 백그라운드에서 계속됩니다:",
     returnHome: "홈으로 돌아가기",
@@ -871,5 +889,6 @@ export const ko: Translations = {
     fromGallery: "완성작에서 선택",
     fromAlbum: "앨범에서 선택",
     takePhoto: "사진 촬영",
+    uploadDesc: "가상 피팅을 시작할 이미지 선택",
   },
 }

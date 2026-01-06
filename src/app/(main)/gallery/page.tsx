@@ -25,6 +25,7 @@ import {
   isLifestyleType as isLifestyleTypeRaw
 } from "@/lib/taskTypes"
 import { useGalleryStore, getCacheKey } from "@/stores/galleryStore"
+import { useIsMobile } from "@/hooks/useIsMobile"
 
 type TabType = "all" | "model" | "product" | "group" | "reference" | "favorites"
 type ModelSubType = "all" | "buyer" | "prostudio" | "create_model" | "social" | "lifestyle"  // 买家秀 / 专业棚拍 / 创建专属模特 / 社媒种草 / LifeStyle 街拍
@@ -57,6 +58,11 @@ function isLifestyleType(gen: Generation | null | undefined): boolean {
 
 export default function GalleryPage() {
   const router = useRouter()
+  
+  // Device detection
+  const isMobile = useIsMobile(1024)
+  const isDesktop = isMobile === false
+  
   const [activeTab, setActiveTab] = useState<TabType>("all")
   const [modelSubType, setModelSubType] = useState<ModelSubType>("all")  // 模特二级分类
   const [selectedItem, setSelectedItem] = useState<{ gen: Generation; index: number } | null>(null)

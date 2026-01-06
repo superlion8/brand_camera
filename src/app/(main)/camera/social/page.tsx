@@ -24,6 +24,7 @@ import { BottomNav } from "@/components/shared/BottomNav"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
+import { useIsMobile } from "@/hooks/useIsMobile"
 
 // Helper to map API error codes to translated messages
 const getErrorMessage = (error: string, t: any): string => {
@@ -79,6 +80,9 @@ function SocialPageContent() {
   const modelUploadRef = useRef<HTMLInputElement>(null)
   const bgUploadRef = useRef<HTMLInputElement>(null)
   
+  // Device detection
+  const isMobile = useIsMobile(1024)
+  const isDesktop = isMobile === false
   
   // Mode and state
   const [mode, setMode] = useState<SocialMode>("camera")
@@ -862,8 +866,35 @@ function SocialPageContent() {
             </div>
 
             {/* Viewfinder / Captured Image */}
-            <div className="flex-1 relative">
-              {mode === "camera" && hasCamera && permissionChecked ? (
+            <div className={`flex-1 relative ${isDesktop && mode === "camera" ? 'bg-zinc-50' : ''}`}>
+              {/* PC Desktop: Show upload interface */}
+              {mode === "camera" && isDesktop ? (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center p-8 max-w-md">
+                    <div className="w-24 h-24 mx-auto mb-6 bg-white rounded-2xl shadow-lg flex items-center justify-center">
+                      <ImageIcon className="w-12 h-12 text-zinc-400" />
+                    </div>
+                    <h2 className="text-xl font-bold text-zinc-900 mb-2">{t.social?.uploadProduct || '上传商品图片'}</h2>
+                    <p className="text-zinc-500 mb-6">{t.social?.uploadProductDesc || '选择商品图片开始社媒种草拍摄'}</p>
+                    <div className="flex gap-3 justify-center">
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-6 py-3 bg-pink-600 text-white rounded-xl font-medium hover:bg-pink-700 transition-colors flex items-center gap-2"
+                      >
+                        <ImageIcon className="w-5 h-5" />
+                        {t.social?.selectFromAlbum || '从相册选择'}
+                      </button>
+                      <button
+                        onClick={() => setShowProductPanel(true)}
+                        className="px-6 py-3 bg-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-300 transition-colors flex items-center gap-2"
+                      >
+                        <FolderHeart className="w-5 h-5" />
+                        {t.social?.assetLibrary || '素材库'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : mode === "camera" && hasCamera && permissionChecked && !isDesktop ? (
                 <Webcam
                   ref={webcamRef}
                   audio={false}
@@ -878,14 +909,14 @@ function SocialPageContent() {
                   onUserMediaError={handleCameraError}
                   className="absolute inset-0 w-full h-full object-cover opacity-60"
                 />
-              ) : mode === "camera" && !permissionChecked ? (
+              ) : mode === "camera" && !permissionChecked && !isDesktop ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
                   <div className="text-center text-zinc-400">
                     <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin opacity-50" />
                     <p className="text-sm">正在初始化相机...</p>
                   </div>
                 </div>
-              ) : mode === "camera" && !hasCamera ? (
+              ) : mode === "camera" && !hasCamera && !isDesktop ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
                   <div className="text-center text-zinc-400">
                     <Camera className="w-12 h-12 mx-auto mb-4 opacity-30" />
@@ -949,14 +980,22 @@ function SocialPageContent() {
             </div>
 
             {/* Bottom Controls Area */}
-            <div className="bg-black flex flex-col justify-end pb-safe pt-6 px-6 relative z-20 shrink-0 min-h-[9rem]">
+            <div className={`flex flex-col justify-end pb-safe pt-6 px-6 relative z-20 shrink-0 ${
+              isDesktop 
+                ? 'bg-white border-t border-zinc-200 min-h-[6rem]' 
+                : 'bg-black min-h-[9rem]'
+            }`}>
               {mode === "review" ? (
-                <div className="space-y-4 pb-4">
+                <div className="space-y-4 pb-4 lg:flex lg:items-center lg:justify-center lg:gap-4 lg:space-y-0">
                   {/* Custom button in review mode */}
-                  <div className="flex justify-center">
+                  <div className="flex justify-center lg:order-1">
                     <button 
                       onClick={() => setShowCustomPanel(true)}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 text-white/90 hover:bg-white/20 transition-colors border border-white/20"
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-full transition-colors border ${
+                        isDesktop 
+                          ? 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border-zinc-300'
+                          : 'bg-white/10 text-white/90 hover:bg-white/20 border-white/20'
+                      }`}
                     >
                       <SlidersHorizontal className="w-4 h-4" />
                       <span className="text-sm font-medium">{t.camera?.customizeModelBg || '自定义模特和背景'}</span>
@@ -964,7 +1003,7 @@ function SocialPageContent() {
                   </div>
                   
                   {/* Shoot It button */}
-                  <div className="w-full flex justify-center">
+                  <div className="w-full flex justify-center lg:w-auto lg:order-2">
                     <motion.button
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -972,13 +1011,16 @@ function SocialPageContent() {
                         triggerFlyToGallery(e)
                         handleShootIt()
                       }}
-                      className="w-full max-w-xs h-14 rounded-full text-lg font-semibold gap-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:from-pink-600 hover:to-purple-600 shadow-[0_0_20px_rgba(236,72,153,0.3)] flex items-center justify-center transition-colors"
+                      className="w-full max-w-xs lg:px-8 h-14 rounded-full text-lg font-semibold gap-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:from-pink-600 hover:to-purple-600 shadow-[0_0_20px_rgba(236,72,153,0.3)] flex items-center justify-center transition-colors"
                     >
                       <Wand2 className="w-5 h-5" />
                       {t.social?.generate || '生成种草图'}
                     </motion.button>
                   </div>
                 </div>
+              ) : isDesktop ? (
+                /* Desktop: Hide bottom controls in camera mode */
+                <div className="hidden" />
               ) : (
                 <div className="flex items-center justify-center gap-8 pb-4">
                   {/* Album - Left of shutter */}
@@ -992,7 +1034,7 @@ function SocialPageContent() {
                     <span className="text-[10px]">{t.camera?.album || '相册'}</span>
                   </button>
 
-                  {/* Shutter */}
+                  {/* Shutter - Mobile only */}
                   <button 
                     onClick={handleCapture}
                     disabled={!hasCamera}
