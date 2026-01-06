@@ -6,7 +6,8 @@ import Webcam from "react-webcam"
 import { 
   ArrowLeft, ArrowRight, Loader2, Image as ImageIcon, 
   SlidersHorizontal, X, Wand2, Camera, Home,
-  Heart, Download, FolderHeart, Check, ZoomIn, Plus, Grid3X3
+  Heart, Download, FolderHeart, Check, ZoomIn, Plus, Grid3X3,
+  Images, Sparkles
 } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { fileToBase64, generateId, compressBase64Image, ensureBase64, saveProductToAssets } from "@/lib/utils"
@@ -838,7 +839,7 @@ function ProStudioPageContent() {
   }
 
   return (
-    <div className="h-full relative flex flex-col bg-black">
+    <div className={`h-full relative flex flex-col ${isDesktop ? 'bg-zinc-50' : 'bg-black'}`}>
       <input 
         type="file" 
         ref={fileInputRef} 
@@ -894,30 +895,98 @@ function ProStudioPageContent() {
 
             {/* Viewfinder / Captured Image */}
             <div className="flex-1 relative">
-              {/* PC Desktop: Show upload interface */}
+              {/* PC Desktop: Show upload interface with two-column layout */}
               {mode === "camera" && isDesktop ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-zinc-100 lg:bg-zinc-50">
-                  <div className="text-center p-8 max-w-md">
-                    <div className="w-24 h-24 mx-auto mb-6 bg-white rounded-2xl shadow-lg flex items-center justify-center">
-                      <ImageIcon className="w-12 h-12 text-zinc-400" />
+                <div className="absolute inset-0 overflow-y-auto bg-zinc-50">
+                  {/* PC Header */}
+                  <div className="bg-white border-b border-zinc-200">
+                    <div className="max-w-5xl mx-auto px-8 py-5">
+                      <div className="flex items-center gap-3">
+                        <button 
+                          onClick={() => router.push('/')}
+                          className="w-9 h-9 rounded-lg hover:bg-zinc-100 flex items-center justify-center transition-colors"
+                        >
+                          <Home className="w-5 h-5 text-zinc-600" />
+                        </button>
+                        <h1 className="text-lg font-semibold text-zinc-900">{t.proStudio?.proStudioMode || '专业棚拍'}</h1>
+                      </div>
                     </div>
-                    <h2 className="text-xl font-bold text-zinc-900 mb-2">{t.proStudio?.uploadProduct || '上传商品图片'}</h2>
-                    <p className="text-zinc-500 mb-6">{t.proStudio?.uploadProductDesc || '选择商品图片开始专业棚拍'}</p>
-                    <div className="flex gap-3 justify-center">
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
-                      >
-                        <ImageIcon className="w-5 h-5" />
-                        {t.proStudio?.selectFromAlbum || '从相册选择'}
-                      </button>
-                      <button
-                        onClick={() => setShowProductPanel(true)}
-                        className="px-6 py-3 bg-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-300 transition-colors flex items-center gap-2"
-                      >
-                        <FolderHeart className="w-5 h-5" />
-                        {t.proStudio?.assetLibrary || '素材库'}
-                      </button>
+                  </div>
+                  
+                  {/* Two-column content */}
+                  <div className="max-w-5xl mx-auto px-8 py-8">
+                    <div className="flex gap-8">
+                      {/* Left: Image Upload */}
+                      <div className="w-[380px] shrink-0">
+                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-zinc-100">
+                          <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="w-full aspect-[3/4] max-h-[400px] rounded-2xl border-2 border-dashed border-zinc-300 hover:border-amber-400 hover:bg-amber-50/50 flex flex-col items-center justify-center gap-3 transition-all"
+                          >
+                            <div className="w-16 h-16 bg-zinc-100 rounded-2xl flex items-center justify-center">
+                              <ImageIcon className="w-8 h-8 text-zinc-400" />
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm font-medium text-zinc-700">{t.proStudio?.uploadProduct || '上传商品图片'}</p>
+                              <p className="text-xs text-zinc-400 mt-1">点击上传或拖拽图片</p>
+                            </div>
+                          </button>
+                          <div className="mt-4">
+                            <button
+                              onClick={() => setShowProductPanel(true)}
+                              className="w-full h-12 rounded-xl border border-zinc-200 bg-white hover:border-amber-400 hover:bg-amber-50/50 flex items-center justify-center gap-2 transition-colors"
+                            >
+                              <FolderHeart className="w-4 h-4 text-zinc-500" />
+                              <span className="text-sm text-zinc-600">{t.proStudio?.assetLibrary || '素材库'}</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Right: Options */}
+                      <div className="flex-1 min-w-0">
+                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-6 space-y-6">
+                          <div className="text-center py-8">
+                            <div className="w-16 h-16 mx-auto mb-4 bg-amber-50 rounded-2xl flex items-center justify-center">
+                              <Sparkles className="w-8 h-8 text-amber-500" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-zinc-900 mb-2">专业棚拍模式</h3>
+                            <p className="text-sm text-zinc-500 max-w-xs mx-auto">
+                              上传商品图片后，AI 将为你生成 4 张不同风格的专业模特展示图
+                            </p>
+                          </div>
+                          
+                          <div className="border-t border-zinc-100 pt-6 space-y-4">
+                            <div className="flex items-start gap-3">
+                              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
+                                <Check className="w-4 h-4 text-blue-600" />
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-medium text-zinc-900">智能模特匹配</h4>
+                                <p className="text-xs text-zinc-500">根据商品自动匹配最合适的模特</p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center shrink-0">
+                                <Check className="w-4 h-4 text-purple-600" />
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-medium text-zinc-900">专业背景场景</h4>
+                                <p className="text-xs text-zinc-500">多种专业摄影背景可选</p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
+                                <Check className="w-4 h-4 text-green-600" />
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-medium text-zinc-900">高质量输出</h4>
+                                <p className="text-xs text-zinc-500">专业级图片质量，可直接用于电商</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -1030,7 +1030,7 @@ export default function GalleryPage() {
         )}
         
         <div 
-          className="grid grid-cols-2 gap-3 transition-transform duration-200"
+          className={`grid gap-3 transition-transform duration-200 ${isDesktop ? 'grid-cols-4 lg:grid-cols-5 xl:grid-cols-6' : 'grid-cols-2'}`}
           style={{ transform: `translateY(${pullDistance}px)` }}
         >
           {/* 显示从数据库获取的 pending 任务（刷新后恢复的生成中任务） */}
