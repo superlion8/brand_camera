@@ -870,8 +870,230 @@ function ProStudioPageContent() {
       />
 
       <AnimatePresence mode="wait">
-        {/* Camera / Review Mode */}
-        {(mode === "camera" || mode === "review") && (
+        {/* Desktop Review Mode - Two Column Layout */}
+        {mode === "review" && isDesktop && (
+          <motion.div 
+            key="desktop-review"
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            className="flex-1 overflow-y-auto"
+          >
+            {/* PC Header */}
+            <div className="bg-white border-b border-zinc-200">
+              <div className="max-w-5xl mx-auto px-8 py-5">
+                <div className="flex items-center gap-3">
+                  <button 
+                    onClick={handleRetake}
+                    className="w-9 h-9 rounded-lg hover:bg-zinc-100 flex items-center justify-center transition-colors"
+                  >
+                    <ArrowLeft className="w-5 h-5 text-zinc-600" />
+                  </button>
+                  <h1 className="text-lg font-semibold text-zinc-900">{t.proStudio?.proStudioMode || '专业棚拍'}</h1>
+                </div>
+              </div>
+            </div>
+            
+            {/* Two-column content */}
+            <div className="max-w-5xl mx-auto px-8 py-8">
+              <div className="flex gap-8">
+                {/* Left: Image Preview */}
+                <div className="w-[380px] shrink-0">
+                  <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 overflow-hidden">
+                    <div className="aspect-[3/4] relative bg-zinc-100">
+                      <img 
+                        src={capturedImage || ""} 
+                        alt="商品预览" 
+                        className="w-full h-full object-contain"
+                      />
+                      {/* 如果有第二张商品，右下角显示缩略图 */}
+                      {capturedImage2 && (
+                        <div className="absolute bottom-3 right-3 w-16 h-16 rounded-lg overflow-hidden border-2 border-white shadow-lg">
+                          <img 
+                            src={capturedImage2} 
+                            alt="商品2" 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-4 border-t border-zinc-100">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleRetake}
+                          className="flex-1 h-10 rounded-lg border border-zinc-200 text-sm font-medium text-zinc-600 hover:bg-zinc-50 transition-colors"
+                        >
+                          重新选择
+                        </button>
+                        {!capturedImage2 && (
+                          <button
+                            disabled={isAnalyzingProduct}
+                            onClick={async () => {
+                              if (!capturedImage) return
+                              setIsAnalyzingProduct(true)
+                              try {
+                                const [analysisResult, uploadedUrl] = await Promise.all([
+                                  fetch('/api/analyze-product', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ image: capturedImage })
+                                  }).then(res => res.json()).catch(() => ({ success: false })),
+                                  user?.id 
+                                    ? ensureImageUrl(capturedImage, user.id, 'product')
+                                    : Promise.resolve(capturedImage)
+                                ])
+                                sessionStorage.setItem('product1Image', uploadedUrl)
+                                sessionStorage.removeItem('product2Image')
+                                sessionStorage.removeItem('product2Type')
+                                if (analysisResult.success && analysisResult.data?.type) {
+                                  sessionStorage.setItem('product1Type', analysisResult.data.type)
+                                }
+                              } catch (error) {
+                                sessionStorage.setItem('product1Image', capturedImage)
+                              }
+                              router.push('/pro-studio/outfit')
+                            }}
+                            className="flex-1 h-10 rounded-lg bg-zinc-100 text-sm font-medium text-zinc-700 hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                          >
+                            {isAnalyzingProduct ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Plus className="w-4 h-4" />
+                            )}
+                            {t.proStudio?.styleOutfit || '搭配商品'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Right: Settings */}
+                <div className="flex-1 min-w-0 space-y-6">
+                  {/* Model Selection */}
+                  <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold text-zinc-900">{t.proStudio?.selectModel || '选择模特'}</h3>
+                      {selectedModel && (
+                        <button 
+                          onClick={() => setSelectedModelId(null)}
+                          className="text-xs text-zinc-500 hover:text-zinc-700"
+                        >
+                          {t.proStudio?.clearSelection || '清除选择'}
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-sm text-zinc-500 mb-4">不选则随机匹配</p>
+                    <div className="grid grid-cols-4 gap-3">
+                      {/* Upload button */}
+                      <button
+                        onClick={() => modelUploadRef.current?.click()}
+                        className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-amber-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                      >
+                        <Plus className="w-5 h-5 text-zinc-400" />
+                        <span className="text-[10px] text-zinc-400">上传</span>
+                      </button>
+                      {/* Model list */}
+                      {allModels.slice(0, 7).map(model => (
+                        <button
+                          key={model.id}
+                          onClick={() => setSelectedModelId(selectedModelId === model.id ? null : model.id)}
+                          className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
+                            selectedModelId === model.id 
+                              ? 'border-amber-500 ring-2 ring-amber-500/30' 
+                              : 'border-transparent hover:border-amber-300'
+                          }`}
+                        >
+                          <Image src={model.imageUrl} alt={model.name || ''} fill className="object-cover" />
+                          {selectedModelId === model.id && (
+                            <div className="absolute top-1 right-1 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center">
+                              <Check className="w-3 h-3 text-white" />
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Background Selection */}
+                  <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold text-zinc-900">{t.proStudio?.selectBg || '选择背景'}</h3>
+                      {selectedBg && (
+                        <button 
+                          onClick={() => setSelectedBgId(null)}
+                          className="text-xs text-zinc-500 hover:text-zinc-700"
+                        >
+                          {t.proStudio?.clearSelection || '清除选择'}
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-sm text-zinc-500 mb-4">不选则随机匹配</p>
+                    <div className="grid grid-cols-4 gap-3">
+                      {/* Upload button */}
+                      <button
+                        onClick={() => bgUploadRef.current?.click()}
+                        className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-amber-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                      >
+                        <Plus className="w-5 h-5 text-zinc-400" />
+                        <span className="text-[10px] text-zinc-400">上传</span>
+                      </button>
+                      {/* Background list */}
+                      {allBgs.slice(0, 7).map(bg => (
+                        <button
+                          key={bg.id}
+                          onClick={() => setSelectedBgId(selectedBgId === bg.id ? null : bg.id)}
+                          className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
+                            selectedBgId === bg.id 
+                              ? 'border-amber-500 ring-2 ring-amber-500/30' 
+                              : 'border-transparent hover:border-amber-300'
+                          }`}
+                        >
+                          <Image src={bg.imageUrl} alt={bg.name || ''} fill className="object-cover" />
+                          {selectedBgId === bg.id && (
+                            <div className="absolute top-1 right-1 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center">
+                              <Check className="w-3 h-3 text-white" />
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Generate Button */}
+                  <button
+                    onClick={async (e) => {
+                      if (capturedImage2) {
+                        if (user?.id) {
+                          const [url1, url2] = await Promise.all([
+                            ensureImageUrl(capturedImage!, user.id, 'product'),
+                            ensureImageUrl(capturedImage2, user.id, 'product')
+                          ])
+                          sessionStorage.setItem('product1Image', url1)
+                          sessionStorage.setItem('product2Image', url2)
+                        } else {
+                          sessionStorage.setItem('product1Image', capturedImage!)
+                          sessionStorage.setItem('product2Image', capturedImage2)
+                        }
+                        router.push('/pro-studio/outfit')
+                      } else {
+                        triggerFlyToGallery(e)
+                        handleShootIt()
+                      }
+                    }}
+                    className="w-full h-14 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-lg font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg shadow-amber-200/50"
+                  >
+                    <Sparkles className="w-5 h-5" />
+                    {capturedImage2 ? '去搭配' : '开始生成'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Camera Mode (Desktop) / Camera & Review Mode (Mobile) */}
+        {((mode === "camera" && isDesktop) || ((mode === "camera" || mode === "review") && !isDesktop)) && (
           <motion.div 
             key="camera-view"
             initial={{ opacity: 0 }} 
