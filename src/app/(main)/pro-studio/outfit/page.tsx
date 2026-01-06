@@ -10,6 +10,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import { fileToBase64, generateId, ensureBase64 } from "@/lib/utils"
+import { useIsMobile } from "@/hooks/useIsMobile"
 import { useLanguageStore } from "@/stores/languageStore"
 import { ProductCategory } from "@/types/outfit"
 import { usePresetStore } from "@/stores/presetStore"
@@ -241,6 +242,10 @@ function OutfitPageContent() {
   // 自定义上传的资产
   const [customModels, setCustomModels] = useState<Asset[]>([])
   const [customBgs, setCustomBgs] = useState<Asset[]>([])
+  
+  // Desktop detection
+  const isMobile = useIsMobile(1024)
+  const isDesktop = isMobile === false
   
   // 数据库 UUID，用于收藏功能
   const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
@@ -1169,6 +1174,365 @@ function OutfitPageContent() {
     ? [...presetStore.visibleBackgrounds, ...userBackgrounds].find(b => b.id === selectedBgId)
     : null
   
+  // All models and backgrounds for selection
+  const allModels = [...customModels, ...studioModels, ...userModels]
+  const allBgs = [...customBgs, ...studioBackgrounds, ...userBackgrounds]
+  
+  // Add product to a slot
+  const handleAddProduct = (imageUrl: string, slotId: ProductCategory) => {
+    setSlots(prev => prev.map(slot => 
+      slot.id === slotId
+        ? { ...slot, product: { imageUrl } }
+        : slot
+    ))
+  }
+  
+  // Remove product from a slot
+  const handleRemoveProduct = (slotId: ProductCategory) => {
+    setSlots(prev => prev.map(slot => 
+      slot.id === slotId
+        ? { ...slot, product: undefined }
+        : slot
+    ))
+  }
+
+  // Desktop Layout
+  if (isDesktop) {
+    return (
+      <div className="h-full bg-zinc-50 flex flex-col overflow-hidden">
+        {/* PC Header */}
+        <div className="bg-white border-b border-zinc-200 shrink-0">
+          <div className="max-w-6xl mx-auto px-8 py-4">
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => router.back()}
+                className="w-9 h-9 rounded-lg hover:bg-zinc-100 flex items-center justify-center transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5 text-zinc-600" />
+              </button>
+              <h1 className="text-lg font-semibold text-zinc-900">{t.outfit?.title || '搭配商品'}</h1>
+            </div>
+          </div>
+        </div>
+        
+        {/* Main Content - Two Column Layout */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-6xl mx-auto px-8 py-6">
+            <div className="flex gap-8">
+              {/* Left: Outfit Slots */}
+              <div className="w-[420px] shrink-0">
+                <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-6">
+                  <h3 className="font-semibold text-zinc-900 mb-4">服装搭配</h3>
+                  <p className="text-sm text-zinc-500 mb-6">点击空白框添加商品，生成穿搭效果图</p>
+                  
+                  {/* Outfit Slots Grid */}
+                  <div className="grid grid-cols-3 gap-4">
+                    {/* Hat - top center */}
+                    {renderDesktopSlot(slots.find(s => s.id === '帽子')!, 'HAT')}
+                    <div /> {/* Empty spacer */}
+                    <div /> {/* Empty spacer */}
+                    
+                    {/* Inner - left */}
+                    {renderDesktopSlot(slots.find(s => s.id === '内衬')!, 'INNER')}
+                    {/* Top - center */}
+                    {renderDesktopSlot(slots.find(s => s.id === '上衣')!, 'TOP')}
+                    {/* Empty or Accessory */}
+                    <div />
+                    
+                    {/* Bottom - center */}
+                    <div /> {/* Empty spacer */}
+                    {renderDesktopSlot(slots.find(s => s.id === '裤子')!, 'BOTTOM')}
+                    {/* Shoes - right */}
+                    {renderDesktopSlot(slots.find(s => s.id === '鞋子')!, 'SHOES')}
+                  </div>
+                  
+                  <div className="mt-6 pt-4 border-t border-zinc-100">
+                    <p className="text-xs text-zinc-400 text-center">
+                      💡 至少添加1件商品即可生成
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Right: Model & Background Selection */}
+              <div className="flex-1 min-w-0 space-y-6">
+                {/* Model Selection */}
+                <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-zinc-900">{t.outfit?.selectModel || '选择模特'}</h3>
+                    {selectedModel && (
+                      <button 
+                        onClick={() => setSelectedModelId(null)}
+                        className="text-xs text-zinc-500 hover:text-zinc-700"
+                      >
+                        清除选择
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-sm text-zinc-500 mb-4">不选则随机匹配</p>
+                  <div className="grid grid-cols-5 gap-3">
+                    {/* Upload button */}
+                    <button
+                      onClick={() => modelUploadRef.current?.click()}
+                      className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-amber-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                    >
+                      <Plus className="w-5 h-5 text-zinc-400" />
+                      <span className="text-[10px] text-zinc-400">上传</span>
+                    </button>
+                    {/* Model list */}
+                    {allModels.slice(0, 9).map(model => (
+                      <button
+                        key={model.id}
+                        onClick={() => setSelectedModelId(selectedModelId === model.id ? null : model.id)}
+                        className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
+                          selectedModelId === model.id 
+                            ? 'border-amber-500 ring-2 ring-amber-500/30' 
+                            : 'border-transparent hover:border-amber-300'
+                        }`}
+                      >
+                        <Image src={model.imageUrl} alt={model.name || ''} fill className="object-cover" />
+                        {selectedModelId === model.id && (
+                          <div className="absolute top-1 right-1 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center">
+                            <Check className="w-3 h-3 text-white" />
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Background Selection */}
+                <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-zinc-900">{t.outfit?.selectBg || '选择背景'}</h3>
+                    {selectedBg && (
+                      <button 
+                        onClick={() => setSelectedBgId(null)}
+                        className="text-xs text-zinc-500 hover:text-zinc-700"
+                      >
+                        清除选择
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-sm text-zinc-500 mb-4">不选则随机匹配</p>
+                  <div className="grid grid-cols-5 gap-3">
+                    {/* Upload button */}
+                    <button
+                      onClick={() => bgUploadRef.current?.click()}
+                      className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-amber-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                    >
+                      <Plus className="w-5 h-5 text-zinc-400" />
+                      <span className="text-[10px] text-zinc-400">上传</span>
+                    </button>
+                    {/* Background list */}
+                    {allBgs.slice(0, 9).map(bg => (
+                      <button
+                        key={bg.id}
+                        onClick={() => setSelectedBgId(selectedBgId === bg.id ? null : bg.id)}
+                        className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
+                          selectedBgId === bg.id 
+                            ? 'border-amber-500 ring-2 ring-amber-500/30' 
+                            : 'border-transparent hover:border-amber-300'
+                        }`}
+                      >
+                        <Image src={bg.imageUrl} alt={bg.name || ''} fill className="object-cover" />
+                        {selectedBgId === bg.id && (
+                          <div className="absolute top-1 right-1 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center">
+                            <Check className="w-3 h-3 text-white" />
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Generate Button */}
+                <button
+                  onClick={handleShootIt}
+                  className="w-full h-14 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-lg font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg shadow-amber-200/50"
+                >
+                  <Wand2 className="w-5 h-5" />
+                  开始生成
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* File inputs */}
+        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
+        <input type="file" ref={cameraInputRef} className="hidden" accept="image/*" capture="environment" onChange={handleCameraCapture} />
+        <input type="file" ref={modelUploadRef} className="hidden" accept="image/*" onChange={handleModelUpload} />
+        <input type="file" ref={bgUploadRef} className="hidden" accept="image/*" onChange={handleBgUpload} />
+        
+        {/* Asset Picker Panel */}
+        <AnimatePresence>
+          {showAssetPicker && (
+            <>
+              <motion.div 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/40 z-40"
+                onClick={() => setShowAssetPicker(false)}
+              />
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }} 
+                animate={{ opacity: 1, scale: 1 }} 
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="fixed inset-x-8 top-1/2 -translate-y-1/2 max-w-2xl mx-auto bg-white rounded-2xl z-50 max-h-[70vh] flex flex-col overflow-hidden shadow-xl"
+              >
+                <div className="h-14 border-b flex items-center justify-between px-4 shrink-0">
+                  <span className="font-semibold text-lg">选择商品</span>
+                  <button onClick={() => setShowAssetPicker(false)} className="text-zinc-400 hover:text-zinc-600">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="p-3 flex gap-2 border-b overflow-x-auto shrink-0">
+                  <button 
+                    onClick={() => setAssetPickerSource("user")}
+                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      assetPickerSource === "user" ? "bg-amber-500 text-white" : "bg-zinc-100 text-zinc-600"
+                    }`}
+                  >
+                    我的商品
+                  </button>
+                  <button 
+                    onClick={() => setAssetPickerSource("preset")}
+                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      assetPickerSource === "preset" ? "bg-amber-500 text-white" : "bg-zinc-100 text-zinc-600"
+                    }`}
+                  >
+                    预设商品
+                  </button>
+                </div>
+                {/* Sub-tabs for product category */}
+                {assetPickerSource === "preset" && (
+                  <div className="p-2 flex gap-2 border-b overflow-x-auto shrink-0 bg-zinc-50">
+                    {PRODUCT_SUB_TABS.map(cat => (
+                      <button
+                        key={cat}
+                        onClick={() => setAssetPickerSubTab(cat)}
+                        className={`px-3 py-1 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${
+                          assetPickerSubTab === cat ? "bg-zinc-800 text-white" : "bg-white text-zinc-600 border"
+                        }`}
+                      >
+                        {getProductCategoryLabel(cat, t)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="flex-1 overflow-y-auto p-4">
+                  <div className="grid grid-cols-4 gap-3">
+                    {/* Upload button */}
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="aspect-square rounded-xl border-2 border-dashed border-zinc-300 hover:border-amber-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                    >
+                      <Plus className="w-6 h-6 text-zinc-400" />
+                      <span className="text-xs text-zinc-400">上传</span>
+                    </button>
+                    {/* Products */}
+                    {(assetPickerSource === "user" ? userProducts : 
+                      assetPickerSubTab === "all" ? PRESET_PRODUCTS :
+                      PRESET_PRODUCTS.filter(p => {
+                        const catMap: Record<ProductSubTab, string[]> = {
+                          all: [],
+                          top: ['上衣', 'top'],
+                          pants: ['裤子', 'pants'],
+                          inner: ['内衬', 'inner'],
+                          shoes: ['鞋子', 'shoes'],
+                          hat: ['帽子', 'hat']
+                        }
+                        return catMap[assetPickerSubTab]?.includes(p.category || '')
+                      })
+                    ).map(product => (
+                      <button
+                        key={product.id}
+                        onClick={() => {
+                          if (uploadTargetSlot) {
+                            handleAddProduct(product.imageUrl, uploadTargetSlot)
+                            setShowAssetPicker(false)
+                          }
+                        }}
+                        className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-amber-400 transition-all"
+                      >
+                        <Image src={product.imageUrl} alt={product.name || ''} fill className="object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+        
+        {/* Fullscreen Image Preview */}
+        <AnimatePresence>
+          {fullscreenImage && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+              onClick={() => setFullscreenImage(null)}
+            >
+              <img src={fullscreenImage} alt="Preview" className="max-w-[90%] max-h-[90%] object-contain" />
+              <button
+                onClick={() => setFullscreenImage(null)}
+                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
+        {/* Quota Exceeded Modal */}
+        <QuotaExceededModal isOpen={showExceededModal} onClose={closeExceededModal} requiredCount={requiredCount} />
+      </div>
+    )
+  }
+  
+  // Helper function for desktop slot rendering
+  function renderDesktopSlot(slot: OutfitSlot | undefined, label: string) {
+    if (!slot) return <div />
+    return (
+      <button
+        onClick={() => {
+          setUploadTargetSlot(slot.id)
+          setShowAssetPicker(true)
+        }}
+        className={`aspect-square rounded-xl overflow-hidden relative transition-all ${
+          slot.product 
+            ? 'border-2 border-amber-500 bg-white shadow-sm' 
+            : 'border-2 border-dashed border-zinc-300 hover:border-amber-400 bg-white'
+        }`}
+      >
+        {slot.product ? (
+          <>
+            <Image src={slot.product.imageUrl} alt={slot.label} fill className="object-cover" />
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                handleRemoveProduct(slot.id)
+              }}
+              className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity"
+            >
+              <X className="w-3 h-3 text-white" />
+            </button>
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full gap-1">
+            <Plus className="w-5 h-5 text-zinc-400" />
+            <span className="text-[10px] text-zinc-400 font-medium">{label}</span>
+          </div>
+        )}
+      </button>
+    )
+  }
+
+  // Mobile Layout (original)
   return (
     <div className="min-h-screen bg-zinc-900 flex flex-col">
       {/* Header */}
