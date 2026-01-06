@@ -5,6 +5,7 @@ export const en: Translations = {
   common: {
     appName: "Brand Camera",
     slogan: "AI Studio for Brands",
+    search: "Search...",
     loading: "Loading...",
     generating: "Generating...",
     done: "Done",
@@ -68,6 +69,9 @@ export const en: Translations = {
   // Home Page
   home: {
     description: "Generate professional product and model photos with one click",
+    welcome: "Welcome to Brand Camera",
+    welcomeDesc: "Choose a feature below to start creating",
+    quickLinks: "Quick Links",
     shootModel: "Model Photo",
     shootProduct: "Product Photo",
     retouchRoom: "Retouch Room",

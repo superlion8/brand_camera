@@ -5,6 +5,7 @@ export const ko: Translations = {
   common: {
     appName: "브랜드 카메라",
     slogan: "브랜드를 위한 AI 스튜디오",
+    search: "검색...",
     loading: "로딩 중...",
     generating: "생성 중...",
     done: "완료",
@@ -68,6 +69,9 @@ export const ko: Translations = {
   // Home Page
   home: {
     description: "원클릭으로 전문적인 상품 및 모델 사진 생성",
+    welcome: "Brand Camera에 오신 것을 환영합니다",
+    welcomeDesc: "아래 기능을 선택하여 창작을 시작하세요",
+    quickLinks: "바로가기",
     shootModel: "모델 촬영",
     shootProduct: "상품 촬영",
     retouchRoom: "편집실",

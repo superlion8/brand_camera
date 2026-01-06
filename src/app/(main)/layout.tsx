@@ -1,4 +1,4 @@
-import { BottomNav } from "@/components/shared/BottomNav"
+import { ResponsiveLayout } from "@/components/layouts/ResponsiveLayout"
 import { VersionChecker } from "@/components/shared/VersionChecker"
 import { FlyToGallery } from "@/components/shared/FlyToGallery"
 import { GalleryPreloader } from "@/components/shared/GalleryPreloader"
@@ -9,17 +9,15 @@ export default function MainLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex flex-col h-[100dvh] bg-zinc-50 max-w-md mx-auto shadow-2xl relative">
-      {/* Main Content Area - scrollable */}
-      <div className="flex-1 overflow-y-auto relative bg-white">
+    <>
+      <ResponsiveLayout>
         {children}
-      </div>
-      <BottomNav />
+      </ResponsiveLayout>
       <VersionChecker />
       {/* Fly to gallery animation */}
       <FlyToGallery />
       {/* Silent preload gallery data */}
       <GalleryPreloader />
-    </div>
+    </>
   )
 }

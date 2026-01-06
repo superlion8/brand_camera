@@ -3,6 +3,7 @@ export const zh = {
   common: {
     appName: "品牌相机",
     slogan: "品牌的AI影棚",
+    search: "搜索...",
     loading: "加载中...",
     generating: "生成中...",
     done: "完成",
@@ -66,6 +67,9 @@ export const zh = {
   // Home Page
   home: {
     description: "一键生成专业的商品图和模特展示图",
+    welcome: "欢迎使用 Brand Camera",
+    welcomeDesc: "选择下方功能开始创作",
+    quickLinks: "快捷入口",
     shootModel: "拍模特",
     shootProduct: "拍商品",
     retouchRoom: "修图室",

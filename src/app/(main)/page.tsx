@@ -12,16 +12,17 @@ import { UserMenu } from "@/components/shared/UserMenu"
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher"
 import { QuotaIndicator } from "@/components/shared/QuotaIndicator"
 import { SyncIndicator } from "@/components/shared/SyncIndicator"
+import { useIsMobile } from "@/hooks/useIsMobile"
 
 // Supabase Storage base URL for homepage images
 const HOMEPAGE_STORAGE_URL = 'https://cvdogeigbpussfamctsu.supabase.co/storage/v1/object/public/presets/homepage'
 
 // Section Header Component
-function SectionHeader({ title, icon }: { title: string; icon: React.ReactNode }) {
+function SectionHeader({ title, icon, className }: { title: string; icon: React.ReactNode; className?: string }) {
   return (
-    <div className="flex items-center gap-2 px-1 mb-3 mt-6 first:mt-2">
+    <div className={`flex items-center gap-2 px-1 mb-3 mt-6 first:mt-2 ${className || ''}`}>
       {icon && <div className="text-zinc-900">{icon}</div>}
-      <h2 className="text-base font-bold text-zinc-900 tracking-tight">{title}</h2>
+      <h2 className="text-base font-bold text-zinc-900 tracking-tight lg:text-lg">{title}</h2>
     </div>
   )
 }
@@ -34,6 +35,7 @@ function BeforeAfterCard({
   afterImage,
   badge,
   href,
+  isDesktop = false,
 }: {
   title: string
   subtitle: string
@@ -41,17 +43,25 @@ function BeforeAfterCard({
   afterImage: string
   badge?: string
   href: string
+  isDesktop?: boolean
 }) {
+  const cardClass = isDesktop 
+    ? "w-full h-[280px] rounded-2xl"
+    : "min-w-[160px] w-[160px] h-[220px] rounded-[16px] snap-start"
+
+  const imageWidth = isDesktop ? 400 : 160
+
   return (
     <Link href={href}>
       <motion.div
+        whileHover={isDesktop ? { scale: 1.02, y: -4 } : undefined}
         whileTap={{ scale: 0.95 }}
-        className="min-w-[160px] w-[160px] h-[220px] rounded-[16px] overflow-hidden relative bg-zinc-100 shadow-sm border border-zinc-100 snap-start cursor-pointer group"
+        className={`${cardClass} overflow-hidden relative bg-zinc-100 shadow-sm border border-zinc-100 cursor-pointer group`}
       >
         {/* Before Image (Base) */}
         <div className="absolute inset-0">
           <Image src={beforeImage} alt="Before" fill className="object-cover" />
-          <div className="absolute top-2 left-2 w-[52px] text-center py-0.5 bg-black/40 backdrop-blur-sm rounded text-[9px] font-bold text-white/80 z-10">
+          <div className="absolute top-2 left-2 lg:top-3 lg:left-3 w-[52px] lg:w-[60px] text-center py-0.5 lg:py-1 bg-black/40 backdrop-blur-sm rounded text-[9px] lg:text-[10px] font-bold text-white/80 z-10">
             Original
           </div>
         </div>
@@ -68,10 +78,10 @@ function BeforeAfterCard({
             repeatDelay: 2,
           }}
         >
-          <div className="absolute inset-0 w-[160px] h-full">
+          <div className={`absolute inset-0 ${isDesktop ? 'w-full' : 'w-[160px]'} h-full`}>
             <Image src={afterImage} alt="After" fill className="object-cover" />
           </div>
-          <div className="absolute top-2 left-2 w-[52px] text-center py-0.5 bg-purple-600/80 backdrop-blur-sm rounded text-[9px] font-bold text-white z-10">
+          <div className="absolute top-2 left-2 lg:top-3 lg:left-3 w-[52px] lg:w-[60px] text-center py-0.5 lg:py-1 bg-purple-600/80 backdrop-blur-sm rounded text-[9px] lg:text-[10px] font-bold text-white z-10">
             Result
           </div>
         </motion.div>
@@ -79,14 +89,14 @@ function BeforeAfterCard({
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent pointer-events-none" />
 
         {badge && (
-          <div className="absolute top-2 right-2 px-1.5 py-0.5 bg-white/20 backdrop-blur-md rounded text-[9px] font-bold text-white border border-white/20 z-20">
+          <div className="absolute top-2 right-2 lg:top-3 lg:right-3 px-1.5 lg:px-2 py-0.5 lg:py-1 bg-white/20 backdrop-blur-md rounded text-[9px] lg:text-[10px] font-bold text-white border border-white/20 z-20">
             {badge}
           </div>
         )}
 
-        <div className="absolute bottom-0 left-0 right-0 p-3 z-20">
-          <h3 className="text-sm font-bold text-white leading-tight mb-0.5">{title}</h3>
-          <p className="text-[10px] text-white/70 font-medium">{subtitle}</p>
+        <div className="absolute bottom-0 left-0 right-0 p-3 lg:p-4 z-20">
+          <h3 className="text-sm lg:text-base font-bold text-white leading-tight mb-0.5">{title}</h3>
+          <p className="text-[10px] lg:text-xs text-white/70 font-medium">{subtitle}</p>
         </div>
       </motion.div>
     </Link>
@@ -102,6 +112,7 @@ function FadeBeforeAfterCard({
   badge,
   href,
   beforePosition = "center",
+  isDesktop = false,
 }: {
   title: string
   subtitle: string
@@ -110,12 +121,18 @@ function FadeBeforeAfterCard({
   badge?: string
   href: string
   beforePosition?: "center" | "top" | "bottom"
+  isDesktop?: boolean
 }) {
+  const cardClass = isDesktop 
+    ? "w-full h-[280px] rounded-2xl"
+    : "min-w-[160px] w-[160px] h-[220px] rounded-[16px] snap-start"
+
   return (
     <Link href={href}>
       <motion.div
+        whileHover={isDesktop ? { scale: 1.02, y: -4 } : undefined}
         whileTap={{ scale: 0.95 }}
-        className="min-w-[160px] w-[160px] h-[220px] rounded-[16px] overflow-hidden relative bg-zinc-100 shadow-sm border border-zinc-100 snap-start cursor-pointer group"
+        className={`${cardClass} overflow-hidden relative bg-zinc-100 shadow-sm border border-zinc-100 cursor-pointer group`}
       >
         {/* Before Image (Base) */}
         <div className="absolute inset-0">
@@ -139,7 +156,7 @@ function FadeBeforeAfterCard({
 
         {/* Label that changes with image */}
         <motion.div
-          className="absolute top-2 left-2 w-[52px] text-center py-0.5 bg-black/40 backdrop-blur-sm rounded text-[9px] font-bold text-white/80 z-10"
+          className="absolute top-2 left-2 lg:top-3 lg:left-3 w-[52px] lg:w-[60px] text-center py-0.5 lg:py-1 bg-black/40 backdrop-blur-sm rounded text-[9px] lg:text-[10px] font-bold text-white/80 z-10"
           animate={{ opacity: [1, 1, 0, 0, 1] }}
           transition={{
             duration: 10,
@@ -152,7 +169,7 @@ function FadeBeforeAfterCard({
           Original
         </motion.div>
         <motion.div
-          className="absolute top-2 left-2 w-[52px] text-center py-0.5 bg-purple-600/80 backdrop-blur-sm rounded text-[9px] font-bold text-white z-10"
+          className="absolute top-2 left-2 lg:top-3 lg:left-3 w-[52px] lg:w-[60px] text-center py-0.5 lg:py-1 bg-purple-600/80 backdrop-blur-sm rounded text-[9px] lg:text-[10px] font-bold text-white z-10"
           animate={{ opacity: [0, 0, 1, 1, 0] }}
           transition={{
             duration: 10,
@@ -168,14 +185,14 @@ function FadeBeforeAfterCard({
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent pointer-events-none" />
 
         {badge && (
-          <div className="absolute top-2 right-2 px-1.5 py-0.5 bg-white/20 backdrop-blur-md rounded text-[9px] font-bold text-white border border-white/20 z-20">
+          <div className="absolute top-2 right-2 lg:top-3 lg:right-3 px-1.5 lg:px-2 py-0.5 lg:py-1 bg-white/20 backdrop-blur-md rounded text-[9px] lg:text-[10px] font-bold text-white border border-white/20 z-20">
             {badge}
           </div>
         )}
 
-        <div className="absolute bottom-0 left-0 right-0 p-3 z-20">
-          <h3 className="text-sm font-bold text-white leading-tight mb-0.5">{title}</h3>
-          <p className="text-[10px] text-white/70 font-medium">{subtitle}</p>
+        <div className="absolute bottom-0 left-0 right-0 p-3 lg:p-4 z-20">
+          <h3 className="text-sm lg:text-base font-bold text-white leading-tight mb-0.5">{title}</h3>
+          <p className="text-[10px] lg:text-xs text-white/70 font-medium">{subtitle}</p>
         </div>
       </motion.div>
     </Link>
@@ -200,9 +217,10 @@ function RetouchRow({
     <Link href={href}>
       <motion.div
         whileTap={{ scale: 0.98 }}
-        className="flex items-center gap-4 p-3 bg-white rounded-2xl border border-zinc-100 shadow-sm mb-2.5 cursor-pointer"
+        whileHover={{ scale: 1.01 }}
+        className="flex items-center gap-4 p-3 lg:p-4 bg-white rounded-2xl border border-zinc-100 shadow-sm mb-2.5 cursor-pointer"
       >
-        <div className="w-14 h-14 rounded-xl overflow-hidden bg-zinc-100 shrink-0 relative">
+        <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-xl overflow-hidden bg-zinc-100 shrink-0 relative">
           <Image src={image} alt={title} fill className="object-cover" />
           <div className="absolute inset-0 bg-black/10" />
           <div className="absolute inset-0 flex items-center justify-center text-white drop-shadow-md">
@@ -210,11 +228,11 @@ function RetouchRow({
           </div>
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-bold text-zinc-900 truncate">{title}</h3>
-          <p className="text-xs text-zinc-500 mt-0.5 truncate">{subtitle}</p>
+          <h3 className="text-sm lg:text-base font-bold text-zinc-900 truncate">{title}</h3>
+          <p className="text-xs lg:text-sm text-zinc-500 mt-0.5 truncate">{subtitle}</p>
         </div>
-        <div className="w-8 h-8 rounded-full bg-zinc-50 flex items-center justify-center shrink-0">
-          <ChevronRight className="w-4 h-4 text-zinc-400" />
+        <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-zinc-50 flex items-center justify-center shrink-0">
+          <ChevronRight className="w-4 h-4 lg:w-5 lg:h-5 text-zinc-400" />
         </div>
       </motion.div>
     </Link>
@@ -249,9 +267,10 @@ export default function HomePage() {
   const { generations, _hasHydrated } = useAssetStore()
   const { reset: resetModelCreate } = useModelCreateStore()
   const { t } = useTranslation()
+  const isMobile = useIsMobile(1024)
 
-  // Get recent generations (last 4)
-  const recentGenerations = generations.slice(0, 4)
+  // Get recent generations (last 4 for mobile, last 8 for desktop)
+  const recentGenerations = generations.slice(0, isMobile ? 4 : 8)
 
   // 点击创建专属模特时，重置状态并导航
   const handleCreateModelClick = () => {
@@ -259,15 +278,17 @@ export default function HomePage() {
     router.push('/model-create')
   }
 
+  const isDesktop = isMobile === false
+
   return (
     <motion.div 
-      className="min-h-full bg-zinc-50/50 pb-32"
+      className="min-h-full bg-zinc-50/50 pb-32 lg:pb-8"
       initial="initial"
       animate="animate"
       variants={pageVariants}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 bg-white/90 backdrop-blur-md sticky top-0 z-30 border-b border-zinc-100/50">
+      {/* Mobile Header - Hidden on Desktop (handled by TopNav) */}
+      <div className="lg:hidden flex items-center justify-between px-5 py-3 bg-white/90 backdrop-blur-md sticky top-0 z-30 border-b border-zinc-100/50">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center text-white">
             <Image src="/logo.png" alt="Brand Camera" width={20} height={20} className="rounded" />
@@ -286,14 +307,23 @@ export default function HomePage() {
       </div>
 
       {/* Content */}
-      <div className="pt-2 pb-24">
+      <div className="pt-2 pb-24 lg:pt-6 lg:pb-8 lg:px-6">
+        {/* Desktop Welcome Section */}
+        {isDesktop && (
+          <motion.div className="mb-8" variants={sectionVariants}>
+            <h1 className="text-2xl font-bold text-zinc-900 mb-2">{t.home?.welcome || '欢迎使用 Brand Camera'}</h1>
+            <p className="text-zinc-500">{t.home?.welcomeDesc || '选择下方功能开始创作'}</p>
+          </motion.div>
+        )}
+
         {/* Section 1: 拍模特 */}
-        <motion.div className="px-4" variants={sectionVariants}>
+        <motion.div className="px-4 lg:px-0" variants={sectionVariants}>
           <SectionHeader
             title={t.home.shootModel || "拍模特"}
             icon={<ScanFace className="w-4 h-4 text-purple-600" />}
           />
-          <div className="flex gap-3 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide snap-x">
+          {/* Mobile: Horizontal Scroll */}
+          <div className="lg:hidden flex gap-3 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide snap-x">
             <BeforeAfterCard
               title={t.home.proStudio || "专业棚拍"}
               subtitle={t.home.proStudioSubtitle || "纯色背景质感"}
@@ -325,15 +355,53 @@ export default function HomePage() {
               href="/camera/social"
             />
           </div>
+          {/* Desktop: Grid Layout */}
+          <div className="hidden lg:grid lg:grid-cols-4 gap-4 pb-4">
+            <BeforeAfterCard
+              title={t.home.proStudio || "专业棚拍"}
+              subtitle={t.home.proStudioSubtitle || "纯色背景质感"}
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/pro-studio-before.jpg?v=2`}
+              afterImage={`${HOMEPAGE_STORAGE_URL}/pro-studio-after.png?v=2`}
+              href="/pro-studio"
+              isDesktop
+            />
+            <BeforeAfterCard
+              title={t.home.lifestyleMode || "LifeStyle 街拍"}
+              subtitle={t.home.lifestyleModeSubtitle || "AI 智能匹配模特与街景"}
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/lifestyle-before.png`}
+              afterImage={`${HOMEPAGE_STORAGE_URL}/lifestyle-after.jpg`}
+              badge="NEW"
+              href="/lifestyle"
+              isDesktop
+            />
+            <BeforeAfterCard
+              title={t.home.modelStudio || "买家秀"}
+              subtitle={t.home.modelStudioSubtitle || "真实生活场景"}
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/model-before.jpg`}
+              afterImage={`${HOMEPAGE_STORAGE_URL}/model-after.png`}
+              href="/camera"
+              isDesktop
+            />
+            <BeforeAfterCard
+              title={t.home.socialMode || "社媒种草"}
+              subtitle={t.home.socialModeSubtitle || "小红书INS风格"}
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/social-before.jpg`}
+              afterImage={`${HOMEPAGE_STORAGE_URL}/social-after.jpg`}
+              badge="NEW"
+              href="/camera/social"
+              isDesktop
+            />
+          </div>
         </motion.div>
 
         {/* Section 2: 定制拍摄 Custom Shot */}
-        <motion.div className="px-4 mt-2" variants={sectionVariants}>
+        <motion.div className="px-4 lg:px-0 mt-2" variants={sectionVariants}>
           <SectionHeader
             title={t.home.customShot || "定制拍摄"}
             icon={<Sparkles className="w-4 h-4 text-pink-600" />}
           />
-          <div className="flex gap-3 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide snap-x">
+          {/* Mobile: Horizontal Scroll */}
+          <div className="lg:hidden flex gap-3 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide snap-x">
             <FadeBeforeAfterCard
               title={t.home.groupShoot || "组图拍摄"}
               subtitle={t.home.groupShootSubtitle || "多角度套图"}
@@ -366,116 +434,162 @@ export default function HomePage() {
               href="/try-on"
             />
           </div>
+          {/* Desktop: Grid Layout */}
+          <div className="hidden lg:grid lg:grid-cols-4 gap-4 pb-4">
+            <FadeBeforeAfterCard
+              title={t.home.groupShoot || "组图拍摄"}
+              subtitle={t.home.groupShootSubtitle || "多角度套图"}
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/group-shoot-before.png`}
+              afterImage={`${HOMEPAGE_STORAGE_URL}/group-shoot-after.png`}
+              href="/camera/group"
+              isDesktop
+            />
+            <FadeBeforeAfterCard
+              title={t.home.referenceShot || "参考图拍摄"}
+              subtitle={t.home.referenceShotSubtitle || "复刻风格"}
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/reference-shot-before.png`}
+              afterImage={`${HOMEPAGE_STORAGE_URL}/reference-shot-after.png`}
+              badge="NEW"
+              href="/reference-shot"
+              beforePosition="top"
+              isDesktop
+            />
+            <BeforeAfterCard
+              title={t.home.productStudio || "商品棚拍"}
+              subtitle={t.home.productStudioSubtitle || "电商白底图"}
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/product-before.jpg`}
+              afterImage={`${HOMEPAGE_STORAGE_URL}/product-after.jpg`}
+              href="/studio"
+              isDesktop
+            />
+            <FadeBeforeAfterCard
+              title={t.home.tryOn || "虚拟换装"}
+              subtitle={t.home.tryOnSubtitle || "AI 智能换装"}
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/try-on-before.png`}
+              afterImage={`${HOMEPAGE_STORAGE_URL}/try-on-after.png`}
+              badge="NEW"
+              href="/try-on"
+              isDesktop
+            />
+          </div>
         </motion.div>
 
         {/* Create Custom Model Promo */}
-        <motion.div className="px-4 mt-4" variants={sectionVariants}>
+        <motion.div className="px-4 lg:px-0 mt-4" variants={sectionVariants}>
           <motion.div
             whileTap={{ scale: 0.98 }}
+            whileHover={{ scale: 1.01 }}
             onClick={handleCreateModelClick}
-            className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 p-4 cursor-pointer"
+            className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 p-4 lg:p-6 cursor-pointer"
           >
             {/* Background decoration */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-            <div className="absolute bottom-0 left-1/2 w-24 h-24 bg-white/5 rounded-full translate-y-1/2" />
+            <div className="absolute top-0 right-0 w-32 h-32 lg:w-48 lg:h-48 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute bottom-0 left-1/2 w-24 h-24 lg:w-36 lg:h-36 bg-white/5 rounded-full translate-y-1/2" />
             
-            <div className="flex items-center gap-4 relative z-10">
-              <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shrink-0">
-                <UserRoundPlus className="w-7 h-7 text-white" />
+            <div className="flex items-center gap-4 lg:gap-6 relative z-10">
+              <div className="w-14 h-14 lg:w-16 lg:h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shrink-0">
+                <UserRoundPlus className="w-7 h-7 lg:w-8 lg:h-8 text-white" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-base font-bold text-white">{t.home.createCustomModel}</h3>
+                  <h3 className="text-base lg:text-lg font-bold text-white">{t.home.createCustomModel}</h3>
                   <span className="px-1.5 py-0.5 bg-white/20 backdrop-blur-sm rounded text-[10px] font-bold text-white">
                     NEW
                   </span>
                 </div>
-                <p className="text-sm text-white/80 mt-0.5">{t.home.createCustomModelDesc}</p>
+                <p className="text-sm lg:text-base text-white/80 mt-0.5">{t.home.createCustomModelDesc}</p>
               </div>
-              <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shrink-0">
-                <ChevronRight className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shrink-0">
+                <ChevronRight className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
               </div>
             </div>
           </motion.div>
         </motion.div>
 
-        {/* Section 3: 修图室 */}
-        <motion.div className="px-4 mt-2" variants={sectionVariants}>
-          <SectionHeader
-            title={t.home.retouchRoom || "修图室"}
-            icon={<Wand2 className="w-4 h-4 text-blue-600" />}
-          />
-          <div className="flex flex-col">
-            <RetouchRow
-              title={t.home.generalEdit || "通用编辑"}
-              subtitle={t.home.generalEditDesc || "画质增强、智能抠图、消除笔"}
-              icon={<Settings className="w-6 h-6" />}
-              image="https://images.unsplash.com/photo-1746458825397-9cd95fff0dfb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=200"
-              href="/edit/general"
+        {/* Section 3: 修图室 - Desktop: Side by side with Quick Links */}
+        <div className="lg:grid lg:grid-cols-2 lg:gap-6 mt-2">
+          <motion.div className="px-4 lg:px-0" variants={sectionVariants}>
+            <SectionHeader
+              title={t.home.retouchRoom || "修图室"}
+              icon={<Wand2 className="w-4 h-4 text-blue-600" />}
             />
-            <RetouchRow
-              title={t.home.modifyMaterial || "改材质版型"}
-              subtitle={t.home.modifyMaterialDesc || "修改生成图的服装材质和版型"}
-              icon={<Palette className="w-6 h-6" />}
-              image="https://images.unsplash.com/photo-1558171813-4c088753af8f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=200"
-              href="/gallery/modify-material"
+            <div className="flex flex-col">
+              <RetouchRow
+                title={t.home.generalEdit || "通用编辑"}
+                subtitle={t.home.generalEditDesc || "画质增强、智能抠图、消除笔"}
+                icon={<Settings className="w-6 h-6" />}
+                image="https://images.unsplash.com/photo-1746458825397-9cd95fff0dfb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=200"
+                href="/edit/general"
+              />
+              <RetouchRow
+                title={t.home.modifyMaterial || "改材质版型"}
+                subtitle={t.home.modifyMaterialDesc || "修改生成图的服装材质和版型"}
+                icon={<Palette className="w-6 h-6" />}
+                image="https://images.unsplash.com/photo-1558171813-4c088753af8f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=200"
+                href="/gallery/modify-material"
+              />
+            </div>
+          </motion.div>
+
+          {/* Section 4: Quick Links */}
+          <motion.div className="px-4 lg:px-0 mt-4 lg:mt-0" variants={sectionVariants}>
+            <SectionHeader
+              title={t.home?.quickLinks || "快捷入口"}
+              icon={<Grid3X3 className="w-4 h-4 text-zinc-600" />}
+              className="lg:block hidden"
             />
-          </div>
-        </motion.div>
+            <div className="space-y-2 lg:mt-9">
+              <div>
+                <Link
+                  href="/brand-assets"
+                  className="flex items-center justify-between bg-white rounded-xl p-3 lg:p-4 border border-zinc-100 active:bg-zinc-50 hover:bg-zinc-50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 lg:w-10 lg:h-10 bg-zinc-100 rounded-lg flex items-center justify-center">
+                      <FolderHeart className="w-4 h-4 lg:w-5 lg:h-5 text-zinc-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-zinc-900 text-sm lg:text-base">{t.assets.title}</h3>
+                      <p className="text-[11px] lg:text-xs text-zinc-500">
+                        {t.common.model}、{t.common.background}、{t.common.product}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 lg:w-5 lg:h-5 text-zinc-400" />
+                </Link>
+              </div>
 
-        {/* Section 4: Quick Links */}
-        <motion.div className="px-4 mt-4" variants={sectionVariants}>
-          <div className="space-y-2">
-            <div>
-              <Link
-                href="/brand-assets"
-                className="flex items-center justify-between bg-white rounded-xl p-3 border border-zinc-100 active:bg-zinc-50"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 bg-zinc-100 rounded-lg flex items-center justify-center">
-                    <FolderHeart className="w-4 h-4 text-zinc-600" />
+              <div>
+                <Link
+                  href="/gallery"
+                  className="flex items-center justify-between bg-white rounded-xl p-3 lg:p-4 border border-zinc-100 active:bg-zinc-50 hover:bg-zinc-50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 lg:w-10 lg:h-10 bg-zinc-100 rounded-lg flex items-center justify-center">
+                      <Images className="w-4 h-4 lg:w-5 lg:h-5 text-zinc-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-zinc-900 text-sm lg:text-base">{t.nav.gallery}</h3>
+                      <p className="text-[11px] lg:text-xs text-zinc-500">{t.gallery.favorites}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-medium text-zinc-900 text-sm">{t.assets.title}</h3>
-                    <p className="text-[11px] text-zinc-500">
-                      {t.common.model}、{t.common.background}、{t.common.product}
-                    </p>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-zinc-400" />
-              </Link>
+                  <ChevronRight className="w-4 h-4 lg:w-5 lg:h-5 text-zinc-400" />
+                </Link>
+              </div>
             </div>
-
-            <div>
-              <Link
-                href="/gallery"
-                className="flex items-center justify-between bg-white rounded-xl p-3 border border-zinc-100 active:bg-zinc-50"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 bg-zinc-100 rounded-lg flex items-center justify-center">
-                    <Images className="w-4 h-4 text-zinc-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-zinc-900 text-sm">{t.nav.gallery}</h3>
-                    <p className="text-[11px] text-zinc-500">{t.gallery.favorites}</p>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-zinc-400" />
-              </Link>
-            </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
 
         {/* My Gallery */}
         {_hasHydrated && recentGenerations.length > 0 && (
-          <motion.div className="px-4 mt-6" variants={sectionVariants}>
+          <motion.div className="px-4 lg:px-0 mt-6" variants={sectionVariants}>
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-zinc-500 uppercase">{t.home.myGallery}</h2>
-              <Link href="/gallery" className="text-xs text-blue-600 font-medium">
+              <h2 className="text-sm lg:text-base font-semibold text-zinc-500 uppercase">{t.home.myGallery}</h2>
+              <Link href="/gallery" className="text-xs lg:text-sm text-blue-600 font-medium hover:text-blue-700">
                 {t.home.viewAll}
               </Link>
             </div>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-4 lg:grid-cols-8 gap-2 lg:gap-3">
               {recentGenerations.map((gen) => {
                 const imageUrl = gen.outputImageUrls?.[0]
                 if (!imageUrl) return null
@@ -483,13 +597,13 @@ export default function HomePage() {
                   <Link
                     key={gen.id}
                     href="/gallery"
-                    className="aspect-square rounded-lg overflow-hidden bg-zinc-200"
+                    className="aspect-square rounded-lg lg:rounded-xl overflow-hidden bg-zinc-200 hover:opacity-90 transition-opacity"
                   >
                     <Image
                       src={imageUrl}
                       alt="Generated"
-                      width={100}
-                      height={100}
+                      width={150}
+                      height={150}
                       className="w-full h-full object-cover"
                     />
                   </Link>
