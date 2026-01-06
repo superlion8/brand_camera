@@ -54,7 +54,7 @@ export function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
 
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto bg-zinc-50">
-          <div className="max-w-7xl mx-auto">
+          <div className="h-full">
             {children}
           </div>
         </main>
