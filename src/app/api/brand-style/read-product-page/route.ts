@@ -3,15 +3,26 @@ import { getGenAIClient, extractText } from '@/lib/genai'
 
 // Use Jina Reader to extract web page content
 async function readWebPage(url: string): Promise<{ markdown: string; images: string[] }> {
+  // Try Jina Reader with browser-like headers
   const response = await fetch(`https://r.jina.ai/${url}`, {
     headers: {
-      'Accept': 'application/json',
+      'Accept': 'text/plain',
       'X-Return-Format': 'markdown',
+      'X-With-Images-Summary': 'true',
+      'X-With-Links-Summary': 'true',
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     }
   })
   
   if (!response.ok) {
-    throw new Error(`Failed to read web page: ${response.statusText}`)
+    // Provide more helpful error messages
+    if (response.status === 451) {
+      throw new Error('该网站阻止了自动访问。请尝试：1) 使用其他品牌网站链接，或 2) 手动截图上传商品图片')
+    }
+    if (response.status === 403) {
+      throw new Error('网站拒绝访问，请尝试其他链接或手动上传图片')
+    }
+    throw new Error(`无法读取网页 (${response.status})`)
   }
   
   const text = await response.text()
