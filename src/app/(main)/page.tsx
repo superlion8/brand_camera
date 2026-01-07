@@ -509,29 +509,29 @@ export default function HomePage() {
         {/* Section 3: 修图室 - Desktop: Side by side with Quick Links */}
         <div className="lg:grid lg:grid-cols-2 lg:gap-6 mt-2">
           <motion.div className="px-4 lg:px-0" variants={sectionVariants}>
-            <SectionHeader
-              title={t.home.retouchRoom || "修图室"}
-              icon={<Wand2 className="w-4 h-4 text-blue-600" />}
+          <SectionHeader
+            title={t.home.retouchRoom || "修图室"}
+            icon={<Wand2 className="w-4 h-4 text-blue-600" />}
+          />
+          <div className="flex flex-col">
+            <RetouchRow
+              title={t.home.generalEdit || "通用编辑"}
+              subtitle={t.home.generalEditDesc || "画质增强、智能抠图、消除笔"}
+              icon={<Settings className="w-6 h-6" />}
+              image="https://images.unsplash.com/photo-1746458825397-9cd95fff0dfb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=200"
+              href="/edit/general"
             />
-            <div className="flex flex-col">
-              <RetouchRow
-                title={t.home.generalEdit || "通用编辑"}
-                subtitle={t.home.generalEditDesc || "画质增强、智能抠图、消除笔"}
-                icon={<Settings className="w-6 h-6" />}
-                image="https://images.unsplash.com/photo-1746458825397-9cd95fff0dfb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=200"
-                href="/edit/general"
-              />
-              <RetouchRow
-                title={t.home.modifyMaterial || "改材质版型"}
-                subtitle={t.home.modifyMaterialDesc || "修改生成图的服装材质和版型"}
-                icon={<Palette className="w-6 h-6" />}
-                image="https://images.unsplash.com/photo-1558171813-4c088753af8f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=200"
-                href="/gallery/modify-material"
-              />
-            </div>
-          </motion.div>
+            <RetouchRow
+              title={t.home.modifyMaterial || "改材质版型"}
+              subtitle={t.home.modifyMaterialDesc || "修改生成图的服装材质和版型"}
+              icon={<Palette className="w-6 h-6" />}
+              image="https://images.unsplash.com/photo-1558171813-4c088753af8f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=200"
+              href="/gallery/modify-material"
+            />
+          </div>
+        </motion.div>
 
-          {/* Section 4: Quick Links */}
+        {/* Section 4: Quick Links */}
           <motion.div className="px-4 lg:px-0 mt-4 lg:mt-0" variants={sectionVariants}>
             <SectionHeader
               title={t.home?.quickLinks || "快捷入口"}
@@ -539,45 +539,45 @@ export default function HomePage() {
               className="lg:block hidden"
             />
             <div className="space-y-2 lg:mt-9">
-              <div>
-                <Link
-                  href="/brand-assets"
+            <div>
+              <Link
+                href="/brand-assets"
                   className="flex items-center justify-between bg-white rounded-xl p-3 lg:p-4 border border-zinc-100 active:bg-zinc-50 hover:bg-zinc-50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
+              >
+                <div className="flex items-center gap-3">
                     <div className="w-9 h-9 lg:w-10 lg:h-10 bg-zinc-100 rounded-lg flex items-center justify-center">
                       <FolderHeart className="w-4 h-4 lg:w-5 lg:h-5 text-zinc-600" />
-                    </div>
-                    <div>
+                  </div>
+                  <div>
                       <h3 className="font-medium text-zinc-900 text-sm lg:text-base">{t.assets.title}</h3>
                       <p className="text-[11px] lg:text-xs text-zinc-500">
-                        {t.common.model}、{t.common.background}、{t.common.product}
-                      </p>
-                    </div>
+                      {t.common.model}、{t.common.background}、{t.common.product}
+                    </p>
                   </div>
+                </div>
                   <ChevronRight className="w-4 h-4 lg:w-5 lg:h-5 text-zinc-400" />
-                </Link>
-              </div>
+              </Link>
+            </div>
 
-              <div>
-                <Link
-                  href="/gallery"
+            <div>
+              <Link
+                href="/gallery"
                   className="flex items-center justify-between bg-white rounded-xl p-3 lg:p-4 border border-zinc-100 active:bg-zinc-50 hover:bg-zinc-50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
+              >
+                <div className="flex items-center gap-3">
                     <div className="w-9 h-9 lg:w-10 lg:h-10 bg-zinc-100 rounded-lg flex items-center justify-center">
                       <Images className="w-4 h-4 lg:w-5 lg:h-5 text-zinc-600" />
-                    </div>
-                    <div>
+                  </div>
+                  <div>
                       <h3 className="font-medium text-zinc-900 text-sm lg:text-base">{t.nav.gallery}</h3>
                       <p className="text-[11px] lg:text-xs text-zinc-500">{t.gallery.favorites}</p>
                     </div>
                   </div>
                   <ChevronRight className="w-4 h-4 lg:w-5 lg:h-5 text-zinc-400" />
-                </Link>
-              </div>
+              </Link>
             </div>
-          </motion.div>
+          </div>
+        </motion.div>
         </div>
 
         {/* My Gallery */}

@@ -731,20 +731,20 @@ function StudioPageContent() {
       )}
     </div>
   )
-
+  
   return (
     <div className={`h-full flex flex-col ${isDesktop ? 'bg-zinc-50' : 'bg-zinc-50'}`}>
       {/* Header - simplified for PC since TopNav exists */}
       {!isDesktop && (
-        <div className="h-14 flex items-center px-4 bg-white border-b shrink-0">
-          <button 
-            onClick={() => router.push('/')}
-            className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center"
-          >
-            <Home className="w-5 h-5" />
-          </button>
-          <span className="font-semibold ml-2">{t.studio.title}</span>
-        </div>
+      <div className="h-14 flex items-center px-4 bg-white border-b shrink-0">
+        <button 
+          onClick={() => router.push('/')}
+          className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center"
+        >
+          <Home className="w-5 h-5" />
+        </button>
+        <span className="font-semibold ml-2">{t.studio.title}</span>
+      </div>
       )}
       
       {/* PC Header */}
@@ -798,20 +798,20 @@ function StudioPageContent() {
                       <div>
                         <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.studio.photoType}</h3>
                         <div className="grid grid-cols-2 gap-3">
-                          <button
+                  <button
                             onClick={() => setPhotoType('studio')}
                             className={`py-4 px-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
                               photoType === 'studio'
                                 ? 'border-amber-500 bg-amber-50'
                                 : 'border-zinc-200 bg-white hover:border-zinc-300'
                             }`}
-                          >
+                  >
                             <span className="text-2xl">📦</span>
                             <span className={`text-sm font-medium ${photoType === 'studio' ? 'text-amber-700' : 'text-zinc-600'}`}>
                               {t.studio.studioShot}
                             </span>
                             <span className="text-xs text-zinc-400">{t.studio.studioShotDesc}</span>
-                          </button>
+                  </button>
                           <button
                             onClick={() => setPhotoType('hanging')}
                             className={`py-4 px-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
@@ -836,7 +836,7 @@ function StudioPageContent() {
                           {LIGHT_TYPES.map(type => {
                             const Icon = type.icon
                             return (
-                              <button
+                    <button
                                 key={type.id}
                                 onClick={() => setLightType(type.id)}
                                 className={`py-3 px-2 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5 ${
@@ -844,23 +844,23 @@ function StudioPageContent() {
                                     ? 'border-amber-500 bg-amber-50'
                                     : 'border-zinc-200 bg-white hover:border-zinc-300'
                                 }`}
-                              >
+                    >
                                 <Icon className={`w-5 h-5 ${lightType === type.id ? 'text-amber-600' : 'text-zinc-400'}`} />
                                 <span className={`text-xs font-medium ${lightType === type.id ? 'text-amber-700' : 'text-zinc-600'}`}>
                                   {type.label}
                                 </span>
-                              </button>
+                    </button>
                             )
                           })}
                         </div>
                       </div>
-                      
+                    
                       {/* Aspect Ratio */}
                       <div>
                         <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.studio.aspectRatio}</h3>
                         <div className="flex flex-wrap gap-2">
                           {ASPECT_RATIOS.map(ratio => (
-                            <button
+                    <button
                               key={ratio.id}
                               onClick={() => setAspectRatio(ratio.id)}
                               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
@@ -870,11 +870,11 @@ function StudioPageContent() {
                               }`}
                             >
                               {ratio.label}
-                            </button>
+                    </button>
                           ))}
                         </div>
                       </div>
-                      
+                    
                       {/* Light Direction */}
                       <div>
                         <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.studio.lightDirection}</h3>
@@ -883,7 +883,7 @@ function StudioPageContent() {
                             ['top-left', '↖'], ['top', '↑'], ['top-right', '↗'],
                             ['left', '←'], ['front', '●'], ['right', '→'],
                           ].map(([dir, icon]) => (
-                            <button
+                    <button
                               key={dir}
                               onClick={() => setLightDirection(dir)}
                               className={`aspect-square rounded-xl border-2 flex items-center justify-center text-lg transition-all ${
@@ -893,25 +893,25 @@ function StudioPageContent() {
                               }`}
                             >
                               {icon}
-                            </button>
+                    </button>
                           ))}
-                        </div>
-                      </div>
+                  </div>
+                </div>
                       
                       {/* Background Color */}
                       <div>
                         <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.studio.bgColor}</h3>
                         <div className="flex gap-2">
                           {PRESET_BG_COLORS.map(color => (
-                            <button
+                  <button
                               key={color.id}
-                              onClick={() => {
+                    onClick={() => {
                                 setBgColor(color.colors[0])
                                 const [h, s, v] = hexToHsv(color.colors[0])
                                 setHue(h)
                                 setSaturation(s)
                                 setBrightness(v)
-                              }}
+                    }}
                               className={`w-10 h-10 rounded-full border-2 transition-all ${
                                 bgColor === color.colors[0] ? 'border-zinc-900 ring-2 ring-zinc-900/20' : 'border-zinc-200 hover:border-zinc-400'
                               }`}
@@ -938,9 +938,9 @@ function StudioPageContent() {
                         >
                           <Sparkles className="w-5 h-5" />
                           <span>{t.camera.startShoot}</span>
-                        </button>
-                      </div>
-                    </div>
+                  </button>
+                </div>
+            </div>
                   </div>
                 </div>
               </div>
@@ -1170,12 +1170,12 @@ function StudioPageContent() {
           >
             {/* Back button - hidden on desktop */}
             {!isDesktop && (
-              <button
-                onClick={() => setMode('main')}
-                className="absolute top-4 left-4 z-20 w-10 h-10 rounded-full bg-black/30 text-white backdrop-blur-md flex items-center justify-center"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
+            <button
+              onClick={() => setMode('main')}
+              className="absolute top-4 left-4 z-20 w-10 h-10 rounded-full bg-black/30 text-white backdrop-blur-md flex items-center justify-center"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
             )}
             
             {/* Camera view / Upload interface */}
@@ -1238,31 +1238,31 @@ function StudioPageContent() {
               
               {/* Grid overlay - hidden on desktop */}
               {!isDesktop && (
-                <div className="absolute inset-0 pointer-events-none opacity-30">
-                  <div className="w-full h-full grid grid-cols-3 grid-rows-3">
-                    {[...Array(9)].map((_, i) => (
-                      <div key={i} className="border border-white/20" />
-                    ))}
-                  </div>
+              <div className="absolute inset-0 pointer-events-none opacity-30">
+                <div className="w-full h-full grid grid-cols-3 grid-rows-3">
+                  {[...Array(9)].map((_, i) => (
+                    <div key={i} className="border border-white/20" />
+                  ))}
                 </div>
+              </div>
               )}
               
               {/* Focus frame - hidden on desktop */}
               {!isDesktop && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-64 h-64 border border-white/50 rounded-lg relative">
-                    <div className="absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 border-amber-400" />
-                    <div className="absolute -top-1 -right-1 w-4 h-4 border-t-4 border-r-4 border-amber-400" />
-                    <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-4 border-l-4 border-amber-400" />
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-4 border-r-4 border-amber-400" />
-                  </div>
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="w-64 h-64 border border-white/50 rounded-lg relative">
+                  <div className="absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 border-amber-400" />
+                  <div className="absolute -top-1 -right-1 w-4 h-4 border-t-4 border-r-4 border-amber-400" />
+                  <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-4 border-l-4 border-amber-400" />
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-4 border-r-4 border-amber-400" />
                 </div>
+              </div>
               )}
               
               {!isDesktop && (
-                <div className="absolute top-16 left-0 right-0 text-center text-white/80 text-sm font-medium">
-                  {t.camera.shootYourProduct}
-                </div>
+              <div className="absolute top-16 left-0 right-0 text-center text-white/80 text-sm font-medium">
+                {t.camera.shootYourProduct}
+              </div>
               )}
             </div>
             
