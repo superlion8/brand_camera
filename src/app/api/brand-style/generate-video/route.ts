@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getGenAIClient } from '@/lib/genai'
 import { createClient } from '@supabase/supabase-js'
+import { GoogleAuth } from 'google-auth-library'
 
 // Lazy initialize supabase to avoid build-time errors
 function getSupabase() {
@@ -12,6 +12,29 @@ function getSupabase() {
   }
   
   return createClient(url, key)
+}
+
+// Get Google Cloud access token for Vertex AI
+async function getAccessToken(): Promise<string> {
+  const credentials = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON
+  if (!credentials) {
+    throw new Error('GOOGLE_APPLICATION_CREDENTIALS_JSON is required for Veo video generation')
+  }
+  
+  const credentialsJson = JSON.parse(credentials)
+  const auth = new GoogleAuth({
+    credentials: credentialsJson,
+    scopes: ['https://www.googleapis.com/auth/cloud-platform']
+  })
+  
+  const client = await auth.getClient()
+  const token = await client.getAccessToken()
+  
+  if (!token.token) {
+    throw new Error('Failed to get access token')
+  }
+  
+  return token.token
 }
 
 // Helper to convert image to base64
@@ -36,15 +59,14 @@ async function getImageBase64(imageSource: string): Promise<{ data: string; mime
 }
 
 // Upload video to Supabase
-async function uploadVideoToSupabase(videoData: string, mimeType: string): Promise<string> {
+async function uploadVideoToSupabase(videoData: Buffer, mimeType: string): Promise<string> {
   const supabase = getSupabase()
-  const buffer = Buffer.from(videoData, 'base64')
   const extension = mimeType.includes('mp4') ? 'mp4' : 'webm'
   const filename = `brand-style/video_${Date.now()}_${Math.random().toString(36).slice(2)}.${extension}`
   
   const { error } = await supabase.storage
     .from('generations')
-    .upload(filename, buffer, {
+    .upload(filename, videoData, {
       contentType: mimeType,
       upsert: false
     })
@@ -60,6 +82,67 @@ async function uploadVideoToSupabase(videoData: string, mimeType: string): Promi
   return urlData.publicUrl
 }
 
+// Poll for video generation completion
+async function pollVideoOperation(operationName: string, accessToken: string): Promise<string> {
+  const maxAttempts = 60 // 5 minutes max wait time
+  const pollInterval = 5000 // 5 seconds
+  
+  for (let i = 0; i < maxAttempts; i++) {
+    console.log(`[Veo] Polling operation status (attempt ${i + 1}/${maxAttempts})...`)
+    
+    const response = await fetch(`https://us-central1-aiplatform.googleapis.com/v1/${operationName}`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      }
+    })
+    
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Failed to poll operation: ${response.status} - ${errorText}`)
+    }
+    
+    const operation = await response.json()
+    
+    if (operation.done) {
+      if (operation.error) {
+        throw new Error(`Video generation failed: ${JSON.stringify(operation.error)}`)
+      }
+      
+      // Extract video URL from response
+      const videoUri = operation.response?.generatedSamples?.[0]?.video?.uri
+      if (!videoUri) {
+        throw new Error('No video URI in completed operation')
+      }
+      
+      return videoUri
+    }
+    
+    // Wait before next poll
+    await new Promise(resolve => setTimeout(resolve, pollInterval))
+  }
+  
+  throw new Error('Video generation timed out')
+}
+
+// Download video from GCS URI
+async function downloadVideoFromGCS(gcsUri: string, accessToken: string): Promise<Buffer> {
+  // Convert gs://bucket/path to https://storage.googleapis.com/bucket/path
+  const httpsUrl = gcsUri.replace('gs://', 'https://storage.googleapis.com/')
+  
+  const response = await fetch(httpsUrl, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+    }
+  })
+  
+  if (!response.ok) {
+    throw new Error(`Failed to download video: ${response.status}`)
+  }
+  
+  const buffer = await response.arrayBuffer()
+  return Buffer.from(buffer)
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { productImage, prompt, brandSummary } = await request.json()
@@ -68,82 +151,107 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 })
     }
 
-    console.log('[Veo] Starting video generation with Veo 3...')
+    console.log('[Veo] Starting video generation with Veo 2...')
 
-    // Prepare product image
-    const productImageData = await getImageBase64(productImage)
+    // Check if we have the required credentials
+    if (!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+      console.log('[Veo] No Google Cloud credentials configured, skipping video generation')
+      return NextResponse.json({
+        error: 'Video generation requires Google Cloud credentials. This feature is not configured.',
+        videoUrl: null,
+        success: false
+      })
+    }
+
+    // Get access token
+    const accessToken = await getAccessToken()
+    
+    // Get project ID from credentials
+    const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON)
+    const projectId = credentials.project_id
+    const location = 'us-central1'
 
     // Build video prompt
     const videoPrompt = `${prompt}
 
-Product Context: A fashion item (clothing/accessory) as shown in the reference image.
+Product Context: A fashion item (clothing/accessory) for a brand video.
 Brand Style: ${brandSummary || 'Modern, trendy, lifestyle-focused'}
 
 Video Requirements:
-- Feature the product naturally in a lifestyle context
 - UGC/creator style - authentic and relatable
 - Smooth camera movement
 - Good lighting
-- Vertical format suitable for social media
-- Duration: 4-6 seconds
-- High quality, professional look while maintaining authentic feel`
+- Duration: 5-8 seconds
+- High quality, professional look`
 
-    // Generate video using Veo 3
-    const genAI = getGenAIClient()
+    // Call Veo 2 API (more stable than Veo 3)
+    const apiUrl = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/veo-002:predictLongRunning`
     
-    const result = await genAI.models.generateContent({
-      model: 'veo-3-preview',
-      contents: [
+    const requestBody = {
+      instances: [
         {
-          role: 'user',
-          parts: [
-            { text: videoPrompt },
-            { inlineData: { mimeType: productImageData.mimeType, data: productImageData.data } }
-          ]
+          prompt: videoPrompt
         }
       ],
-      config: {
-        responseModalities: ['VIDEO'],
+      parameters: {
+        aspectRatio: '9:16', // Vertical for social media
+        personGeneration: 'allow_adult',
+        durationSeconds: 6,
+        enhancePrompt: true
       }
+    }
+
+    console.log('[Veo] Sending request to Veo API...')
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody)
     })
 
-    console.log('[Veo] Generation complete, extracting video...')
-
-    // Extract video from response
-    let videoData: string | null = null
-    let videoMimeType = 'video/mp4'
-    
-    const candidate = result.candidates?.[0]
-    if (candidate?.content?.parts) {
-      for (const part of candidate.content.parts) {
-        // @ts-ignore - video data structure
-        if (part.inlineData?.data) {
-          // @ts-ignore
-          videoData = part.inlineData.data
-          // @ts-ignore
-          videoMimeType = part.inlineData.mimeType || 'video/mp4'
-          break
-        }
-        // @ts-ignore - alternative video response structure
-        if (part.videoMetadata || part.video) {
-          // @ts-ignore
-          videoData = part.video?.data || part.videoMetadata?.data
-          break
-        }
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('[Veo] API error:', errorText)
+      
+      // Check for specific errors
+      if (response.status === 404) {
+        return NextResponse.json({
+          error: 'Veo video generation model not available in your project. Please enable Vertex AI Veo API.',
+          videoUrl: null,
+          success: false
+        })
       }
+      
+      if (response.status === 403) {
+        return NextResponse.json({
+          error: 'Insufficient permissions for Veo video generation. Please check your Google Cloud IAM settings.',
+          videoUrl: null,
+          success: false
+        })
+      }
+      
+      throw new Error(`Veo API error: ${response.status} - ${errorText}`)
     }
 
-    if (!videoData) {
-      // Check if there's an error or the model doesn't support video yet
-      console.error('[Veo] No video data in response:', JSON.stringify(result).slice(0, 500))
-      throw new Error('Video generation did not return any video data. Veo 3 may not be available yet.')
-    }
+    const operation = await response.json()
+    console.log('[Veo] Operation started:', operation.name)
+
+    // Poll for completion
+    const videoGcsUri = await pollVideoOperation(operation.name, accessToken)
+    console.log('[Veo] Video generated:', videoGcsUri)
+
+    // Download video from GCS
+    const videoBuffer = await downloadVideoFromGCS(videoGcsUri, accessToken)
+    console.log('[Veo] Video downloaded, size:', videoBuffer.length)
 
     // Upload to Supabase for persistent storage
-    console.log('[Veo] Uploading video to storage...')
-    const storedVideoUrl = await uploadVideoToSupabase(videoData, videoMimeType)
+    console.log('[Veo] Uploading video to Supabase...')
+    const storedVideoUrl = await uploadVideoToSupabase(videoBuffer, 'video/mp4')
 
-    console.log('[Veo] Video generation complete')
+    console.log('[Veo] Video generation complete:', storedVideoUrl)
 
     return NextResponse.json({
       videoUrl: storedVideoUrl,
@@ -155,10 +263,13 @@ Video Requirements:
     
     const errorMessage = (error as Error).message
     
-    // Handle specific errors
-    if (errorMessage.includes('not found') || errorMessage.includes('not available') || errorMessage.includes('not supported')) {
+    // Handle specific errors gracefully
+    if (errorMessage.includes('not found') || 
+        errorMessage.includes('not available') || 
+        errorMessage.includes('not supported') ||
+        errorMessage.includes('GOOGLE_APPLICATION_CREDENTIALS')) {
       return NextResponse.json({
-        error: 'Veo 3 video generation is not available yet. Video generation will be skipped.',
+        error: 'Video generation is not available. ' + errorMessage,
         videoUrl: null,
         success: false
       })
