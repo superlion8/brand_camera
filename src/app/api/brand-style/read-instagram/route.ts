@@ -1,7 +1,84 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getGenAIClient, extractText } from '@/lib/genai'
 
-// Fetch Instagram post data using the embed page (doesn't require login)
+// Primary method: Use RapidAPI to get Instagram post data
+async function fetchInstagramViaRapidAPI(url: string): Promise<{ images: string[]; caption: string }> {
+  const rapidApiKey = process.env.RAPIDAPI_KEY
+  if (!rapidApiKey) {
+    throw new Error('RAPIDAPI_KEY not configured')
+  }
+
+  console.log('[Instagram] Using RapidAPI to fetch:', url)
+  
+  // Extract shortcode from URL
+  const shortcodeMatch = url.match(/\/p\/([^\/\?]+)/) || url.match(/\/reel\/([^\/\?]+)/)
+  if (!shortcodeMatch) {
+    throw new Error('Invalid Instagram URL format')
+  }
+  const shortcode = shortcodeMatch[1]
+  console.log('[Instagram] Shortcode:', shortcode)
+
+  const apiUrl = `https://instagram-scraper-api2.p.rapidapi.com/v1/post_info?code_or_id_or_url=${shortcode}`
+  
+  const response = await fetch(apiUrl, {
+    headers: {
+      'X-RapidAPI-Key': rapidApiKey,
+      'X-RapidAPI-Host': 'instagram-scraper-api2.p.rapidapi.com'
+    }
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    console.error('[Instagram] RapidAPI error:', response.status, errorText)
+    throw new Error(`RapidAPI request failed: ${response.status}`)
+  }
+
+  const data = await response.json()
+  console.log('[Instagram] RapidAPI response received')
+  
+  const images: string[] = []
+  let caption = ''
+
+  // Extract images from carousel or single post
+  if (data.data) {
+    const postData = data.data
+    
+    // Get caption
+    caption = postData.caption?.text || ''
+    
+    // Get images - handle both carousel and single post
+    if (postData.carousel_media && Array.isArray(postData.carousel_media)) {
+      // Carousel post with multiple images
+      for (const item of postData.carousel_media) {
+        if (item.image_versions2?.candidates?.[0]?.url) {
+          images.push(item.image_versions2.candidates[0].url)
+        } else if (item.image_versions?.items?.[0]?.url) {
+          images.push(item.image_versions.items[0].url)
+        }
+      }
+    } else if (postData.image_versions2?.candidates?.[0]?.url) {
+      // Single image post
+      images.push(postData.image_versions2.candidates[0].url)
+    } else if (postData.image_versions?.items?.[0]?.url) {
+      images.push(postData.image_versions.items[0].url)
+    }
+    
+    // Also try thumbnail_url as fallback
+    if (images.length === 0 && postData.thumbnail_url) {
+      images.push(postData.thumbnail_url)
+    }
+  }
+
+  console.log('[Instagram] Extracted', images.length, 'images from RapidAPI')
+  
+  if (images.length === 0) {
+    throw new Error('No images found in RapidAPI response')
+  }
+
+  return { images, caption }
+}
+
+// Fallback method: Use embed page (may not work on all servers due to TLS fingerprinting)
 async function fetchInstagramPost(url: string): Promise<{ images: string[]; caption: string }> {
   console.log('[Instagram] Fetching post via embed page:', url)
   
@@ -249,9 +326,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 1: Fetch Instagram post data
+    // Try RapidAPI first (most reliable), then fall back to embed page
     console.log('[Brand Style] Reading Instagram post:', url)
-    const { images, caption } = await fetchInstagramPost(url)
-    console.log('[Brand Style] Found', images.length, 'images')
+    let images: string[] = []
+    let caption = ''
+    
+    try {
+      const result = await fetchInstagramViaRapidAPI(url)
+      images = result.images
+      caption = result.caption
+      console.log('[Brand Style] RapidAPI success, found', images.length, 'images')
+    } catch (rapidApiError) {
+      console.log('[Brand Style] RapidAPI failed, trying embed page:', rapidApiError)
+      try {
+        const result = await fetchInstagramPost(url)
+        images = result.images
+        caption = result.caption
+        console.log('[Brand Style] Embed page success, found', images.length, 'images')
+      } catch (embedError) {
+        console.error('[Brand Style] All methods failed')
+        throw new Error('无法获取 Instagram 帖子图片，请检查链接或稍后重试')
+      }
+    }
 
     if (images.length === 0) {
       return NextResponse.json(
