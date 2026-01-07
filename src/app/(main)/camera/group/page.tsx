@@ -358,19 +358,35 @@ function GroupShootPageContent() {
             className="flex-1 flex flex-col"
           >
             {/* Header */}
-            <div className="h-14 flex items-center px-4 border-b bg-white shrink-0">
-              <button
-                onClick={() => router.push("/")}
-                className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center transition-colors"
-              >
-                <Home className="w-5 h-5 text-zinc-600" />
-              </button>
-              <span className="font-semibold text-lg ml-2">{t.home.groupShoot || '组图拍摄'}</span>
-            </div>
+            {isDesktop ? (
+              <div className="bg-white border-b border-zinc-200">
+                <div className="max-w-4xl mx-auto px-8 py-5">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => router.push("/")}
+                      className="w-9 h-9 rounded-lg hover:bg-zinc-100 flex items-center justify-center transition-colors"
+                    >
+                      <Home className="w-5 h-5 text-zinc-600" />
+                    </button>
+                    <span className="font-semibold text-lg text-zinc-900">{t.home.groupShoot || '组图拍摄'}</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="h-14 flex items-center px-4 border-b bg-white shrink-0">
+                <button
+                  onClick={() => router.push("/")}
+                  className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center transition-colors"
+                >
+                  <Home className="w-5 h-5 text-zinc-600" />
+                </button>
+                <span className="font-semibold text-lg ml-2">{t.home.groupShoot || '组图拍摄'}</span>
+              </div>
+            )}
 
-            <div className="flex-1 overflow-y-auto pb-32 bg-zinc-50">
+            <div className={`flex-1 overflow-y-auto bg-zinc-50 ${isDesktop ? 'py-8' : 'pb-32'}`}>
               {/* 图片上传区域 - 紧凑布局 */}
-              <div className="p-4 space-y-2">
+              <div className={`space-y-2 ${isDesktop ? 'max-w-4xl mx-auto px-8' : 'p-4'}`}>
                 {!selectedImage ? (
                   <>
                     {/* 选择提示标题 */}
@@ -443,7 +459,7 @@ function GroupShootPageContent() {
               </div>
 
               {/* 风格选择 - 紧凑卡片 */}
-              <div className="px-4 pb-2">
+              <div className={`pb-2 ${isDesktop ? '' : 'px-4'}`}>
                 <div className="flex gap-2">
                   {/* 生活风格卡片 */}
                   <button
@@ -510,21 +526,38 @@ function GroupShootPageContent() {
               </div>
             </div>
 
-            {/* Fixed Bottom Button */}
-            <div className="fixed bottom-20 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-zinc-50 via-zinc-50 to-transparent max-w-md mx-auto z-40">
-              <button
-                onClick={handleStartGeneration}
-                disabled={!selectedImage}
-                className={`w-full h-14 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${
-                  selectedImage 
-                    ? 'bg-white hover:bg-zinc-50 text-zinc-900 shadow-lg border border-zinc-200 active:scale-[0.98]'
-                    : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
-                }`}
-              >
-                <Sparkles className={`w-5 h-5 ${selectedImage ? 'text-amber-500' : ''}`} />
-                <span>{t.camera.startShoot} ({numImages})</span>
-              </button>
-            </div>
+            {/* Bottom Button */}
+            {isDesktop ? (
+              <div className="max-w-4xl mx-auto px-8 pb-8">
+                <button
+                  onClick={handleStartGeneration}
+                  disabled={!selectedImage}
+                  className={`w-full h-14 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${
+                    selectedImage 
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg active:scale-[0.98]'
+                      : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
+                  }`}
+                >
+                  <Sparkles className="w-5 h-5" />
+                  <span>{t.camera.startShoot} ({numImages})</span>
+                </button>
+              </div>
+            ) : (
+              <div className="fixed bottom-20 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-zinc-50 via-zinc-50 to-transparent max-w-md mx-auto z-40">
+                <button
+                  onClick={handleStartGeneration}
+                  disabled={!selectedImage}
+                  className={`w-full h-14 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${
+                    selectedImage 
+                      ? 'bg-white hover:bg-zinc-50 text-zinc-900 shadow-lg border border-zinc-200 active:scale-[0.98]'
+                      : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
+                  }`}
+                >
+                  <Sparkles className={`w-5 h-5 ${selectedImage ? 'text-amber-500' : ''}`} />
+                  <span>{t.camera.startShoot} ({numImages})</span>
+                </button>
+              </div>
+            )}
 
             {!isDesktop && <BottomNav forceShow />}
           </motion.div>
@@ -537,26 +570,32 @@ function GroupShootPageContent() {
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
             exit={{ opacity: 0 }}
-            className="flex-1 bg-zinc-950 flex flex-col items-center justify-center p-8 text-center"
+            className={`flex-1 flex flex-col items-center justify-center p-8 text-center ${
+              isDesktop ? 'bg-zinc-50' : 'bg-zinc-950'
+            }`}
           >
             <div className="relative mb-6">
               <div className={`absolute inset-0 blur-xl rounded-full animate-pulse ${
-                styleMode === 'lifestyle' ? 'bg-blue-500/20' : 'bg-amber-500/20'
+                styleMode === 'lifestyle' 
+                  ? (isDesktop ? 'bg-blue-500/30' : 'bg-blue-500/20')
+                  : (isDesktop ? 'bg-amber-500/30' : 'bg-amber-500/20')
               }`} />
               <Loader2 className={`w-16 h-16 animate-spin relative z-10 ${
-                styleMode === 'lifestyle' ? 'text-blue-500' : 'text-amber-500'
+                styleMode === 'lifestyle' 
+                  ? (isDesktop ? 'text-blue-600' : 'text-blue-500')
+                  : (isDesktop ? 'text-amber-600' : 'text-amber-500')
               }`} />
             </div>
             
-            <h3 className="text-white text-2xl font-bold mb-2">
+            <h3 className={`text-2xl font-bold mb-2 ${isDesktop ? 'text-zinc-900' : 'text-white'}`}>
               {styleMode === 'lifestyle' 
                 ? (t.groupShootPage?.creatingLifestyle || 'AI 正在创作ins风格组图...')
                 : (t.groupShootPage?.creatingStudio || 'AI 正在创作专业展示图...')}
             </h3>
-            <div className="text-zinc-400 space-y-1 text-sm mb-8">
+            <div className={`space-y-1 text-sm mb-8 ${isDesktop ? 'text-zinc-500' : 'text-zinc-400'}`}>
               <p>分析图片特征</p>
               <p>设计{styleMode === 'lifestyle' ? '生活化' : '电商展示'}pose</p>
-              <p>生成5张多样化图片...</p>
+              <p>生成{numImages}张多样化图片...</p>
             </div>
             
             {/* Progress dots */}
@@ -572,12 +611,37 @@ function GroupShootPageContent() {
                       status === 'completed' ? 'bg-green-500' :
                       status === 'generating' ? `${styleMode === 'lifestyle' ? 'bg-blue-500' : 'bg-amber-500'} animate-pulse` :
                       status === 'failed' ? 'bg-red-500' :
-                      'bg-zinc-600'
+                      isDesktop ? 'bg-zinc-300' : 'bg-zinc-600'
                     }`}
                   />
                 )
               })}
             </div>
+            
+            {/* PC: Action buttons */}
+            {isDesktop && (
+              <div className="mt-8 space-y-3 w-full max-w-xs">
+                <p className="text-zinc-400 text-xs mb-4">生成将在后台继续，您可以：</p>
+                <button
+                  onClick={handleReselect}
+                  className={`w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors ${
+                    styleMode === 'lifestyle' 
+                      ? 'bg-blue-600 text-white hover:bg-blue-700'
+                      : 'bg-amber-600 text-white hover:bg-amber-700'
+                  }`}
+                >
+                  <ImageIcon className="w-5 h-5" />
+                  选择新图片
+                </button>
+                <button
+                  onClick={() => router.push("/")}
+                  className="w-full h-12 rounded-full bg-white text-zinc-700 hover:bg-zinc-100 border border-zinc-200 font-medium flex items-center justify-center gap-2 transition-colors"
+                >
+                  <Home className="w-5 h-5" />
+                  返回首页
+                </button>
+              </div>
+            )}
             
             {!isDesktop && <BottomNav forceShow />}
           </motion.div>
@@ -592,64 +656,103 @@ function GroupShootPageContent() {
             exit={{ opacity: 0, y: 20 }}
             className="flex-1 flex flex-col bg-zinc-50 overflow-hidden"
           >
-            <div className="h-14 flex items-center px-4 border-b bg-white z-10 shrink-0">
-              <button 
-                onClick={handleReselect} 
-                className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <span className="font-semibold ml-2">
-                {styleMode === 'lifestyle' ? (t.groupShootPage?.lifestyleMode || '生活风格') : (t.groupShootPage?.studioMode || '棚拍风格')}
-              </span>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 pb-32">
-              <div className="grid grid-cols-2 gap-3">
-                {Array.from({ length: numImages }).map((_, i) => {
-                  const task = tasks.find(t => t.id === currentTaskId)
-                  const slot = task?.imageSlots?.[i]
-                  const url = slot?.imageUrl || generatedImages[i]
-                  const status = slot?.status || (url ? 'completed' : 'pending')
-                  
-                  const labels = [`Pose ${i + 1}`]
-                  
-                  if (status === 'pending' || status === 'generating') {
-                    return (
-                      <div key={i} className="aspect-[4/5] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
-                        <Loader2 className={`w-6 h-6 animate-spin mb-2 ${
-                          styleMode === 'lifestyle' ? 'text-blue-400' : 'text-amber-400'
-                        }`} />
-                        <span className="text-[10px] text-zinc-400">{labels[i] || `图${i+1}`} 生成中...</span>
-                      </div>
-                    )
-                  }
-                  
-                  if (status === 'failed' || !url) {
-                    return (
-                      <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
-                        {slot?.error || '生成失败'}
-                      </div>
-                    )
-                  }
-                  
-                  return (
-                    <div 
-                      key={i} 
-                      className="group relative aspect-[4/5] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer"
-                      onClick={() => setFullscreenImage(url)}
+            {/* Header */}
+            {isDesktop ? (
+              <div className="bg-white border-b border-zinc-200">
+                <div className="max-w-4xl mx-auto px-8 py-4">
+                  <div className="flex items-center justify-between">
+                    <button 
+                      onClick={handleReselect} 
+                      className="flex items-center gap-2 text-zinc-600 hover:text-zinc-900"
                     >
-                      <Image src={url} alt="Result" fill className="object-cover" />
-                      <div className="absolute top-2 left-2">
-                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium text-white ${
-                          styleMode === 'lifestyle' ? 'bg-blue-500' : 'bg-amber-500'
-                        }`}>
-                          {labels[i] || `图${i+1}`}
-                        </span>
+                      <ArrowLeft className="w-5 h-5" />
+                      <span className="font-medium">返回</span>
+                    </button>
+                    <span className="font-semibold text-zinc-900">
+                      {styleMode === 'lifestyle' ? (t.groupShootPage?.lifestyleMode || '生活风格') : (t.groupShootPage?.studioMode || '棚拍风格')}
+                    </span>
+                    <div className="w-20" />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="h-14 flex items-center px-4 border-b bg-white z-10 shrink-0">
+                <button 
+                  onClick={handleReselect} 
+                  className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <span className="font-semibold ml-2">
+                  {styleMode === 'lifestyle' ? (t.groupShootPage?.lifestyleMode || '生活风格') : (t.groupShootPage?.studioMode || '棚拍风格')}
+                </span>
+              </div>
+            )}
+
+            <div className={`flex-1 overflow-y-auto ${isDesktop ? 'py-8' : 'p-4 pb-32'}`}>
+              <div className={`${isDesktop ? 'max-w-4xl mx-auto px-8' : ''}`}>
+                <div className={`grid gap-3 ${isDesktop ? 'grid-cols-4' : 'grid-cols-2'}`}>
+                  {Array.from({ length: numImages }).map((_, i) => {
+                    const task = tasks.find(t => t.id === currentTaskId)
+                    const slot = task?.imageSlots?.[i]
+                    const url = slot?.imageUrl || generatedImages[i]
+                    const status = slot?.status || (url ? 'completed' : 'pending')
+                    
+                    const labels = [`Pose ${i + 1}`]
+                    
+                    if (status === 'pending' || status === 'generating') {
+                      return (
+                        <div key={i} className="aspect-[4/5] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
+                          <Loader2 className={`w-6 h-6 animate-spin mb-2 ${
+                            styleMode === 'lifestyle' ? 'text-blue-400' : 'text-amber-400'
+                          }`} />
+                          <span className="text-[10px] text-zinc-400">{labels[i] || `图${i+1}`} 生成中...</span>
+                        </div>
+                      )
+                    }
+                    
+                    if (status === 'failed' || !url) {
+                      return (
+                        <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
+                          {slot?.error || '生成失败'}
+                        </div>
+                      )
+                    }
+                    
+                    return (
+                      <div 
+                        key={i} 
+                        className="group relative aspect-[4/5] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer"
+                        onClick={() => setFullscreenImage(url)}
+                      >
+                        <Image src={url} alt="Result" fill className="object-cover" />
+                        <div className="absolute top-2 left-2">
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium text-white ${
+                            styleMode === 'lifestyle' ? 'bg-blue-500' : 'bg-amber-500'
+                          }`}>
+                            {labels[i] || `图${i+1}`}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
+                
+                {/* PC: Centered button */}
+                {isDesktop && (
+                  <div className="flex justify-center mt-8">
+                    <button 
+                      onClick={handleReselect}
+                      className={`px-8 h-12 text-lg rounded-xl font-semibold transition-colors ${
+                        styleMode === 'lifestyle' 
+                          ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600'
+                          : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600'
+                      }`}
+                    >
+                      拍摄下一组
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -714,18 +817,21 @@ function GroupShootPageContent() {
               </div>
             )}
             
-            <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t max-w-md mx-auto">
-              <button 
-                onClick={handleReselect}
-                className={`w-full h-12 text-lg rounded-xl font-semibold transition-colors ${
-                  styleMode === 'lifestyle' 
-                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600'
-                    : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600'
-                }`}
-              >
-                拍摄下一组
-              </button>
-            </div>
+            {/* Mobile: Bottom button */}
+            {!isDesktop && (
+              <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t max-w-md mx-auto">
+                <button 
+                  onClick={handleReselect}
+                  className={`w-full h-12 text-lg rounded-xl font-semibold transition-colors ${
+                    styleMode === 'lifestyle' 
+                      ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600'
+                      : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600'
+                  }`}
+                >
+                  拍摄下一组
+                </button>
+              </div>
+            )}
             
             {!isDesktop && <BottomNav forceShow />}
           </motion.div>

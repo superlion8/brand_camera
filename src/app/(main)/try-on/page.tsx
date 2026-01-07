@@ -513,25 +513,47 @@ export default function TryOnPage() {
           </motion.div>
         )}
         
-        {/* Fixed Generate Button for main mode */}
+        {/* Generate Button for main mode */}
         {mode === 'main' && (
-          <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-white via-white to-transparent max-w-md mx-auto z-40">
-            <button
-              onClick={(e) => {
-                triggerFlyToGallery(e)
-                handleGenerate()
-              }}
-              disabled={!canGenerate}
-              className={`w-full h-14 rounded-full text-base font-semibold gap-2 flex items-center justify-center transition-all ${
-                !canGenerate
-                  ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
-                  : "bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white shadow-lg shadow-pink-200"
-              }`}
-            >
-              <Sparkles className="w-5 h-5" />
-              <span>{t.tryOn?.generate || '开始换装'}</span>
-            </button>
-          </div>
+          isDesktop ? (
+            <div className="p-4 bg-white border-t">
+              <div className="max-w-4xl mx-auto">
+                <button
+                  onClick={(e) => {
+                    triggerFlyToGallery(e)
+                    handleGenerate()
+                  }}
+                  disabled={!canGenerate}
+                  className={`w-full h-14 rounded-xl text-base font-semibold gap-2 flex items-center justify-center transition-all ${
+                    !canGenerate
+                      ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
+                      : "bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white shadow-lg"
+                  }`}
+                >
+                  <Sparkles className="w-5 h-5" />
+                  <span>{t.tryOn?.generate || '开始换装'}</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-white via-white to-transparent max-w-md mx-auto z-40">
+              <button
+                onClick={(e) => {
+                  triggerFlyToGallery(e)
+                  handleGenerate()
+                }}
+                disabled={!canGenerate}
+                className={`w-full h-14 rounded-full text-base font-semibold gap-2 flex items-center justify-center transition-all ${
+                  !canGenerate
+                    ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white shadow-lg shadow-pink-200"
+                }`}
+              >
+                <Sparkles className="w-5 h-5" />
+                <span>{t.tryOn?.generate || '开始换装'}</span>
+              </button>
+            </div>
+          )
         )}
         
         {/* Camera Mode */}
@@ -632,11 +654,15 @@ export default function TryOnPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex-1 flex flex-col items-center justify-center p-8 pb-24"
+            className={`flex-1 flex flex-col items-center justify-center p-8 ${isDesktop ? '' : 'pb-24'}`}
           >
             <div className="relative mb-6">
-              <div className="absolute inset-0 bg-pink-500/20 blur-xl rounded-full animate-pulse" />
-              <Loader2 className="w-16 h-16 text-pink-500 animate-spin relative z-10" />
+              <div className={`absolute inset-0 blur-xl rounded-full animate-pulse ${
+                isDesktop ? 'bg-pink-500/30' : 'bg-pink-500/20'
+              }`} />
+              <Loader2 className={`w-16 h-16 animate-spin relative z-10 ${
+                isDesktop ? 'text-pink-600' : 'text-pink-500'
+              }`} />
             </div>
             <h3 className="text-xl font-bold text-zinc-800 mb-2">{t.tryOn?.generating || '正在生成换装效果...'}</h3>
             <p className="text-zinc-500 text-sm mb-8">{t.tryOn?.generatingDesc || 'AI 正在为您生成 2 张换装效果图'}</p>
@@ -645,14 +671,22 @@ export default function TryOnPage() {
               <p className="text-zinc-400 text-xs text-center mb-4">{t.studio?.continueInBackground || '可以继续拍摄新照片'}</p>
               <button
                 onClick={handleNewDuringProcessing}
-                className="w-full h-12 rounded-full bg-pink-500 text-white font-medium flex items-center justify-center gap-2 hover:bg-pink-600 transition-colors"
+                className={`w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors ${
+                  isDesktop 
+                    ? 'bg-pink-600 text-white hover:bg-pink-700'
+                    : 'bg-pink-500 text-white hover:bg-pink-600'
+                }`}
               >
                 <Camera className="w-5 h-5" />
                 {t.tryOn?.newGeneration || '拍摄新照片'}
               </button>
               <button
                 onClick={() => router.push('/')}
-                className="w-full h-12 rounded-full bg-zinc-100 text-zinc-700 font-medium flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors"
+                className={`w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors ${
+                  isDesktop 
+                    ? 'bg-white text-zinc-700 hover:bg-zinc-100 border border-zinc-200'
+                    : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
+                }`}
               >
                 <Home className="w-5 h-5" />
                 {t.studio?.returnHome || '返回首页'}
@@ -670,7 +704,7 @@ export default function TryOnPage() {
             exit={{ opacity: 0 }}
             className="flex-1 overflow-y-auto"
           >
-            <div className="p-4 pb-40">
+            <div className={`${isDesktop ? 'max-w-4xl mx-auto py-8 px-4' : 'p-4 pb-40'}`}>
               <div className="text-center mb-4">
                 <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-2">
                   <Check className="w-5 h-5 text-green-600" />
@@ -679,7 +713,7 @@ export default function TryOnPage() {
                 <p className="text-xs text-zinc-500">{t.tryOn?.resultDesc || '点击图片查看详情'}</p>
               </div>
               
-              <div className="grid grid-cols-2 gap-3">
+              <div className={`grid gap-3 ${isDesktop ? 'grid-cols-4' : 'grid-cols-2'}`}>
                 {resultImages.filter((url): url is string => !!url).map((url, i) => (
                   <button
                     key={i}
@@ -695,22 +729,43 @@ export default function TryOnPage() {
                   </button>
                 ))}
               </div>
+              
+              {/* PC: Centered buttons */}
+              {isDesktop && (
+                <div className="flex justify-center gap-3 mt-8">
+                  <button
+                    onClick={() => setMode('main')}
+                    className="px-8 h-12 border border-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 transition-colors"
+                  >
+                    {t.tryOn?.newGeneration || '重新换装'}
+                  </button>
+                  <button
+                    onClick={() => router.push('/edit')}
+                    className="px-8 h-12 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-xl font-medium hover:from-pink-600 hover:to-purple-600 transition-colors"
+                  >
+                    {t.edit?.title || '修图工具'}
+                  </button>
+                </div>
+              )}
             </div>
             
-            <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t flex gap-3 max-w-md mx-auto z-40">
-              <button
-                onClick={() => setMode('main')}
-                className="flex-1 h-12 border border-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 transition-colors"
-              >
-                {t.tryOn?.newGeneration || '重新换装'}
-              </button>
-              <button
-                onClick={() => router.push('/edit')}
-                className="flex-1 h-12 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-xl font-medium hover:from-pink-600 hover:to-purple-600 transition-colors"
-              >
-                {t.edit?.title || '修图工具'}
-              </button>
-            </div>
+            {/* Mobile: Fixed bottom buttons */}
+            {!isDesktop && (
+              <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t flex gap-3 max-w-md mx-auto z-40">
+                <button
+                  onClick={() => setMode('main')}
+                  className="flex-1 h-12 border border-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 transition-colors"
+                >
+                  {t.tryOn?.newGeneration || '重新换装'}
+                </button>
+                <button
+                  onClick={() => router.push('/edit')}
+                  className="flex-1 h-12 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-xl font-medium hover:from-pink-600 hover:to-purple-600 transition-colors"
+                >
+                  {t.edit?.title || '修图工具'}
+                </button>
+              </div>
+            )}
             
             {/* Result Detail Dialog */}
             {selectedResultIndex !== null && resultImages[selectedResultIndex] && (

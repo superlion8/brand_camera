@@ -558,7 +558,9 @@ export default function ReferenceShotPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex flex-col items-center justify-center min-h-[60vh] gap-6 px-8"
+            className={`flex flex-col items-center justify-center min-h-[60vh] gap-6 px-8 ${
+              isDesktop ? 'max-w-4xl mx-auto' : ''
+            }`}
           >
             <div className="relative mb-2">
               {/* 脉冲发光背景 */}
@@ -632,8 +634,23 @@ export default function ReferenceShotPage() {
                 {t.camera?.continueInBackground || '可在后台继续生成'}
               </p>
               <button
+                onClick={handleReset}
+                className={`w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors ${
+                  isDesktop 
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
+                }`}
+              >
+                <Camera className="w-5 h-5" />
+                {t.referenceShot?.newGeneration || '重新生成'}
+              </button>
+              <button
                 onClick={() => router.push('/')}
-                className="w-full h-12 rounded-full bg-zinc-100 text-zinc-700 font-medium flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors"
+                className={`w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors ${
+                  isDesktop 
+                    ? 'bg-white text-zinc-700 hover:bg-zinc-100 border border-zinc-200'
+                    : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
+                }`}
               >
                 <Home className="w-5 h-5" />
                 {t.camera?.returnHome || '返回首页'}
@@ -643,7 +660,7 @@ export default function ReferenceShotPage() {
         )}
         
         {step === 'result' && (
-          <div className="space-y-6">
+          <div className={`space-y-6 ${isDesktop ? 'max-w-4xl mx-auto' : ''}`}>
             <div className="text-center">
               <h2 className="text-lg font-bold text-zinc-800">
                 {t.referenceShot?.resultTitle || '生成完成'}
@@ -654,14 +671,14 @@ export default function ReferenceShotPage() {
             </div>
             
             {/* Generated Images */}
-            <div className="flex flex-col gap-4">
+            <div className={`${isDesktop ? 'grid grid-cols-2 gap-6' : 'flex flex-col gap-4'}`}>
               {generatedImages.map((img, index) => (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden bg-zinc-100 shadow-lg"
+                  className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden bg-zinc-100 shadow-lg group"
                 >
                   <Image
                     src={img.url}
@@ -672,7 +689,9 @@ export default function ReferenceShotPage() {
                   />
                   
                   {/* Actions */}
-                  <div className="absolute top-3 right-3 flex gap-2 z-20">
+                  <div className={`absolute top-3 right-3 flex gap-2 z-20 ${
+                    isDesktop ? 'opacity-0 group-hover:opacity-100 transition-opacity' : ''
+                  }`}>
                     <button
                       onClick={() => handleDownload(img.url, index)}
                       className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
@@ -711,16 +730,24 @@ export default function ReferenceShotPage() {
             </div>
             
             {/* Actions */}
-            <div className="flex gap-3">
+            <div className={`flex gap-3 ${isDesktop ? 'justify-center' : ''}`}>
               <button
                 onClick={handleReset}
-                className="flex-1 h-12 rounded-full bg-zinc-100 text-zinc-700 font-semibold hover:bg-zinc-200 transition-colors"
+                className={`h-12 rounded-full font-semibold transition-colors ${
+                  isDesktop 
+                    ? 'px-8 bg-white text-zinc-700 hover:bg-zinc-100 border border-zinc-200'
+                    : 'flex-1 bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
+                }`}
               >
                 {t.referenceShot?.newGeneration || '重新生成'}
               </button>
               <button
                 onClick={() => router.push('/gallery')}
-                className="flex-1 h-12 rounded-full bg-black text-white font-semibold hover:bg-zinc-800 transition-colors"
+                className={`h-12 rounded-full font-semibold transition-colors ${
+                  isDesktop
+                    ? 'px-8 bg-blue-600 text-white hover:bg-blue-700'
+                    : 'flex-1 bg-black text-white hover:bg-zinc-800'
+                }`}
               >
                 {t.referenceShot?.viewGallery || '查看成片'}
               </button>
@@ -729,26 +756,47 @@ export default function ReferenceShotPage() {
         )}
       </div>
       
-      {/* Fixed Generate Button at Bottom - Only show in upload step */}
+      {/* Generate Button - Only show in upload step */}
       {step === 'upload' && (
-        <div className="fixed bottom-20 left-0 right-0 p-4 bg-white/95 backdrop-blur-lg border-t border-zinc-100 z-30">
-          <motion.button
-            onClick={(e) => {
-              triggerFlyToGallery(e)
-              handleGenerate()
-            }}
-            disabled={!canGenerate}
-            whileTap={{ scale: 0.98 }}
-            className={`w-full h-12 rounded-full text-base font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg ${
-              canGenerate
-                ? 'bg-black text-white hover:bg-zinc-800'
-                : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
-            }`}
-          >
-            <Wand2 className="w-5 h-5" />
-            {t.referenceShot?.generate || '开始生成'}
-          </motion.button>
-        </div>
+        isDesktop ? (
+          <div className="max-w-4xl mx-auto px-4 pb-8">
+            <motion.button
+              onClick={(e) => {
+                triggerFlyToGallery(e)
+                handleGenerate()
+              }}
+              disabled={!canGenerate}
+              whileTap={{ scale: 0.98 }}
+              className={`w-full h-14 rounded-xl text-base font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg ${
+                canGenerate
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
+              }`}
+            >
+              <Wand2 className="w-5 h-5" />
+              {t.referenceShot?.generate || '开始生成'}
+            </motion.button>
+          </div>
+        ) : (
+          <div className="fixed bottom-20 left-0 right-0 p-4 bg-white/95 backdrop-blur-lg border-t border-zinc-100 z-30">
+            <motion.button
+              onClick={(e) => {
+                triggerFlyToGallery(e)
+                handleGenerate()
+              }}
+              disabled={!canGenerate}
+              whileTap={{ scale: 0.98 }}
+              className={`w-full h-12 rounded-full text-base font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg ${
+                canGenerate
+                  ? 'bg-black text-white hover:bg-zinc-800'
+                  : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
+              }`}
+            >
+              <Wand2 className="w-5 h-5" />
+              {t.referenceShot?.generate || '开始生成'}
+            </motion.button>
+          </div>
+        )
       )}
       
       {/* Model Picker Modal */}

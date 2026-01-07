@@ -1046,35 +1046,53 @@ function LifestylePageContent() {
           <motion.div 
             key="processing"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="flex-1 bg-zinc-950 flex flex-col items-center justify-center p-8 text-center"
+            className={`flex-1 flex flex-col items-center justify-center p-8 text-center ${
+              isDesktop ? 'bg-zinc-50' : 'bg-zinc-950'
+            }`}
           >
             <div className="w-20 h-20 mb-8 relative">
-              <div className="absolute inset-0 bg-purple-500/20 blur-2xl rounded-full animate-pulse" />
-              <Loader2 className="w-full h-full text-purple-500 animate-spin" />
+              <div className={`absolute inset-0 blur-2xl rounded-full animate-pulse ${
+                isDesktop ? 'bg-purple-500/30' : 'bg-purple-500/20'
+              }`} />
+              <Loader2 className={`w-full h-full animate-spin ${
+                isDesktop ? 'text-purple-600' : 'text-purple-500'
+              }`} />
             </div>
-            <h3 className="text-white text-2xl font-bold mb-4">{t.lifestyle?.creating || '正在创作街拍大片'}</h3>
-            <p className="text-zinc-400 text-sm mb-8">{lifestyleStatus}</p>
+            <h3 className={`text-2xl font-bold mb-4 ${isDesktop ? 'text-zinc-900' : 'text-white'}`}>
+              {t.lifestyle?.creating || '正在创作街拍大片'}
+            </h3>
+            <p className={`text-sm mb-8 ${isDesktop ? 'text-zinc-500' : 'text-zinc-400'}`}>{lifestyleStatus}</p>
             
             {/* Action buttons */}
             <div className="space-y-3 w-full max-w-xs">
-              <p className="text-zinc-500 text-xs mb-4">{t.lifestyle?.continueInBackground || '生成将在后台继续，您可以：'}</p>
+              <p className={`text-xs mb-4 ${isDesktop ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                {t.lifestyle?.continueInBackground || '生成将在后台继续，您可以：'}
+              </p>
               <button
                 onClick={handleRetake}
-                className="w-full h-12 rounded-full bg-white text-black font-medium flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors"
+                className={`w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors ${
+                  isDesktop 
+                    ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                    : 'bg-white text-black hover:bg-zinc-200'
+                }`}
               >
                 <Camera className="w-5 h-5" />
                 {t.lifestyle?.shootMore || '拍摄新一组'}
               </button>
               <button
                 onClick={() => router.push("/")}
-                className="w-full h-12 rounded-full bg-white/10 text-white font-medium flex items-center justify-center gap-2 hover:bg-white/20 transition-colors border border-white/20"
+                className={`w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors border ${
+                  isDesktop 
+                    ? 'bg-white text-zinc-700 hover:bg-zinc-100 border-zinc-200' 
+                    : 'bg-white/10 text-white hover:bg-white/20 border-white/20'
+                }`}
               >
                 <Home className="w-5 h-5" />
                 {t.lifestyle?.returnHome || '返回首页'}
               </button>
             </div>
             
-            <BottomNav forceShow />
+            {!isDesktop && <BottomNav forceShow />}
           </motion.div>
         )}
 
@@ -1084,55 +1102,94 @@ function LifestylePageContent() {
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
             className="flex-1 flex flex-col bg-zinc-50 overflow-hidden"
           >
-            <div className="h-14 flex items-center justify-between px-4 border-b bg-white">
-              <button onClick={handleRetake} className="flex items-center gap-2 font-medium">
-                <ArrowLeft className="w-5 h-5" />
-                <span>{t.lifestyle?.retake || '重拍'}</span>
-              </button>
-              <span className="font-bold">{t.lifestyle?.results || 'LifeStyle 成片'}</span>
-              <div className="w-10" />
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 pb-8">
-              <div className="grid grid-cols-2 gap-3">
-                {Array.from({ length: LIFESTYLE_NUM_IMAGES }).map((_, i) => {
-                  const url = generatedImages[i]
-                  const currentTask = tasks.find(t => t.id === currentTaskId)
-                  const slot = currentTask?.imageSlots?.[i]
-                  const status = slot?.status || (url ? 'completed' : 'generating')
-                  
-                  return (
-                    <div 
-                      key={i} 
-                      className="aspect-[3/4] rounded-xl bg-zinc-200 overflow-hidden relative cursor-pointer" 
-                      onClick={() => url && setSelectedResultIndex(i)}
+            {/* Header */}
+            {isDesktop ? (
+              <div className="bg-white border-b border-zinc-200">
+                <div className="max-w-4xl mx-auto px-8 py-4">
+                  <div className="flex items-center justify-between">
+                    <button onClick={handleRetake} className="flex items-center gap-2 text-zinc-600 hover:text-zinc-900 font-medium">
+                      <ArrowLeft className="w-5 h-5" />
+                      <span>{t.lifestyle?.retake || '重拍'}</span>
+                    </button>
+                    <span className="font-bold text-zinc-900">{t.lifestyle?.results || 'LifeStyle 成片'}</span>
+                    <div className="w-20" />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="h-14 flex items-center justify-between px-4 border-b bg-white">
+                <button onClick={handleRetake} className="flex items-center gap-2 font-medium">
+                  <ArrowLeft className="w-5 h-5" />
+                  <span>{t.lifestyle?.retake || '重拍'}</span>
+                </button>
+                <span className="font-bold">{t.lifestyle?.results || 'LifeStyle 成片'}</span>
+                <div className="w-10" />
+              </div>
+            )}
+            
+            {/* Content */}
+            <div className={`flex-1 overflow-y-auto ${isDesktop ? 'py-8' : 'p-4 pb-8'}`}>
+              <div className={`${isDesktop ? 'max-w-4xl mx-auto px-8' : ''}`}>
+                <div className={`grid gap-3 ${isDesktop ? 'grid-cols-4' : 'grid-cols-2'}`}>
+                  {Array.from({ length: LIFESTYLE_NUM_IMAGES }).map((_, i) => {
+                    const url = generatedImages[i]
+                    const currentTask = tasks.find(t => t.id === currentTaskId)
+                    const slot = currentTask?.imageSlots?.[i]
+                    const status = slot?.status || (url ? 'completed' : 'generating')
+                    
+                    return (
+                      <div 
+                        key={i} 
+                        className="aspect-[3/4] rounded-xl bg-zinc-200 overflow-hidden relative cursor-pointer group" 
+                        onClick={() => url && setSelectedResultIndex(i)}
+                      >
+                        {url ? (
+                          <>
+                            <Image src={url} alt="Result" fill className="object-cover" />
+                            <button className={`absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm ${
+                              isDesktop ? 'opacity-0 group-hover:opacity-100 transition-opacity' : ''
+                            }`}>
+                              <Heart className="w-3.5 h-3.5 text-zinc-500" />
+                            </button>
+                          </>
+                        ) : status === 'failed' ? (
+                          <div className="absolute inset-0 flex items-center justify-center text-zinc-400">
+                            <span className="text-xs">{t.camera?.generationFailed || '生成失败'}</span>
+                          </div>
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <Loader2 className="w-6 h-6 text-zinc-400 animate-spin" />
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+                
+                {/* PC: Centered button */}
+                {isDesktop && (
+                  <div className="flex justify-center mt-8">
+                    <button 
+                      onClick={handleRetake} 
+                      className="px-8 h-12 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold transition-colors"
                     >
-                      {url ? (
-                        <>
-                          <Image src={url} alt="Result" fill className="object-cover" />
-                          <button className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm">
-                            <Heart className="w-3.5 h-3.5 text-zinc-500" />
-                          </button>
-                        </>
-                      ) : status === 'failed' ? (
-                        <div className="absolute inset-0 flex items-center justify-center text-zinc-400">
-                          <span className="text-xs">{t.camera?.generationFailed || '生成失败'}</span>
-                        </div>
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <Loader2 className="w-6 h-6 text-zinc-400 animate-spin" />
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
+                      {t.lifestyle?.shootNextSet || '拍摄下一组'}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
-            <div className="p-4 pb-20 bg-white border-t shadow-up">
-              <button onClick={handleRetake} className="w-full h-12 rounded-lg bg-zinc-900 text-white font-semibold hover:bg-zinc-800 transition-colors">
-                {t.lifestyle?.shootNextSet || '拍摄下一组'}
-              </button>
-            </div>
-            <BottomNav forceShow />
+            
+            {/* Mobile: Bottom button */}
+            {!isDesktop && (
+              <div className="p-4 pb-20 bg-white border-t shadow-up">
+                <button onClick={handleRetake} className="w-full h-12 rounded-lg bg-zinc-900 text-white font-semibold hover:bg-zinc-800 transition-colors">
+                  {t.lifestyle?.shootNextSet || '拍摄下一组'}
+                </button>
+              </div>
+            )}
+            
+            {!isDesktop && <BottomNav forceShow />}
           </motion.div>
         )}
       </AnimatePresence>

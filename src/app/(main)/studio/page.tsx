@@ -1284,11 +1284,15 @@ function StudioPageContent() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex-1 flex flex-col items-center justify-center p-8 pb-24"
+            className={`flex-1 flex flex-col items-center justify-center p-8 ${isDesktop ? '' : 'pb-24'}`}
           >
             <div className="relative mb-6">
-              <div className="absolute inset-0 bg-amber-500/20 blur-xl rounded-full animate-pulse" />
-              <Loader2 className="w-16 h-16 text-amber-500 animate-spin relative z-10" />
+              <div className={`absolute inset-0 blur-xl rounded-full animate-pulse ${
+                isDesktop ? 'bg-amber-500/30' : 'bg-amber-500/20'
+              }`} />
+              <Loader2 className={`w-16 h-16 animate-spin relative z-10 ${
+                isDesktop ? 'text-amber-600' : 'text-amber-500'
+              }`} />
             </div>
             <h3 className="text-xl font-bold text-zinc-800 mb-2">{t.studio.generating}</h3>
             <p className="text-zinc-500 text-sm mb-8">{t.studio.generatingDesc}</p>
@@ -1298,14 +1302,22 @@ function StudioPageContent() {
               <p className="text-zinc-400 text-xs text-center mb-4">{t.studio.continueInBackground}</p>
               <button
                 onClick={handleNewProductDuringProcessing}
-                className="w-full h-12 rounded-full bg-amber-500 text-white font-medium flex items-center justify-center gap-2 hover:bg-amber-600 transition-colors"
+                className={`w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors ${
+                  isDesktop 
+                    ? 'bg-amber-600 text-white hover:bg-amber-700'
+                    : 'bg-amber-500 text-white hover:bg-amber-600'
+                }`}
               >
                 <Camera className="w-5 h-5" />
                 {t.studio.shootNew}
               </button>
               <button
                 onClick={handleReturnHomeDuringProcessing}
-                className="w-full h-12 rounded-full bg-zinc-100 text-zinc-700 font-medium flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors"
+                className={`w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors ${
+                  isDesktop 
+                    ? 'bg-white text-zinc-700 hover:bg-zinc-100 border border-zinc-200'
+                    : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
+                }`}
               >
                 <Home className="w-5 h-5" />
                 {t.studio.returnHome}
@@ -1323,9 +1335,9 @@ function StudioPageContent() {
             exit={{ opacity: 0 }}
             className="flex-1 overflow-y-auto"
           >
-            <div className="p-4 pb-40">
+            <div className={`${isDesktop ? 'max-w-4xl mx-auto py-8 px-4' : 'p-4 pb-40'}`}>
               <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.studio.results}</h3>
-              <div className="grid grid-cols-2 gap-3">
+              <div className={`grid gap-3 ${isDesktop ? 'grid-cols-4' : 'grid-cols-2'}`}>
                 {generatedImages.map((url, i) => (
                   <div 
                     key={i}
@@ -1346,16 +1358,16 @@ function StudioPageContent() {
                       )}
                     </div>
                     
-                    {/* Favorite button - always visible */}
+                    {/* Favorite button - show on hover for PC */}
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
                         handleFavorite(i)
                       }}
-                      className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-colors ${
+                      className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-all ${
                         currentGenerationId && isFavorited(currentGenerationId, i)
                           ? 'bg-red-500 text-white'
-                          : 'bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500'
+                          : `bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500 ${isDesktop ? 'opacity-0 group-hover:opacity-100' : ''}`
                       }`}
                     >
                       <Heart className={`w-4 h-4 ${currentGenerationId && isFavorited(currentGenerationId, i) ? 'fill-current' : ''}`} />
@@ -1363,13 +1375,32 @@ function StudioPageContent() {
                   </div>
                 ))}
               </div>
+              
+              {/* PC: Centered buttons */}
+              {isDesktop && (
+                <div className="flex justify-center gap-3 mt-8">
+                  <button
+                    onClick={() => setMode('main')}
+                    className="px-8 h-12 border border-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 transition-colors"
+                  >
+                    {t.studio.adjustParams}
+                  </button>
+                  <button
+                    onClick={handleReset}
+                    className="px-8 h-12 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 transition-colors"
+                  >
+                    {t.studio.shootNew}
+                  </button>
+                </div>
+              )}
             </div>
             
-            {/* Actions - positioned above BottomNav */}
-            <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t flex gap-3 max-w-md mx-auto z-40">
-              <button
-                onClick={() => setMode('main')}
-                className="flex-1 h-12 border border-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 transition-colors"
+            {/* Mobile: Actions - positioned above BottomNav */}
+            {!isDesktop && (
+              <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t flex gap-3 max-w-md mx-auto z-40">
+                <button
+                  onClick={() => setMode('main')}
+                  className="flex-1 h-12 border border-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 transition-colors"
                 >
                   {t.studio.adjustParams}
                 </button>
@@ -1379,7 +1410,8 @@ function StudioPageContent() {
                 >
                   {t.studio.shootNew}
                 </button>
-            </div>
+              </div>
+            )}
             
             {/* Result Detail Dialog */}
             {selectedResultIndex !== null && generatedImages[selectedResultIndex] && (
