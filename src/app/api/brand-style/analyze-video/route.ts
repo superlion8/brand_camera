@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { GoogleGenAI } from '@google/genai'
+import { getGenAIClient, extractText } from '@/lib/genai'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import { writeFile, unlink, mkdir } from 'fs/promises'
@@ -7,7 +7,6 @@ import path from 'path'
 import os from 'os'
 
 const execAsync = promisify(exec)
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! })
 
 // Download video using yt-dlp
 async function downloadVideo(url: string): Promise<string> {
@@ -74,6 +73,8 @@ async function analyzeVideoFrames(frames: string[]): Promise<string> {
     throw new Error('No frames to analyze')
   }
 
+  const genAI = getGenAIClient()
+  
   const imageParts = frames.map(frame => {
     const base64Data = frame.replace(/^data:image\/\w+;base64,/, '')
     return {
@@ -111,7 +112,7 @@ async function analyzeVideoFrames(frames: string[]): Promise<string> {
     ]
   })
 
-  const responseText = result.text || ''
+  const responseText = extractText(result) || ''
   
   // Clean up the response
   let cleanPrompt = responseText

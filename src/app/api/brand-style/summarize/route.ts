@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { GoogleGenAI } from '@google/genai'
-
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! })
+import { getGenAIClient, extractText } from '@/lib/genai'
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,6 +29,7 @@ export async function POST(request: NextRequest) {
   "contentTone": "内容调性"
 }`
 
+    const genAI = getGenAIClient()
     const result = await genAI.models.generateContent({
       model: 'gemini-2.0-flash',
       contents: [
@@ -41,7 +40,7 @@ export async function POST(request: NextRequest) {
       ]
     })
 
-    const responseText = result.text || ''
+    const responseText = extractText(result) || ''
     
     // Parse JSON from response
     const jsonMatch = responseText.match(/\{[\s\S]*\}/)

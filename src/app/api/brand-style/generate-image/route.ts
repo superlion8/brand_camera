@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { GoogleGenAI } from '@google/genai'
+import { getGenAIClient, extractImage } from '@/lib/genai'
 import { createClient } from '@supabase/supabase-js'
-
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! })
 
 // Lazy initialize supabase to avoid build-time errors
 function getSupabase() {
@@ -177,6 +175,7 @@ Generate a single professional product photo.`
     }
 
     // Generate image
+    const genAI = getGenAIClient()
     const result = await genAI.models.generateContent({
       model: 'gemini-2.0-flash-exp-image-generation',
       contents: [
@@ -194,18 +193,9 @@ Generate a single professional product photo.`
       }
     })
 
-    // Extract generated image
-    const responseParts = result.candidates?.[0]?.content?.parts || []
-    let generatedImageBase64: string | null = null
-    let generatedMimeType = 'image/png'
-
-    for (const part of responseParts) {
-      if (part.inlineData?.data) {
-        generatedImageBase64 = part.inlineData.data
-        generatedMimeType = part.inlineData.mimeType || 'image/png'
-        break
-      }
-    }
+    // Extract generated image using helper
+    const generatedImageBase64 = extractImage(result)
+    const generatedMimeType = 'image/png'
 
     if (!generatedImageBase64) {
       throw new Error('No image generated')

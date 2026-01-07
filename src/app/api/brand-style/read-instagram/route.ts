@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { GoogleGenAI } from '@google/genai'
-
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! })
+import { getGenAIClient, extractText } from '@/lib/genai'
 
 // Extract Instagram post ID from URL
 function extractPostId(url: string): string | null {
@@ -119,6 +117,8 @@ async function findBestModelImage(images: string[]): Promise<string> {
     return images[0]
   }
 
+  const genAI = getGenAIClient()
+
   // Limit to first 10 images
   const imagesToAnalyze = images.slice(0, 10)
   
@@ -171,7 +171,7 @@ async function findBestModelImage(images: string[]): Promise<string> {
     ]
   })
 
-  const responseText = result.text || '0'
+  const responseText = extractText(result) || '0'
   const index = parseInt(responseText.match(/\d+/)?.[0] || '0', 10)
   
   return imagesToAnalyze[Math.min(index, imagesToAnalyze.length - 1)]

@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { GoogleGenAI } from '@google/genai'
-
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! })
+import { getGenAIClient, extractText } from '@/lib/genai'
 
 // Use Jina Reader to extract web page content
 async function readWebPage(url: string): Promise<{ markdown: string; images: string[] }> {
@@ -51,7 +49,7 @@ async function analyzeImages(images: string[]): Promise<{
   // Limit to first 10 images for analysis
   const imagesToAnalyze = images.slice(0, 10)
   
-  const model = genAI.models.generateContent
+  const genAI = getGenAIClient()
   
   // Create image parts for the prompt
   const imageParts = await Promise.all(
@@ -107,7 +105,7 @@ async function analyzeImages(images: string[]): Promise<{
     ]
   })
 
-  const responseText = result.text || ''
+  const responseText = extractText(result) || ''
   
   // Parse JSON from response
   const jsonMatch = responseText.match(/\{[\s\S]*\}/)
