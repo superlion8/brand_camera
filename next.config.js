@@ -13,7 +13,7 @@ const nextConfig = {
   },
   images: {
     // Allow all external images for brand style analysis
-    // This is needed because we fetch images from various e-commerce sites
+    // Disable optimization for external images (Instagram, Shopify CDN, etc.)
     unoptimized: true,
     remotePatterns: [
       {
@@ -21,8 +21,6 @@ const nextConfig = {
         hostname: '**',
       },
     ],
-    // 禁用图片优化的严格检查
-    unoptimized: false,
     dangerouslyAllowSVG: true,
   },
   experimental: {
