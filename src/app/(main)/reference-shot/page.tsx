@@ -419,22 +419,22 @@ export default function ReferenceShotPage() {
       </div>
       
       {/* Content */}
-      <div className="p-4 pb-32">
+      <div className={`p-4 pb-32 ${isDesktop ? 'max-w-4xl mx-auto py-8' : ''}`}>
         {step === 'upload' && (
-          <div className="space-y-4">
+          <div className={`space-y-4 ${isDesktop ? 'bg-white rounded-2xl shadow-sm border border-zinc-100 p-6' : ''}`}>
             {/* Reference Image + Product Image - Side by Side */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className={`grid grid-cols-2 gap-3 ${isDesktop ? 'gap-6' : ''}`}>
               {/* Reference Image */}
               <div>
-                <h3 className="text-xs font-semibold text-zinc-800 mb-1">
+                <h3 className={`font-semibold text-zinc-800 mb-1 ${isDesktop ? 'text-sm' : 'text-xs'}`}>
                   {t.referenceShot?.referenceImage || '参考图'}
                 </h3>
-                <p className="text-[10px] text-zinc-500 mb-2 line-clamp-2">
+                <p className={`text-zinc-500 mb-2 line-clamp-2 ${isDesktop ? 'text-xs' : 'text-[10px]'}`}>
                   {t.referenceShot?.referenceImageDesc || '上传参考图，AI学习风格'}
                 </p>
                 
                 {referenceImage ? (
-                  <div className="relative w-full aspect-[3/4] rounded-xl overflow-hidden bg-zinc-100">
+                  <div className={`relative w-full rounded-xl overflow-hidden bg-zinc-100 ${isDesktop ? 'aspect-square max-h-[280px]' : 'aspect-[3/4]'}`}>
                     <Image src={referenceImage} alt="Reference" fill className="object-cover" />
                     <button
                       onClick={() => setReferenceImage(null)}
@@ -446,7 +446,7 @@ export default function ReferenceShotPage() {
                 ) : (
                   <button
                     onClick={() => refImageInputRef.current?.click()}
-                    className="w-full aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 bg-zinc-50 hover:bg-blue-50 transition-all flex flex-col items-center justify-center gap-1"
+                    className={`w-full rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 bg-zinc-50 hover:bg-blue-50 transition-all flex flex-col items-center justify-center gap-1 ${isDesktop ? 'aspect-square max-h-[280px]' : 'aspect-[3/4]'}`}
                   >
                     <Plus className="w-8 h-8 text-zinc-400" />
                     <span className="text-xs text-zinc-500">{t.common?.upload || '上传'}</span>
@@ -456,15 +456,15 @@ export default function ReferenceShotPage() {
               
               {/* Product Image */}
               <div>
-                <h3 className="text-xs font-semibold text-zinc-800 mb-1">
+                <h3 className={`font-semibold text-zinc-800 mb-1 ${isDesktop ? 'text-sm' : 'text-xs'}`}>
                   {t.referenceShot?.productImage || '商品图'}
                 </h3>
-                <p className="text-[10px] text-zinc-500 mb-2 line-clamp-2">
+                <p className={`text-zinc-500 mb-2 line-clamp-2 ${isDesktop ? 'text-xs' : 'text-[10px]'}`}>
                   {t.referenceShot?.productImageDesc || '上传商品图'}
                 </p>
                 
                 {productImage ? (
-                  <div className="relative w-full aspect-[3/4] rounded-xl overflow-hidden bg-zinc-100">
+                  <div className={`relative w-full rounded-xl overflow-hidden bg-zinc-100 ${isDesktop ? 'aspect-square max-h-[280px]' : 'aspect-[3/4]'}`}>
                     <Image src={productImage} alt="Product" fill className="object-cover" />
                     <button
                       onClick={() => setProductImage(null)}
@@ -476,7 +476,7 @@ export default function ReferenceShotPage() {
                 ) : (
                   <button
                     onClick={() => productImageInputRef.current?.click()}
-                    className="w-full aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 bg-zinc-50 hover:bg-blue-50 transition-all flex flex-col items-center justify-center gap-1"
+                    className={`w-full rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 bg-zinc-50 hover:bg-blue-50 transition-all flex flex-col items-center justify-center gap-1 ${isDesktop ? 'aspect-square max-h-[280px]' : 'aspect-[3/4]'}`}
                   >
                     <Plus className="w-8 h-8 text-zinc-400" />
                     <span className="text-xs text-zinc-500">{t.common?.upload || '上传'}</span>
