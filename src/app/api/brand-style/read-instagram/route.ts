@@ -38,8 +38,10 @@ async function fetchInstagramPost(url: string): Promise<{ images: string[]; capt
     while ((match = cdnRegex.exec(html)) !== null) {
       let imgUrl = match[1].replace(/&amp;/g, '&').replace(/\\u0026/g, '&')
       
-      // Filter out small images (profile pics, icons) and duplicates
-      if (imgUrl.includes('s150x150') || 
+      // Filter out static resources (icons, logos), small images (profile pics), and duplicates
+      if (imgUrl.includes('static.cdninstagram.com') || // static resources (logos, icons)
+          imgUrl.includes('rsrc.php') ||                 // static resources
+          imgUrl.includes('s150x150') || 
           imgUrl.includes('s240x240') ||
           imgUrl.includes('_a.jpg')) { // profile pics
         continue
