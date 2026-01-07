@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getGenAIClient, extractText } from '@/lib/genai'
 
 // Get TikTok video download URL using RapidAPI
-async function getTikTokVideoUrl(url: string): Promise<string> {
+async function getTikTokVideoUrl(url: string): Promise<{ videoUrl: string; coverUrl: string; duration: number }> {
   const rapidApiKey = process.env.RAPIDAPI_KEY
   
   if (!rapidApiKey) {
@@ -11,14 +11,15 @@ async function getTikTokVideoUrl(url: string): Promise<string> {
 
   console.log('[Video] Fetching TikTok video URL via RapidAPI...')
   
-  const response = await fetch('https://tiktok-download-video1.p.rapidapi.com/getVideo', {
-    method: 'POST',
+  // Use GET request with URL as query parameter
+  const apiUrl = `https://tiktok-download-video1.p.rapidapi.com/getVideo?url=${encodeURIComponent(url)}&hd=1`
+  
+  const response = await fetch(apiUrl, {
+    method: 'GET',
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
       'X-RapidAPI-Key': rapidApiKey,
       'X-RapidAPI-Host': 'tiktok-download-video1.p.rapidapi.com'
-    },
-    body: `url=${encodeURIComponent(url)}`
+    }
   })
 
   if (!response.ok) {
@@ -27,16 +28,24 @@ async function getTikTokVideoUrl(url: string): Promise<string> {
   }
 
   const data = await response.json()
-  console.log('[Video] RapidAPI response:', JSON.stringify(data).slice(0, 200))
+  console.log('[Video] RapidAPI response code:', data.code, 'msg:', data.msg)
   
-  // Try different possible response formats
-  const videoUrl = data.data?.play || data.data?.wmplay || data.play || data.video_url
+  if (data.code !== 0) {
+    throw new Error(`TikTok API error: ${data.msg}`)
+  }
+  
+  // Prefer HD play, then regular play, then watermarked play
+  const videoUrl = data.data?.hdplay || data.data?.play || data.data?.wmplay
+  const coverUrl = data.data?.cover || data.data?.origin_cover
+  const duration = data.data?.duration || 0
   
   if (!videoUrl) {
     throw new Error('No video URL found in RapidAPI response')
   }
 
-  return videoUrl
+  console.log('[Video] Got video URL, duration:', duration, 'seconds')
+  
+  return { videoUrl, coverUrl, duration }
 }
 
 // Download video to buffer
@@ -189,7 +198,9 @@ export async function POST(request: NextRequest) {
     if (url.includes('tiktok.com')) {
       try {
         // Get video download URL via RapidAPI
-        const videoUrl = await getTikTokVideoUrl(url)
+        const { videoUrl, duration } = await getTikTokVideoUrl(url)
+        
+        console.log('[Video] Video duration:', duration, 'seconds')
         
         // Download video to buffer
         const videoBuffer = await downloadVideoToBuffer(videoUrl)
