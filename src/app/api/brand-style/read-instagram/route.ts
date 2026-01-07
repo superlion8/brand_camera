@@ -8,13 +8,17 @@ async function fetchInstagramViaRapidAPI(url: string): Promise<{ images: string[
     throw new Error('RAPIDAPI_KEY not configured')
   }
 
-  // Strip query params (like ?img_index=5) to get base post URL
-  const cleanUrl = url.split('?')[0]
-  console.log('[Instagram] Using RapidAPI to fetch:', cleanUrl)
+  // Extract shortcode from URL
+  // URL format: https://www.instagram.com/username/p/SHORTCODE/ or https://www.instagram.com/p/SHORTCODE/
+  const shortcodeMatch = url.match(/\/p\/([A-Za-z0-9_-]+)/)
+  if (!shortcodeMatch) {
+    throw new Error('Could not extract shortcode from Instagram URL')
+  }
+  const shortcode = shortcodeMatch[1]
+  console.log('[Instagram] Extracted shortcode:', shortcode)
   
-  // Build API URL with encoded Instagram URL
-  const encodedUrl = encodeURIComponent(cleanUrl)
-  const apiUrl = `https://instagram-scraper-stable-api.p.rapidapi.com/get_media_data.php?reel_post_code_or_url=${encodedUrl}&type=post`
+  // Build API URL with shortcode (NOT full URL - API expects just the code)
+  const apiUrl = `https://instagram-scraper-stable-api.p.rapidapi.com/get_media_data.php?reel_post_code_or_url=${shortcode}&type=post`
   console.log('[Instagram] API URL:', apiUrl)
   
   const response = await fetch(apiUrl, {
