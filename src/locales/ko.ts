@@ -154,6 +154,8 @@ export const ko: Translations = {
     myModels: "내 것",
     allBackgrounds: "전체",
     myBackgrounds: "내 것",
+    selectModel: "모델 선택",
+    selectBg: "배경 선택",
   },
   
   // Group Shoot Page

@@ -154,6 +154,8 @@ export const en: Translations = {
     myModels: "My",
     allBackgrounds: "All",
     myBackgrounds: "My",
+    selectModel: "Select Model",
+    selectBg: "Select Background",
   },
   
   // Group Shoot Page

@@ -152,6 +152,8 @@ export const zh = {
     myModels: "我的",
     allBackgrounds: "全部",
     myBackgrounds: "我的",
+    selectModel: "选择模特",
+    selectBg: "选择背景",
   },
   
   // Group Shoot Page
