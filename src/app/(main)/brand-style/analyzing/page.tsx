@@ -404,12 +404,14 @@ export default function AnalyzingPage() {
                             onClick={() => setZoomImage(step.result!.selectedImage!)}
                             className="relative h-20 w-20 rounded-lg overflow-hidden bg-zinc-100 group cursor-pointer"
                           >
-                            {/* Use native img for external CDN images (Instagram, etc.) */}
+                            {/* Use proxy for external CDN images (Instagram, etc.) */}
                             <img 
-                              src={step.result.selectedImage} 
+                              src={step.result.selectedImage?.includes('cdninstagram.com') || step.result.selectedImage?.includes('fbcdn.net')
+                                ? `/api/image-proxy?url=${encodeURIComponent(step.result.selectedImage)}`
+                                : step.result.selectedImage
+                              } 
                               alt="Result" 
                               className="absolute inset-0 w-full h-full object-cover"
-                              referrerPolicy="no-referrer"
                               onError={(e) => {
                                 console.log('[Image] Failed to load:', step.result?.selectedImage?.slice(0, 60))
                                 e.currentTarget.style.display = 'none'
@@ -473,12 +475,13 @@ export default function AnalyzingPage() {
             <TransformWrapper>
               <TransformComponent>
                 <div className="relative w-[90vw] h-[80vh]">
-                  <Image
-                    src={zoomImage}
+                  <img
+                    src={zoomImage?.includes('cdninstagram.com') || zoomImage?.includes('fbcdn.net')
+                      ? `/api/image-proxy?url=${encodeURIComponent(zoomImage)}`
+                      : zoomImage || ''
+                    }
                     alt="Zoomed"
-                    fill
-                    className="object-contain"
-                    unoptimized
+                    className="w-full h-full object-contain"
                   />
                 </div>
               </TransformComponent>

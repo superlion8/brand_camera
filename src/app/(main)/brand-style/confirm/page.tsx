@@ -45,6 +45,16 @@ interface AnalysisData {
 
 type EditingField = 'webModel' | 'insModel' | 'productRef' | 'videoPrompt' | 'brandSummary' | null
 
+// Helper to proxy external images (Instagram CDN, etc.)
+function getProxiedUrl(url: string | undefined): string {
+  if (!url) return ''
+  // Only proxy external CDN images that need it
+  if (url.includes('cdninstagram.com') || url.includes('fbcdn.net')) {
+    return `/api/image-proxy?url=${encodeURIComponent(url)}`
+  }
+  return url
+}
+
 export default function ConfirmPage() {
   const router = useRouter()
   const isMobile = useIsMobile(1024)
@@ -335,12 +345,10 @@ export default function ConfirmPage() {
               </div>
               <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-zinc-100">
                 {analysisData.instagram.bestModelImage ? (
-                  <Image 
-                    src={analysisData.instagram.bestModelImage} 
+                  <img 
+                    src={getProxiedUrl(analysisData.instagram.bestModelImage)} 
                     alt="Instagram Model" 
-                    fill 
-                    className="object-cover"
-                    unoptimized
+                    className="absolute inset-0 w-full h-full object-cover"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-zinc-400">
