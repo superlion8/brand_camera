@@ -27,6 +27,13 @@ export default function BrandStylePage() {
   const isDesktop = isMobile === false
   const { user, isLoading: authLoading } = useAuth()
 
+  // Form state - all hooks must be called before any conditional returns
+  const [productPageUrl, setProductPageUrl] = useState('https://wittmore.com/collections/gramicci/products/gramicci-charcoal-grey-mohair-sweater?variant=42259036897342')
+  const [instagramUrl, setInstagramUrl] = useState('https://www.instagram.com/urbanoutfitters/p/DTDqX4mktXQ/?img_index=5')
+  const [videoUrl, setVideoUrl] = useState('https://www.tiktok.com/@notbrookemonk/video/7455822281110064414?q=urban%20outfitter&t=1767776249851')
+  const [productImage, setProductImage] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
   // 未登录时重定向到登录页
   useEffect(() => {
     if (!authLoading && !user) {
@@ -45,13 +52,6 @@ export default function BrandStylePage() {
       </div>
     )
   }
-
-  // Form state - with default test URLs for development
-  const [productPageUrl, setProductPageUrl] = useState('https://wittmore.com/collections/gramicci/products/gramicci-charcoal-grey-mohair-sweater?variant=42259036897342')
-  const [instagramUrl, setInstagramUrl] = useState('https://www.instagram.com/urbanoutfitters/p/DTDqX4mktXQ/?img_index=5')
-  const [videoUrl, setVideoUrl] = useState('https://www.tiktok.com/@notbrookemonk/video/7455822281110064414?q=urban%20outfitter&t=1767776249851')
-  const [productImage, setProductImage] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Validation
   const isValidUrl = (url: string) => {
