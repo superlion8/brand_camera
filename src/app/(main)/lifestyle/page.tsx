@@ -613,6 +613,312 @@ function LifestylePageContent() {
                     </div>
                   </div>
                 </div>
+              ) : mode === "review" && isDesktop ? (
+                /* Desktop Review Mode - Two Column Layout */
+                <div className="absolute inset-0 overflow-y-auto bg-zinc-50">
+                  {/* PC Header */}
+                  <div className="bg-white border-b border-zinc-200">
+                    <div className="max-w-5xl mx-auto px-8 py-5">
+                      <div className="flex items-center gap-3">
+                        <button 
+                          onClick={handleRetake}
+                          className="w-9 h-9 rounded-lg hover:bg-zinc-100 flex items-center justify-center transition-colors"
+                        >
+                          <ArrowLeft className="w-5 h-5 text-zinc-600" />
+                        </button>
+                        <h1 className="text-lg font-semibold text-zinc-900">{t.lifestyle?.title || 'LifeStyle 街拍'}</h1>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Two-column content */}
+                  <div className="max-w-5xl mx-auto px-8 py-8">
+                    <div className="flex gap-8">
+                        {/* Left: Product Image */}
+                      <div className="w-[380px] shrink-0 space-y-4">
+                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 overflow-hidden">
+                          <div className="p-3 border-b border-zinc-100 flex items-center justify-between">
+                            <span className="text-sm font-medium text-zinc-900">{t.lifestyle?.uploadProduct || '商品图'}</span>
+                            <button onClick={handleRetake} className="text-xs text-zinc-500 hover:text-zinc-700">
+                              更换
+                            </button>
+                          </div>
+                          <div className="aspect-square relative bg-zinc-50">
+                            <img src={capturedImage || ""} alt="商品" className="w-full h-full object-contain" />
+                          </div>
+                        </div>
+                        
+                        {/* Outfit Button */}
+                        <button
+                          onClick={() => {
+                            if (capturedImage) {
+                              sessionStorage.setItem('lifestyleProduct1Image', capturedImage)
+                              router.push('/lifestyle/outfit')
+                            }
+                          }}
+                          className="w-full h-12 rounded-xl border-2 border-dashed border-zinc-300 hover:border-purple-400 flex items-center justify-center gap-2 text-zinc-500 hover:text-purple-600 transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span className="text-sm">{t.lifestyle?.outfitMode || '搭配商品'}</span>
+                        </button>
+                      </div>
+                      
+                      {/* Right: Settings */}
+                      <div className="flex-1 min-w-0 space-y-6">
+                        {/* Model Selection */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-semibold text-zinc-900">{t.lifestyle?.selectModel || '选择模特'}</h3>
+                            <div className="flex items-center gap-3">
+                              {selectedModelId && (
+                                <button onClick={() => setSelectedModelId(null)} className="text-xs text-zinc-500 hover:text-zinc-700">
+                                  {t.proStudio?.clearSelection || '清除选择'}
+                                </button>
+                              )}
+                              {allModels.length > 7 && (
+                                <button 
+                                  onClick={() => {
+                                    setActiveCustomTab("model")
+                                    setShowCustomPanel(true)
+                                  }}
+                                  className="text-xs text-purple-600 hover:text-purple-700 font-medium"
+                                >
+                                  查看更多 ({allModels.length})
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-sm text-zinc-500 mb-4">不选则随机匹配</p>
+                          <div className="grid grid-cols-4 gap-3">
+                            <button
+                              onClick={() => modelUploadRef.current?.click()}
+                              className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-purple-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                            >
+                              <Plus className="w-5 h-5 text-zinc-400" />
+                              <span className="text-[10px] text-zinc-400">上传</span>
+                            </button>
+                            {allModels.slice(0, 7).map(model => (
+                              <button
+                                key={model.id}
+                                onClick={() => setSelectedModelId(selectedModelId === model.id ? null : model.id)}
+                                className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
+                                  selectedModelId === model.id 
+                                    ? 'border-purple-500 ring-2 ring-purple-500/30' 
+                                    : 'border-transparent hover:border-purple-300'
+                                }`}
+                              >
+                                <Image src={model.imageUrl} alt={model.name || ''} fill className="object-cover" />
+                                {selectedModelId === model.id && (
+                                  <div className="absolute top-1 right-1 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
+                                    <Check className="w-3 h-3 text-white" />
+                                  </div>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Scene Selection */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-semibold text-zinc-900">{t.lifestyle?.selectScene || '选择场景'}</h3>
+                            <div className="flex items-center gap-3">
+                              {selectedSceneId && (
+                                <button onClick={() => setSelectedSceneId(null)} className="text-xs text-zinc-500 hover:text-zinc-700">
+                                  {t.proStudio?.clearSelection || '清除选择'}
+                                </button>
+                              )}
+                              {allScenes.length > 7 && (
+                                <button 
+                                  onClick={() => {
+                                    setActiveCustomTab("scene")
+                                    setShowCustomPanel(true)
+                                  }}
+                                  className="text-xs text-purple-600 hover:text-purple-700 font-medium"
+                                >
+                                  查看更多 ({allScenes.length})
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-sm text-zinc-500 mb-4">不选则随机匹配</p>
+                          <div className="grid grid-cols-4 gap-3">
+                            <button
+                              onClick={() => sceneUploadRef.current?.click()}
+                              className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-purple-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                            >
+                              <Plus className="w-5 h-5 text-zinc-400" />
+                              <span className="text-[10px] text-zinc-400">上传</span>
+                            </button>
+                            {allScenes.slice(0, 7).map(scene => (
+                              <button
+                                key={scene.id}
+                                onClick={() => setSelectedSceneId(selectedSceneId === scene.id ? null : scene.id)}
+                                className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
+                                  selectedSceneId === scene.id 
+                                    ? 'border-purple-500 ring-2 ring-purple-500/30' 
+                                    : 'border-transparent hover:border-purple-300'
+                                }`}
+                              >
+                                <Image src={scene.imageUrl} alt={scene.name || ''} fill className="object-cover" />
+                                {selectedSceneId === scene.id && (
+                                  <div className="absolute top-1 right-1 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
+                                    <Check className="w-3 h-3 text-white" />
+                                  </div>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Generate Button */}
+                        <button
+                          onClick={handleLifestyleGenerate}
+                          className="w-full h-14 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-lg font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg shadow-purple-200/50"
+                        >
+                          <Wand2 className="w-5 h-5" />
+                          {t.lifestyle?.startGenerate || '开始生成'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Desktop Modal for View More */}
+                  <AnimatePresence>
+                    {showCustomPanel && (
+                      <>
+                        <motion.div 
+                          initial={{ opacity: 0 }} 
+                          animate={{ opacity: 1 }} 
+                          exit={{ opacity: 0 }}
+                          className="fixed inset-0 bg-black/40 z-40"
+                          onClick={() => setShowCustomPanel(false)}
+                        />
+                        <motion.div 
+                          initial={{ opacity: 0, scale: 0.95 }} 
+                          animate={{ opacity: 1, scale: 1 }} 
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          className="fixed inset-x-8 top-1/2 -translate-y-1/2 max-w-3xl mx-auto bg-white rounded-2xl z-50 max-h-[80vh] flex flex-col overflow-hidden shadow-xl"
+                        >
+                          <div className="h-14 border-b flex items-center justify-between px-6 shrink-0">
+                            <div className="flex gap-4">
+                              <button 
+                                onClick={() => setActiveCustomTab("model")}
+                                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                                  activeCustomTab === "model" ? "bg-purple-500 text-white" : "bg-zinc-100 text-zinc-600"
+                                }`}
+                              >
+                                {t.lifestyle?.streetModel || '模特'}
+                              </button>
+                              <button 
+                                onClick={() => setActiveCustomTab("scene")}
+                                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                                  activeCustomTab === "scene" ? "bg-purple-500 text-white" : "bg-zinc-100 text-zinc-600"
+                                }`}
+                              >
+                                {t.lifestyle?.streetScene || '场景'}
+                              </button>
+                            </div>
+                            <button 
+                              onClick={() => setShowCustomPanel(false)} 
+                              className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center"
+                            >
+                              <X className="w-5 h-5 text-zinc-500" />
+                            </button>
+                          </div>
+                          <div className="flex-1 overflow-y-auto p-6">
+                            {activeCustomTab === "model" && (
+                              <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm text-zinc-600">{t.lifestyle?.selectModel || '选择模特（不选则随机）'}</span>
+                                  {selectedModelId && (
+                                    <button onClick={() => setSelectedModelId(null)} className="text-xs text-purple-600">
+                                      {t.proStudio?.clearSelection || '清除选择'}
+                                    </button>
+                                  )}
+                                </div>
+                                <div className="grid grid-cols-6 gap-3">
+                                  <button
+                                    onClick={() => modelUploadRef.current?.click()}
+                                    className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-purple-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                                  >
+                                    <Plus className="w-5 h-5 text-zinc-400" />
+                                    <span className="text-[10px] text-zinc-400">上传</span>
+                                  </button>
+                                  {allModels.map(model => (
+                                    <button
+                                      key={model.id}
+                                      onClick={() => setSelectedModelId(selectedModelId === model.id ? null : model.id)}
+                                      className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
+                                        selectedModelId === model.id 
+                                          ? 'border-purple-500 ring-2 ring-purple-500/30' 
+                                          : 'border-transparent hover:border-purple-300'
+                                      }`}
+                                    >
+                                      <Image src={model.imageUrl} alt={model.name || ''} fill className="object-cover" />
+                                      {selectedModelId === model.id && (
+                                        <div className="absolute top-1 right-1 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
+                                          <Check className="w-3 h-3 text-white" />
+                                        </div>
+                                      )}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {activeCustomTab === "scene" && (
+                              <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm text-zinc-600">{t.lifestyle?.selectScene || '选择场景（不选则随机）'}</span>
+                                  {selectedSceneId && (
+                                    <button onClick={() => setSelectedSceneId(null)} className="text-xs text-purple-600">
+                                      {t.proStudio?.clearSelection || '清除选择'}
+                                    </button>
+                                  )}
+                                </div>
+                                <div className="grid grid-cols-6 gap-3">
+                                  <button
+                                    onClick={() => sceneUploadRef.current?.click()}
+                                    className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-purple-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                                  >
+                                    <Plus className="w-5 h-5 text-zinc-400" />
+                                    <span className="text-[10px] text-zinc-400">上传</span>
+                                  </button>
+                                  {allScenes.map(scene => (
+                                    <button
+                                      key={scene.id}
+                                      onClick={() => setSelectedSceneId(selectedSceneId === scene.id ? null : scene.id)}
+                                      className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
+                                        selectedSceneId === scene.id 
+                                          ? 'border-purple-500 ring-2 ring-purple-500/30' 
+                                          : 'border-transparent hover:border-purple-300'
+                                      }`}
+                                    >
+                                      <Image src={scene.imageUrl} alt={scene.name || ''} fill className="object-cover" />
+                                      {selectedSceneId === scene.id && (
+                                        <div className="absolute top-1 right-1 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
+                                          <Check className="w-3 h-3 text-white" />
+                                        </div>
+                                      )}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          <div className="h-16 border-t flex items-center justify-center px-6">
+                            <button 
+                              onClick={() => setShowCustomPanel(false)}
+                              className="px-8 py-2.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium transition-colors"
+                            >
+                              确定
+                            </button>
+                          </div>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+                </div>
               ) : mode === "camera" ? (
                 hasCamera && permissionChecked ? (
                   <Webcam

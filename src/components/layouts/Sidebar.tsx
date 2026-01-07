@@ -16,11 +16,13 @@ import {
   Shirt,
   ImageIcon,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Loader2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/stores/languageStore'
 import { useState } from 'react'
+import { useGenerationTaskStore } from '@/stores/generationTaskStore'
 
 interface NavItem {
   id: string
@@ -28,12 +30,17 @@ interface NavItem {
   icon: React.ReactNode
   href?: string
   children?: { id: string; label: string; href: string }[]
+  badge?: string
 }
 
 export function Sidebar({ className }: { className?: string }) {
   const pathname = usePathname()
   const { t } = useTranslation()
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['shoot', 'custom'])
+  const { tasks } = useGenerationTaskStore()
+  
+  // Check if any task is currently generating
+  const hasActiveTask = tasks.some(task => task.status === 'generating')
 
   const toggleGroup = (groupId: string) => {
     setExpandedGroups(prev => 
@@ -93,8 +100,9 @@ export function Sidebar({ className }: { className?: string }) {
     {
       id: 'gallery',
       label: t.nav?.gallery || '图库',
-      icon: <Images className="w-5 h-5" />,
+      icon: hasActiveTask ? <Loader2 className="w-5 h-5 animate-spin" /> : <Images className="w-5 h-5" />,
       href: '/gallery',
+      badge: hasActiveTask ? t.common?.generating || '生成中...' : undefined,
     },
   ]
 
@@ -178,11 +186,16 @@ export function Sidebar({ className }: { className?: string }) {
                   )}
                 >
                   <span className={cn(
-                    isActive(item.href!) ? 'text-blue-600' : 'text-zinc-400'
+                    isActive(item.href!) ? 'text-blue-600' : item.badge ? 'text-amber-500' : 'text-zinc-400'
                   )}>
                     {item.icon}
                   </span>
-                  <span>{item.label}</span>
+                  <span className="flex-1">{item.label}</span>
+                  {item.badge && (
+                    <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-medium rounded-full animate-pulse">
+                      {item.badge}
+                    </span>
+                  )}
                 </Link>
               )}
             </li>
