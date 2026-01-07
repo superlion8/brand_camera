@@ -1,117 +1,111 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getGenAIClient, extractText } from '@/lib/genai'
 
-// Fetch Instagram post data by scraping the page directly (no external API needed)
+// Fetch Instagram post data using the embed page (doesn't require login)
 async function fetchInstagramPost(url: string): Promise<{ images: string[]; caption: string }> {
-  console.log('[Instagram] Fetching post directly:', url)
+  console.log('[Instagram] Fetching post via embed page:', url)
   
-  // Clean URL - remove query params for the fetch
-  const cleanUrl = url.split('?')[0]
+  // Clean URL and convert to embed URL
+  let cleanUrl = url.split('?')[0]
+  if (!cleanUrl.endsWith('/')) cleanUrl += '/'
+  const embedUrl = cleanUrl + 'embed/'
   
   try {
-    // Fetch the Instagram page with browser-like headers
-    const response = await fetch(cleanUrl, {
+    // Fetch the Instagram embed page (doesn't require login)
+    const response = await fetch(embedUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
-        'Cache-Control': 'no-cache',
       }
     })
 
     if (!response.ok) {
-      console.error('[Instagram] Failed to fetch page:', response.status)
-      throw new Error(`Failed to fetch Instagram page: ${response.statusText}`)
+      console.error('[Instagram] Failed to fetch embed page:', response.status)
+      throw new Error(`Failed to fetch Instagram embed page: ${response.statusText}`)
     }
 
     const html = await response.text()
-    console.log('[Instagram] Got HTML, length:', html.length)
+    console.log('[Instagram] Got embed HTML, length:', html.length)
     
     const images: string[] = []
     let caption = ''
 
-    // Method 1: Extract twitter:image meta tag (Instagram now uses this instead of og:image)
-    const twitterImageMatch = html.match(/name="twitter:image"\s+content="([^"]+)"/i) ||
-                              html.match(/content="([^"]+)"\s+name="twitter:image"/i)
-    
-    if (twitterImageMatch) {
-      const imageUrl = twitterImageMatch[1].replace(/&amp;/g, '&')
-      console.log('[Instagram] Found twitter:image:', imageUrl.slice(0, 100))
-      images.push(imageUrl)
-    }
-
-    // Method 2: Extract og:image meta tag (fallback)
-    const ogImageMatch = html.match(/property="og:image"\s+content="([^"]+)"/i) ||
-                         html.match(/content="([^"]+)"\s+property="og:image"/i) ||
-                         html.match(/og:image[^>]*content="([^"]+)"/i)
-    
-    if (ogImageMatch) {
-      const imageUrl = ogImageMatch[1].replace(/&amp;/g, '&')
-      if (!images.includes(imageUrl)) {
-        console.log('[Instagram] Found og:image:', imageUrl.slice(0, 100))
-        images.push(imageUrl)
-      }
-    }
-
-    // Method 4: Extract from JSON-LD structured data
-    const jsonLdMatch = html.match(/<script type="application\/ld\+json"[^>]*>([^<]+)<\/script>/i)
-    if (jsonLdMatch) {
-      try {
-        const jsonLd = JSON.parse(jsonLdMatch[1])
-        if (jsonLd.image) {
-          const ldImages = Array.isArray(jsonLd.image) ? jsonLd.image : [jsonLd.image]
-          for (const img of ldImages) {
-            const imgUrl = typeof img === 'string' ? img : img.url
-            if (imgUrl && !images.includes(imgUrl)) {
-              images.push(imgUrl)
-            }
-          }
-        }
-        if (jsonLd.caption) {
-          caption = jsonLd.caption
-        }
-      } catch (e) {
-        console.log('[Instagram] Failed to parse JSON-LD')
-      }
-    }
-
-    // Method 5: Extract additional images from page content
-    // Look for Instagram CDN URLs in the HTML
-    const cdnRegex = /(https:\/\/(?:scontent|instagram|cdninstagram)[^"'\s\\]+\.(?:jpg|jpeg|png|webp)[^"'\s\\]*)/gi
+    // Extract all Instagram CDN image URLs from the embed page
+    // Match URLs from instagram CDN (fbcdn.net or cdninstagram.com)
+    const cdnRegex = /(https:\/\/[^"'\s,]+(?:instagram|fbcdn)[^"'\s,]+\.(?:jpg|jpeg|png|webp)[^"'\s,]*)/gi
     let match
     while ((match = cdnRegex.exec(html)) !== null) {
       let imgUrl = match[1].replace(/&amp;/g, '&').replace(/\\u0026/g, '&')
-      // Filter out small images (profile pics, icons)
-      if (!imgUrl.includes('s150x150') && 
-          !imgUrl.includes('s320x320') &&
-          !imgUrl.includes('_n.jpg?_nc_cat') && // Skip if already in list
-          !images.some(existing => existing.includes(imgUrl.split('?')[0].slice(-30)))) {
+      
+      // Filter out small images (profile pics, icons) and duplicates
+      if (imgUrl.includes('s150x150') || 
+          imgUrl.includes('s240x240') ||
+          imgUrl.includes('_a.jpg')) { // profile pics
+        continue
+      }
+      
+      // Check for duplicates by comparing the base URL without size params
+      const baseUrl = imgUrl.split('?')[0].slice(-50)
+      if (!images.some(existing => existing.split('?')[0].slice(-50) === baseUrl)) {
         images.push(imgUrl)
+        console.log('[Instagram] Found image:', imgUrl.slice(0, 80) + '...')
       }
     }
 
-    // Method 6: Extract og:description for caption
-    if (!caption) {
-      const descMatch = html.match(/property="og:description"\s+content="([^"]+)"/i) ||
-                        html.match(/content="([^"]+)"\s+property="og:description"/i)
-      if (descMatch) {
-        caption = descMatch[1].replace(/&amp;/g, '&').replace(/&#[0-9]+;/g, '')
-      }
+    // Extract caption from the embed page
+    const captionMatch = html.match(/class="Caption"[^>]*>([^<]+)</i) ||
+                         html.match(/"caption":\s*"([^"]+)"/i)
+    if (captionMatch) {
+      caption = captionMatch[1].replace(/\\n/g, ' ').replace(/\\u[\dA-Fa-f]{4}/g, '')
     }
 
-    console.log('[Instagram] Extracted', images.length, 'images')
+    console.log('[Instagram] Extracted', images.length, 'images from embed page')
     
     if (images.length === 0) {
-      throw new Error('No images found on Instagram page')
+      throw new Error('No images found in Instagram embed page')
     }
 
-    return { images, caption }
+    // Prefer higher resolution images (filter out smaller versions)
+    const filteredImages = filterHighResImages(images)
+    console.log('[Instagram] After filtering:', filteredImages.length, 'high-res images')
+
+    return { images: filteredImages, caption }
 
   } catch (error) {
-    console.error('[Instagram] Direct fetch failed:', error)
+    console.error('[Instagram] Embed fetch failed:', error)
     // Try Jina as last resort
     return fetchInstagramViaJina(url)
   }
+}
+
+// Filter to keep only the highest resolution version of each image
+function filterHighResImages(images: string[]): string[] {
+  const imageMap = new Map<string, string>()
+  
+  for (const url of images) {
+    // Extract the unique image ID from the URL
+    const idMatch = url.match(/\/([^\/]+)_n\.jpg/) || url.match(/\/(\d+_\d+)/)
+    if (!idMatch) {
+      imageMap.set(url, url)
+      continue
+    }
+    
+    const imageId = idMatch[1]
+    const existing = imageMap.get(imageId)
+    
+    if (!existing) {
+      imageMap.set(imageId, url)
+    } else {
+      // Prefer URLs with higher resolution indicators
+      const hasHighRes = (u: string) => u.includes('1080') || u.includes('p750') || (!u.includes('p640') && !u.includes('s640'))
+      if (hasHighRes(url) && !hasHighRes(existing)) {
+        imageMap.set(imageId, url)
+      }
+    }
+  }
+  
+  return Array.from(imageMap.values())
 }
 
 // Fallback: Use Jina Reader to extract Instagram content
