@@ -551,7 +551,7 @@ function LifestylePageContent() {
                             </div>
                             <div className="text-center">
                               <p className="text-sm font-medium text-zinc-700">{t.lifestyle?.uploadProduct || '上传商品图片'}</p>
-                              <p className="text-xs text-zinc-400 mt-1">点击上传或拖拽图片</p>
+                              <p className="text-xs text-zinc-400 mt-1">{t.common?.clickToUploadOrDrag || '点击上传或拖拽图片'}</p>
                             </div>
                           </button>
                           <div className="mt-4">
@@ -575,7 +575,7 @@ function LifestylePageContent() {
                             </div>
                             <h3 className="text-lg font-semibold text-zinc-900 mb-2">LifeStyle 街拍模式</h3>
                             <p className="text-sm text-zinc-500 max-w-xs mx-auto">
-                              上传商品图片后，AI 将为你生成时尚街拍风格的模特展示图
+                              {t.common?.uploadProductDesc || '上传商品图片后，AI 将为你生成专业展示图'}
                             </p>
                           </div>
                           
@@ -640,7 +640,7 @@ function LifestylePageContent() {
                           <div className="p-3 border-b border-zinc-100 flex items-center justify-between">
                             <span className="text-sm font-medium text-zinc-900">{t.lifestyle?.uploadProduct || '商品图'}</span>
                             <button onClick={handleRetake} className="text-xs text-zinc-500 hover:text-zinc-700">
-                              更换
+                              {t.common?.change || '更换'}
                             </button>
                           </div>
                           <div className="aspect-square relative bg-zinc-50">
@@ -683,12 +683,12 @@ function LifestylePageContent() {
                                   }}
                                   className="text-xs text-purple-600 hover:text-purple-700 font-medium"
                                 >
-                                  查看更多 ({allModels.length})
+                                  {t.common?.viewMore || '查看更多'} ({allModels.length})
                                 </button>
                               )}
                             </div>
                           </div>
-                          <p className="text-sm text-zinc-500 mb-4">不选则随机匹配</p>
+                          <p className="text-sm text-zinc-500 mb-4">{t.common?.randomMatchHint || '不选则随机匹配'}</p>
                           <div className="grid grid-cols-4 gap-3">
                             <button
                               onClick={() => modelUploadRef.current?.click()}
@@ -736,12 +736,12 @@ function LifestylePageContent() {
                                   }}
                                   className="text-xs text-purple-600 hover:text-purple-700 font-medium"
                                 >
-                                  查看更多 ({allScenes.length})
+                                  {t.common?.viewMore || '查看更多'} ({allScenes.length})
                                 </button>
                               )}
                             </div>
                           </div>
-                          <p className="text-sm text-zinc-500 mb-4">不选则随机匹配</p>
+                          <p className="text-sm text-zinc-500 mb-4">{t.common?.randomMatchHint || '不选则随机匹配'}</p>
                           <div className="grid grid-cols-4 gap-3">
                             <button
                               onClick={() => sceneUploadRef.current?.click()}

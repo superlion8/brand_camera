@@ -1048,12 +1048,12 @@ function SocialPageContent() {
                                   }}
                                   className="text-xs text-pink-600 hover:text-pink-700 font-medium"
                                 >
-                                  查看更多 ({allModels.length})
+                                  {t.common?.viewMore || '查看更多'} ({allModels.length})
                                 </button>
                               )}
                             </div>
                           </div>
-                          <p className="text-sm text-zinc-500 mb-4">不选则随机匹配</p>
+                          <p className="text-sm text-zinc-500 mb-4">{t.common?.randomMatchHint || '不选则随机匹配'}</p>
                           <div className="grid grid-cols-4 gap-3">
                             <button
                               onClick={() => modelUploadRef.current?.click()}
@@ -1101,12 +1101,12 @@ function SocialPageContent() {
                                   }}
                                   className="text-xs text-pink-600 hover:text-pink-700 font-medium"
                                 >
-                                  查看更多 ({allBackgrounds.length})
+                                  {t.common?.viewMore || '查看更多'} ({allBackgrounds.length})
                                 </button>
                               )}
                             </div>
                           </div>
-                          <p className="text-sm text-zinc-500 mb-4">不选则随机匹配</p>
+                          <p className="text-sm text-zinc-500 mb-4">{t.common?.randomMatchHint || '不选则随机匹配'}</p>
                           <div className="grid grid-cols-4 gap-3">
                             <button
                               onClick={() => bgUploadRef.current?.click()}

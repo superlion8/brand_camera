@@ -54,6 +54,12 @@ export const en: Translations = {
     syncing: "Syncing with cloud...",
     pleaseWait: "Please wait",
     waiting: "Waiting...",
+    viewMore: "View More",
+    randomMatchHint: "Random if not selected",
+    clearSelection: "Clear",
+    change: "Change",
+    clickToUploadOrDrag: "Click to upload or drag and drop",
+    uploadProductDesc: "Upload product image, AI will generate professional display",
   },
   
   // Navigation

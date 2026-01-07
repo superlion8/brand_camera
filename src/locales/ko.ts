@@ -54,6 +54,12 @@ export const ko: Translations = {
     syncing: "클라우드 동기화 중...",
     pleaseWait: "잠시만 기다려 주세요",
     waiting: "대기 중...",
+    viewMore: "더 보기",
+    randomMatchHint: "선택 안 하면 랜덤 매칭",
+    clearSelection: "선택 취소",
+    change: "변경",
+    clickToUploadOrDrag: "클릭하여 업로드 또는 드래그 앤 드롭",
+    uploadProductDesc: "상품 이미지 업로드 후 AI가 전문 디스플레이 생성",
   },
   
   // Navigation

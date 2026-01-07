@@ -52,6 +52,12 @@ export const zh = {
     syncing: "正在同步云端数据...",
     pleaseWait: "请稍候",
     waiting: "等待中...",
+    viewMore: "查看更多",
+    randomMatchHint: "不选则随机匹配",
+    clearSelection: "清除选择",
+    change: "更换",
+    clickToUploadOrDrag: "点击上传或拖拽图片",
+    uploadProductDesc: "上传商品图片后，AI 将为你生成专业展示图",
   },
   
   // Navigation
