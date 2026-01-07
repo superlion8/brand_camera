@@ -379,12 +379,18 @@ export default function AnalyzingPage() {
                             onClick={() => setZoomImage(step.result!.selectedImage!)}
                             className="relative h-20 w-20 rounded-lg overflow-hidden bg-zinc-100 group cursor-pointer"
                           >
-                            <Image 
+                            {/* Use native img for external CDN images (Instagram, etc.) to avoid CORS issues */}
+                            <img 
                               src={step.result.selectedImage} 
                               alt="Result" 
-                              fill 
-                              className="object-cover"
-                              unoptimized
+                              className="absolute inset-0 w-full h-full object-cover"
+                              referrerPolicy="no-referrer"
+                              crossOrigin="anonymous"
+                              onError={(e) => {
+                                console.log('[Image] Failed to load:', step.result?.selectedImage?.slice(0, 60))
+                                // Hide broken image
+                                e.currentTarget.style.display = 'none'
+                              }}
                             />
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
                               <ZoomIn className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
