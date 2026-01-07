@@ -1178,8 +1178,8 @@ export default function GalleryPage() {
               <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
               <span className="text-sm text-blue-600">{t.common.syncing || '正在加载数据...'}</span>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              {[...Array(6)].map((_, i) => (
+            <div className={`grid gap-3 ${isDesktop ? 'grid-cols-4 lg:grid-cols-5 xl:grid-cols-6' : 'grid-cols-2'}`}>
+              {[...Array(isDesktop ? 12 : 6)].map((_, i) => (
                 <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl animate-pulse" />
               ))}
             </div>
