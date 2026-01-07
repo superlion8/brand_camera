@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
 import { 
   ArrowLeft, Upload, Loader2, Download, Heart, 
-  Sun, Sparkles, Lightbulb, Zap, Home, FolderHeart, X, Camera, ZoomIn, Wand2
+  Sun, Sparkles, Lightbulb, Zap, Home, FolderHeart, X, Camera, ZoomIn, Wand2,
+  Image as ImageIcon, Images
 } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Webcam from "react-webcam"
@@ -20,6 +21,7 @@ import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
+import { useIsMobile } from "@/hooks/useIsMobile"
 
 // Helper to map API error codes to translated messages
 const getErrorMessage = (error: string, t: any): string => {
@@ -132,6 +134,10 @@ function StudioPageContent() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const colorPickerRef = useRef<HTMLDivElement>(null)
   const webcamRef = useRef<Webcam>(null)
+  
+  // Device detection
+  const isMobile = useIsMobile(1024)
+  const isDesktop = isMobile === false
   
   const [mode, setMode] = useState<StudioMode>('main')
   const modeRef = useRef(mode) // Ref to track latest mode for async callbacks
@@ -629,9 +635,107 @@ function StudioPageContent() {
     setMode('main')
   }
   
+  // Render upload area (shared between mobile and PC)
+  const renderUploadArea = () => (
+    <div className={`${isDesktop ? 'bg-white rounded-2xl p-6 shadow-sm border border-zinc-100' : 'bg-zinc-100 min-h-[200px] p-4'} flex items-center justify-center`}>
+      {!productImage ? (
+        <div className={`w-full ${isDesktop ? '' : 'max-w-sm'} space-y-3`}>
+          {/* Camera - hidden on desktop */}
+          {!isDesktop && (
+            <button
+              onClick={() => setMode('camera')}
+              className="w-full h-14 rounded-xl bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center gap-3 transition-colors shadow-lg shadow-amber-200"
+            >
+              <Camera className="w-5 h-5" />
+              <span className="font-medium">{t.studio.shootProduct}</span>
+            </button>
+          )}
+          
+          {/* PC: Larger upload area */}
+          {isDesktop ? (
+            <div className="space-y-4">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full aspect-[3/4] max-h-[400px] rounded-2xl border-2 border-dashed border-zinc-300 hover:border-amber-400 hover:bg-amber-50/50 flex flex-col items-center justify-center gap-3 transition-all"
+              >
+                <div className="w-16 h-16 bg-zinc-100 rounded-2xl flex items-center justify-center">
+                  <Upload className="w-8 h-8 text-zinc-400" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-medium text-zinc-700">{t.studio.shootProduct}</p>
+                  <p className="text-xs text-zinc-400 mt-1">点击上传或拖拽图片</p>
+                </div>
+              </button>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setShowGalleryPanel(true)}
+                  className="h-12 rounded-xl border border-zinc-200 bg-white hover:border-amber-400 hover:bg-amber-50/50 flex items-center justify-center gap-2 transition-colors"
+                >
+                  <ImageIcon className="w-4 h-4 text-zinc-500" />
+                  <span className="text-sm text-zinc-600">{t.studio.fromGallery}</span>
+                </button>
+                <button
+                  onClick={() => setShowProductPanel(true)}
+                  className="h-12 rounded-xl border border-zinc-200 bg-white hover:border-amber-400 hover:bg-amber-50/50 flex items-center justify-center gap-2 transition-colors"
+                >
+                  <FolderHeart className="w-4 h-4 text-zinc-500" />
+                  <span className="text-sm text-zinc-600">{t.camera.assetLibrary}</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-amber-400 flex items-center justify-center gap-2 transition-colors"
+              >
+                <Upload className="w-4 h-4 text-zinc-500" />
+                <span className="text-sm text-zinc-700">{t.camera.album}</span>
+              </button>
+              <button
+                onClick={() => setShowGalleryPanel(true)}
+                className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-amber-400 flex items-center justify-center gap-2 transition-colors"
+              >
+                <Home className="w-4 h-4 text-zinc-500" />
+                <span className="text-sm text-zinc-700">{t.studio.fromGallery}</span>
+              </button>
+              <button
+                onClick={() => setShowProductPanel(true)}
+                className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-amber-400 flex items-center justify-center gap-2 transition-colors"
+              >
+                <FolderHeart className="w-4 h-4 text-zinc-500" />
+                <span className="text-sm text-zinc-700">{t.camera.assetLibrary}</span>
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className={`relative w-full ${isDesktop ? 'max-w-full' : 'max-w-xs'}`}>
+          <Image 
+            src={productImage} 
+            alt="Product"
+            width={400}
+            height={400}
+            className={`w-full rounded-xl shadow-lg object-contain bg-white ${isDesktop ? 'max-h-[400px]' : ''}`}
+          />
+          <button
+            onClick={() => {
+              setProductImage(null)
+              setProductFromPhone(false)
+            }}
+            className="absolute bottom-3 right-3 px-4 py-2 bg-white/90 hover:bg-white text-zinc-700 text-sm font-medium rounded-lg shadow transition-colors"
+          >
+            {t.edit.editNew}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+  
   return (
-    <div className="h-full flex flex-col bg-zinc-50">
-      {/* Header */}
+    <div className={`h-full flex flex-col ${isDesktop ? 'bg-zinc-50' : 'bg-zinc-50'}`}>
+      {/* Header - simplified for PC since TopNav exists */}
+      {!isDesktop && (
       <div className="h-14 flex items-center px-4 bg-white border-b shrink-0">
         <button 
           onClick={() => router.push('/')}
@@ -641,6 +745,24 @@ function StudioPageContent() {
         </button>
         <span className="font-semibold ml-2">{t.studio.title}</span>
       </div>
+      )}
+      
+      {/* PC Header */}
+      {isDesktop && (
+        <div className="bg-white border-b border-zinc-200">
+          <div className="max-w-5xl mx-auto px-8 py-5">
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => router.push('/')}
+                className="w-9 h-9 rounded-lg hover:bg-zinc-100 flex items-center justify-center transition-colors"
+              >
+                <Home className="w-5 h-5 text-zinc-600" />
+              </button>
+              <h1 className="text-lg font-semibold text-zinc-900">{t.studio.title}</h1>
+            </div>
+          </div>
+        </div>
+      )}
       
       <input 
         type="file" 
@@ -658,71 +780,173 @@ function StudioPageContent() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex-1 overflow-y-auto pb-40"
+            className={`flex-1 overflow-y-auto ${isDesktop ? 'py-8' : 'pb-40'}`}
           >
-            {/* Image Upload Area */}
-            <div className="bg-zinc-100 min-h-[200px] flex items-center justify-center relative p-4">
-              {!productImage ? (
-                <div className="w-full max-w-sm space-y-2">
-                  {/* Camera */}
-                  <button
-                    onClick={() => setMode('camera')}
-                    className="w-full h-14 rounded-xl bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center gap-3 transition-colors shadow-lg shadow-amber-200"
-                  >
-                    <Camera className="w-5 h-5" />
-                    <span className="font-medium">{t.studio.shootProduct}</span>
-                  </button>
+            {/* PC: Two-column layout */}
+            {isDesktop ? (
+              <div className="max-w-5xl mx-auto px-8">
+                <div className="flex gap-8">
+                  {/* Left: Image Upload + Photo Type */}
+                  <div className="w-[380px] shrink-0 space-y-4">
+                    {renderUploadArea()}
+                    
+                    {/* Photo Type - under upload */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-4">
+                      <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.studio.photoType}</h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          onClick={() => setPhotoType('studio')}
+                          className={`py-3 px-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5 ${
+                            photoType === 'studio'
+                              ? 'border-amber-500 bg-amber-50'
+                              : 'border-zinc-200 bg-white hover:border-zinc-300'
+                          }`}
+                        >
+                          <span className="text-xl">📦</span>
+                          <span className={`text-xs font-medium ${photoType === 'studio' ? 'text-amber-700' : 'text-zinc-600'}`}>
+                            {t.studio.studioShot}
+                          </span>
+                        </button>
+                        <button
+                          onClick={() => setPhotoType('hanging')}
+                          className={`py-3 px-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5 ${
+                            photoType === 'hanging'
+                              ? 'border-amber-500 bg-amber-50'
+                              : 'border-zinc-200 bg-white hover:border-zinc-300'
+                          }`}
+                        >
+                          <span className="text-xl">👔</span>
+                          <span className={`text-xs font-medium ${photoType === 'hanging' ? 'text-amber-700' : 'text-zinc-600'}`}>
+                            {t.studio.hangingShot}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                   
-                  <div className="grid grid-cols-3 gap-2">
-                    {/* Album */}
+                  {/* Right: Settings */}
+                  <div className="flex-1 min-w-0">
+                    <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-6 space-y-6">
+                      {/* Light Type */}
+                      <div>
+                        <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.studio.lightType}</h3>
+                        <div className="grid grid-cols-4 gap-2">
+                          {LIGHT_TYPES.map(type => {
+                            const Icon = type.icon
+                            return (
                     <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-amber-400 flex items-center justify-center gap-2 transition-colors"
+                                key={type.id}
+                                onClick={() => setLightType(type.id)}
+                                className={`py-3 px-2 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5 ${
+                                  lightType === type.id
+                                    ? 'border-amber-500 bg-amber-50'
+                                    : 'border-zinc-200 bg-white hover:border-zinc-300'
+                                }`}
                     >
-                      <Upload className="w-4 h-4 text-zinc-500" />
-                      <span className="text-sm text-zinc-700">{t.camera.album}</span>
+                                <Icon className={`w-5 h-5 ${lightType === type.id ? 'text-amber-600' : 'text-zinc-400'}`} />
+                                <span className={`text-xs font-medium ${lightType === type.id ? 'text-amber-700' : 'text-zinc-600'}`}>
+                                  {type.label}
+                                </span>
                     </button>
+                            )
+                          })}
+                        </div>
+                      </div>
                     
-                    {/* Gallery */}
+                      {/* Aspect Ratio */}
+                      <div>
+                        <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.studio.aspectRatio}</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {ASPECT_RATIOS.map(ratio => (
                     <button
-                      onClick={() => setShowGalleryPanel(true)}
-                      className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-amber-400 flex items-center justify-center gap-2 transition-colors"
-                    >
-                      <Home className="w-4 h-4 text-zinc-500" />
-                      <span className="text-sm text-zinc-700">{t.studio.fromGallery}</span>
+                              key={ratio.id}
+                              onClick={() => setAspectRatio(ratio.id)}
+                              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                                aspectRatio === ratio.id
+                                  ? 'bg-zinc-900 text-white'
+                                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                              }`}
+                            >
+                              {ratio.label}
                     </button>
+                          ))}
+                        </div>
+                      </div>
                     
-                    {/* Asset library */}
+                      {/* Light Direction */}
+                      <div>
+                        <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.studio.lightDirection}</h3>
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            ['top-left', '↖'], ['top', '↑'], ['top-right', '↗'],
+                            ['left', '←'], ['front', '●'], ['right', '→'],
+                          ].map(([dir, icon]) => (
                     <button
-                      onClick={() => setShowProductPanel(true)}
-                      className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-amber-400 flex items-center justify-center gap-2 transition-colors"
-                    >
-                      <FolderHeart className="w-4 h-4 text-zinc-500" />
-                      <span className="text-sm text-zinc-700">{t.camera.assetLibrary}</span>
+                              key={dir}
+                              onClick={() => setLightDirection(dir)}
+                              className={`aspect-square rounded-xl border-2 flex items-center justify-center text-lg transition-all ${
+                                lightDirection === dir
+                                  ? 'border-amber-500 bg-amber-500 text-white'
+                                  : 'border-zinc-200 bg-white hover:border-zinc-300 text-zinc-400'
+                              }`}
+                            >
+                              {icon}
                     </button>
+                          ))}
                   </div>
                 </div>
-              ) : (
-                <div className="relative w-full max-w-xs">
-                  <Image 
-                    src={productImage} 
-                    alt="Product"
-                    width={300}
-                    height={300}
-                    className="w-full rounded-xl shadow-lg object-contain bg-white"
-                  />
+                      
+                      {/* Background Color */}
+                      <div>
+                        <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.studio.bgColor}</h3>
+                        <div className="flex gap-2">
+                          {PRESET_BG_COLORS.map(color => (
                   <button
+                              key={color.id}
                     onClick={() => {
-                      setProductImage(null)
-                      setProductFromPhone(false)
+                                setBgColor(color.colors[0])
+                                const [h, s, v] = hexToHsv(color.colors[0])
+                                setHue(h)
+                                setSaturation(s)
+                                setBrightness(v)
                     }}
-                    className="absolute bottom-2 right-2 px-3 py-1.5 bg-white/90 hover:bg-white text-zinc-700 text-sm font-medium rounded-lg shadow transition-colors"
-                  >
-                    {t.edit.editNew}
+                              className={`w-10 h-10 rounded-full border-2 transition-all ${
+                                bgColor === color.colors[0] ? 'border-zinc-900 ring-2 ring-zinc-900/20' : 'border-zinc-200 hover:border-zinc-400'
+                              }`}
+                              style={{ background: `linear-gradient(135deg, ${color.colors[0]}, ${color.colors[1]})` }}
+                              title={color.label}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Generate Button */}
+                      <div className="pt-4 border-t border-zinc-100">
+                        <button
+                          onClick={(e) => {
+                            triggerFlyToGallery(e)
+                            handleGenerate()
+                          }}
+                          disabled={!productImage}
+                          className={`w-full h-12 rounded-xl text-base font-semibold gap-2 flex items-center justify-center transition-all ${
+                            !productImage
+                              ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
+                              : "bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-200/50"
+                          }`}
+                        >
+                          <Sparkles className="w-5 h-5" />
+                          <span>{t.camera.startShoot}</span>
                   </button>
                 </div>
-              )}
             </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Mobile Layout */
+              <>
+                {/* Image Upload Area */}
+                {renderUploadArea()}
             
             {/* Settings Panel */}
             <div className="p-4 bg-white rounded-t-2xl -mt-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] relative z-10 space-y-5">
@@ -907,11 +1131,13 @@ function StudioPageContent() {
               </div>
               
             </div>
+              </>
+            )}
           </motion.div>
         )}
         
-        {/* Fixed Generate Button for main mode */}
-        {mode === 'main' && (
+        {/* Fixed Generate Button for main mode - Mobile only */}
+        {mode === 'main' && !isDesktop && (
           <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-white via-white to-transparent max-w-md mx-auto z-40">
             <button
               onClick={(e) => {
@@ -940,17 +1166,46 @@ function StudioPageContent() {
             exit={{ opacity: 0 }}
             className="flex-1 flex flex-col bg-black relative"
           >
-            {/* Back button */}
+            {/* Back button - hidden on desktop */}
+            {!isDesktop && (
             <button
               onClick={() => setMode('main')}
               className="absolute top-4 left-4 z-20 w-10 h-10 rounded-full bg-black/30 text-white backdrop-blur-md flex items-center justify-center"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
+            )}
             
-            {/* Camera view */}
-            <div className="flex-1 relative">
-              {hasCamera ? (
+            {/* Camera view / Upload interface */}
+            <div className={`flex-1 relative ${isDesktop ? 'bg-zinc-50' : ''}`}>
+              {isDesktop ? (
+                /* PC Desktop: Show upload interface */
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center p-8 max-w-md">
+                    <div className="w-24 h-24 mx-auto mb-6 bg-white rounded-2xl shadow-lg flex items-center justify-center">
+                      <Camera className="w-12 h-12 text-zinc-400" />
+                    </div>
+                    <h2 className="text-xl font-bold text-zinc-900 mb-2">{t.studio?.uploadProduct || '上传商品图片'}</h2>
+                    <p className="text-zinc-500 mb-6">{t.studio?.uploadProductDesc || '选择商品图片开始棚拍'}</p>
+                    <div className="flex gap-3 justify-center">
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-6 py-3 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 transition-colors flex items-center gap-2"
+                      >
+                        <Upload className="w-5 h-5" />
+                        {t.studio?.fromAlbum || '从相册选择'}
+                      </button>
+                      <button
+                        onClick={() => setShowProductPanel(true)}
+                        className="px-6 py-3 bg-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-300 transition-colors flex items-center gap-2"
+                      >
+                        <FolderHeart className="w-5 h-5" />
+                        {t.studio?.assetLibrary || '素材库'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : hasCamera ? (
                 <Webcam
                   ref={webcamRef}
                   audio={false}
@@ -979,7 +1234,8 @@ function StudioPageContent() {
                 </div>
               )}
               
-              {/* Grid overlay */}
+              {/* Grid overlay - hidden on desktop */}
+              {!isDesktop && (
               <div className="absolute inset-0 pointer-events-none opacity-30">
                 <div className="w-full h-full grid grid-cols-3 grid-rows-3">
                   {[...Array(9)].map((_, i) => (
@@ -987,8 +1243,10 @@ function StudioPageContent() {
                   ))}
                 </div>
               </div>
+              )}
               
-              {/* Focus frame */}
+              {/* Focus frame - hidden on desktop */}
+              {!isDesktop && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="w-64 h-64 border border-white/50 rounded-lg relative">
                   <div className="absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 border-amber-400" />
@@ -997,14 +1255,17 @@ function StudioPageContent() {
                   <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-4 border-r-4 border-amber-400" />
                 </div>
               </div>
+              )}
               
+              {!isDesktop && (
               <div className="absolute top-16 left-0 right-0 text-center text-white/80 text-sm font-medium">
                 {t.camera.shootYourProduct}
               </div>
+              )}
             </div>
             
-            {/* Capture button - positioned above BottomNav */}
-            <div className="bg-black py-8 pb-24 flex justify-center">
+            {/* Capture button - positioned above BottomNav, hidden on desktop in camera mode */}
+            <div className={`py-8 pb-24 flex justify-center ${isDesktop ? 'bg-white border-t border-zinc-200' : 'bg-black'}`}>
               <button
                 onClick={handleCapture}
                 disabled={!cameraReady}
@@ -1023,11 +1284,15 @@ function StudioPageContent() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex-1 flex flex-col items-center justify-center p-8 pb-24"
+            className={`flex-1 flex flex-col items-center justify-center p-8 ${isDesktop ? '' : 'pb-24'}`}
           >
             <div className="relative mb-6">
-              <div className="absolute inset-0 bg-amber-500/20 blur-xl rounded-full animate-pulse" />
-              <Loader2 className="w-16 h-16 text-amber-500 animate-spin relative z-10" />
+              <div className={`absolute inset-0 blur-xl rounded-full animate-pulse ${
+                isDesktop ? 'bg-amber-500/30' : 'bg-amber-500/20'
+              }`} />
+              <Loader2 className={`w-16 h-16 animate-spin relative z-10 ${
+                isDesktop ? 'text-amber-600' : 'text-amber-500'
+              }`} />
             </div>
             <h3 className="text-xl font-bold text-zinc-800 mb-2">{t.studio.generating}</h3>
             <p className="text-zinc-500 text-sm mb-8">{t.studio.generatingDesc}</p>
@@ -1037,14 +1302,22 @@ function StudioPageContent() {
               <p className="text-zinc-400 text-xs text-center mb-4">{t.studio.continueInBackground}</p>
               <button
                 onClick={handleNewProductDuringProcessing}
-                className="w-full h-12 rounded-full bg-amber-500 text-white font-medium flex items-center justify-center gap-2 hover:bg-amber-600 transition-colors"
+                className={`w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors ${
+                  isDesktop 
+                    ? 'bg-amber-600 text-white hover:bg-amber-700'
+                    : 'bg-amber-500 text-white hover:bg-amber-600'
+                }`}
               >
                 <Camera className="w-5 h-5" />
                 {t.studio.shootNew}
               </button>
               <button
                 onClick={handleReturnHomeDuringProcessing}
-                className="w-full h-12 rounded-full bg-zinc-100 text-zinc-700 font-medium flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors"
+                className={`w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors ${
+                  isDesktop 
+                    ? 'bg-white text-zinc-700 hover:bg-zinc-100 border border-zinc-200'
+                    : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
+                }`}
               >
                 <Home className="w-5 h-5" />
                 {t.studio.returnHome}
@@ -1062,9 +1335,9 @@ function StudioPageContent() {
             exit={{ opacity: 0 }}
             className="flex-1 overflow-y-auto"
           >
-            <div className="p-4 pb-40">
+            <div className={`${isDesktop ? 'max-w-4xl mx-auto py-8 px-4' : 'p-4 pb-40'}`}>
               <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.studio.results}</h3>
-              <div className="grid grid-cols-2 gap-3">
+              <div className={`grid gap-3 ${isDesktop ? 'grid-cols-4' : 'grid-cols-2'}`}>
                 {generatedImages.map((url, i) => (
                   <div 
                     key={i}
@@ -1085,16 +1358,16 @@ function StudioPageContent() {
                       )}
                     </div>
                     
-                    {/* Favorite button - always visible */}
+                    {/* Favorite button - show on hover for PC */}
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
                         handleFavorite(i)
                       }}
-                      className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-colors ${
+                      className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-all ${
                         currentGenerationId && isFavorited(currentGenerationId, i)
                           ? 'bg-red-500 text-white'
-                          : 'bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500'
+                          : `bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500 ${isDesktop ? 'opacity-0 group-hover:opacity-100' : ''}`
                       }`}
                     >
                       <Heart className={`w-4 h-4 ${currentGenerationId && isFavorited(currentGenerationId, i) ? 'fill-current' : ''}`} />
@@ -1102,13 +1375,32 @@ function StudioPageContent() {
                   </div>
                 ))}
               </div>
+              
+              {/* PC: Centered buttons */}
+              {isDesktop && (
+                <div className="flex justify-center gap-3 mt-8">
+                  <button
+                    onClick={() => setMode('main')}
+                    className="px-8 h-12 border border-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 transition-colors"
+                  >
+                    {t.studio.adjustParams}
+                  </button>
+                  <button
+                    onClick={handleReset}
+                    className="px-8 h-12 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 transition-colors"
+                  >
+                    {t.studio.shootNew}
+                  </button>
+                </div>
+              )}
             </div>
             
-            {/* Actions - positioned above BottomNav */}
-            <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t flex gap-3 max-w-md mx-auto z-40">
-              <button
-                onClick={() => setMode('main')}
-                className="flex-1 h-12 border border-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 transition-colors"
+            {/* Mobile: Actions - positioned above BottomNav */}
+            {!isDesktop && (
+              <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t flex gap-3 max-w-md mx-auto z-40">
+                <button
+                  onClick={() => setMode('main')}
+                  className="flex-1 h-12 border border-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 transition-colors"
                 >
                   {t.studio.adjustParams}
                 </button>
@@ -1118,7 +1410,8 @@ function StudioPageContent() {
                 >
                   {t.studio.shootNew}
                 </button>
-            </div>
+              </div>
+            )}
             
             {/* Result Detail Dialog */}
             {selectedResultIndex !== null && generatedImages[selectedResultIndex] && (

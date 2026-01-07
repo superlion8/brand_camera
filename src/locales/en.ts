@@ -5,6 +5,7 @@ export const en: Translations = {
   common: {
     appName: "Brand Camera",
     slogan: "AI Studio for Brands",
+    search: "Search...",
     loading: "Loading...",
     generating: "Generating...",
     done: "Done",
@@ -53,6 +54,12 @@ export const en: Translations = {
     syncing: "Syncing with cloud...",
     pleaseWait: "Please wait",
     waiting: "Waiting...",
+    viewMore: "View More",
+    randomMatchHint: "Random if not selected",
+    clearSelection: "Clear",
+    change: "Change",
+    clickToUploadOrDrag: "Click to upload or drag and drop",
+    uploadProductDesc: "Upload product image, AI will generate professional display",
   },
   
   // Navigation
@@ -68,6 +75,9 @@ export const en: Translations = {
   // Home Page
   home: {
     description: "Generate professional product and model photos with one click",
+    welcome: "Welcome to Brand Camera",
+    welcomeDesc: "Choose a feature below to start creating",
+    quickLinks: "Quick Links",
     shootModel: "Model Photo",
     shootProduct: "Product Photo",
     retouchRoom: "Retouch Room",
@@ -106,6 +116,9 @@ export const en: Translations = {
     takePhoto: "Photo",
     album: "Album",
     assetLibrary: "Library",
+    uploadProduct: "Upload Product Image",
+    uploadProductDesc: "Select a product image to start buyer show",
+    selectFromAlbum: "Select from Album",
     shootProduct: "Shoot Product",
     addProduct2: "Add Product 2",
     customizeModelBg: "Customize Model & Background",
@@ -147,6 +160,8 @@ export const en: Translations = {
     myModels: "My",
     allBackgrounds: "All",
     myBackgrounds: "My",
+    selectModel: "Select Model",
+    selectBg: "Select Background",
   },
   
   // Group Shoot Page
@@ -155,6 +170,7 @@ export const en: Translations = {
     chooseOneMethod: "Choose one method to add image",
     uploadImage: "Upload Image",
     fromAlbum: "From Album",
+    selectStyle: "Select Style",
     selectFromPhotos: "Select from Photos",
     modelCategory: "Model Category",
     imageSelected: "Image Selected",
@@ -217,6 +233,8 @@ export const en: Translations = {
     noGallery: "No generations yet",
     goShoot: "Go Shoot",
     generationResult: "Generation Result",
+    uploadImage: "Upload Image",
+    uploadImageDesc: "Select an image to edit",
   },
   
   // Studio Page
@@ -264,6 +282,9 @@ export const en: Translations = {
     fromAlbum: "Upload from Album",
     generationFailed: "Generation failed, please retry",
     officialExamples: "Official Examples",
+    uploadProduct: "Upload Product Image",
+    uploadProductDesc: "Select a product image to start studio shoot",
+    assetLibrary: "Asset Library",
   },
   
   // Gallery Page
@@ -488,6 +509,9 @@ export const en: Translations = {
     generatingOutfit: "Designing outfit...",
     album: "Album",
     assetLibrary: "Assets",
+    uploadProduct: "Upload Product Image",
+    uploadProductDesc: "Select a product image to start pro studio shoot",
+    selectFromAlbum: "Select from Album",
     customConfig: "Custom Settings",
     nextStep: "Next",
     selectModel: "Select Model (random if not selected)",
@@ -759,6 +783,10 @@ export const en: Translations = {
   // Social Mode
   social: {
     title: "Social",
+    uploadProduct: "Upload Product Image",
+    uploadProductDesc: "Select a product image to start social media shoot",
+    selectFromAlbum: "Select from Album",
+    assetLibrary: "Assets",
     productImage: "Product Image",
     model: "Model",
     background: "Background",
@@ -786,6 +814,9 @@ export const en: Translations = {
     album: "Album",
     examples: "Examples",
     assetLibrary: "Assets",
+    uploadProduct: "Upload Product Image",
+    uploadProductDesc: "Select a product image to start Lifestyle street photography",
+    selectFromAlbum: "Select from Album",
     creating: "Creating street style photos",
     continueInBackground: "Generation continues in background, you can:",
     returnHome: "Return Home",
@@ -867,5 +898,6 @@ export const en: Translations = {
     fromGallery: "From Photos",
     fromAlbum: "From Album",
     takePhoto: "Take Photo",
+    uploadDesc: "Select images to start virtual try-on",
   },
 }

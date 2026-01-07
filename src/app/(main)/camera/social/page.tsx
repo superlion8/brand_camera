@@ -7,7 +7,7 @@ import Webcam from "react-webcam"
 import { 
   ArrowLeft, ArrowRight, Check, Loader2, Image as ImageIcon, 
   SlidersHorizontal, X, Wand2, Camera, Home,
-  Heart, Download, Pin, ZoomIn, FolderHeart, Plus, Upload
+  Heart, Download, Pin, ZoomIn, FolderHeart, Plus, Upload, Sparkles
 } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { useGenerationTaskStore, base64ToBlobUrl } from "@/stores/generationTaskStore"
@@ -24,6 +24,7 @@ import { BottomNav } from "@/components/shared/BottomNav"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
+import { useIsMobile } from "@/hooks/useIsMobile"
 
 // Helper to map API error codes to translated messages
 const getErrorMessage = (error: string, t: any): string => {
@@ -79,6 +80,9 @@ function SocialPageContent() {
   const modelUploadRef = useRef<HTMLInputElement>(null)
   const bgUploadRef = useRef<HTMLInputElement>(null)
   
+  // Device detection
+  const isMobile = useIsMobile(1024)
+  const isDesktop = isMobile === false
   
   // Mode and state
   const [mode, setMode] = useState<SocialMode>("camera")
@@ -812,7 +816,7 @@ function SocialPageContent() {
   }
   
   return (
-    <div className="h-full relative flex flex-col bg-black">
+    <div className={`h-full relative flex flex-col ${isDesktop ? 'bg-zinc-50' : 'bg-black'}`}>
       <input 
         type="file" 
         ref={fileInputRef} 
@@ -862,8 +866,103 @@ function SocialPageContent() {
             </div>
 
             {/* Viewfinder / Captured Image */}
-            <div className="flex-1 relative">
-              {mode === "camera" && hasCamera && permissionChecked ? (
+            <div className={`flex-1 relative ${isDesktop && mode === "camera" ? 'bg-zinc-50' : ''}`}>
+              {/* PC Desktop: Show upload interface with two-column layout */}
+              {mode === "camera" && isDesktop ? (
+                <div className="absolute inset-0 overflow-y-auto bg-zinc-50">
+                  {/* PC Header */}
+                  <div className="bg-white border-b border-zinc-200">
+                    <div className="max-w-5xl mx-auto px-8 py-5">
+                      <div className="flex items-center gap-3">
+                        <button 
+                          onClick={() => router.push('/')}
+                          className="w-9 h-9 rounded-lg hover:bg-zinc-100 flex items-center justify-center transition-colors"
+                        >
+                          <Home className="w-5 h-5 text-zinc-600" />
+                        </button>
+                        <h1 className="text-lg font-semibold text-zinc-900">{t.social?.title || '社媒种草'}</h1>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Two-column content */}
+                  <div className="max-w-5xl mx-auto px-8 py-8">
+                    <div className="flex gap-8">
+                      {/* Left: Image Upload */}
+                      <div className="w-[380px] shrink-0">
+                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-zinc-100">
+                          <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="w-full aspect-[3/4] max-h-[400px] rounded-2xl border-2 border-dashed border-zinc-300 hover:border-pink-400 hover:bg-pink-50/50 flex flex-col items-center justify-center gap-3 transition-all"
+                          >
+                            <div className="w-16 h-16 bg-zinc-100 rounded-2xl flex items-center justify-center">
+                              <ImageIcon className="w-8 h-8 text-zinc-400" />
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm font-medium text-zinc-700">{t.social?.uploadProduct || '上传商品图片'}</p>
+                              <p className="text-xs text-zinc-400 mt-1">点击上传或拖拽图片</p>
+                            </div>
+                          </button>
+                          <div className="mt-4">
+                            <button
+                              onClick={() => setShowProductPanel(true)}
+                              className="w-full h-12 rounded-xl border border-zinc-200 bg-white hover:border-pink-400 hover:bg-pink-50/50 flex items-center justify-center gap-2 transition-colors"
+                            >
+                              <FolderHeart className="w-4 h-4 text-zinc-500" />
+                              <span className="text-sm text-zinc-600">{t.social?.assetLibrary || '素材库'}</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Right: Options */}
+                      <div className="flex-1 min-w-0">
+                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-6 space-y-6">
+                          <div className="text-center py-8">
+                            <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-pink-50 to-purple-50 rounded-2xl flex items-center justify-center">
+                              <Sparkles className="w-8 h-8 text-pink-500" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-zinc-900 mb-2">社媒种草模式</h3>
+                            <p className="text-sm text-zinc-500 max-w-xs mx-auto">
+                              生成小红书、INS 风格的时尚种草图片
+                            </p>
+                          </div>
+                          
+                          <div className="border-t border-zinc-100 pt-6 space-y-4">
+                            <div className="flex items-start gap-3">
+                              <div className="w-8 h-8 bg-pink-100 rounded-lg flex items-center justify-center shrink-0">
+                                <Check className="w-4 h-4 text-pink-600" />
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-medium text-zinc-900">小红书风格</h4>
+                                <p className="text-xs text-zinc-500">适合社交媒体分享的时尚风格</p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center shrink-0">
+                                <Check className="w-4 h-4 text-purple-600" />
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-medium text-zinc-900">精致穿搭展示</h4>
+                                <p className="text-xs text-zinc-500">展示商品搭配效果</p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                              <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center shrink-0">
+                                <Check className="w-4 h-4 text-orange-600" />
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-medium text-zinc-900">种草力 MAX</h4>
+                                <p className="text-xs text-zinc-500">提升商品转化率</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : mode === "camera" && hasCamera && permissionChecked && !isDesktop ? (
                 <Webcam
                   ref={webcamRef}
                   audio={false}
@@ -878,14 +977,14 @@ function SocialPageContent() {
                   onUserMediaError={handleCameraError}
                   className="absolute inset-0 w-full h-full object-cover opacity-60"
                 />
-              ) : mode === "camera" && !permissionChecked ? (
+              ) : mode === "camera" && !permissionChecked && !isDesktop ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
                   <div className="text-center text-zinc-400">
                     <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin opacity-50" />
                     <p className="text-sm">正在初始化相机...</p>
                   </div>
                 </div>
-              ) : mode === "camera" && !hasCamera ? (
+              ) : mode === "camera" && !hasCamera && !isDesktop ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
                   <div className="text-center text-zinc-400">
                     <Camera className="w-12 h-12 mx-auto mb-4 opacity-30" />
@@ -893,7 +992,303 @@ function SocialPageContent() {
                     <p className="text-xs mt-1">{t.camera?.productPlaceholder || '请上传商品图片'}</p>
                   </div>
                 </div>
+              ) : mode === "review" && isDesktop ? (
+                /* Desktop Review Mode - Two Column Layout */
+                <div className="absolute inset-0 overflow-y-auto bg-zinc-50">
+                  {/* PC Header */}
+                  <div className="bg-white border-b border-zinc-200">
+                    <div className="max-w-5xl mx-auto px-8 py-4">
+                      <div className="flex items-center gap-3">
+                        <button 
+                          onClick={handleRetake}
+                          className="w-9 h-9 rounded-lg hover:bg-zinc-100 flex items-center justify-center transition-colors"
+                        >
+                          <ArrowLeft className="w-5 h-5 text-zinc-600" />
+                        </button>
+                        <h1 className="text-lg font-semibold text-zinc-900">{t.social?.title || '社媒种草'}</h1>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Two-column content */}
+                  <div className="max-w-5xl mx-auto px-8 py-6">
+                    <div className="flex gap-8">
+                      {/* Left: Product Image */}
+                      <div className="w-[380px] shrink-0 space-y-4">
+                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 overflow-hidden">
+                          <div className="p-3 border-b border-zinc-100 flex items-center justify-between">
+                            <span className="text-sm font-medium text-zinc-900">{t.social?.productImage || '商品图'}</span>
+                            <button onClick={handleRetake} className="text-xs text-zinc-500 hover:text-zinc-700">
+                              更换
+                            </button>
+                          </div>
+                          <div className="aspect-square relative bg-zinc-50">
+                            <img src={capturedImage || ""} alt="商品" className="w-full h-full object-contain" />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Right: Settings */}
+                      <div className="flex-1 min-w-0 space-y-6">
+                        {/* Model Selection */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-semibold text-zinc-900">{t.social?.selectModel || '选择模特'}</h3>
+                            <div className="flex items-center gap-3">
+                              {selectedModel && (
+                                <button onClick={() => setSelectedModel(null)} className="text-xs text-zinc-500 hover:text-zinc-700">
+                                  {t.proStudio?.clearSelection || '清除选择'}
+                                </button>
+                              )}
+                              {allModels.length > 7 && (
+                                <button 
+                                  onClick={() => {
+                                    setActiveCustomTab("model")
+                                    setShowCustomPanel(true)
+                                  }}
+                                  className="text-xs text-pink-600 hover:text-pink-700 font-medium"
+                                >
+                                  {t.common?.viewMore || '查看更多'} ({allModels.length})
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-sm text-zinc-500 mb-4">{t.common?.randomMatchHint || '不选则随机匹配'}</p>
+                          <div className="grid grid-cols-4 gap-3">
+                            <button
+                              onClick={() => modelUploadRef.current?.click()}
+                              className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-pink-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                            >
+                              <Plus className="w-5 h-5 text-zinc-400" />
+                              <span className="text-[10px] text-zinc-400">上传</span>
+                            </button>
+                            {allModels.slice(0, 7).map(model => (
+                              <button
+                                key={model.id}
+                                onClick={() => setSelectedModel(selectedModel === model.id ? null : model.id)}
+                                className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
+                                  selectedModel === model.id 
+                                    ? 'border-pink-500 ring-2 ring-pink-500/30' 
+                                    : 'border-transparent hover:border-pink-300'
+                                }`}
+                              >
+                                <Image src={model.imageUrl} alt={model.name || ''} fill className="object-cover" />
+                                {selectedModel === model.id && (
+                                  <div className="absolute top-1 right-1 w-5 h-5 bg-pink-500 rounded-full flex items-center justify-center">
+                                    <Check className="w-3 h-3 text-white" />
+                                  </div>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Background Selection */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-semibold text-zinc-900">{t.social?.selectBackground || '选择背景'}</h3>
+                            <div className="flex items-center gap-3">
+                              {selectedBg && (
+                                <button onClick={() => setSelectedBg(null)} className="text-xs text-zinc-500 hover:text-zinc-700">
+                                  {t.proStudio?.clearSelection || '清除选择'}
+                                </button>
+                              )}
+                              {allBackgrounds.length > 7 && (
+                                <button 
+                                  onClick={() => {
+                                    setActiveCustomTab("bg")
+                                    setShowCustomPanel(true)
+                                  }}
+                                  className="text-xs text-pink-600 hover:text-pink-700 font-medium"
+                                >
+                                  {t.common?.viewMore || '查看更多'} ({allBackgrounds.length})
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-sm text-zinc-500 mb-4">{t.common?.randomMatchHint || '不选则随机匹配'}</p>
+                          <div className="grid grid-cols-4 gap-3">
+                            <button
+                              onClick={() => bgUploadRef.current?.click()}
+                              className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-pink-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                            >
+                              <Plus className="w-5 h-5 text-zinc-400" />
+                              <span className="text-[10px] text-zinc-400">上传</span>
+                            </button>
+                            {allBackgrounds.slice(0, 7).map(bg => (
+                              <button
+                                key={bg.id}
+                                onClick={() => setSelectedBg(selectedBg === bg.id ? null : bg.id)}
+                                className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
+                                  selectedBg === bg.id 
+                                    ? 'border-pink-500 ring-2 ring-pink-500/30' 
+                                    : 'border-transparent hover:border-pink-300'
+                                }`}
+                              >
+                                <Image src={bg.imageUrl} alt={bg.name || ''} fill className="object-cover" />
+                                {selectedBg === bg.id && (
+                                  <div className="absolute top-1 right-1 w-5 h-5 bg-pink-500 rounded-full flex items-center justify-center">
+                                    <Check className="w-3 h-3 text-white" />
+                                  </div>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Generate Button */}
+                        <button
+                          onClick={(e) => {
+                            triggerFlyToGallery(e)
+                            handleShootIt()
+                          }}
+                          className="w-full h-14 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white text-lg font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg shadow-pink-200/50"
+                        >
+                          <Wand2 className="w-5 h-5" />
+                          {t.social?.generate || '生成种草图'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Desktop Modal for View More */}
+                  <AnimatePresence>
+                    {showCustomPanel && (
+                      <>
+                        <motion.div 
+                          initial={{ opacity: 0 }} 
+                          animate={{ opacity: 1 }} 
+                          exit={{ opacity: 0 }}
+                          className="fixed inset-0 bg-black/40 z-40"
+                          onClick={() => setShowCustomPanel(false)}
+                        />
+                        <motion.div 
+                          initial={{ opacity: 0, scale: 0.95 }} 
+                          animate={{ opacity: 1, scale: 1 }} 
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          className="fixed inset-x-8 top-1/2 -translate-y-1/2 max-w-3xl mx-auto bg-white rounded-2xl z-50 max-h-[80vh] flex flex-col overflow-hidden shadow-xl"
+                        >
+                          <div className="h-14 border-b flex items-center justify-between px-6 shrink-0">
+                            <div className="flex gap-4">
+                              <button 
+                                onClick={() => setActiveCustomTab("model")}
+                                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                                  activeCustomTab === "model" ? "bg-pink-500 text-white" : "bg-zinc-100 text-zinc-600"
+                                }`}
+                              >
+                                {t.common?.model || '模特'}
+                              </button>
+                              <button 
+                                onClick={() => setActiveCustomTab("bg")}
+                                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                                  activeCustomTab === "bg" ? "bg-pink-500 text-white" : "bg-zinc-100 text-zinc-600"
+                                }`}
+                              >
+                                {t.common?.background || '背景'}
+                              </button>
+                            </div>
+                            <button 
+                              onClick={() => setShowCustomPanel(false)} 
+                              className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center"
+                            >
+                              <X className="w-5 h-5 text-zinc-500" />
+                            </button>
+                          </div>
+                          <div className="flex-1 overflow-y-auto p-6">
+                            {activeCustomTab === "model" && (
+                              <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm text-zinc-600">{t.social?.selectModel || '选择模特（不选则随机）'}</span>
+                                  {selectedModel && (
+                                    <button onClick={() => setSelectedModel(null)} className="text-xs text-pink-600">
+                                      {t.proStudio?.clearSelection || '清除选择'}
+                                    </button>
+                                  )}
+                                </div>
+                                <div className="grid grid-cols-6 gap-3">
+                                  <button
+                                    onClick={() => modelUploadRef.current?.click()}
+                                    className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-pink-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                                  >
+                                    <Plus className="w-5 h-5 text-zinc-400" />
+                                    <span className="text-[10px] text-zinc-400">上传</span>
+                                  </button>
+                                  {allModels.map(model => (
+                                    <button
+                                      key={model.id}
+                                      onClick={() => setSelectedModel(selectedModel === model.id ? null : model.id)}
+                                      className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
+                                        selectedModel === model.id 
+                                          ? 'border-pink-500 ring-2 ring-pink-500/30' 
+                                          : 'border-transparent hover:border-pink-300'
+                                      }`}
+                                    >
+                                      <Image src={model.imageUrl} alt={model.name || ''} fill className="object-cover" />
+                                      {selectedModel === model.id && (
+                                        <div className="absolute top-1 right-1 w-5 h-5 bg-pink-500 rounded-full flex items-center justify-center">
+                                          <Check className="w-3 h-3 text-white" />
+                                        </div>
+                                      )}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {activeCustomTab === "bg" && (
+                              <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm text-zinc-600">{t.social?.selectBackground || '选择背景（不选则随机）'}</span>
+                                  {selectedBg && (
+                                    <button onClick={() => setSelectedBg(null)} className="text-xs text-pink-600">
+                                      {t.proStudio?.clearSelection || '清除选择'}
+                                    </button>
+                                  )}
+                                </div>
+                                <div className="grid grid-cols-6 gap-3">
+                                  <button
+                                    onClick={() => bgUploadRef.current?.click()}
+                                    className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-pink-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                                  >
+                                    <Plus className="w-5 h-5 text-zinc-400" />
+                                    <span className="text-[10px] text-zinc-400">上传</span>
+                                  </button>
+                                  {allBackgrounds.map(bg => (
+                                    <button
+                                      key={bg.id}
+                                      onClick={() => setSelectedBg(selectedBg === bg.id ? null : bg.id)}
+                                      className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
+                                        selectedBg === bg.id 
+                                          ? 'border-pink-500 ring-2 ring-pink-500/30' 
+                                          : 'border-transparent hover:border-pink-300'
+                                      }`}
+                                    >
+                                      <Image src={bg.imageUrl} alt={bg.name || ''} fill className="object-cover" />
+                                      {selectedBg === bg.id && (
+                                        <div className="absolute top-1 right-1 w-5 h-5 bg-pink-500 rounded-full flex items-center justify-center">
+                                          <Check className="w-3 h-3 text-white" />
+                                        </div>
+                                      )}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          <div className="h-16 border-t flex items-center justify-center px-6">
+                            <button 
+                              onClick={() => setShowCustomPanel(false)}
+                              className="px-8 py-2.5 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-medium transition-colors"
+                            >
+                              确定
+                            </button>
+                          </div>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+                </div>
               ) : (
+                /* Mobile Review Mode */
                 <div className="absolute inset-0">
                   <img 
                     src={capturedImage || ""} 
@@ -920,7 +1315,8 @@ function SocialPageContent() {
                 )}
               </div>
 
-              {mode === "camera" && (
+              {/* Camera overlays - Mobile only */}
+              {mode === "camera" && !isDesktop && (
                 <>
                   {/* Grid Overlay */}
                   <div className="absolute inset-0 pointer-events-none opacity-30">
@@ -949,14 +1345,22 @@ function SocialPageContent() {
             </div>
 
             {/* Bottom Controls Area */}
-            <div className="bg-black flex flex-col justify-end pb-safe pt-6 px-6 relative z-20 shrink-0 min-h-[9rem]">
+            <div className={`flex flex-col justify-end pb-safe pt-6 px-6 relative z-20 shrink-0 ${
+              isDesktop 
+                ? 'bg-white border-t border-zinc-200 min-h-[6rem]' 
+                : 'bg-black min-h-[9rem]'
+            }`}>
               {mode === "review" ? (
-                <div className="space-y-4 pb-4">
+                <div className="space-y-4 pb-4 lg:flex lg:items-center lg:justify-center lg:gap-4 lg:space-y-0">
                   {/* Custom button in review mode */}
-                  <div className="flex justify-center">
+                  <div className="flex justify-center lg:order-1">
                     <button 
                       onClick={() => setShowCustomPanel(true)}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 text-white/90 hover:bg-white/20 transition-colors border border-white/20"
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-full transition-colors border ${
+                        isDesktop 
+                          ? 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border-zinc-300'
+                          : 'bg-white/10 text-white/90 hover:bg-white/20 border-white/20'
+                      }`}
                     >
                       <SlidersHorizontal className="w-4 h-4" />
                       <span className="text-sm font-medium">{t.camera?.customizeModelBg || '自定义模特和背景'}</span>
@@ -964,7 +1368,7 @@ function SocialPageContent() {
                   </div>
                   
                   {/* Shoot It button */}
-                  <div className="w-full flex justify-center">
+                  <div className="w-full flex justify-center lg:w-auto lg:order-2">
                     <motion.button
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -972,13 +1376,16 @@ function SocialPageContent() {
                         triggerFlyToGallery(e)
                         handleShootIt()
                       }}
-                      className="w-full max-w-xs h-14 rounded-full text-lg font-semibold gap-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:from-pink-600 hover:to-purple-600 shadow-[0_0_20px_rgba(236,72,153,0.3)] flex items-center justify-center transition-colors"
+                      className="w-full max-w-xs lg:px-8 h-14 rounded-full text-lg font-semibold gap-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:from-pink-600 hover:to-purple-600 shadow-[0_0_20px_rgba(236,72,153,0.3)] flex items-center justify-center transition-colors"
                     >
                       <Wand2 className="w-5 h-5" />
                       {t.social?.generate || '生成种草图'}
                     </motion.button>
                   </div>
                 </div>
+              ) : isDesktop ? (
+                /* Desktop: Hide bottom controls in camera mode */
+                <div className="hidden" />
               ) : (
                 <div className="flex items-center justify-center gap-8 pb-4">
                   {/* Album - Left of shutter */}
@@ -992,7 +1399,7 @@ function SocialPageContent() {
                     <span className="text-[10px]">{t.camera?.album || '相册'}</span>
                   </button>
 
-                  {/* Shutter */}
+                  {/* Shutter - Mobile only */}
                   <button 
                     onClick={handleCapture}
                     disabled={!hasCamera}

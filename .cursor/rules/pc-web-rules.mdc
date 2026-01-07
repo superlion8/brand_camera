@@ -1,0 +1,119 @@
+---
+alwaysApply: true
+---
+
+## PC Web 开发规则
+
+本项目同时支持 Mobile Web 和 PC Web，**开发新功能时必须同时考虑两端适配**。
+
+### 核心工具
+
+```typescript
+import { useIsMobile } from "@/hooks/useIsMobile"
+
+const isMobile = useIsMobile(1024)
+const isDesktop = isMobile === false
+```
+
+### 开发模式选择
+
+| 页面复杂度 | 推荐方式 | 示例 |
+|-----------|---------|------|
+| 简单 | Tailwind 响应式 | `grid-cols-2 md:grid-cols-4` |
+| 中等 | 条件渲染 | `{isDesktop ? <A/> : <B/>}` |
+| 复杂 | 逻辑提取到 Hook | `useFeatureLogic()` + 分离组件 |
+
+### PC Web 必须检查项
+
+#### 1. 相机功能 - 仅移动端
+```tsx
+// ❌ 错误
+<button onClick={handleCapture}>拍照</button>
+
+// ✅ 正确
+{!isDesktop && <button onClick={handleCapture}>拍照</button>}
+```
+
+#### 2. 底部导航 - 仅移动端
+```tsx
+// ❌ 错误
+<BottomNav forceShow />
+
+// ✅ 正确
+{!isDesktop && <BottomNav forceShow />}
+```
+
+#### 3. 相机覆盖层（网格/对焦框）- 仅移动端
+```tsx
+// ❌ 错误
+{mode === "camera" && <FocusFrame />}
+
+// ✅ 正确
+{mode === "camera" && !isDesktop && <FocusFrame />}
+```
+
+#### 4. PC 端布局容器
+```tsx
+// 双栏布局标准结构
+<div className="max-w-5xl mx-auto px-8 py-6">
+  <div className="flex gap-8">
+    <div className="w-[380px] shrink-0">{/* 左栏 */}</div>
+    <div className="flex-1 min-w-0">{/* 右栏 */}</div>
+  </div>
+</div>
+
+// 卡片容器
+<div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-6">
+```
+
+#### 5. 图片网格 - PC 端更多列
+```tsx
+<div className={`grid gap-4 ${isDesktop ? 'grid-cols-4' : 'grid-cols-2'}`}>
+```
+
+### 新功能开发检查清单
+
+开发完成后，必须检查以下项目：
+
+- [ ] 导入 `useIsMobile` 并定义 `isDesktop`
+- [ ] 相机/拍照功能添加 `!isDesktop` 条件
+- [ ] 独立 BottomNav 添加 `!isDesktop` 条件
+- [ ] PC 端有 `max-w-*` 和 `mx-auto` 居中
+- [ ] 上传区域在 PC 端尺寸合理（非全屏）
+- [ ] 图片网格在 PC 端列数增加
+- [ ] 翻译文件包含新增文本 key
+
+### 常用 PC 端样式
+
+```tsx
+// 页面容器
+"max-w-5xl mx-auto px-8 py-6"
+
+// 双栏布局
+"flex gap-8"
+
+// 固定宽度左栏
+"w-[380px] shrink-0"
+
+// 弹性右栏
+"flex-1 min-w-0"
+
+// 卡片
+"bg-white rounded-2xl shadow-sm border border-zinc-100 p-6"
+
+// 模特/背景选择网格
+"grid grid-cols-5 gap-2"
+
+// 主按钮
+"w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+
+// 选中状态
+"border-2 border-blue-500 ring-2 ring-blue-500/30"
+
+// hover 显示
+"opacity-0 group-hover:opacity-100"
+```
+
+### 原则
+
+**先移动端，再桌面端。业务逻辑共享，UI 按需区分。**

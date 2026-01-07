@@ -26,6 +26,7 @@ import { BottomNav } from "@/components/shared/BottomNav"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
+import { useIsMobile } from "@/hooks/useIsMobile"
 
 // Helper to map API error codes to translated messages
 const getErrorMessage = (error: string, t: any): string => {
@@ -84,6 +85,10 @@ function CameraPageContent() {
   const fileInputRef2 = useRef<HTMLInputElement>(null) // For second product image
   const modelUploadRef = useRef<HTMLInputElement>(null) // For model upload
   const bgUploadRef = useRef<HTMLInputElement>(null) // For background/environment upload
+  
+  // Device detection
+  const isMobile = useIsMobile(1024)
+  const isDesktop = isMobile === false
   
   // Mode and state
   const [mode, setMode] = useState<CameraMode>("camera")
@@ -1177,7 +1182,7 @@ function CameraPageContent() {
   }
   
   return (
-    <div className="h-full relative flex flex-col bg-black">
+    <div className={`h-full relative flex flex-col ${isDesktop ? 'bg-zinc-50' : 'bg-black'}`}>
       <input 
         type="file" 
         ref={fileInputRef} 
@@ -1227,8 +1232,103 @@ function CameraPageContent() {
             </div>
 
             {/* Viewfinder / Captured Image */}
-            <div className="flex-1 relative">
-              {mode === "camera" && hasCamera && permissionChecked ? (
+            <div className={`flex-1 relative ${isDesktop && mode === "camera" ? 'bg-zinc-50' : ''}`}>
+              {/* PC Desktop: Show upload interface with two-column layout */}
+              {mode === "camera" && isDesktop ? (
+                <div className="absolute inset-0 overflow-y-auto bg-zinc-50">
+                  {/* PC Header */}
+                  <div className="bg-white border-b border-zinc-200">
+                    <div className="max-w-5xl mx-auto px-8 py-5">
+                      <div className="flex items-center gap-3">
+                        <button 
+                          onClick={() => router.push('/')}
+                          className="w-9 h-9 rounded-lg hover:bg-zinc-100 flex items-center justify-center transition-colors"
+                        >
+                          <Home className="w-5 h-5 text-zinc-600" />
+                        </button>
+                        <h1 className="text-lg font-semibold text-zinc-900">{t.camera?.title || '买家秀'}</h1>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Two-column content */}
+                  <div className="max-w-5xl mx-auto px-8 py-8">
+                    <div className="flex gap-8">
+                      {/* Left: Image Upload */}
+                      <div className="w-[380px] shrink-0">
+                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-zinc-100">
+                          <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="w-full aspect-[3/4] max-h-[400px] rounded-2xl border-2 border-dashed border-zinc-300 hover:border-blue-400 hover:bg-blue-50/50 flex flex-col items-center justify-center gap-3 transition-all"
+                          >
+                            <div className="w-16 h-16 bg-zinc-100 rounded-2xl flex items-center justify-center">
+                              <ImageIcon className="w-8 h-8 text-zinc-400" />
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm font-medium text-zinc-700">{t.camera?.uploadProduct || '上传商品图片'}</p>
+                              <p className="text-xs text-zinc-400 mt-1">{t.common?.clickToUploadOrDrag || '点击上传或拖拽图片'}</p>
+                            </div>
+                          </button>
+                          <div className="mt-4">
+                            <button
+                              onClick={() => setShowProductPanel(true)}
+                              className="w-full h-12 rounded-xl border border-zinc-200 bg-white hover:border-blue-400 hover:bg-blue-50/50 flex items-center justify-center gap-2 transition-colors"
+                            >
+                              <FolderHeart className="w-4 h-4 text-zinc-500" />
+                              <span className="text-sm text-zinc-600">{t.camera?.assetLibrary || '素材库'}</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Right: Options */}
+                      <div className="flex-1 min-w-0">
+                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-6 space-y-6">
+                          <div className="text-center py-8">
+                            <div className="w-16 h-16 mx-auto mb-4 bg-blue-50 rounded-2xl flex items-center justify-center">
+                              <Wand2 className="w-8 h-8 text-blue-500" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-zinc-900 mb-2">买家秀模式</h3>
+                            <p className="text-sm text-zinc-500 max-w-xs mx-auto">
+                              {t.common?.uploadProductDesc || '上传商品图片后，AI 将为你生成专业展示图'}
+                            </p>
+                          </div>
+                          
+                          <div className="border-t border-zinc-100 pt-6 space-y-4">
+                            <div className="flex items-start gap-3">
+                              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
+                                <Check className="w-4 h-4 text-blue-600" />
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-medium text-zinc-900">真实场景</h4>
+                                <p className="text-xs text-zinc-500">生活化场景，更有代入感</p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
+                                <Check className="w-4 h-4 text-green-600" />
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-medium text-zinc-900">多样风格</h4>
+                                <p className="text-xs text-zinc-500">支持自定义模特和背景</p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                              <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center shrink-0">
+                                <Check className="w-4 h-4 text-amber-600" />
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-medium text-zinc-900">高质量输出</h4>
+                                <p className="text-xs text-zinc-500">适合电商平台使用</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : mode === "camera" && hasCamera && permissionChecked && !isDesktop ? (
                 <Webcam
                   ref={webcamRef}
                   audio={false}
@@ -1243,14 +1343,14 @@ function CameraPageContent() {
                   onUserMediaError={handleCameraError}
                   className="absolute inset-0 w-full h-full object-cover opacity-60"
                 />
-              ) : mode === "camera" && !permissionChecked ? (
+              ) : mode === "camera" && !permissionChecked && !isDesktop ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
                   <div className="text-center text-zinc-400">
                     <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin opacity-50" />
                     <p className="text-sm">正在初始化相机...</p>
                   </div>
                 </div>
-              ) : mode === "camera" && !hasCamera ? (
+              ) : mode === "camera" && !hasCamera && !isDesktop ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
                   <div className="text-center text-zinc-400">
                     <Camera className="w-12 h-12 mx-auto mb-4 opacity-30" />
@@ -1258,7 +1358,343 @@ function CameraPageContent() {
                     <p className="text-xs mt-1">{t.camera.productPlaceholder}</p>
                   </div>
                 </div>
+              ) : mode === "review" && isDesktop ? (
+                /* Desktop Review Mode - Two Column Layout */
+                <div className="absolute inset-0 overflow-y-auto bg-zinc-50">
+                  {/* PC Header */}
+                  <div className="bg-white border-b border-zinc-200">
+                    <div className="max-w-5xl mx-auto px-8 py-4">
+                      <div className="flex items-center gap-3">
+                        <button 
+                          onClick={handleRetake}
+                          className="w-9 h-9 rounded-lg hover:bg-zinc-100 flex items-center justify-center transition-colors"
+                        >
+                          <ArrowLeft className="w-5 h-5 text-zinc-600" />
+                        </button>
+                        <h1 className="text-lg font-semibold text-zinc-900">{t.camera?.title || '买家秀'}</h1>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Two-column content */}
+                  <div className="max-w-5xl mx-auto px-8 py-6">
+                    <div className="flex gap-8">
+                      {/* Left: Product Image */}
+                      <div className="w-[380px] shrink-0 space-y-4">
+                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 overflow-hidden">
+                          <div className="p-3 border-b border-zinc-100 flex items-center justify-between">
+                            <span className="text-sm font-medium text-zinc-900">{t.camera?.product1 || '商品图'}</span>
+                            <button onClick={handleRetake} className="text-xs text-zinc-500 hover:text-zinc-700">
+                              {t.common?.change || '更换'}
+                            </button>
+                          </div>
+                          <div className="aspect-square relative bg-zinc-50">
+                            <img src={capturedImage || ""} alt="商品" className="w-full h-full object-contain" />
+                          </div>
+                        </div>
+                        
+                        {/* Add second product */}
+                        {capturedImage2 ? (
+                          <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 overflow-hidden">
+                            <div className="p-3 border-b border-zinc-100 flex items-center justify-between">
+                              <span className="text-sm font-medium text-zinc-900">{t.camera?.product2 || '商品2'}</span>
+                              <button onClick={() => setCapturedImage2(null)} className="text-xs text-red-500 hover:text-red-600">
+                                移除
+                              </button>
+                            </div>
+                            <div className="aspect-square relative bg-zinc-50">
+                              <img src={capturedImage2} alt="商品2" className="w-full h-full object-contain" />
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={async () => {
+                              const imageUrl = user?.id 
+                                ? await ensureImageUrl(capturedImage!, user.id, 'product')
+                                : capturedImage!
+                              sessionStorage.setItem('product1Image', imageUrl)
+                              sessionStorage.removeItem('product2Image')
+                              router.push('/pro-studio/outfit?mode=camera')
+                            }}
+                            className="w-full h-12 rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 flex items-center justify-center gap-2 text-zinc-500 hover:text-blue-600 transition-colors"
+                          >
+                            <Plus className="w-4 h-4" />
+                            <span className="text-sm">{t.outfit?.title || '搭配商品'}</span>
+                          </button>
+                        )}
+                      </div>
+                      
+                      {/* Right: Settings */}
+                      <div className="flex-1 min-w-0 space-y-6">
+                        {/* Model Selection */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-semibold text-zinc-900">{t.camera?.selectModel || '选择模特'}</h3>
+                            <div className="flex items-center gap-3">
+                              {selectedModel && (
+                                <button onClick={() => setSelectedModel(null)} className="text-xs text-zinc-500 hover:text-zinc-700">
+                                  {t.proStudio?.clearSelection || '清除选择'}
+                                </button>
+                              )}
+                              {allModels.length > 7 && (
+                                <button 
+                                  onClick={() => {
+                                    setActiveCustomTab("model")
+                                    setShowCustomPanel(true)
+                                  }}
+                                  className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                                >
+                                  {t.common?.viewMore || '查看更多'} ({allModels.length})
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-sm text-zinc-500 mb-4">{t.common?.randomMatchHint || '不选则随机匹配'}</p>
+                          <div className="grid grid-cols-4 gap-3">
+                            <button
+                              onClick={() => modelUploadRef.current?.click()}
+                              className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                            >
+                              <Plus className="w-5 h-5 text-zinc-400" />
+                              <span className="text-[10px] text-zinc-400">上传</span>
+                            </button>
+                            {allModels.slice(0, 7).map(model => (
+                              <button
+                                key={model.id}
+                                onClick={() => setSelectedModel(selectedModel === model.id ? null : model.id)}
+                                className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
+                                  selectedModel === model.id 
+                                    ? 'border-blue-500 ring-2 ring-blue-500/30' 
+                                    : 'border-transparent hover:border-blue-300'
+                                }`}
+                              >
+                                <Image src={model.imageUrl} alt={model.name || ''} fill className="object-cover" />
+                                {selectedModel === model.id && (
+                                  <div className="absolute top-1 right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                                    <Check className="w-3 h-3 text-white" />
+                                  </div>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Background Selection */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-semibold text-zinc-900">{t.camera?.selectBg || '选择背景'}</h3>
+                            <div className="flex items-center gap-3">
+                              {selectedBg && (
+                                <button onClick={() => setSelectedBg(null)} className="text-xs text-zinc-500 hover:text-zinc-700">
+                                  {t.proStudio?.clearSelection || '清除选择'}
+                                </button>
+                              )}
+                              {allBackgrounds.length > 7 && (
+                                <button 
+                                  onClick={() => {
+                                    setActiveCustomTab("bg")
+                                    setShowCustomPanel(true)
+                                  }}
+                                  className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                                >
+                                  {t.common?.viewMore || '查看更多'} ({allBackgrounds.length})
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-sm text-zinc-500 mb-4">{t.common?.randomMatchHint || '不选则随机匹配'}</p>
+                          <div className="grid grid-cols-4 gap-3">
+                            <button
+                              onClick={() => bgUploadRef.current?.click()}
+                              className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                            >
+                              <Plus className="w-5 h-5 text-zinc-400" />
+                              <span className="text-[10px] text-zinc-400">上传</span>
+                            </button>
+                            {allBackgrounds.slice(0, 7).map(bg => (
+                              <button
+                                key={bg.id}
+                                onClick={() => setSelectedBg(selectedBg === bg.id ? null : bg.id)}
+                                className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
+                                  selectedBg === bg.id 
+                                    ? 'border-blue-500 ring-2 ring-blue-500/30' 
+                                    : 'border-transparent hover:border-blue-300'
+                                }`}
+                              >
+                                <Image src={bg.imageUrl} alt={bg.name || ''} fill className="object-cover" />
+                                {selectedBg === bg.id && (
+                                  <div className="absolute top-1 right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                                    <Check className="w-3 h-3 text-white" />
+                                  </div>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Generate Button */}
+                        <button
+                          onClick={async (e) => {
+                            if (capturedImage2) {
+                              const [url1, url2] = await Promise.all([
+                                ensureImageUrl(capturedImage!, user?.id || '', 'product'),
+                                ensureImageUrl(capturedImage2, user?.id || '', 'product')
+                              ])
+                              sessionStorage.setItem('product1Image', url1)
+                              sessionStorage.setItem('product2Image', url2)
+                              router.push('/pro-studio/outfit?mode=camera')
+                            } else {
+                              triggerFlyToGallery(e)
+                              handleShootIt()
+                            }
+                          }}
+                          className="w-full h-14 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-lg font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg shadow-blue-200/50"
+                        >
+                          <Wand2 className="w-5 h-5" />
+                          {capturedImage2 ? '去搭配' : '开始生成'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Desktop Modal for View More */}
+                  <AnimatePresence>
+                    {showCustomPanel && (
+                      <>
+                        <motion.div 
+                          initial={{ opacity: 0 }} 
+                          animate={{ opacity: 1 }} 
+                          exit={{ opacity: 0 }}
+                          className="fixed inset-0 bg-black/40 z-40"
+                          onClick={() => setShowCustomPanel(false)}
+                        />
+                        <motion.div 
+                          initial={{ opacity: 0, scale: 0.95 }} 
+                          animate={{ opacity: 1, scale: 1 }} 
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          className="fixed inset-x-8 top-1/2 -translate-y-1/2 max-w-3xl mx-auto bg-white rounded-2xl z-50 max-h-[80vh] flex flex-col overflow-hidden shadow-xl"
+                        >
+                          <div className="h-14 border-b flex items-center justify-between px-6 shrink-0">
+                            <div className="flex gap-4">
+                              <button 
+                                onClick={() => setActiveCustomTab("model")}
+                                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                                  activeCustomTab === "model" ? "bg-blue-600 text-white" : "bg-zinc-100 text-zinc-600"
+                                }`}
+                              >
+                                {t.common?.model || '模特'}
+                              </button>
+                              <button 
+                                onClick={() => setActiveCustomTab("bg")}
+                                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                                  activeCustomTab === "bg" ? "bg-blue-600 text-white" : "bg-zinc-100 text-zinc-600"
+                                }`}
+                              >
+                                {t.common?.background || '背景'}
+                              </button>
+                            </div>
+                            <button 
+                              onClick={() => setShowCustomPanel(false)} 
+                              className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center"
+                            >
+                              <X className="w-5 h-5 text-zinc-500" />
+                            </button>
+                          </div>
+                          <div className="flex-1 overflow-y-auto p-6">
+                            {activeCustomTab === "model" && (
+                              <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm text-zinc-600">{t.camera?.selectModel || '选择模特（不选则随机）'}</span>
+                                  {selectedModel && (
+                                    <button onClick={() => setSelectedModel(null)} className="text-xs text-blue-600">
+                                      {t.proStudio?.clearSelection || '清除选择'}
+                                    </button>
+                                  )}
+                                </div>
+                                <div className="grid grid-cols-6 gap-3">
+                                  <button
+                                    onClick={() => modelUploadRef.current?.click()}
+                                    className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                                  >
+                                    <Plus className="w-5 h-5 text-zinc-400" />
+                                    <span className="text-[10px] text-zinc-400">上传</span>
+                                  </button>
+                                  {allModels.map(model => (
+                                    <button
+                                      key={model.id}
+                                      onClick={() => setSelectedModel(selectedModel === model.id ? null : model.id)}
+                                      className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
+                                        selectedModel === model.id 
+                                          ? 'border-blue-500 ring-2 ring-blue-500/30' 
+                                          : 'border-transparent hover:border-blue-300'
+                                      }`}
+                                    >
+                                      <Image src={model.imageUrl} alt={model.name || ''} fill className="object-cover" />
+                                      {selectedModel === model.id && (
+                                        <div className="absolute top-1 right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                                          <Check className="w-3 h-3 text-white" />
+                                        </div>
+                                      )}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {activeCustomTab === "bg" && (
+                              <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm text-zinc-600">{t.camera?.selectBg || '选择背景（不选则随机）'}</span>
+                                  {selectedBg && (
+                                    <button onClick={() => setSelectedBg(null)} className="text-xs text-blue-600">
+                                      {t.proStudio?.clearSelection || '清除选择'}
+                                    </button>
+                                  )}
+                                </div>
+                                <div className="grid grid-cols-6 gap-3">
+                                  <button
+                                    onClick={() => bgUploadRef.current?.click()}
+                                    className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                                  >
+                                    <Plus className="w-5 h-5 text-zinc-400" />
+                                    <span className="text-[10px] text-zinc-400">上传</span>
+                                  </button>
+                                  {allBackgrounds.map(bg => (
+                                    <button
+                                      key={bg.id}
+                                      onClick={() => setSelectedBg(selectedBg === bg.id ? null : bg.id)}
+                                      className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
+                                        selectedBg === bg.id 
+                                          ? 'border-blue-500 ring-2 ring-blue-500/30' 
+                                          : 'border-transparent hover:border-blue-300'
+                                      }`}
+                                    >
+                                      <Image src={bg.imageUrl} alt={bg.name || ''} fill className="object-cover" />
+                                      {selectedBg === bg.id && (
+                                        <div className="absolute top-1 right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                                          <Check className="w-3 h-3 text-white" />
+                                        </div>
+                                      )}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          <div className="h-16 border-t flex items-center justify-center px-6">
+                            <button 
+                              onClick={() => setShowCustomPanel(false)}
+                              className="px-8 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+                            >
+                              确定
+                            </button>
+                          </div>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+                </div>
               ) : (
+                /* Mobile Review Mode */
                 <div className="absolute inset-0 flex">
                   {/* Main product image */}
                   <div className={`relative ${capturedImage2 ? 'w-1/2' : 'w-full'} h-full`}>
@@ -1334,7 +1770,8 @@ function CameraPageContent() {
                 )}
               </div>
 
-              {mode === "camera" && (
+              {/* Camera overlays - Mobile only */}
+              {mode === "camera" && !isDesktop && (
                 <>
                   {/* Grid Overlay */}
                   <div className="absolute inset-0 pointer-events-none opacity-30">
@@ -1363,14 +1800,22 @@ function CameraPageContent() {
             </div>
 
             {/* Bottom Controls Area */}
-            <div className="bg-black flex flex-col justify-end pb-safe pt-6 px-6 relative z-20 shrink-0 min-h-[9rem]">
+            <div className={`flex flex-col justify-end pb-safe pt-6 px-6 relative z-20 shrink-0 ${
+              isDesktop 
+                ? 'bg-white border-t border-zinc-200 min-h-[6rem]' 
+                : 'bg-black min-h-[9rem]'
+            }`}>
               {mode === "review" ? (
-                <div className="space-y-4 pb-4">
+                <div className="space-y-4 pb-4 lg:flex lg:items-center lg:justify-center lg:gap-4 lg:space-y-0">
                   {/* Custom button */}
-                  <div className="flex justify-center">
+                  <div className="flex justify-center lg:order-1">
                     <button 
                       onClick={() => setShowCustomPanel(true)}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 text-white/90 hover:bg-white/20 transition-colors border border-white/20"
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-full transition-colors border ${
+                        isDesktop 
+                          ? 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border-zinc-300'
+                          : 'bg-white/10 text-white/90 hover:bg-white/20 border-white/20'
+                      }`}
                     >
                       <SlidersHorizontal className="w-4 h-4" />
                       <span className="text-sm font-medium">{t.camera.customizeModelBg}</span>
@@ -1378,7 +1823,7 @@ function CameraPageContent() {
                   </div>
                   
                   {/* Generate button */}
-                  <div className="w-full flex justify-center">
+                  <div className="w-full flex justify-center lg:w-auto lg:order-2">
                     <motion.button
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -1386,13 +1831,20 @@ function CameraPageContent() {
                         triggerFlyToGallery(e)
                         handleShootIt()
                       }}
-                      className="w-full max-w-xs h-14 rounded-full text-lg font-semibold gap-2 shadow-[0_0_20px_rgba(255,255,255,0.3)] flex items-center justify-center bg-white text-black hover:bg-zinc-200 transition-colors"
+                      className={`w-full max-w-xs h-14 rounded-full text-lg font-semibold gap-2 flex items-center justify-center transition-colors ${
+                        isDesktop
+                          ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg'
+                          : 'bg-white text-black hover:bg-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.3)]'
+                      }`}
                     >
                       <Wand2 className="w-5 h-5" />
                       Shoot It
                     </motion.button>
                   </div>
                 </div>
+              ) : isDesktop ? (
+                /* Desktop: Hide bottom controls in camera mode */
+                <div className="hidden" />
               ) : (
                 <div className="flex items-center justify-center gap-8 pb-4">
                   {/* Album - Left of shutter */}
@@ -1406,7 +1858,7 @@ function CameraPageContent() {
                     <span className="text-[10px]">{t.camera.album}</span>
                   </button>
 
-                  {/* Shutter */}
+                  {/* Shutter - Mobile only */}
                   <button 
                     onClick={handleCapture}
                     disabled={!hasCamera}

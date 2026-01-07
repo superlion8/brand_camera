@@ -13,6 +13,7 @@ import { useAssetStore } from "@/stores/assetStore"
 import { createClient } from "@/lib/supabase/client"
 import { useTranslation } from "@/stores/languageStore"
 import { generateId } from "@/lib/utils"
+import { useIsMobile } from "@/hooks/useIsMobile"
 
 // 创建模式类型
 type CreateMode = 'reference' | 'selector' | null
@@ -94,6 +95,10 @@ export default function ModelCreatePage() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<number>(0)
+  
+  // Device detection
+  const isMobile = useIsMobile(1024)
+  const isDesktop = isMobile === false
   
   // 页面状态
   const [pageState, setPageState] = useState<PageState>('mode-select')
@@ -314,8 +319,8 @@ export default function ModelCreatePage() {
       }
       
       setUploadProgress(50)
-      const url = await uploadFileToStorage(file)
-      if (url) {
+        const url = await uploadFileToStorage(file)
+        if (url) {
         setReferenceImage(url)
       }
       setUploadProgress(100)
@@ -328,7 +333,7 @@ export default function ModelCreatePage() {
   // 从资产库添加
   const handleAddFromAssets = (imageUrl: string) => {
     setReferenceImage(imageUrl)
-    setShowAssetPicker(false)
+      setShowAssetPicker(false)
   }
   
   // 拖拽处理
@@ -540,8 +545,8 @@ export default function ModelCreatePage() {
       setErrorMessage('')
     } else {
       // 从模式选择返回首页
-      reset()
-      router.push('/')
+    reset()
+    router.push('/')
     }
   }
   
@@ -611,19 +616,19 @@ export default function ModelCreatePage() {
   
   // 结果页面
   if (pageState === 'result' && generatedImages.length > 0) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-violet-50 via-white to-white flex flex-col">
-        {/* Header */}
-        <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-violet-100/50">
-          <div className="flex items-center justify-between px-4 py-3">
-            <button
-              onClick={handleBack}
-              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-violet-50 transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5 text-zinc-700" />
-            </button>
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-violet-600" />
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-violet-50 via-white to-white flex flex-col">
+      {/* Header */}
+      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-violet-100/50">
+        <div className="flex items-center justify-between px-4 py-3">
+          <button
+            onClick={handleBack}
+            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-violet-50 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 text-zinc-700" />
+          </button>
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-violet-600" />
               <span className="font-bold text-zinc-900">{t.modelCreate?.generateComplete || '生成完成'}</span>
             </div>
             <div className="w-10" />
@@ -837,17 +842,17 @@ export default function ModelCreatePage() {
               <span className="font-bold text-zinc-900">{t.modelCreate?.uploadReference || '上传参考模特'}</span>
             </div>
             <div className="w-10" />
-          </div>
         </div>
-        
+      </div>
+      
         {/* Content */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="px-4 py-6 pb-32">
-            {/* Title */}
-            <div className="text-center mb-6">
+      <div className="flex-1 overflow-y-auto">
+        <div className="px-4 py-6 pb-32">
+          {/* Title */}
+          <div className="text-center mb-6">
               <h1 className="text-xl font-bold text-zinc-900 mb-2">{t.modelCreate?.uploadReferenceTitle || '上传参考模特图'}</h1>
               <p className="text-sm text-zinc-500">{t.modelCreate?.uploadReferenceDesc || '上传一张模特照片，AI 将分析并生成相似风格的新模特'}</p>
-            </div>
+          </div>
             
             {/* Error Message */}
             {errorMessage && (
@@ -855,89 +860,89 @@ export default function ModelCreatePage() {
                 {errorMessage}
               </div>
             )}
-            
-            {/* Upload Area */}
-            <div
-              className={`relative rounded-2xl border-2 border-dashed transition-all min-h-[280px] ${
-                isDragging
-                  ? 'border-violet-500 bg-violet-50'
-                  : 'border-zinc-200 bg-white hover:border-violet-300'
-              }`}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-            >
-              <div className="p-4">
+          
+          {/* Upload Area */}
+          <div
+            className={`relative rounded-2xl border-2 border-dashed transition-all min-h-[280px] ${
+              isDragging
+                ? 'border-violet-500 bg-violet-50'
+                : 'border-zinc-200 bg-white hover:border-violet-300'
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <div className="p-4">
                 {referenceImage ? (
                   <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-zinc-100 group">
-                    <Image
+                        <Image
                       src={referenceImage}
                       alt="Reference Model"
-                      fill
-                      className="object-cover"
-                    />
-                    <button
+                          fill
+                          className="object-cover"
+                        />
+                        <button
                       onClick={() => setReferenceImage(null)}
                       className="absolute top-2 right-2 w-8 h-8 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="w-4 h-4 text-white" />
-                    </button>
+                        >
+                          <X className="w-4 h-4 text-white" />
+                        </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full h-full min-h-[240px] flex flex-col items-center justify-center gap-3"
+                >
+                  <div className="w-16 h-16 rounded-full bg-violet-100 flex items-center justify-center">
+                    <ImagePlus className="w-8 h-8 text-violet-500" />
                   </div>
-                ) : (
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full h-full min-h-[240px] flex flex-col items-center justify-center gap-3"
-                  >
-                    <div className="w-16 h-16 rounded-full bg-violet-100 flex items-center justify-center">
-                      <ImagePlus className="w-8 h-8 text-violet-500" />
-                    </div>
-                    <div className="text-center">
+                  <div className="text-center">
                       <p className="text-sm font-medium text-zinc-700 mb-1">{t.modelCreate?.clickToUploadReference || '点击上传参考模特图'}</p>
                       <p className="text-xs text-zinc-400">{t.modelCreate?.orDragHere || '或拖拽图片到这里'}</p>
-                    </div>
-                  </button>
-                )}
-              </div>
+                  </div>
+                </button>
+              )}
             </div>
-            
-            {/* Action Buttons */}
-            <div className="flex gap-3 mt-4">
-              <button
-                onClick={() => fileInputRef.current?.click()}
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="flex gap-3 mt-4">
+            <button
+              onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
                 className="flex-1 py-3 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                {isUploading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 text-violet-600 animate-spin" />
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 className="w-4 h-4 text-violet-600 animate-spin" />
                     <span className="text-sm font-medium text-violet-600">{t.modelCreate?.uploading || '上传中'} {uploadProgress}%</span>
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4 text-zinc-600" />
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4 text-zinc-600" />
                     <span className="text-sm font-medium text-zinc-700">{t.modelCreate?.localUpload || '本地上传'}</span>
-                  </>
-                )}
-              </button>
-              <button
-                onClick={() => setShowAssetPicker(true)}
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => setShowAssetPicker(true)}
                 disabled={isUploading}
                 className="flex-1 py-3 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                <FolderHeart className="w-4 h-4 text-zinc-600" />
+            >
+              <FolderHeart className="w-4 h-4 text-zinc-600" />
                 <span className="text-sm font-medium text-zinc-700">{t.modelCreate?.selectFromAssets || '从资产库选择'}</span>
-              </button>
-            </div>
-            
-            {/* Hidden File Input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => handleFileSelect(e.target.files)}
-            />
-            
+            </button>
+          </div>
+          
+          {/* Hidden File Input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleFileSelect(e.target.files)}
+          />
+          
             {/* User Prompt */}
             <div className="mt-6">
               <label className="block text-sm font-medium text-zinc-700 mb-2">
@@ -949,57 +954,57 @@ export default function ModelCreatePage() {
                 placeholder={t.modelCreate?.extraDescriptionPlaceholder || '例如：希望模特更加高冷、时尚感更强...'}
                 className="w-full h-24 px-4 py-3 rounded-xl border border-zinc-200 bg-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
-            </div>
           </div>
         </div>
-        
+      </div>
+      
         {/* Bottom Action */}
         <div className="fixed bottom-20 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-white via-white to-transparent">
-          <button
+        <button
             onClick={handleGenerateWithReference}
             disabled={!referenceImage}
-            className={`w-full py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2 transition-all ${
+          className={`w-full py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2 transition-all ${
               referenceImage
-                ? 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-lg shadow-violet-200'
-                : 'bg-zinc-300 cursor-not-allowed'
-            }`}
-          >
+              ? 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-lg shadow-violet-200'
+              : 'bg-zinc-300 cursor-not-allowed'
+          }`}
+        >
             <Sparkles className="w-5 h-5" />
             <span>{t.modelCreate?.generateModel || '生成模特'}</span>
-          </button>
-        </div>
-        
-        {/* Asset Picker Modal */}
-        <AnimatePresence>
-          {showAssetPicker && (
+        </button>
+      </div>
+      
+      {/* Asset Picker Modal */}
+      <AnimatePresence>
+        {showAssetPicker && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center"
+            onClick={() => setShowAssetPicker(false)}
+          >
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center"
-              onClick={() => setShowAssetPicker(false)}
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="w-full max-w-md bg-white rounded-t-3xl max-h-[70vh] flex flex-col"
+              onClick={(e) => e.stopPropagation()}
             >
-              <motion.div
-                initial={{ y: '100%' }}
-                animate={{ y: 0 }}
-                exit={{ y: '100%' }}
-                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                className="w-full max-w-md bg-white rounded-t-3xl max-h-[70vh] flex flex-col"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-center justify-between px-4 py-4 border-b border-zinc-100">
+              <div className="flex items-center justify-between px-4 py-4 border-b border-zinc-100">
                   <h3 className="text-lg font-bold text-zinc-900">{t.modelCreate?.selectFromAssets || '从资产库选择'}</h3>
-                  <button
-                    onClick={() => setShowAssetPicker(false)}
-                    className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center"
-                  >
-                    <X className="w-4 h-4 text-zinc-600" />
-                  </button>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto p-4">
+                <button
+                  onClick={() => setShowAssetPicker(false)}
+                  className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center"
+                >
+                  <X className="w-4 h-4 text-zinc-600" />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-4">
                   {modelAssets && modelAssets.length > 0 ? (
-                    <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                       {modelAssets.map((asset) => (
                         <button
                           key={asset.id}
@@ -1014,10 +1019,10 @@ export default function ModelCreatePage() {
                           />
                         </button>
                       ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12">
-                      <FolderHeart className="w-12 h-12 text-zinc-300 mx-auto mb-3" />
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <FolderHeart className="w-12 h-12 text-zinc-300 mx-auto mb-3" />
                       <p className="text-sm text-zinc-500">{t.modelCreate?.noProductsInAssets || '资产库为空'}</p>
                     </div>
                   )}
@@ -1204,8 +1209,8 @@ export default function ModelCreatePage() {
             </button>
           </div>
         )}
-      </div>
-    )
+    </div>
+  )
   }
   
   return null

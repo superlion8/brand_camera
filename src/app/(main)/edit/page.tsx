@@ -6,6 +6,7 @@ import { Wand2, Lightbulb, Home, ChevronRight, Palette, Sparkles } from "lucide-
 import { useRouter } from "next/navigation"
 import { useLanguageStore } from "@/stores/languageStore"
 import { motion } from "framer-motion"
+import { useIsMobile } from "@/hooks/useIsMobile"
 
 // Tool Card Component - 参考 Bcamui 设计
 interface ToolCardProps {
@@ -68,6 +69,10 @@ function ToolCard({ title, description, icon, image, color, href }: ToolCardProp
 export default function EditHubPage() {
   const router = useRouter()
   const t = useLanguageStore(state => state.t)
+  
+  // Device detection
+  const isMobile = useIsMobile(1024)
+  const isDesktop = isMobile === false
   
   // Feature cards with translations
   const FEATURE_CARDS = [

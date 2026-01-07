@@ -12,6 +12,7 @@ import { usePresetStore } from "@/stores/presetStore"
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
 import { motion, AnimatePresence } from "framer-motion"
 import { useLanguageStore } from "@/stores/languageStore"
+import { useIsMobile } from "@/hooks/useIsMobile"
 
 type SourceTab = "user" | "preset"
 type ModelSubTab = "normal" | "studio"
@@ -36,6 +37,10 @@ const getProductCategoryLabel = (cat: ProductSubTab, t: any): string => {
 export default function BrandAssetsPage() {
   const router = useRouter()
   const t = useLanguageStore(state => state.t)
+  
+  // Device detection
+  const isMobile = useIsMobile(1024)
+  const isDesktop = isMobile === false
   
   // Type tabs with translated labels
   const typeTabs = [
@@ -247,7 +252,7 @@ export default function BrandAssetsPage() {
       
       {/* Header */}
       <div className="border-b bg-white shrink-0">
-        <div className="h-14 flex items-center justify-between px-4">
+        <div className={`h-14 flex items-center justify-between ${isDesktop ? 'max-w-6xl mx-auto px-8' : 'px-4'}`}>
           <div className="flex items-center">
             <button
               onClick={() => router.push("/")}
@@ -292,7 +297,7 @@ export default function BrandAssetsPage() {
         </div>
         
         {/* Type Tabs */}
-        <div className="px-4 pb-3 flex gap-2 overflow-x-auto hide-scrollbar">
+        <div className={`pb-3 flex gap-2 overflow-x-auto hide-scrollbar ${isDesktop ? 'max-w-6xl mx-auto px-8' : 'px-4'}`}>
           {typeTabs.map((tab) => {
             const Icon = tab.icon
             const userCount = getUserAssets(tab.value).length
@@ -437,7 +442,8 @@ export default function BrandAssetsPage() {
       </div>
       
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 pb-24">
+      <div className={`flex-1 overflow-y-auto pb-24 ${isDesktop ? 'px-8 py-6' : 'p-4'}`}>
+        <div className={isDesktop ? 'max-w-6xl mx-auto' : ''}>
         {/* 初始加载时显示同步中提示 */}
         {isInitialLoading && activeSource === "user" && (
           <div className="flex items-center justify-center gap-2 py-3 mb-4 bg-blue-50 border border-blue-100 rounded-lg">
@@ -449,7 +455,7 @@ export default function BrandAssetsPage() {
         {displayAssets.length > 0 ? (
           <motion.div 
             key={`grid-${activeType}-${activeSource}-${modelSubTab}-${backgroundSubTab}-${productSubTab}`}
-            className="grid grid-cols-2 gap-3"
+            className={`grid gap-3 ${isDesktop ? 'grid-cols-5' : 'grid-cols-2'}`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
@@ -477,8 +483,8 @@ export default function BrandAssetsPage() {
           </motion.div>
         ) : isInitialLoading && activeSource === "user" ? (
           // 初始加载中显示骨架屏
-          <div className="grid grid-cols-2 gap-3">
-            {[1, 2, 3, 4].map((i) => (
+          <div className={`grid gap-3 ${isDesktop ? 'grid-cols-5' : 'grid-cols-2'}`}>
+            {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="aspect-square bg-zinc-100 rounded-xl animate-pulse" />
             ))}
           </div>
@@ -507,6 +513,7 @@ export default function BrandAssetsPage() {
             )}
           </div>
         )}
+        </div>
       </div>
       
       {/* Fullscreen Zoom Viewer */}

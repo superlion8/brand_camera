@@ -25,6 +25,7 @@ import {
   isLifestyleType as isLifestyleTypeRaw
 } from "@/lib/taskTypes"
 import { useGalleryStore, getCacheKey } from "@/stores/galleryStore"
+import { useIsMobile } from "@/hooks/useIsMobile"
 
 type TabType = "all" | "model" | "product" | "group" | "reference" | "favorites"
 type ModelSubType = "all" | "buyer" | "prostudio" | "create_model" | "social" | "lifestyle"  // 买家秀 / 专业棚拍 / 创建专属模特 / 社媒种草 / LifeStyle 街拍
@@ -57,6 +58,11 @@ function isLifestyleType(gen: Generation | null | undefined): boolean {
 
 export default function GalleryPage() {
   const router = useRouter()
+  
+  // Device detection
+  const isMobile = useIsMobile(1024)
+  const isDesktop = isMobile === false
+  
   const [activeTab, setActiveTab] = useState<TabType>("all")
   const [modelSubType, setModelSubType] = useState<ModelSubType>("all")  // 模特二级分类
   const [selectedItem, setSelectedItem] = useState<{ gen: Generation; index: number } | null>(null)
@@ -1024,7 +1030,7 @@ export default function GalleryPage() {
         )}
         
         <div 
-          className="grid grid-cols-2 gap-3 transition-transform duration-200"
+          className={`grid gap-3 transition-transform duration-200 ${isDesktop ? 'grid-cols-4 lg:grid-cols-5 xl:grid-cols-6' : 'grid-cols-2'}`}
           style={{ transform: `translateY(${pullDistance}px)` }}
         >
           {/* 显示从数据库获取的 pending 任务（刷新后恢复的生成中任务） */}
@@ -1172,8 +1178,8 @@ export default function GalleryPage() {
               <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
               <span className="text-sm text-blue-600">{t.common.syncing || '正在加载数据...'}</span>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              {[...Array(6)].map((_, i) => (
+            <div className={`grid gap-3 ${isDesktop ? 'grid-cols-4 lg:grid-cols-5 xl:grid-cols-6' : 'grid-cols-2'}`}>
+              {[...Array(isDesktop ? 12 : 6)].map((_, i) => (
                 <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl animate-pulse" />
               ))}
             </div>

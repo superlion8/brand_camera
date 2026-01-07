@@ -23,6 +23,7 @@ import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { usePresetStore } from "@/stores/presetStore"
+import { useIsMobile } from "@/hooks/useIsMobile"
 
 type PageMode = "camera" | "review" | "processing" | "results"
 
@@ -52,6 +53,10 @@ function LifestylePageContent() {
   useEffect(() => {
     loadPresets()
   }, [loadPresets])
+  
+  // Device detection
+  const isMobile = useIsMobile(1024)
+  const isDesktop = isMobile === false
   
   // State
   const [mode, setMode] = useState<PageMode>("camera")
@@ -448,7 +453,7 @@ function LifestylePageContent() {
   }
 
   return (
-    <div className="h-full relative flex flex-col bg-black overflow-hidden">
+    <div className={`h-full relative flex flex-col overflow-hidden ${isDesktop ? 'bg-zinc-50' : 'bg-black'}`}>
       <input 
         type="file" 
         ref={fileInputRef} 
@@ -512,8 +517,409 @@ function LifestylePageContent() {
             )}
 
             {/* Viewfinder */}
-            <div className="flex-1 relative bg-zinc-900">
-              {mode === "camera" ? (
+            <div className={`flex-1 relative ${isDesktop ? 'bg-zinc-50' : 'bg-zinc-900'}`}>
+              {mode === "camera" && isDesktop ? (
+                /* PC Desktop: Show upload interface with two-column layout */
+                <div className="absolute inset-0 overflow-y-auto bg-zinc-50">
+                  {/* PC Header */}
+                  <div className="bg-white border-b border-zinc-200">
+                    <div className="max-w-5xl mx-auto px-8 py-5">
+                      <div className="flex items-center gap-3">
+                        <button 
+                          onClick={() => router.push('/')}
+                          className="w-9 h-9 rounded-lg hover:bg-zinc-100 flex items-center justify-center transition-colors"
+                        >
+                          <Home className="w-5 h-5 text-zinc-600" />
+                        </button>
+                        <h1 className="text-lg font-semibold text-zinc-900">{t.lifestyle?.title || 'LifeStyle 街拍'}</h1>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Two-column content */}
+                  <div className="max-w-5xl mx-auto px-8 py-8">
+                    <div className="flex gap-8">
+                      {/* Left: Image Upload */}
+                      <div className="w-[380px] shrink-0">
+                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-zinc-100">
+                          <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="w-full aspect-[3/4] max-h-[400px] rounded-2xl border-2 border-dashed border-zinc-300 hover:border-purple-400 hover:bg-purple-50/50 flex flex-col items-center justify-center gap-3 transition-all"
+                          >
+                            <div className="w-16 h-16 bg-zinc-100 rounded-2xl flex items-center justify-center">
+                              <ImageIcon className="w-8 h-8 text-zinc-400" />
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm font-medium text-zinc-700">{t.lifestyle?.uploadProduct || '上传商品图片'}</p>
+                              <p className="text-xs text-zinc-400 mt-1">{t.common?.clickToUploadOrDrag || '点击上传或拖拽图片'}</p>
+                            </div>
+                          </button>
+                          <div className="mt-4">
+                            <button
+                              onClick={() => setShowProductPanel(true)}
+                              className="w-full h-12 rounded-xl border border-zinc-200 bg-white hover:border-purple-400 hover:bg-purple-50/50 flex items-center justify-center gap-2 transition-colors"
+                            >
+                              <FolderHeart className="w-4 h-4 text-zinc-500" />
+                              <span className="text-sm text-zinc-600">{t.lifestyle?.assetLibrary || '素材库'}</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Right: Options */}
+                      <div className="flex-1 min-w-0">
+                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-6 space-y-6">
+                          <div className="text-center py-8">
+                            <div className="w-16 h-16 mx-auto mb-4 bg-purple-50 rounded-2xl flex items-center justify-center">
+                              <Sparkles className="w-8 h-8 text-purple-500" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-zinc-900 mb-2">LifeStyle 街拍模式</h3>
+                            <p className="text-sm text-zinc-500 max-w-xs mx-auto">
+                              {t.common?.uploadProductDesc || '上传商品图片后，AI 将为你生成专业展示图'}
+                            </p>
+                          </div>
+                          
+                          <div className="border-t border-zinc-100 pt-6 space-y-4">
+                            <div className="flex items-start gap-3">
+                              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center shrink-0">
+                                <Check className="w-4 h-4 text-purple-600" />
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-medium text-zinc-900">智能场景匹配</h4>
+                                <p className="text-xs text-zinc-500">根据商品自动匹配最合适的街景</p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                              <div className="w-8 h-8 bg-pink-100 rounded-lg flex items-center justify-center shrink-0">
+                                <Check className="w-4 h-4 text-pink-600" />
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-medium text-zinc-900">时尚模特风格</h4>
+                                <p className="text-xs text-zinc-500">专业时尚模特展示效果</p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
+                                <Check className="w-4 h-4 text-blue-600" />
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-medium text-zinc-900">多种风格可选</h4>
+                                <p className="text-xs text-zinc-500">支持自定义模特和场景</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : mode === "review" && isDesktop ? (
+                /* Desktop Review Mode - Two Column Layout */
+                <div className="absolute inset-0 overflow-y-auto bg-zinc-50">
+                  {/* PC Header */}
+                  <div className="bg-white border-b border-zinc-200">
+                    <div className="max-w-5xl mx-auto px-8 py-5">
+                      <div className="flex items-center gap-3">
+                        <button 
+                          onClick={handleRetake}
+                          className="w-9 h-9 rounded-lg hover:bg-zinc-100 flex items-center justify-center transition-colors"
+                        >
+                          <ArrowLeft className="w-5 h-5 text-zinc-600" />
+                        </button>
+                        <h1 className="text-lg font-semibold text-zinc-900">{t.lifestyle?.title || 'LifeStyle 街拍'}</h1>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Two-column content */}
+                  <div className="max-w-5xl mx-auto px-8 py-8">
+                    <div className="flex gap-8">
+                        {/* Left: Product Image */}
+                      <div className="w-[380px] shrink-0 space-y-4">
+                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 overflow-hidden">
+                          <div className="p-3 border-b border-zinc-100 flex items-center justify-between">
+                            <span className="text-sm font-medium text-zinc-900">{t.lifestyle?.uploadProduct || '商品图'}</span>
+                            <button onClick={handleRetake} className="text-xs text-zinc-500 hover:text-zinc-700">
+                              {t.common?.change || '更换'}
+                            </button>
+                          </div>
+                          <div className="aspect-square relative bg-zinc-50">
+                            <img src={capturedImage || ""} alt="商品" className="w-full h-full object-contain" />
+                          </div>
+                        </div>
+                        
+                        {/* Outfit Button */}
+                        <button
+                          onClick={() => {
+                            if (capturedImage) {
+                              sessionStorage.setItem('lifestyleProduct1Image', capturedImage)
+                              router.push('/lifestyle/outfit')
+                            }
+                          }}
+                          className="w-full h-12 rounded-xl border-2 border-dashed border-zinc-300 hover:border-purple-400 flex items-center justify-center gap-2 text-zinc-500 hover:text-purple-600 transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span className="text-sm">{t.lifestyle?.outfitMode || '搭配商品'}</span>
+                        </button>
+                      </div>
+                      
+                      {/* Right: Settings */}
+                      <div className="flex-1 min-w-0 space-y-6">
+                        {/* Model Selection */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-semibold text-zinc-900">{t.lifestyle?.selectModel || '选择模特'}</h3>
+                            <div className="flex items-center gap-3">
+                              {selectedModelId && (
+                                <button onClick={() => setSelectedModelId(null)} className="text-xs text-zinc-500 hover:text-zinc-700">
+                                  {t.proStudio?.clearSelection || '清除选择'}
+                                </button>
+                              )}
+                              {allModels.length > 7 && (
+                                <button 
+                                  onClick={() => {
+                                    setActiveCustomTab("model")
+                                    setShowCustomPanel(true)
+                                  }}
+                                  className="text-xs text-purple-600 hover:text-purple-700 font-medium"
+                                >
+                                  {t.common?.viewMore || '查看更多'} ({allModels.length})
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-sm text-zinc-500 mb-4">{t.common?.randomMatchHint || '不选则随机匹配'}</p>
+                          <div className="grid grid-cols-4 gap-3">
+                            <button
+                              onClick={() => modelUploadRef.current?.click()}
+                              className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-purple-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                            >
+                              <Plus className="w-5 h-5 text-zinc-400" />
+                              <span className="text-[10px] text-zinc-400">上传</span>
+                            </button>
+                            {allModels.slice(0, 7).map(model => (
+                              <button
+                                key={model.id}
+                                onClick={() => setSelectedModelId(selectedModelId === model.id ? null : model.id)}
+                                className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
+                                  selectedModelId === model.id 
+                                    ? 'border-purple-500 ring-2 ring-purple-500/30' 
+                                    : 'border-transparent hover:border-purple-300'
+                                }`}
+                              >
+                                <Image src={model.imageUrl} alt={model.name || ''} fill className="object-cover" />
+                                {selectedModelId === model.id && (
+                                  <div className="absolute top-1 right-1 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
+                                    <Check className="w-3 h-3 text-white" />
+                                  </div>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Scene Selection */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-semibold text-zinc-900">{t.lifestyle?.selectScene || '选择场景'}</h3>
+                            <div className="flex items-center gap-3">
+                              {selectedSceneId && (
+                                <button onClick={() => setSelectedSceneId(null)} className="text-xs text-zinc-500 hover:text-zinc-700">
+                                  {t.proStudio?.clearSelection || '清除选择'}
+                                </button>
+                              )}
+                              {allScenes.length > 7 && (
+                                <button 
+                                  onClick={() => {
+                                    setActiveCustomTab("scene")
+                                    setShowCustomPanel(true)
+                                  }}
+                                  className="text-xs text-purple-600 hover:text-purple-700 font-medium"
+                                >
+                                  {t.common?.viewMore || '查看更多'} ({allScenes.length})
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-sm text-zinc-500 mb-4">{t.common?.randomMatchHint || '不选则随机匹配'}</p>
+                          <div className="grid grid-cols-4 gap-3">
+                            <button
+                              onClick={() => sceneUploadRef.current?.click()}
+                              className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-purple-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                            >
+                              <Plus className="w-5 h-5 text-zinc-400" />
+                              <span className="text-[10px] text-zinc-400">上传</span>
+                            </button>
+                            {allScenes.slice(0, 7).map(scene => (
+                              <button
+                                key={scene.id}
+                                onClick={() => setSelectedSceneId(selectedSceneId === scene.id ? null : scene.id)}
+                                className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
+                                  selectedSceneId === scene.id 
+                                    ? 'border-purple-500 ring-2 ring-purple-500/30' 
+                                    : 'border-transparent hover:border-purple-300'
+                                }`}
+                              >
+                                <Image src={scene.imageUrl} alt={scene.name || ''} fill className="object-cover" />
+                                {selectedSceneId === scene.id && (
+                                  <div className="absolute top-1 right-1 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
+                                    <Check className="w-3 h-3 text-white" />
+                                  </div>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Generate Button */}
+                        <button
+                          onClick={handleLifestyleGenerate}
+                          className="w-full h-14 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-lg font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg shadow-purple-200/50"
+                        >
+                          <Wand2 className="w-5 h-5" />
+                          {t.lifestyle?.startGenerate || '开始生成'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Desktop Modal for View More */}
+                  <AnimatePresence>
+                    {showCustomPanel && (
+                      <>
+                        <motion.div 
+                          initial={{ opacity: 0 }} 
+                          animate={{ opacity: 1 }} 
+                          exit={{ opacity: 0 }}
+                          className="fixed inset-0 bg-black/40 z-40"
+                          onClick={() => setShowCustomPanel(false)}
+                        />
+                        <motion.div 
+                          initial={{ opacity: 0, scale: 0.95 }} 
+                          animate={{ opacity: 1, scale: 1 }} 
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          className="fixed inset-x-8 top-1/2 -translate-y-1/2 max-w-3xl mx-auto bg-white rounded-2xl z-50 max-h-[80vh] flex flex-col overflow-hidden shadow-xl"
+                        >
+                          <div className="h-14 border-b flex items-center justify-between px-6 shrink-0">
+                            <div className="flex gap-4">
+                              <button 
+                                onClick={() => setActiveCustomTab("model")}
+                                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                                  activeCustomTab === "model" ? "bg-purple-500 text-white" : "bg-zinc-100 text-zinc-600"
+                                }`}
+                              >
+                                {t.lifestyle?.streetModel || '模特'}
+                              </button>
+                              <button 
+                                onClick={() => setActiveCustomTab("scene")}
+                                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                                  activeCustomTab === "scene" ? "bg-purple-500 text-white" : "bg-zinc-100 text-zinc-600"
+                                }`}
+                              >
+                                {t.lifestyle?.streetScene || '场景'}
+                              </button>
+                            </div>
+                            <button 
+                              onClick={() => setShowCustomPanel(false)} 
+                              className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center"
+                            >
+                              <X className="w-5 h-5 text-zinc-500" />
+                            </button>
+                          </div>
+                          <div className="flex-1 overflow-y-auto p-6">
+                            {activeCustomTab === "model" && (
+                              <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm text-zinc-600">{t.lifestyle?.selectModel || '选择模特（不选则随机）'}</span>
+                                  {selectedModelId && (
+                                    <button onClick={() => setSelectedModelId(null)} className="text-xs text-purple-600">
+                                      {t.proStudio?.clearSelection || '清除选择'}
+                                    </button>
+                                  )}
+                                </div>
+                                <div className="grid grid-cols-6 gap-3">
+                                  <button
+                                    onClick={() => modelUploadRef.current?.click()}
+                                    className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-purple-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                                  >
+                                    <Plus className="w-5 h-5 text-zinc-400" />
+                                    <span className="text-[10px] text-zinc-400">上传</span>
+                                  </button>
+                                  {allModels.map(model => (
+                                    <button
+                                      key={model.id}
+                                      onClick={() => setSelectedModelId(selectedModelId === model.id ? null : model.id)}
+                                      className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
+                                        selectedModelId === model.id 
+                                          ? 'border-purple-500 ring-2 ring-purple-500/30' 
+                                          : 'border-transparent hover:border-purple-300'
+                                      }`}
+                                    >
+                                      <Image src={model.imageUrl} alt={model.name || ''} fill className="object-cover" />
+                                      {selectedModelId === model.id && (
+                                        <div className="absolute top-1 right-1 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
+                                          <Check className="w-3 h-3 text-white" />
+                                        </div>
+                                      )}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {activeCustomTab === "scene" && (
+                              <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm text-zinc-600">{t.lifestyle?.selectScene || '选择场景（不选则随机）'}</span>
+                                  {selectedSceneId && (
+                                    <button onClick={() => setSelectedSceneId(null)} className="text-xs text-purple-600">
+                                      {t.proStudio?.clearSelection || '清除选择'}
+                                    </button>
+                                  )}
+                                </div>
+                                <div className="grid grid-cols-6 gap-3">
+                                  <button
+                                    onClick={() => sceneUploadRef.current?.click()}
+                                    className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-purple-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                                  >
+                                    <Plus className="w-5 h-5 text-zinc-400" />
+                                    <span className="text-[10px] text-zinc-400">上传</span>
+                                  </button>
+                                  {allScenes.map(scene => (
+                                    <button
+                                      key={scene.id}
+                                      onClick={() => setSelectedSceneId(selectedSceneId === scene.id ? null : scene.id)}
+                                      className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
+                                        selectedSceneId === scene.id 
+                                          ? 'border-purple-500 ring-2 ring-purple-500/30' 
+                                          : 'border-transparent hover:border-purple-300'
+                                      }`}
+                                    >
+                                      <Image src={scene.imageUrl} alt={scene.name || ''} fill className="object-cover" />
+                                      {selectedSceneId === scene.id && (
+                                        <div className="absolute top-1 right-1 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
+                                          <Check className="w-3 h-3 text-white" />
+                                        </div>
+                                      )}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          <div className="h-16 border-t flex items-center justify-center px-6">
+                            <button 
+                              onClick={() => setShowCustomPanel(false)}
+                              className="px-8 py-2.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium transition-colors"
+                            >
+                              确定
+                            </button>
+                          </div>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ) : mode === "camera" ? (
                 hasCamera && permissionChecked ? (
                   <Webcam
                     ref={webcamRef}
@@ -536,14 +942,22 @@ function LifestylePageContent() {
             </div>
 
             {/* Bottom Controls Area */}
-            <div className="bg-black flex flex-col justify-end pb-safe pt-6 px-6 relative z-20 shrink-0 min-h-[9rem]">
+            <div className={`flex flex-col justify-end pb-safe pt-6 px-6 relative z-20 shrink-0 ${
+              isDesktop 
+                ? 'bg-white border-t border-zinc-200 min-h-[6rem]' 
+                : 'bg-black min-h-[9rem]'
+            }`}>
               {mode === "review" ? (
-                <div className="space-y-4 pb-4">
+                <div className="space-y-4 pb-4 lg:flex lg:items-center lg:justify-center lg:gap-4 lg:space-y-0">
                   {/* Custom model/scene button */}
-                  <div className="flex justify-center">
+                  <div className="flex justify-center lg:order-1">
                     <button 
                       onClick={() => setShowCustomPanel(true)}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 text-white/90 hover:bg-white/20 transition-colors border border-white/20"
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-full transition-colors border ${
+                        isDesktop 
+                          ? 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border-zinc-300'
+                          : 'bg-white/10 text-white/90 hover:bg-white/20 border-white/20'
+                      }`}
                     >
                       <SlidersHorizontal className="w-4 h-4" />
                       <span className="text-sm font-medium">{t.lifestyle?.customizeModelScene || '自定义模特/场景'}</span>
@@ -551,7 +965,7 @@ function LifestylePageContent() {
                   </div>
                   
                   {/* Generate and Outfit buttons */}
-                  <div className="w-full flex gap-3 max-w-sm mx-auto">
+                  <div className="w-full flex gap-3 max-w-sm mx-auto lg:w-auto lg:order-2">
                     {/* Outfit Mode Button */}
                     <motion.button
                       initial={{ opacity: 0, y: 20 }}
@@ -564,7 +978,11 @@ function LifestylePageContent() {
                           router.push('/lifestyle/outfit')
                         }
                       }}
-                      className="h-14 px-6 rounded-full bg-white/10 text-white font-bold text-sm flex items-center justify-center gap-2 border border-white/20 hover:bg-white/20 transition-colors"
+                      className={`h-14 px-6 rounded-full font-bold text-sm flex items-center justify-center gap-2 border transition-colors ${
+                        isDesktop
+                          ? 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border-zinc-300'
+                          : 'bg-white/10 text-white border-white/20 hover:bg-white/20'
+                      }`}
                     >
                       <Plus className="w-5 h-5" />
                       {t.lifestyle?.outfitMode || '搭配'}
@@ -576,13 +994,16 @@ function LifestylePageContent() {
                       animate={{ opacity: 1, y: 0 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={handleLifestyleGenerate}
-                      className="flex-1 h-14 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold text-lg flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(168,85,247,0.4)]"
+                      className="flex-1 lg:flex-none lg:px-8 h-14 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold text-lg flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(168,85,247,0.4)]"
                     >
                       <Wand2 className="w-5 h-5" />
                       {t.lifestyle?.startGenerate || '开始生成'}
                     </motion.button>
                   </div>
                 </div>
+              ) : isDesktop ? (
+                /* Desktop: Hide bottom controls in camera mode */
+                <div className="hidden" />
               ) : (
                 <div className="flex items-center justify-center gap-8 pb-4">
                   {/* Album - Left of shutter */}
@@ -596,7 +1017,7 @@ function LifestylePageContent() {
                     <span className="text-[10px]">{t.lifestyle?.album || '相册'}</span>
                   </button>
 
-                  {/* Shutter */}
+                  {/* Shutter - Mobile only */}
                   <button 
                     onClick={handleCapture}
                     disabled={!hasCamera}
@@ -625,35 +1046,53 @@ function LifestylePageContent() {
           <motion.div 
             key="processing"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="flex-1 bg-zinc-950 flex flex-col items-center justify-center p-8 text-center"
+            className={`flex-1 flex flex-col items-center justify-center p-8 text-center ${
+              isDesktop ? 'bg-zinc-50' : 'bg-zinc-950'
+            }`}
           >
             <div className="w-20 h-20 mb-8 relative">
-              <div className="absolute inset-0 bg-purple-500/20 blur-2xl rounded-full animate-pulse" />
-              <Loader2 className="w-full h-full text-purple-500 animate-spin" />
+              <div className={`absolute inset-0 blur-2xl rounded-full animate-pulse ${
+                isDesktop ? 'bg-purple-500/30' : 'bg-purple-500/20'
+              }`} />
+              <Loader2 className={`w-full h-full animate-spin ${
+                isDesktop ? 'text-purple-600' : 'text-purple-500'
+              }`} />
             </div>
-            <h3 className="text-white text-2xl font-bold mb-4">{t.lifestyle?.creating || '正在创作街拍大片'}</h3>
-            <p className="text-zinc-400 text-sm mb-8">{lifestyleStatus}</p>
+            <h3 className={`text-2xl font-bold mb-4 ${isDesktop ? 'text-zinc-900' : 'text-white'}`}>
+              {t.lifestyle?.creating || '正在创作街拍大片'}
+            </h3>
+            <p className={`text-sm mb-8 ${isDesktop ? 'text-zinc-500' : 'text-zinc-400'}`}>{lifestyleStatus}</p>
             
             {/* Action buttons */}
             <div className="space-y-3 w-full max-w-xs">
-              <p className="text-zinc-500 text-xs mb-4">{t.lifestyle?.continueInBackground || '生成将在后台继续，您可以：'}</p>
+              <p className={`text-xs mb-4 ${isDesktop ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                {t.lifestyle?.continueInBackground || '生成将在后台继续，您可以：'}
+              </p>
               <button
                 onClick={handleRetake}
-                className="w-full h-12 rounded-full bg-white text-black font-medium flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors"
+                className={`w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors ${
+                  isDesktop 
+                    ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                    : 'bg-white text-black hover:bg-zinc-200'
+                }`}
               >
                 <Camera className="w-5 h-5" />
                 {t.lifestyle?.shootMore || '拍摄新一组'}
               </button>
               <button
                 onClick={() => router.push("/")}
-                className="w-full h-12 rounded-full bg-white/10 text-white font-medium flex items-center justify-center gap-2 hover:bg-white/20 transition-colors border border-white/20"
+                className={`w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors border ${
+                  isDesktop 
+                    ? 'bg-white text-zinc-700 hover:bg-zinc-100 border-zinc-200' 
+                    : 'bg-white/10 text-white hover:bg-white/20 border-white/20'
+                }`}
               >
                 <Home className="w-5 h-5" />
                 {t.lifestyle?.returnHome || '返回首页'}
               </button>
             </div>
             
-            <BottomNav forceShow />
+            {!isDesktop && <BottomNav forceShow />}
           </motion.div>
         )}
 
@@ -663,55 +1102,94 @@ function LifestylePageContent() {
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
             className="flex-1 flex flex-col bg-zinc-50 overflow-hidden"
           >
-            <div className="h-14 flex items-center justify-between px-4 border-b bg-white">
-              <button onClick={handleRetake} className="flex items-center gap-2 font-medium">
-                <ArrowLeft className="w-5 h-5" />
-                <span>{t.lifestyle?.retake || '重拍'}</span>
-              </button>
-              <span className="font-bold">{t.lifestyle?.results || 'LifeStyle 成片'}</span>
-              <div className="w-10" />
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 pb-8">
-              <div className="grid grid-cols-2 gap-3">
-                {Array.from({ length: LIFESTYLE_NUM_IMAGES }).map((_, i) => {
-                  const url = generatedImages[i]
-                  const currentTask = tasks.find(t => t.id === currentTaskId)
-                  const slot = currentTask?.imageSlots?.[i]
-                  const status = slot?.status || (url ? 'completed' : 'generating')
-                  
-                  return (
-                    <div 
-                      key={i} 
-                      className="aspect-[3/4] rounded-xl bg-zinc-200 overflow-hidden relative cursor-pointer" 
-                      onClick={() => url && setSelectedResultIndex(i)}
+            {/* Header */}
+            {isDesktop ? (
+              <div className="bg-white border-b border-zinc-200">
+                <div className="max-w-4xl mx-auto px-8 py-4">
+                  <div className="flex items-center justify-between">
+                    <button onClick={handleRetake} className="flex items-center gap-2 text-zinc-600 hover:text-zinc-900 font-medium">
+                      <ArrowLeft className="w-5 h-5" />
+                      <span>{t.lifestyle?.retake || '重拍'}</span>
+                    </button>
+                    <span className="font-bold text-zinc-900">{t.lifestyle?.results || 'LifeStyle 成片'}</span>
+                    <div className="w-20" />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="h-14 flex items-center justify-between px-4 border-b bg-white">
+                <button onClick={handleRetake} className="flex items-center gap-2 font-medium">
+                  <ArrowLeft className="w-5 h-5" />
+                  <span>{t.lifestyle?.retake || '重拍'}</span>
+                </button>
+                <span className="font-bold">{t.lifestyle?.results || 'LifeStyle 成片'}</span>
+                <div className="w-10" />
+              </div>
+            )}
+            
+            {/* Content */}
+            <div className={`flex-1 overflow-y-auto ${isDesktop ? 'py-8' : 'p-4 pb-8'}`}>
+              <div className={`${isDesktop ? 'max-w-4xl mx-auto px-8' : ''}`}>
+                <div className={`grid gap-3 ${isDesktop ? 'grid-cols-4' : 'grid-cols-2'}`}>
+                  {Array.from({ length: LIFESTYLE_NUM_IMAGES }).map((_, i) => {
+                    const url = generatedImages[i]
+                    const currentTask = tasks.find(t => t.id === currentTaskId)
+                    const slot = currentTask?.imageSlots?.[i]
+                    const status = slot?.status || (url ? 'completed' : 'generating')
+                    
+                    return (
+                      <div 
+                        key={i} 
+                        className="aspect-[3/4] rounded-xl bg-zinc-200 overflow-hidden relative cursor-pointer group" 
+                        onClick={() => url && setSelectedResultIndex(i)}
+                      >
+                        {url ? (
+                          <>
+                            <Image src={url} alt="Result" fill className="object-cover" />
+                            <button className={`absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm ${
+                              isDesktop ? 'opacity-0 group-hover:opacity-100 transition-opacity' : ''
+                            }`}>
+                              <Heart className="w-3.5 h-3.5 text-zinc-500" />
+                            </button>
+                          </>
+                        ) : status === 'failed' ? (
+                          <div className="absolute inset-0 flex items-center justify-center text-zinc-400">
+                            <span className="text-xs">{t.camera?.generationFailed || '生成失败'}</span>
+                          </div>
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <Loader2 className="w-6 h-6 text-zinc-400 animate-spin" />
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+                
+                {/* PC: Centered button */}
+                {isDesktop && (
+                  <div className="flex justify-center mt-8">
+                    <button 
+                      onClick={handleRetake} 
+                      className="px-8 h-12 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold transition-colors"
                     >
-                      {url ? (
-                        <>
-                          <Image src={url} alt="Result" fill className="object-cover" />
-                          <button className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm">
-                            <Heart className="w-3.5 h-3.5 text-zinc-500" />
-                          </button>
-                        </>
-                      ) : status === 'failed' ? (
-                        <div className="absolute inset-0 flex items-center justify-center text-zinc-400">
-                          <span className="text-xs">{t.camera?.generationFailed || '生成失败'}</span>
-                        </div>
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <Loader2 className="w-6 h-6 text-zinc-400 animate-spin" />
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
+                      {t.lifestyle?.shootNextSet || '拍摄下一组'}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
-            <div className="p-4 pb-20 bg-white border-t shadow-up">
-              <button onClick={handleRetake} className="w-full h-12 rounded-lg bg-zinc-900 text-white font-semibold hover:bg-zinc-800 transition-colors">
-                {t.lifestyle?.shootNextSet || '拍摄下一组'}
-              </button>
-            </div>
-            <BottomNav forceShow />
+            
+            {/* Mobile: Bottom button */}
+            {!isDesktop && (
+              <div className="p-4 pb-20 bg-white border-t shadow-up">
+                <button onClick={handleRetake} className="w-full h-12 rounded-lg bg-zinc-900 text-white font-semibold hover:bg-zinc-800 transition-colors">
+                  {t.lifestyle?.shootNextSet || '拍摄下一组'}
+                </button>
+              </div>
+            )}
+            
+            {!isDesktop && <BottomNav forceShow />}
           </motion.div>
         )}
       </AnimatePresence>
