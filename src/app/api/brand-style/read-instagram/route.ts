@@ -1,84 +1,112 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getGenAIClient, extractText } from '@/lib/genai'
 
-// Extract Instagram post ID from URL
-function extractPostId(url: string): string | null {
-  // Handle various Instagram URL formats
-  // https://www.instagram.com/p/ABC123/
-  // https://www.instagram.com/reel/ABC123/
-  // https://instagram.com/p/ABC123/?img_index=1
-  const patterns = [
-    /instagram\.com\/(?:p|reel)\/([A-Za-z0-9_-]+)/,
-    /instagram\.com\/[^\/]+\/(?:p|reel)\/([A-Za-z0-9_-]+)/
-  ]
-  
-  for (const pattern of patterns) {
-    const match = url.match(pattern)
-    if (match) return match[1]
-  }
-  
-  return null
-}
-
-// Fetch Instagram post data using RapidAPI
+// Fetch Instagram post data by scraping the page directly (no external API needed)
 async function fetchInstagramPost(url: string): Promise<{ images: string[]; caption: string }> {
-  const rapidApiKey = process.env.RAPIDAPI_KEY
+  console.log('[Instagram] Fetching post directly:', url)
   
-  if (!rapidApiKey) {
-    // Fallback: Try to use Jina Reader for Instagram
-    console.log('[Instagram] No RapidAPI key, trying Jina Reader fallback...')
-    return fetchInstagramViaJina(url)
-  }
-
-  const postId = extractPostId(url)
-  if (!postId) {
-    throw new Error('Invalid Instagram URL')
-  }
-
+  // Clean URL - remove query params for the fetch
+  const cleanUrl = url.split('?')[0]
+  
   try {
-    const response = await fetch(
-      `https://instagram-scraper-api2.p.rapidapi.com/v1/post_info?code_or_id_or_url=${encodeURIComponent(url)}`,
-      {
-        headers: {
-          'X-RapidAPI-Key': rapidApiKey,
-          'X-RapidAPI-Host': 'instagram-scraper-api2.p.rapidapi.com'
-        }
+    // Fetch the Instagram page with browser-like headers
+    const response = await fetch(cleanUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Cache-Control': 'no-cache',
       }
-    )
+    })
 
     if (!response.ok) {
-      throw new Error(`RapidAPI error: ${response.statusText}`)
+      console.error('[Instagram] Failed to fetch page:', response.status)
+      throw new Error(`Failed to fetch Instagram page: ${response.statusText}`)
     }
 
-    const data = await response.json()
+    const html = await response.text()
+    console.log('[Instagram] Got HTML, length:', html.length)
     
-    // Extract images from response
     const images: string[] = []
+    let caption = ''
+
+    // Method 1: Extract og:image meta tag (main image)
+    const ogImageMatch = html.match(/property="og:image"\s+content="([^"]+)"/i) ||
+                         html.match(/content="([^"]+)"\s+property="og:image"/i) ||
+                         html.match(/og:image[^>]*content="([^"]+)"/i)
     
-    if (data.data?.carousel_media) {
-      // Carousel post with multiple images
-      for (const item of data.data.carousel_media) {
-        if (item.image_versions2?.candidates?.[0]?.url) {
-          images.push(item.image_versions2.candidates[0].url)
-        }
-      }
-    } else if (data.data?.image_versions2?.candidates?.[0]?.url) {
-      // Single image post
-      images.push(data.data.image_versions2.candidates[0].url)
+    if (ogImageMatch) {
+      // Decode HTML entities
+      const imageUrl = ogImageMatch[1].replace(/&amp;/g, '&')
+      console.log('[Instagram] Found og:image:', imageUrl.slice(0, 100))
+      images.push(imageUrl)
     }
 
-    const caption = data.data?.caption?.text || ''
+    // Method 2: Extract from JSON-LD structured data
+    const jsonLdMatch = html.match(/<script type="application\/ld\+json"[^>]*>([^<]+)<\/script>/i)
+    if (jsonLdMatch) {
+      try {
+        const jsonLd = JSON.parse(jsonLdMatch[1])
+        if (jsonLd.image) {
+          const ldImages = Array.isArray(jsonLd.image) ? jsonLd.image : [jsonLd.image]
+          for (const img of ldImages) {
+            const imgUrl = typeof img === 'string' ? img : img.url
+            if (imgUrl && !images.includes(imgUrl)) {
+              images.push(imgUrl)
+            }
+          }
+        }
+        if (jsonLd.caption) {
+          caption = jsonLd.caption
+        }
+      } catch (e) {
+        console.log('[Instagram] Failed to parse JSON-LD')
+      }
+    }
+
+    // Method 3: Extract additional images from page content
+    // Look for Instagram CDN URLs in the HTML
+    const cdnRegex = /(https:\/\/(?:scontent|instagram)[^"'\s]+\.(?:jpg|jpeg|png|webp)[^"'\s]*)/gi
+    let match
+    while ((match = cdnRegex.exec(html)) !== null) {
+      let imgUrl = match[1].replace(/&amp;/g, '&').replace(/\\u0026/g, '&')
+      // Filter out small images (profile pics, icons)
+      if (!imgUrl.includes('s150x150') && 
+          !imgUrl.includes('s320x320') &&
+          !imgUrl.includes('_n.jpg?_nc_cat') && // Skip if already in list
+          !images.some(existing => existing.includes(imgUrl.split('?')[0].slice(-30)))) {
+        images.push(imgUrl)
+      }
+    }
+
+    // Method 4: Extract og:description for caption
+    if (!caption) {
+      const descMatch = html.match(/property="og:description"\s+content="([^"]+)"/i) ||
+                        html.match(/content="([^"]+)"\s+property="og:description"/i)
+      if (descMatch) {
+        caption = descMatch[1].replace(/&amp;/g, '&').replace(/&#[0-9]+;/g, '')
+      }
+    }
+
+    console.log('[Instagram] Extracted', images.length, 'images')
+    
+    if (images.length === 0) {
+      throw new Error('No images found on Instagram page')
+    }
 
     return { images, caption }
 
   } catch (error) {
-    console.error('[Instagram] RapidAPI error, trying fallback:', error)
+    console.error('[Instagram] Direct fetch failed:', error)
+    // Try Jina as last resort
     return fetchInstagramViaJina(url)
   }
 }
 
 // Fallback: Use Jina Reader to extract Instagram content
 async function fetchInstagramViaJina(url: string): Promise<{ images: string[]; caption: string }> {
+  console.log('[Instagram] Trying Jina Reader fallback...')
+  
   const response = await fetch(`https://r.jina.ai/${url}`, {
     headers: {
       'Accept': 'text/plain',
