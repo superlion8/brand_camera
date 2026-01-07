@@ -10,23 +10,44 @@ async function fetchInstagramPost(url: string): Promise<{ images: string[]; capt
   if (!cleanUrl.endsWith('/')) cleanUrl += '/'
   const embedUrl = cleanUrl + 'embed/'
   
+  console.log('[Instagram] Embed URL:', embedUrl)
+  
   try {
-    // Fetch the Instagram embed page (doesn't require login)
+    // Fetch the Instagram embed page with comprehensive browser-like headers
     const response = await fetch(embedUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-      }
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"macOS"',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'Upgrade-Insecure-Requests': '1',
+      },
+      cache: 'no-store',
     })
 
+    console.log('[Instagram] Response status:', response.status)
+    
     if (!response.ok) {
-      console.error('[Instagram] Failed to fetch embed page:', response.status)
-      throw new Error(`Failed to fetch Instagram embed page: ${response.statusText}`)
+      console.error('[Instagram] Failed to fetch embed page:', response.status, response.statusText)
+      throw new Error(`Failed to fetch Instagram embed page: ${response.status} ${response.statusText}`)
     }
 
     const html = await response.text()
     console.log('[Instagram] Got embed HTML, length:', html.length)
+    
+    // Debug: Check if we got a login page
+    if (html.includes('Log into Instagram') || html.includes('login')) {
+      console.log('[Instagram] Got login page instead of embed content')
+    }
     
     const images: string[] = []
     let caption = ''
@@ -35,7 +56,9 @@ async function fetchInstagramPost(url: string): Promise<{ images: string[]; capt
     // Match URLs from instagram CDN (fbcdn.net or cdninstagram.com)
     const cdnRegex = /(https:\/\/[^"'\s,]+(?:instagram|fbcdn)[^"'\s,]+\.(?:jpg|jpeg|png|webp)[^"'\s,]*)/gi
     let match
+    let totalMatches = 0
     while ((match = cdnRegex.exec(html)) !== null) {
+      totalMatches++
       let imgUrl = match[1].replace(/&amp;/g, '&').replace(/\\u0026/g, '&')
       
       // Filter out static resources (icons, logos), small images (profile pics), and duplicates
@@ -44,6 +67,7 @@ async function fetchInstagramPost(url: string): Promise<{ images: string[]; capt
           imgUrl.includes('s150x150') || 
           imgUrl.includes('s240x240') ||
           imgUrl.includes('_a.jpg')) { // profile pics
+        console.log('[Instagram] Filtered out:', imgUrl.slice(0, 60) + '...')
         continue
       }
       
@@ -54,6 +78,8 @@ async function fetchInstagramPost(url: string): Promise<{ images: string[]; capt
         console.log('[Instagram] Found image:', imgUrl.slice(0, 80) + '...')
       }
     }
+    
+    console.log('[Instagram] Total regex matches:', totalMatches, 'Valid images:', images.length)
 
     // Extract caption from the embed page
     const captionMatch = html.match(/class="Caption"[^>]*>([^<]+)</i) ||
@@ -65,6 +91,8 @@ async function fetchInstagramPost(url: string): Promise<{ images: string[]; capt
     console.log('[Instagram] Extracted', images.length, 'images from embed page')
     
     if (images.length === 0) {
+      // Debug: print first 500 chars of HTML to see what we got
+      console.log('[Instagram] HTML preview:', html.slice(0, 500))
       throw new Error('No images found in Instagram embed page')
     }
 
