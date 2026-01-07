@@ -8,11 +8,14 @@ async function fetchInstagramViaRapidAPI(url: string): Promise<{ images: string[
     throw new Error('RAPIDAPI_KEY not configured')
   }
 
-  console.log('[Instagram] Using RapidAPI to fetch:', url)
+  // Strip query params (like ?img_index=5) to get base post URL
+  const cleanUrl = url.split('?')[0]
+  console.log('[Instagram] Using RapidAPI to fetch:', cleanUrl)
   
   // Build API URL with encoded Instagram URL
-  const encodedUrl = encodeURIComponent(url.split('?')[0])
+  const encodedUrl = encodeURIComponent(cleanUrl)
   const apiUrl = `https://instagram-scraper-stable-api.p.rapidapi.com/get_media_data.php?reel_post_code_or_url=${encodedUrl}&type=post`
+  console.log('[Instagram] API URL:', apiUrl)
   
   const response = await fetch(apiUrl, {
     headers: {
@@ -28,6 +31,12 @@ async function fetchInstagramViaRapidAPI(url: string): Promise<{ images: string[
   }
 
   const data = await response.json()
+  
+  // Check if API returned an error
+  if (data.error) {
+    console.error('[Instagram] RapidAPI returned error:', data.error)
+    throw new Error(`RapidAPI error: ${JSON.stringify(data.error)}`)
+  }
   
   // Debug: Log response structure to identify carousel fields
   console.log('[Instagram] RapidAPI response keys:', Object.keys(data))
