@@ -778,24 +778,24 @@ export default function ReferenceShotPage() {
             </motion.button>
           </div>
         ) : (
-          <div className="fixed bottom-20 left-0 right-0 p-4 bg-white/95 backdrop-blur-lg border-t border-zinc-100 z-30">
-            <motion.button
-              onClick={(e) => {
-                triggerFlyToGallery(e)
-                handleGenerate()
-              }}
-              disabled={!canGenerate}
-              whileTap={{ scale: 0.98 }}
-              className={`w-full h-12 rounded-full text-base font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg ${
-                canGenerate
-                  ? 'bg-black text-white hover:bg-zinc-800'
-                  : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
-              }`}
-            >
-              <Wand2 className="w-5 h-5" />
-              {t.referenceShot?.generate || '开始生成'}
-            </motion.button>
-          </div>
+        <div className="fixed bottom-20 left-0 right-0 p-4 bg-white/95 backdrop-blur-lg border-t border-zinc-100 z-30">
+          <motion.button
+            onClick={(e) => {
+              triggerFlyToGallery(e)
+              handleGenerate()
+            }}
+            disabled={!canGenerate}
+            whileTap={{ scale: 0.98 }}
+            className={`w-full h-12 rounded-full text-base font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg ${
+              canGenerate
+                ? 'bg-black text-white hover:bg-zinc-800'
+                : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
+            }`}
+          >
+            <Wand2 className="w-5 h-5" />
+            {t.referenceShot?.generate || '开始生成'}
+          </motion.button>
+        </div>
         )
       )}
       

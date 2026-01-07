@@ -9,10 +9,13 @@ import {
   Loader2,
   ImageIcon,
   Video,
-  Home
+  Home,
+  X,
+  ZoomIn
 } from 'lucide-react'
 import Image from 'next/image'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 
 interface GenerationTask {
   id: string
@@ -39,6 +42,13 @@ export default function GeneratingPage() {
   ])
 
   const [analysisData, setAnalysisData] = useState<any>(null)
+  const [zoomImage, setZoomImage] = useState<string | null>(null)
+  
+  // Use ref to store results (avoid closure issues)
+  const resultsRef = useRef<{ images: { id: string; title: string; url: string }[]; video?: string }>({
+    images: [],
+    video: undefined
+  })
 
   // Load analysis data
   useEffect(() => {
@@ -68,17 +78,33 @@ export default function GeneratingPage() {
     }
   }, [analysisData])
 
-  const updateTask = (taskId: string, updates: Partial<GenerationTask>) => {
+  const updateTask = (taskId: string, updates: Partial<GenerationTask>, taskTitle?: string, taskType?: 'image' | 'video') => {
     setTasks(prev => prev.map(task => 
       task.id === taskId ? { ...task, ...updates } : task
     ))
+    
+    // Also update resultsRef for completed tasks (avoid closure issues when saving)
+    if (updates.status === 'completed' && updates.result) {
+      if (taskType === 'video' || taskId === 'video') {
+        resultsRef.current.video = updates.result
+      } else {
+        // Add to images array if not already there
+        if (!resultsRef.current.images.find(img => img.id === taskId)) {
+          resultsRef.current.images.push({
+            id: taskId,
+            title: taskTitle || taskId,
+            url: updates.result
+          })
+        }
+      }
+    }
   }
 
   const runGeneration = async () => {
     if (!analysisData) return
     const signal = abortControllerRef.current?.signal
 
-    const generateImage = async (taskId: string, type: string, referenceImage: string) => {
+    const generateImage = async (taskId: string, taskTitle: string, type: string, referenceImage: string) => {
       updateTask(taskId, { status: 'generating' })
       
       try {
@@ -95,12 +121,16 @@ export default function GeneratingPage() {
           signal
         })
         
-        if (!res.ok) throw new Error('Generation failed')
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}))
+          throw new Error(errorData.error || 'Generation failed')
+        }
         const data = await res.json()
         
-        updateTask(taskId, { status: 'completed', result: data.imageUrl })
+        updateTask(taskId, { status: 'completed', result: data.imageUrl }, taskTitle, 'image')
       } catch (error) {
         if ((error as Error).name === 'AbortError') return
+        console.error(`[Generate] ${taskId} failed:`, error)
         updateTask(taskId, { status: 'error', error: (error as Error).message })
       }
     }
@@ -120,40 +150,36 @@ export default function GeneratingPage() {
           signal
         })
         
-        if (!res.ok) throw new Error('Video generation failed')
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}))
+          throw new Error(errorData.error || 'Video generation failed')
+        }
         const data = await res.json()
         
-        updateTask('video', { status: 'completed', result: data.videoUrl })
+        updateTask('video', { status: 'completed', result: data.videoUrl }, 'UGC 短视频', 'video')
       } catch (error) {
         if ((error as Error).name === 'AbortError') return
+        console.error('[Generate] video failed:', error)
         updateTask('video', { status: 'error', error: (error as Error).message })
       }
     }
 
     // Generate images in sequence (to avoid rate limits)
-    await generateImage('web-1', 'web', analysisData.productPage.modelImage)
-    await generateImage('web-2', 'web', analysisData.productPage.modelImage)
-    await generateImage('ins-1', 'ins', analysisData.instagram.bestModelImage)
-    await generateImage('ins-2', 'ins', analysisData.instagram.bestModelImage)
+    await generateImage('web-1', '官网风格图 1', 'web', analysisData.productPage.modelImage)
+    await generateImage('web-2', '官网风格图 2', 'web', analysisData.productPage.modelImage)
+    await generateImage('ins-1', 'INS 风格图 1', 'ins', analysisData.instagram.bestModelImage)
+    await generateImage('ins-2', 'INS 风格图 2', 'ins', analysisData.instagram.bestModelImage)
     
     if (analysisData.productPage.productImage) {
-      await generateImage('product', 'product', analysisData.productPage.productImage)
+      await generateImage('product', '商品展示图', 'product', analysisData.productPage.productImage)
     }
     
     // Generate video last
     await generateVideo()
 
-    // Store results and navigate
-    const results = {
-      images: tasks.filter(t => t.type === 'image' && t.result).map(t => ({
-        id: t.id,
-        title: t.title,
-        url: t.result
-      })),
-      video: tasks.find(t => t.id === 'video')?.result
-    }
-    
-    sessionStorage.setItem('brandStyleResults', JSON.stringify(results))
+    // Store results from ref (not from state, to avoid closure issues)
+    console.log('[Generate] All done, results:', resultsRef.current)
+    sessionStorage.setItem('brandStyleResults', JSON.stringify(resultsRef.current))
     router.push('/brand-style/results')
   }
 
@@ -228,7 +254,15 @@ export default function GeneratingPage() {
                 }`}>
                   {task.status === 'completed' && task.result ? (
                     task.type === 'image' ? (
-                      <Image src={task.result} alt={task.title} fill className="object-cover" />
+                      <button
+                        onClick={() => setZoomImage(task.result!)}
+                        className="w-full h-full relative group cursor-pointer"
+                      >
+                        <Image src={task.result} alt={task.title} fill className="object-cover" unoptimized />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                          <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </button>
                     ) : (
                       <video 
                         src={task.result} 
@@ -305,6 +339,39 @@ export default function GeneratingPage() {
           </motion.div>
         </div>
       </div>
+
+      {/* Image Zoom Modal */}
+      <AnimatePresence>
+        {zoomImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+            onClick={() => setZoomImage(null)}
+          >
+            <button
+              onClick={() => setZoomImage(null)}
+              className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+            >
+              <X className="w-6 h-6 text-white" />
+            </button>
+            <TransformWrapper>
+              <TransformComponent>
+                <div className="relative w-[90vw] h-[80vh]">
+                  <Image
+                    src={zoomImage}
+                    alt="Zoomed"
+                    fill
+                    className="object-contain"
+                    unoptimized
+                  />
+                </div>
+              </TransformComponent>
+            </TransformWrapper>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
