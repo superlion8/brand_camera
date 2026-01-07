@@ -786,49 +786,47 @@ function StudioPageContent() {
             {isDesktop ? (
               <div className="max-w-5xl mx-auto px-8">
                 <div className="flex gap-8">
-                  {/* Left: Image Upload */}
-                  <div className="w-[380px] shrink-0">
+                  {/* Left: Image Upload + Photo Type */}
+                  <div className="w-[380px] shrink-0 space-y-4">
                     {renderUploadArea()}
+                    
+                    {/* Photo Type - under upload */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-4">
+                      <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.studio.photoType}</h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          onClick={() => setPhotoType('studio')}
+                          className={`py-3 px-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5 ${
+                            photoType === 'studio'
+                              ? 'border-amber-500 bg-amber-50'
+                              : 'border-zinc-200 bg-white hover:border-zinc-300'
+                          }`}
+                        >
+                          <span className="text-xl">📦</span>
+                          <span className={`text-xs font-medium ${photoType === 'studio' ? 'text-amber-700' : 'text-zinc-600'}`}>
+                            {t.studio.studioShot}
+                          </span>
+                        </button>
+                        <button
+                          onClick={() => setPhotoType('hanging')}
+                          className={`py-3 px-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5 ${
+                            photoType === 'hanging'
+                              ? 'border-amber-500 bg-amber-50'
+                              : 'border-zinc-200 bg-white hover:border-zinc-300'
+                          }`}
+                        >
+                          <span className="text-xl">👔</span>
+                          <span className={`text-xs font-medium ${photoType === 'hanging' ? 'text-amber-700' : 'text-zinc-600'}`}>
+                            {t.studio.hangingShot}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                   
                   {/* Right: Settings */}
                   <div className="flex-1 min-w-0">
                     <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-6 space-y-6">
-                      {/* Photo Type */}
-                      <div>
-                        <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.studio.photoType}</h3>
-                        <div className="grid grid-cols-2 gap-3">
-                  <button
-                            onClick={() => setPhotoType('studio')}
-                            className={`py-4 px-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
-                              photoType === 'studio'
-                                ? 'border-amber-500 bg-amber-50'
-                                : 'border-zinc-200 bg-white hover:border-zinc-300'
-                            }`}
-                  >
-                            <span className="text-2xl">📦</span>
-                            <span className={`text-sm font-medium ${photoType === 'studio' ? 'text-amber-700' : 'text-zinc-600'}`}>
-                              {t.studio.studioShot}
-                            </span>
-                            <span className="text-xs text-zinc-400">{t.studio.studioShotDesc}</span>
-                  </button>
-                          <button
-                            onClick={() => setPhotoType('hanging')}
-                            className={`py-4 px-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
-                              photoType === 'hanging'
-                                ? 'border-amber-500 bg-amber-50'
-                                : 'border-zinc-200 bg-white hover:border-zinc-300'
-                            }`}
-                          >
-                            <span className="text-2xl">👔</span>
-                            <span className={`text-sm font-medium ${photoType === 'hanging' ? 'text-amber-700' : 'text-zinc-600'}`}>
-                              {t.studio.hangingShot}
-                            </span>
-                            <span className="text-xs text-zinc-400">{t.studio.hangingShotDesc}</span>
-                          </button>
-                        </div>
-                      </div>
-                      
                       {/* Light Type */}
                       <div>
                         <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.studio.lightType}</h3>

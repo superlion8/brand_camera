@@ -675,12 +675,12 @@ export default function GeneralEditPage() {
           >
             {/* Back button - hidden on desktop */}
             {!isDesktop && (
-              <button
-                onClick={() => setShowCamera(false)}
-                className="absolute top-4 left-4 z-20 w-10 h-10 rounded-full bg-black/30 text-white backdrop-blur-md flex items-center justify-center"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
+            <button
+              onClick={() => setShowCamera(false)}
+              className="absolute top-4 left-4 z-20 w-10 h-10 rounded-full bg-black/30 text-white backdrop-blur-md flex items-center justify-center"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
             )}
             
             {/* Camera view / Upload interface */}
@@ -737,25 +737,25 @@ export default function GeneralEditPage() {
               
               {/* Grid overlay - hidden on desktop */}
               {!isDesktop && (
-                <div className="absolute inset-0 pointer-events-none opacity-30">
-                  <div className="w-full h-full grid grid-cols-3 grid-rows-3">
-                    {[...Array(9)].map((_, i) => (
-                      <div key={i} className="border border-white/20" />
-                    ))}
-                  </div>
+              <div className="absolute inset-0 pointer-events-none opacity-30">
+                <div className="w-full h-full grid grid-cols-3 grid-rows-3">
+                  {[...Array(9)].map((_, i) => (
+                    <div key={i} className="border border-white/20" />
+                  ))}
                 </div>
+              </div>
               )}
               
               {/* Focus frame - hidden on desktop */}
               {!isDesktop && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-64 h-64 border border-white/50 rounded-lg relative">
-                    <div className="absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 border-purple-400" />
-                    <div className="absolute -top-1 -right-1 w-4 h-4 border-t-4 border-r-4 border-purple-400" />
-                    <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-4 border-l-4 border-purple-400" />
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-4 border-r-4 border-purple-400" />
-                  </div>
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="w-64 h-64 border border-white/50 rounded-lg relative">
+                  <div className="absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 border-purple-400" />
+                  <div className="absolute -top-1 -right-1 w-4 h-4 border-t-4 border-r-4 border-purple-400" />
+                  <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-4 border-l-4 border-purple-400" />
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-4 border-r-4 border-purple-400" />
                 </div>
+              </div>
               )}
             </div>
             

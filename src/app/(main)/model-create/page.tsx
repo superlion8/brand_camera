@@ -954,7 +954,7 @@ export default function ModelCreatePage() {
                 placeholder={t.modelCreate?.extraDescriptionPlaceholder || '例如：希望模特更加高冷、时尚感更强...'}
                 className="w-full h-24 px-4 py-3 rounded-xl border border-zinc-200 bg-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
-            </div>
+          </div>
         </div>
       </div>
       
