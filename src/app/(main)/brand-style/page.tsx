@@ -69,15 +69,47 @@ export default function BrandStylePage() {
     isValidUrl(videoUrl) && 
     productImage
 
-  // Handle image upload
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
+  // Compress image to reduce size for sessionStorage
+  const compressImage = (file: File, maxWidth: number = 800, quality: number = 0.7): Promise<string> => {
+    return new Promise((resolve) => {
       const reader = new FileReader()
-      reader.onload = (event) => {
-        setProductImage(event.target?.result as string)
+      reader.onload = (e) => {
+        const img = document.createElement('img')
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          let width = img.width
+          let height = img.height
+          
+          // Scale down if too large
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width
+            width = maxWidth
+          }
+          
+          canvas.width = width
+          canvas.height = height
+          
+          const ctx = canvas.getContext('2d')
+          ctx?.drawImage(img, 0, 0, width, height)
+          
+          // Convert to JPEG with compression
+          const compressed = canvas.toDataURL('image/jpeg', quality)
+          console.log('[Image] Compressed from', (e.target?.result as string).length, 'to', compressed.length)
+          resolve(compressed)
+        }
+        img.src = e.target?.result as string
       }
       reader.readAsDataURL(file)
+    })
+  }
+
+  // Handle image upload with compression
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Compress image to avoid sessionStorage quota issues
+      const compressed = await compressImage(file)
+      setProductImage(compressed)
     }
   }
 
