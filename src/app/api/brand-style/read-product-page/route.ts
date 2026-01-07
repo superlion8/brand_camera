@@ -126,8 +126,11 @@ async function analyzeImages(images: string[]): Promise<{
     throw new Error('No images found on the page')
   }
 
-  // Limit to first 10 images for analysis
-  const imagesToAnalyze = images.slice(0, 10)
+  // IMPORTANT: Only analyze the FIRST 5 images
+  // Product main images are always at the top of the page
+  // Images after that are usually "related products" which we should ignore
+  const imagesToAnalyze = images.slice(0, 5)
+  console.log('[Brand Style] Analyzing first', imagesToAnalyze.length, 'images (ignoring related products)')
   
   const genAI = getGenAIClient()
   
@@ -135,6 +138,7 @@ async function analyzeImages(images: string[]): Promise<{
   const imageParts = await Promise.all(
     imagesToAnalyze.map(async (url, index) => {
       try {
+        console.log(`[Brand Style] Loading image ${index}:`, url.slice(0, 80))
         const response = await fetch(url)
         if (!response.ok) return null
         const buffer = await response.arrayBuffer()
@@ -158,17 +162,23 @@ async function analyzeImages(images: string[]): Promise<{
     throw new Error('Failed to load any images')
   }
 
-  const prompt = `你是一位时尚电商专家。请分析这些商品页面的图片，找出：
+  const prompt = `你是一位时尚电商专家。这些是同一个商品详情页的图片（按页面顺序排列）。
 
-1. **最佳模特图**: 找出一张最典型的单人模特正面展示商品的图片（模特穿着/展示商品，背景清晰，构图专业）
-2. **最佳商品图**: 找出一张最典型的无模特纯商品棚拍图（如果存在的话）
-3. **品牌风格**: 总结这个品牌的视觉风格和调性
+重要提示：这些图片都是同一个商品的不同展示图，请从中选择：
 
-请以 JSON 格式输出：
+1. **最佳模特图**: 找出一张最典型的单人模特正面全身展示该商品的图片
+   - 必须是模特穿着/展示商品
+   - 优先选择正面、全身、清晰的图片
+   
+2. **最佳商品图**: 找出一张纯商品图（无模特），如果存在的话
+
+3. **品牌风格**: 总结这个品牌的视觉风格
+
+输出 JSON：
 {
-  "modelImageIndex": 0-9 的数字，表示最佳模特图的索引，如果没有则为 -1,
-  "productImageIndex": 0-9 的数字，表示最佳商品图的索引，如果没有则为 -1,
-  "brandSummary": "品牌风格的简短描述（50字以内）",
+  "modelImageIndex": 0-${validImageParts.length - 1} 的数字，表示最佳模特图索引，-1表示无,
+  "productImageIndex": 0-${validImageParts.length - 1} 的数字，表示最佳商品图索引，-1表示无,
+  "brandSummary": "品牌风格描述（50字内）",
   "brandKeywords": ["关键词1", "关键词2", "关键词3"]
 }`
 
@@ -195,9 +205,24 @@ async function analyzeImages(images: string[]): Promise<{
   
   const parsed = JSON.parse(jsonMatch[0])
   
+  // Ensure index is within valid range
+  const modelIdx = parsed.modelImageIndex
+  const productIdx = parsed.productImageIndex
+  
+  const modelImage = (modelIdx >= 0 && modelIdx < imagesToAnalyze.length) 
+    ? imagesToAnalyze[modelIdx] 
+    : imagesToAnalyze[0] // Default to first image
+    
+  const productImage = (productIdx >= 0 && productIdx < imagesToAnalyze.length)
+    ? imagesToAnalyze[productIdx]
+    : null
+    
+  console.log('[Brand Style] Selected model image index:', modelIdx)
+  console.log('[Brand Style] Selected product image index:', productIdx)
+  
   return {
-    modelImage: parsed.modelImageIndex >= 0 ? imagesToAnalyze[parsed.modelImageIndex] : imagesToAnalyze[0],
-    productImage: parsed.productImageIndex >= 0 ? imagesToAnalyze[parsed.productImageIndex] : null,
+    modelImage,
+    productImage,
     brandSummary: parsed.brandSummary || '',
     brandKeywords: parsed.brandKeywords || []
   }
