@@ -4,10 +4,14 @@ import { createClient } from '@supabase/supabase-js'
 
 // Lazy initialize supabase to avoid build-time errors
 function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_KEY!
-  )
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  
+  if (!url || !key) {
+    throw new Error('Supabase configuration missing. Please set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.')
+  }
+  
+  return createClient(url, key)
 }
 
 // Helper to convert image URL or base64 to base64 data
