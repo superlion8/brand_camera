@@ -69,6 +69,7 @@ export default function AnalyzingPage() {
   ])
 
   const [currentStep, setCurrentStep] = useState(0)
+  const currentStepRef = useRef(0) // 用 ref 跟踪当前步骤，避免闭包问题
   const [inputData, setInputData] = useState<{
     productPageUrl: string
     instagramUrl: string
@@ -110,6 +111,7 @@ export default function AnalyzingPage() {
 
     try {
       // Step 1: Analyze product page
+      currentStepRef.current = 0
       setCurrentStep(0)
       updateStep('product-page', { status: 'processing' })
       
@@ -120,8 +122,10 @@ export default function AnalyzingPage() {
         signal
       })
       
-      if (!productPageRes.ok) throw new Error('Failed to analyze product page')
       const productPageData = await productPageRes.json()
+      if (!productPageRes.ok || productPageData.error) {
+        throw new Error(productPageData.error || 'Failed to analyze product page')
+      }
       
       updateStep('product-page', { 
         status: 'completed',
@@ -133,6 +137,7 @@ export default function AnalyzingPage() {
       })
 
       // Step 2: Analyze Instagram
+      currentStepRef.current = 1
       setCurrentStep(1)
       updateStep('instagram', { status: 'processing' })
       
@@ -143,8 +148,10 @@ export default function AnalyzingPage() {
         signal
       })
       
-      if (!instagramRes.ok) throw new Error('Failed to analyze Instagram')
       const instagramData = await instagramRes.json()
+      if (!instagramRes.ok || instagramData.error) {
+        throw new Error(instagramData.error || 'Failed to analyze Instagram')
+      }
       
       updateStep('instagram', { 
         status: 'completed',
@@ -155,6 +162,7 @@ export default function AnalyzingPage() {
       })
 
       // Step 3: Analyze video
+      currentStepRef.current = 2
       setCurrentStep(2)
       updateStep('video', { status: 'processing' })
       
@@ -165,8 +173,10 @@ export default function AnalyzingPage() {
         signal
       })
       
-      if (!videoRes.ok) throw new Error('Failed to analyze video')
       const videoData = await videoRes.json()
+      if (!videoRes.ok || videoData.error) {
+        throw new Error(videoData.error || 'Failed to analyze video')
+      }
       
       updateStep('video', { 
         status: 'completed',
@@ -176,6 +186,7 @@ export default function AnalyzingPage() {
       })
 
       // Step 4: Generate summary
+      currentStepRef.current = 3
       setCurrentStep(3)
       updateStep('summary', { status: 'processing' })
       
@@ -190,8 +201,10 @@ export default function AnalyzingPage() {
         signal
       })
       
-      if (!summaryRes.ok) throw new Error('Failed to generate summary')
       const summaryData = await summaryRes.json()
+      if (!summaryRes.ok || summaryData.error) {
+        throw new Error(summaryData.error || 'Failed to generate summary')
+      }
       
       updateStep('summary', { 
         status: 'completed',
@@ -215,9 +228,11 @@ export default function AnalyzingPage() {
       if ((error as Error).name === 'AbortError') return
       
       console.error('Analysis error:', error)
-      const currentStepData = steps[currentStep]
-      if (currentStepData) {
-        updateStep(currentStepData.id, { 
+      // 使用 ref 获取当前步骤，避免闭包问题
+      const stepIds = ['product-page', 'instagram', 'video', 'summary']
+      const failedStepId = stepIds[currentStepRef.current]
+      if (failedStepId) {
+        updateStep(failedStepId, { 
           status: 'error',
           error: (error as Error).message
         })
