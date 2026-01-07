@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import OpenAI from 'openai'
+import { getGenAIClient } from '@/lib/genai'
 import { createClient } from '@supabase/supabase-js'
-
-// Lazy initialize OpenAI to avoid build-time errors
-function getOpenAI() {
-  return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY!
-  })
-}
 
 // Lazy initialize supabase to avoid build-time errors
 function getSupabase() {
@@ -21,10 +14,13 @@ function getSupabase() {
   return createClient(url, key)
 }
 
-// Helper to convert image to base64 URL
-async function getImageBase64Url(imageSource: string): Promise<string> {
+// Helper to convert image to base64
+async function getImageBase64(imageSource: string): Promise<{ data: string; mimeType: string }> {
   if (imageSource.startsWith('data:')) {
-    return imageSource
+    const match = imageSource.match(/^data:([^;]+);base64,(.+)$/)
+    if (match) {
+      return { mimeType: match[1], data: match[2] }
+    }
   }
   
   const response = await fetch(imageSource)
@@ -36,26 +32,20 @@ async function getImageBase64Url(imageSource: string): Promise<string> {
   const base64 = Buffer.from(buffer).toString('base64')
   const mimeType = response.headers.get('content-type') || 'image/jpeg'
   
-  return `data:${mimeType};base64,${base64}`
+  return { data: base64, mimeType }
 }
 
 // Upload video to Supabase
-async function uploadVideoToSupabase(videoUrl: string): Promise<string> {
+async function uploadVideoToSupabase(videoData: string, mimeType: string): Promise<string> {
   const supabase = getSupabase()
-  
-  // Download video from OpenAI
-  const response = await fetch(videoUrl)
-  if (!response.ok) {
-    throw new Error(`Failed to download video: ${response.statusText}`)
-  }
-  
-  const buffer = await response.arrayBuffer()
-  const filename = `brand-style/video_${Date.now()}_${Math.random().toString(36).slice(2)}.mp4`
+  const buffer = Buffer.from(videoData, 'base64')
+  const extension = mimeType.includes('mp4') ? 'mp4' : 'webm'
+  const filename = `brand-style/video_${Date.now()}_${Math.random().toString(36).slice(2)}.${extension}`
   
   const { error } = await supabase.storage
     .from('generations')
     .upload(filename, buffer, {
-      contentType: 'video/mp4',
+      contentType: mimeType,
       upsert: false
     })
   
@@ -70,38 +60,6 @@ async function uploadVideoToSupabase(videoUrl: string): Promise<string> {
   return urlData.publicUrl
 }
 
-// Poll for video completion
-async function waitForVideoCompletion(openai: OpenAI, videoId: string, maxWaitMs: number = 300000): Promise<string> {
-  const startTime = Date.now()
-  const pollInterval = 5000 // 5 seconds
-  
-  while (Date.now() - startTime < maxWaitMs) {
-    const video = await openai.videos.retrieve(videoId)
-    
-    console.log(`[Sora] Video status: ${video.status}`)
-    
-    if (video.status === 'completed') {
-      // Get the video URL
-      // @ts-ignore
-      if (video.url) {
-        // @ts-ignore
-        return video.url
-      }
-      throw new Error('Video completed but no URL provided')
-    }
-    
-    if (video.status === 'failed') {
-      // @ts-ignore
-      throw new Error(`Video generation failed: ${video.error?.message || 'Unknown error'}`)
-    }
-    
-    // Wait before next poll
-    await new Promise(resolve => setTimeout(resolve, pollInterval))
-  }
-  
-  throw new Error('Video generation timed out')
-}
-
 export async function POST(request: NextRequest) {
   try {
     const { productImage, prompt, brandSummary } = await request.json()
@@ -110,51 +68,82 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 })
     }
 
-    if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json({
-        videoUrl: null,
-        message: 'Video generation requires OPENAI_API_KEY to be configured.',
-        success: false
-      })
-    }
-
-    console.log('[Sora] Starting video generation...')
+    console.log('[Veo] Starting video generation with Veo 3...')
 
     // Prepare product image
-    const productImageUrl = await getImageBase64Url(productImage)
+    const productImageData = await getImageBase64(productImage)
 
     // Build video prompt
     const videoPrompt = `${prompt}
 
-Product: A fashion item (clothing/accessory) as shown in the reference image.
-Style: ${brandSummary || 'Modern, trendy, lifestyle-focused'}
+Product Context: A fashion item (clothing/accessory) as shown in the reference image.
+Brand Style: ${brandSummary || 'Modern, trendy, lifestyle-focused'}
 
-Requirements:
+Video Requirements:
 - Feature the product naturally in a lifestyle context
 - UGC/creator style - authentic and relatable
 - Smooth camera movement
 - Good lighting
-- Vertical format (9:16) for social media`
+- Vertical format suitable for social media
+- Duration: 4-6 seconds
+- High quality, professional look while maintaining authentic feel`
 
-    // Create video with Sora 2 API
-    const openai = getOpenAI()
-    const video = await openai.videos.create({
-      model: 'sora-2',
-      prompt: videoPrompt,
-      size: '720x1280', // Vertical format (9:16)
-      seconds: '4', // '4', '8', or '12' seconds
+    // Generate video using Veo 3
+    const genAI = getGenAIClient()
+    
+    const result = await genAI.models.generateContent({
+      model: 'veo-3-preview',
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            { text: videoPrompt },
+            { inlineData: { mimeType: productImageData.mimeType, data: productImageData.data } }
+          ]
+        }
+      ],
+      config: {
+        responseModalities: ['VIDEO'],
+      }
     })
 
-    console.log(`[Sora] Video created with ID: ${video.id}`)
+    console.log('[Veo] Generation complete, extracting video...')
 
-    // Wait for video to complete
-    const videoUrl = await waitForVideoCompletion(openai, video.id)
+    // Extract video from response
+    let videoData: string | null = null
+    let videoMimeType = 'video/mp4'
+    
+    const candidate = result.candidates?.[0]
+    if (candidate?.content?.parts) {
+      for (const part of candidate.content.parts) {
+        // @ts-ignore - video data structure
+        if (part.inlineData?.data) {
+          // @ts-ignore
+          videoData = part.inlineData.data
+          // @ts-ignore
+          videoMimeType = part.inlineData.mimeType || 'video/mp4'
+          break
+        }
+        // @ts-ignore - alternative video response structure
+        if (part.videoMetadata || part.video) {
+          // @ts-ignore
+          videoData = part.video?.data || part.videoMetadata?.data
+          break
+        }
+      }
+    }
+
+    if (!videoData) {
+      // Check if there's an error or the model doesn't support video yet
+      console.error('[Veo] No video data in response:', JSON.stringify(result).slice(0, 500))
+      throw new Error('Video generation did not return any video data. Veo 3 may not be available yet.')
+    }
 
     // Upload to Supabase for persistent storage
-    console.log('[Sora] Uploading video to storage...')
-    const storedVideoUrl = await uploadVideoToSupabase(videoUrl)
+    console.log('[Veo] Uploading video to storage...')
+    const storedVideoUrl = await uploadVideoToSupabase(videoData, videoMimeType)
 
-    console.log('[Sora] Video generation complete')
+    console.log('[Veo] Video generation complete')
 
     return NextResponse.json({
       videoUrl: storedVideoUrl,
@@ -162,23 +151,17 @@ Requirements:
     })
 
   } catch (error) {
-    console.error('[Sora] Error generating video:', error)
+    console.error('[Veo] Error generating video:', error)
     
     const errorMessage = (error as Error).message
     
     // Handle specific errors
-    if (errorMessage.includes('rate limit') || errorMessage.includes('quota')) {
-      return NextResponse.json(
-        { error: 'Video generation rate limit reached. Please try again later.' },
-        { status: 429 }
-      )
-    }
-    
-    if (errorMessage.includes('not available') || errorMessage.includes('model')) {
-      return NextResponse.json(
-        { error: 'Sora video generation is not available. Please check your API access.' },
-        { status: 503 }
-      )
+    if (errorMessage.includes('not found') || errorMessage.includes('not available') || errorMessage.includes('not supported')) {
+      return NextResponse.json({
+        error: 'Veo 3 video generation is not available yet. Video generation will be skipped.',
+        videoUrl: null,
+        success: false
+      })
     }
     
     return NextResponse.json(
