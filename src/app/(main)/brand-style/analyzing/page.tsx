@@ -218,13 +218,38 @@ export default function AnalyzingPage() {
       })
 
       // Store results and navigate to confirm page
-      sessionStorage.setItem('brandStyleAnalysis', JSON.stringify({
-        productPage: productPageData,
-        instagram: instagramData,
+      // Only store essential data to avoid exceeding sessionStorage quota
+      const analysisData = {
+        productPage: {
+          // Only keep first 5 images for selection
+          images: (productPageData.images || []).slice(0, 5),
+          modelImage: productPageData.modelImage,
+          productImage: productPageData.productImage,
+          brandSummary: productPageData.brandSummary,
+          brandKeywords: productPageData.brandKeywords
+        },
+        instagram: {
+          // Only keep first 5 images for selection
+          images: (instagramData.images || []).slice(0, 5),
+          bestModelImage: instagramData.bestModelImage
+        },
         video: videoData,
         summary: summaryData,
         productImage: inputData.productImage
-      }))
+      }
+      
+      try {
+        sessionStorage.setItem('brandStyleAnalysis', JSON.stringify(analysisData))
+      } catch (storageError) {
+        console.error('Storage quota exceeded, trying with minimal data')
+        // If still too large, store without large arrays
+        const minimalData = {
+          ...analysisData,
+          productPage: { ...analysisData.productPage, images: [] },
+          instagram: { ...analysisData.instagram, images: [] }
+        }
+        sessionStorage.setItem('brandStyleAnalysis', JSON.stringify(minimalData))
+      }
       
       router.push('/brand-style/confirm')
 
@@ -379,16 +404,14 @@ export default function AnalyzingPage() {
                             onClick={() => setZoomImage(step.result!.selectedImage!)}
                             className="relative h-20 w-20 rounded-lg overflow-hidden bg-zinc-100 group cursor-pointer"
                           >
-                            {/* Use native img for external CDN images (Instagram, etc.) to avoid CORS issues */}
+                            {/* Use native img for external CDN images (Instagram, etc.) */}
                             <img 
                               src={step.result.selectedImage} 
                               alt="Result" 
                               className="absolute inset-0 w-full h-full object-cover"
                               referrerPolicy="no-referrer"
-                              crossOrigin="anonymous"
                               onError={(e) => {
                                 console.log('[Image] Failed to load:', step.result?.selectedImage?.slice(0, 60))
-                                // Hide broken image
                                 e.currentTarget.style.display = 'none'
                               }}
                             />
