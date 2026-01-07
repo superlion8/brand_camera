@@ -1019,7 +1019,8 @@ function SocialPageContent() {
                 )}
               </div>
 
-              {mode === "camera" && (
+              {/* Camera overlays - Mobile only */}
+              {mode === "camera" && !isDesktop && (
                 <>
                   {/* Grid Overlay */}
                   <div className="absolute inset-0 pointer-events-none opacity-30">
