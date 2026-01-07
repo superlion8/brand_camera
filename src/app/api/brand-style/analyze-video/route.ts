@@ -101,7 +101,7 @@ async function analyzeVideoWithGemini(videoBuffer: Buffer): Promise<string> {
 "A casual lifestyle video showing a person trying on clothes, natural lighting, handheld camera movement, warm and authentic atmosphere, quick transitions, trendy editing style..."`
 
   const result = await genAI.models.generateContent({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-3-flash-preview',
     contents: [
       {
         role: 'user',
@@ -150,7 +150,7 @@ async function analyzeVideoFallback(url: string): Promise<string> {
         const base64 = Buffer.from(buffer).toString('base64')
         
         const result = await genAI.models.generateContent({
-          model: 'gemini-2.0-flash',
+          model: 'gemini-3-flash-preview',
           contents: [
             {
               role: 'user',
