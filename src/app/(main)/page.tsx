@@ -506,6 +506,39 @@ export default function HomePage() {
           </motion.div>
         </motion.div>
 
+        {/* Brand Style Analysis Promo */}
+        <motion.div className="px-4 lg:px-0 mt-3" variants={sectionVariants}>
+          <Link href="/brand-style">
+            <motion.div
+              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: 1.01 }}
+              className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 p-4 lg:p-6 cursor-pointer"
+            >
+              {/* Background decoration */}
+              <div className="absolute top-0 right-0 w-32 h-32 lg:w-48 lg:h-48 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+              <div className="absolute bottom-0 left-1/4 w-20 h-20 lg:w-32 lg:h-32 bg-white/5 rounded-full translate-y-1/2" />
+              
+              <div className="flex items-center gap-4 lg:gap-6 relative z-10">
+                <div className="w-14 h-14 lg:w-16 lg:h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shrink-0">
+                  <Palette className="w-7 h-7 lg:w-8 lg:h-8 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base lg:text-lg font-bold text-white">品牌风格分析</h3>
+                    <span className="px-1.5 py-0.5 bg-white/20 backdrop-blur-sm rounded text-[10px] font-bold text-white">
+                      NEW
+                    </span>
+                  </div>
+                  <p className="text-sm lg:text-base text-white/80 mt-0.5">分析品牌风格，批量生成官网图、INS图、短视频</p>
+                </div>
+                <div className="w-10 h-10 lg:w-12 lg:h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shrink-0">
+                  <ChevronRight className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
+                </div>
+              </div>
+            </motion.div>
+          </Link>
+        </motion.div>
+
         {/* Section 3: 修图室 - Desktop: Side by side with Quick Links */}
         <div className="lg:grid lg:grid-cols-2 lg:gap-6 mt-2">
           <motion.div className="px-4 lg:px-0" variants={sectionVariants}>
