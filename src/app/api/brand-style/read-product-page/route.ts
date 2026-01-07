@@ -41,36 +41,63 @@ async function readWebPage(url: string): Promise<{ markdown: string; images: str
   // Extract image URLs from markdown - multiple patterns
   const images: string[] = []
   
-  // Pattern 1: Markdown image syntax
-  const markdownImageRegex = /!\[.*?\]\((https?:\/\/[^\s\)]+)\)/g
+  // Helper to normalize URL and add to list
+  const addImage = (rawUrl: string) => {
+    // Handle escaped slashes from JSON (\/\/ -> //)
+    let url = rawUrl.replace(/\\\//g, '/')
+    // Handle protocol-relative URLs (// -> https://)
+    if (url.startsWith('//')) {
+      url = 'https:' + url
+    }
+    // Dedupe by base URL (without query params)
+    const baseUrl = url.split('?')[0]
+    if (!images.some(img => img.split('?')[0] === baseUrl) && isValidProductImage(url)) {
+      images.push(url)
+    }
+  }
+  
+  // Pattern 1: Markdown image syntax (https:// or //)
+  const markdownImageRegex = /!\[.*?\]\(((?:https?:)?\/\/[^\s\)]+)\)/g
   let match: RegExpExecArray | null
   while ((match = markdownImageRegex.exec(text)) !== null) {
-    const imgUrl = match[1]
-    if (!images.includes(imgUrl) && isValidProductImage(imgUrl)) {
-      images.push(imgUrl)
-    }
+    addImage(match[1])
   }
   
-  // Pattern 2: Direct image URLs (jpg, png, webp, gif)
-  const directImageRegex = /(https?:\/\/[^\s<>"'\)]+\.(?:jpg|jpeg|png|webp|gif)(?:\?[^\s<>"']*)?)/gi
+  // Pattern 2: Direct image URLs (jpg, png, webp, gif) with https:// or //
+  const directImageRegex = /((?:https?:)?\/\/[^\s<>"'\)]+\.(?:jpg|jpeg|png|webp|gif)(?:\?[^\s<>"']*)?)/gi
   while ((match = directImageRegex.exec(text)) !== null) {
-    const imgUrl = match[1].split('?')[0] // Remove query params for dedup
-    if (!images.includes(imgUrl) && isValidProductImage(imgUrl)) {
-      images.push(match[1]) // Keep original URL with params
+    addImage(match[1])
+  }
+  
+  // Pattern 3: JSON escaped URLs from Shopify data (\"images\":[\"\/\/wittmore.com/cdn/shop/files/..."])
+  const jsonImageRegex = /\\?"(?:images|src|featured_image)\\?":\s*\\?"(\\\/\\\/[^"]+)\\?"/gi
+  while ((match = jsonImageRegex.exec(text)) !== null) {
+    addImage(match[1])
+  }
+  
+  // Pattern 4: JSON image arrays ["\/\/wittmore.com/cdn/shop/files/..."]
+  const jsonArrayRegex = /\\?"images\\?":\s*\[((?:"[^"]+",?\s*)+)\]/gi
+  while ((match = jsonArrayRegex.exec(text)) !== null) {
+    const arrayContent = match[1]
+    const urlMatches = arrayContent.match(/\\?"(\\\/\\\/[^"]+)\\?"/g)
+    if (urlMatches) {
+      for (const urlMatch of urlMatches) {
+        const cleanUrl = urlMatch.replace(/\\?"/g, '')
+        addImage(cleanUrl)
+      }
     }
   }
   
-  // Pattern 3: Shopify CDN URLs (may not have extension)
-  const shopifyRegex = /(https?:\/\/cdn\.shopify\.com\/s\/files\/[^\s<>"']+)/gi
-  let shopifyMatch: RegExpExecArray | null
-  while ((shopifyMatch = shopifyRegex.exec(text)) !== null) {
-    const shopifyUrl = shopifyMatch[1]
-    if (!images.some(img => img.includes(shopifyUrl.split('?')[0]))) {
-      images.push(shopifyUrl)
-    }
+  // Pattern 5: Shopify CDN URLs with various formats
+  const shopifyRegex = /((?:https?:)?\\?\/\\?\/[^\s<>"']*(?:cdn\.shopify\.com|wittmore\.com)\/cdn\/shop\/files\/[^\s<>"'\\]+\.(?:jpg|jpeg|png|webp|gif))/gi
+  while ((match = shopifyRegex.exec(text)) !== null) {
+    addImage(match[1])
   }
   
   console.log('[Brand Style] Extracted', images.length, 'images')
+  if (images.length > 0) {
+    console.log('[Brand Style] First few images:', images.slice(0, 3))
+  }
   return { markdown: text, images }
 }
 
