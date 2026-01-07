@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
+import OpenAI from 'openai'
 import { createClient } from '@supabase/supabase-js'
+
+// Lazy initialize OpenAI to avoid build-time errors
+function getOpenAI() {
+  return new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY!
+  })
+}
 
 // Lazy initialize supabase to avoid build-time errors
 function getSupabase() {
@@ -29,6 +37,8 @@ async function getImageBase64Url(imageSource: string): Promise<string> {
 
 // Upload video to Supabase
 async function uploadVideoToSupabase(videoUrl: string): Promise<string> {
+  const supabase = getSupabase()
+  
   // Download video from OpenAI
   const response = await fetch(videoUrl)
   if (!response.ok) {
@@ -38,7 +48,6 @@ async function uploadVideoToSupabase(videoUrl: string): Promise<string> {
   const buffer = await response.arrayBuffer()
   const filename = `brand-style/video_${Date.now()}_${Math.random().toString(36).slice(2)}.mp4`
   
-  const supabase = getSupabase()
   const { error } = await supabase.storage
     .from('generations')
     .upload(filename, buffer, {
@@ -57,43 +66,36 @@ async function uploadVideoToSupabase(videoUrl: string): Promise<string> {
   return urlData.publicUrl
 }
 
-// Generate video using available API (Runway, Pika, or Sora when available)
-async function generateVideoWithRunway(prompt: string, imageBase64: string): Promise<string | null> {
-  const runwayApiKey = process.env.RUNWAY_API_KEY
+// Poll for video completion
+async function waitForVideoCompletion(openai: OpenAI, videoId: string, maxWaitMs: number = 300000): Promise<string> {
+  const startTime = Date.now()
+  const pollInterval = 5000 // 5 seconds
   
-  if (!runwayApiKey) {
-    console.log('[Brand Style] No Runway API key, video generation skipped')
-    return null
-  }
-
-  try {
-    // Runway Gen-3 Alpha API
-    const response = await fetch('https://api.runwayml.com/v1/generation', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${runwayApiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gen-3-alpha',
-        prompt: prompt,
-        image: imageBase64,
-        duration: 5,
-        aspect_ratio: '9:16'
-      })
-    })
-
-    if (!response.ok) {
-      throw new Error(`Runway API error: ${response.statusText}`)
+  while (Date.now() - startTime < maxWaitMs) {
+    const video = await openai.videos.retrieve(videoId)
+    
+    console.log(`[Sora] Video status: ${video.status}`)
+    
+    if (video.status === 'completed') {
+      // Get the video URL
+      // @ts-ignore
+      if (video.url) {
+        // @ts-ignore
+        return video.url
+      }
+      throw new Error('Video completed but no URL provided')
     }
-
-    const data = await response.json()
-    return data.output_url || data.video_url || null
-
-  } catch (error) {
-    console.error('[Brand Style] Runway API error:', error)
-    return null
+    
+    if (video.status === 'failed') {
+      // @ts-ignore
+      throw new Error(`Video generation failed: ${video.error?.message || 'Unknown error'}`)
+    }
+    
+    // Wait before next poll
+    await new Promise(resolve => setTimeout(resolve, pollInterval))
   }
+  
+  throw new Error('Video generation timed out')
 }
 
 export async function POST(request: NextRequest) {
@@ -104,7 +106,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 })
     }
 
-    console.log('[Brand Style] Generating video...')
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json({
+        videoUrl: null,
+        message: 'Video generation requires OPENAI_API_KEY to be configured.',
+        success: false
+      })
+    }
+
+    console.log('[Sora] Starting video generation...')
 
     // Prepare product image
     const productImageUrl = await getImageBase64Url(productImage)
@@ -120,25 +130,27 @@ Requirements:
 - UGC/creator style - authentic and relatable
 - Smooth camera movement
 - Good lighting
-- 5 seconds duration`
+- Vertical format (9:16) for social media`
 
-    // Try to generate video with Runway
-    const videoUrl = await generateVideoWithRunway(videoPrompt, productImageUrl)
+    // Create video with Sora 2 API
+    const openai = getOpenAI()
+    const video = await openai.videos.create({
+      model: 'sora-2',
+      prompt: videoPrompt,
+      size: '720x1280', // Vertical format (9:16)
+      seconds: '4', // '4', '8', or '12' seconds
+    })
 
-    if (!videoUrl) {
-      // Video generation not available, return placeholder message
-      return NextResponse.json({
-        videoUrl: null,
-        message: 'Video generation is not configured. Please add RUNWAY_API_KEY to enable video generation.',
-        success: false
-      })
-    }
+    console.log(`[Sora] Video created with ID: ${video.id}`)
+
+    // Wait for video to complete
+    const videoUrl = await waitForVideoCompletion(openai, video.id)
 
     // Upload to Supabase for persistent storage
-    console.log('[Brand Style] Uploading video to storage...')
+    console.log('[Sora] Uploading video to storage...')
     const storedVideoUrl = await uploadVideoToSupabase(videoUrl)
 
-    console.log('[Brand Style] Video generation complete')
+    console.log('[Sora] Video generation complete')
 
     return NextResponse.json({
       videoUrl: storedVideoUrl,
@@ -146,12 +158,28 @@ Requirements:
     })
 
   } catch (error) {
-    console.error('[Brand Style] Error generating video:', error)
+    console.error('[Sora] Error generating video:', error)
+    
+    const errorMessage = (error as Error).message
+    
+    // Handle specific errors
+    if (errorMessage.includes('rate limit') || errorMessage.includes('quota')) {
+      return NextResponse.json(
+        { error: 'Video generation rate limit reached. Please try again later.' },
+        { status: 429 }
+      )
+    }
+    
+    if (errorMessage.includes('not available') || errorMessage.includes('model')) {
+      return NextResponse.json(
+        { error: 'Sora video generation is not available. Please check your API access.' },
+        { status: 503 }
+      )
+    }
     
     return NextResponse.json(
-      { error: (error as Error).message },
+      { error: errorMessage },
       { status: 500 }
     )
   }
 }
-
