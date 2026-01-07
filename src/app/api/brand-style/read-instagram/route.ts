@@ -30,19 +30,30 @@ async function fetchInstagramPost(url: string): Promise<{ images: string[]; capt
     const images: string[] = []
     let caption = ''
 
-    // Method 1: Extract og:image meta tag (main image)
+    // Method 1: Extract twitter:image meta tag (Instagram now uses this instead of og:image)
+    const twitterImageMatch = html.match(/name="twitter:image"\s+content="([^"]+)"/i) ||
+                              html.match(/content="([^"]+)"\s+name="twitter:image"/i)
+    
+    if (twitterImageMatch) {
+      const imageUrl = twitterImageMatch[1].replace(/&amp;/g, '&')
+      console.log('[Instagram] Found twitter:image:', imageUrl.slice(0, 100))
+      images.push(imageUrl)
+    }
+
+    // Method 2: Extract og:image meta tag (fallback)
     const ogImageMatch = html.match(/property="og:image"\s+content="([^"]+)"/i) ||
                          html.match(/content="([^"]+)"\s+property="og:image"/i) ||
                          html.match(/og:image[^>]*content="([^"]+)"/i)
     
     if (ogImageMatch) {
-      // Decode HTML entities
       const imageUrl = ogImageMatch[1].replace(/&amp;/g, '&')
-      console.log('[Instagram] Found og:image:', imageUrl.slice(0, 100))
-      images.push(imageUrl)
+      if (!images.includes(imageUrl)) {
+        console.log('[Instagram] Found og:image:', imageUrl.slice(0, 100))
+        images.push(imageUrl)
+      }
     }
 
-    // Method 2: Extract from JSON-LD structured data
+    // Method 4: Extract from JSON-LD structured data
     const jsonLdMatch = html.match(/<script type="application\/ld\+json"[^>]*>([^<]+)<\/script>/i)
     if (jsonLdMatch) {
       try {
@@ -64,9 +75,9 @@ async function fetchInstagramPost(url: string): Promise<{ images: string[]; capt
       }
     }
 
-    // Method 3: Extract additional images from page content
+    // Method 5: Extract additional images from page content
     // Look for Instagram CDN URLs in the HTML
-    const cdnRegex = /(https:\/\/(?:scontent|instagram)[^"'\s]+\.(?:jpg|jpeg|png|webp)[^"'\s]*)/gi
+    const cdnRegex = /(https:\/\/(?:scontent|instagram|cdninstagram)[^"'\s\\]+\.(?:jpg|jpeg|png|webp)[^"'\s\\]*)/gi
     let match
     while ((match = cdnRegex.exec(html)) !== null) {
       let imgUrl = match[1].replace(/&amp;/g, '&').replace(/\\u0026/g, '&')
@@ -79,7 +90,7 @@ async function fetchInstagramPost(url: string): Promise<{ images: string[]; capt
       }
     }
 
-    // Method 4: Extract og:description for caption
+    // Method 6: Extract og:description for caption
     if (!caption) {
       const descMatch = html.match(/property="og:description"\s+content="([^"]+)"/i) ||
                         html.match(/content="([^"]+)"\s+property="og:description"/i)
