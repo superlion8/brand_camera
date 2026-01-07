@@ -174,10 +174,10 @@ Generate a single professional product photo.`
         throw new Error(`Unknown generation type: ${type}`)
     }
 
-    // Generate image
+    // Generate image using Gemini 3 Pro Image Preview
     const genAI = getGenAIClient()
     const result = await genAI.models.generateContent({
-      model: 'gemini-2.0-flash-exp-image-generation',
+      model: 'gemini-3-pro-image-preview',
       contents: [
         {
           role: 'user',
