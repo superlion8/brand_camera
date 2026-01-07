@@ -992,7 +992,137 @@ function SocialPageContent() {
                     <p className="text-xs mt-1">{t.camera?.productPlaceholder || '请上传商品图片'}</p>
                   </div>
                 </div>
+              ) : mode === "review" && isDesktop ? (
+                /* Desktop Review Mode - Two Column Layout */
+                <div className="absolute inset-0 overflow-y-auto bg-zinc-50">
+                  {/* PC Header */}
+                  <div className="bg-white border-b border-zinc-200">
+                    <div className="max-w-5xl mx-auto px-8 py-4">
+                      <div className="flex items-center gap-3">
+                        <button 
+                          onClick={handleRetake}
+                          className="w-9 h-9 rounded-lg hover:bg-zinc-100 flex items-center justify-center transition-colors"
+                        >
+                          <ArrowLeft className="w-5 h-5 text-zinc-600" />
+                        </button>
+                        <h1 className="text-lg font-semibold text-zinc-900">{t.social?.title || '社媒种草'}</h1>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Two-column content */}
+                  <div className="max-w-5xl mx-auto px-8 py-6">
+                    <div className="flex gap-8">
+                      {/* Left: Product Image */}
+                      <div className="w-[380px] shrink-0 space-y-4">
+                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 overflow-hidden">
+                          <div className="p-3 border-b border-zinc-100 flex items-center justify-between">
+                            <span className="text-sm font-medium text-zinc-900">{t.social?.productImage || '商品图'}</span>
+                            <button onClick={handleRetake} className="text-xs text-zinc-500 hover:text-zinc-700">
+                              更换
+                            </button>
+                          </div>
+                          <div className="aspect-square relative bg-zinc-50">
+                            <img src={capturedImage || ""} alt="商品" className="w-full h-full object-contain" />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Right: Settings */}
+                      <div className="flex-1 min-w-0 space-y-4">
+                        {/* Model Selection */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-5">
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="font-semibold text-zinc-900">{t.social?.selectModel || '选择模特'}</h3>
+                            {selectedModel && (
+                              <button onClick={() => setSelectedModel(null)} className="text-xs text-zinc-500">清除</button>
+                            )}
+                          </div>
+                          <p className="text-sm text-zinc-500 mb-3">不选则随机匹配</p>
+                          <div className="grid grid-cols-5 gap-2">
+                            <button
+                              onClick={() => modelUploadRef.current?.click()}
+                              className="aspect-[3/4] rounded-lg border-2 border-dashed border-zinc-300 hover:border-pink-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                            >
+                              <Plus className="w-4 h-4 text-zinc-400" />
+                              <span className="text-[9px] text-zinc-400">上传</span>
+                            </button>
+                            {userModels.slice(0, 9).map(model => (
+                              <button
+                                key={model.id}
+                                onClick={() => setSelectedModel(selectedModel === model.id ? null : model.id)}
+                                className={`aspect-[3/4] rounded-lg overflow-hidden relative border-2 transition-all ${
+                                  selectedModel === model.id 
+                                    ? 'border-pink-500 ring-2 ring-pink-500/30' 
+                                    : 'border-transparent hover:border-pink-300'
+                                }`}
+                              >
+                                <Image src={model.imageUrl} alt={model.name || ''} fill className="object-cover" />
+                                {selectedModel === model.id && (
+                                  <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-pink-500 rounded-full flex items-center justify-center">
+                                    <Check className="w-2.5 h-2.5 text-white" />
+                                  </div>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Background Selection */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-5">
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="font-semibold text-zinc-900">{t.social?.selectBackground || '选择背景'}</h3>
+                            {selectedBg && (
+                              <button onClick={() => setSelectedBg(null)} className="text-xs text-zinc-500">清除</button>
+                            )}
+                          </div>
+                          <p className="text-sm text-zinc-500 mb-3">不选则随机匹配</p>
+                          <div className="grid grid-cols-5 gap-2">
+                            <button
+                              onClick={() => bgUploadRef.current?.click()}
+                              className="aspect-[3/4] rounded-lg border-2 border-dashed border-zinc-300 hover:border-pink-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                            >
+                              <Plus className="w-4 h-4 text-zinc-400" />
+                              <span className="text-[9px] text-zinc-400">上传</span>
+                            </button>
+                            {userBackgrounds.slice(0, 9).map(bg => (
+                              <button
+                                key={bg.id}
+                                onClick={() => setSelectedBg(selectedBg === bg.id ? null : bg.id)}
+                                className={`aspect-[3/4] rounded-lg overflow-hidden relative border-2 transition-all ${
+                                  selectedBg === bg.id 
+                                    ? 'border-pink-500 ring-2 ring-pink-500/30' 
+                                    : 'border-transparent hover:border-pink-300'
+                                }`}
+                              >
+                                <Image src={bg.imageUrl} alt={bg.name || ''} fill className="object-cover" />
+                                {selectedBg === bg.id && (
+                                  <div className="absolute top-0.5 right-0.5 w-4 h-4 bg-pink-500 rounded-full flex items-center justify-center">
+                                    <Check className="w-2.5 h-2.5 text-white" />
+                                  </div>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Generate Button */}
+                        <button
+                          onClick={(e) => {
+                            triggerFlyToGallery(e)
+                            handleShootIt()
+                          }}
+                          className="w-full h-12 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg"
+                        >
+                          <Wand2 className="w-5 h-5" />
+                          {t.social?.generate || '生成种草图'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               ) : (
+                /* Mobile Review Mode */
                 <div className="absolute inset-0">
                   <img 
                     src={capturedImage || ""} 
