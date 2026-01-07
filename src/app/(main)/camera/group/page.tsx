@@ -526,7 +526,7 @@ function GroupShootPageContent() {
               </button>
             </div>
 
-            <BottomNav forceShow />
+            {!isDesktop && <BottomNav forceShow />}
           </motion.div>
         )}
 
@@ -579,7 +579,7 @@ function GroupShootPageContent() {
               })}
             </div>
             
-            <BottomNav forceShow />
+            {!isDesktop && <BottomNav forceShow />}
           </motion.div>
         )}
 
@@ -727,7 +727,7 @@ function GroupShootPageContent() {
               </button>
             </div>
             
-            <BottomNav forceShow />
+            {!isDesktop && <BottomNav forceShow />}
           </motion.div>
         )}
       </AnimatePresence>
