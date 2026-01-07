@@ -11,10 +11,13 @@ import {
   Check,
   Loader2,
   AlertCircle,
-  ArrowLeft
+  ArrowLeft,
+  X,
+  ZoomIn
 } from 'lucide-react'
 import Image from 'next/image'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 
 interface AnalysisStep {
   id: string
@@ -70,6 +73,7 @@ export default function AnalyzingPage() {
 
   const [currentStep, setCurrentStep] = useState(0)
   const currentStepRef = useRef(0) // 用 ref 跟踪当前步骤，避免闭包问题
+  const [zoomImage, setZoomImage] = useState<string | null>(null) // 放大查看的图片
   const [inputData, setInputData] = useState<{
     productPageUrl: string
     instagramUrl: string
@@ -371,7 +375,10 @@ export default function AnalyzingPage() {
                           exit={{ opacity: 0, height: 0 }}
                           className="mt-3"
                         >
-                          <div className="relative h-20 w-20 rounded-lg overflow-hidden bg-zinc-100">
+                          <button
+                            onClick={() => setZoomImage(step.result!.selectedImage!)}
+                            className="relative h-20 w-20 rounded-lg overflow-hidden bg-zinc-100 group cursor-pointer"
+                          >
                             <Image 
                               src={step.result.selectedImage} 
                               alt="Result" 
@@ -379,7 +386,10 @@ export default function AnalyzingPage() {
                               className="object-cover"
                               unoptimized
                             />
-                          </div>
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                              <ZoomIn className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
+                          </button>
                         </motion.div>
                       )}
                       {step.status === 'completed' && step.result?.videoPrompt && (
@@ -414,6 +424,39 @@ export default function AnalyzingPage() {
           </motion.div>
         </div>
       </div>
+
+      {/* Image Zoom Modal */}
+      <AnimatePresence>
+        {zoomImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+            onClick={() => setZoomImage(null)}
+          >
+            <button
+              onClick={() => setZoomImage(null)}
+              className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+            >
+              <X className="w-6 h-6 text-white" />
+            </button>
+            <TransformWrapper>
+              <TransformComponent>
+                <div className="relative w-[90vw] h-[80vh]">
+                  <Image
+                    src={zoomImage}
+                    alt="Zoomed"
+                    fill
+                    className="object-contain"
+                    unoptimized
+                  />
+                </div>
+              </TransformComponent>
+            </TransformWrapper>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

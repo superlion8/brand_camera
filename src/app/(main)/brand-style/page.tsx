@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { 
@@ -14,15 +14,37 @@ import {
   Link as LinkIcon,
   Upload,
   X,
-  Check
+  Check,
+  Loader2
 } from 'lucide-react'
 import Image from 'next/image'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useAuth } from '@/components/providers/AuthProvider'
 
 export default function BrandStylePage() {
   const router = useRouter()
   const isMobile = useIsMobile(1024)
   const isDesktop = isMobile === false
+  const { user, isLoading: authLoading } = useAuth()
+
+  // 未登录时重定向到登录页
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace('/login?redirect=/brand-style')
+    }
+  }, [user, authLoading, router])
+
+  // 显示加载状态
+  if (authLoading || !user) {
+    return (
+      <div className="h-full flex items-center justify-center bg-zinc-50">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 text-violet-500 animate-spin" />
+          <p className="text-sm text-zinc-500">加载中...</p>
+        </div>
+      </div>
+    )
+  }
 
   // Form state - with default test URLs for development
   const [productPageUrl, setProductPageUrl] = useState('https://wittmore.com/collections/gramicci/products/gramicci-charcoal-grey-mohair-sweater?variant=42259036897342')
