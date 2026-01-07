@@ -3,47 +3,89 @@ import { getGenAIClient, extractText } from '@/lib/genai'
 
 // Use Jina Reader to extract web page content
 async function readWebPage(url: string): Promise<{ markdown: string; images: string[] }> {
-  // Try Jina Reader with browser-like headers
-  const response = await fetch(`https://r.jina.ai/${url}`, {
+  const jinaUrl = `https://r.jina.ai/${url}`
+  console.log('[Brand Style] Fetching from Jina:', jinaUrl)
+  
+  // Try Jina Reader - simple request without extra headers that might cause issues
+  const response = await fetch(jinaUrl, {
+    method: 'GET',
     headers: {
       'Accept': 'text/plain',
-      'X-Return-Format': 'markdown',
-      'X-With-Images-Summary': 'true',
-      'X-With-Links-Summary': 'true',
-      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    }
+    },
+    // Disable Next.js fetch cache
+    cache: 'no-store',
   })
   
+  console.log('[Brand Style] Jina response status:', response.status)
+  
   if (!response.ok) {
+    const errorText = await response.text().catch(() => '')
+    console.error('[Brand Style] Jina error response:', errorText.slice(0, 500))
+    
     // Provide more helpful error messages
     if (response.status === 451) {
-      throw new Error('该网站阻止了自动访问。请尝试：1) 使用其他品牌网站链接，或 2) 手动截图上传商品图片')
+      throw new Error('该网站阻止了自动访问。请尝试其他品牌网站链接')
     }
     if (response.status === 403) {
-      throw new Error('网站拒绝访问，请尝试其他链接或手动上传图片')
+      throw new Error('访问被拒绝，请尝试其他链接')
     }
-    throw new Error(`无法读取网页 (${response.status})`)
+    if (response.status === 422) {
+      throw new Error('URL 格式无效，请检查链接')
+    }
+    throw new Error(`无法读取网页 (${response.status}): ${errorText.slice(0, 100)}`)
   }
   
   const text = await response.text()
+  console.log('[Brand Style] Jina response length:', text.length)
   
-  // Extract image URLs from markdown
-  const imageRegex = /!\[.*?\]\((https?:\/\/[^\s\)]+)\)/g
+  // Extract image URLs from markdown - multiple patterns
   const images: string[] = []
-  let match
-  while ((match = imageRegex.exec(text)) !== null) {
-    images.push(match[1])
-  }
   
-  // Also try to find direct image URLs
-  const directImageRegex = /(https?:\/\/[^\s<>"]+\.(?:jpg|jpeg|png|webp|gif))/gi
-  while ((match = directImageRegex.exec(text)) !== null) {
-    if (!images.includes(match[1])) {
-      images.push(match[1])
+  // Pattern 1: Markdown image syntax
+  const markdownImageRegex = /!\[.*?\]\((https?:\/\/[^\s\)]+)\)/g
+  let match: RegExpExecArray | null
+  while ((match = markdownImageRegex.exec(text)) !== null) {
+    const imgUrl = match[1]
+    if (!images.includes(imgUrl) && isValidProductImage(imgUrl)) {
+      images.push(imgUrl)
     }
   }
   
+  // Pattern 2: Direct image URLs (jpg, png, webp, gif)
+  const directImageRegex = /(https?:\/\/[^\s<>"'\)]+\.(?:jpg|jpeg|png|webp|gif)(?:\?[^\s<>"']*)?)/gi
+  while ((match = directImageRegex.exec(text)) !== null) {
+    const imgUrl = match[1].split('?')[0] // Remove query params for dedup
+    if (!images.includes(imgUrl) && isValidProductImage(imgUrl)) {
+      images.push(match[1]) // Keep original URL with params
+    }
+  }
+  
+  // Pattern 3: Shopify CDN URLs (may not have extension)
+  const shopifyRegex = /(https?:\/\/cdn\.shopify\.com\/s\/files\/[^\s<>"']+)/gi
+  let shopifyMatch: RegExpExecArray | null
+  while ((shopifyMatch = shopifyRegex.exec(text)) !== null) {
+    const shopifyUrl = shopifyMatch[1]
+    if (!images.some(img => img.includes(shopifyUrl.split('?')[0]))) {
+      images.push(shopifyUrl)
+    }
+  }
+  
+  console.log('[Brand Style] Extracted', images.length, 'images')
   return { markdown: text, images }
+}
+
+// Filter out non-product images (icons, logos, etc.)
+function isValidProductImage(url: string): boolean {
+  const lowerUrl = url.toLowerCase()
+  // Skip small images, icons, logos
+  if (lowerUrl.includes('icon') || lowerUrl.includes('logo') || lowerUrl.includes('favicon')) {
+    return false
+  }
+  // Skip very small dimensions if in URL
+  if (/[_x](?:16|24|32|48|64|100)(?:x|_|\.)/.test(lowerUrl)) {
+    return false
+  }
+  return true
 }
 
 // Use VLM to analyze images and find best model/product images
