@@ -126,10 +126,10 @@ async function analyzeImages(images: string[]): Promise<{
     throw new Error('No images found on the page')
   }
 
-  // IMPORTANT: Only analyze the FIRST 5 images
+  // IMPORTANT: Only analyze the FIRST 3 images
   // Product main images are always at the top of the page
   // Images after that are usually "related products" which we should ignore
-  const imagesToAnalyze = images.slice(0, 5)
+  const imagesToAnalyze = images.slice(0, 3)
   console.log('[Brand Style] Analyzing first', imagesToAnalyze.length, 'images (ignoring related products)')
   
   const genAI = getGenAIClient()
@@ -162,22 +162,30 @@ async function analyzeImages(images: string[]): Promise<{
     throw new Error('Failed to load any images')
   }
 
-  const prompt = `你是一位时尚电商专家。这些是同一个商品详情页的图片（按页面顺序排列）。
+  const prompt = `你是一位时尚电商专家。这些是一个商品详情页的图片（按页面顺序排列，索引0是最先出现的）。
 
-重要提示：这些图片都是同一个商品的不同展示图，请从中选择：
+⚠️ 关键规则：
+- 图片索引越小（0、1、2），越可能是主商品图
+- 索引较大的图片可能是"相关商品"或"推荐商品"，展示的是其他商品，请忽略
+- 你需要识别出哪些图片展示的是同一件商品
 
-1. **最佳模特图**: 找出一张最典型的单人模特正面全身展示该商品的图片
-   - 必须是模特穿着/展示商品
-   - 优先选择正面、全身、清晰的图片
+请分析这些图片，找出展示【同一件主商品】的图片：
+
+1. **最佳模特图** (modelImageIndex): 
+   - 找出展示主商品的单人模特图（穿着/展示该商品）
+   - 优先选择索引较小的图片（通常是主商品）
+   - 如果多张图片展示同一件商品，选最清晰的正面全身照
    
-2. **最佳商品图**: 找出一张纯商品图（无模特），如果存在的话
+2. **最佳商品图** (productImageIndex): 
+   - 找出主商品的纯产品图（无模特），如果有的话
+   - 必须是与模特图同一件商品
 
 3. **品牌风格**: 总结这个品牌的视觉风格
 
-输出 JSON：
+输出 JSON（不要输出其他内容）：
 {
-  "modelImageIndex": 0-${validImageParts.length - 1} 的数字，表示最佳模特图索引，-1表示无,
-  "productImageIndex": 0-${validImageParts.length - 1} 的数字，表示最佳商品图索引，-1表示无,
+  "modelImageIndex": 0-${validImageParts.length - 1} 的数字，-1表示无,
+  "productImageIndex": 0-${validImageParts.length - 1} 的数字，-1表示无,
   "brandSummary": "品牌风格描述（50字内）",
   "brandKeywords": ["关键词1", "关键词2", "关键词3"]
 }`

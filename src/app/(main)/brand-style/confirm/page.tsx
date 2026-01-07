@@ -216,7 +216,7 @@ export default function ConfirmPage() {
       )}
 
       {/* Content */}
-      <div className={`flex-1 overflow-y-auto ${isDesktop ? 'py-8' : 'p-4 pb-32'}`}>
+      <div className={`flex-1 overflow-y-auto ${isDesktop ? 'py-8' : 'p-4 pb-40'}`}>
         <div className={`space-y-6 ${isDesktop ? 'max-w-4xl mx-auto px-8' : ''}`}>
           
           {/* Your Product */}
@@ -479,7 +479,7 @@ export default function ConfirmPage() {
           </div>
         </div>
       ) : (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t max-w-md mx-auto">
+        <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t shadow-lg z-40">
           <button
             onClick={handleGenerate}
             disabled={isGenerating}
