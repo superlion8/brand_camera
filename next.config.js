@@ -12,21 +12,13 @@ const nextConfig = {
     NEXT_BUILD_ID: BUILD_ID,
   },
   images: {
+    // Allow all external images for brand style analysis
+    // This is needed because we fetch images from various e-commerce sites
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'cvdogeigbpussfamctsu.supabase.co',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'lh3.googleusercontent.com',
-        pathname: '/**',
+        hostname: '**',
       },
     ],
     // 禁用图片优化的严格检查

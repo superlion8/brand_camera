@@ -135,7 +135,8 @@ export default function ConfirmPage() {
                   src={analysisData.productImage} 
                   alt="Product" 
                   fill 
-                  className="object-contain" 
+                  className="object-contain"
+                  unoptimized
                 />
               </div>
               <div className="flex-1">
@@ -186,12 +187,22 @@ export default function ConfirmPage() {
                 </div>
               </div>
               <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-zinc-100">
-                <Image 
-                  src={analysisData.productPage.modelImage} 
-                  alt="Web Model" 
-                  fill 
-                  className="object-cover" 
-                />
+                {analysisData.productPage.modelImage ? (
+                  <Image 
+                    src={analysisData.productPage.modelImage} 
+                    alt="Web Model" 
+                    fill 
+                    className="object-cover"
+                    unoptimized
+                    onError={(e) => {
+                      console.error('Failed to load web model image:', analysisData.productPage.modelImage)
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-zinc-400">
+                    <Globe className="w-8 h-8" />
+                  </div>
+                )}
               </div>
             </motion.div>
 
@@ -212,12 +223,22 @@ export default function ConfirmPage() {
                 </div>
               </div>
               <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-zinc-100">
-                <Image 
-                  src={analysisData.instagram.bestModelImage} 
-                  alt="Instagram Model" 
-                  fill 
-                  className="object-cover" 
-                />
+                {analysisData.instagram.bestModelImage ? (
+                  <Image 
+                    src={analysisData.instagram.bestModelImage} 
+                    alt="Instagram Model" 
+                    fill 
+                    className="object-cover"
+                    unoptimized
+                    onError={(e) => {
+                      console.error('Failed to load instagram model image:', analysisData.instagram.bestModelImage)
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-zinc-400">
+                    <Instagram className="w-8 h-8" />
+                  </div>
+                )}
               </div>
             </motion.div>
 
@@ -243,7 +264,8 @@ export default function ConfirmPage() {
                     src={analysisData.productPage.productImage} 
                     alt="Product Reference" 
                     fill 
-                    className="object-cover" 
+                    className="object-cover"
+                    unoptimized
                   />
                 </div>
               </motion.div>

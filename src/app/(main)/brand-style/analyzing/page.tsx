@@ -300,7 +300,8 @@ export default function AnalyzingPage() {
                   src={inputData.productImage} 
                   alt="Product" 
                   fill 
-                  className="object-contain" 
+                  className="object-contain"
+                  unoptimized
                 />
               </div>
             </motion.div>
@@ -360,7 +361,8 @@ export default function AnalyzingPage() {
                               src={step.result.selectedImage} 
                               alt="Result" 
                               fill 
-                              className="object-cover" 
+                              className="object-cover"
+                              unoptimized
                             />
                           </div>
                         </motion.div>
