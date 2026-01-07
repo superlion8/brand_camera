@@ -17,7 +17,8 @@ import {
   ImageIcon,
   ChevronDown,
   ChevronRight,
-  Loader2
+  Loader2,
+  Palette
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/stores/languageStore'
@@ -84,6 +85,13 @@ export function Sidebar({ className }: { className?: string }) {
       label: t.home?.createCustomModel || '创建专属模特',
       icon: <Users className="w-5 h-5" />,
       href: '/model-create',
+    },
+    {
+      id: 'brand-style',
+      label: '品牌风格分析',
+      icon: <Palette className="w-5 h-5" />,
+      href: '/brand-style',
+      badge: 'NEW',
     },
     {
       id: 'edit',
