@@ -28,44 +28,94 @@ async function fetchInstagramViaRapidAPI(url: string): Promise<{ images: string[
   }
 
   const data = await response.json()
-  console.log('[Instagram] RapidAPI response received, shortcode:', data.shortcode)
+  
+  // Debug: Log response structure to identify carousel fields
+  console.log('[Instagram] RapidAPI response keys:', Object.keys(data))
+  console.log('[Instagram] shortcode:', data.shortcode)
+  console.log('[Instagram] __typename:', data.__typename)
+  console.log('[Instagram] media_type:', data.media_type)
+  console.log('[Instagram] product_type:', data.product_type)
   
   const images: string[] = []
   let caption = ''
 
-  // Get caption
+  // Get caption - try multiple possible field names
   if (data.edge_media_to_caption?.edges?.[0]?.node?.text) {
     caption = data.edge_media_to_caption.edges[0].node.text
+  } else if (data.caption?.text) {
+    caption = data.caption.text
+  } else if (typeof data.caption === 'string') {
+    caption = data.caption
   }
 
-  // Handle carousel (multiple images) or single image
-  if (data.edge_sidecar_to_children?.edges) {
-    // Carousel post with multiple images
-    console.log('[Instagram] Carousel post with', data.edge_sidecar_to_children.edges.length, 'items')
+  // Handle carousel (multiple images) - check multiple possible structures
+  // Structure 1: edge_sidecar_to_children (GraphQL format)
+  if (data.edge_sidecar_to_children?.edges && data.edge_sidecar_to_children.edges.length > 0) {
+    console.log('[Instagram] Found edge_sidecar_to_children with', data.edge_sidecar_to_children.edges.length, 'items')
     for (const edge of data.edge_sidecar_to_children.edges) {
       const node = edge.node
       if (node.display_url) {
         images.push(node.display_url)
+        console.log('[Instagram] Added carousel image:', node.display_url.slice(0, 60) + '...')
       } else if (node.display_resources?.length > 0) {
-        // Get highest resolution
         const highRes = node.display_resources[node.display_resources.length - 1]
+        images.push(highRes.src)
+        console.log('[Instagram] Added carousel image from display_resources')
+      }
+    }
+  }
+  // Structure 2: carousel_media (alternative API format)
+  else if (data.carousel_media && Array.isArray(data.carousel_media) && data.carousel_media.length > 0) {
+    console.log('[Instagram] Found carousel_media with', data.carousel_media.length, 'items')
+    for (const item of data.carousel_media) {
+      if (item.image_versions2?.candidates?.[0]?.url) {
+        images.push(item.image_versions2.candidates[0].url)
+      } else if (item.display_url) {
+        images.push(item.display_url)
+      }
+    }
+  }
+  // Structure 3: resources array
+  else if (data.resources && Array.isArray(data.resources) && data.resources.length > 0) {
+    console.log('[Instagram] Found resources with', data.resources.length, 'items')
+    for (const resource of data.resources) {
+      if (resource.display_url) {
+        images.push(resource.display_url)
+      } else if (resource.src) {
+        images.push(resource.src)
+      }
+    }
+  }
+  
+  // If no carousel images found, try single image fields
+  if (images.length === 0) {
+    console.log('[Instagram] No carousel found, checking single image fields...')
+    
+    if (data.display_url) {
+      console.log('[Instagram] Found display_url')
+      images.push(data.display_url)
+    }
+    if (data.display_resources?.length > 0) {
+      const highRes = data.display_resources[data.display_resources.length - 1]
+      if (!images.includes(highRes.src)) {
+        console.log('[Instagram] Found display_resources')
         images.push(highRes.src)
       }
     }
-  } else if (data.display_url) {
-    // Single image post
-    console.log('[Instagram] Single image post')
-    images.push(data.display_url)
-  } else if (data.display_resources?.length > 0) {
-    // Fallback to display_resources
-    const highRes = data.display_resources[data.display_resources.length - 1]
-    images.push(highRes.src)
-  } else if (data.thumbnail_src) {
-    // Last fallback
-    images.push(data.thumbnail_src)
+    if (data.image_versions2?.candidates?.[0]?.url) {
+      const url = data.image_versions2.candidates[0].url
+      if (!images.includes(url)) {
+        console.log('[Instagram] Found image_versions2')
+        images.push(url)
+      }
+    }
+    if (data.thumbnail_src && !images.includes(data.thumbnail_src)) {
+      console.log('[Instagram] Found thumbnail_src')
+      images.push(data.thumbnail_src)
+    }
   }
 
-  console.log('[Instagram] Extracted', images.length, 'images from RapidAPI')
+  console.log('[Instagram] Total extracted images:', images.length)
   
   if (images.length === 0) {
     throw new Error('No images found in RapidAPI response')
@@ -321,6 +371,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'URL is required' }, { status: 400 })
     }
 
+    // Parse img_index from URL if present (Instagram carousel images use ?img_index=N)
+    // e.g., https://www.instagram.com/halara_official/p/DTGEPAYEg7Y/?img_index=5
+    let preferredIndex: number | null = null
+    try {
+      const urlObj = new URL(url)
+      const imgIndex = urlObj.searchParams.get('img_index')
+      if (imgIndex) {
+        preferredIndex = parseInt(imgIndex, 10) - 1 // Instagram uses 1-based index
+        console.log('[Brand Style] User specified img_index:', imgIndex, '-> array index:', preferredIndex)
+      }
+    } catch {
+      // Invalid URL, will be caught later
+    }
+
     // Step 1: Fetch Instagram post data
     // Try RapidAPI first (most reliable), then fall back to embed page
     console.log('[Brand Style] Reading Instagram post:', url)
@@ -352,10 +416,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Step 2: Find best model image using VLM
-    console.log('[Brand Style] Finding best model image...')
-    const bestModelImage = await findBestModelImage(images)
-    console.log('[Brand Style] Best model image found')
+    // Step 2: Find best model image
+    // If user specified img_index and it's valid, use that directly
+    let bestModelImage: string
+    if (preferredIndex !== null && preferredIndex >= 0 && preferredIndex < images.length) {
+      bestModelImage = images[preferredIndex]
+      console.log('[Brand Style] Using user-specified image at index', preferredIndex)
+    } else {
+      // Use VLM to find best model image
+      console.log('[Brand Style] Finding best model image via VLM...')
+      bestModelImage = await findBestModelImage(images)
+    }
+    console.log('[Brand Style] Best model image selected')
 
     return NextResponse.json({
       images,
