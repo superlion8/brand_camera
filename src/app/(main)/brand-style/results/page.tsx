@@ -6,17 +6,15 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   ArrowLeft,
   Download,
-  Share2,
-  Heart,
-  Play,
   X,
   Check,
-  Home,
   RefreshCw,
   Globe,
   Instagram,
   ImageIcon,
-  Video
+  Video,
+  ArrowRight,
+  ChevronRight
 } from 'lucide-react'
 import Image from 'next/image'
 import { useIsMobile } from '@/hooks/useIsMobile'
@@ -26,12 +24,20 @@ interface ResultImage {
   id: string
   title: string
   url: string
-  type: 'web' | 'ins' | 'product'
+}
+
+interface Originals {
+  webModelImage?: string
+  productImage?: string
+  insImage?: string
+  videoUrl?: string
+  videoPrompt?: string
 }
 
 interface Results {
   images: ResultImage[]
   video?: string
+  originals?: Originals
 }
 
 export default function ResultsPage() {
@@ -41,7 +47,6 @@ export default function ResultsPage() {
 
   const [results, setResults] = useState<Results | null>(null)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false)
 
   // Load results
   useEffect(() => {
@@ -70,27 +75,8 @@ export default function ResultsPage() {
     }
   }
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'web':
-        return <Globe className="w-3 h-3" />
-      case 'ins':
-        return <Instagram className="w-3 h-3" />
-      default:
-        return <ImageIcon className="w-3 h-3" />
-    }
-  }
-
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'web':
-        return 'bg-blue-500'
-      case 'ins':
-        return 'bg-gradient-to-r from-purple-500 to-pink-500'
-      default:
-        return 'bg-amber-500'
-    }
-  }
+  // Find images by id
+  const getImageById = (id: string) => results?.images.find(img => img.id === id)?.url
 
   if (!results) {
     return (
@@ -99,6 +85,211 @@ export default function ResultsPage() {
       </div>
     )
   }
+
+  const webImage1 = getImageById('web-1')
+  const webImage2 = getImageById('web-2')
+  const insImage1 = getImageById('ins-1')
+  const insImage2 = getImageById('ins-2')
+  const productImage = getImageById('product')
+
+  // Comparison Card Component
+  const ComparisonCard = ({ 
+    title, 
+    icon, 
+    iconBg,
+    originalImage, 
+    originalLabel,
+    generatedImages 
+  }: { 
+    title: string
+    icon: React.ReactNode
+    iconBg: string
+    originalImage?: string
+    originalLabel: string
+    generatedImages: { url?: string; label: string }[]
+  }) => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white rounded-2xl border border-zinc-200 overflow-hidden"
+    >
+      {/* Section Header */}
+      <div className="px-4 py-3 border-b border-zinc-100 flex items-center gap-2">
+        <div className={`w-7 h-7 rounded-lg ${iconBg} flex items-center justify-center`}>
+          {icon}
+        </div>
+        <span className="font-semibold text-zinc-800">{title}</span>
+      </div>
+      
+      {/* Images Row */}
+      <div className="p-4">
+        <div className={`flex items-center gap-2 ${isDesktop ? '' : 'overflow-x-auto pb-2'}`}>
+          {/* Original Image */}
+          {originalImage && (
+            <>
+              <div className="flex-shrink-0">
+                <div className="text-xs text-zinc-500 mb-1.5 text-center">{originalLabel}</div>
+                <div 
+                  className={`relative bg-zinc-100 rounded-xl overflow-hidden cursor-pointer border-2 border-zinc-200 ${
+                    isDesktop ? 'w-32 h-40' : 'w-24 h-32'
+                  }`}
+                  onClick={() => setSelectedImage(originalImage)}
+                >
+                  <Image src={originalImage} alt={originalLabel} fill className="object-cover" unoptimized />
+                  <div className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-zinc-700/80 rounded text-[10px] text-white">
+                    原图
+                  </div>
+                </div>
+              </div>
+              
+              {/* Arrow */}
+              <div className="flex-shrink-0 px-1">
+                <ChevronRight className="w-5 h-5 text-zinc-300" />
+              </div>
+            </>
+          )}
+          
+          {/* Generated Images */}
+          {generatedImages.map((img, idx) => (
+            <div key={idx} className="flex-shrink-0">
+              <div className="text-xs text-zinc-500 mb-1.5 text-center">{img.label}</div>
+              <div 
+                className={`relative bg-zinc-100 rounded-xl overflow-hidden group ${
+                  isDesktop ? 'w-32 h-40' : 'w-24 h-32'
+                } ${img.url ? 'cursor-pointer border-2 border-violet-300' : ''}`}
+                onClick={() => img.url && setSelectedImage(img.url)}
+              >
+                {img.url ? (
+                  <>
+                    <Image src={img.url} alt={img.label} fill className="object-cover" unoptimized />
+                    <div className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-violet-600/90 rounded text-[10px] text-white">
+                      AI生成
+                    </div>
+                    {/* Download on hover */}
+                    {isDesktop && (
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDownload(img.url!, `${img.label}.png`)
+                          }}
+                          className="w-8 h-8 bg-white rounded-full flex items-center justify-center"
+                        >
+                          <Download className="w-4 h-4 text-zinc-700" />
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-xs text-zinc-400">未生成</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  )
+
+  // Video Comparison Component
+  const VideoComparison = ({ 
+    originalUrl, 
+    originalPrompt,
+    generatedUrl 
+  }: { 
+    originalUrl?: string
+    originalPrompt?: string
+    generatedUrl?: string 
+  }) => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white rounded-2xl border border-zinc-200 overflow-hidden"
+    >
+      {/* Section Header */}
+      <div className="px-4 py-3 border-b border-zinc-100 flex items-center gap-2">
+        <div className="w-7 h-7 rounded-lg bg-red-100 flex items-center justify-center">
+          <Video className="w-4 h-4 text-red-600" />
+        </div>
+        <span className="font-semibold text-zinc-800">UGC 短视频</span>
+      </div>
+      
+      <div className="p-4">
+        <div className={`flex gap-4 ${isDesktop ? '' : 'flex-col'}`}>
+          {/* Original Video */}
+          {originalUrl && (
+            <div className="flex-1">
+              <div className="text-xs text-zinc-500 mb-1.5">原视频</div>
+              <div className={`relative bg-zinc-900 rounded-xl overflow-hidden ${
+                isDesktop ? 'aspect-video' : 'aspect-[9/16]'
+              }`}>
+                <video
+                  src={originalUrl}
+                  className="w-full h-full object-contain"
+                  controls
+                  playsInline
+                />
+                <div className="absolute top-2 left-2 px-2 py-1 bg-zinc-700/80 rounded text-xs text-white">
+                  原视频
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Video Prompt (if no original video) */}
+          {!originalUrl && originalPrompt && (
+            <div className="flex-1">
+              <div className="text-xs text-zinc-500 mb-1.5">视频提示词</div>
+              <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200">
+                <p className="text-sm text-zinc-600 line-clamp-4">{originalPrompt}</p>
+              </div>
+            </div>
+          )}
+          
+          {/* Arrow for desktop */}
+          {isDesktop && (originalUrl || originalPrompt) && (
+            <div className="flex items-center px-2">
+              <ChevronRight className="w-6 h-6 text-zinc-300" />
+            </div>
+          )}
+          
+          {/* Generated Video */}
+          <div className="flex-1">
+            <div className="text-xs text-zinc-500 mb-1.5">AI 生成视频</div>
+            <div className={`relative bg-zinc-900 rounded-xl overflow-hidden ${
+              isDesktop ? 'aspect-video' : 'aspect-[9/16]'
+            }`}>
+              {generatedUrl ? (
+                <>
+                  <video
+                    src={generatedUrl}
+                    className="w-full h-full object-contain"
+                    controls
+                    playsInline
+                  />
+                  <div className="absolute top-2 left-2 px-2 py-1 bg-violet-600/90 rounded text-xs text-white">
+                    AI生成
+                  </div>
+                  <button
+                    onClick={() => handleDownload(generatedUrl, 'brand-video.mp4')}
+                    className="absolute top-2 right-2 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center hover:bg-white transition-colors"
+                  >
+                    <Download className="w-4 h-4 text-zinc-700" />
+                  </button>
+                </>
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-sm text-zinc-500">视频生成中或暂未可用</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  )
 
   return (
     <div className="h-full flex flex-col bg-zinc-50">
@@ -115,10 +306,9 @@ export default function ResultsPage() {
                   <ArrowLeft className="w-5 h-5 text-zinc-600" />
                 </button>
                 <div>
-                  <h1 className="text-lg font-semibold text-zinc-900">生成完成</h1>
+                  <h1 className="text-lg font-semibold text-zinc-900">生成结果对比</h1>
                   <p className="text-sm text-zinc-500">
-                    共生成 {results.images.length} 张图片
-                    {results.video ? ' 和 1 个视频' : ''}
+                    原图与 AI 生成结果对比
                   </p>
                 </div>
               </div>
@@ -149,86 +339,54 @@ export default function ResultsPage() {
 
       {/* Content */}
       <div className={`flex-1 overflow-y-auto ${isDesktop ? 'py-8' : 'p-4 pb-32'}`}>
-        <div className={`space-y-6 ${isDesktop ? 'max-w-5xl mx-auto px-8' : ''}`}>
+        <div className={`space-y-4 ${isDesktop ? 'max-w-5xl mx-auto px-8' : ''}`}>
           
-          {/* Images Section */}
-          <div>
-            <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider mb-4">
-              生成图片
-            </h2>
-            <div className={`grid gap-4 ${isDesktop ? 'grid-cols-4' : 'grid-cols-2'}`}>
-              {results.images.map((img, index) => (
-                <motion.div
-                  key={img.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="group relative aspect-[3/4] bg-zinc-100 rounded-2xl overflow-hidden cursor-pointer"
-                  onClick={() => setSelectedImage(img.url)}
-                >
-                  <Image src={img.url} alt={img.title} fill className="object-cover" />
-                  
-                  {/* Type Badge */}
-                  <div className={`absolute top-2 left-2 px-2 py-1 ${getTypeColor(img.type)} rounded-full flex items-center gap-1`}>
-                    {getTypeIcon(img.type)}
-                    <span className="text-[10px] font-medium text-white">{img.title}</span>
-                  </div>
-                  
-                  {/* Hover Actions */}
-                  <div className={`absolute inset-0 bg-black/50 flex items-center justify-center gap-3 transition-opacity ${
-                    isDesktop ? 'opacity-0 group-hover:opacity-100' : 'opacity-0'
-                  }`}>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDownload(img.url, `${img.id}.png`)
-                      }}
-                      className="w-10 h-10 bg-white rounded-full flex items-center justify-center hover:bg-zinc-100 transition-colors"
-                    >
-                      <Download className="w-5 h-5 text-zinc-700" />
-                    </button>
-                    <button
-                      onClick={(e) => e.stopPropagation()}
-                      className="w-10 h-10 bg-white rounded-full flex items-center justify-center hover:bg-zinc-100 transition-colors"
-                    >
-                      <Heart className="w-5 h-5 text-zinc-700" />
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
+          {/* Web Style Comparison */}
+          <ComparisonCard
+            title="官网风格图"
+            icon={<Globe className="w-4 h-4 text-blue-600" />}
+            iconBg="bg-blue-100"
+            originalImage={results.originals?.webModelImage}
+            originalLabel="官网原图"
+            generatedImages={[
+              { url: webImage1, label: '风格图 1' },
+              { url: webImage2, label: '风格图 2' }
+            ]}
+          />
 
-          {/* Video Section */}
-          {results.video && (
-            <div>
-              <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider mb-4">
-                UGC 短视频
-              </h2>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`relative rounded-2xl overflow-hidden bg-zinc-900 ${
-                  isDesktop ? 'aspect-video max-w-2xl' : 'aspect-[9/16]'
-                }`}
-              >
-                <video
-                  src={results.video}
-                  className="w-full h-full object-contain"
-                  controls
-                  playsInline
-                />
-                
-                {/* Download Button */}
-                <button
-                  onClick={() => handleDownload(results.video!, 'brand-video.mp4')}
-                  className="absolute top-4 right-4 w-10 h-10 bg-white/90 rounded-full flex items-center justify-center hover:bg-white transition-colors"
-                >
-                  <Download className="w-5 h-5 text-zinc-700" />
-                </button>
-              </motion.div>
-            </div>
+          {/* INS Style Comparison */}
+          <ComparisonCard
+            title="INS 风格图"
+            icon={<Instagram className="w-4 h-4 text-pink-600" />}
+            iconBg="bg-gradient-to-br from-purple-100 to-pink-100"
+            originalImage={results.originals?.insImage}
+            originalLabel="INS 原图"
+            generatedImages={[
+              { url: insImage1, label: '风格图 1' },
+              { url: insImage2, label: '风格图 2' }
+            ]}
+          />
+
+          {/* Product Display Comparison */}
+          {(results.originals?.productImage || productImage) && (
+            <ComparisonCard
+              title="商品展示图"
+              icon={<ImageIcon className="w-4 h-4 text-amber-600" />}
+              iconBg="bg-amber-100"
+              originalImage={results.originals?.productImage}
+              originalLabel="商品原图"
+              generatedImages={[
+                { url: productImage, label: '展示图' }
+              ]}
+            />
           )}
+
+          {/* Video Comparison */}
+          <VideoComparison
+            originalUrl={results.originals?.videoUrl}
+            originalPrompt={results.originals?.videoPrompt}
+            generatedUrl={results.video}
+          />
         </div>
       </div>
 

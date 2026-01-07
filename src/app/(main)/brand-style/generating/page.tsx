@@ -178,8 +178,19 @@ export default function GeneratingPage() {
     await generateVideo()
 
     // Store results from ref (not from state, to avoid closure issues)
-    console.log('[Generate] All done, results:', resultsRef.current)
-    sessionStorage.setItem('brandStyleResults', JSON.stringify(resultsRef.current))
+    // Include original images for comparison display
+    const fullResults = {
+      ...resultsRef.current,
+      originals: {
+        webModelImage: analysisData.productPage.modelImage,
+        productImage: analysisData.productPage.productImage,
+        insImage: analysisData.instagram.bestModelImage,
+        videoUrl: analysisData.video?.videoUrl,
+        videoPrompt: analysisData.video?.prompt
+      }
+    }
+    console.log('[Generate] All done, results:', fullResults)
+    sessionStorage.setItem('brandStyleResults', JSON.stringify(fullResults))
     router.push('/brand-style/results')
   }
 
