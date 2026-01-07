@@ -399,24 +399,27 @@ export default function TryOnPage() {
             className="flex-1 overflow-y-auto pb-40"
           >
             {/* Person Image Upload Area */}
-            <div className="bg-zinc-100 min-h-[200px] flex items-center justify-center relative p-4">
+            <div className={`bg-zinc-100 flex items-center justify-center relative p-4 ${isDesktop ? 'min-h-[160px]' : 'min-h-[200px]'}`}>
               {!personImage ? (
-                <div className="w-full max-w-sm space-y-2">
-                  <button
-                    onClick={() => {
-                      setCameraTarget('person')
-                      setMode('camera')
-                    }}
-                    className="w-full h-14 rounded-xl bg-pink-500 hover:bg-pink-600 text-white flex items-center justify-center gap-3 transition-colors shadow-lg shadow-pink-200"
-                  >
-                    <Camera className="w-5 h-5" />
-                    <span className="font-medium">{t.tryOn?.takePhoto || '拍摄人物照片'}</span>
-                  </button>
+                <div className={`w-full space-y-2 ${isDesktop ? 'max-w-md' : 'max-w-sm'}`}>
+                  {/* Take Photo - Mobile only */}
+                  {!isDesktop && (
+                    <button
+                      onClick={() => {
+                        setCameraTarget('person')
+                        setMode('camera')
+                      }}
+                      className="w-full h-14 rounded-xl bg-pink-500 hover:bg-pink-600 text-white flex items-center justify-center gap-3 transition-colors shadow-lg shadow-pink-200"
+                    >
+                      <Camera className="w-5 h-5" />
+                      <span className="font-medium">{t.tryOn?.takePhoto || '拍摄人物照片'}</span>
+                    </button>
+                  )}
                   
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className={`grid gap-2 ${isDesktop ? 'grid-cols-2' : 'grid-cols-2'}`}>
                     <button
                       onClick={() => personFileInputRef.current?.click()}
-                      className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-pink-400 flex items-center justify-center gap-2 transition-colors"
+                      className={`rounded-xl border-2 border-zinc-200 bg-white hover:border-pink-400 flex items-center justify-center gap-2 transition-colors ${isDesktop ? 'h-16 px-6' : 'h-14'}`}
                     >
                       <Upload className="w-4 h-4 text-zinc-500" />
                       <span className="text-sm text-zinc-700">{t.tryOn?.fromAlbum || '相册'}</span>
@@ -426,7 +429,7 @@ export default function TryOnPage() {
                         setGalleryTarget('person')
                         setShowGalleryPanel(true)
                       }}
-                      className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-pink-400 flex items-center justify-center gap-2 transition-colors"
+                      className={`rounded-xl border-2 border-zinc-200 bg-white hover:border-pink-400 flex items-center justify-center gap-2 transition-colors ${isDesktop ? 'h-16 px-6' : 'h-14'}`}
                     >
                       <FolderHeart className="w-4 h-4 text-zinc-500" />
                       <span className="text-sm text-zinc-700">{t.tryOn?.fromGallery || '成片'}</span>
