@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getGenAIClient, extractText } from '@/lib/genai'
 
-// Primary method: Use RapidAPI to get Instagram post data
+// Primary method: Use RapidAPI instagram-scraper-stable-api to get Instagram post data
 async function fetchInstagramViaRapidAPI(url: string): Promise<{ images: string[]; caption: string }> {
   const rapidApiKey = process.env.RAPIDAPI_KEY
   if (!rapidApiKey) {
@@ -10,20 +10,14 @@ async function fetchInstagramViaRapidAPI(url: string): Promise<{ images: string[
 
   console.log('[Instagram] Using RapidAPI to fetch:', url)
   
-  // Extract shortcode from URL
-  const shortcodeMatch = url.match(/\/p\/([^\/\?]+)/) || url.match(/\/reel\/([^\/\?]+)/)
-  if (!shortcodeMatch) {
-    throw new Error('Invalid Instagram URL format')
-  }
-  const shortcode = shortcodeMatch[1]
-  console.log('[Instagram] Shortcode:', shortcode)
-
-  const apiUrl = `https://instagram-scraper-api2.p.rapidapi.com/v1/post_info?code_or_id_or_url=${shortcode}`
+  // Build API URL with encoded Instagram URL
+  const encodedUrl = encodeURIComponent(url.split('?')[0])
+  const apiUrl = `https://instagram-scraper-stable-api.p.rapidapi.com/get_media_data.php?reel_post_code_or_url=${encodedUrl}&type=post`
   
   const response = await fetch(apiUrl, {
     headers: {
       'X-RapidAPI-Key': rapidApiKey,
-      'X-RapidAPI-Host': 'instagram-scraper-api2.p.rapidapi.com'
+      'X-RapidAPI-Host': 'instagram-scraper-stable-api.p.rapidapi.com'
     }
   })
 
@@ -34,39 +28,41 @@ async function fetchInstagramViaRapidAPI(url: string): Promise<{ images: string[
   }
 
   const data = await response.json()
-  console.log('[Instagram] RapidAPI response received')
+  console.log('[Instagram] RapidAPI response received, shortcode:', data.shortcode)
   
   const images: string[] = []
   let caption = ''
 
-  // Extract images from carousel or single post
-  if (data.data) {
-    const postData = data.data
-    
-    // Get caption
-    caption = postData.caption?.text || ''
-    
-    // Get images - handle both carousel and single post
-    if (postData.carousel_media && Array.isArray(postData.carousel_media)) {
-      // Carousel post with multiple images
-      for (const item of postData.carousel_media) {
-        if (item.image_versions2?.candidates?.[0]?.url) {
-          images.push(item.image_versions2.candidates[0].url)
-        } else if (item.image_versions?.items?.[0]?.url) {
-          images.push(item.image_versions.items[0].url)
-        }
+  // Get caption
+  if (data.edge_media_to_caption?.edges?.[0]?.node?.text) {
+    caption = data.edge_media_to_caption.edges[0].node.text
+  }
+
+  // Handle carousel (multiple images) or single image
+  if (data.edge_sidecar_to_children?.edges) {
+    // Carousel post with multiple images
+    console.log('[Instagram] Carousel post with', data.edge_sidecar_to_children.edges.length, 'items')
+    for (const edge of data.edge_sidecar_to_children.edges) {
+      const node = edge.node
+      if (node.display_url) {
+        images.push(node.display_url)
+      } else if (node.display_resources?.length > 0) {
+        // Get highest resolution
+        const highRes = node.display_resources[node.display_resources.length - 1]
+        images.push(highRes.src)
       }
-    } else if (postData.image_versions2?.candidates?.[0]?.url) {
-      // Single image post
-      images.push(postData.image_versions2.candidates[0].url)
-    } else if (postData.image_versions?.items?.[0]?.url) {
-      images.push(postData.image_versions.items[0].url)
     }
-    
-    // Also try thumbnail_url as fallback
-    if (images.length === 0 && postData.thumbnail_url) {
-      images.push(postData.thumbnail_url)
-    }
+  } else if (data.display_url) {
+    // Single image post
+    console.log('[Instagram] Single image post')
+    images.push(data.display_url)
+  } else if (data.display_resources?.length > 0) {
+    // Fallback to display_resources
+    const highRes = data.display_resources[data.display_resources.length - 1]
+    images.push(highRes.src)
+  } else if (data.thumbnail_src) {
+    // Last fallback
+    images.push(data.thumbnail_src)
   }
 
   console.log('[Instagram] Extracted', images.length, 'images from RapidAPI')
