@@ -165,28 +165,35 @@ export default function GeneratingPage() {
     }
 
     // Generate images in sequence (to avoid rate limits)
-    await generateImage('web-1', '官网风格图 1', 'web', analysisData.productPage.modelImage)
-    await generateImage('web-2', '官网风格图 2', 'web', analysisData.productPage.modelImage)
-    await generateImage('ins-1', 'INS 风格图 1', 'ins', analysisData.instagram.bestModelImage)
-    await generateImage('ins-2', 'INS 风格图 2', 'ins', analysisData.instagram.bestModelImage)
+    if (analysisData?.productPage?.modelImage) {
+      await generateImage('web-1', '官网风格图 1', 'web', analysisData.productPage.modelImage)
+      await generateImage('web-2', '官网风格图 2', 'web', analysisData.productPage.modelImage)
+    }
     
-    if (analysisData.productPage.productImage) {
+    if (analysisData?.instagram?.bestModelImage) {
+      await generateImage('ins-1', 'INS 风格图 1', 'ins', analysisData.instagram.bestModelImage)
+      await generateImage('ins-2', 'INS 风格图 2', 'ins', analysisData.instagram.bestModelImage)
+    }
+    
+    if (analysisData?.productPage?.productImage) {
       await generateImage('product', '商品展示图', 'product', analysisData.productPage.productImage)
     }
     
     // Generate video last
-    await generateVideo()
+    if (analysisData?.video) {
+      await generateVideo()
+    }
 
     // Store results from ref (not from state, to avoid closure issues)
     // Include original images for comparison display
     const fullResults = {
       ...resultsRef.current,
       originals: {
-        webModelImage: analysisData.productPage.modelImage,
-        productImage: analysisData.productPage.productImage,
-        insImage: analysisData.instagram.bestModelImage,
-        videoUrl: analysisData.video?.videoUrl,
-        videoPrompt: analysisData.video?.prompt
+        webModelImage: analysisData?.productPage?.modelImage || undefined,
+        productImage: analysisData?.productPage?.productImage || undefined,
+        insImage: analysisData?.instagram?.bestModelImage || undefined,
+        videoUrl: analysisData?.video?.videoUrl || undefined,
+        videoPrompt: analysisData?.video?.prompt || undefined
       }
     }
     console.log('[Generate] All done, results:', fullResults)

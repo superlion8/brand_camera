@@ -55,7 +55,20 @@ export default function ResultsPage() {
       router.replace('/brand-style')
       return
     }
-    setResults(JSON.parse(stored))
+    
+    try {
+      const parsed = JSON.parse(stored)
+      // Ensure images is always an array
+      const normalizedResults: Results = {
+        images: Array.isArray(parsed.images) ? parsed.images : [],
+        video: parsed.video || undefined,
+        originals: parsed.originals || {}
+      }
+      setResults(normalizedResults)
+    } catch (error) {
+      console.error('Failed to parse results:', error)
+      router.replace('/brand-style')
+    }
   }, [router])
 
   const handleDownload = async (url: string, filename: string) => {
@@ -75,8 +88,11 @@ export default function ResultsPage() {
     }
   }
 
-  // Find images by id
-  const getImageById = (id: string) => results?.images.find(img => img.id === id)?.url
+  // Find images by id - with safe access
+  const getImageById = (id: string) => {
+    if (!results?.images || !Array.isArray(results.images)) return undefined
+    return results.images.find(img => img.id === id)?.url
+  }
 
   if (!results) {
     return (
