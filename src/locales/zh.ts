@@ -168,6 +168,7 @@ export const zh = {
     chooseOneMethod: "选择一种方式添加图片",
     uploadImage: "上传图片",
     fromAlbum: "从相册选择",
+    selectStyle: "选择风格",
     selectFromPhotos: "从成片选择",
     modelCategory: "模特分类",
     imageSelected: "图片已选择",

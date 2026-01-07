@@ -170,6 +170,7 @@ export const ko: Translations = {
     chooseOneMethod: "이미지 추가 방법을 선택하세요",
     uploadImage: "이미지 업로드",
     fromAlbum: "앨범에서",
+    selectStyle: "스타일 선택",
     selectFromPhotos: "사진에서 선택",
     modelCategory: "모델 카테고리",
     imageSelected: "이미지 선택됨",

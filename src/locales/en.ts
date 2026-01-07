@@ -170,6 +170,7 @@ export const en: Translations = {
     chooseOneMethod: "Choose one method to add image",
     uploadImage: "Upload Image",
     fromAlbum: "From Album",
+    selectStyle: "Select Style",
     selectFromPhotos: "Select from Photos",
     modelCategory: "Model Category",
     imageSelected: "Image Selected",
