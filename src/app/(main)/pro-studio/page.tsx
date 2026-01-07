@@ -2158,6 +2158,22 @@ function ProStudioPageContent() {
             exit={{ opacity: 0, y: 20 }}
             className="flex-1 flex flex-col bg-zinc-50 overflow-hidden"
           >
+            {/* Header */}
+            {isDesktop ? (
+              <div className="bg-white border-b border-zinc-200 shrink-0">
+                <div className="max-w-5xl mx-auto px-8 py-4">
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={handleRetake}
+                      className="w-9 h-9 rounded-lg hover:bg-zinc-100 flex items-center justify-center transition-colors"
+                    >
+                      <ArrowLeft className="w-5 h-5 text-zinc-600" />
+                    </button>
+                    <h1 className="text-lg font-semibold text-zinc-900">{t.camera.results}</h1>
+                  </div>
+                </div>
+              </div>
+            ) : (
             <div className="h-14 flex items-center px-4 border-b bg-white z-10">
               <button 
                 onClick={handleRetake} 
@@ -2167,10 +2183,13 @@ function ProStudioPageContent() {
               </button>
               <span className="font-semibold ml-2">{t.camera.results}</span>
             </div>
+            )}
 
-            <div className="flex-1 overflow-y-auto p-4 pb-8">
-              {/* 4 种机位图片 - 2x2 网格 */}
-              <div className="grid grid-cols-2 gap-3">
+            {/* Content */}
+            <div className={`flex-1 overflow-y-auto ${isDesktop ? 'py-8' : 'p-4 pb-8'}`}>
+              <div className={isDesktop ? 'max-w-4xl mx-auto px-8' : ''}>
+                {/* 4 种机位图片 - 桌面端4列，移动端2列 */}
+                <div className={`grid gap-4 ${isDesktop ? 'grid-cols-4' : 'grid-cols-2 gap-3'}`}>
                 {[0, 1, 2, 3].map((i) => {
                   const currentTask = tasks.find(t => t.id === currentTaskId)
                   const slot = currentTask?.imageSlots?.[i]
@@ -2179,17 +2198,17 @@ function ProStudioPageContent() {
                   
                   if (status === 'pending' || status === 'generating') {
                     return (
-                      <div key={i} className="aspect-[4/5] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
+                        <div key={i} className="aspect-[3/4] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
                         <Loader2 className="w-6 h-6 text-zinc-400 animate-spin mb-2" />
-                        <span className="text-[10px] text-zinc-400">{getImageLabel(i)}</span>
+                          <span className="text-[10px] text-zinc-400">{getImageLabel(i)}</span>
                       </div>
                     )
                   }
                   
                   if (status === 'failed' || !url) {
                     return (
-                      <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl flex flex-col items-center justify-center text-zinc-400 text-xs">
-                        <span className="mb-1">{getImageLabel(i)}</span>
+                        <div key={i} className="aspect-[3/4] bg-zinc-200 rounded-xl flex flex-col items-center justify-center text-zinc-400 text-xs">
+                          <span className="mb-1">{getImageLabel(i)}</span>
                         <span>{slot?.error || t.camera.generationFailed}</span>
                       </div>
                     )
@@ -2198,24 +2217,39 @@ function ProStudioPageContent() {
                   return (
                     <div 
                       key={i} 
-                      className="group relative aspect-[4/5] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer"
+                        className="group relative aspect-[3/4] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer hover:shadow-md transition-shadow"
                       onClick={() => setSelectedResultIndex(i)}
                     >
                       <Image src={url} alt="Result" fill className="object-cover" />
-                      <button className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm">
+                        <button className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
                         <Heart className="w-3.5 h-3.5 text-zinc-500" />
                       </button>
                       <div className="absolute top-2 left-2">
-                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium text-white ${getImageColor(i)}`}>
-                          {getImageLabel(i)}
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium text-white ${getImageColor(i)}`}>
+                            {getImageLabel(i)}
                         </span>
                       </div>
                     </div>
                   )
                 })}
+                </div>
+                
+                {/* Desktop: Button inline */}
+                {isDesktop && (
+                  <div className="mt-8 flex justify-center">
+                    <button 
+                      onClick={handleRetake}
+                      className="px-8 h-12 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold transition-colors"
+                    >
+                      {t.proStudio?.shootNextSet || t.camera.shootNextSet}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
+            {/* Mobile: Bottom button */}
+            {!isDesktop && (
             <div className="p-4 pb-20 bg-white border-t shadow-up">
               <button 
                 onClick={handleRetake}
@@ -2224,6 +2258,7 @@ function ProStudioPageContent() {
                 {t.proStudio?.shootNextSet || t.camera.shootNextSet}
               </button>
             </div>
+            )}
             
             {/* Result Detail Dialog */}
             {selectedResultIndex !== null && (() => {
