@@ -301,9 +301,9 @@ export async function POST(request: NextRequest) {
         }
 
         // Send initial task list
-        send({ type: 'init', tasks: tasks.map(t => ({ id: t.id, title: t.title, type: t.type })) })
+        send({ type: 'init', tasks: tasks.map(t => ({ id: t.id, type: t.type })) })
 
-        const results: { images: { id: string; title: string; url: string }[]; video?: string } = { images: [] }
+        const results: { images: { id: string; url: string }[]; video?: string } = { images: [] }
 
         // Execute tasks sequentially
         for (const task of tasks) {
