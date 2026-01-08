@@ -50,7 +50,7 @@ function extractImagesWithContext(pageContent: string): ImageWithContext[] {
   const seen = new Set<string>()
   
   const normalizeUrl = (rawUrl: string): string => {
-    let url = rawUrl.replace(/\\\//g, '/')
+    let url = rawUrl.replace(/\\\//g, '/').replace(/\\"/g, '')
     if (url.startsWith('//')) url = 'https:' + url
     return url
   }
@@ -86,26 +86,72 @@ function extractImagesWithContext(pageContent: string): ImageWithContext[] {
     })
   }
   
+  // Debug: Log a sample of the content to understand format
+  console.log('[Brand Style] Page content sample (first 500 chars):', pageContent.slice(0, 500))
+  console.log('[Brand Style] Page content sample (around 5000):', pageContent.slice(5000, 5500))
+  
   // Pattern 1: Markdown images ![alt](url) with context
-  const mdRegex = /(.{0,150})!\[([^\]]*)\]\(((?:https?:)?\/\/[^\s\)]+)\)(.{0,150})/g
+  const mdRegex = /(.{0,150})!\[([^\]]*)\]\(((?:https?:)?\/\/[^\s\)]+)\)(.{0,150})/gs
   let match
+  let mdCount = 0
   while ((match = mdRegex.exec(pageContent)) !== null) {
+    mdCount++
     const [, before, alt, url, after] = match
     addImage(url, `${before} [IMAGE: ${alt}] ${after}`, alt)
   }
+  console.log('[Brand Style] Markdown pattern matched:', mdCount)
   
-  // Pattern 2: Direct image URLs with context
-  const imgRegex = /(.{0,100})((?:https?:)?\/\/[^\s<>"'\)]+\.(?:jpg|jpeg|png|webp|gif)(?:\?[^\s<>"']*)?)(.{0,100})/gi
+  // Pattern 2: Direct image URLs (jpg, jpeg, png, webp, gif)
+  const imgRegex = /(.{0,100})((?:https?:)?\/\/[^\s<>"'\)\]]+\.(?:jpg|jpeg|png|webp|gif)(?:\?[^\s<>"'\)\]]*)?)/gi
+  let imgCount = 0
   while ((match = imgRegex.exec(pageContent)) !== null) {
-    const [, before, url, after] = match
-    // Skip if already captured by markdown pattern
+    imgCount++
+    const [, before, url] = match
+    const afterMatch = pageContent.slice(match.index + match[0].length, match.index + match[0].length + 100)
     const normalized = normalizeUrl(url)
     if (!seen.has(normalized.split('?')[0])) {
-      addImage(url, `${before} [IMAGE] ${after}`, '')
+      addImage(url, `${before} [IMAGE] ${afterMatch}`, '')
     }
   }
+  console.log('[Brand Style] Direct URL pattern matched:', imgCount)
   
-  console.log('[Brand Style] Extracted', results.length, 'images with context')
+  // Pattern 3: Shopify CDN URLs (may not have extension in URL)
+  const shopifyRegex = /(https?:\/\/cdn\.shopify\.com\/[^\s<>"'\)\]]+)/gi
+  let shopifyCount = 0
+  while ((match = shopifyRegex.exec(pageContent)) !== null) {
+    shopifyCount++
+    const url = match[1]
+    const startIdx = Math.max(0, match.index - 100)
+    const endIdx = Math.min(pageContent.length, match.index + match[0].length + 100)
+    const context = pageContent.slice(startIdx, endIdx)
+    const normalized = normalizeUrl(url)
+    if (!seen.has(normalized.split('?')[0])) {
+      addImage(url, context, '')
+    }
+  }
+  console.log('[Brand Style] Shopify CDN pattern matched:', shopifyCount)
+  
+  // Pattern 4: Any CDN image URLs
+  const cdnRegex = /(https?:\/\/[^\s<>"'\)\]]*(?:cdn|cloudfront|imgix|cloudinary)[^\s<>"'\)\]]*\.(?:jpg|jpeg|png|webp|gif)[^\s<>"'\)\]]*)/gi
+  let cdnCount = 0
+  while ((match = cdnRegex.exec(pageContent)) !== null) {
+    cdnCount++
+    const url = match[1]
+    const startIdx = Math.max(0, match.index - 100)
+    const endIdx = Math.min(pageContent.length, match.index + match[0].length + 100)
+    const context = pageContent.slice(startIdx, endIdx)
+    const normalized = normalizeUrl(url)
+    if (!seen.has(normalized.split('?')[0])) {
+      addImage(url, context, '')
+    }
+  }
+  console.log('[Brand Style] CDN pattern matched:', cdnCount)
+  
+  console.log('[Brand Style] Total unique images extracted:', results.length)
+  if (results.length > 0) {
+    console.log('[Brand Style] First image:', results[0].url.slice(0, 80))
+  }
+  
   return results.slice(0, 30) // Limit to 30 images
 }
 
