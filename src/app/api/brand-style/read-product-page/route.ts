@@ -37,32 +37,72 @@ async function readWebPage(url: string): Promise<string> {
   return text
 }
 
+// Fallback: Extract image URLs using regex patterns
+function extractImageUrlsWithRegex(pageContent: string): string[] {
+  const images: string[] = []
+  const seen = new Set<string>()
+  
+  const addImage = (rawUrl: string) => {
+    let url = rawUrl.replace(/\\\//g, '/')
+    if (url.startsWith('//')) url = 'https:' + url
+    
+    // Skip UI elements, icons, logos
+    const lowerUrl = url.toLowerCase()
+    if (lowerUrl.includes('logo') || lowerUrl.includes('icon') || lowerUrl.includes('favicon')) return
+    if (lowerUrl.includes('flag') || lowerUrl.includes('payment') || lowerUrl.includes('badge')) return
+    if (/[_x-](?:16|24|32|48|64|100)(?:x|_|\.|-)/i.test(url)) return
+    
+    const baseUrl = url.split('?')[0]
+    if (!seen.has(baseUrl) && url.startsWith('http')) {
+      seen.add(baseUrl)
+      images.push(url)
+    }
+  }
+  
+  // Pattern 1: Markdown images
+  const mdRegex = /!\[.*?\]\(((?:https?:)?\/\/[^\s\)]+)\)/g
+  let match
+  while ((match = mdRegex.exec(pageContent)) !== null) addImage(match[1])
+  
+  // Pattern 2: Direct image URLs
+  const imgRegex = /((?:https?:)?\/\/[^\s<>"'\)]+\.(?:jpg|jpeg|png|webp|gif)(?:\?[^\s<>"']*)?)/gi
+  while ((match = imgRegex.exec(pageContent)) !== null) addImage(match[1])
+  
+  // Pattern 3: Shopify/CDN URLs
+  const cdnRegex = /((?:https?:)?\/\/[^\s<>"']*(?:cdn\.shopify\.com|shopify\.com\/cdn)[^\s<>"']+\.(?:jpg|jpeg|png|webp))/gi
+  while ((match = cdnRegex.exec(pageContent)) !== null) addImage(match[1])
+  
+  return images.slice(0, 20) // Limit to first 20
+}
+
 // Step 1: Use VLM to extract product image URLs from page content
 async function extractProductImageUrls(pageContent: string, pageUrl: string): Promise<string[]> {
   const genAI = getGenAIClient()
   
-  // Truncate content if too long (keep first 15000 chars which usually contains product info)
+  // Truncate content if too long
   const truncatedContent = pageContent.slice(0, 15000)
   
   const prompt = `你是一位电商网页分析专家。以下是一个商品详情页的内容（来自 ${pageUrl}）。
 
-请从内容中找出【主商品】的图片 URL。
+🎯 任务：从网页内容中提取【主商品】的图片 URL 列表。
 
-⚠️ 重要规则：
-1. 只提取主商品的图片（模特穿着/展示商品的图，或纯商品图）
-2. 忽略以下类型的图片：
-   - 国旗、货币选择器、语言切换图标
-   - 网站 logo、favicon、社交媒体图标
-   - 导航栏图片、banner 广告
-   - "相关商品"、"推荐商品" 区域的图片
-   - 尺寸很小的图片（如 16x16, 32x32, 100x100）
-3. 图片 URL 通常包含 cdn、shopify、或商品相关关键词
-4. 优先选择高清大图（URL 中可能有 1080、2000 等尺寸参数）
+⚠️ 必须返回结果！即使不确定，也要选择最可能是商品图的 URL。
 
-请输出 JSON 格式（不要输出其他内容）：
+优先级（从高到低）：
+1. 包含 "product"、"item"、商品名称的图片 URL
+2. 来自 CDN 的大图（shopify.com/cdn、cloudfront、imgix 等）
+3. URL 中有大尺寸参数的（1080、2000、large、grande 等）
+4. 页面上方/前面出现的图片 URL
+
+排除（低优先级，但如果没有其他图片也可以返回）：
+- 明显的 logo、favicon、icon（URL 中包含这些词）
+- 国旗、支付图标（flag、payment、visa、mastercard）
+- 很小的图（URL 中有 16x16、32x32、100x100 等）
+
+输出 JSON（productImages 数组必须至少包含 1 个 URL）：
 {
-  "productImages": ["url1", "url2", "url3"],
-  "reasoning": "简短说明你是如何判断这些是主商品图片的"
+  "productImages": ["url1", "url2", "url3", ...],
+  "reasoning": "简短说明"
 }
 
 网页内容：
@@ -70,43 +110,41 @@ ${truncatedContent}`
 
   console.log('[Brand Style] Asking VLM to extract product image URLs...')
   
-  const result = await genAI.models.generateContent({
-    model: 'gemini-2.0-flash',
-    contents: [{ role: 'user', parts: [{ text: prompt }] }]
-  })
-
-  const responseText = extractText(result) || ''
-  console.log('[Brand Style] VLM response:', responseText.slice(0, 500))
-  
-  const jsonMatch = responseText.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) {
-    console.error('[Brand Style] Failed to parse VLM response')
-    return []
-  }
-  
   try {
-    const parsed = JSON.parse(jsonMatch[0])
-    const urls = (parsed.productImages || []) as string[]
+    const result = await genAI.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: [{ role: 'user', parts: [{ text: prompt }] }]
+    })
+
+    const responseText = extractText(result) || ''
+    console.log('[Brand Style] VLM response:', responseText.slice(0, 500))
     
-    // Normalize URLs
-    const normalizedUrls = urls.map(url => {
-      // Handle escaped slashes
-      let normalized = url.replace(/\\\//g, '/')
-      // Handle protocol-relative URLs
-      if (normalized.startsWith('//')) {
-        normalized = 'https:' + normalized
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/)
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0])
+      const urls = (parsed.productImages || []) as string[]
+      
+      // Normalize URLs
+      const normalizedUrls = urls.map(url => {
+        let normalized = url.replace(/\\\//g, '/')
+        if (normalized.startsWith('//')) normalized = 'https:' + normalized
+        return normalized
+      }).filter(url => url.startsWith('http'))
+      
+      if (normalizedUrls.length > 0) {
+        console.log('[Brand Style] VLM extracted', normalizedUrls.length, 'product image URLs')
+        return normalizedUrls
       }
-      return normalized
-    }).filter(url => url.startsWith('http'))
-    
-    console.log('[Brand Style] VLM extracted', normalizedUrls.length, 'product image URLs')
-    console.log('[Brand Style] Reasoning:', parsed.reasoning)
-    
-    return normalizedUrls
+    }
   } catch (e) {
-    console.error('[Brand Style] JSON parse error:', e)
-    return []
+    console.error('[Brand Style] VLM error:', e)
   }
+  
+  // Fallback: use regex extraction
+  console.log('[Brand Style] VLM returned no images, falling back to regex extraction')
+  const regexUrls = extractImageUrlsWithRegex(pageContent)
+  console.log('[Brand Style] Regex extracted', regexUrls.length, 'images')
+  return regexUrls
 }
 
 // Step 2: Load images and use VLM to select best model/product images
