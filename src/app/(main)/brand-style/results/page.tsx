@@ -252,33 +252,37 @@ export default function ResultsPage() {
       
       <div className="p-4">
         <div className={`flex gap-4 ${isDesktop ? '' : 'flex-col'}`}>
-          {/* Original Video */}
-          {originalUrl && (
-            <div className="flex-1">
-              <div className="text-xs text-zinc-500 mb-1.5">{t.brandStyle.original}</div>
-              <div className={`relative bg-zinc-900 rounded-xl overflow-hidden ${
-                isDesktop ? 'aspect-video' : 'aspect-[9/16]'
-              }`}>
-                <video
-                  src={originalUrl}
-                  className="w-full h-full object-contain"
-                  controls
-                  playsInline
-                />
-                <div className="absolute top-2 left-2 px-2 py-1 bg-zinc-700/80 rounded text-xs text-white">
-                  {t.brandStyle.original}
+          {/* Original Section: Video + Prompt */}
+          {(originalUrl || originalPrompt) && (
+            <div className="flex-1 space-y-3">
+              <div className="text-xs text-zinc-500">{t.brandStyle.original}</div>
+              
+              {/* Original Video */}
+              {originalUrl && (
+                <div className={`relative bg-zinc-900 rounded-xl overflow-hidden ${
+                  isDesktop ? 'aspect-video' : 'aspect-[9/16]'
+                }`}>
+                  <video
+                    src={originalUrl}
+                    className="w-full h-full object-contain"
+                    controls
+                    playsInline
+                  />
+                  <div className="absolute top-2 left-2 px-2 py-1 bg-zinc-700/80 rounded text-xs text-white">
+                    {t.brandStyle.original}
+                  </div>
                 </div>
-              </div>
-            </div>
-          )}
-          
-          {/* Video Prompt (if no original video) */}
-          {!originalUrl && originalPrompt && (
-            <div className="flex-1">
-              <div className="text-xs text-zinc-500 mb-1.5">{t.brandStyle.videoPrompt}</div>
-              <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200">
-                <p className="text-sm text-zinc-600 line-clamp-4">{originalPrompt}</p>
-              </div>
+              )}
+              
+              {/* Video Prompt (always show below video if exists) */}
+              {originalPrompt && (
+                <div>
+                  <div className="text-xs text-zinc-500 mb-1.5">{t.brandStyle.videoPrompt}</div>
+                  <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200">
+                    <p className="text-sm text-zinc-600 line-clamp-4">{originalPrompt}</p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           
