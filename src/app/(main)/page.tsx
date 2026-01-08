@@ -46,10 +46,10 @@ function BeforeAfterCard({
   isDesktop?: boolean
 }) {
   const cardClass = isDesktop 
-    ? "w-full aspect-[9/16] rounded-2xl"
+    ? "w-full aspect-[16/9] rounded-2xl"
     : "min-w-[160px] w-[160px] h-[220px] rounded-[16px] snap-start"
 
-  const imageWidth = isDesktop ? 400 : 160
+  const imageWidth = isDesktop ? 300 : 160
 
   return (
     <Link href={href}>
@@ -124,7 +124,7 @@ function FadeBeforeAfterCard({
   isDesktop?: boolean
 }) {
   const cardClass = isDesktop 
-    ? "w-full aspect-[9/16] rounded-2xl"
+    ? "w-full aspect-[16/9] rounded-2xl"
     : "min-w-[160px] w-[160px] h-[220px] rounded-[16px] snap-start"
 
   return (
