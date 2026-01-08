@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 
 // Together AI API base URL
 // Together AI API base URL
-const TOGETHER_API_BASE = 'https://api.together.xyz/v1'
+const TOGETHER_API_BASE = 'https://api.together.ai/v2'
 
 // Lazy initialize supabase
 function getSupabase() {

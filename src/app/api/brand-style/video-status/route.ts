@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-// Together AI API base URL
-const TOGETHER_API_BASE = 'https://api.together.xyz/v1'
+// Together AI API base URL (v2 for video)
+const TOGETHER_API_BASE = 'https://api.together.ai/v2'
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -46,7 +46,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'TOGETHER_API_KEY not configured' }, { status: 500 })
     }
     
-    const response = await fetch(`${TOGETHER_API_BASE}/videos/${videoId}`, {
+    // v2 API uses query param: /v2/videos/status?id={videoId}
+    const response = await fetch(`${TOGETHER_API_BASE}/videos/status?id=${videoId}`, {
       headers: { 'Authorization': `Bearer ${apiKey}` }
     })
     

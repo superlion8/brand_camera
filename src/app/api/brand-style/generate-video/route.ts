@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// Together AI API base URL
-const TOGETHER_API_BASE = 'https://api.together.xyz/v1'
+// Together AI API base URL (v2 for video generation)
+const TOGETHER_API_BASE = 'https://api.together.ai/v2'
 
 export async function POST(request: NextRequest) {
   try {
