@@ -958,6 +958,9 @@ export const en: Translations = {
     // Generating page
     generatingTitle: "Generating Content",
     generatingDesc: "AI is generating exclusive content based on your brand style",
+    completedCount: "Completed {completed}/{total}",
+    generatingWaitMessage: "Generation takes about 2-3 minutes, please wait",
+    generationFailed: "Generation failed",
     webStyleImage: "Website Style Image",
     webStyleImageDesc: "Professional brand website display image",
     insStyleImage: "INS Style Image",

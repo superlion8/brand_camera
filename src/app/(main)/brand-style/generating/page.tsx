@@ -163,7 +163,7 @@ export default function GeneratingPage() {
               <div>
                 <h1 className="text-lg font-semibold text-zinc-900">{t.brandStyle.generatingTitle}</h1>
                 <p className="text-sm text-zinc-500">
-                  已完成 {completedCount}/{tasks.length} 项
+                  {t.brandStyle.completedCount?.replace('{completed}', String(completedCount)).replace('{total}', String(tasks.length)) || `已完成 ${completedCount}/${tasks.length} 项`}
                 </p>
               </div>
             </div>
@@ -196,7 +196,7 @@ export default function GeneratingPage() {
         <div className={`${isDesktop ? 'max-w-4xl mx-auto px-8' : ''}`}>
           
           {/* Task Grid */}
-          <div className={`grid gap-4 ${isDesktop ? 'grid-cols-3' : 'grid-cols-2'}`}>
+          <div className="grid grid-cols-2 gap-4">
             {tasks.map((task, index) => (
               <motion.div
                 key={task.id}
@@ -211,7 +211,7 @@ export default function GeneratingPage() {
                     : 'border-zinc-200'
                 }`}
               >
-                <div className={`aspect-square relative ${
+                <div className={`aspect-[9/16] relative ${
                   task.status === 'completed' && task.result 
                     ? '' 
                     : 'bg-zinc-100'
@@ -247,7 +247,7 @@ export default function GeneratingPage() {
                     </div>
                   ) : task.status === 'error' ? (
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <p className="text-sm text-red-500">生成失败</p>
+                      <p className="text-sm text-red-500">{t.brandStyle.generationFailed || '生成失败'}</p>
                     </div>
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center">
@@ -289,7 +289,7 @@ export default function GeneratingPage() {
             className="mt-8 space-y-3"
           >
             <p className="text-center text-sm text-zinc-400">
-              生成过程大约需要 2-3 分钟，请耐心等待
+              {t.brandStyle.generatingWaitMessage || '生成过程大约需要 2-3 分钟，请耐心等待'}
             </p>
             <div className="flex justify-center">
               <button
@@ -297,7 +297,7 @@ export default function GeneratingPage() {
                 className="px-6 py-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-xl font-medium flex items-center gap-2 transition-colors"
               >
                 <Home className="w-5 h-5" />
-                返回首页
+                {t.brandStyle.backToHome || '返回首页'}
               </button>
             </div>
           </motion.div>

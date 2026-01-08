@@ -956,6 +956,9 @@ export const zh = {
     // 生成页面
     generatingTitle: "正在生成内容",
     generatingDesc: "AI 正在根据您的品牌风格生成专属内容",
+    completedCount: "已完成 {completed}/{total} 项",
+    generatingWaitMessage: "生成过程大约需要 2-3 分钟，请耐心等待",
+    generationFailed: "生成失败",
     webStyleImage: "官网风格图",
     webStyleImageDesc: "专业的品牌官网展示图",
     insStyleImage: "INS 风格图",

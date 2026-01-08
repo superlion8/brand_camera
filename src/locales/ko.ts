@@ -957,6 +957,9 @@ export const ko: Translations = {
     
     // 생성 페이지
     generatingTitle: "콘텐츠 생성 중",
+    completedCount: "완료 {completed}/{total}",
+    generatingWaitMessage: "생성에 약 2-3분이 소요됩니다. 잠시만 기다려주세요",
+    generationFailed: "생성 실패",
     generatingDesc: "AI가 브랜드 스타일에 맞는 전용 콘텐츠를 생성하고 있습니다",
     webStyleImage: "웹사이트 스타일 이미지",
     webStyleImageDesc: "전문적인 브랜드 웹사이트 디스플레이 이미지",
