@@ -1,5 +1,7 @@
 # Brand Camera 系统架构文档
 
+> **重要**: 本文档是项目的单一架构真相来源，开发前请仔细阅读。
+
 ## 目录
 1. [系统概览](#系统概览)
 2. [核心模块](#核心模块)
@@ -7,20 +9,26 @@
 4. [功能实现模式](#功能实现模式)
 5. [代码复用指南](#代码复用指南)
 6. [服务间依赖](#服务间依赖)
+7. [数据库设计](#数据库设计)
+8. [AI 模型配置](#ai-模型配置)
+9. [性能与安全](#性能与安全)
+10. [部署配置](#部署配置)
 
 ---
 
 ## 系统概览
 
 ### 技术栈
-- **前端**: Next.js 14 (App Router) + React 18 + TypeScript
-- **样式**: Tailwind CSS + Framer Motion
-- **状态管理**: Zustand (全局) + React useState/useRef (局部)
-- **后端**: Next.js API Routes
-- **数据库**: Supabase (PostgreSQL)
-- **存储**: Supabase Storage
-- **AI**: Google Gemini (VLM/生图) + Together AI Sora 2 (生视频)
-- **认证**: Supabase Auth
+| 层级 | 技术 |
+|------|------|
+| **前端框架** | Next.js 14 (App Router) + React 18 + TypeScript |
+| **样式** | Tailwind CSS + Framer Motion |
+| **状态管理** | Zustand (全局) + React useState/useRef (局部) |
+| **后端** | Next.js API Routes (Vercel Serverless) |
+| **数据库** | Supabase PostgreSQL |
+| **存储** | Supabase Storage |
+| **AI 模型** | Google Gemini (VLM/生图) + Together AI Sora 2 (生视频) |
+| **认证** | Supabase Auth |
 
 ### 架构图
 ```
@@ -203,21 +211,6 @@ const PRELOAD_TABS = [
 │ 13. Gallery 页面实时显示生成进度                                       │
 │ 14. 全部完成后，refreshQuota() 刷新额度                               │
 └──────────────────────────────────────────────────────────────────────┘
-```
-
-### 数据库字段规范
-```sql
--- generations 表核心字段
-user_id              UUID        -- 用户 ID
-task_id              TEXT        -- 前端生成的任务 ID
-task_type            TEXT        -- 任务类型（使用 TaskTypes 常量）
-status               TEXT        -- pending / completed / failed
-output_image_urls    TEXT[]      -- 生成的图片 URL 数组 ⚠️ 必须用这个字段
-input_image_url      TEXT        -- 输入图片
-model_image_url      TEXT        -- 模特图片
-background_image_url TEXT        -- 背景图片
-input_params         JSONB       -- 生成参数
-total_images_count   INT         -- 图片数量（用于计费）
 ```
 
 ---
@@ -439,29 +432,208 @@ export const zh = {
 └────────────────────────────────────────────────────────────────────┘
 ```
 
-### 模块依赖图
+---
+
+## 数据库设计
+
+### 核心表结构
+
+#### generations 表（生成历史）
+```sql
+CREATE TABLE generations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_email TEXT,
+  task_id TEXT,                          -- 前端生成的任务 ID
+  task_type TEXT NOT NULL,               -- 使用 TaskTypes 常量
+  status TEXT DEFAULT 'pending',         -- pending/completed/failed
+  
+  -- 输出字段
+  output_image_urls TEXT[],              -- ⚠️ 必须用这个字段
+  output_model_types TEXT[],             -- pro/flash
+  output_gen_modes TEXT[],               -- simple/extended
+  prompts TEXT[],                        -- 每张图的 prompt
+  
+  -- 输入字段
+  input_image_url TEXT,
+  input_image2_url TEXT,
+  model_image_url TEXT,
+  background_image_url TEXT,
+  input_params JSONB,
+  
+  -- 统计字段
+  total_images_count INT,
+  simple_mode_count INT,
+  extended_mode_count INT,
+  
+  -- 元数据
+  is_deleted BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 索引
+CREATE INDEX idx_generations_user_id ON generations(user_id);
+CREATE INDEX idx_generations_task_id ON generations(task_id);
+CREATE INDEX idx_generations_task_type ON generations(task_type);
+CREATE INDEX idx_generations_created_at ON generations(created_at DESC);
 ```
-                    ┌──────────────┐
-                    │   用户请求    │
-                    └──────┬───────┘
-                           │
-                    ┌──────▼───────┐
-                    │   页面组件    │
-                    └──────┬───────┘
-                           │
-         ┌─────────────────┼─────────────────┐
-         │                 │                 │
-   ┌─────▼─────┐    ┌─────▼─────┐    ┌─────▼─────┐
-   │   Hooks   │    │  Stores   │    │    API    │
-   │useIsDesktop│   │galleryStore│   │requireAuth│
-   │useQuota   │    │taskStore  │    │genService │
-   └─────┬─────┘    └─────┬─────┘    └─────┬─────┘
-         │                 │                 │
-         └─────────────────┼─────────────────┘
-                           │
-                    ┌──────▼───────┐
-                    │  taskTypes   │  ← 单一数据源
-                    └──────────────┘
+
+#### user_quotas 表（用户额度）
+```sql
+CREATE TABLE user_quotas (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_email TEXT,
+  total_quota INT DEFAULT 100,
+  used_quota INT DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+#### favorites 表（收藏）
+```sql
+CREATE TABLE favorites (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  generation_id UUID REFERENCES generations(id) ON DELETE CASCADE,
+  image_index INT DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, generation_id, image_index)
+);
+```
+
+### Storage Buckets
+```
+storage/
+├─ generations/           # 生成的图片和视频
+│  └─ {user_id}/
+│     └─ {prefix}_{timestamp}_{random}.{ext}
+├─ presets/               # 系统预设素材
+│  ├─ models/
+│  ├─ backgrounds/
+│  └─ homepage/
+└─ brand-assets/          # 用户上传的素材
+   └─ {user_id}/
+```
+
+---
+
+## AI 模型配置
+
+### 使用的模型
+
+| 模型 | 用途 | 文件示例 |
+|------|------|----------|
+| `gemini-3-pro-image-preview` | 图像生成（主模型） | `generate-single/route.ts` |
+| `gemini-2.5-flash-image` | 图像生成（降级模型） | `generate-single/route.ts` |
+| `gemini-3-pro-preview` | VLM 分析（图生文） | `generate-group/route.ts` |
+| `gemini-2.5-flash` | 快速分析 | `analyze-product/route.ts` |
+| `gemini-2.0-flash` | 文本分析 | `brand-style/summarize/route.ts` |
+| `openai/sora-2` (Together AI) | 视频生成 | `brand-style/generate-video/route.ts` |
+
+### GenAI 客户端配置
+**文件**: `src/lib/genai.ts`
+
+```typescript
+import { GoogleGenAI } from "@google/genai";
+
+// 启用 Vertex AI 模式
+process.env.GOOGLE_GENAI_USE_VERTEXAI = "true";
+
+export function getGenAIClient(): GoogleGenAI {
+  return new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+}
+
+// 安全设置 - 关闭所有过滤（服装展示需要）
+export const safetySettings = [
+  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+];
+```
+
+---
+
+## 性能与安全
+
+### 图片优化
+```typescript
+// 上传前压缩
+import imageCompression from 'browser-image-compression';
+
+const compressImage = async (file: File) => {
+  return await imageCompression(file, {
+    maxSizeMB: 1,
+    maxWidthOrHeight: 1920,
+    useWebWorker: true,
+  });
+};
+```
+
+### API 安全
+```typescript
+// 1. 认证中间件
+const authResult = await requireAuth(request)
+if ('response' in authResult) return authResult.response
+
+// 2. 输入验证 (使用 Zod)
+import { z } from 'zod';
+const schema = z.object({
+  productImage: z.string().min(1),
+  taskId: z.string().min(1),
+})
+
+// 3. 环境变量保护
+// API Key 只在服务端使用，不暴露给前端
+```
+
+### 缓存策略
+```typescript
+// Gallery 数据缓存 5 分钟
+const CACHE_TTL = 5 * 60 * 1000
+
+// 预设素材缓存 1 天
+headers: {
+  'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=43200',
+}
+```
+
+---
+
+## 部署配置
+
+### Vercel 配置
+```json
+// vercel.json
+{
+  "functions": {
+    "src/app/api/generate*/**/*.ts": { "maxDuration": 300 },
+    "src/app/api/brand-style/**/*.ts": { "maxDuration": 300 },
+    "src/app/api/model-create/**/*.ts": { "maxDuration": 300 }
+  }
+}
+```
+
+### 环境变量
+```bash
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=xxx
+SUPABASE_SERVICE_ROLE_KEY=xxx  # ⚠️ 不是 SUPABASE_SERVICE_KEY
+
+# Google AI
+GEMINI_API_KEY=xxx
+GOOGLE_AI_API_KEY=xxx  # 别名
+
+# Together AI
+TOGETHER_API_KEY=xxx
+
+# Optional
+RAPIDAPI_KEY=xxx   # Instagram 抓取
+JINA_API_KEY=xxx   # 网页读取
 ```
 
 ---
@@ -472,6 +644,8 @@ export const zh = {
 ```typescript
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
+
+export const maxDuration = 300
 
 export async function POST(request: NextRequest) {
   const authResult = await requireAuth(request)
@@ -544,5 +718,6 @@ refreshQuota()
 
 ---
 
-**文档版本**: 1.0.0  
-**最后更新**: 2026-01-09
+**文档版本**: 2.0.0  
+**最后更新**: 2026-01-09  
+**合并自**: ARCHITECTURE.md + TECHNICAL_ARCHITECTURE.md
