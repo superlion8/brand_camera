@@ -16,6 +16,7 @@ import {
 import Image from 'next/image'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
+import { useTranslation } from '@/stores/languageStore'
 
 interface GenerationTask {
   id: string
@@ -30,16 +31,20 @@ export default function GeneratingPage() {
   const router = useRouter()
   const isMobile = useIsMobile(1024)
   const isDesktop = isMobile === false
+  const { t } = useTranslation()
   const abortControllerRef = useRef<AbortController | null>(null)
 
-  const [tasks, setTasks] = useState<GenerationTask[]>([
-    { id: 'web-1', title: '官网风格图 1', type: 'image', status: 'pending' },
-    { id: 'web-2', title: '官网风格图 2', type: 'image', status: 'pending' },
-    { id: 'ins-1', title: 'INS 风格图 1', type: 'image', status: 'pending' },
-    { id: 'ins-2', title: 'INS 风格图 2', type: 'image', status: 'pending' },
-    { id: 'product', title: '商品展示图', type: 'image', status: 'pending' },
-    { id: 'video', title: 'UGC 短视频', type: 'video', status: 'pending' },
-  ])
+  // Initialize tasks with translations
+  const getInitialTasks = (): GenerationTask[] => [
+    { id: 'web-1', title: `${t.brandStyle.webStyleImage} 1`, type: 'image', status: 'pending' },
+    { id: 'web-2', title: `${t.brandStyle.webStyleImage} 2`, type: 'image', status: 'pending' },
+    { id: 'ins-1', title: `${t.brandStyle.insStyleImage} 1`, type: 'image', status: 'pending' },
+    { id: 'ins-2', title: `${t.brandStyle.insStyleImage} 2`, type: 'image', status: 'pending' },
+    { id: 'product', title: t.brandStyle.productDisplayImage, type: 'image', status: 'pending' },
+    { id: 'video', title: t.brandStyle.ugcVideo, type: 'video', status: 'pending' },
+  ]
+
+  const [tasks, setTasks] = useState<GenerationTask[]>(getInitialTasks())
 
   const [analysisData, setAnalysisData] = useState<any>(null)
   const [zoomImage, setZoomImage] = useState<string | null>(null)
@@ -215,7 +220,7 @@ export default function GeneratingPage() {
                 <Loader2 className="w-5 h-5 text-violet-600 animate-spin" />
               </div>
               <div>
-                <h1 className="text-lg font-semibold text-zinc-900">正在生成内容</h1>
+                <h1 className="text-lg font-semibold text-zinc-900">{t.brandStyle.generatingTitle}</h1>
                 <p className="text-sm text-zinc-500">
                   已完成 {completedCount}/{tasks.length} 项
                 </p>
@@ -229,7 +234,7 @@ export default function GeneratingPage() {
             <Loader2 className="w-4 h-4 text-violet-600 animate-spin" />
           </div>
           <div>
-            <span className="font-semibold">生成中...</span>
+            <span className="font-semibold">{t.brandStyle.generating}</span>
             <span className="text-sm text-zinc-500 ml-2">{completedCount}/{tasks.length}</span>
           </div>
         </div>
@@ -297,7 +302,7 @@ export default function GeneratingPage() {
                         <div className="w-12 h-12 border-4 border-violet-200 rounded-full" />
                         <div className="absolute inset-0 w-12 h-12 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
                       </div>
-                      <p className="text-sm text-zinc-500 mt-3">生成中...</p>
+                      <p className="text-sm text-zinc-500 mt-3">{t.brandStyle.generating}</p>
                     </div>
                   ) : task.status === 'error' ? (
                     <div className="absolute inset-0 flex items-center justify-center">

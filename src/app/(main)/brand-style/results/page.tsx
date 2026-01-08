@@ -19,6 +19,7 @@ import {
 import Image from 'next/image'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
+import { useTranslation } from '@/stores/languageStore'
 
 interface ResultImage {
   id: string
@@ -44,6 +45,7 @@ export default function ResultsPage() {
   const router = useRouter()
   const isMobile = useIsMobile(1024)
   const isDesktop = isMobile === false
+  const { t } = useTranslation()
 
   const [results, setResults] = useState<Results | null>(null)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
@@ -153,7 +155,7 @@ export default function ResultsPage() {
                 >
                   <Image src={originalImage} alt={originalLabel} fill className="object-cover" unoptimized />
                   <div className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-zinc-700/80 rounded text-[10px] text-white">
-                    原图
+                    {t.brandStyle.original}
                   </div>
                 </div>
               </div>
@@ -229,7 +231,7 @@ export default function ResultsPage() {
         <div className="w-7 h-7 rounded-lg bg-red-100 flex items-center justify-center">
           <Video className="w-4 h-4 text-red-600" />
         </div>
-        <span className="font-semibold text-zinc-800">UGC 短视频</span>
+        <span className="font-semibold text-zinc-800">{t.brandStyle.videoStyle}</span>
       </div>
       
       <div className="p-4">
@@ -237,7 +239,7 @@ export default function ResultsPage() {
           {/* Original Video */}
           {originalUrl && (
             <div className="flex-1">
-              <div className="text-xs text-zinc-500 mb-1.5">原视频</div>
+              <div className="text-xs text-zinc-500 mb-1.5">{t.brandStyle.original}</div>
               <div className={`relative bg-zinc-900 rounded-xl overflow-hidden ${
                 isDesktop ? 'aspect-video' : 'aspect-[9/16]'
               }`}>
@@ -248,7 +250,7 @@ export default function ResultsPage() {
                   playsInline
                 />
                 <div className="absolute top-2 left-2 px-2 py-1 bg-zinc-700/80 rounded text-xs text-white">
-                  原视频
+                  {t.brandStyle.original}
                 </div>
               </div>
             </div>
@@ -257,7 +259,7 @@ export default function ResultsPage() {
           {/* Video Prompt (if no original video) */}
           {!originalUrl && originalPrompt && (
             <div className="flex-1">
-              <div className="text-xs text-zinc-500 mb-1.5">视频提示词</div>
+              <div className="text-xs text-zinc-500 mb-1.5">{t.brandStyle.videoPrompt}</div>
               <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200">
                 <p className="text-sm text-zinc-600 line-clamp-4">{originalPrompt}</p>
               </div>
@@ -273,7 +275,7 @@ export default function ResultsPage() {
           
           {/* Generated Video */}
           <div className="flex-1">
-            <div className="text-xs text-zinc-500 mb-1.5">AI 生成视频</div>
+            <div className="text-xs text-zinc-500 mb-1.5">{t.brandStyle.aiGenerated}</div>
             <div className={`relative bg-zinc-900 rounded-xl overflow-hidden ${
               isDesktop ? 'aspect-video' : 'aspect-[9/16]'
             }`}>
@@ -297,7 +299,7 @@ export default function ResultsPage() {
                 </>
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-sm text-zinc-500">视频生成中或暂未可用</span>
+                  <span className="text-sm text-zinc-500">{t.brandStyle.generating}</span>
                 </div>
               )}
             </div>
@@ -322,15 +324,15 @@ export default function ResultsPage() {
                   <ArrowLeft className="w-5 h-5 text-zinc-600" />
                 </button>
                 <div>
-                  <h1 className="text-lg font-semibold text-zinc-900">生成结果对比</h1>
+                  <h1 className="text-lg font-semibold text-zinc-900">{t.brandStyle.resultsTitle}</h1>
                   <p className="text-sm text-zinc-500">
-                    原图与 AI 生成结果对比
+                    {t.brandStyle.resultsDesc}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2 px-3 py-1.5 bg-green-100 rounded-full">
                 <Check className="w-4 h-4 text-green-600" />
-                <span className="text-sm font-medium text-green-700">全部完成</span>
+                <span className="text-sm font-medium text-green-700">{t.brandStyle.allComplete}</span>
               </div>
             </div>
           </div>
@@ -344,11 +346,11 @@ export default function ResultsPage() {
             >
               <ArrowLeft className="w-5 h-5 text-zinc-600" />
             </button>
-            <span className="font-semibold text-lg ml-2">生成结果</span>
+            <span className="font-semibold text-lg ml-2">{t.brandStyle.resultsTitle}</span>
           </div>
           <div className="flex items-center gap-1 px-2 py-1 bg-green-100 rounded-full">
             <Check className="w-3 h-3 text-green-600" />
-            <span className="text-xs font-medium text-green-700">完成</span>
+            <span className="text-xs font-medium text-green-700">{t.brandStyle.taskCompleted}</span>
           </div>
         </div>
       )}
@@ -359,40 +361,40 @@ export default function ResultsPage() {
           
           {/* Web Style Comparison */}
           <ComparisonCard
-            title="官网风格图"
+            title={t.brandStyle.websiteStyle}
             icon={<Globe className="w-4 h-4 text-blue-600" />}
             iconBg="bg-blue-100"
             originalImage={results.originals?.webModelImage}
-            originalLabel="官网原图"
+            originalLabel={t.brandStyle.original}
             generatedImages={[
-              { url: webImage1, label: '风格图 1' },
-              { url: webImage2, label: '风格图 2' }
+              { url: webImage1, label: `${t.brandStyle.aiGenerated} 1` },
+              { url: webImage2, label: `${t.brandStyle.aiGenerated} 2` }
             ]}
           />
 
           {/* INS Style Comparison */}
           <ComparisonCard
-            title="INS 风格图"
+            title={t.brandStyle.insStyle}
             icon={<Instagram className="w-4 h-4 text-pink-600" />}
             iconBg="bg-gradient-to-br from-purple-100 to-pink-100"
             originalImage={results.originals?.insImage}
-            originalLabel="INS 原图"
+            originalLabel={t.brandStyle.original}
             generatedImages={[
-              { url: insImage1, label: '风格图 1' },
-              { url: insImage2, label: '风格图 2' }
+              { url: insImage1, label: `${t.brandStyle.aiGenerated} 1` },
+              { url: insImage2, label: `${t.brandStyle.aiGenerated} 2` }
             ]}
           />
 
           {/* Product Display Comparison */}
           {(results.originals?.productImage || productImage) && (
             <ComparisonCard
-              title="商品展示图"
+              title={t.brandStyle.productStyle}
               icon={<ImageIcon className="w-4 h-4 text-amber-600" />}
               iconBg="bg-amber-100"
               originalImage={results.originals?.productImage}
-              originalLabel="商品原图"
+              originalLabel={t.brandStyle.original}
               generatedImages={[
-                { url: productImage, label: '展示图' }
+                { url: productImage, label: t.brandStyle.aiGenerated }
               ]}
             />
           )}
