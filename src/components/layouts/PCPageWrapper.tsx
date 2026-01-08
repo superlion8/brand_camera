@@ -53,7 +53,7 @@ export function PCPageWrapper({
               <div className="flex items-center gap-4">
                 {showHomeButton && (
                   <button 
-                    onClick={() => router.push('/')}
+                    onClick={() => router.push('/app')}
                     className="w-9 h-9 rounded-lg hover:bg-zinc-100 flex items-center justify-center transition-colors"
                   >
                     <Home className="w-5 h-5 text-zinc-600" />

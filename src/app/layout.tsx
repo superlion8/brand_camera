@@ -5,13 +5,25 @@ import { AuthProvider } from '@/components/providers/AuthProvider'
 import { Analytics } from '@vercel/analytics/next'
 
 export const metadata: Metadata = {
-  title: '品牌相机 - Brand Camera',
-  description: '为品牌主理人打造的AI产品摄影工具',
+  title: 'Brand Camera - AI-Powered Product Photography',
+  description: 'Transform your product photos with AI. Create stunning model photos, lifestyle shots, and professional product images in seconds. No photographers, no studios, no waiting.',
+  keywords: ['AI photography', 'product photography', 'e-commerce', 'model photos', 'brand style', 'AI image generation'],
   manifest: '/manifest.json',
+  openGraph: {
+    title: 'Brand Camera - AI-Powered Product Photography',
+    description: 'Transform your product photos with AI. Create stunning model photos, lifestyle shots, and professional product images in seconds.',
+    type: 'website',
+    siteName: 'Brand Camera',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Brand Camera - AI-Powered Product Photography',
+    description: 'Transform your product photos with AI. Create stunning images in seconds.',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: '品牌相机',
+    title: 'Brand Camera',
   },
 }
 

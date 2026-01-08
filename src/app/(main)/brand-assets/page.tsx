@@ -243,7 +243,7 @@ export default function BrandAssetsPage() {
   if (screenLoading) {
     return <ScreenLoadingGuard><div /></ScreenLoadingGuard>
   }
-
+  
   return (
     <div className="h-full flex flex-col bg-zinc-50">
       <input

@@ -56,7 +56,7 @@ export function Sidebar({ className }: { className?: string }) {
       id: 'home',
       label: t.nav?.home || '首页',
       icon: <Home className="w-5 h-5" />,
-      href: '/',
+      href: '/app',
     },
     {
       id: 'shoot',
@@ -115,7 +115,7 @@ export function Sidebar({ className }: { className?: string }) {
   ]
 
   const isActive = (href: string) => {
-    if (href === '/') return pathname === '/'
+    if (href === '/app') return pathname === '/app'
     return pathname.startsWith(href)
   }
 
