@@ -193,6 +193,8 @@ export async function POST(request: NextRequest) {
     
     let prompt: string
     
+    let playableVideoUrl: string | null = null
+    
     // Check if it's a TikTok URL
     if (url.includes('tiktok.com')) {
       try {
@@ -200,6 +202,9 @@ export async function POST(request: NextRequest) {
         const { videoUrl, duration } = await getTikTokVideoUrl(url)
         
         console.log('[Video] Video duration:', duration, 'seconds')
+        
+        // Save the playable URL
+        playableVideoUrl = videoUrl
         
         // Download video to buffer
         const videoBuffer = await downloadVideoToBuffer(videoUrl)
@@ -228,6 +233,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       prompt,
+      playableVideoUrl, // Return the direct video URL for playback
       success: true
     })
 

@@ -205,8 +205,8 @@ export default function AnalyzingPage() {
           throw new Error(videoData.error || 'Failed to analyze video')
         }
         
-        // Add original video URL to videoData
-        videoData.videoUrl = inputData.videoUrl
+        // Add video URL to videoData (prefer playable URL if available)
+        videoData.videoUrl = videoData.playableVideoUrl || inputData.videoUrl
         
         updateStep('video', { 
           status: 'completed',
