@@ -4,13 +4,16 @@ import { useEffect, useRef } from 'react'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useGalleryStore, getCacheKey } from '@/stores/galleryStore'
 
-// 预加载的 tab 配置
+// 预加载的 tab 配置（包含所有 tab）
 const PRELOAD_TABS = [
   { tab: 'all', subType: '' },
   { tab: 'model', subType: 'buyer' },
   { tab: 'model', subType: 'prostudio' },
   { tab: 'model', subType: 'lifestyle' },
   { tab: 'product', subType: '' },
+  { tab: 'group', subType: '' },
+  { tab: 'reference', subType: '' },
+  { tab: 'brand', subType: '' },
   { tab: 'favorites', subType: '' },
 ]
 

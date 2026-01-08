@@ -230,75 +230,14 @@ export default function GalleryPage() {
     }
   }
   
-  // 所有需要预加载的 tab 配置
-  const ALL_TABS_TO_PRELOAD = [
-    { tab: 'all', subType: '' },
-    { tab: 'model', subType: 'buyer' },
-    { tab: 'model', subType: 'prostudio' },
-    { tab: 'model', subType: 'lifestyle' },
-    { tab: 'product', subType: '' },
-    { tab: 'group', subType: '' },
-    { tab: 'reference', subType: '' },
-    { tab: 'brand', subType: '' },
-  ]
-  
-  // 预加载单个 tab 的数据
-  const preloadSingleTab = async (tab: string, subType: string): Promise<void> => {
-    const cacheKey = tab === 'model' ? `${tab}_${subType}` : tab
-    
-    // 如果已有缓存，跳过
-    if (getCache(cacheKey)) {
-      console.log(`[Gallery] Cache hit for ${cacheKey}, skip preload`)
-      return
-    }
-    
-    try {
-      const response = await fetch(`/api/gallery?type=${tab}&page=1&subType=${subType}`, {
-        cache: 'no-store',
-      })
-      const result = await response.json()
-      
-      if (result.success) {
-        setCache(cacheKey, {
-          items: result.data.items,
-          hasMore: result.data.hasMore,
-          currentPage: 1,
-          pendingTasks: result.data.pendingTasks || [],
-          fetchedAt: Date.now(),
-        })
-        console.log(`[Gallery] Preloaded ${cacheKey}: ${result.data.items.length} items`)
-      }
-    } catch (error) {
-      console.error(`[Gallery] Failed to preload ${cacheKey}:`, error)
-    }
-  }
-  
-  // 首次加载时并行预加载所有 tab
-  const hasStartedPreloadRef = useRef(false)
+  // 当用户登录或 tab 切换时加载数据（优先使用全局预加载的缓存）
+  // 注意：全局预加载由 GalleryPreloader 组件在首页完成，这里只需使用缓存
   useEffect(() => {
-    if (user && !hasStartedPreloadRef.current) {
-      hasStartedPreloadRef.current = true
-      
-      // 并行预加载所有 tab（包括当前 tab）
-      console.log('[Gallery] Starting parallel preload for all tabs')
-      Promise.allSettled(
-        ALL_TABS_TO_PRELOAD.map(({ tab, subType }) => preloadSingleTab(tab, subType))
-      ).then(() => {
-        console.log('[Gallery] All tabs preloaded')
-      })
-      
-      // 同时立即加载当前 tab（会比预加载先完成并显示）
-      fetchGalleryData(1, false, false)
-    }
-  }, [user])
-  
-  // 当 tab 切换、二级分类切换时加载数据（优先使用缓存）
-  useEffect(() => {
-    if (user && hasStartedPreloadRef.current) {
+    if (user) {
       // fetchGalleryData 内部会检查缓存，命中则立即返回
       fetchGalleryData(1, false, false)
     }
-  }, [activeTab, modelSubType])
+  }, [user, activeTab, modelSubType])
   
   // 任务完成时，本地 append 到 galleryItems（不再定时刷新）
   useEffect(() => {
