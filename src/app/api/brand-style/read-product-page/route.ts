@@ -37,78 +37,125 @@ async function readWebPage(url: string): Promise<string> {
   return text
 }
 
-// Fallback: Extract image URLs using regex patterns
-function extractImageUrlsWithRegex(pageContent: string): string[] {
-  const images: string[] = []
+// Image with surrounding context for LLM analysis
+interface ImageWithContext {
+  url: string
+  context: string
+  alt: string
+}
+
+// Step 1: Extract all image URLs with their surrounding context from FULL page
+function extractImagesWithContext(pageContent: string): ImageWithContext[] {
+  const results: ImageWithContext[] = []
   const seen = new Set<string>()
   
-  const addImage = (rawUrl: string) => {
+  const normalizeUrl = (rawUrl: string): string => {
     let url = rawUrl.replace(/\\\//g, '/')
     if (url.startsWith('//')) url = 'https:' + url
-    
-    // Skip UI elements, icons, logos
+    return url
+  }
+  
+  const shouldSkip = (url: string): boolean => {
     const lowerUrl = url.toLowerCase()
-    if (lowerUrl.includes('logo') || lowerUrl.includes('icon') || lowerUrl.includes('favicon')) return
-    if (lowerUrl.includes('flag') || lowerUrl.includes('payment') || lowerUrl.includes('badge')) return
-    if (/[_x-](?:16|24|32|48|64|100)(?:x|_|\.|-)/i.test(url)) return
+    // Skip obvious UI elements
+    if (lowerUrl.includes('logo') && !lowerUrl.includes('catalog')) return true
+    if (lowerUrl.includes('favicon')) return true
+    if (lowerUrl.includes('icon') && !lowerUrl.includes('collection')) return true
+    if (lowerUrl.includes('/flag')) return true
+    if (lowerUrl.includes('payment')) return true
+    if (lowerUrl.includes('badge')) return true
+    if (lowerUrl.endsWith('.svg')) return true
+    // Skip tiny images
+    if (/[_x-](?:16|24|32|48|64)(?:x|_|\.|-|$)/i.test(url)) return true
+    return false
+  }
+  
+  const addImage = (url: string, context: string, alt: string) => {
+    const normalized = normalizeUrl(url)
+    if (!normalized.startsWith('http')) return
+    if (shouldSkip(normalized)) return
     
-    const baseUrl = url.split('?')[0]
-    if (!seen.has(baseUrl) && url.startsWith('http')) {
-      seen.add(baseUrl)
-      images.push(url)
+    const baseUrl = normalized.split('?')[0]
+    if (seen.has(baseUrl)) return
+    seen.add(baseUrl)
+    
+    results.push({
+      url: normalized,
+      context: context.slice(0, 200).replace(/\s+/g, ' ').trim(),
+      alt: alt.slice(0, 100)
+    })
+  }
+  
+  // Pattern 1: Markdown images ![alt](url) with context
+  const mdRegex = /(.{0,150})!\[([^\]]*)\]\(((?:https?:)?\/\/[^\s\)]+)\)(.{0,150})/g
+  let match
+  while ((match = mdRegex.exec(pageContent)) !== null) {
+    const [, before, alt, url, after] = match
+    addImage(url, `${before} [IMAGE: ${alt}] ${after}`, alt)
+  }
+  
+  // Pattern 2: Direct image URLs with context
+  const imgRegex = /(.{0,100})((?:https?:)?\/\/[^\s<>"'\)]+\.(?:jpg|jpeg|png|webp|gif)(?:\?[^\s<>"']*)?)(.{0,100})/gi
+  while ((match = imgRegex.exec(pageContent)) !== null) {
+    const [, before, url, after] = match
+    // Skip if already captured by markdown pattern
+    const normalized = normalizeUrl(url)
+    if (!seen.has(normalized.split('?')[0])) {
+      addImage(url, `${before} [IMAGE] ${after}`, '')
     }
   }
   
-  // Pattern 1: Markdown images
-  const mdRegex = /!\[.*?\]\(((?:https?:)?\/\/[^\s\)]+)\)/g
-  let match
-  while ((match = mdRegex.exec(pageContent)) !== null) addImage(match[1])
-  
-  // Pattern 2: Direct image URLs
-  const imgRegex = /((?:https?:)?\/\/[^\s<>"'\)]+\.(?:jpg|jpeg|png|webp|gif)(?:\?[^\s<>"']*)?)/gi
-  while ((match = imgRegex.exec(pageContent)) !== null) addImage(match[1])
-  
-  // Pattern 3: Shopify/CDN URLs
-  const cdnRegex = /((?:https?:)?\/\/[^\s<>"']*(?:cdn\.shopify\.com|shopify\.com\/cdn)[^\s<>"']+\.(?:jpg|jpeg|png|webp))/gi
-  while ((match = cdnRegex.exec(pageContent)) !== null) addImage(match[1])
-  
-  return images.slice(0, 20) // Limit to first 20
+  console.log('[Brand Style] Extracted', results.length, 'images with context')
+  return results.slice(0, 30) // Limit to 30 images
 }
 
-// Step 1: Use VLM to extract product image URLs from page content
+// Step 2: Use LLM to analyze images with context and identify product images
 async function extractProductImageUrls(pageContent: string, pageUrl: string): Promise<string[]> {
   const genAI = getGenAIClient()
   
-  // Truncate content if too long
-  const truncatedContent = pageContent.slice(0, 15000)
+  // Extract all images with context from FULL page (no truncation)
+  const imagesWithContext = extractImagesWithContext(pageContent)
   
-  const prompt = `你是一位电商网页分析专家。以下是一个商品详情页的内容（来自 ${pageUrl}）。
+  if (imagesWithContext.length === 0) {
+    console.log('[Brand Style] No images found in page')
+    return []
+  }
+  
+  // Format images for LLM
+  const imageList = imagesWithContext.map((img, i) => 
+    `[${i + 1}] URL: ${img.url}\n    Alt: ${img.alt || '(无)'}\n    上下文: ${img.context}`
+  ).join('\n\n')
+  
+  const prompt = `你是电商网页分析专家。以下是从商品详情页（${pageUrl}）提取的图片列表。
 
-🎯 任务：从网页内容中提取【主商品】的图片 URL 列表。
+每张图片包含：
+- URL：图片地址
+- Alt：图片描述文本
+- 上下文：图片在页面中前后的文字
 
-⚠️ 必须返回结果！即使不确定，也要选择最可能是商品图的 URL。
+🎯 任务：根据【上下文】和【Alt 文本】判断哪些是主商品图片。
 
-优先级（从高到低）：
-1. 包含 "product"、"item"、商品名称的图片 URL
-2. 来自 CDN 的大图（shopify.com/cdn、cloudfront、imgix 等）
-3. URL 中有大尺寸参数的（1080、2000、large、grande 等）
-4. 页面上方/前面出现的图片 URL
+主商品图片特征：
+- 上下文包含商品名称、价格、尺码、颜色选择等
+- Alt 文本描述商品（如 "Cashmere Sweater", "产品图"）
+- URL 包含 product、item、files 等关键词
+- 通常是页面中间的大图
 
-排除（低优先级，但如果没有其他图片也可以返回）：
-- 明显的 logo、favicon、icon（URL 中包含这些词）
-- 国旗、支付图标（flag、payment、visa、mastercard）
-- 很小的图（URL 中有 16x16、32x32、100x100 等）
+排除：
+- 导航栏、页头、页脚区域的图片
+- 上下文包含 "navigation"、"footer"、"menu"、"相关商品"、"推荐"
+- Logo、图标、国旗、支付方式图片
 
-输出 JSON（productImages 数组必须至少包含 1 个 URL）：
+图片列表：
+${imageList}
+
+输出 JSON（必须返回至少 1 个 URL）：
 {
-  "productImages": ["url1", "url2", "url3", ...],
-  "reasoning": "简短说明"
-}
+  "productImageUrls": ["url1", "url2", ...],
+  "reasoning": "简短说明判断依据"
+}`
 
-网页内容：
-${truncatedContent}`
-
-  console.log('[Brand Style] Asking VLM to extract product image URLs...')
+  console.log('[Brand Style] Asking LLM to identify product images...')
   
   try {
     const result = await genAI.models.generateContent({
@@ -117,12 +164,12 @@ ${truncatedContent}`
     })
 
     const responseText = extractText(result) || ''
-    console.log('[Brand Style] VLM response:', responseText.slice(0, 500))
+    console.log('[Brand Style] LLM response:', responseText.slice(0, 500))
     
     const jsonMatch = responseText.match(/\{[\s\S]*\}/)
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0])
-      const urls = (parsed.productImages || []) as string[]
+      const urls = (parsed.productImageUrls || parsed.productImages || []) as string[]
       
       // Normalize URLs
       const normalizedUrls = urls.map(url => {
@@ -132,19 +179,18 @@ ${truncatedContent}`
       }).filter(url => url.startsWith('http'))
       
       if (normalizedUrls.length > 0) {
-        console.log('[Brand Style] VLM extracted', normalizedUrls.length, 'product image URLs')
+        console.log('[Brand Style] LLM identified', normalizedUrls.length, 'product images')
+        console.log('[Brand Style] Reasoning:', parsed.reasoning)
         return normalizedUrls
       }
     }
   } catch (e) {
-    console.error('[Brand Style] VLM error:', e)
+    console.error('[Brand Style] LLM error:', e)
   }
   
-  // Fallback: use regex extraction
-  console.log('[Brand Style] VLM returned no images, falling back to regex extraction')
-  const regexUrls = extractImageUrlsWithRegex(pageContent)
-  console.log('[Brand Style] Regex extracted', regexUrls.length, 'images')
-  return regexUrls
+  // Fallback: return first few non-logo images
+  console.log('[Brand Style] LLM failed, using fallback')
+  return imagesWithContext.slice(0, 5).map(img => img.url)
 }
 
 // Step 2: Load images and use VLM to select best model/product images
