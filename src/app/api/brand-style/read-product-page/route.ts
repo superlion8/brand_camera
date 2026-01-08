@@ -61,6 +61,91 @@ async function tryShopifyJsonApi(url: string): Promise<{
   }
 }
 
+// Try to extract Open Graph images from HTML (works for most e-commerce sites)
+async function tryOpenGraphImages(url: string): Promise<string[]> {
+  try {
+    console.log('[Brand Style] Trying to extract Open Graph images...')
+    
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml',
+      },
+      cache: 'no-store',
+    })
+    
+    if (!response.ok) {
+      console.log('[Brand Style] Failed to fetch page:', response.status)
+      return []
+    }
+    
+    const html = await response.text()
+    const images: string[] = []
+    const seen = new Set<string>()
+    
+    // Extract og:image meta tags
+    const ogRegex = /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/gi
+    let match
+    while ((match = ogRegex.exec(html)) !== null) {
+      const url = match[1]
+      if (!seen.has(url)) {
+        seen.add(url)
+        images.push(url)
+      }
+    }
+    
+    // Also try the reverse order (content before property)
+    const ogRegex2 = /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/gi
+    while ((match = ogRegex2.exec(html)) !== null) {
+      const url = match[1]
+      if (!seen.has(url)) {
+        seen.add(url)
+        images.push(url)
+      }
+    }
+    
+    // Extract product images from JSON-LD structured data
+    const jsonLdRegex = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
+    while ((match = jsonLdRegex.exec(html)) !== null) {
+      try {
+        const jsonData = JSON.parse(match[1])
+        // Handle single object or array
+        const items = Array.isArray(jsonData) ? jsonData : [jsonData]
+        for (const item of items) {
+          if (item['@type'] === 'Product' && item.image) {
+            const productImages = Array.isArray(item.image) ? item.image : [item.image]
+            for (const img of productImages) {
+              const imgUrl = typeof img === 'string' ? img : img.url
+              if (imgUrl && !seen.has(imgUrl)) {
+                seen.add(imgUrl)
+                images.push(imgUrl)
+              }
+            }
+          }
+        }
+      } catch {
+        // JSON parse error, skip
+      }
+    }
+    
+    // Extract high-res product images from common patterns
+    const productImgRegex = /<img[^>]+src=["']([^"']+(?:product|item|goods|main)[^"']*\.(?:jpg|jpeg|png|webp)[^"']*)["']/gi
+    while ((match = productImgRegex.exec(html)) !== null) {
+      const url = match[1]
+      if (!seen.has(url) && !url.includes('thumb') && !url.includes('icon')) {
+        seen.add(url)
+        images.push(url.startsWith('//') ? 'https:' + url : url)
+      }
+    }
+    
+    console.log('[Brand Style] Open Graph/JSON-LD extracted', images.length, 'images')
+    return images.slice(0, 10)
+  } catch (e) {
+    console.log('[Brand Style] Open Graph extraction error:', (e as Error).message)
+    return []
+  }
+}
+
 // Use Jina Reader to extract web page content (fallback)
 async function readWebPage(url: string): Promise<string> {
   const jinaUrl = `https://r.jina.ai/${url}`
@@ -465,13 +550,19 @@ export async function POST(request: NextRequest) {
       imageUrls = shopifyData.images
       console.log('[Brand Style] Using Shopify API images:', imageUrls.length)
     } else {
-      // Step 2: Fallback to Jina Reader
-      console.log('[Brand Style] Falling back to Jina Reader...')
-      pageContent = await readWebPage(url)
-      
-      // Step 3: Use LLM to extract product image URLs from page content
-      console.log('[Brand Style] Using LLM to identify product images...')
-      imageUrls = await extractProductImageUrls(pageContent, url)
+      // Step 2: Try Open Graph / JSON-LD (works for most e-commerce sites)
+      const ogImages = await tryOpenGraphImages(url)
+      if (ogImages.length > 0) {
+        imageUrls = ogImages
+        console.log('[Brand Style] Using Open Graph/JSON-LD images:', imageUrls.length)
+      } else {
+        // Step 3: Fallback to Jina Reader + LLM
+        console.log('[Brand Style] Falling back to Jina Reader...')
+        pageContent = await readWebPage(url)
+        
+        console.log('[Brand Style] Using LLM to identify product images...')
+        imageUrls = await extractProductImageUrls(pageContent, url)
+      }
     }
     
     if (imageUrls.length === 0) {
