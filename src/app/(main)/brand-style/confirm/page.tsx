@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import Image from 'next/image'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useTranslation } from '@/stores/languageStore'
 
 interface AnalysisData {
   productPage: {
@@ -59,6 +60,7 @@ export default function ConfirmPage() {
   const router = useRouter()
   const isMobile = useIsMobile(1024)
   const isDesktop = isMobile === false
+  const { t } = useTranslation()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null)
@@ -196,8 +198,8 @@ export default function ConfirmPage() {
                   <ArrowLeft className="w-5 h-5 text-zinc-600" />
                 </button>
                 <div>
-                  <h1 className="text-lg font-semibold text-zinc-900">确认分析结果</h1>
-                  <p className="text-sm text-zinc-500">点击各项内容可以修改，确认后开始生成</p>
+                  <h1 className="text-lg font-semibold text-zinc-900">{t.brandStyle.confirmTitle}</h1>
+                  <p className="text-sm text-zinc-500">{t.brandStyle.confirmDesc}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 px-3 py-1.5 bg-green-100 rounded-full">
@@ -216,7 +218,7 @@ export default function ConfirmPage() {
             >
               <ArrowLeft className="w-5 h-5 text-zinc-600" />
             </button>
-            <span className="font-semibold text-lg ml-2">确认结果</span>
+            <span className="font-semibold text-lg ml-2">{t.brandStyle.confirmTitle}</span>
           </div>
           <div className="flex items-center gap-1 px-2 py-1 bg-green-100 rounded-full">
             <Check className="w-3 h-3 text-green-600" />
@@ -294,13 +296,13 @@ export default function ConfirmPage() {
                     <Globe className="w-4 h-4 text-blue-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-zinc-900">官网模特参考</h3>
-                    <p className="text-xs text-zinc-500">用于生成官网风格图</p>
+                    <h3 className="font-semibold text-zinc-900">{t.brandStyle.webModelRef}</h3>
+                    <p className="text-xs text-zinc-500">{t.brandStyle.webModelRefDesc}</p>
                   </div>
                 </div>
                 <button className="text-blue-600 text-sm font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <RefreshCw className="w-4 h-4" />
-                  更换
+                  {t.brandStyle.change}
                 </button>
               </div>
               <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-zinc-100">
@@ -334,13 +336,13 @@ export default function ConfirmPage() {
                     <Instagram className="w-4 h-4 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-zinc-900">INS 模特参考</h3>
-                    <p className="text-xs text-zinc-500">用于生成 INS 风格图</p>
+                    <h3 className="font-semibold text-zinc-900">{t.brandStyle.insModelRef}</h3>
+                    <p className="text-xs text-zinc-500">{t.brandStyle.insModelRefDesc}</p>
                   </div>
                 </div>
                 <button className="text-pink-600 text-sm font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <RefreshCw className="w-4 h-4" />
-                  更换
+                  {t.brandStyle.change}
                 </button>
               </div>
               <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-zinc-100">
@@ -373,13 +375,13 @@ export default function ConfirmPage() {
                       <ImageIcon className="w-4 h-4 text-amber-600" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-zinc-900">商品图参考</h3>
-                      <p className="text-xs text-zinc-500">用于生成纯商品展示图</p>
+                      <h3 className="font-semibold text-zinc-900">{t.brandStyle.productRef}</h3>
+                      <p className="text-xs text-zinc-500">{t.brandStyle.productRefDesc}</p>
                     </div>
                   </div>
                   <button className="text-amber-600 text-sm font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <RefreshCw className="w-4 h-4" />
-                    更换
+                    {t.brandStyle.change}
                   </button>
                 </div>
                 <div className="relative aspect-square rounded-xl overflow-hidden bg-zinc-100">
@@ -479,7 +481,7 @@ export default function ConfirmPage() {
               ) : (
                 <>
                   <Sparkles className="w-5 h-5" />
-                  <span>确认并开始生成</span>
+                  <span>{t.brandStyle.startGenerate}</span>
                   <ArrowRight className="w-5 h-5" />
                 </>
               )}
@@ -501,7 +503,7 @@ export default function ConfirmPage() {
             ) : (
               <>
                 <Sparkles className="w-5 h-5" />
-                <span>开始生成</span>
+                <span>{t.brandStyle.startGenerate}</span>
                 <ArrowRight className="w-5 h-5" />
               </>
             )}

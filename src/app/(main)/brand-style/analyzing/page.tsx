@@ -42,36 +42,39 @@ export default function AnalyzingPage() {
   const { t } = useTranslation()
   const abortControllerRef = useRef<AbortController | null>(null)
 
-  const [steps, setSteps] = useState<AnalysisStep[]>([
+  // Initialize steps with translations
+  const getInitialSteps = (): AnalysisStep[] => [
     {
       id: 'product-page',
-      title: '分析商品页面',
-      description: '读取网页内容，提取商品图片和品牌信息',
+      title: t.brandStyle.analyzeProductPage,
+      description: t.brandStyle.analyzeProductPageDesc,
       icon: <Globe className="w-5 h-5" />,
       status: 'pending'
     },
     {
       id: 'instagram',
-      title: '分析 Instagram',
-      description: '获取帖子图片，找到最佳模特展示图',
+      title: t.brandStyle.analyzeInstagram,
+      description: t.brandStyle.analyzeInstagramDesc,
       icon: <Instagram className="w-5 h-5" />,
       status: 'pending'
     },
     {
       id: 'video',
-      title: '分析短视频',
-      description: '下载视频并反推创作提示词',
+      title: t.brandStyle.analyzeVideo,
+      description: t.brandStyle.analyzeVideoDesc,
       icon: <Video className="w-5 h-5" />,
       status: 'pending'
     },
     {
       id: 'summary',
-      title: '生成品牌风格摘要',
-      description: '综合分析，提取品牌风格关键词',
+      title: t.brandStyle.generateSummary,
+      description: t.brandStyle.generateSummaryDesc,
       icon: <ImageIcon className="w-5 h-5" />,
       status: 'pending'
     }
-  ])
+  ]
+
+  const [steps, setSteps] = useState<AnalysisStep[]>(getInitialSteps())
 
   const [currentStep, setCurrentStep] = useState(0)
   const currentStepRef = useRef(0) // 用 ref 跟踪当前步骤，避免闭包问题
@@ -301,8 +304,8 @@ export default function AnalyzingPage() {
                 <ArrowLeft className="w-5 h-5 text-zinc-600" />
               </button>
               <div>
-                <h1 className="text-lg font-semibold text-zinc-900">正在分析品牌风格</h1>
-                <p className="text-sm text-zinc-500">请稍候，AI 正在分析您的品牌素材...</p>
+                <h1 className="text-lg font-semibold text-zinc-900">{t.brandStyle.analyzing}</h1>
+                <p className="text-sm text-zinc-500">{t.brandStyle.subtitle}</p>
               </div>
             </div>
           </div>
@@ -315,7 +318,7 @@ export default function AnalyzingPage() {
           >
             <ArrowLeft className="w-5 h-5 text-zinc-600" />
           </button>
-          <span className="font-semibold text-lg ml-2">分析中...</span>
+          <span className="font-semibold text-lg ml-2">{t.brandStyle.analyzing}...</span>
         </div>
       )}
 
