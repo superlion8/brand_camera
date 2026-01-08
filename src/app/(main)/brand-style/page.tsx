@@ -29,9 +29,9 @@ export default function BrandStylePage() {
   const { t } = useTranslation()
 
   // Form state - all hooks must be called before any conditional returns
-  const [productPageUrl, setProductPageUrl] = useState('https://wittmore.com/collections/gramicci/products/gramicci-charcoal-grey-mohair-sweater?variant=42259036897342')
-  const [instagramUrl, setInstagramUrl] = useState('https://www.instagram.com/urbanoutfitters/p/DTDqX4mktXQ/?img_index=5')
-  const [videoUrl, setVideoUrl] = useState('https://www.tiktok.com/@notbrookemonk/video/7455822281110064414?q=urban%20outfitter&t=1767776249851')
+  const [productPageUrl, setProductPageUrl] = useState('')
+  const [instagramUrl, setInstagramUrl] = useState('')
+  const [videoUrl, setVideoUrl] = useState('')
   const [productImage, setProductImage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
