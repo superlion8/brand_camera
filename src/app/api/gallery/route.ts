@@ -89,13 +89,13 @@ export async function GET(request: NextRequest) {
     }
 
     // 查询 generations - 注意数据库字段是 task_type 不是 type
-    // 兼容旧数据：同时检查 output_image_urls 或 image_urls 不为空
+    // 注意：不能在这里用 .or() 因为后面还要加类型过滤的 .or()
+    // 兼容旧数据在数据处理阶段处理
     let query = supabase
       .from('generations')
       .select('*', { count: 'exact' })
       .eq('user_id', userId)
       .is('deleted_at', null)
-      .or('output_image_urls.not.is.null,image_urls.not.is.null')
 
     // 按类型筛选 - 使用 task_type 字段
     const subType = searchParams.get('subType') || ''
