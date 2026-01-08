@@ -1,0 +1,120 @@
+# Brand Camera 项目开发规则
+
+## 新功能开发检查清单
+
+每次开发新功能时，必须检查以下模块是否需要同步修改：
+
+### 1. 💰 计费系统
+- [ ] `src/app/api/quota/reserve/route.ts` - 扣费逻辑
+- [ ] `src/lib/taskTypes.ts` - 任务类型定义（新增类型需要在这里注册）
+- [ ] 确认 credit 消耗规则（图片 1 credit，视频 10 credits）
+
+### 2. 📦 资产管理
+- [ ] `src/app/api/gallery/route.ts` - Gallery API 过滤逻辑（新 task_type 需要添加过滤条件）
+- [ ] `src/app/(main)/gallery/page.tsx` - Gallery 页面 tab 显示
+- [ ] `src/components/shared/GalleryPreloader.tsx` - 预加载配置
+- [ ] 数据库 `generations` 表字段：`output_image_urls`（不是 `image_urls`）
+
+### 3. 🎨 UI 一致性
+- [ ] 使用 `useIsDesktop` hook + `ScreenLoadingGuard` 组件防止页面闪烁
+- [ ] PC Web 和 Mobile Web 双端适配
+- [ ] 底部导航 `BottomNav` 仅在移动端显示
+- [ ] 相机功能仅在移动端可用
+
+### 4. 🌍 国际化
+- [ ] `src/locales/zh.ts` - 中文翻译
+- [ ] `src/locales/en.ts` - 英文翻译  
+- [ ] `src/locales/ko.ts` - 韩文翻译
+- [ ] AI 生成的文本需要根据用户语言设置生成对应语言
+
+### 5. 🧭 导航
+- [ ] `src/components/layouts/Sidebar.tsx` - PC 端侧边栏
+- [ ] 首页入口卡片 `src/app/(main)/app/page.tsx`
+- [ ] 路由：功能页面放在 `src/app/(main)/` 下
+
+### 6. 🔐 认证
+- [ ] 页面需要登录检查
+- [ ] API 路由使用 `requireAuth()` 中间件
+
+### 7. 📝 数据存储
+- [ ] 生成结果保存到 `generations` 表
+- [ ] 使用 `task_type` 字段区分功能类型
+- [ ] 图片上传到 Supabase Storage `generations` bucket
+
+---
+
+## 项目架构概览
+
+```
+src/
+├── app/
+│   ├── page.tsx              # Landing Page (未登录)
+│   ├── (main)/               # 需要登录的页面
+│   │   ├── app/page.tsx      # App 首页
+│   │   ├── gallery/          # 作品集
+│   │   ├── brand-style/      # Clone Brand Style
+│   │   ├── camera/           # 拍照功能
+│   │   └── ...
+│   └── api/                  # API 路由
+│       ├── quota/            # 计费
+│       ├── gallery/          # 作品集
+│       └── brand-style/      # Brand Style APIs
+├── components/
+│   ├── layouts/              # 布局组件
+│   ├── shared/               # 共享组件
+│   └── ui/                   # UI 组件
+├── lib/
+│   └── taskTypes.ts          # 任务类型定义（重要！）
+├── stores/                   # Zustand 状态管理
+└── locales/                  # 国际化
+```
+
+## 任务类型注册流程
+
+新增功能类型时，必须在以下位置注册：
+
+1. **`src/lib/taskTypes.ts`**
+```typescript
+export const TaskTypes = {
+  // ... existing
+  NEW_TYPE: 'new_type',
+} as const
+
+// 添加判断函数
+export function isNewType(type?: string): boolean {
+  return getCanonicalType(type) === TaskTypes.NEW_TYPE
+}
+```
+
+2. **`src/app/api/gallery/route.ts`** - 添加过滤条件
+```typescript
+} else if (type === 'newtab') {
+  query = query.or('task_type.eq.new_type')
+}
+```
+
+3. **`src/app/(main)/gallery/page.tsx`** - 添加 tab（如需要）
+
+---
+
+## 常见问题
+
+### Q: 图片在 Gallery 中不显示？
+检查：
+1. 保存时使用 `output_image_urls` 字段（不是 `image_urls`）
+2. `task_type` 已在 `gallery/route.ts` 中添加过滤条件
+3. GalleryPreloader 中包含该 tab
+
+### Q: 页面进入时闪烁/刷新？
+使用 `useIsDesktop` + `ScreenLoadingGuard`：
+```tsx
+const { isDesktop } = useIsDesktop()
+return (
+  <ScreenLoadingGuard>
+    {/* 页面内容 */}
+  </ScreenLoadingGuard>
+)
+```
+
+### Q: 切换 tab 时重新请求？
+检查 `GalleryPreloader.tsx` 是否包含该 tab 的预加载配置
