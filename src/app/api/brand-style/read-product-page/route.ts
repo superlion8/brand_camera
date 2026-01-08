@@ -138,19 +138,74 @@ async function analyzeImages(images: string[]): Promise<{
   const imageParts = await Promise.all(
     imagesToAnalyze.map(async (url, index) => {
       try {
-        console.log(`[Brand Style] Loading image ${index}:`, url.slice(0, 80))
-        const response = await fetch(url)
-        if (!response.ok) return null
+        console.log(`[Brand Style] Loading image ${index}:`, url.slice(0, 100))
+        
+        // Add headers to mimic browser request
+        const response = await fetch(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+            'Referer': new URL(url).origin + '/',
+          },
+          cache: 'no-store',
+        })
+        
+        if (!response.ok) {
+          console.log(`[Brand Style] Image ${index} fetch failed: ${response.status}`)
+          return null
+        }
+        
+        const contentType = response.headers.get('content-type') || ''
+        
+        // Validate that response is actually an image
+        if (!contentType.startsWith('image/')) {
+          console.log(`[Brand Style] Image ${index} has non-image content-type: ${contentType}`)
+          return null
+        }
+        
         const buffer = await response.arrayBuffer()
+        
+        // Check buffer size - skip if too small (likely error page) or too large
+        if (buffer.byteLength < 1000) {
+          console.log(`[Brand Style] Image ${index} too small (${buffer.byteLength} bytes), skipping`)
+          return null
+        }
+        if (buffer.byteLength > 10 * 1024 * 1024) {
+          console.log(`[Brand Style] Image ${index} too large (${buffer.byteLength} bytes), skipping`)
+          return null
+        }
+        
+        // Check for common image magic bytes
+        const bytes = new Uint8Array(buffer.slice(0, 4))
+        const isJpeg = bytes[0] === 0xFF && bytes[1] === 0xD8
+        const isPng = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47
+        const isGif = bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46
+        const isWebp = bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46
+        
+        if (!isJpeg && !isPng && !isGif && !isWebp) {
+          console.log(`[Brand Style] Image ${index} has invalid magic bytes, skipping`)
+          return null
+        }
+        
         const base64 = Buffer.from(buffer).toString('base64')
-        const mimeType = response.headers.get('content-type') || 'image/jpeg'
+        
+        // Determine correct mime type based on magic bytes
+        let mimeType = contentType
+        if (isJpeg) mimeType = 'image/jpeg'
+        else if (isPng) mimeType = 'image/png'
+        else if (isGif) mimeType = 'image/gif'
+        else if (isWebp) mimeType = 'image/webp'
+        
+        console.log(`[Brand Style] Image ${index} loaded successfully: ${mimeType}, ${buffer.byteLength} bytes`)
+        
         return {
           inlineData: {
             mimeType,
             data: base64
           }
         }
-      } catch {
+      } catch (err) {
+        console.log(`[Brand Style] Image ${index} error:`, (err as Error).message)
         return null
       }
     })
@@ -158,8 +213,10 @@ async function analyzeImages(images: string[]): Promise<{
   
   const validImageParts = imageParts.filter(p => p !== null)
   
+  console.log(`[Brand Style] Successfully loaded ${validImageParts.length} of ${imagesToAnalyze.length} images`)
+  
   if (validImageParts.length === 0) {
-    throw new Error('Failed to load any images')
+    throw new Error('无法加载页面图片，该网站可能有图片防盗链保护。请尝试其他品牌网站')
   }
 
   const prompt = `你是一位时尚电商专家。这些是一个商品详情页的图片（按页面顺序排列，索引0是最先出现的）。
