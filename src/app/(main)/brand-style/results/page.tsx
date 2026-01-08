@@ -51,16 +51,6 @@ interface Results {
   originals?: Originals
 }
 
-// Helper to proxy Instagram CDN images (bypass referrer restrictions)
-function getProxiedUrl(url: string | undefined): string {
-  if (!url) return ''
-  // Only proxy Instagram CDN images
-  if (url.includes('cdninstagram.com') || url.includes('fbcdn.net')) {
-    return `/api/image-proxy?url=${encodeURIComponent(url)}`
-  }
-  return url
-}
-
 export default function ResultsPage() {
   const router = useRouter()
   const isMobile = useIsMobile(1024)
