@@ -21,7 +21,8 @@ import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
-import { useIsMobile } from "@/hooks/useIsMobile"
+import { useIsDesktop } from "@/hooks/useIsMobile"
+import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 
 // Helper to map API error codes to translated messages
 const getErrorMessage = (error: string, t: any): string => {
@@ -136,8 +137,7 @@ function StudioPageContent() {
   const webcamRef = useRef<Webcam>(null)
   
   // Device detection
-  const isMobile = useIsMobile(1024)
-  const isDesktop = isMobile === false
+  const { isDesktop, isMobile, isLoading: screenLoading } = useIsDesktop(1024)
   
   const [mode, setMode] = useState<StudioMode>('main')
   const modeRef = useRef(mode) // Ref to track latest mode for async callbacks
@@ -732,6 +732,11 @@ function StudioPageContent() {
     </div>
   )
   
+  // 防止 hydration 闪烁
+  if (screenLoading) {
+    return <ScreenLoadingGuard><div /></ScreenLoadingGuard>
+  }
+
   return (
     <div className={`h-full flex flex-col ${isDesktop ? 'bg-zinc-50' : 'bg-zinc-50'}`}>
       {/* Header - simplified for PC since TopNav exists */}

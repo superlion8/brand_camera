@@ -17,7 +17,8 @@ import { useSettingsStore } from "@/stores/settingsStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { Asset } from "@/types"
-import { useIsMobile } from "@/hooks/useIsMobile"
+import { useIsDesktop } from "@/hooks/useIsMobile"
+import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 
 // Steps
 type Step = 'upload' | 'generating' | 'result'
@@ -41,8 +42,7 @@ export default function ReferenceShotPage() {
   const { addTask, initImageSlots, updateImageSlot, updateTaskStatus, removeTask } = useGenerationTaskStore()
   
   // Device detection
-  const isMobile = useIsMobile(1024)
-  const isDesktop = isMobile === false
+  const { isDesktop, isMobile, isLoading: screenLoading } = useIsDesktop(1024)
   
   // Step state
   const [step, setStep] = useState<Step>('upload')
@@ -400,6 +400,11 @@ export default function ReferenceShotPage() {
   // Check if iOS for share button
   const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)
   
+  // 防止 hydration 闪烁
+  if (screenLoading) {
+    return <ScreenLoadingGuard><div /></ScreenLoadingGuard>
+  }
+
   return (
     <div className="min-h-screen bg-zinc-50">
       {/* Header */}

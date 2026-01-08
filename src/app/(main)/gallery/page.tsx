@@ -26,7 +26,8 @@ import {
   isBrandStyleType as isBrandStyleTypeRaw
 } from "@/lib/taskTypes"
 import { useGalleryStore, getCacheKey } from "@/stores/galleryStore"
-import { useIsMobile } from "@/hooks/useIsMobile"
+import { useIsDesktop } from "@/hooks/useIsMobile"
+import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 
 type TabType = "all" | "model" | "product" | "group" | "reference" | "brand" | "favorites"
 type ModelSubType = "all" | "buyer" | "prostudio" | "create_model" | "social" | "lifestyle"  // 买家秀 / 专业棚拍 / 创建专属模特 / 社媒种草 / LifeStyle 街拍
@@ -64,8 +65,7 @@ export default function GalleryPage() {
   const router = useRouter()
   
   // Device detection
-  const isMobile = useIsMobile(1024)
-  const isDesktop = isMobile === false
+  const { isDesktop, isMobile, isLoading: screenLoading } = useIsDesktop(1024)
   
   const [activeTab, setActiveTab] = useState<TabType>("all")
   const [modelSubType, setModelSubType] = useState<ModelSubType>("all")  // 模特二级分类
@@ -230,14 +230,74 @@ export default function GalleryPage() {
     }
   }
   
-  // 当 tab 切换、二级分类切换或用户登录时加载数据（优先使用缓存）
+  // 预加载所有 tab 的数据（进入页面时一次性并行加载）
+  const preloadAllTabs = async () => {
+    if (!user) return
+    
+    // 所有需要预加载的 tab
+    const tabsToPreload = [
+      { tab: 'all', subType: '' },
+      { tab: 'model', subType: 'buyer' },
+      { tab: 'model', subType: 'prostudio' },
+      { tab: 'model', subType: 'lifestyle' },
+      { tab: 'product', subType: '' },
+      { tab: 'group', subType: '' },
+      { tab: 'reference', subType: '' },
+      { tab: 'brand', subType: '' },
+    ]
+    
+    // 并行预加载（静默加载，不影响当前 tab 的显示）
+    const preloadPromises = tabsToPreload.map(async ({ tab, subType }) => {
+      const cacheKey = tab === 'model' ? `${tab}_${subType}` : tab
+      
+      // 如果已有缓存，跳过
+      if (getCache(cacheKey)) return
+      
+      try {
+        const response = await fetch(`/api/gallery?type=${tab}&page=1&subType=${subType}`, {
+          cache: 'no-store',
+        })
+        const result = await response.json()
+        
+        if (result.success) {
+          setCache(cacheKey, {
+            items: result.data.items,
+            hasMore: result.data.hasMore,
+            currentPage: 1,
+            pendingTasks: result.data.pendingTasks || [],
+            fetchedAt: Date.now(),
+          })
+          console.log(`[Gallery] Preloaded ${cacheKey}: ${result.data.items.length} items`)
+        }
+      } catch (error) {
+        console.error(`[Gallery] Failed to preload ${cacheKey}:`, error)
+      }
+    })
+    
+    // 等待所有预加载完成（静默）
+    await Promise.allSettled(preloadPromises)
+  }
+  
+  // 首次加载时预加载所有 tab
+  const hasPreloadedRef = useRef(false)
   useEffect(() => {
-    if (user) {
+    if (user && !hasPreloadedRef.current) {
+      hasPreloadedRef.current = true
+      // 先加载当前 tab，然后后台预加载其他 tab
+      fetchGalleryData(1, false, false).then(() => {
+        preloadAllTabs()
+      })
+    }
+  }, [user])
+  
+  // 当 tab 切换、二级分类切换时加载数据（优先使用缓存，预加载后应该命中缓存）
+  useEffect(() => {
+    if (user && hasPreloadedRef.current) {
       // 不在这里设置 loading，让 fetchGalleryData 自己管理
-      // 这样缓存命中时不会出现 loading 闪烁
+      // 预加载后应该命中缓存，切换 tab 瞬间完成
       fetchGalleryData(1, false, false)
     }
-  }, [activeTab, modelSubType, user])
+  }, [activeTab, modelSubType])
   
   // 任务完成时，本地 append 到 galleryItems（不再定时刷新）
   useEffect(() => {
@@ -894,6 +954,11 @@ export default function GalleryPage() {
     { id: "favorites", label: t.gallery.favorites, icon: <Heart className="w-3.5 h-3.5" /> },
   ]
   
+  // 防止 hydration 闪烁
+  if (screenLoading) {
+    return <ScreenLoadingGuard><div /></ScreenLoadingGuard>
+  }
+
   return (
     <div className="h-full flex flex-col bg-zinc-50">
       {/* Header */}

@@ -18,14 +18,13 @@ import {
   Loader2
 } from 'lucide-react'
 import Image from 'next/image'
-import { useIsMobile } from '@/hooks/useIsMobile'
+import { useIsDesktop } from '@/hooks/useIsMobile'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useTranslation } from '@/stores/languageStore'
 
 export default function BrandStylePage() {
   const router = useRouter()
-  const isMobile = useIsMobile(1024)
-  const isDesktop = isMobile === false
+  const { isDesktop, isLoading: screenLoading } = useIsDesktop(1024)
   const { user, isLoading: authLoading } = useAuth()
   const { t } = useTranslation()
 
@@ -44,7 +43,7 @@ export default function BrandStylePage() {
   }, [user, authLoading, router])
 
   // 显示加载状态（等待 auth 和 isMobile 都确定后再渲染，避免闪烁）
-  if (authLoading || !user || isMobile === null) {
+  if (authLoading || !user || screenLoading) {
     return (
       <div className="h-full flex items-center justify-center bg-zinc-50">
         <div className="flex flex-col items-center gap-3">

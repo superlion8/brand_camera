@@ -183,13 +183,14 @@ async function analyzeVideoFallback(url: string): Promise<string> {
 
 export async function POST(request: NextRequest) {
   try {
-    const { url } = await request.json()
+    const { url, language = 'zh' } = await request.json()
     
     if (!url) {
       return NextResponse.json({ error: 'URL is required' }, { status: 400 })
     }
 
-    console.log('[Brand Style] Analyzing video:', url)
+    console.log('[Brand Style] Analyzing video:', url, 'Language:', language)
+    // Note: Video prompt is always in English for Sora compatibility
     
     let prompt: string
     

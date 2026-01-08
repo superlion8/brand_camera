@@ -13,7 +13,8 @@ import { useAssetStore } from "@/stores/assetStore"
 import { createClient } from "@/lib/supabase/client"
 import { useTranslation } from "@/stores/languageStore"
 import { generateId } from "@/lib/utils"
-import { useIsMobile } from "@/hooks/useIsMobile"
+import { useIsDesktop } from "@/hooks/useIsMobile"
+import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 
 // 创建模式类型
 type CreateMode = 'reference' | 'selector' | null
@@ -97,8 +98,7 @@ export default function ModelCreatePage() {
   const [uploadProgress, setUploadProgress] = useState<number>(0)
   
   // Device detection
-  const isMobile = useIsMobile(1024)
-  const isDesktop = isMobile === false
+  const { isDesktop, isMobile, isLoading: screenLoading } = useIsDesktop(1024)
   
   // 页面状态
   const [pageState, setPageState] = useState<PageState>('mode-select')
@@ -584,6 +584,11 @@ export default function ModelCreatePage() {
     }
   }
   
+  // 防止 hydration 闪烁
+  if (screenLoading) {
+    return <ScreenLoadingGuard><div /></ScreenLoadingGuard>
+  }
+
   // 加载中
   if (isCheckingAuth) {
     return (

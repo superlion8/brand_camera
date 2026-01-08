@@ -26,6 +26,21 @@ export function useIsMobile(breakpoint: number = 768): boolean | null {
 }
 
 /**
+ * Hook to detect if the current device is desktop
+ * Returns { isDesktop, isLoading } to properly handle SSR
+ * @param breakpoint - The breakpoint in pixels (default: 1024)
+ */
+export function useIsDesktop(breakpoint: number = 1024) {
+  const isMobile = useIsMobile(breakpoint)
+  
+  return {
+    isDesktop: isMobile === false,
+    isLoading: isMobile === null,
+    isMobile: isMobile === true,
+  }
+}
+
+/**
  * Hook to detect screen size category
  */
 export function useScreenSize() {

@@ -6,7 +6,8 @@ import { Wand2, Lightbulb, Home, ChevronRight, Palette, Sparkles } from "lucide-
 import { useRouter } from "next/navigation"
 import { useLanguageStore } from "@/stores/languageStore"
 import { motion } from "framer-motion"
-import { useIsMobile } from "@/hooks/useIsMobile"
+import { useIsDesktop } from "@/hooks/useIsMobile"
+import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 
 // Tool Card Component - 参考 Bcamui 设计
 interface ToolCardProps {
@@ -71,8 +72,7 @@ export default function EditHubPage() {
   const t = useLanguageStore(state => state.t)
   
   // Device detection
-  const isMobile = useIsMobile(1024)
-  const isDesktop = isMobile === false
+  const { isDesktop, isLoading: screenLoading } = useIsDesktop(1024)
   
   // Feature cards with translations
   const FEATURE_CARDS = [
@@ -114,6 +114,10 @@ export default function EditHubPage() {
     },
   ]
 
+  // 防止 hydration 闪烁
+  if (screenLoading) {
+    return <ScreenLoadingGuard><div /></ScreenLoadingGuard>
+  }
   
   return (
     <div className="h-full flex flex-col bg-zinc-50">

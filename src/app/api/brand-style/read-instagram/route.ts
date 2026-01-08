@@ -378,11 +378,14 @@ async function findBestModelImage(images: string[]): Promise<string> {
 
 export async function POST(request: NextRequest) {
   try {
-    const { url } = await request.json()
+    const { url, language = 'zh' } = await request.json()
     
     if (!url) {
       return NextResponse.json({ error: 'URL is required' }, { status: 400 })
     }
+
+    console.log('[Instagram] Language:', language)
+    // Note: Instagram scraping doesn't generate text content, language param reserved for future use
 
     // Parse img_index from URL if present (Instagram carousel images use ?img_index=N)
     // e.g., https://www.instagram.com/halara_official/p/DTGEPAYEg7Y/?img_index=5

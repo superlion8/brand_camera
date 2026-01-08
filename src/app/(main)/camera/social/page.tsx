@@ -24,7 +24,8 @@ import { BottomNav } from "@/components/shared/BottomNav"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
-import { useIsMobile } from "@/hooks/useIsMobile"
+import { useIsDesktop } from "@/hooks/useIsMobile"
+import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 
 // Helper to map API error codes to translated messages
 const getErrorMessage = (error: string, t: any): string => {
@@ -81,8 +82,7 @@ function SocialPageContent() {
   const bgUploadRef = useRef<HTMLInputElement>(null)
   
   // Device detection
-  const isMobile = useIsMobile(1024)
-  const isDesktop = isMobile === false
+  const { isDesktop, isMobile, isLoading: screenLoading } = useIsDesktop(1024)
   
   // Mode and state
   const [mode, setMode] = useState<SocialMode>("camera")
@@ -815,6 +815,11 @@ function SocialPageContent() {
     )
   }
   
+  // 防止 hydration 闪烁
+  if (screenLoading) {
+    return <ScreenLoadingGuard><div /></ScreenLoadingGuard>
+  }
+
   return (
     <div className={`h-full relative flex flex-col ${isDesktop ? 'bg-zinc-50' : 'bg-black'}`}>
       <input 

@@ -390,7 +390,7 @@ ${imageList}
 }
 
 // Step 2: Load images and use VLM to select best model/product images
-async function analyzeImages(imageUrls: string[]): Promise<{
+async function analyzeImages(imageUrls: string[], language: string = 'zh'): Promise<{
   images: string[]
   modelImage: string | null
   productImage: string | null
@@ -472,20 +472,23 @@ async function analyzeImages(imageUrls: string[]): Promise<{
     throw new Error('无法加载商品图片，该网站可能有图片防盗链保护')
   }
 
-  // VLM analysis
-  const prompt = `你是时尚电商专家。这些是商品详情页的主商品图片。
+  // VLM analysis - use language-specific instructions
+  const langInstructions = getLanguageInstructions(language)
+  const prompt = `You are a fashion e-commerce expert. These are product detail page images.
 
-请分析并选出：
-1. **最佳模特图** (modelImageIndex): 模特穿着/展示商品的图片，选最清晰的正面图
-2. **最佳商品图** (productImageIndex): 纯商品图（无模特），如果有的话
-3. **品牌风格**: 分析品牌视觉风格
+Please analyze and select:
+1. **Best Model Image** (modelImageIndex): Image showing a model wearing/displaying the product, choose the clearest front-facing one
+2. **Best Product Image** (productImageIndex): Pure product image (no model), if available
+3. **Brand Style**: Analyze the brand's visual style
 
-输出 JSON：
+IMPORTANT: Output brandSummary and brandKeywords in ${langInstructions.outputLang} language.
+
+Output JSON:
 {
-  "modelImageIndex": 0-${loadedImages.length - 1} 或 -1,
-  "productImageIndex": 0-${loadedImages.length - 1} 或 -1,
-  "brandSummary": "品牌风格描述（50字内）",
-  "brandKeywords": ["关键词1", "关键词2", "关键词3"]
+  "modelImageIndex": 0-${loadedImages.length - 1} or -1,
+  "productImageIndex": 0-${loadedImages.length - 1} or -1,
+  "brandSummary": "${langInstructions.exampleSummary}",
+  "brandKeywords": ${JSON.stringify(langInstructions.exampleKeywords)}
 }`
 
   const result = await genAI.models.generateContent({
@@ -531,15 +534,39 @@ async function analyzeImages(imageUrls: string[]): Promise<{
   }
 }
 
+// Get language-specific prompt instructions
+function getLanguageInstructions(language: string): { outputLang: string, exampleSummary: string, exampleKeywords: string[] } {
+  switch (language) {
+    case 'en':
+      return {
+        outputLang: 'English',
+        exampleSummary: 'Brand style description (within 50 words)',
+        exampleKeywords: ['keyword1', 'keyword2', 'keyword3']
+      }
+    case 'ko':
+      return {
+        outputLang: 'Korean',
+        exampleSummary: '브랜드 스타일 설명 (50자 이내)',
+        exampleKeywords: ['키워드1', '키워드2', '키워드3']
+      }
+    default: // zh
+      return {
+        outputLang: 'Chinese',
+        exampleSummary: '品牌风格描述（50字内）',
+        exampleKeywords: ['关键词1', '关键词2', '关键词3']
+      }
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const { url } = await request.json()
+    const { url, language = 'zh' } = await request.json()
     
     if (!url) {
       return NextResponse.json({ error: 'URL is required' }, { status: 400 })
     }
 
-    console.log('[Brand Style] Reading product page:', url)
+    console.log('[Brand Style] Reading product page:', url, 'Language:', language)
     
     let imageUrls: string[] = []
     let pageContent = ''
@@ -572,7 +599,7 @@ export async function POST(request: NextRequest) {
 
     // Step 4: Load images and analyze with VLM
     console.log('[Brand Style] Loading and analyzing images...')
-    const analysis = await analyzeImages(imageUrls)
+    const analysis = await analyzeImages(imageUrls, language)
     console.log('[Brand Style] Analysis complete')
 
     return NextResponse.json({

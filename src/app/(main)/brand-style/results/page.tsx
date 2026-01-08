@@ -17,7 +17,8 @@ import {
   ChevronRight
 } from 'lucide-react'
 import Image from 'next/image'
-import { useIsMobile } from '@/hooks/useIsMobile'
+import { useIsDesktop } from '@/hooks/useIsMobile'
+import { ScreenLoadingGuard } from '@/components/ui/ScreenLoadingGuard'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 import { useTranslation } from '@/stores/languageStore'
 
@@ -53,8 +54,7 @@ interface Results {
 
 export default function ResultsPage() {
   const router = useRouter()
-  const isMobile = useIsMobile(1024)
-  const isDesktop = isMobile === false
+  const { isDesktop, isLoading: screenLoading } = useIsDesktop(1024)
   const { t } = useTranslation()
 
   const [results, setResults] = useState<Results | null>(null)
@@ -328,6 +328,11 @@ export default function ResultsPage() {
       </div>
     </motion.div>
   )
+
+  // 防止 hydration 闪烁
+  if (screenLoading) {
+    return <ScreenLoadingGuard><div /></ScreenLoadingGuard>
+  }
 
   return (
     <div className="h-full flex flex-col bg-zinc-50">

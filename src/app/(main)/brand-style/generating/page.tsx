@@ -13,7 +13,8 @@ import {
   ZoomIn
 } from 'lucide-react'
 import Image from 'next/image'
-import { useIsMobile } from '@/hooks/useIsMobile'
+import { useIsDesktop } from '@/hooks/useIsMobile'
+import { ScreenLoadingGuard } from '@/components/ui/ScreenLoadingGuard'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 import { useTranslation } from '@/stores/languageStore'
 
@@ -27,8 +28,7 @@ interface GenerationTask {
 
 export default function GeneratingPage() {
   const router = useRouter()
-  const isMobile = useIsMobile(1024)
-  const isDesktop = isMobile === false
+  const { isDesktop, isLoading: screenLoading } = useIsDesktop(1024)
   const { t } = useTranslation()
 
   const [tasks, setTasks] = useState<GenerationTask[]>([])
@@ -281,6 +281,11 @@ export default function GeneratingPage() {
       'video': t.brandStyle.ugcVideo,
     }
     return titleMap[taskId] || taskId
+  }
+
+  // 防止 hydration 闪烁
+  if (screenLoading) {
+    return <ScreenLoadingGuard><div /></ScreenLoadingGuard>
   }
 
   return (

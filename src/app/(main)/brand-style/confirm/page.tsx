@@ -18,7 +18,8 @@ import {
   RefreshCw
 } from 'lucide-react'
 import Image from 'next/image'
-import { useIsMobile } from '@/hooks/useIsMobile'
+import { useIsDesktop } from '@/hooks/useIsMobile'
+import { ScreenLoadingGuard } from '@/components/ui/ScreenLoadingGuard'
 import { useTranslation } from '@/stores/languageStore'
 
 interface AnalysisData {
@@ -58,8 +59,7 @@ function getProxiedUrl(url: string | undefined): string {
 
 export default function ConfirmPage() {
   const router = useRouter()
-  const isMobile = useIsMobile(1024)
-  const isDesktop = isMobile === false
+  const { isDesktop, isLoading: screenLoading } = useIsDesktop(1024)
   const { t } = useTranslation()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -181,6 +181,11 @@ export default function ConfirmPage() {
       return analysisData?.instagram?.images || []
     }
     return []
+  }
+
+  // 防止 hydration 闪烁
+  if (screenLoading) {
+    return <ScreenLoadingGuard><div /></ScreenLoadingGuard>
   }
 
   return (

@@ -10,7 +10,8 @@ import {
 import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import { fileToBase64, generateId, ensureBase64 } from "@/lib/utils"
-import { useIsMobile } from "@/hooks/useIsMobile"
+import { useIsDesktop } from "@/hooks/useIsMobile"
+import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 import { useLanguageStore } from "@/stores/languageStore"
 import { ProductCategory } from "@/types/outfit"
 import { usePresetStore } from "@/stores/presetStore"
@@ -244,8 +245,7 @@ function OutfitPageContent() {
   const [customBgs, setCustomBgs] = useState<Asset[]>([])
   
   // Desktop detection
-  const isMobile = useIsMobile(1024)
-  const isDesktop = isMobile === false
+  const { isDesktop, isMobile, isLoading: screenLoading } = useIsDesktop(1024)
   
   // 数据库 UUID，用于收藏功能
   const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
@@ -1530,6 +1530,11 @@ function OutfitPageContent() {
         )}
       </button>
     )
+  }
+
+  // 防止 hydration 闪烁
+  if (screenLoading) {
+    return <ScreenLoadingGuard><div /></ScreenLoadingGuard>
   }
 
   // Mobile Layout (original)

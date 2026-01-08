@@ -12,7 +12,8 @@ import { usePresetStore } from "@/stores/presetStore"
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
 import { motion, AnimatePresence } from "framer-motion"
 import { useLanguageStore } from "@/stores/languageStore"
-import { useIsMobile } from "@/hooks/useIsMobile"
+import { useIsDesktop } from "@/hooks/useIsMobile"
+import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 
 type SourceTab = "user" | "preset"
 type ModelSubTab = "normal" | "studio"
@@ -39,8 +40,7 @@ export default function BrandAssetsPage() {
   const t = useLanguageStore(state => state.t)
   
   // Device detection
-  const isMobile = useIsMobile(1024)
-  const isDesktop = isMobile === false
+  const { isDesktop, isMobile, isLoading: screenLoading } = useIsDesktop(1024)
   
   // Type tabs with translated labels
   const typeTabs = [
@@ -239,6 +239,11 @@ export default function BrandAssetsPage() {
     )
   }
   
+  // 防止 hydration 闪烁
+  if (screenLoading) {
+    return <ScreenLoadingGuard><div /></ScreenLoadingGuard>
+  }
+
   return (
     <div className="h-full flex flex-col bg-zinc-50">
       <input

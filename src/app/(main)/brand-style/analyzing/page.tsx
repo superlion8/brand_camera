@@ -16,9 +16,10 @@ import {
   ZoomIn
 } from 'lucide-react'
 import Image from 'next/image'
-import { useIsMobile } from '@/hooks/useIsMobile'
+import { useIsDesktop } from '@/hooks/useIsMobile'
+import { ScreenLoadingGuard } from '@/components/ui/ScreenLoadingGuard'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
-import { useTranslation } from '@/stores/languageStore'
+import { useTranslation, useLanguageStore } from '@/stores/languageStore'
 
 interface AnalysisStep {
   id: string
@@ -37,9 +38,8 @@ interface AnalysisStep {
 
 export default function AnalyzingPage() {
   const router = useRouter()
-  const isMobile = useIsMobile(1024)
-  const isDesktop = isMobile === false
-  const { t } = useTranslation()
+  const { isDesktop, isLoading: screenLoading } = useIsDesktop(1024)
+  const { t, language } = useTranslation()
   const abortControllerRef = useRef<AbortController | null>(null)
 
   // Initialize steps with translations
@@ -137,7 +137,7 @@ export default function AnalyzingPage() {
         const productPageRes = await fetch('/api/brand-style/read-product-page', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: inputData.productPageUrl }),
+          body: JSON.stringify({ url: inputData.productPageUrl, language }),
           signal
         })
         
@@ -167,7 +167,7 @@ export default function AnalyzingPage() {
         const instagramRes = await fetch('/api/brand-style/read-instagram', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: inputData.instagramUrl }),
+          body: JSON.stringify({ url: inputData.instagramUrl, language }),
           signal
         })
         
@@ -196,7 +196,7 @@ export default function AnalyzingPage() {
         const videoRes = await fetch('/api/brand-style/analyze-video', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: inputData.videoUrl }),
+          body: JSON.stringify({ url: inputData.videoUrl, language }),
           signal
         })
         
@@ -229,7 +229,8 @@ export default function AnalyzingPage() {
         body: JSON.stringify({
           productPageData: productPageData || null,
           instagramData: instagramData || null,
-          videoData: videoData || null
+          videoData: videoData || null,
+          language
         }),
         signal
       })
@@ -313,6 +314,11 @@ export default function AnalyzingPage() {
 
   const completedCount = steps.filter(s => s.status === 'completed').length
   const progress = (completedCount / steps.length) * 100
+
+  // 防止 hydration 闪烁
+  if (screenLoading) {
+    return <ScreenLoadingGuard><div /></ScreenLoadingGuard>
+  }
 
   return (
     <div className="h-full flex flex-col bg-zinc-50">

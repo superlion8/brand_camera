@@ -12,7 +12,8 @@ import { UserMenu } from "@/components/shared/UserMenu"
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher"
 import { QuotaIndicator } from "@/components/shared/QuotaIndicator"
 import { SyncIndicator } from "@/components/shared/SyncIndicator"
-import { useIsMobile } from "@/hooks/useIsMobile"
+import { useIsDesktop } from "@/hooks/useIsMobile"
+import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 
 // Supabase Storage base URL for homepage images
 const HOMEPAGE_STORAGE_URL = 'https://cvdogeigbpussfamctsu.supabase.co/storage/v1/object/public/presets/homepage'
@@ -267,7 +268,7 @@ export default function HomePage() {
   const { generations, _hasHydrated } = useAssetStore()
   const { reset: resetModelCreate } = useModelCreateStore()
   const { t } = useTranslation()
-  const isMobile = useIsMobile(1024)
+  const { isDesktop, isMobile, isLoading } = useIsDesktop(1024)
 
   // Get recent generations (last 4 for mobile, last 8 for desktop)
   const recentGenerations = generations.slice(0, isMobile ? 4 : 8)
@@ -278,7 +279,10 @@ export default function HomePage() {
     router.push('/model-create')
   }
 
-  const isDesktop = isMobile === false
+  // 防止 hydration 闪烁
+  if (isLoading) {
+    return <ScreenLoadingGuard><div /></ScreenLoadingGuard>
+  }
 
   return (
     <motion.div 

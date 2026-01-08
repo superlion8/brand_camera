@@ -20,7 +20,8 @@ import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { useSettingsStore } from "@/stores/settingsStore"
 import { Suspense } from "react"
-import { useIsMobile } from "@/hooks/useIsMobile"
+import { useIsDesktop } from "@/hooks/useIsMobile"
+import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 import { 
   isModelType as isBuyerShowType,  // 买家秀 (model_studio)
   isProStudioType,                  // 专业棚拍 (pro_studio)
@@ -49,8 +50,7 @@ function GroupShootPageContent() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   // Device detection
-  const isMobile = useIsMobile(1024)
-  const isDesktop = isMobile === false
+  const { isDesktop, isMobile, isLoading: screenLoading } = useIsDesktop(1024)
   
   // State
   const [mode, setMode] = useState<PageMode>("main")
@@ -336,6 +336,11 @@ function GroupShootPageContent() {
   }, [])
 
   const numImages = GROUP_NUM_IMAGES  // 固定4张图
+
+  // 防止 hydration 闪烁
+  if (screenLoading) {
+    return <ScreenLoadingGuard><div /></ScreenLoadingGuard>
+  }
 
   return (
     <div className="h-full relative flex flex-col bg-zinc-50">

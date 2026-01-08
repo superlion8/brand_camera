@@ -25,7 +25,8 @@ import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { useSettingsStore } from "@/stores/settingsStore"
-import { useIsMobile } from "@/hooks/useIsMobile"
+import { useIsDesktop } from "@/hooks/useIsMobile"
+import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 
 type PageMode = "camera" | "review" | "processing" | "results"
 
@@ -274,8 +275,7 @@ function ProStudioPageContent() {
   
   
   // Device detection
-  const isMobile = useIsMobile(1024)
-  const isDesktop = isMobile === false
+  const { isDesktop, isMobile, isLoading: screenLoading } = useIsDesktop(1024)
   
   // State
   const [mode, setMode] = useState<PageMode>("camera")
@@ -836,6 +836,11 @@ function ProStudioPageContent() {
         </div>
       </div>
     )
+  }
+
+  // 防止 hydration 闪烁
+  if (screenLoading) {
+    return <ScreenLoadingGuard><div /></ScreenLoadingGuard>
   }
 
   return (

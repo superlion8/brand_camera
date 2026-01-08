@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 const PAGE_SIZE = 20
 
 // 图库数据类型筛选
-type GalleryType = 'all' | 'model' | 'product' | 'group' | 'reference' | 'favorites'
+type GalleryType = 'all' | 'model' | 'product' | 'group' | 'reference' | 'brand' | 'favorites'
 
 export async function GET(request: NextRequest) {
   // 检查认证
@@ -131,6 +131,9 @@ export async function GET(request: NextRequest) {
     } else if (type === 'reference') {
       // 参考图拍摄 - 独立分类
       query = query.or('task_type.eq.reference_shot')
+    } else if (type === 'brand') {
+      // Clone Brand Style - 独立分类
+      query = query.or('task_type.eq.brand_style')
     }
 
     const { data: generations, error: genError, count: genCount } = await query

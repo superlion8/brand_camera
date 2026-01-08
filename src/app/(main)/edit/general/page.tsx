@@ -15,7 +15,8 @@ import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
-import { useIsMobile } from "@/hooks/useIsMobile"
+import { useIsDesktop } from "@/hooks/useIsMobile"
+import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 
 // Helper to map API error codes to translated messages
 const getErrorMessage = (error: string, t: any): string => {
@@ -33,8 +34,7 @@ export default function GeneralEditPage() {
   const webcamRef = useRef<Webcam>(null)
   
   // Device detection
-  const isMobile = useIsMobile(1024)
-  const isDesktop = isMobile === false
+  const { isDesktop, isMobile, isLoading: screenLoading } = useIsDesktop(1024)
   
   // Multi-image support: array of up to 5 images
   const MAX_IMAGES = 5
@@ -377,6 +377,11 @@ export default function GeneralEditPage() {
     setActiveImageSlot(0)
   }
   
+  // 防止 hydration 闪烁
+  if (screenLoading) {
+    return <ScreenLoadingGuard><div /></ScreenLoadingGuard>
+  }
+
   return (
     <div className="h-full flex flex-col bg-zinc-50">
       {/* Header */}

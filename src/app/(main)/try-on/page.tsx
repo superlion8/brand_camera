@@ -17,7 +17,8 @@ import { useLanguageStore } from "@/stores/languageStore"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
-import { useIsMobile } from "@/hooks/useIsMobile"
+import { useIsDesktop } from "@/hooks/useIsMobile"
+import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 
 // 直接导入 Webcam（类型问题无法用 dynamic 解决）
 import Webcam from "react-webcam"
@@ -37,8 +38,7 @@ export default function TryOnPage() {
   const { addGeneration, generations } = useAssetStore()
   
   // Device detection
-  const isMobile = useIsMobile(1024)
-  const isDesktop = isMobile === false
+  const { isDesktop, isMobile, isLoading: screenLoading } = useIsDesktop(1024)
   
   // Mode
   const [mode, setMode] = useState<TryOnMode>('main')
@@ -355,6 +355,11 @@ export default function TryOnPage() {
     height: { min: 1080, ideal: 1920 },
   }
   
+  // 防止 hydration 闪烁
+  if (screenLoading) {
+    return <ScreenLoadingGuard><div /></ScreenLoadingGuard>
+  }
+
   return (
     <div className="h-full flex flex-col bg-zinc-50">
       {/* Header */}
