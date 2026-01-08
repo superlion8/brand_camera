@@ -83,22 +83,21 @@ async function analyzeVideoWithGemini(videoBuffer: Buffer): Promise<string> {
   
   const base64Video = videoBuffer.toString('base64')
   
-  const prompt = `你是一位短视频创作专家。请仔细观看这个视频，分析它的：
-- 视频风格和氛围
-- 拍摄手法和镜头运动
-- 主体的动作和表现方式
-- 背景环境和光线
-- 视频节奏和剪辑风格
+  const prompt = `请反推这条视频，描述：
+1. 背景环境 - 场景、布景、氛围
+2. 人物的动作 - 姿态、走位、与镜头的互动
+3. 拍摄的手法 - 镜头运动、景别变化、特写与全景
+4. 视频风格 - 整体调性、节奏、剪辑风格、光影效果
 
-然后，反推出一段英文提示词，用于让 AI 生成类似风格的短视频。
+【重要】不要描述人物的穿着和服饰！只关注动作、环境和拍摄技法。
 
-要求：
-1. 提示词应该是通用的，不要包含具体的商品名称或品牌
-2. 提示词需要描述视频的核心特征，让 AI 能生成类似风格的新视频
-3. 直接输出提示词，不要包含其他解释文字
+输出要求：
+- 直接输出英文提示词，不要包含其他解释
+- 提示词应该足够详细，能让 AI 生成类似风格的视频
+- 不要包含具体的品牌名称
 
 格式示例：
-"A casual lifestyle video showing a person trying on clothes, natural lighting, handheld camera movement, warm and authentic atmosphere, quick transitions, trendy editing style..."`
+"A lifestyle video in a cozy home setting, natural daylight streaming through large windows. The model walks casually into frame, pauses to look at the camera with a subtle smile, then turns to show different angles. Camera follows with smooth handheld movement, occasional close-ups of facial expressions. Warm color grading, authentic UGC creator vibe, relaxed pacing..."`
 
   const result = await genAI.models.generateContent({
     model: 'gemini-3-flash-preview',

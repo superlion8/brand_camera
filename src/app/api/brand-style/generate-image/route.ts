@@ -82,96 +82,56 @@ export async function POST(request: NextRequest) {
     let prompt: string
     switch (type) {
       case 'web':
-        prompt = `[Role: Professional E-commerce Fashion Photographer]
+        // 官网展品展示图：保持参考图中的模特和背景，姿势微调
+        prompt = `给第一张图片中的商品[product]生成模特展示图。
 
-# Task
-Generate a professional e-commerce model photo for the product shown in the first image.
+要求：
+1. 保持第二张参考图[web_img_model]中的模特外貌特征和背景环境
+2. 姿势微调，使其更符合[product]商品的气质
+3. 穿搭要搭配适合[product]风格的服装配饰
+4. 商品[product]必须清晰可见，是画面的焦点
+5. 保持专业电商级别的画质和光影
 
-# Reference Style
-Use the second image as a style reference for:
-- Model appearance and pose
-- Background and environment
-- Lighting and atmosphere
-- Overall aesthetic
+品牌风格：${brandSummary || '现代、专业、高质量时尚品牌'}
+关键词：${styleKeywords?.join(', ') || '专业、优雅、现代'}
 
-# Product
-The clothing/product from the first image should be worn/displayed by the model.
-
-# Brand Style
-${brandSummary || 'Modern, professional, high-quality fashion brand'}
-Keywords: ${styleKeywords?.join(', ') || 'professional, elegant, modern'}
-
-# Requirements
-- Professional studio or lifestyle setting
-- Model should be facing the camera or slightly angled
-- Clean, commercial-quality result
-- The product should be clearly visible and well-presented
-- Maintain anatomical correctness
-
-# Output
-Generate a single high-quality e-commerce photo.`
+生成一张高质量的官网风格模特展示图。`
         break
         
       case 'ins':
-        prompt = `[Role: Instagram Fashion Content Creator]
+        // INS风格图：保持参考图中的模特，背景可根据pose调整
+        prompt = `给第一张图片中的商品[product]生成INS风格模特展示图。
 
-# Task
-Generate an Instagram-style lifestyle photo featuring the product from the first image.
+要求：
+1. 保持第二张参考图中的模特外貌特征
+2. 姿势微调，使其更符合[product]商品的气质
+3. 背景使用参考图的空间风格，可以根据新的pose调整拍摄角度
+4. 穿搭要搭配适合[product]风格的服装配饰
+5. 画面要有INS/社交媒体的生活感和氛围感
+6. 自然光或氛围光，色调温暖有质感
 
-# Reference Style
-Use the second image as a style reference for:
-- Aesthetic and vibe
-- Color grading and mood
-- Lifestyle setting
-- Model styling
+品牌风格：${brandSummary || '时尚、真实、生活方式导向'}
+关键词：${styleKeywords?.join(', ') || '生活方式、真实、时尚'}
 
-# Product
-The clothing/product from the first image should be worn/displayed naturally.
-
-# Brand Style
-${brandSummary || 'Trendy, authentic, lifestyle-focused brand'}
-Keywords: ${styleKeywords?.join(', ') || 'lifestyle, authentic, trendy'}
-
-# Requirements
-- Natural, candid feel (not too posed)
-- Lifestyle environment (cafe, street, home, etc.)
-- Warm, inviting atmosphere
-- Instagram-worthy composition
-- Product should look natural and desirable
-
-# Output
-Generate a single Instagram-style lifestyle photo.`
+生成一张适合INS发布的生活方式模特展示图。`
         break
         
       case 'product':
-        prompt = `[Role: Product Photography Specialist]
+        // 商品展示图：无模特，参考原图的拍摄风格
+        prompt = `给第一张图片中的商品[product]生成一张无模特的商品展示图。
 
-# Task
-Generate a clean product-only photo (no model) for the product shown in the first image.
+要求：
+1. 参考第二张图[web_img_product]的拍摄风格
+2. 参考其光影效果和布光方式
+3. 参考其背景布局和场景设计
+4. 不要出现人物/模特
+5. 商品是唯一的主角，清晰展示细节
+6. 专业的产品摄影级别画质
 
-# Reference Style
-Use the second image as a reference for:
-- Lighting setup
-- Background style
-- Product staging
-- Overall aesthetic
+品牌风格：${brandSummary || '干净、专业的产品摄影'}
+关键词：${styleKeywords?.join(', ') || '干净、专业、细节'}
 
-# Product
-Recreate the product from the first image in a studio setting.
-
-# Brand Style
-${brandSummary || 'Clean, professional product photography'}
-Keywords: ${styleKeywords?.join(', ') || 'clean, professional, detailed'}
-
-# Requirements
-- No human model, product only
-- Clean studio background
-- Professional lighting
-- Product should be the hero
-- High detail and clarity
-
-# Output
-Generate a single professional product photo.`
+生成一张专业的纯商品展示图。`
         break
         
       default:
