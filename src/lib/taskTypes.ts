@@ -21,6 +21,7 @@ export const TaskTypes = {
   REFERENCE_SHOT: 'reference_shot',  // 参考图拍摄
   LIFESTYLE: 'lifestyle',            // LifeStyle 街拍
   TRY_ON: 'try_on',                  // 虚拟换装
+  BRAND_STYLE: 'brand_style',        // Clone Brand Style
 } as const
 
 export type CanonicalTaskType = typeof TaskTypes[keyof typeof TaskTypes]
@@ -63,6 +64,11 @@ const TYPE_MAP: Record<string, CanonicalTaskType> = {
   // 虚拟换装 → try_on
   'try_on': TaskTypes.TRY_ON,
   'tryon': TaskTypes.TRY_ON,
+  
+  // Clone Brand Style → brand_style
+  'brand_style': TaskTypes.BRAND_STYLE,
+  'brandstyle': TaskTypes.BRAND_STYLE,
+  'brand': TaskTypes.BRAND_STYLE,
 }
 
 // ===== 核心函数 =====
@@ -150,6 +156,14 @@ export function isTryOnType(type?: string): boolean {
 }
 
 /**
+ * 判断是否是 Clone Brand Style 类型
+ * 包含: brand_style, brandstyle, brand
+ */
+export function isBrandStyleType(type?: string): boolean {
+  return getCanonicalType(type) === TaskTypes.BRAND_STYLE
+}
+
+/**
  * 判断是否是模特相关类型（买家秀 + 专业棚拍 + 组图 + 创建专属模特 + 参考图拍摄）
  * 用于图库的"模特"分类筛选
  */
@@ -178,6 +192,7 @@ export function getTypeDisplayName(type?: string): string {
     case TaskTypes.REFERENCE_SHOT: return '参考图拍摄'
     case TaskTypes.LIFESTYLE: return 'LifeStyle 街拍'
     case TaskTypes.TRY_ON: return '虚拟换装'
+    case TaskTypes.BRAND_STYLE: return 'Clone Brand Style'
     default: return '未知类型'
   }
 }

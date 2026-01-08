@@ -5,7 +5,7 @@ const TOGETHER_API_BASE = 'https://api.together.ai/v2'
 
 export async function POST(request: NextRequest) {
   try {
-    const { prompt, brandSummary } = await request.json()
+    const { prompt, productDescription } = await request.json()
 
     if (!prompt) {
       return NextResponse.json({ error: 'Missing required prompt' }, { status: 400 })
@@ -24,21 +24,9 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Build video prompt
-    const videoPrompt = `${prompt}
-
-商品信息：展示一件时尚商品
-品牌风格：${brandSummary || '现代、时尚、生活方式导向'}
-
-视频要求：
-- UGC/创作者风格 - 真实自然
-- 9:16 竖版比例（适合社交媒体）
-- 流畅的镜头运动
-- 自然光效
-- 时长 5-8 秒
-- 高质量、专业感
-
-注意：不要描述人物的穿着，专注于动作、环境和拍摄手法。`
+    // Build video prompt: Generate a video wearing [product]. [vid_prompt]
+    const productInfo = productDescription || 'a fashion product'
+    const videoPrompt = `Generate a video of a model wearing ${productInfo}. ${prompt}`
 
     // Create video job (don't wait for completion)
     const response = await fetch(`${TOGETHER_API_BASE}/videos`, {

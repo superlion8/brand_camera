@@ -27,7 +27,7 @@ import {
 import { useGalleryStore, getCacheKey } from "@/stores/galleryStore"
 import { useIsMobile } from "@/hooks/useIsMobile"
 
-type TabType = "all" | "model" | "product" | "group" | "reference" | "favorites"
+type TabType = "all" | "model" | "product" | "group" | "reference" | "brand" | "favorites"
 type ModelSubType = "all" | "buyer" | "prostudio" | "create_model" | "social" | "lifestyle"  // 买家秀 / 专业棚拍 / 创建专属模特 / 社媒种草 / LifeStyle 街拍
 
 // 类型分类函数包装器（兼容 Generation 对象参数）
@@ -252,6 +252,8 @@ export default function GalleryPage() {
           return { tabs: ['all', 'model'], subType: null }
         case 'lifestyle':
           return { tabs: ['all', 'model'], subType: 'lifestyle' }
+        case 'brand_style':
+          return { tabs: ['all', 'brand'], subType: null }
         default:
           return { tabs: ['all'], subType: null }
       }
@@ -876,6 +878,7 @@ export default function GalleryPage() {
     { id: "product", label: t.gallery.product, icon: <Lightbulb className="w-3.5 h-3.5" /> },
     { id: "group", label: t.gallery.groupShoot || '组图', icon: <Grid3X3 className="w-3.5 h-3.5" /> },
     { id: "reference", label: t.gallery.referenceShot || '参考图', icon: <Palette className="w-3.5 h-3.5" /> },
+    { id: "brand", label: t.gallery.brand || 'Brand', icon: <Sparkles className="w-3.5 h-3.5" /> },
     { id: "favorites", label: t.gallery.favorites, icon: <Heart className="w-3.5 h-3.5" /> },
   ]
   

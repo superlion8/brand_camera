@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getGenAIClient, extractImage } from '@/lib/genai'
 import { createClient } from '@supabase/supabase-js'
+import { createClient as createServerClient } from '@/lib/supabase/server'
 
-// Lazy initialize supabase to avoid build-time errors
-function getSupabase() {
+// Lazy initialize supabase (service role) for storage
+function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   
@@ -37,9 +38,9 @@ async function getImageBase64(imageSource: string): Promise<{ data: string; mime
   return { data: base64, mimeType }
 }
 
-// Upload generated image to Supabase
+// Upload generated image to Supabase storage
 async function uploadToSupabase(base64Data: string, mimeType: string): Promise<string> {
-  const supabase = getSupabase()
+  const supabase = getSupabaseAdmin()
   const buffer = Buffer.from(base64Data, 'base64')
   const extension = mimeType.includes('png') ? 'png' : 'jpg'
   const filename = `brand-style/${Date.now()}_${Math.random().toString(36).slice(2)}.${extension}`
@@ -62,15 +63,51 @@ async function uploadToSupabase(base64Data: string, mimeType: string): Promise<s
   return urlData.publicUrl
 }
 
+// Save generation record to gallery
+async function saveToGallery(
+  userId: string,
+  userEmail: string,
+  imageUrl: string,
+  type: string
+): Promise<void> {
+  const supabase = getSupabaseAdmin()
+  
+  const { error } = await supabase
+    .from('generations')
+    .insert({
+      user_id: userId,
+      user_email: userEmail,
+      task_id: `brand-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      task_type: 'brand_style',
+      status: 'completed',
+      total_images_count: 1,
+      image_urls: [imageUrl],
+      metadata: { type } // web, ins, or product
+    })
+  
+  if (error) {
+    console.error('[Brand Style] Error saving to gallery:', error)
+    // Don't throw - image was generated successfully
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
+    // Get current user
+    const supabase = await createServerClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { productImage, referenceImage, type, brandSummary, styleKeywords } = await request.json()
 
     if (!productImage || !referenceImage) {
       return NextResponse.json({ error: 'Missing required images' }, { status: 400 })
     }
 
-    console.log(`[Brand Style] Generating ${type} style image...`)
+    console.log(`[Brand Style] Generating ${type} style image for user ${user.id}...`)
 
     // Prepare images
     const [productImageData, referenceImageData] = await Promise.all([
@@ -168,6 +205,10 @@ export async function POST(request: NextRequest) {
     // Upload to Supabase
     console.log('[Brand Style] Uploading generated image...')
     const imageUrl = await uploadToSupabase(generatedImageBase64, generatedMimeType)
+
+    // Save to gallery
+    console.log('[Brand Style] Saving to gallery...')
+    await saveToGallery(user.id, user.email || '', imageUrl, type)
 
     console.log('[Brand Style] Image generation complete')
 

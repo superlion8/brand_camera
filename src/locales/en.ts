@@ -98,7 +98,7 @@ export const en: Translations = {
     referenceShotSubtitle: "Replicate Style",
     tryOn: "Virtual Try-On",
     tryOnSubtitle: "AI Smart Try-On",
-    brandStyle: "Brand Style Analysis",
+    brandStyle: "Clone Brand Style",
     brandStyleSubtitle: "AI Brand Clone",
     generalEdit: "General Edit",
     generalEditDesc: "Enhance, Remove BG, Magic Eraser",
@@ -295,6 +295,7 @@ export const en: Translations = {
     all: "All",
     model: "Model",
     product: "Product",
+    brand: "Brand",
     favorites: "Favorites",
     noImages: "No images",
     noModelImages: "No model images",
@@ -878,7 +879,7 @@ export const en: Translations = {
 
   // Brand Style Analysis
   brandStyle: {
-    title: "Brand Style Analysis",
+    title: "Clone Brand Style",
     subtitle: "Generate exclusive content based on your brand assets",
     heroTitle: "AI Brand Style Clone",
     heroDesc: "Upload your brand assets, AI will learn your visual style and generate website images, INS style photos and UGC videos with one click",

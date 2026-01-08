@@ -76,14 +76,45 @@ export default function GeneratingPage() {
     if (!analysisData || tasks.length === 0 || isStarted) return
     setIsStarted(true)
 
-    // Start all image generations in parallel
-    tasks.forEach(task => {
-      if (task.type === 'image') {
-        generateImage(task.id)
-      } else if (task.type === 'video') {
-        generateVideo(task.id)
+    // Reserve quota first: 1 credit per image, 10 credits for video
+    const reserveAndGenerate = async () => {
+      const imageCount = tasks.filter(t => t.type === 'image').length
+      const videoCount = tasks.filter(t => t.type === 'video').length
+      const totalCredits = imageCount * 1 + videoCount * 10
+
+      try {
+        const reserveRes = await fetch('/api/quota/reserve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            taskId: `brand-style-${Date.now()}`,
+            imageCount: totalCredits,
+            taskType: 'brand_style'
+          })
+        })
+
+        if (!reserveRes.ok) {
+          const error = await reserveRes.json()
+          console.error('[Brand Style] Quota reserve failed:', error)
+          // Mark all tasks as error
+          setTasks(prev => prev.map(t => ({ ...t, status: 'error', error: error.error || 'Insufficient quota' })))
+          return
+        }
+
+        // Start all generations in parallel
+        tasks.forEach(task => {
+          if (task.type === 'image') {
+            generateImage(task.id)
+          } else if (task.type === 'video') {
+            generateVideo(task.id)
+          }
+        })
+      } catch (error) {
+        console.error('[Brand Style] Error reserving quota:', error)
       }
-    })
+    }
+
+    reserveAndGenerate()
   }, [analysisData, tasks, isStarted])
 
   // Generate single image
@@ -148,9 +179,8 @@ export default function GeneratingPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          productImage: analysisData.productImage,
           prompt: analysisData.video.prompt,
-          brandSummary: analysisData.summary?.summary || ''
+          productDescription: analysisData.productPage?.brandSummary || analysisData.summary?.summary || 'a fashion product'
         })
       })
 

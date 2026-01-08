@@ -96,8 +96,8 @@ export const zh = {
     referenceShotSubtitle: "复刻风格",
     tryOn: "虚拟换装",
     tryOnSubtitle: "AI 智能换装",
-    brandStyle: "品牌风格分析",
-    brandStyleSubtitle: "AI 克隆品牌视觉",
+    brandStyle: "克隆品牌风格",
+    brandStyleSubtitle: "Clone Brand Style",
     generalEdit: "通用编辑",
     generalEditDesc: "画质增强、智能抠图、消除笔",
     modifyMaterial: "改材质版型",
@@ -293,6 +293,7 @@ export const zh = {
     all: "全部",
     model: "模特",
     product: "产品",
+    brand: "Brand",
     favorites: "收藏",
     noImages: "暂无图片",
     noModelImages: "暂无模特图",
@@ -874,9 +875,9 @@ export const zh = {
     viewGallery: "查看成片",
   },
 
-  // 品牌风格分析
+  // Clone Brand Style
   brandStyle: {
-    title: "品牌风格分析",
+    title: "克隆品牌风格",
     subtitle: "基于您的品牌素材生成专属内容",
     heroTitle: "AI 品牌风格克隆",
     heroDesc: "上传您的品牌素材，AI 将学习您的视觉风格，一键生成官网展示图、INS 风格图和 UGC 视频",

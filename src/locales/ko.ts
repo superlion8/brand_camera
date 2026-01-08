@@ -98,8 +98,8 @@ export const ko: Translations = {
     referenceShotSubtitle: "스타일 복제",
     tryOn: "가상 피팅",
     tryOnSubtitle: "AI 스마트 피팅",
-    brandStyle: "브랜드 스타일 분석",
-    brandStyleSubtitle: "AI 브랜드 클론",
+    brandStyle: "브랜드 스타일 클론",
+    brandStyleSubtitle: "Clone Brand Style",
     generalEdit: "일반 편집",
     generalEditDesc: "화질 향상, 배경 제거, 지우개",
     modifyMaterial: "소재/핏 변경",
@@ -295,6 +295,7 @@ export const ko: Translations = {
     all: "전체",
     model: "모델",
     product: "상품",
+    brand: "Brand",
     favorites: "즐겨찾기",
     noImages: "이미지 없음",
     noModelImages: "모델 이미지 없음",
@@ -876,9 +877,9 @@ export const ko: Translations = {
     viewGallery: "완성작 보기",
   },
 
-  // 브랜드 스타일 분석
+  // Clone Brand Style
   brandStyle: {
-    title: "브랜드 스타일 분석",
+    title: "브랜드 스타일 클론",
     subtitle: "브랜드 자산을 기반으로 전용 콘텐츠 생성",
     heroTitle: "AI 브랜드 스타일 클론",
     heroDesc: "브랜드 자산을 업로드하면 AI가 비주얼 스타일을 학습하여 웹사이트 이미지, INS 스타일 사진, UGC 비디오를 원클릭으로 생성합니다",
