@@ -65,10 +65,26 @@ export default function GeneratingPage() {
     const data = JSON.parse(stored)
     setAnalysisData(data)
     
-    // Remove product task if no product reference image
-    if (!data.productPage.productImage) {
-      setTasks(prev => prev.filter(t => t.id !== 'product'))
-    }
+    // Filter tasks based on available data
+    setTasks(prev => prev.filter(task => {
+      // Web style images require productPage data with modelImage
+      if (task.id.startsWith('web-')) {
+        return data.productPage?.modelImage
+      }
+      // INS style images require instagram data
+      if (task.id.startsWith('ins-')) {
+        return data.instagram?.bestModelImage
+      }
+      // Product display requires productPage.productImage
+      if (task.id === 'product') {
+        return data.productPage?.productImage
+      }
+      // Video requires video data
+      if (task.id === 'video') {
+        return data.video?.prompt
+      }
+      return true
+    }))
   }, [router])
 
   // Start generation
@@ -120,8 +136,8 @@ export default function GeneratingPage() {
             productImage: analysisData.productImage,
             referenceImage,
             type,
-            brandSummary: analysisData.summary.summary,
-            styleKeywords: analysisData.summary.styleKeywords
+            brandSummary: analysisData.summary?.summary || '',
+            styleKeywords: analysisData.summary?.styleKeywords || []
           }),
           signal
         })
@@ -141,6 +157,8 @@ export default function GeneratingPage() {
     }
 
     const generateVideo = async () => {
+      if (!analysisData.video?.prompt) return // Skip if no video data
+      
       updateTask('video', { status: 'generating' })
       
       try {
@@ -150,7 +168,7 @@ export default function GeneratingPage() {
           body: JSON.stringify({
             productImage: analysisData.productImage,
             prompt: analysisData.video.prompt,
-            brandSummary: analysisData.summary.summary
+            brandSummary: analysisData.summary?.summary || ''
           }),
           signal
         })

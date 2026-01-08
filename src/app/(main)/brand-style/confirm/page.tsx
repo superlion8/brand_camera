@@ -139,10 +139,10 @@ export default function ConfirmPage() {
     if (!analysisData) return
     
     if (field === 'videoPrompt') {
-      setEditingText(analysisData.video.prompt)
+      setEditingText(analysisData.video?.prompt || '')
     } else if (field === 'brandSummary') {
-      setEditingText(analysisData.summary.summary)
-      setEditingKeywords([...analysisData.summary.styleKeywords])
+      setEditingText(analysisData.summary?.summary || '')
+      setEditingKeywords([...(analysisData.summary?.styleKeywords || [])])
     }
     setEditingField(field)
   }
@@ -176,9 +176,9 @@ export default function ConfirmPage() {
   // Get available images for selection
   const getAvailableImages = (field: 'webModel' | 'insModel' | 'productRef') => {
     if (field === 'webModel' || field === 'productRef') {
-      return analysisData.productPage.images || []
+      return analysisData?.productPage?.images || []
     } else if (field === 'insModel') {
-      return analysisData.instagram.images || []
+      return analysisData?.instagram?.images || []
     }
     return []
   }
@@ -282,86 +282,90 @@ export default function ConfirmPage() {
           {/* Analysis Results Grid */}
           <div className={`grid gap-4 ${isDesktop ? 'grid-cols-2' : 'grid-cols-1'}`}>
             
-            {/* Web Model Image */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-white rounded-2xl p-5 border border-zinc-200 group cursor-pointer hover:border-blue-300 hover:shadow-md transition-all"
-              onClick={() => setEditingField('webModel')}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Globe className="w-4 h-4 text-blue-600" />
+            {/* Web Model Image (if productPage data exists) */}
+            {analysisData.productPage && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-white rounded-2xl p-5 border border-zinc-200 group cursor-pointer hover:border-blue-300 hover:shadow-md transition-all"
+                onClick={() => setEditingField('webModel')}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Globe className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-zinc-900">{t.brandStyle.webModelRef}</h3>
+                      <p className="text-xs text-zinc-500">{t.brandStyle.webModelRefDesc}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-zinc-900">{t.brandStyle.webModelRef}</h3>
-                    <p className="text-xs text-zinc-500">{t.brandStyle.webModelRefDesc}</p>
-                  </div>
+                  <button className="text-blue-600 text-sm font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <RefreshCw className="w-4 h-4" />
+                    {t.brandStyle.change}
+                  </button>
                 </div>
-                <button className="text-blue-600 text-sm font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <RefreshCw className="w-4 h-4" />
-                  {t.brandStyle.change}
-                </button>
-              </div>
-              <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-zinc-100">
-                {analysisData.productPage.modelImage ? (
-                  <Image 
-                    src={analysisData.productPage.modelImage} 
-                    alt="Web Model" 
-                    fill 
-                    className="object-cover"
-                    unoptimized
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-zinc-400">
-                    <Globe className="w-8 h-8" />
-                  </div>
-                )}
-              </div>
-            </motion.div>
+                <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-zinc-100">
+                  {analysisData.productPage.modelImage ? (
+                    <Image 
+                      src={analysisData.productPage.modelImage} 
+                      alt="Web Model" 
+                      fill 
+                      className="object-cover"
+                      unoptimized
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-zinc-400">
+                      <Globe className="w-8 h-8" />
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
 
-            {/* Instagram Model Image */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-white rounded-2xl p-5 border border-zinc-200 group cursor-pointer hover:border-pink-300 hover:shadow-md transition-all"
-              onClick={() => setEditingField('insModel')}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                    <Instagram className="w-4 h-4 text-white" />
+            {/* Instagram Model Image (if instagram data exists) */}
+            {analysisData.instagram && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="bg-white rounded-2xl p-5 border border-zinc-200 group cursor-pointer hover:border-pink-300 hover:shadow-md transition-all"
+                onClick={() => setEditingField('insModel')}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                      <Instagram className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-zinc-900">{t.brandStyle.insModelRef}</h3>
+                      <p className="text-xs text-zinc-500">{t.brandStyle.insModelRefDesc}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-zinc-900">{t.brandStyle.insModelRef}</h3>
-                    <p className="text-xs text-zinc-500">{t.brandStyle.insModelRefDesc}</p>
-                  </div>
+                  <button className="text-pink-600 text-sm font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <RefreshCw className="w-4 h-4" />
+                    {t.brandStyle.change}
+                  </button>
                 </div>
-                <button className="text-pink-600 text-sm font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <RefreshCw className="w-4 h-4" />
-                  {t.brandStyle.change}
-                </button>
-              </div>
-              <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-zinc-100">
-                {analysisData.instagram.bestModelImage ? (
-                  <img 
-                    src={getProxiedUrl(analysisData.instagram.bestModelImage)} 
-                    alt="Instagram Model" 
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-zinc-400">
-                    <Instagram className="w-8 h-8" />
-                  </div>
-                )}
-              </div>
-            </motion.div>
+                <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-zinc-100">
+                  {analysisData.instagram.bestModelImage ? (
+                    <img 
+                      src={getProxiedUrl(analysisData.instagram.bestModelImage)} 
+                      alt="Instagram Model" 
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-zinc-400">
+                      <Instagram className="w-8 h-8" />
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
 
             {/* Product Image (if exists) */}
-            {analysisData.productPage.productImage && (
+            {analysisData.productPage?.productImage && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -396,35 +400,37 @@ export default function ConfirmPage() {
               </motion.div>
             )}
 
-            {/* Video Prompt */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="bg-white rounded-2xl p-5 border border-zinc-200 group cursor-pointer hover:border-red-300 hover:shadow-md transition-all"
-              onClick={() => startEditingText('videoPrompt')}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
-                    <Video className="w-4 h-4 text-red-600" />
+            {/* Video Prompt (if video data exists) */}
+            {analysisData.video?.prompt && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="bg-white rounded-2xl p-5 border border-zinc-200 group cursor-pointer hover:border-red-300 hover:shadow-md transition-all"
+                onClick={() => startEditingText('videoPrompt')}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                      <Video className="w-4 h-4 text-red-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-zinc-900">{t.brandStyle.videoPrompt}</h3>
+                      <p className="text-xs text-zinc-500">{t.brandStyle.videoPromptDesc}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-zinc-900">视频创作提示词</h3>
-                    <p className="text-xs text-zinc-500">从 UGC 视频中反推</p>
-                  </div>
+                  <button className="text-red-600 text-sm font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Edit3 className="w-4 h-4" />
+                    {t.common.edit}
+                  </button>
                 </div>
-                <button className="text-red-600 text-sm font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Edit3 className="w-4 h-4" />
-                  编辑
-                </button>
-              </div>
-              <div className="p-4 bg-zinc-50 rounded-xl">
-                <p className="text-sm text-zinc-700 leading-relaxed line-clamp-4">
-                  {analysisData.video.prompt}
-                </p>
-              </div>
-            </motion.div>
+                <div className="p-4 bg-zinc-50 rounded-xl">
+                  <p className="text-sm text-zinc-700 leading-relaxed line-clamp-4">
+                    {analysisData.video.prompt}
+                  </p>
+                </div>
+              </motion.div>
+            )}
           </div>
 
           {/* Brand Summary */}

@@ -118,83 +118,104 @@ export default function AnalyzingPage() {
     if (!inputData) return
     const signal = abortControllerRef.current?.signal
 
+    // Track which steps to run based on provided URLs
+    const hasProductPage = inputData.productPageUrl?.trim()
+    const hasInstagram = inputData.instagramUrl?.trim()
+    const hasVideo = inputData.videoUrl?.trim()
+
+    let productPageData: any = null
+    let instagramData: any = null
+    let videoData: any = null
+
     try {
-      // Step 1: Analyze product page
-      currentStepRef.current = 0
-      setCurrentStep(0)
-      updateStep('product-page', { status: 'processing' })
-      
-      const productPageRes = await fetch('/api/brand-style/read-product-page', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: inputData.productPageUrl }),
-        signal
-      })
-      
-      const productPageData = await productPageRes.json()
-      if (!productPageRes.ok || productPageData.error) {
-        throw new Error(productPageData.error || 'Failed to analyze product page')
-      }
-      
-      updateStep('product-page', { 
-        status: 'completed',
-        result: {
-          images: productPageData.images,
-          selectedImage: productPageData.modelImage,
-          text: productPageData.brandSummary
+      // Step 1: Analyze product page (if URL provided)
+      if (hasProductPage) {
+        currentStepRef.current = 0
+        setCurrentStep(0)
+        updateStep('product-page', { status: 'processing' })
+        
+        const productPageRes = await fetch('/api/brand-style/read-product-page', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: inputData.productPageUrl }),
+          signal
+        })
+        
+        productPageData = await productPageRes.json()
+        if (!productPageRes.ok || productPageData.error) {
+          throw new Error(productPageData.error || 'Failed to analyze product page')
         }
-      })
-
-      // Step 2: Analyze Instagram
-      currentStepRef.current = 1
-      setCurrentStep(1)
-      updateStep('instagram', { status: 'processing' })
-      
-      const instagramRes = await fetch('/api/brand-style/read-instagram', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: inputData.instagramUrl }),
-        signal
-      })
-      
-      const instagramData = await instagramRes.json()
-      if (!instagramRes.ok || instagramData.error) {
-        throw new Error(instagramData.error || 'Failed to analyze Instagram')
+        
+        updateStep('product-page', { 
+          status: 'completed',
+          result: {
+            images: productPageData.images,
+            selectedImage: productPageData.modelImage,
+            text: productPageData.brandSummary
+          }
+        })
+      } else {
+        updateStep('product-page', { status: 'completed', result: { text: 'Skipped - no URL provided' } })
       }
-      
-      updateStep('instagram', { 
-        status: 'completed',
-        result: {
-          images: instagramData.images,
-          selectedImage: instagramData.bestModelImage
-        }
-      })
 
-      // Step 3: Analyze video
-      currentStepRef.current = 2
-      setCurrentStep(2)
-      updateStep('video', { status: 'processing' })
-      
-      const videoRes = await fetch('/api/brand-style/analyze-video', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: inputData.videoUrl }),
-        signal
-      })
-      
-      const videoData = await videoRes.json()
-      if (!videoRes.ok || videoData.error) {
-        throw new Error(videoData.error || 'Failed to analyze video')
+      // Step 2: Analyze Instagram (if URL provided)
+      if (hasInstagram) {
+        currentStepRef.current = 1
+        setCurrentStep(1)
+        updateStep('instagram', { status: 'processing' })
+        
+        const instagramRes = await fetch('/api/brand-style/read-instagram', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: inputData.instagramUrl }),
+          signal
+        })
+        
+        instagramData = await instagramRes.json()
+        if (!instagramRes.ok || instagramData.error) {
+          throw new Error(instagramData.error || 'Failed to analyze Instagram')
+        }
+        
+        updateStep('instagram', { 
+          status: 'completed',
+          result: {
+            images: instagramData.images,
+            selectedImage: instagramData.bestModelImage
+          }
+        })
+      } else {
+        updateStep('instagram', { status: 'completed', result: { text: 'Skipped - no URL provided' } })
       }
-      
-      updateStep('video', { 
-        status: 'completed',
-        result: {
-          videoPrompt: videoData.prompt
-        }
-      })
 
-      // Step 4: Generate summary
+      // Step 3: Analyze video (if URL provided)
+      if (hasVideo) {
+        currentStepRef.current = 2
+        setCurrentStep(2)
+        updateStep('video', { status: 'processing' })
+        
+        const videoRes = await fetch('/api/brand-style/analyze-video', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: inputData.videoUrl }),
+          signal
+        })
+        
+        videoData = await videoRes.json()
+        if (!videoRes.ok || videoData.error) {
+          throw new Error(videoData.error || 'Failed to analyze video')
+        }
+        
+        updateStep('video', { 
+          status: 'completed',
+          result: {
+            videoPrompt: videoData.prompt
+          }
+        })
+      } else {
+        updateStep('video', { status: 'completed', result: { text: 'Skipped - no URL provided' } })
+      }
+
+      // Step 4: Generate summary (only if we have at least some data)
       currentStepRef.current = 3
       setCurrentStep(3)
       updateStep('summary', { status: 'processing' })
@@ -203,9 +224,9 @@ export default function AnalyzingPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          productPageData,
-          instagramData,
-          videoData
+          productPageData: productPageData || null,
+          instagramData: instagramData || null,
+          videoData: videoData || null
         }),
         signal
       })
@@ -225,20 +246,20 @@ export default function AnalyzingPage() {
       // Store results and navigate to confirm page
       // Only store essential data to avoid exceeding sessionStorage quota
       const analysisData = {
-        productPage: {
+        productPage: productPageData ? {
           // Only keep first 5 images for selection
           images: (productPageData.images || []).slice(0, 5),
           modelImage: productPageData.modelImage,
           productImage: productPageData.productImage,
           brandSummary: productPageData.brandSummary,
           brandKeywords: productPageData.brandKeywords
-        },
-        instagram: {
+        } : null,
+        instagram: instagramData ? {
           // Only keep first 5 images for selection
           images: (instagramData.images || []).slice(0, 5),
           bestModelImage: instagramData.bestModelImage
-        },
-        video: videoData,
+        } : null,
+        video: videoData || null,
         summary: summaryData,
         productImage: inputData.productImage
       }

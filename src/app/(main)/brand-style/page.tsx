@@ -65,11 +65,13 @@ export default function BrandStylePage() {
     }
   }
 
-  const canSubmit = 
-    isValidUrl(productPageUrl) && 
-    isValidUrl(instagramUrl) && 
-    isValidUrl(videoUrl) && 
-    productImage
+  // At least one URL must be provided, plus product image
+  const hasAtLeastOneUrl = 
+    isValidUrl(productPageUrl) || 
+    isValidUrl(instagramUrl) || 
+    isValidUrl(videoUrl)
+  
+  const canSubmit = hasAtLeastOneUrl && productImage
 
   // Compress image to reduce size for sessionStorage
   const compressImage = (file: File, maxWidth: number = 800, quality: number = 0.7): Promise<string> => {

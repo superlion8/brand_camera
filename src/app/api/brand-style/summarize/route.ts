@@ -6,19 +6,24 @@ export async function POST(request: NextRequest) {
     const { productPageData, instagramData, videoData } = await request.json()
 
     console.log('[Brand Style] Generating brand summary...')
+    console.log('[Brand Style] Data available:', {
+      hasProductPage: !!productPageData,
+      hasInstagram: !!instagramData,
+      hasVideo: !!videoData
+    })
 
     const prompt = `你是一位品牌策略专家。基于以下品牌素材分析，请生成一份品牌风格摘要。
 
 ## 官网分析
-- 品牌描述: ${productPageData.brandSummary || '未提供'}
-- 品牌关键词: ${productPageData.brandKeywords?.join(', ') || '未提供'}
+- 品牌描述: ${productPageData?.brandSummary || '未提供'}
+- 品牌关键词: ${productPageData?.brandKeywords?.join(', ') || '未提供'}
 
 ## Instagram 风格
-- 已分析图片数量: ${instagramData.images?.length || 0}
-- 内容描述: ${instagramData.caption?.slice(0, 200) || '未提供'}
+- 已分析图片数量: ${instagramData?.images?.length || 0}
+- 内容描述: ${instagramData?.caption?.slice(0, 200) || '未提供'}
 
 ## UGC 视频风格
-- 视频提示词: ${videoData.prompt || '未提供'}
+- 视频提示词: ${videoData?.prompt || '未提供'}
 
 请输出 JSON 格式：
 {
