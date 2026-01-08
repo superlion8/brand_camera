@@ -50,7 +50,11 @@ function extractImagesWithContext(pageContent: string): ImageWithContext[] {
   const seen = new Set<string>()
   
   const normalizeUrl = (rawUrl: string): string => {
+    // Handle escaped slashes from JSON: \/ -> /
     let url = rawUrl.replace(/\\\//g, '/').replace(/\\"/g, '')
+    // Handle double-escaped: \\/ -> /
+    url = url.replace(/\\\\/g, '')
+    // Handle protocol-relative URLs
     if (url.startsWith('//')) url = 'https:' + url
     return url
   }
@@ -86,37 +90,54 @@ function extractImagesWithContext(pageContent: string): ImageWithContext[] {
     })
   }
   
-  // Debug: Log a sample of the content to understand format
-  console.log('[Brand Style] Page content sample (first 500 chars):', pageContent.slice(0, 500))
-  console.log('[Brand Style] Page content sample (around 5000):', pageContent.slice(5000, 5500))
+  // Debug: Log a sample of the content
+  console.log('[Brand Style] Page content length:', pageContent.length)
   
-  // Pattern 1: Markdown images ![alt](url) with context
-  const mdRegex = /(.{0,150})!\[([^\]]*)\]\(((?:https?:)?\/\/[^\s\)]+)\)(.{0,150})/gs
   let match
+  
+  // Pattern 1: Markdown images - both ![alt](url) and [![alt](url)] formats
+  const mdRegex = /(.{0,100})\[?!\[([^\]]*)\]\(((?:https?:)?\/\/[^\s\)]+)\)/gs
   let mdCount = 0
   while ((match = mdRegex.exec(pageContent)) !== null) {
     mdCount++
-    const [, before, alt, url, after] = match
+    const [, before, alt, url] = match
+    const afterIdx = match.index + match[0].length
+    const after = pageContent.slice(afterIdx, afterIdx + 100)
     addImage(url, `${before} [IMAGE: ${alt}] ${after}`, alt)
   }
   console.log('[Brand Style] Markdown pattern matched:', mdCount)
   
-  // Pattern 2: Direct image URLs (jpg, jpeg, png, webp, gif)
-  const imgRegex = /(.{0,100})((?:https?:)?\/\/[^\s<>"'\)\]]+\.(?:jpg|jpeg|png|webp|gif)(?:\?[^\s<>"'\)\]]*)?)/gi
-  let imgCount = 0
-  while ((match = imgRegex.exec(pageContent)) !== null) {
-    imgCount++
-    const [, before, url] = match
-    const afterMatch = pageContent.slice(match.index + match[0].length, match.index + match[0].length + 100)
+  // Pattern 2: Escaped JSON image URLs (Shopify format): "\/\/domain.com\/..." or "//domain.com/..."
+  const jsonImgRegex = /"(\\?\/\\?\/[^"]+\.(?:jpg|jpeg|png|webp|gif)[^"]*)"/gi
+  let jsonCount = 0
+  while ((match = jsonImgRegex.exec(pageContent)) !== null) {
+    jsonCount++
+    const url = match[1]
+    const startIdx = Math.max(0, match.index - 150)
+    const endIdx = Math.min(pageContent.length, match.index + match[0].length + 150)
+    const context = pageContent.slice(startIdx, endIdx)
+    addImage(url, context, '')
+  }
+  console.log('[Brand Style] JSON escaped URL pattern matched:', jsonCount)
+  
+  // Pattern 3: Direct HTTPS image URLs
+  const httpsRegex = /(https:\/\/[^\s<>"'\)\]\\]+\.(?:jpg|jpeg|png|webp|gif)(?:\?[^\s<>"'\)\]\\]*)?)/gi
+  let httpsCount = 0
+  while ((match = httpsRegex.exec(pageContent)) !== null) {
+    httpsCount++
+    const url = match[1]
+    const startIdx = Math.max(0, match.index - 100)
+    const endIdx = Math.min(pageContent.length, match.index + match[0].length + 100)
+    const context = pageContent.slice(startIdx, endIdx)
     const normalized = normalizeUrl(url)
     if (!seen.has(normalized.split('?')[0])) {
-      addImage(url, `${before} [IMAGE] ${afterMatch}`, '')
+      addImage(url, context, '')
     }
   }
-  console.log('[Brand Style] Direct URL pattern matched:', imgCount)
+  console.log('[Brand Style] HTTPS URL pattern matched:', httpsCount)
   
-  // Pattern 3: Shopify CDN URLs (may not have extension in URL)
-  const shopifyRegex = /(https?:\/\/cdn\.shopify\.com\/[^\s<>"'\)\]]+)/gi
+  // Pattern 4: Shopify CDN URLs (with or without extension)
+  const shopifyRegex = /((?:https?:)?\/\/[^\s<>"'\)\]\\]*(?:cdn\.shopify\.com|shopify\.com\/cdn)[^\s<>"'\)\]\\]*)/gi
   let shopifyCount = 0
   while ((match = shopifyRegex.exec(pageContent)) !== null) {
     shopifyCount++
@@ -130,22 +151,6 @@ function extractImagesWithContext(pageContent: string): ImageWithContext[] {
     }
   }
   console.log('[Brand Style] Shopify CDN pattern matched:', shopifyCount)
-  
-  // Pattern 4: Any CDN image URLs
-  const cdnRegex = /(https?:\/\/[^\s<>"'\)\]]*(?:cdn|cloudfront|imgix|cloudinary)[^\s<>"'\)\]]*\.(?:jpg|jpeg|png|webp|gif)[^\s<>"'\)\]]*)/gi
-  let cdnCount = 0
-  while ((match = cdnRegex.exec(pageContent)) !== null) {
-    cdnCount++
-    const url = match[1]
-    const startIdx = Math.max(0, match.index - 100)
-    const endIdx = Math.min(pageContent.length, match.index + match[0].length + 100)
-    const context = pageContent.slice(startIdx, endIdx)
-    const normalized = normalizeUrl(url)
-    if (!seen.has(normalized.split('?')[0])) {
-      addImage(url, context, '')
-    }
-  }
-  console.log('[Brand Style] CDN pattern matched:', cdnCount)
   
   console.log('[Brand Style] Total unique images extracted:', results.length)
   if (results.length > 0) {
