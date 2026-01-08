@@ -7,39 +7,109 @@
 ### 1. 💰 计费系统
 - [ ] `src/app/api/quota/reserve/route.ts` - 扣费逻辑
 - [ ] `src/lib/taskTypes.ts` - 任务类型定义（新增类型需要在这里注册）
-- [ ] 确认 credit 消耗规则（图片 1 credit，视频 10 credits）
+- [ ] 确认 credit 消耗规则：**图片 1 credit，视频 10 credits**
 
-### 2. 📦 资产管理
+### 2. 📦 资产管理 & Gallery
 - [ ] `src/app/api/gallery/route.ts` - Gallery API 过滤逻辑（新 task_type 需要添加过滤条件）
 - [ ] `src/app/(main)/gallery/page.tsx` - Gallery 页面 tab 显示
-- [ ] `src/components/shared/GalleryPreloader.tsx` - 预加载配置
-- [ ] 数据库 `generations` 表字段：`output_image_urls`（不是 `image_urls`）
+- [ ] `src/components/shared/GalleryPreloader.tsx` - **PRELOAD_TABS 配置**（新增 tab 必须添加）
+- [ ] `src/stores/galleryStore.ts` - 缓存 key 生成逻辑（如有特殊需求）
+- [ ] 数据库字段：**必须使用 `output_image_urls`**（不是 `image_urls`）
 
-### 3. 🎨 UI 一致性
-- [ ] 使用 `useIsDesktop` hook + `ScreenLoadingGuard` 组件防止页面闪烁
-- [ ] PC Web 和 Mobile Web 双端适配
-- [ ] 底部导航 `BottomNav` 仅在移动端显示
-- [ ] 相机功能仅在移动端可用
+### 3. 🏷️ 类型系统（重要！）
+- [ ] `src/lib/taskTypes.ts` - **TaskTypes 常量** + **TYPE_MAP 映射** + **isXxxType() 函数**
+- [ ] `src/types/index.ts` - **GenerationType 联合类型**（添加新类型变种）
+- [ ] `src/stores/generationTaskStore.ts` - **TaskType 类型**（如果需要前端任务追踪）
 
-### 4. 🌍 国际化
+**代码规范：**
+```typescript
+// ✅ 正确：写入数据库时使用常量
+import { TaskTypes } from '@/lib/taskTypes'
+task_type: TaskTypes.BRAND_STYLE
+
+// ✅ 正确：判断类型时使用函数（自动兼容历史数据）
+import { isBrandStyleType } from '@/lib/taskTypes'
+if (isBrandStyleType(item.task_type)) { ... }
+
+// ❌ 错误：直接使用字符串
+task_type: 'brand_style'
+if (item.task_type === 'brand_style') { ... }
+```
+
+### 4. 🎨 UI 一致性
+- [ ] 使用 `useIsDesktop` hook + `ScreenLoadingGuard` 组件**防止页面闪烁**
+- [ ] PC Web 和 Mobile Web **双端适配**
+- [ ] 底部导航 `BottomNav` **仅在移动端显示**
+- [ ] 相机功能 **仅在移动端可用**
+
+```tsx
+// 标准页面结构
+import { useIsDesktop } from '@/hooks/useIsMobile'
+import { ScreenLoadingGuard } from '@/components/ui/ScreenLoadingGuard'
+
+export default function MyPage() {
+  const { isDesktop, isMobile, isLoading } = useIsDesktop()
+  
+  if (isLoading) {
+    return <ScreenLoadingGuard><div /></ScreenLoadingGuard>
+  }
+  
+  return (
+    <div>
+      {/* 页面内容 */}
+      {!isDesktop && <BottomNav />}
+    </div>
+  )
+}
+```
+
+### 5. 🌍 国际化
 - [ ] `src/locales/zh.ts` - 中文翻译
 - [ ] `src/locales/en.ts` - 英文翻译  
 - [ ] `src/locales/ko.ts` - 韩文翻译
-- [ ] AI 生成的文本需要根据用户语言设置生成对应语言
+- [ ] **AI 生成的文本**需要根据用户语言设置生成对应语言
 
-### 5. 🧭 导航
-- [ ] `src/components/layouts/Sidebar.tsx` - PC 端侧边栏
-- [ ] 首页入口卡片 `src/app/(main)/app/page.tsx`
+```typescript
+// 获取用户语言并传递给后端
+const { language } = useTranslation()
+await fetch('/api/xxx', {
+  body: JSON.stringify({ ...data, language })
+})
+
+// 后端 VLM/LLM prompt 中指定语言
+const prompt = `请用${language === 'en' ? '英文' : language === 'ko' ? '韩文' : '中文'}输出...`
+```
+
+### 6. 🧭 导航
+- [ ] `src/components/layouts/Sidebar.tsx` - PC 端侧边栏 navItems
+- [ ] `src/app/(main)/app/page.tsx` - **首页入口卡片**（新功能需要添加入口）
 - [ ] 路由：功能页面放在 `src/app/(main)/` 下
 
-### 6. 🔐 认证
-- [ ] 页面需要登录检查
+### 7. 🔐 认证
+- [ ] 页面需要登录检查（layout 已处理）
 - [ ] API 路由使用 `requireAuth()` 中间件
 
-### 7. 📝 数据存储
+```typescript
+import { requireAuth } from '@/lib/auth'
+
+export async function POST(request: NextRequest) {
+  const authResult = await requireAuth(request)
+  if ('response' in authResult) return authResult.response
+  const { user } = authResult
+  // ...
+}
+```
+
+### 8. 📝 数据存储
 - [ ] 生成结果保存到 `generations` 表
 - [ ] 使用 `task_type` 字段区分功能类型
 - [ ] 图片上传到 Supabase Storage `generations` bucket
+- [ ] 视频需要确认 bucket 已开启 `video/mp4` MIME 类型支持
+
+### 9. 🤖 AI Prompts
+- [ ] `src/prompts/index.ts` - 通用 prompts
+- [ ] `src/prompts/lifestyle.ts` - lifestyle 专用 prompts
+- [ ] 新功能可能需要添加专用 prompt 文件
 
 ---
 
@@ -50,7 +120,7 @@ src/
 ├── app/
 │   ├── page.tsx              # Landing Page (未登录)
 │   ├── (main)/               # 需要登录的页面
-│   │   ├── app/page.tsx      # App 首页
+│   │   ├── app/page.tsx      # App 首页（入口卡片）
 │   │   ├── gallery/          # 作品集
 │   │   ├── brand-style/      # Clone Brand Style
 │   │   ├── camera/           # 拍照功能
@@ -60,61 +130,133 @@ src/
 │       ├── gallery/          # 作品集
 │       └── brand-style/      # Brand Style APIs
 ├── components/
-│   ├── layouts/              # 布局组件
-│   ├── shared/               # 共享组件
-│   └── ui/                   # UI 组件
+│   ├── layouts/              # 布局组件 (Sidebar, TopNav, BottomNav)
+│   ├── shared/               # 共享组件 (GalleryPreloader, QuotaIndicator)
+│   └── ui/                   # UI 组件 (ScreenLoadingGuard)
+├── hooks/
+│   ├── useIsMobile.ts        # useIsDesktop hook（PC/Mobile 判断）
+│   └── useQuota.ts           # 额度检查 hook
 ├── lib/
-│   └── taskTypes.ts          # 任务类型定义（重要！）
+│   ├── auth.ts               # requireAuth 认证中间件
+│   ├── taskTypes.ts          # 任务类型定义（重要！）
+│   └── supabase/             # Supabase 客户端
 ├── stores/                   # Zustand 状态管理
-└── locales/                  # 国际化
+│   ├── galleryStore.ts       # Gallery 缓存
+│   ├── generationTaskStore.ts # 生成任务状态
+│   └── languageStore.ts      # 语言设置
+├── locales/                  # 国际化 (zh, en, ko)
+├── prompts/                  # AI Prompts
+└── types/
+    └── index.ts              # TypeScript 类型定义
 ```
 
-## 任务类型注册流程
+## 任务类型注册完整流程
 
-新增功能类型时，必须在以下位置注册：
+新增功能类型时，必须在以下**所有**位置注册：
 
-1. **`src/lib/taskTypes.ts`**
+### Step 1: `src/lib/taskTypes.ts`
 ```typescript
+// 1. 添加常量
 export const TaskTypes = {
   // ... existing
   NEW_TYPE: 'new_type',
 } as const
 
-// 添加判断函数
+// 2. 添加映射（包括可能的变种）
+const TYPE_MAP: Record<string, CanonicalTaskType> = {
+  // ... existing
+  'new_type': TaskTypes.NEW_TYPE,
+  'newtype': TaskTypes.NEW_TYPE,  // 可能的变种
+}
+
+// 3. 添加判断函数
 export function isNewType(type?: string): boolean {
   return getCanonicalType(type) === TaskTypes.NEW_TYPE
 }
+
+// 4. 更新 getTypeDisplayName
+export function getTypeDisplayName(type?: string): string {
+  switch (canonical) {
+    // ... existing
+    case TaskTypes.NEW_TYPE: return '新功能名称'
+  }
+}
+
+// 5. 如果需要在 Gallery 模特分类中显示，更新 isModelRelatedType
 ```
 
-2. **`src/app/api/gallery/route.ts`** - 添加过滤条件
+### Step 2: `src/types/index.ts`
+```typescript
+export type GenerationType = 
+  | // ... existing
+  | 'new_type'  // 添加新类型
+```
+
+### Step 3: `src/app/api/gallery/route.ts`
 ```typescript
 } else if (type === 'newtab') {
   query = query.or('task_type.eq.new_type')
 }
 ```
 
-3. **`src/app/(main)/gallery/page.tsx`** - 添加 tab（如需要）
+### Step 4: `src/components/shared/GalleryPreloader.tsx`
+```typescript
+const PRELOAD_TABS = [
+  // ... existing
+  { tab: 'newtab', subType: '' },
+]
+```
+
+### Step 5: `src/app/(main)/gallery/page.tsx`
+```typescript
+// 添加 tab 定义和显示逻辑
+```
 
 ---
 
-## 常见问题
+## 常见问题 Q&A
 
 ### Q: 图片在 Gallery 中不显示？
 检查：
 1. 保存时使用 `output_image_urls` 字段（不是 `image_urls`）
 2. `task_type` 已在 `gallery/route.ts` 中添加过滤条件
-3. GalleryPreloader 中包含该 tab
+3. `GalleryPreloader.tsx` 中包含该 tab 的预加载配置
 
 ### Q: 页面进入时闪烁/刷新？
-使用 `useIsDesktop` + `ScreenLoadingGuard`：
-```tsx
-const { isDesktop } = useIsDesktop()
-return (
-  <ScreenLoadingGuard>
-    {/* 页面内容 */}
-  </ScreenLoadingGuard>
-)
-```
+使用 `useIsDesktop` + `ScreenLoadingGuard`（见上方示例）
 
 ### Q: 切换 tab 时重新请求？
-检查 `GalleryPreloader.tsx` 是否包含该 tab 的预加载配置
+检查 `GalleryPreloader.tsx` 的 `PRELOAD_TABS` 是否包含该 tab
+
+### Q: AI 输出语言不对？
+在后端 API 中传递 `language` 参数，并在 VLM/LLM prompt 中指定语言
+
+### Q: 计费没有生效？
+1. 检查 `quota/reserve` API 是否被调用
+2. 检查 `taskType` 参数是否正确传递
+3. 视频任务使用 10 credits，图片使用 1 credit
+
+---
+
+## 环境变量（必需）
+
+```env
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=  # 注意：不是 SUPABASE_SERVICE_KEY
+
+# AI Models
+GOOGLE_AI_API_KEY=
+TOGETHER_API_KEY=
+
+# Optional
+RAPIDAPI_KEY=  # Instagram 抓取
+JINA_API_KEY=  # 网页读取
+```
+
+---
+
+## 开发原则
+
+**先移动端，再桌面端。业务逻辑共享，UI 按需区分。**
