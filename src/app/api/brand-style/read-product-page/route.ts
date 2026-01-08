@@ -1,7 +1,67 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getGenAIClient, extractText } from '@/lib/genai'
 
-// Use Jina Reader to extract web page content
+// Try to get product data from Shopify JSON API
+async function tryShopifyJsonApi(url: string): Promise<{
+  success: boolean
+  images: string[]
+  title: string
+  description: string
+} | null> {
+  try {
+    // Extract product handle from various Shopify URL formats
+    // e.g., /products/product-name or /collections/xxx/products/product-name
+    const urlObj = new URL(url)
+    const pathMatch = urlObj.pathname.match(/\/products\/([^\/\?]+)/)
+    if (!pathMatch) return null
+    
+    const productHandle = pathMatch[1]
+    const jsonUrl = `${urlObj.origin}/products/${productHandle}.json`
+    
+    console.log('[Brand Style] Trying Shopify JSON API:', jsonUrl)
+    
+    const response = await fetch(jsonUrl, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+      },
+      cache: 'no-store',
+    })
+    
+    if (!response.ok) {
+      console.log('[Brand Style] Shopify JSON API not available:', response.status)
+      return null
+    }
+    
+    const data = await response.json()
+    const product = data.product
+    
+    if (!product || !product.images || product.images.length === 0) {
+      console.log('[Brand Style] No product images in Shopify JSON')
+      return null
+    }
+    
+    // Extract image URLs
+    const images = product.images.map((img: { src: string }) => 
+      img.src.replace(/\\\//g, '/')
+    )
+    
+    console.log('[Brand Style] Shopify JSON API success! Found', images.length, 'images')
+    console.log('[Brand Style] Product title:', product.title)
+    
+    return {
+      success: true,
+      images,
+      title: product.title || '',
+      description: product.body_html?.replace(/<[^>]*>/g, ' ').slice(0, 500) || ''
+    }
+  } catch (e) {
+    console.log('[Brand Style] Shopify JSON API error:', (e as Error).message)
+    return null
+  }
+}
+
+// Use Jina Reader to extract web page content (fallback)
 async function readWebPage(url: string): Promise<string> {
   const jinaUrl = `https://r.jina.ai/${url}`
   console.log('[Brand Style] Fetching from Jina:', jinaUrl)
@@ -394,20 +454,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'URL is required' }, { status: 400 })
     }
 
-    // Step 1: Read web page content with Jina
     console.log('[Brand Style] Reading product page:', url)
-    const pageContent = await readWebPage(url)
-
-    // Step 2: Use VLM to extract product image URLs from page content
-    console.log('[Brand Style] Using VLM to identify product images...')
-    const imageUrls = await extractProductImageUrls(pageContent, url)
+    
+    let imageUrls: string[] = []
+    let pageContent = ''
+    
+    // Step 1: Try Shopify JSON API first (most reliable for Shopify sites)
+    const shopifyData = await tryShopifyJsonApi(url)
+    if (shopifyData && shopifyData.images.length > 0) {
+      imageUrls = shopifyData.images
+      console.log('[Brand Style] Using Shopify API images:', imageUrls.length)
+    } else {
+      // Step 2: Fallback to Jina Reader
+      console.log('[Brand Style] Falling back to Jina Reader...')
+      pageContent = await readWebPage(url)
+      
+      // Step 3: Use LLM to extract product image URLs from page content
+      console.log('[Brand Style] Using LLM to identify product images...')
+      imageUrls = await extractProductImageUrls(pageContent, url)
+    }
     
     if (imageUrls.length === 0) {
       throw new Error('未能从页面识别出商品图片，请确认链接是商品详情页')
     }
-    console.log('[Brand Style] VLM identified', imageUrls.length, 'product images')
+    console.log('[Brand Style] Found', imageUrls.length, 'product images')
 
-    // Step 3: Load images and analyze with VLM
+    // Step 4: Load images and analyze with VLM
     console.log('[Brand Style] Loading and analyzing images...')
     const analysis = await analyzeImages(imageUrls)
     console.log('[Brand Style] Analysis complete')
