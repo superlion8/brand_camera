@@ -50,8 +50,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         model: 'openai/sora-2',
         prompt: videoPrompt,
-        seconds: '6',
-        // Sora 2 only supports fps: 30
+        seconds: 8, // Sora 2 only supports 4, 8, 12 seconds
       })
     })
 
