@@ -180,7 +180,8 @@ export default function GeneratingPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: analysisData.video.prompt,
-          productDescription: analysisData.productPage?.brandSummary || analysisData.summary?.summary || 'a fashion product'
+          productDescription: analysisData.productPage?.brandSummary || analysisData.summary?.summary || 'a fashion product',
+          productImage: analysisData.productImage // Pass product image for reference
         })
       })
 
