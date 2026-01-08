@@ -21,6 +21,16 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 import { useTranslation } from '@/stores/languageStore'
 
+// Helper to proxy Instagram CDN images
+function getProxiedUrl(url: string | undefined): string {
+  if (!url) return ''
+  // Proxy Instagram CDN images that have referrer restrictions
+  if (url.includes('cdninstagram.com') || url.includes('fbcdn.net')) {
+    return `/api/image-proxy?url=${encodeURIComponent(url)}`
+  }
+  return url
+}
+
 interface ResultImage {
   id: string
   title: string
@@ -39,6 +49,16 @@ interface Results {
   images: ResultImage[]
   video?: string
   originals?: Originals
+}
+
+// Helper to proxy Instagram CDN images (bypass referrer restrictions)
+function getProxiedUrl(url: string | undefined): string {
+  if (!url) return ''
+  // Only proxy Instagram CDN images
+  if (url.includes('cdninstagram.com') || url.includes('fbcdn.net')) {
+    return `/api/image-proxy?url=${encodeURIComponent(url)}`
+  }
+  return url
 }
 
 export default function ResultsPage() {
@@ -151,9 +171,9 @@ export default function ResultsPage() {
                   className={`relative bg-zinc-100 rounded-xl overflow-hidden cursor-pointer border-2 border-zinc-200 ${
                     isDesktop ? 'w-32 h-40' : 'w-24 h-32'
                   }`}
-                  onClick={() => setSelectedImage(originalImage)}
+                  onClick={() => setSelectedImage(getProxiedUrl(originalImage))}
                 >
-                  <Image src={originalImage} alt={originalLabel} fill className="object-cover" unoptimized />
+                  <Image src={getProxiedUrl(originalImage)} alt={originalLabel} fill className="object-cover" unoptimized />
                   <div className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-zinc-700/80 rounded text-[10px] text-white">
                     {t.brandStyle.original}
                   </div>
