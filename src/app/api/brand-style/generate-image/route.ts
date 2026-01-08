@@ -81,7 +81,7 @@ async function saveToGallery(
       task_type: 'brand_style',
       status: 'completed',
       total_images_count: 1,
-      image_urls: [imageUrl],
+      output_image_urls: [imageUrl], // 使用正确的字段名
       metadata: { type } // web, ins, or product
     })
   

@@ -89,12 +89,13 @@ export async function GET(request: NextRequest) {
     }
 
     // 查询 generations - 注意数据库字段是 task_type 不是 type
+    // 兼容旧数据：同时检查 output_image_urls 或 image_urls 不为空
     let query = supabase
       .from('generations')
       .select('*', { count: 'exact' })
       .eq('user_id', userId)
       .is('deleted_at', null)
-      .not('output_image_urls', 'is', null)
+      .or('output_image_urls.not.is.null,image_urls.not.is.null')
 
     // 按类型筛选 - 使用 task_type 字段
     const subType = searchParams.get('subType') || ''
@@ -146,12 +147,14 @@ export async function GET(request: NextRequest) {
     }
 
     // 展开所有图片 - 注意数据库字段是 task_type
+    // 兼容旧数据：同时检查 output_image_urls 和 image_urls 字段
     const items = generations
       ?.flatMap(gen => {
-        if (!gen.output_image_urls || !Array.isArray(gen.output_image_urls)) {
+        const imageUrls = gen.output_image_urls || gen.image_urls
+        if (!imageUrls || !Array.isArray(imageUrls)) {
           return []
         }
-        return gen.output_image_urls.map((url: string, index: number) => ({
+        return imageUrls.map((url: string, index: number) => ({
           id: `${gen.id}-${index}`,
           generationId: gen.id, // 数据库 UUID，用于收藏 API
           imageIndex: index,
@@ -162,7 +165,7 @@ export async function GET(request: NextRequest) {
             id: gen.task_id || gen.id, // 显示用 task_id，兼容旧数据
             dbId: gen.id, // 数据库 UUID，用于收藏
             type: gen.task_type,
-            outputImageUrls: gen.output_image_urls,
+            outputImageUrls: imageUrls, // 兼容旧数据
             outputGenModes: gen.output_gen_modes,
             outputModelTypes: gen.output_model_types,
             inputImageUrl: gen.input_image_url,

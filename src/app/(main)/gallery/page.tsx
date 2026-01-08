@@ -230,71 +230,72 @@ export default function GalleryPage() {
     }
   }
   
-  // 预加载所有 tab 的数据（进入页面时一次性并行加载）
-  const preloadAllTabs = async () => {
-    if (!user) return
+  // 所有需要预加载的 tab 配置
+  const ALL_TABS_TO_PRELOAD = [
+    { tab: 'all', subType: '' },
+    { tab: 'model', subType: 'buyer' },
+    { tab: 'model', subType: 'prostudio' },
+    { tab: 'model', subType: 'lifestyle' },
+    { tab: 'product', subType: '' },
+    { tab: 'group', subType: '' },
+    { tab: 'reference', subType: '' },
+    { tab: 'brand', subType: '' },
+  ]
+  
+  // 预加载单个 tab 的数据
+  const preloadSingleTab = async (tab: string, subType: string): Promise<void> => {
+    const cacheKey = tab === 'model' ? `${tab}_${subType}` : tab
     
-    // 所有需要预加载的 tab
-    const tabsToPreload = [
-      { tab: 'all', subType: '' },
-      { tab: 'model', subType: 'buyer' },
-      { tab: 'model', subType: 'prostudio' },
-      { tab: 'model', subType: 'lifestyle' },
-      { tab: 'product', subType: '' },
-      { tab: 'group', subType: '' },
-      { tab: 'reference', subType: '' },
-      { tab: 'brand', subType: '' },
-    ]
+    // 如果已有缓存，跳过
+    if (getCache(cacheKey)) {
+      console.log(`[Gallery] Cache hit for ${cacheKey}, skip preload`)
+      return
+    }
     
-    // 并行预加载（静默加载，不影响当前 tab 的显示）
-    const preloadPromises = tabsToPreload.map(async ({ tab, subType }) => {
-      const cacheKey = tab === 'model' ? `${tab}_${subType}` : tab
+    try {
+      const response = await fetch(`/api/gallery?type=${tab}&page=1&subType=${subType}`, {
+        cache: 'no-store',
+      })
+      const result = await response.json()
       
-      // 如果已有缓存，跳过
-      if (getCache(cacheKey)) return
-      
-      try {
-        const response = await fetch(`/api/gallery?type=${tab}&page=1&subType=${subType}`, {
-          cache: 'no-store',
+      if (result.success) {
+        setCache(cacheKey, {
+          items: result.data.items,
+          hasMore: result.data.hasMore,
+          currentPage: 1,
+          pendingTasks: result.data.pendingTasks || [],
+          fetchedAt: Date.now(),
         })
-        const result = await response.json()
-        
-        if (result.success) {
-          setCache(cacheKey, {
-            items: result.data.items,
-            hasMore: result.data.hasMore,
-            currentPage: 1,
-            pendingTasks: result.data.pendingTasks || [],
-            fetchedAt: Date.now(),
-          })
-          console.log(`[Gallery] Preloaded ${cacheKey}: ${result.data.items.length} items`)
-        }
-      } catch (error) {
-        console.error(`[Gallery] Failed to preload ${cacheKey}:`, error)
+        console.log(`[Gallery] Preloaded ${cacheKey}: ${result.data.items.length} items`)
       }
-    })
-    
-    // 等待所有预加载完成（静默）
-    await Promise.allSettled(preloadPromises)
+    } catch (error) {
+      console.error(`[Gallery] Failed to preload ${cacheKey}:`, error)
+    }
   }
   
-  // 首次加载时预加载所有 tab
-  const hasPreloadedRef = useRef(false)
+  // 首次加载时并行预加载所有 tab
+  const hasStartedPreloadRef = useRef(false)
   useEffect(() => {
-    if (user && !hasPreloadedRef.current) {
-      hasPreloadedRef.current = true
-      // 先加载当前 tab，然后后台预加载其他 tab
-      fetchGalleryData(1, false, false).then(() => {
-        preloadAllTabs()
+    if (user && !hasStartedPreloadRef.current) {
+      hasStartedPreloadRef.current = true
+      
+      // 并行预加载所有 tab（包括当前 tab）
+      console.log('[Gallery] Starting parallel preload for all tabs')
+      Promise.allSettled(
+        ALL_TABS_TO_PRELOAD.map(({ tab, subType }) => preloadSingleTab(tab, subType))
+      ).then(() => {
+        console.log('[Gallery] All tabs preloaded')
       })
+      
+      // 同时立即加载当前 tab（会比预加载先完成并显示）
+      fetchGalleryData(1, false, false)
     }
   }, [user])
   
-  // 当 tab 切换、二级分类切换时加载数据（优先使用缓存，预加载后应该命中缓存）
+  // 当 tab 切换、二级分类切换时加载数据（优先使用缓存）
   useEffect(() => {
-    if (user && hasPreloadedRef.current) {
-      // 不在这里设置 loading，让 fetchGalleryData 自己管理
-      // 预加载后应该命中缓存，切换 tab 瞬间完成
+    if (user && hasStartedPreloadRef.current) {
+      // fetchGalleryData 内部会检查缓存，命中则立即返回
       fetchGalleryData(1, false, false)
     }
   }, [activeTab, modelSubType])
