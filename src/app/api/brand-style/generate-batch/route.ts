@@ -167,8 +167,8 @@ async function generateImage(
   return await uploadImageToSupabase(generatedImageBase64, 'image/png')
 }
 
-// Generate video using Together AI Sora 2
-async function generateVideo(prompt: string, brandSummary: string): Promise<string | null> {
+// Start video generation job (returns job ID for polling)
+async function startVideoGeneration(prompt: string, brandSummary: string): Promise<string | null> {
   const apiKey = process.env.TOGETHER_API_KEY
   if (!apiKey) {
     console.log('[Together] No API key, skipping video generation')
@@ -190,7 +190,7 @@ async function generateVideo(prompt: string, brandSummary: string): Promise<stri
 
 注意：不要描述人物的穿着，专注于动作、环境和拍摄技法。`
 
-  // Create video job
+  // Create video job (don't wait for completion)
   const createResponse = await fetch(`${TOGETHER_API_BASE}/videos`, {
     method: 'POST',
     headers: {
@@ -213,40 +213,9 @@ async function generateVideo(prompt: string, brandSummary: string): Promise<stri
 
   const { id: videoId } = await createResponse.json()
   console.log('[Together] Video job created:', videoId)
-
-  // Poll for completion
-  const maxAttempts = 120
-  const pollInterval = 5000
   
-  for (let i = 0; i < maxAttempts; i++) {
-    await new Promise(resolve => setTimeout(resolve, pollInterval))
-    
-    const statusResponse = await fetch(`${TOGETHER_API_BASE}/videos/${videoId}`, {
-      headers: { 'Authorization': `Bearer ${apiKey}` }
-    })
-    
-    if (!statusResponse.ok) {
-      throw new Error(`Failed to poll video status`)
-    }
-    
-    const data = await statusResponse.json()
-    
-    if (data.status === 'completed') {
-      const videoUrl = data.outputs?.video_url
-      if (!videoUrl) throw new Error('No video URL in response')
-      
-      // Download and re-upload to Supabase
-      const downloadResponse = await fetch(videoUrl)
-      const videoBuffer = Buffer.from(await downloadResponse.arrayBuffer())
-      return await uploadVideoToSupabase(videoBuffer, 'video/mp4')
-    }
-    
-    if (data.status === 'failed') {
-      throw new Error(`Video generation failed: ${data.error?.message || 'Unknown error'}`)
-    }
-  }
-  
-  throw new Error('Video generation timed out')
+  // Return job ID for frontend polling
+  return videoId
 }
 
 // Task definition
@@ -333,14 +302,15 @@ export async function POST(request: NextRequest) {
               send({ type: 'progress', taskId: task.id, status: 'completed', result: imageUrl })
               
             } else if (task.type === 'video') {
-              const videoUrl = await generateVideo(
+              // Start video job and return ID for frontend polling
+              const videoJobId = await startVideoGeneration(
                 analysisData.video.prompt,
                 brandSummary
               )
               
-              if (videoUrl) {
-                results.video = videoUrl
-                send({ type: 'progress', taskId: task.id, status: 'completed', result: videoUrl })
+              if (videoJobId) {
+                // Send job ID, frontend will poll for completion
+                send({ type: 'progress', taskId: task.id, status: 'video_started', videoJobId })
               } else {
                 send({ type: 'progress', taskId: task.id, status: 'error', error: 'Video generation not available' })
               }

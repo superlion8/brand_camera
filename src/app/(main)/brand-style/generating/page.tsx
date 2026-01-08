@@ -37,6 +37,8 @@ export default function GeneratingPage() {
   const [analysisData, setAnalysisData] = useState<any>(null)
   const [zoomImage, setZoomImage] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [videoJobId, setVideoJobId] = useState<string | null>(null)
+  const [finalResults, setFinalResults] = useState<any>(null)
 
   // Load analysis data
   useEffect(() => {
@@ -125,19 +127,28 @@ export default function GeneratingPage() {
         break
         
       case 'progress':
-        // Update task status
-        setTasks(prev => prev.map(task => 
-          task.id === event.taskId
-            ? { ...task, status: event.status, result: event.result, error: event.error }
-            : task
-        ))
+        // Handle video_started specially
+        if (event.status === 'video_started' && event.videoJobId) {
+          setVideoJobId(event.videoJobId)
+          setTasks(prev => prev.map(task => 
+            task.id === event.taskId
+              ? { ...task, status: 'generating' }
+              : task
+          ))
+        } else {
+          // Update task status
+          setTasks(prev => prev.map(task => 
+            task.id === event.taskId
+              ? { ...task, status: event.status, result: event.result, error: event.error }
+              : task
+          ))
+        }
         break
         
       case 'complete':
-        // Store results and navigate
-        console.log('[Generate] All done, results:', event.results)
-        sessionStorage.setItem('brandStyleResults', JSON.stringify(event.results))
-        router.push('/brand-style/results')
+        // Store results for later (may need to add video)
+        console.log('[Generate] Images done, results:', event.results)
+        setFinalResults(event.results)
         break
         
       case 'error':
@@ -145,6 +156,63 @@ export default function GeneratingPage() {
         break
     }
   }
+
+  // Poll video status when we have a job ID
+  useEffect(() => {
+    if (!videoJobId) return
+    
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/brand-style/video-status?videoId=${videoJobId}`)
+        const data = await res.json()
+        
+        if (data.status === 'completed' && data.videoUrl) {
+          clearInterval(pollInterval)
+          setTasks(prev => prev.map(task => 
+            task.id === 'video'
+              ? { ...task, status: 'completed', result: data.videoUrl }
+              : task
+          ))
+          setVideoJobId(null)
+        } else if (data.status === 'failed') {
+          clearInterval(pollInterval)
+          setTasks(prev => prev.map(task => 
+            task.id === 'video'
+              ? { ...task, status: 'error', error: data.error || 'Video generation failed' }
+              : task
+          ))
+          setVideoJobId(null)
+        }
+        // If still in_progress, keep polling
+      } catch (error) {
+        console.error('[Video Poll] Error:', error)
+      }
+    }, 5000) // Poll every 5 seconds
+    
+    return () => clearInterval(pollInterval)
+  }, [videoJobId])
+
+  // Navigate to results when all tasks are done
+  useEffect(() => {
+    if (!finalResults) return
+    
+    const allDone = tasks.length > 0 && tasks.every(t => 
+      t.status === 'completed' || t.status === 'error'
+    )
+    
+    if (allDone) {
+      // Add video to results if completed
+      const videoTask = tasks.find(t => t.id === 'video')
+      const resultsWithVideo = {
+        ...finalResults,
+        video: videoTask?.result || finalResults.video
+      }
+      
+      console.log('[Generate] All tasks done, navigating...', resultsWithVideo)
+      sessionStorage.setItem('brandStyleResults', JSON.stringify(resultsWithVideo))
+      router.push('/brand-style/results')
+    }
+  }, [tasks, finalResults, router])
 
   const completedCount = tasks.filter(t => t.status === 'completed').length
   const progress = tasks.length > 0 ? (completedCount / tasks.length) * 100 : 0
