@@ -34,26 +34,10 @@ export default function GeneratingPage() {
   const { t } = useTranslation()
   const abortControllerRef = useRef<AbortController | null>(null)
 
-  // Initialize tasks with translations
-  const getInitialTasks = (): GenerationTask[] => [
-    { id: 'web-1', title: `${t.brandStyle.webStyleImage} 1`, type: 'image', status: 'pending' },
-    { id: 'web-2', title: `${t.brandStyle.webStyleImage} 2`, type: 'image', status: 'pending' },
-    { id: 'ins-1', title: `${t.brandStyle.insStyleImage} 1`, type: 'image', status: 'pending' },
-    { id: 'ins-2', title: `${t.brandStyle.insStyleImage} 2`, type: 'image', status: 'pending' },
-    { id: 'product', title: t.brandStyle.productDisplayImage, type: 'image', status: 'pending' },
-    { id: 'video', title: t.brandStyle.ugcVideo, type: 'video', status: 'pending' },
-  ]
-
-  const [tasks, setTasks] = useState<GenerationTask[]>(getInitialTasks())
-
+  const [tasks, setTasks] = useState<GenerationTask[]>([])
   const [analysisData, setAnalysisData] = useState<any>(null)
   const [zoomImage, setZoomImage] = useState<string | null>(null)
-  
-  // Use ref to store results (avoid closure issues)
-  const resultsRef = useRef<{ images: { id: string; title: string; url: string }[]; video?: string }>({
-    images: [],
-    video: undefined
-  })
+  const [isGenerating, setIsGenerating] = useState(false)
 
   // Load analysis data
   useEffect(() => {
@@ -64,168 +48,107 @@ export default function GeneratingPage() {
     }
     const data = JSON.parse(stored)
     setAnalysisData(data)
-    
-    // Filter tasks based on available data
-    setTasks(prev => prev.filter(task => {
-      // Web style images require productPage data with modelImage
-      if (task.id.startsWith('web-')) {
-        return data.productPage?.modelImage
-      }
-      // INS style images require instagram data
-      if (task.id.startsWith('ins-')) {
-        return data.instagram?.bestModelImage
-      }
-      // Product display requires productPage.productImage
-      if (task.id === 'product') {
-        return data.productPage?.productImage
-      }
-      // Video requires video data
-      if (task.id === 'video') {
-        return data.video?.prompt
-      }
-      return true
-    }))
   }, [router])
 
-  // Start generation
+  // Start generation when analysis data is loaded
   useEffect(() => {
-    if (!analysisData) return
+    if (!analysisData || isGenerating) return
     
+    setIsGenerating(true)
     abortControllerRef.current = new AbortController()
-    runGeneration()
+    runBatchGeneration()
     
     return () => {
       abortControllerRef.current?.abort()
     }
   }, [analysisData])
 
-  const updateTask = (taskId: string, updates: Partial<GenerationTask>, taskTitle?: string, taskType?: 'image' | 'video') => {
-    setTasks(prev => prev.map(task => 
-      task.id === taskId ? { ...task, ...updates } : task
-    ))
-    
-    // Also update resultsRef for completed tasks (avoid closure issues when saving)
-    if (updates.status === 'completed' && updates.result) {
-      if (taskType === 'video' || taskId === 'video') {
-        resultsRef.current.video = updates.result
-      } else {
-        // Add to images array if not already there
-        if (!resultsRef.current.images.find(img => img.id === taskId)) {
-          resultsRef.current.images.push({
-            id: taskId,
-            title: taskTitle || taskId,
-            url: updates.result
-          })
-        }
-      }
-    }
-  }
-
-  const runGeneration = async () => {
+  const runBatchGeneration = async () => {
     if (!analysisData) return
     const signal = abortControllerRef.current?.signal
 
-    const generateImage = async (taskId: string, taskTitle: string, type: string, referenceImage: string) => {
-      updateTask(taskId, { status: 'generating' })
-      
-      try {
-        const res = await fetch('/api/brand-style/generate-image', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            productImage: analysisData.productImage,
-            referenceImage,
-            type,
-            brandSummary: analysisData.summary?.summary || '',
-            styleKeywords: analysisData.summary?.styleKeywords || []
-          }),
-          signal
-        })
+    try {
+      const response = await fetch('/api/brand-style/generate-batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ analysisData }),
+        signal
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to start generation')
+      }
+
+      const reader = response.body?.getReader()
+      if (!reader) {
+        throw new Error('No response stream')
+      }
+
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
         
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}))
-          throw new Error(errorData.error || 'Generation failed')
+        // Parse SSE events
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || '' // Keep incomplete line in buffer
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6))
+              handleStreamEvent(data)
+            } catch {
+              // Ignore parse errors
+            }
+          }
         }
-        const data = await res.json()
-        
-        updateTask(taskId, { status: 'completed', result: data.imageUrl }, taskTitle, 'image')
-      } catch (error) {
-        if ((error as Error).name === 'AbortError') return
-        console.error(`[Generate] ${taskId} failed:`, error)
-        updateTask(taskId, { status: 'error', error: (error as Error).message })
       }
-    }
 
-    const generateVideo = async () => {
-      if (!analysisData.video?.prompt) return // Skip if no video data
-      
-      updateTask('video', { status: 'generating' })
-      
-      try {
-        const res = await fetch('/api/brand-style/generate-video', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            productImage: analysisData.productImage,
-            prompt: analysisData.video.prompt,
-            brandSummary: analysisData.summary?.summary || ''
-          }),
-          signal
-        })
+    } catch (error) {
+      if ((error as Error).name === 'AbortError') return
+      console.error('[Generate] Batch generation failed:', error)
+    }
+  }
+
+  const handleStreamEvent = (event: any) => {
+    switch (event.type) {
+      case 'init':
+        // Initialize tasks from server
+        setTasks(event.tasks.map((t: any) => ({
+          ...t,
+          status: 'pending'
+        })))
+        break
         
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}))
-          throw new Error(errorData.error || 'Video generation failed')
-        }
-        const data = await res.json()
+      case 'progress':
+        // Update task status
+        setTasks(prev => prev.map(task => 
+          task.id === event.taskId
+            ? { ...task, status: event.status, result: event.result, error: event.error }
+            : task
+        ))
+        break
         
-        updateTask('video', { status: 'completed', result: data.videoUrl }, 'UGC 短视频', 'video')
-      } catch (error) {
-        if ((error as Error).name === 'AbortError') return
-        console.error('[Generate] video failed:', error)
-        updateTask('video', { status: 'error', error: (error as Error).message })
-      }
+      case 'complete':
+        // Store results and navigate
+        console.log('[Generate] All done, results:', event.results)
+        sessionStorage.setItem('brandStyleResults', JSON.stringify(event.results))
+        router.push('/brand-style/results')
+        break
+        
+      case 'error':
+        console.error('[Generate] Error:', event.error)
+        break
     }
-
-    // Generate images in sequence (to avoid rate limits)
-    if (analysisData?.productPage?.modelImage) {
-      await generateImage('web-1', `${t.brandStyle.webStyleImage} 1`, 'web', analysisData.productPage.modelImage)
-      await generateImage('web-2', `${t.brandStyle.webStyleImage} 2`, 'web', analysisData.productPage.modelImage)
-    }
-    
-    if (analysisData?.instagram?.bestModelImage) {
-      await generateImage('ins-1', `${t.brandStyle.insStyleImage} 1`, 'ins', analysisData.instagram.bestModelImage)
-      await generateImage('ins-2', `${t.brandStyle.insStyleImage} 2`, 'ins', analysisData.instagram.bestModelImage)
-    }
-    
-    if (analysisData?.productPage?.productImage) {
-      await generateImage('product', t.brandStyle.productDisplayImage, 'product', analysisData.productPage.productImage)
-    }
-    
-    // Generate video last
-    if (analysisData?.video) {
-      await generateVideo()
-    }
-
-    // Store results from ref (not from state, to avoid closure issues)
-    // Include original images for comparison display
-    const fullResults = {
-      ...resultsRef.current,
-      originals: {
-        webModelImage: analysisData?.productPage?.modelImage || undefined,
-        productImage: analysisData?.productPage?.productImage || undefined,
-        insImage: analysisData?.instagram?.bestModelImage || undefined,
-        videoUrl: analysisData?.video?.videoUrl || undefined,
-        videoPrompt: analysisData?.video?.prompt || undefined
-      }
-    }
-    console.log('[Generate] All done, results:', fullResults)
-    sessionStorage.setItem('brandStyleResults', JSON.stringify(fullResults))
-    router.push('/brand-style/results')
   }
 
   const completedCount = tasks.filter(t => t.status === 'completed').length
-  const progress = (completedCount / tasks.length) * 100
+  const progress = tasks.length > 0 ? (completedCount / tasks.length) * 100 : 0
 
   return (
     <div className="h-full flex flex-col bg-zinc-50">
@@ -416,4 +339,3 @@ export default function GeneratingPage() {
     </div>
   )
 }
-
