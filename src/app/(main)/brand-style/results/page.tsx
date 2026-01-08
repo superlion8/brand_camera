@@ -399,12 +399,14 @@ export default function ResultsPage() {
             />
           )}
 
-          {/* Video Comparison */}
-          <VideoComparison
-            originalUrl={results.originals?.videoUrl}
-            originalPrompt={results.originals?.videoPrompt}
-            generatedUrl={results.video}
-          />
+          {/* Video Comparison - only show if video data exists */}
+          {(results.video || results.originals?.videoUrl || results.originals?.videoPrompt) && (
+            <VideoComparison
+              originalUrl={results.originals?.videoUrl}
+              originalPrompt={results.originals?.videoPrompt}
+              generatedUrl={results.video}
+            />
+          )}
         </div>
       </div>
 
@@ -417,14 +419,14 @@ export default function ResultsPage() {
               className="px-8 h-12 rounded-xl border border-zinc-200 text-zinc-700 font-medium flex items-center gap-2 hover:bg-zinc-50 transition-colors"
             >
               <RefreshCw className="w-5 h-5" />
-              重新生成
+              {t.brandStyle.newGeneration}
             </button>
             <button
               onClick={() => router.push('/gallery')}
               className="px-8 h-12 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-medium flex items-center gap-2 hover:from-violet-600 hover:to-purple-700 transition-colors"
             >
               <ImageIcon className="w-5 h-5" />
-              查看图库
+              {t.nav?.gallery}
             </button>
           </div>
         </div>
@@ -435,14 +437,14 @@ export default function ResultsPage() {
             className="flex-1 h-12 rounded-xl border border-zinc-200 text-zinc-700 font-medium flex items-center justify-center gap-2"
           >
             <RefreshCw className="w-5 h-5" />
-            重新生成
+            {t.brandStyle.newGeneration}
           </button>
           <button
             onClick={() => router.push('/gallery')}
             className="flex-1 h-12 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-medium flex items-center justify-center gap-2"
           >
             <ImageIcon className="w-5 h-5" />
-            图库
+            {t.nav?.gallery}
           </button>
         </div>
       )}
