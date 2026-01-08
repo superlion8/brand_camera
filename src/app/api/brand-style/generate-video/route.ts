@@ -51,8 +51,7 @@ export async function POST(request: NextRequest) {
         model: 'openai/sora-2',
         prompt: videoPrompt,
         seconds: '6',
-        fps: 24,
-        output_format: 'MP4',
+        // Sora 2 only supports fps: 30
       })
     })
 
