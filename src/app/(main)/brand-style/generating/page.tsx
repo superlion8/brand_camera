@@ -20,7 +20,6 @@ import { useTranslation } from '@/stores/languageStore'
 
 interface GenerationTask {
   id: string
-  title: string
   type: 'image' | 'video'
   status: 'pending' | 'generating' | 'completed' | 'error'
   result?: string
@@ -150,6 +149,19 @@ export default function GeneratingPage() {
   const completedCount = tasks.filter(t => t.status === 'completed').length
   const progress = tasks.length > 0 ? (completedCount / tasks.length) * 100 : 0
 
+  // Get translated task title based on task ID
+  const getTaskTitle = (taskId: string): string => {
+    const titleMap: Record<string, string> = {
+      'web-1': `${t.brandStyle.webStyleImage} 1`,
+      'web-2': `${t.brandStyle.webStyleImage} 2`,
+      'ins-1': `${t.brandStyle.insStyleImage} 1`,
+      'ins-2': `${t.brandStyle.insStyleImage} 2`,
+      'product': t.brandStyle.productDisplayImage,
+      'video': t.brandStyle.ugcVideo,
+    }
+    return titleMap[taskId] || taskId
+  }
+
   return (
     <div className="h-full flex flex-col bg-zinc-50">
       {/* Header */}
@@ -222,7 +234,7 @@ export default function GeneratingPage() {
                         onClick={() => setZoomImage(task.result!)}
                         className="w-full h-full relative group cursor-pointer"
                       >
-                        <Image src={task.result} alt={task.title} fill className="object-cover" unoptimized />
+                        <Image src={task.result} alt={getTaskTitle(task.id)} fill className="object-cover" unoptimized />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                           <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
@@ -274,7 +286,7 @@ export default function GeneratingPage() {
                     ) : (
                       <ImageIcon className="w-4 h-4 text-zinc-400" />
                     )}
-                    <span className="text-sm font-medium text-zinc-700">{task.title}</span>
+                    <span className="text-sm font-medium text-zinc-700">{getTaskTitle(task.id)}</span>
                   </div>
                 </div>
               </motion.div>

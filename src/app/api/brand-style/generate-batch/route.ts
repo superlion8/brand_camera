@@ -252,7 +252,6 @@ async function generateVideo(prompt: string, brandSummary: string): Promise<stri
 // Task definition
 interface TaskDefinition {
   id: string
-  title: string
   type: 'image' | 'video'
   imageType?: 'web' | 'ins' | 'product'
 }
@@ -284,21 +283,21 @@ export async function POST(request: NextRequest) {
         const tasks: TaskDefinition[] = []
         
         if (analysisData.productPage?.modelImage) {
-          tasks.push({ id: 'web-1', title: '官网风格图 1', type: 'image', imageType: 'web' })
-          tasks.push({ id: 'web-2', title: '官网风格图 2', type: 'image', imageType: 'web' })
+          tasks.push({ id: 'web-1', type: 'image', imageType: 'web' })
+          tasks.push({ id: 'web-2', type: 'image', imageType: 'web' })
         }
         
         if (analysisData.instagram?.bestModelImage) {
-          tasks.push({ id: 'ins-1', title: 'INS风格图 1', type: 'image', imageType: 'ins' })
-          tasks.push({ id: 'ins-2', title: 'INS风格图 2', type: 'image', imageType: 'ins' })
+          tasks.push({ id: 'ins-1', type: 'image', imageType: 'ins' })
+          tasks.push({ id: 'ins-2', type: 'image', imageType: 'ins' })
         }
         
         if (analysisData.productPage?.productImage) {
-          tasks.push({ id: 'product', title: '商品展示图', type: 'image', imageType: 'product' })
+          tasks.push({ id: 'product', type: 'image', imageType: 'product' })
         }
         
         if (analysisData.video?.prompt) {
-          tasks.push({ id: 'video', title: 'UGC短视频', type: 'video' })
+          tasks.push({ id: 'video', type: 'video' })
         }
 
         // Send initial task list
@@ -330,7 +329,7 @@ export async function POST(request: NextRequest) {
                 styleKeywords
               )
               
-              results.images.push({ id: task.id, title: task.title, url: imageUrl })
+              results.images.push({ id: task.id, url: imageUrl })
               send({ type: 'progress', taskId: task.id, status: 'completed', result: imageUrl })
               
             } else if (task.type === 'video') {
