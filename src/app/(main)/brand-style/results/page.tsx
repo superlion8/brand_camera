@@ -173,7 +173,13 @@ export default function ResultsPage() {
                   }`}
                   onClick={() => setSelectedImage(getProxiedUrl(originalImage))}
                 >
-                  <Image src={getProxiedUrl(originalImage)} alt={originalLabel} fill className="object-cover" unoptimized />
+                  {/* Use native img for proxied external images to avoid Next.js Image issues */}
+                  <img 
+                    src={getProxiedUrl(originalImage)} 
+                    alt={originalLabel} 
+                    className="absolute inset-0 w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
                   <div className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-zinc-700/80 rounded text-[10px] text-white">
                     {t.brandStyle.original}
                   </div>
