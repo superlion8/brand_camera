@@ -96,7 +96,7 @@ function extractImagesWithContext(pageContent: string): ImageWithContext[] {
   let match
   
   // Pattern 1: Markdown images - both ![alt](url) and [![alt](url)] formats
-  const mdRegex = /(.{0,100})\[?!\[([^\]]*)\]\(((?:https?:)?\/\/[^\s\)]+)\)/gs
+  const mdRegex = /(.{0,100})\[?!\[([^\]]*)\]\(((?:https?:)?\/\/[^\s\)]+)\)/g
   let mdCount = 0
   while ((match = mdRegex.exec(pageContent)) !== null) {
     mdCount++
