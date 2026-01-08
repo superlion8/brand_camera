@@ -88,7 +88,7 @@ export function Sidebar({ className }: { className?: string }) {
     },
     {
       id: 'brand-style',
-      label: '品牌风格分析',
+      label: t.home?.brandStyle || 'Brand Style Analysis',
       icon: <Palette className="w-5 h-5" />,
       href: '/brand-style',
       badge: 'NEW',

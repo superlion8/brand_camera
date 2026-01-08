@@ -239,7 +239,7 @@ export default function ConfirmPage() {
           >
             <div className="flex items-center gap-2 mb-3">
               <ImageIcon className="w-5 h-5" />
-              <h2 className="font-semibold">待生成商品</h2>
+              <h2 className="font-semibold">{t.brandStyle?.pendingProduct}</h2>
             </div>
             <div className="flex gap-4">
               <div className="relative w-24 h-32 rounded-xl overflow-hidden bg-white/20">
@@ -253,27 +253,33 @@ export default function ConfirmPage() {
               </div>
               <div className="flex-1">
                 <p className="text-white/80 text-sm leading-relaxed">
-                  AI 将基于您的品牌风格，为这件商品生成：
+                  {t.brandStyle?.aiWillGenerate}
                 </p>
                 <ul className="mt-2 space-y-1 text-sm">
-                  <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4" />
-                    <span>2 张官网风格模特图</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4" />
-                    <span>2 张 INS 风格模特图</span>
-                  </li>
-                  {analysisData.productPage.productImage && (
+                  {analysisData.productPage && (
                     <li className="flex items-center gap-2">
                       <Check className="w-4 h-4" />
-                      <span>1 张商品展示图</span>
+                      <span>{t.brandStyle?.webStyleCount}</span>
                     </li>
                   )}
-                  <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4" />
-                    <span>1 条 UGC 风格短视频</span>
-                  </li>
+                  {analysisData.instagram && (
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4" />
+                      <span>{t.brandStyle?.insStyleCount}</span>
+                    </li>
+                  )}
+                  {analysisData.productPage?.productImage && (
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4" />
+                      <span>{t.brandStyle?.productImageCount}</span>
+                    </li>
+                  )}
+                  {analysisData.video && (
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4" />
+                      <span>{t.brandStyle?.ugcVideoCount}</span>
+                    </li>
+                  )}
                 </ul>
               </div>
             </div>
@@ -446,11 +452,11 @@ export default function ConfirmPage() {
                 <div className="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center">
                   <Sparkles className="w-4 h-4 text-violet-600" />
                 </div>
-                <h3 className="font-semibold text-zinc-900">品牌风格摘要</h3>
+                <h3 className="font-semibold text-zinc-900">{t.brandStyle?.brandStyleSummary}</h3>
               </div>
               <button className="text-violet-600 text-sm font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Edit3 className="w-4 h-4" />
-                编辑
+                {t.common?.edit}
               </button>
             </div>
             <p className="text-sm text-zinc-700 leading-relaxed mb-4">
@@ -536,7 +542,7 @@ export default function ConfirmPage() {
             >
               <div className="p-4 border-b flex items-center justify-between">
                 <h3 className="font-semibold text-lg">
-                  选择{editingField === 'webModel' ? '官网模特' : editingField === 'insModel' ? 'INS 模特' : '商品'}参考图
+                  {editingField === 'webModel' ? t.brandStyle?.selectWebModel : editingField === 'insModel' ? t.brandStyle?.selectInsModel : t.brandStyle?.selectProductRef}
                 </h3>
                 <button
                   onClick={() => setEditingField(null)}
@@ -561,12 +567,12 @@ export default function ConfirmPage() {
                     className="w-full h-20 border-2 border-dashed border-zinc-300 rounded-xl flex items-center justify-center gap-2 text-zinc-500 hover:border-violet-400 hover:text-violet-600 transition-colors"
                   >
                     <Upload className="w-5 h-5" />
-                    <span>上传新图片</span>
+                    <span>{t.brandStyle?.uploadNewImage}</span>
                   </button>
                 </div>
 
                 {/* Available Images */}
-                <p className="text-sm text-zinc-500 mb-3">或从分析结果中选择：</p>
+                <p className="text-sm text-zinc-500 mb-3">{t.brandStyle?.selectFromResults}</p>
                 <div className="grid grid-cols-3 gap-3">
                   {getAvailableImages(editingField as 'webModel' | 'insModel' | 'productRef').map((img, i) => (
                     <button
@@ -586,7 +592,7 @@ export default function ConfirmPage() {
                 </div>
 
                 {getAvailableImages(editingField as 'webModel' | 'insModel' | 'productRef').length === 0 && (
-                  <p className="text-center text-zinc-400 py-8">暂无可选图片，请上传新图片</p>
+                  <p className="text-center text-zinc-400 py-8">{t.brandStyle?.noImagesAvailable}</p>
                 )}
               </div>
             </motion.div>
@@ -613,7 +619,7 @@ export default function ConfirmPage() {
             >
               <div className="p-4 border-b flex items-center justify-between">
                 <h3 className="font-semibold text-lg">
-                  编辑{editingField === 'videoPrompt' ? '视频提示词' : '品牌风格摘要'}
+                  {editingField === 'videoPrompt' ? t.brandStyle?.editVideoPrompt : t.brandStyle?.editBrandSummary}
                 </h3>
                 <button
                   onClick={() => setEditingField(null)}
@@ -629,13 +635,13 @@ export default function ConfirmPage() {
                   onChange={(e) => setEditingText(e.target.value)}
                   rows={editingField === 'videoPrompt' ? 6 : 4}
                   className="w-full p-3 border border-zinc-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
-                  placeholder={editingField === 'videoPrompt' ? '描述视频风格...' : '描述品牌风格...'}
+                  placeholder={editingField === 'videoPrompt' ? t.brandStyle?.videoPromptPlaceholder : t.brandStyle?.brandSummaryPlaceholder}
                 />
 
                 {/* Keywords Editor for Brand Summary */}
                 {editingField === 'brandSummary' && (
                   <div>
-                    <p className="text-sm font-medium text-zinc-700 mb-2">风格关键词</p>
+                    <p className="text-sm font-medium text-zinc-700 mb-2">{t.brandStyle?.styleKeywords}</p>
                     <div className="flex flex-wrap gap-2 mb-3">
                       {editingKeywords.map((keyword, i) => (
                         <span 
@@ -658,14 +664,14 @@ export default function ConfirmPage() {
                         value={newKeyword}
                         onChange={(e) => setNewKeyword(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && addKeyword()}
-                        placeholder="添加关键词..."
+                        placeholder={t.brandStyle?.inputKeyword}
                         className="flex-1 px-3 py-2 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                       />
                       <button
                         onClick={addKeyword}
                         className="px-4 py-2 bg-violet-100 text-violet-700 rounded-lg text-sm font-medium hover:bg-violet-200"
                       >
-                        添加
+                        {t.brandStyle?.addKeyword}
                       </button>
                     </div>
                   </div>
@@ -677,13 +683,13 @@ export default function ConfirmPage() {
                   onClick={() => setEditingField(null)}
                   className="flex-1 h-11 rounded-xl border border-zinc-200 text-zinc-700 font-medium hover:bg-zinc-50"
                 >
-                  取消
+                  {t.brandStyle?.cancel}
                 </button>
                 <button
                   onClick={handleSaveText}
                   className="flex-1 h-11 rounded-xl bg-violet-600 text-white font-medium hover:bg-violet-700"
                 >
-                  保存
+                  {t.brandStyle?.save}
                 </button>
               </div>
             </motion.div>

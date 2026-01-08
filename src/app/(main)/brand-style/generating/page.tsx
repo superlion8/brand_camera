@@ -189,17 +189,17 @@ export default function GeneratingPage() {
 
     // Generate images in sequence (to avoid rate limits)
     if (analysisData?.productPage?.modelImage) {
-      await generateImage('web-1', '官网风格图 1', 'web', analysisData.productPage.modelImage)
-      await generateImage('web-2', '官网风格图 2', 'web', analysisData.productPage.modelImage)
+      await generateImage('web-1', `${t.brandStyle.webStyleImage} 1`, 'web', analysisData.productPage.modelImage)
+      await generateImage('web-2', `${t.brandStyle.webStyleImage} 2`, 'web', analysisData.productPage.modelImage)
     }
     
     if (analysisData?.instagram?.bestModelImage) {
-      await generateImage('ins-1', 'INS 风格图 1', 'ins', analysisData.instagram.bestModelImage)
-      await generateImage('ins-2', 'INS 风格图 2', 'ins', analysisData.instagram.bestModelImage)
+      await generateImage('ins-1', `${t.brandStyle.insStyleImage} 1`, 'ins', analysisData.instagram.bestModelImage)
+      await generateImage('ins-2', `${t.brandStyle.insStyleImage} 2`, 'ins', analysisData.instagram.bestModelImage)
     }
     
     if (analysisData?.productPage?.productImage) {
-      await generateImage('product', '商品展示图', 'product', analysisData.productPage.productImage)
+      await generateImage('product', t.brandStyle.productDisplayImage, 'product', analysisData.productPage.productImage)
     }
     
     // Generate video last
