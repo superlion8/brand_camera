@@ -478,22 +478,18 @@ export default function HomePage() {
           </div>
         </motion.div>
 
-        {/* Create Custom Model & Brand Style - PC: 16:9 cards side by side */}
+        {/* Create Custom Model & Brand Style - PC: 16:9 grid cards */}
         <motion.div className="px-4 lg:px-0 mt-4" variants={sectionVariants}>
-          <div className="flex flex-col lg:flex-row lg:gap-4">
-            {/* Create Custom Model Card */}
+          {/* Mobile: stacked layout */}
+          <div className="flex flex-col gap-3 lg:hidden">
+            {/* Create Custom Model Card - Mobile */}
             <motion.div
               whileTap={{ scale: 0.98 }}
-              whileHover={{ scale: 1.01 }}
               onClick={handleCreateModelClick}
-              className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 p-4 lg:p-6 cursor-pointer lg:flex-1 lg:aspect-[16/9]"
+              className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 p-4 cursor-pointer"
             >
-              {/* Background decoration */}
-              <div className="absolute top-0 right-0 w-32 h-32 lg:w-48 lg:h-48 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-              <div className="absolute bottom-0 left-1/2 w-24 h-24 lg:w-36 lg:h-36 bg-white/5 rounded-full translate-y-1/2" />
-              
-              {/* Mobile: horizontal layout */}
-              <div className="flex items-center gap-4 relative z-10 lg:hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+              <div className="flex items-center gap-4 relative z-10">
                 <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shrink-0">
                   <UserRoundPlus className="w-7 h-7 text-white" />
                 </div>
@@ -508,33 +504,16 @@ export default function HomePage() {
                   <ChevronRight className="w-5 h-5 text-white" />
                 </div>
               </div>
-              
-              {/* Desktop: vertical centered layout */}
-              <div className="hidden lg:flex lg:flex-col lg:items-center lg:justify-center lg:h-full lg:text-center relative z-10">
-                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-3">
-                  <UserRoundPlus className="w-8 h-8 text-white" />
-                </div>
-                <div className="flex items-center gap-2 justify-center">
-                  <h3 className="text-lg font-bold text-white">{t.home.createCustomModel}</h3>
-                  <span className="px-1.5 py-0.5 bg-white/20 backdrop-blur-sm rounded text-[10px] font-bold text-white">NEW</span>
-                </div>
-                <p className="text-base text-white/80 mt-1">{t.home.createCustomModelDesc}</p>
-              </div>
             </motion.div>
 
-            {/* Brand Style Card */}
-            <Link href="/brand-style" className="mt-3 lg:mt-0 lg:flex-1">
+            {/* Brand Style Card - Mobile */}
+            <Link href="/brand-style">
               <motion.div
                 whileTap={{ scale: 0.98 }}
-                whileHover={{ scale: 1.01 }}
-                className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 p-4 lg:p-6 cursor-pointer lg:aspect-[16/9] h-full"
+                className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 p-4 cursor-pointer"
               >
-                {/* Background decoration */}
-                <div className="absolute top-0 right-0 w-32 h-32 lg:w-48 lg:h-48 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-                <div className="absolute bottom-0 left-1/4 w-20 h-20 lg:w-32 lg:h-32 bg-white/5 rounded-full translate-y-1/2" />
-                
-                {/* Mobile: horizontal layout */}
-                <div className="flex items-center gap-4 relative z-10 lg:hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+                <div className="flex items-center gap-4 relative z-10">
                   <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shrink-0">
                     <Palette className="w-7 h-7 text-white" />
                   </div>
@@ -549,17 +528,49 @@ export default function HomePage() {
                     <ChevronRight className="w-5 h-5 text-white" />
                   </div>
                 </div>
-                
-                {/* Desktop: vertical centered layout */}
-                <div className="hidden lg:flex lg:flex-col lg:items-center lg:justify-center lg:h-full lg:text-center relative z-10">
-                  <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-3">
-                    <Palette className="w-8 h-8 text-white" />
+              </motion.div>
+            </Link>
+          </div>
+
+          {/* Desktop: 16:9 grid cards like other sections */}
+          <div className="hidden lg:grid lg:grid-cols-4 lg:gap-4">
+            {/* Create Custom Model Card - Desktop */}
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              onClick={handleCreateModelClick}
+              className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 cursor-pointer aspect-[16/9]"
+            >
+              <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+              <div className="absolute bottom-0 left-1/4 w-16 h-16 bg-white/5 rounded-full translate-y-1/2" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center mb-2">
+                  <UserRoundPlus className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex items-center gap-1.5 justify-center">
+                  <h3 className="text-sm font-bold text-white">{t.home.createCustomModel}</h3>
+                  <span className="px-1 py-0.5 bg-white/20 backdrop-blur-sm rounded text-[8px] font-bold text-white">NEW</span>
+                </div>
+                <p className="text-xs text-white/80 mt-1">{t.home.createCustomModelDesc}</p>
+              </div>
+            </motion.div>
+
+            {/* Brand Style Card - Desktop */}
+            <Link href="/brand-style">
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 cursor-pointer aspect-[16/9]"
+              >
+                <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+                <div className="absolute bottom-0 left-1/4 w-16 h-16 bg-white/5 rounded-full translate-y-1/2" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+                  <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center mb-2">
+                    <Palette className="w-6 h-6 text-white" />
                   </div>
-                  <div className="flex items-center gap-2 justify-center">
-                    <h3 className="text-lg font-bold text-white">{t.home.brandStyle}</h3>
-                    <span className="px-1.5 py-0.5 bg-white/20 backdrop-blur-sm rounded text-[10px] font-bold text-white">NEW</span>
+                  <div className="flex items-center gap-1.5 justify-center">
+                    <h3 className="text-sm font-bold text-white">{t.home.brandStyle}</h3>
+                    <span className="px-1 py-0.5 bg-white/20 backdrop-blur-sm rounded text-[8px] font-bold text-white">NEW</span>
                   </div>
-                  <p className="text-base text-white/80 mt-1">{t.home.brandStyleSubtitle}</p>
+                  <p className="text-xs text-white/80 mt-1">{t.home.brandStyleSubtitle}</p>
                 </div>
               </motion.div>
             </Link>
