@@ -30,15 +30,16 @@ export function GalleryPreloader() {
     
     const preloadGalleryData = async () => {
       setPreloading(true)
-      console.log('[GalleryPreloader] Starting silent preload...')
+      console.log('[GalleryPreloader] Starting parallel preload...')
       
-      for (const { tab, subType } of PRELOAD_TABS) {
+      // 并行预加载所有 tab
+      const preloadPromises = PRELOAD_TABS.map(async ({ tab, subType }) => {
         const cacheKey = getCacheKey(tab, subType)
         
         // 跳过已预加载的 tab
         if (isTabPreloaded(cacheKey)) {
           console.log(`[GalleryPreloader] ${cacheKey} already preloaded, skipping`)
-          continue
+          return
         }
         
         try {
@@ -61,10 +62,9 @@ export function GalleryPreloader() {
         } catch (error) {
           console.error(`[GalleryPreloader] Failed to preload ${cacheKey}:`, error)
         }
-        
-        // 间隔 200ms，避免同时发起太多请求
-        await new Promise(r => setTimeout(r, 200))
-      }
+      })
+      
+      await Promise.allSettled(preloadPromises)
       
       setPreloading(false)
       console.log('[GalleryPreloader] Preload complete')
