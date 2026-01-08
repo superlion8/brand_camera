@@ -22,7 +22,8 @@ import {
   isEditType as isEditTypeRaw,
   isCreateModelType as isCreateModelTypeRaw,
   isReferenceShotType as isReferenceShotTypeRaw,
-  isLifestyleType as isLifestyleTypeRaw
+  isLifestyleType as isLifestyleTypeRaw,
+  isBrandStyleType as isBrandStyleTypeRaw
 } from "@/lib/taskTypes"
 import { useGalleryStore, getCacheKey } from "@/stores/galleryStore"
 import { useIsMobile } from "@/hooks/useIsMobile"
@@ -54,6 +55,9 @@ function isReferenceShotType(gen: Generation | null | undefined): boolean {
 }
 function isLifestyleType(gen: Generation | null | undefined): boolean {
   return gen ? isLifestyleTypeRaw(gen.type) : false
+}
+function isBrandStyleType(gen: Generation | null | undefined): boolean {
+  return gen ? isBrandStyleTypeRaw(gen.type) : false
 }
 
 export default function GalleryPage() {
@@ -453,6 +457,14 @@ export default function GalleryPage() {
       return { 
         label: t.gallery.lifestyleShot || 'LifeStyle 街拍', 
         color: 'bg-purple-600',
+      }
+    }
+    
+    // Brand Style types (Clone Brand Style)
+    if (isBrandStyleType(gen)) {
+      return { 
+        label: t.gallery.brand || 'Brand', 
+        color: 'bg-gradient-to-r from-violet-500 to-purple-600',
       }
     }
 
