@@ -524,12 +524,12 @@ export default function HomePage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-base lg:text-lg font-bold text-white">品牌风格分析</h3>
+                    <h3 className="text-base lg:text-lg font-bold text-white">{t.home.brandStyle}</h3>
                     <span className="px-1.5 py-0.5 bg-white/20 backdrop-blur-sm rounded text-[10px] font-bold text-white">
                       NEW
                     </span>
                   </div>
-                  <p className="text-sm lg:text-base text-white/80 mt-0.5">分析品牌风格，批量生成官网图、INS图、短视频</p>
+                  <p className="text-sm lg:text-base text-white/80 mt-0.5">{t.home.brandStyleSubtitle}</p>
                 </div>
                 <div className="w-10 h-10 lg:w-12 lg:h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shrink-0">
                   <ChevronRight className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
