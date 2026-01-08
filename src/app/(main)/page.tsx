@@ -532,25 +532,31 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {/* Desktop: 16:9 grid cards like other sections */}
+          {/* Desktop: 16:9 grid cards - same size as other cards */}
           <div className="hidden lg:grid lg:grid-cols-4 lg:gap-4">
             {/* Create Custom Model Card - Desktop */}
             <motion.div
               whileHover={{ scale: 1.02 }}
               onClick={handleCreateModelClick}
-              className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 cursor-pointer aspect-[16/9]"
+              className="relative overflow-hidden rounded-2xl cursor-pointer aspect-[16/9]"
             >
-              <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-              <div className="absolute bottom-0 left-1/4 w-16 h-16 bg-white/5 rounded-full translate-y-1/2" />
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center mb-2">
-                  <UserRoundPlus className="w-6 h-6 text-white" />
+              {/* Background image - 使用 model 相关图片 */}
+              <Image
+                src={`${HOMEPAGE_STORAGE_URL}/pro-studio-after.png?v=2`}
+                alt="Create Custom Model"
+                fill
+                className="object-cover"
+                unoptimized
+              />
+              {/* Gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-violet-600/90 via-purple-500/60 to-transparent" />
+              {/* Content */}
+              <div className="absolute inset-0 flex flex-col justify-end p-3">
+                <div className="flex items-center gap-1.5">
+                  <span className="px-1.5 py-0.5 bg-purple-500 rounded text-[10px] font-bold text-white">NEW</span>
                 </div>
-                <div className="flex items-center gap-1.5 justify-center">
-                  <h3 className="text-sm font-bold text-white">{t.home.createCustomModel}</h3>
-                  <span className="px-1 py-0.5 bg-white/20 backdrop-blur-sm rounded text-[8px] font-bold text-white">NEW</span>
-                </div>
-                <p className="text-xs text-white/80 mt-1">{t.home.createCustomModelDesc}</p>
+                <h3 className="text-sm font-bold text-white mt-1">{t.home.createCustomModel}</h3>
+                <p className="text-xs text-white/80">{t.home.createCustomModelDesc}</p>
               </div>
             </motion.div>
 
@@ -558,19 +564,25 @@ export default function HomePage() {
             <Link href="/brand-style">
               <motion.div
                 whileHover={{ scale: 1.02 }}
-                className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 cursor-pointer aspect-[16/9]"
+                className="relative overflow-hidden rounded-2xl cursor-pointer aspect-[16/9]"
               >
-                <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-                <div className="absolute bottom-0 left-1/4 w-16 h-16 bg-white/5 rounded-full translate-y-1/2" />
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
-                  <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center mb-2">
-                    <Palette className="w-6 h-6 text-white" />
+                {/* Background image - 使用 lifestyle 相关图片 */}
+                <Image
+                  src={`${HOMEPAGE_STORAGE_URL}/lifestyle-after.jpg`}
+                  alt="Clone Brand Style"
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
+                {/* Gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-orange-600/90 via-amber-500/60 to-transparent" />
+                {/* Content */}
+                <div className="absolute inset-0 flex flex-col justify-end p-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className="px-1.5 py-0.5 bg-orange-500 rounded text-[10px] font-bold text-white">NEW</span>
                   </div>
-                  <div className="flex items-center gap-1.5 justify-center">
-                    <h3 className="text-sm font-bold text-white">{t.home.brandStyle}</h3>
-                    <span className="px-1 py-0.5 bg-white/20 backdrop-blur-sm rounded text-[8px] font-bold text-white">NEW</span>
-                  </div>
-                  <p className="text-xs text-white/80 mt-1">{t.home.brandStyleSubtitle}</p>
+                  <h3 className="text-sm font-bold text-white mt-1">{t.home.brandStyle}</h3>
+                  <p className="text-xs text-white/80">{t.home.brandStyleSubtitle}</p>
                 </div>
               </motion.div>
             </Link>
