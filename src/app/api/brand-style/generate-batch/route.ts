@@ -3,8 +3,8 @@ import { getGenAIClient, extractImage } from '@/lib/genai'
 import { createClient } from '@supabase/supabase-js'
 
 // Together AI API base URL
-// Together AI API base URL (no /v1 prefix for video API)
-const TOGETHER_API_BASE = 'https://api.together.ai'
+// Together AI API base URL
+const TOGETHER_API_BASE = 'https://api.together.xyz/v1'
 
 // Lazy initialize supabase
 function getSupabase() {

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-// Together AI API base URL (no /v1 prefix for video API)
-const TOGETHER_API_BASE = 'https://api.together.ai'
+// Together AI API base URL
+const TOGETHER_API_BASE = 'https://api.together.xyz/v1'
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
