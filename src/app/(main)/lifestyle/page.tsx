@@ -1117,54 +1117,54 @@ function LifestylePageContent() {
                 </div>
               </div>
             ) : (
-              <div className="h-14 flex items-center justify-between px-4 border-b bg-white">
-                <button onClick={handleRetake} className="flex items-center gap-2 font-medium">
-                  <ArrowLeft className="w-5 h-5" />
-                  <span>{t.lifestyle?.retake || '重拍'}</span>
-                </button>
-                <span className="font-bold">{t.lifestyle?.results || 'LifeStyle 成片'}</span>
-                <div className="w-10" />
-              </div>
+            <div className="h-14 flex items-center justify-between px-4 border-b bg-white">
+              <button onClick={handleRetake} className="flex items-center gap-2 font-medium">
+                <ArrowLeft className="w-5 h-5" />
+                <span>{t.lifestyle?.retake || '重拍'}</span>
+              </button>
+              <span className="font-bold">{t.lifestyle?.results || 'LifeStyle 成片'}</span>
+              <div className="w-10" />
+            </div>
             )}
             
             {/* Content */}
             <div className={`flex-1 overflow-y-auto ${isDesktop ? 'py-8' : 'p-4 pb-8'}`}>
               <div className={`${isDesktop ? 'max-w-4xl mx-auto px-8' : ''}`}>
                 <div className={`grid gap-3 ${isDesktop ? 'grid-cols-4' : 'grid-cols-2'}`}>
-                  {Array.from({ length: LIFESTYLE_NUM_IMAGES }).map((_, i) => {
-                    const url = generatedImages[i]
-                    const currentTask = tasks.find(t => t.id === currentTaskId)
-                    const slot = currentTask?.imageSlots?.[i]
-                    const status = slot?.status || (url ? 'completed' : 'generating')
-                    
-                    return (
-                      <div 
-                        key={i} 
+                {Array.from({ length: LIFESTYLE_NUM_IMAGES }).map((_, i) => {
+                  const url = generatedImages[i]
+                  const currentTask = tasks.find(t => t.id === currentTaskId)
+                  const slot = currentTask?.imageSlots?.[i]
+                  const status = slot?.status || (url ? 'completed' : 'generating')
+                  
+                  return (
+                    <div 
+                      key={i} 
                         className="aspect-[3/4] rounded-xl bg-zinc-200 overflow-hidden relative cursor-pointer group" 
-                        onClick={() => url && setSelectedResultIndex(i)}
-                      >
-                        {url ? (
-                          <>
-                            <Image src={url} alt="Result" fill className="object-cover" />
+                      onClick={() => url && setSelectedResultIndex(i)}
+                    >
+                      {url ? (
+                        <>
+                          <Image src={url} alt="Result" fill className="object-cover" />
                             <button className={`absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm ${
                               isDesktop ? 'opacity-0 group-hover:opacity-100 transition-opacity' : ''
                             }`}>
-                              <Heart className="w-3.5 h-3.5 text-zinc-500" />
-                            </button>
-                          </>
-                        ) : status === 'failed' ? (
-                          <div className="absolute inset-0 flex items-center justify-center text-zinc-400">
-                            <span className="text-xs">{t.camera?.generationFailed || '生成失败'}</span>
-                          </div>
-                        ) : (
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <Loader2 className="w-6 h-6 text-zinc-400 animate-spin" />
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
+                            <Heart className="w-3.5 h-3.5 text-zinc-500" />
+                          </button>
+                        </>
+                      ) : status === 'failed' ? (
+                        <div className="absolute inset-0 flex items-center justify-center text-zinc-400">
+                          <span className="text-xs">{t.camera?.generationFailed || '生成失败'}</span>
+                        </div>
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Loader2 className="w-6 h-6 text-zinc-400 animate-spin" />
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
                 
                 {/* PC: Centered button */}
                 {isDesktop && (
@@ -1175,18 +1175,18 @@ function LifestylePageContent() {
                     >
                       {t.lifestyle?.shootNextSet || '拍摄下一组'}
                     </button>
-                  </div>
+            </div>
                 )}
               </div>
             </div>
             
             {/* Mobile: Bottom button */}
             {!isDesktop && (
-              <div className="p-4 pb-20 bg-white border-t shadow-up">
-                <button onClick={handleRetake} className="w-full h-12 rounded-lg bg-zinc-900 text-white font-semibold hover:bg-zinc-800 transition-colors">
-                  {t.lifestyle?.shootNextSet || '拍摄下一组'}
-                </button>
-              </div>
+            <div className="p-4 pb-20 bg-white border-t shadow-up">
+              <button onClick={handleRetake} className="w-full h-12 rounded-lg bg-zinc-900 text-white font-semibold hover:bg-zinc-800 transition-colors">
+                {t.lifestyle?.shootNextSet || '拍摄下一组'}
+              </button>
+            </div>
             )}
             
             {!isDesktop && <BottomNav forceShow />}
