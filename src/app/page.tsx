@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { useRef, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowRight, Sparkles, Zap, Palette, Camera, Users, Play, Check } from 'lucide-react'
+import { ArrowRight, Zap, Palette, Camera, Users, Play, Check } from 'lucide-react'
 import { useAuth } from '@/components/providers/AuthProvider'
 
 // Supabase Storage base URL
@@ -301,9 +301,13 @@ export default function LandingPage() {
       <header className="fixed top-0 left-0 right-0 z-40 bg-zinc-50/80 backdrop-blur-xl border-b border-zinc-200/50">
         <nav className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
+            <Image
+              src="/logo.png"
+              alt="Brand Camera"
+              width={36}
+              height={36}
+              className="rounded-xl"
+            />
             <span className="text-xl font-bold tracking-tight text-zinc-900">Brand Camera</span>
           </Link>
           
@@ -552,9 +556,13 @@ export default function LandingPage() {
       <footer className="py-12 px-6 border-t border-zinc-200 bg-white">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-white" />
-            </div>
+            <Image
+              src="/logo.png"
+              alt="Brand Camera"
+              width={32}
+              height={32}
+              className="rounded-lg"
+            />
             <span className="font-semibold text-zinc-900">Brand Camera</span>
           </div>
           
