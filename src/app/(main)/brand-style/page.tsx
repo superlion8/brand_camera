@@ -43,13 +43,13 @@ export default function BrandStylePage() {
     }
   }, [user, authLoading, router])
 
-  // 显示加载状态
-  if (authLoading || !user) {
+  // 显示加载状态（等待 auth 和 isMobile 都确定后再渲染，避免闪烁）
+  if (authLoading || !user || isMobile === null) {
     return (
       <div className="h-full flex items-center justify-center bg-zinc-50">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 text-violet-500 animate-spin" />
-          <p className="text-sm text-zinc-500">{t.common.loading}</p>
+          <p className="text-sm text-zinc-500">{t.common?.loading || '加载中...'}</p>
         </div>
       </div>
     )
