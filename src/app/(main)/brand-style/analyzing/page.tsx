@@ -18,6 +18,7 @@ import {
 import Image from 'next/image'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
+import { useTranslation } from '@/stores/languageStore'
 
 interface AnalysisStep {
   id: string
@@ -38,6 +39,7 @@ export default function AnalyzingPage() {
   const router = useRouter()
   const isMobile = useIsMobile(1024)
   const isDesktop = isMobile === false
+  const { t } = useTranslation()
   const abortControllerRef = useRef<AbortController | null>(null)
 
   const [steps, setSteps] = useState<AnalysisStep[]>([

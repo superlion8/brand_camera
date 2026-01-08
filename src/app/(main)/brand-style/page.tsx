@@ -20,12 +20,14 @@ import {
 import Image from 'next/image'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useAuth } from '@/components/providers/AuthProvider'
+import { useTranslation } from '@/stores/languageStore'
 
 export default function BrandStylePage() {
   const router = useRouter()
   const isMobile = useIsMobile(1024)
   const isDesktop = isMobile === false
   const { user, isLoading: authLoading } = useAuth()
+  const { t } = useTranslation()
 
   // Form state - all hooks must be called before any conditional returns
   const [productPageUrl, setProductPageUrl] = useState('https://wittmore.com/collections/gramicci/products/gramicci-charcoal-grey-mohair-sweater?variant=42259036897342')
@@ -47,7 +49,7 @@ export default function BrandStylePage() {
       <div className="h-full flex items-center justify-center bg-zinc-50">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 text-violet-500 animate-spin" />
-          <p className="text-sm text-zinc-500">加载中...</p>
+          <p className="text-sm text-zinc-500">{t.common.loading}</p>
         </div>
       </div>
     )
@@ -144,8 +146,8 @@ export default function BrandStylePage() {
                 <ArrowLeft className="w-5 h-5 text-zinc-600" />
               </button>
               <div>
-                <h1 className="text-lg font-semibold text-zinc-900">品牌风格分析</h1>
-                <p className="text-sm text-zinc-500">基于您的品牌素材生成专属内容</p>
+                <h1 className="text-lg font-semibold text-zinc-900">{t.brandStyle.title}</h1>
+                <p className="text-sm text-zinc-500">{t.brandStyle.subtitle}</p>
               </div>
             </div>
           </div>
@@ -158,7 +160,7 @@ export default function BrandStylePage() {
           >
             <ArrowLeft className="w-5 h-5 text-zinc-600" />
           </button>
-          <span className="font-semibold text-lg ml-2">品牌风格分析</span>
+          <span className="font-semibold text-lg ml-2">{t.brandStyle.title}</span>
         </div>
       )}
 
@@ -177,9 +179,9 @@ export default function BrandStylePage() {
                 <Sparkles className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="font-bold text-lg mb-1">AI 品牌风格克隆</h2>
+                <h2 className="font-bold text-lg mb-1">{t.brandStyle.heroTitle}</h2>
                 <p className="text-white/80 text-sm leading-relaxed">
-                  提供您品牌的参考素材，AI 将分析您的品牌风格，并为新商品生成统一风格的展示图和短视频
+                  {t.brandStyle.heroDesc}
                 </p>
               </div>
             </div>
@@ -200,8 +202,8 @@ export default function BrandStylePage() {
                   <Globe className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-zinc-900">商品详情页链接</h3>
-                  <p className="text-xs text-zinc-500">最能体现您品牌风格的官网商品页</p>
+                  <h3 className="font-semibold text-zinc-900">{t.brandStyle.productPageUrl}</h3>
+                  <p className="text-xs text-zinc-500">{t.brandStyle.productPageUrlDesc}</p>
                 </div>
               </div>
               <div className="relative">
@@ -231,8 +233,8 @@ export default function BrandStylePage() {
                   <Instagram className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-zinc-900">Instagram 内容链接</h3>
-                  <p className="text-xs text-zinc-500">最能体现您品牌风格的 INS 帖子</p>
+                  <h3 className="font-semibold text-zinc-900">{t.brandStyle.instagramUrl}</h3>
+                  <p className="text-xs text-zinc-500">{t.brandStyle.instagramUrlDesc}</p>
                 </div>
               </div>
               <div className="relative">
@@ -262,8 +264,8 @@ export default function BrandStylePage() {
                   <Video className="w-5 h-5 text-red-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-zinc-900">UGC 短视频链接</h3>
-                  <p className="text-xs text-zinc-500">一条讲解商品的短视频 (TikTok/YouTube/IG Reels)</p>
+                  <h3 className="font-semibold text-zinc-900">{t.brandStyle.videoUrl}</h3>
+                  <p className="text-xs text-zinc-500">{t.brandStyle.videoUrlDesc}</p>
                 </div>
               </div>
               <div className="relative">
@@ -293,8 +295,8 @@ export default function BrandStylePage() {
                   <ImageIcon className="w-5 h-5 text-amber-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-zinc-900">待拍摄商品图</h3>
-                  <p className="text-xs text-zinc-500">上传需要生成模特展示图的商品</p>
+                  <h3 className="font-semibold text-zinc-900">{t.brandStyle.productImage}</h3>
+                  <p className="text-xs text-zinc-500">{t.brandStyle.productImageDesc}</p>
                 </div>
               </div>
               
@@ -308,7 +310,7 @@ export default function BrandStylePage() {
                   />
                   <div className="h-40 border-2 border-dashed border-zinc-300 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-amber-500 hover:bg-amber-50/50 transition-colors">
                     <Upload className="w-8 h-8 text-zinc-400" />
-                    <span className="text-sm text-zinc-500">点击上传商品图片</span>
+                    <span className="text-sm text-zinc-500">{t.brandStyle.uploadProductImage}</span>
                   </div>
                 </label>
               ) : (
@@ -348,12 +350,12 @@ export default function BrandStylePage() {
               {isSubmitting ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>正在提交...</span>
+                  <span>{t.brandStyle.submitting}</span>
                 </>
               ) : (
                 <>
                   <Sparkles className="w-5 h-5" />
-                  <span>开始分析</span>
+                  <span>{t.brandStyle.startAnalysis}</span>
                   <ArrowRight className="w-5 h-5" />
                 </>
               )}
@@ -374,12 +376,12 @@ export default function BrandStylePage() {
             {isSubmitting ? (
               <>
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>正在提交...</span>
+                <span>{t.brandStyle.submitting}</span>
               </>
             ) : (
               <>
                 <Sparkles className="w-5 h-5" />
-                <span>开始分析</span>
+                <span>{t.brandStyle.startAnalysis}</span>
                 <ArrowRight className="w-5 h-5" />
               </>
             )}
