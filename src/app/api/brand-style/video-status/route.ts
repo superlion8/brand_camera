@@ -1,7 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
 // Together AI API base URL (v2 for video)
 const TOGETHER_API_BASE = 'https://api.together.ai/v2'
+
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  
+  if (!url || !key) {
+    throw new Error('Supabase configuration missing.')
+  }
+  
+  return createClient(url, key)
+}
+
+async function uploadVideoToSupabase(videoData: Buffer): Promise<string> {
+  const supabase = getSupabase()
+  const filename = `brand-style/video_${Date.now()}_${Math.random().toString(36).slice(2)}.mp4`
+  
+  const { error } = await supabase.storage
+    .from('generations')
+    .upload(filename, videoData, { contentType: 'video/mp4', upsert: false })
+  
+  if (error) {
+    throw new Error(`Failed to upload video: ${error.message}`)
+  }
+  
+  const { data: urlData } = supabase.storage.from('generations').getPublicUrl(filename)
+  return urlData.publicUrl
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -35,13 +63,17 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ status: 'failed', error: 'No video URL in response' })
       }
       
-      // Return Together AI URL directly (Supabase doesn't support video/mp4 upload)
-      // TODO: Configure Supabase bucket to allow video uploads for persistent storage
-      console.log('[Video Status] Video completed:', videoUrl)
+      // Download and upload to Supabase for persistent storage
+      console.log('[Video Status] Downloading video from Together AI...')
+      const downloadResponse = await fetch(videoUrl)
+      const videoBuffer = Buffer.from(await downloadResponse.arrayBuffer())
+      
+      console.log('[Video Status] Uploading to Supabase...')
+      const storedUrl = await uploadVideoToSupabase(videoBuffer)
       
       return NextResponse.json({ 
         status: 'completed', 
-        videoUrl: videoUrl 
+        videoUrl: storedUrl 
       })
     }
     
