@@ -167,7 +167,7 @@ export default function ResultsPage() {
                   <img 
                     src={getProxiedUrl(originalImage)} 
                     alt={originalLabel} 
-                    className="absolute inset-0 w-full h-full object-cover"
+                    className="absolute inset-0 w-full h-full object-contain"
                     referrerPolicy="no-referrer"
                   />
                   <div className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-zinc-700/80 rounded text-[10px] text-white">
