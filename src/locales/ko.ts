@@ -404,12 +404,6 @@ export const ko: Translations = {
     joinDiscord: "Discord 참여",
   },
   
-  // Quota
-  quota: {
-    creditsLeft: "남은 크레딧",
-    upgrade: "업그레이드",
-  },
-  
   // Pull to refresh
   pullRefresh: {
     pullToRefresh: "당겨서 새로고침",
@@ -552,6 +546,8 @@ export const ko: Translations = {
     close: "닫기",
     needQuota: "이 작업에는 {required}개의 크레딧이 필요하며 {remaining}개만 남아 있습니다",
     usedQuota: "{used}/{total} 이미지 크레딧을 사용했습니다",
+    creditsLeft: "남은 크레딧",
+    upgrade: "업그레이드",
   },
 
   // Generation task

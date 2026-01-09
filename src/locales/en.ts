@@ -404,12 +404,6 @@ export const en: Translations = {
     joinDiscord: "Join our Discord",
   },
   
-  // Quota
-  quota: {
-    creditsLeft: "Credits Left",
-    upgrade: "Upgrade",
-  },
-  
   // Pull to refresh
   pullRefresh: {
     pullToRefresh: "Pull to refresh",
@@ -552,6 +546,8 @@ export const en: Translations = {
     close: "Close",
     needQuota: "This operation needs {required} credits, you only have {remaining} left",
     usedQuota: "You have used {used}/{total} image credits",
+    creditsLeft: "Credits Left",
+    upgrade: "Upgrade",
   },
 
   // Generation task

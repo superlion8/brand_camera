@@ -402,12 +402,6 @@ export const zh = {
     joinDiscord: "加入 Discord",
   },
   
-  // Quota
-  quota: {
-    creditsLeft: "剩余额度",
-    upgrade: "升级",
-  },
-  
   // Pull to refresh
   pullRefresh: {
     pullToRefresh: "下拉刷新",
@@ -550,6 +544,8 @@ export const zh = {
     close: "关闭",
     needQuota: "本次操作需要 {required} 张额度，您仅剩 {remaining} 张",
     usedQuota: "您已使用 {used}/{total} 张图片额度",
+    creditsLeft: "剩余额度",
+    upgrade: "升级",
   },
 
   // Generation task
