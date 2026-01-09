@@ -3,12 +3,7 @@ import { stripe, getCreditsForPrice, getPlanForPrice, isSubscriptionPrice } from
 import { createServiceClient } from '@/lib/supabase/service'
 import Stripe from 'stripe'
 
-// 禁用 body 解析，Stripe 需要原始 body
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-}
+// App Router 使用 request.text() 自动获取原始 body，无需额外配置
 
 export async function POST(request: NextRequest) {
   const body = await request.text()
