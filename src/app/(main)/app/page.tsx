@@ -377,7 +377,7 @@ export default function HomePage() {
               subtitle={t.home.modelStudioSubtitle || "真实生活场景"}
               beforeImage={`${HOMEPAGE_STORAGE_URL}/model-before.jpg`}
               afterImage={`${HOMEPAGE_STORAGE_URL}/model-after.png`}
-              href="/camera"
+              href="/buyer-show"
             />
             <BeforeAfterCard
               title={t.home.socialMode || "社媒种草"}
@@ -385,7 +385,7 @@ export default function HomePage() {
               beforeImage={`${HOMEPAGE_STORAGE_URL}/social-before.jpg`}
               afterImage={`${HOMEPAGE_STORAGE_URL}/social-after.jpg`}
               badge="NEW"
-              href="/camera/social"
+              href="/social"
             />
           </div>
           {/* Desktop: Grid Layout - 新功能展示图 */}
@@ -407,14 +407,14 @@ export default function HomePage() {
               title={t.home.modelStudio || "买家秀"}
               subtitle={t.home.modelStudioSubtitle || "真实生活场景"}
               image={`${FEATURES_URL}/buyer-show.jpg`}
-              href="/camera"
+              href="/buyer-show"
             />
             <ShowcaseCard
               title={t.home.socialMode || "社媒种草"}
               subtitle={t.home.socialModeSubtitle || "小红书INS风格"}
               image={`${FEATURES_URL}/social.jpg`}
               badge="NEW"
-              href="/camera/social"
+              href="/social"
             />
           </div>
         </motion.div>
@@ -432,7 +432,7 @@ export default function HomePage() {
               subtitle={t.home.groupShootSubtitle || "多角度套图"}
               beforeImage={`${HOMEPAGE_STORAGE_URL}/group-shoot-before.png`}
               afterImage={`${HOMEPAGE_STORAGE_URL}/group-shoot-after.png`}
-              href="/camera/group"
+              href="/group-shot"
             />
             <FadeBeforeAfterCard
               title={t.home.referenceShot || "参考图拍摄"}
@@ -448,7 +448,7 @@ export default function HomePage() {
               subtitle={t.home.productStudioSubtitle || "电商白底图"}
               beforeImage={`${HOMEPAGE_STORAGE_URL}/product-before.jpg`}
               afterImage={`${HOMEPAGE_STORAGE_URL}/product-after.jpg`}
-              href="/studio"
+              href="/product-shot"
             />
             <FadeBeforeAfterCard
               title={t.home.tryOn || "虚拟换装"}
@@ -465,7 +465,7 @@ export default function HomePage() {
               title={t.home.groupShoot || "组图拍摄"}
               subtitle={t.home.groupShootSubtitle || "多角度套图"}
               image={`${FEATURES_URL}/group.jpg`}
-              href="/camera/group"
+              href="/group-shot"
             />
             <ShowcaseCard
               title={t.home.referenceShot || "参考图拍摄"}
@@ -478,7 +478,7 @@ export default function HomePage() {
               title={t.home.productStudio || "商品棚拍"}
               subtitle={t.home.productStudioSubtitle || "电商白底图"}
               image={`${FEATURES_URL}/product-studio.jpg`}
-              href="/studio"
+              href="/product-shot"
             />
             <ShowcaseCard
               title={t.home.tryOn || "虚拟换装"}

@@ -80,7 +80,7 @@ export default function GalleryPage() {
   useEffect(() => {
     router.prefetch('/try-on')
     router.prefetch('/edit/general')
-    router.prefetch('/camera/group')
+    router.prefetch('/group-shot')
     router.prefetch('/gallery/modify-material')
   }, [router])
   
@@ -1381,7 +1381,7 @@ export default function GalleryPage() {
                         const imageUrl = selectedItem.gen.outputImageUrls[selectedItem.index]
                         sessionStorage.setItem('groupShootImage', imageUrl)
                         setNavigatingTo('group')
-                        router.push("/camera/group")
+                        router.push("/group-shot")
                       }}
                       className="flex-1 h-12 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-70"
                     >

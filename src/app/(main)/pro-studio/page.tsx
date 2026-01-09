@@ -2351,7 +2351,7 @@ function ProStudioPageContent() {
                               if (selectedImageUrl) {
                                 sessionStorage.setItem('groupShootImage', selectedImageUrl)
                                 setSelectedResultIndex(null)
-                                router.push("/camera/group")
+                                router.push("/group-shot")
                               }
                             }}
                             className="flex-1 h-12 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-medium flex items-center justify-center gap-2 transition-colors"

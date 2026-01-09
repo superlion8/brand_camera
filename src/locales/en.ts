@@ -70,6 +70,12 @@ export const en: Translations = {
     gallery: "Photos",
     assets: "Assets",
     studio: "Studio",
+    // New sidebar navigation
+    modelShot: "Model Shot",
+    customShot: "Custom Shot",
+    brand: "Brand",
+    editingRoom: "Editing Room",
+    myPhotos: "My Photos",
   },
   
   // Home Page
@@ -87,6 +93,8 @@ export const en: Translations = {
     modelStudioSubtitle: "Real-life Shot",
     socialMode: "Social",
     socialModeSubtitle: "Selfie Show",
+    socialUGC: "Social UGC",
+    buyerShow: "Buyer Show",
     proStudio: "Model Studio",
     proStudioSubtitle: "Pro Studio Shot",
     lifestyleMode: "LifeStyle Shot",
@@ -98,6 +106,9 @@ export const en: Translations = {
     referenceShotSubtitle: "Replicate Style",
     tryOn: "Virtual Try-On",
     tryOnSubtitle: "AI Smart Try-On",
+    outfitChange: "Outfit Change",
+    productShot: "Product Shot",
+    modelCreate: "Model Create",
     brandStyle: "Clone Brand Style",
     brandStyleSubtitle: "AI Brand Clone",
     generalEdit: "General Edit",

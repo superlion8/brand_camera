@@ -68,6 +68,12 @@ export const zh = {
     gallery: "成片",
     assets: "资产",
     studio: "影棚",
+    // New sidebar navigation
+    modelShot: "模特拍摄",
+    customShot: "定制拍摄",
+    brand: "品牌",
+    editingRoom: "修图室",
+    myPhotos: "我的成片",
   },
   
   // Home Page
@@ -85,6 +91,8 @@ export const zh = {
     modelStudioSubtitle: "Real-life Shot",
     socialMode: "社媒种草",
     socialModeSubtitle: "Selfie Show",
+    socialUGC: "社媒种草",
+    buyerShow: "买家秀",
     proStudio: "模特棚拍",
     proStudioSubtitle: "Pro Studio Shot",
     lifestyleMode: "LifeStyle 街拍",
@@ -96,6 +104,9 @@ export const zh = {
     referenceShotSubtitle: "复刻风格",
     tryOn: "虚拟换装",
     tryOnSubtitle: "AI 智能换装",
+    outfitChange: "虚拟换装",
+    productShot: "商品棚拍",
+    modelCreate: "创建模特",
     brandStyle: "克隆品牌风格",
     brandStyleSubtitle: "Clone Brand Style",
     generalEdit: "通用编辑",

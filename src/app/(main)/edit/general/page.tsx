@@ -960,7 +960,7 @@ export default function GeneralEditPage() {
                     <button
                       onClick={() => {
                         setShowGalleryPanel(false)
-                        router.push("/camera")
+                        router.push("/buyer-show")
                       }}
                       className="mt-4 px-4 py-2 bg-purple-500 text-white text-sm rounded-lg hover:bg-purple-600"
                     >

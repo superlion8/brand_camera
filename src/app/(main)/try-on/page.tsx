@@ -882,7 +882,7 @@ export default function TryOnPage() {
                             const imageUrl = resultImages[selectedResultIndex]
                             sessionStorage.setItem('groupShootImage', imageUrl)
                             setSelectedResultIndex(null)
-                            router.push("/camera/group")
+                            router.push("/group-shot")
                           }}
                           className="w-full h-12 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-medium flex items-center justify-center gap-2 transition-colors"
                         >

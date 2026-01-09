@@ -11,14 +11,14 @@ import {
   Wand2, 
   Sparkles,
   Users,
-  Box,
   ScanFace,
   Shirt,
-  ImageIcon,
   ChevronDown,
   ChevronRight,
   Loader2,
-  Palette
+  Palette,
+  Package,
+  Layers
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/stores/languageStore'
@@ -37,7 +37,7 @@ interface NavItem {
 export function Sidebar({ className }: { className?: string }) {
   const pathname = usePathname()
   const { t } = useTranslation()
-  const [expandedGroups, setExpandedGroups] = useState<string[]>(['shoot', 'custom'])
+  const [expandedGroups, setExpandedGroups] = useState<string[]>(['model-shot', 'custom-shot', 'brand'])
   const { tasks } = useGenerationTaskStore()
   
   // Check if any task is currently generating
@@ -52,65 +52,62 @@ export function Sidebar({ className }: { className?: string }) {
   }
 
   const navItems: NavItem[] = [
+    // 1. Home
     {
       id: 'home',
-      label: t.nav?.home || '首页',
+      label: t.nav?.home || 'Home',
       icon: <Home className="w-5 h-5" />,
       href: '/app',
     },
+    // 2. Model Shot
     {
-      id: 'shoot',
-      label: t.home?.shootModel || '拍模特',
+      id: 'model-shot',
+      label: t.nav?.modelShot || 'Model Shot',
       icon: <ScanFace className="w-5 h-5" />,
       children: [
-        { id: 'pro-studio', label: t.home?.proStudio || '专业棚拍', href: '/pro-studio' },
-        { id: 'lifestyle', label: t.home?.lifestyleMode || 'LifeStyle 街拍', href: '/lifestyle' },
-        { id: 'camera', label: t.home?.modelStudio || '买家秀', href: '/camera' },
-        { id: 'social', label: t.home?.socialMode || '社媒种草', href: '/camera/social' },
+        { id: 'pro-studio', label: t.home?.proStudio || 'Pro Studio', href: '/pro-studio' },
+        { id: 'lifestyle', label: t.home?.lifestyleMode || 'Lifestyle', href: '/lifestyle' },
+        { id: 'buyer-show', label: t.home?.buyerShow || 'Buyer Show', href: '/buyer-show' },
+        { id: 'social', label: t.home?.socialUGC || 'Social UGC', href: '/social' },
       ],
     },
+    // 3. Custom Shot
     {
-      id: 'custom',
-      label: t.home?.customShot || '定制拍摄',
+      id: 'custom-shot',
+      label: t.nav?.customShot || 'Custom Shot',
       icon: <Sparkles className="w-5 h-5" />,
       children: [
-        { id: 'group', label: t.home?.groupShoot || '组图拍摄', href: '/camera/group' },
-        { id: 'reference', label: t.home?.referenceShot || '参考图拍摄', href: '/reference-shot' },
-        { id: 'studio', label: t.home?.productStudio || '商品棚拍', href: '/studio' },
-        { id: 'try-on', label: t.home?.tryOn || '虚拟换装', href: '/try-on' },
+        { id: 'group-shot', label: t.home?.groupShoot || 'Group Shot', href: '/group-shot' },
+        { id: 'reference-shot', label: t.home?.referenceShot || 'Reference Shot', href: '/reference-shot' },
+        { id: 'product-shot', label: t.home?.productShot || 'Product Shot', href: '/product-shot' },
+        { id: 'outfit-change', label: t.home?.outfitChange || 'Outfit Change', href: '/try-on' },
       ],
     },
+    // 4. Brand
     {
-      id: 'model-create',
-      label: t.home?.createCustomModel || '创建专属模特',
-      icon: <Users className="w-5 h-5" />,
-      href: '/model-create',
+      id: 'brand',
+      label: t.nav?.brand || 'Brand',
+      icon: <Package className="w-5 h-5" />,
+      children: [
+        { id: 'brand-assets', label: t.nav?.assets || 'Assets', href: '/brand-assets' },
+        { id: 'model-create', label: t.home?.modelCreate || 'Model Create', href: '/model-create' },
+        { id: 'brand-style', label: t.home?.brandStyle || 'Brand Style', href: '/brand-style' },
+      ],
     },
-    {
-      id: 'brand-style',
-      label: t.home?.brandStyle || 'Brand Style Analysis',
-      icon: <Palette className="w-5 h-5" />,
-      href: '/brand-style',
-      badge: 'NEW',
-    },
+    // 5. Editing Room
     {
       id: 'edit',
-      label: t.home?.retouchRoom || '修图室',
+      label: t.nav?.editingRoom || 'Editing Room',
       icon: <Wand2 className="w-5 h-5" />,
       href: '/edit',
     },
-    {
-      id: 'brand-assets',
-      label: t.nav?.assets || '素材库',
-      icon: <FolderHeart className="w-5 h-5" />,
-      href: '/brand-assets',
-    },
+    // 6. My Photos
     {
       id: 'gallery',
-      label: t.nav?.gallery || '图库',
+      label: t.nav?.myPhotos || 'My Photos',
       icon: hasActiveTask ? <Loader2 className="w-5 h-5 animate-spin" /> : <Images className="w-5 h-5" />,
       href: '/gallery',
-      badge: hasActiveTask ? t.common?.generating || '生成中...' : undefined,
+      badge: hasActiveTask ? t.common?.generating || 'Generating...' : undefined,
     },
   ]
 
