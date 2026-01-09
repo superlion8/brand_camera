@@ -49,17 +49,11 @@ const features = [
   },
 ]
 
-// Feature showcases - 功能展示卡片
-const featureShowcases = [
-  { image: `${STORAGE_URL}/features/pro-studio.jpg`, label: 'Pro Studio', desc: '专业棚拍', href: '/pro-studio' },
-  { image: `${STORAGE_URL}/features/lifestyle.jpg`, label: 'LifeStyle', desc: '街拍写真', href: '/lifestyle' },
-  { image: `${STORAGE_URL}/features/buyer-show.jpg`, label: 'Buyer Show', desc: '买家秀', href: '/camera' },
-  { image: `${STORAGE_URL}/features/social.jpg`, label: 'Social', desc: '社媒种草', href: '/camera/social' },
-  { image: `${STORAGE_URL}/features/group.jpg`, label: 'Group Shot', desc: '组图拍摄', href: '/camera/group' },
-  { image: `${STORAGE_URL}/features/reference.jpg`, label: 'Reference', desc: '参考图拍摄', href: '/reference-shot' },
-  { image: `${STORAGE_URL}/features/product-studio.jpg`, label: 'Product Studio', desc: '商品影棚', href: '/studio' },
-  { image: `${STORAGE_URL}/features/try-on.jpg`, label: 'Try On', desc: '虚拟换装', href: '/try-on' },
-  { image: `${STORAGE_URL}/features/create-model.jpg`, label: 'Custom Model', desc: '创建专属模特', href: '/model-create' },
+// Case studies - Before/After 展示
+const cases = [
+  { before: `${STORAGE_URL}/pro-studio-before.jpg?v=2`, after: `${STORAGE_URL}/pro-studio-after.png?v=2`, label: 'Pro Studio' },
+  { before: `${STORAGE_URL}/lifestyle-before.png`, after: `${STORAGE_URL}/lifestyle-after.jpg`, label: 'LifeStyle' },
+  { before: `${STORAGE_URL}/model-before.jpg`, after: `${STORAGE_URL}/model-after.png`, label: 'Buyer Show' },
 ]
 
 // Pricing data
@@ -232,34 +226,37 @@ function PricingSection() {
   )
 }
 
-// Feature showcase card component
-function FeatureCard({ image, label, desc, href }: { image: string; label: string; desc: string; href: string }) {
+// Before/After comparison component
+function ComparisonCard({ before, after, label }: { before: string; after: string; label: string }) {
   return (
-    <motion.div variants={fadeInUp}>
-      <Link 
-        href={href}
-        className="group block relative aspect-[4/3] rounded-2xl overflow-hidden bg-zinc-100 shadow-lg shadow-zinc-200/50 hover:shadow-xl hover:shadow-zinc-300/50 transition-shadow"
-      >
-        {/* Feature image */}
-        <Image
-          src={image}
-          alt={label}
-          fill
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
-          unoptimized
-        />
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
-        {/* Content */}
-        <div className="absolute bottom-0 inset-x-0 p-4">
-          <h3 className="text-lg font-semibold text-white">{label}</h3>
-          <p className="text-sm text-white/80">{desc}</p>
-        </div>
-        {/* Hover arrow */}
-        <div className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-          <ArrowRight className="w-4 h-4 text-zinc-700" />
-        </div>
-      </Link>
+    <motion.div 
+      variants={fadeInUp}
+      className="group relative aspect-[4/5] rounded-2xl overflow-hidden bg-zinc-100 shadow-lg shadow-zinc-200/50"
+    >
+      {/* Before image */}
+      <Image
+        src={before}
+        alt={`${label} - Before`}
+        fill
+        className="object-cover transition-opacity duration-700 group-hover:opacity-0"
+        unoptimized
+      />
+      {/* After image */}
+      <Image
+        src={after}
+        alt={`${label} - After`}
+        fill
+        className="object-cover opacity-0 transition-opacity duration-700 group-hover:opacity-100"
+        unoptimized
+      />
+      {/* Gradient overlay */}
+      <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
+        <p className="text-xs font-medium text-white/70">Hover to reveal</p>
+        <h3 className="text-base font-semibold text-white">{label}</h3>
+      </div>
+      {/* Corner indicators */}
+      <div className="absolute top-3 left-3 px-2 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-zinc-700 shadow-sm">Before</div>
+      <div className="absolute top-3 right-3 px-2 py-1 bg-orange-500 rounded-full text-xs font-medium text-white opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">After</div>
     </motion.div>
   )
 }
@@ -496,10 +493,10 @@ export default function LandingPage() {
               Showcase
             </motion.p>
             <motion.h2 variants={fadeInUp} className="text-3xl md:text-4xl font-bold tracking-tight text-zinc-900">
-              Powerful AI Features
+              See the Difference
             </motion.h2>
             <motion.p variants={fadeInUp} className="mt-4 text-zinc-500 max-w-xl mx-auto">
-              From professional studio shots to lifestyle photos, we&apos;ve got you covered.
+              Hover over each image to see the AI transformation.
             </motion.p>
           </motion.div>
           
@@ -508,10 +505,10 @@ export default function LandingPage() {
             whileInView="visible"
             viewport={{ once: true, margin: "-50px" }}
             variants={staggerContainer}
-            className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6"
+            className="grid md:grid-cols-3 gap-6"
           >
-            {featureShowcases.map((item, index) => (
-              <FeatureCard key={index} {...item} />
+            {cases.map((item, index) => (
+              <ComparisonCard key={index} {...item} />
             ))}
           </motion.div>
         </div>
