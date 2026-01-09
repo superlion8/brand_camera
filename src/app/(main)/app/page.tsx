@@ -560,8 +560,8 @@ export default function HomePage() {
                 className="object-cover"
                 unoptimized
               />
-              {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-violet-600/90 via-purple-500/60 to-transparent" />
+              {/* Bottom gradient for text readability */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
               {/* Content */}
               <div className="absolute inset-0 flex flex-col justify-end p-3">
                 <div className="flex items-center gap-1.5">
@@ -586,8 +586,8 @@ export default function HomePage() {
                   className="object-cover"
                   unoptimized
                 />
-                {/* Gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-orange-600/90 via-amber-500/60 to-transparent" />
+                {/* Bottom gradient for text readability */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                 {/* Content */}
                 <div className="absolute inset-0 flex flex-col justify-end p-3">
                   <div className="flex items-center gap-1.5">
