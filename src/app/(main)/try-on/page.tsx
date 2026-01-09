@@ -11,7 +11,6 @@ import {
 } from "lucide-react"
 import { fileToBase64, compressBase64Image } from "@/lib/utils"
 import { useQuota } from "@/hooks/useQuota"
-import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
@@ -75,7 +74,7 @@ export default function TryOnPage() {
   const clothingFileInputRef = useRef<HTMLInputElement>(null)
   
   // Quota management
-  const { quota, checkQuota, refreshQuota, showExceededModal, requiredCount, closeExceededModal } = useQuota()
+  const { quota, checkQuota, refreshQuota } = useQuota()
   
   // Check for image passed from gallery page
   useEffect(() => {
@@ -1089,12 +1088,6 @@ export default function TryOnPage() {
         )}
       </AnimatePresence>
       
-      {/* Quota Exceeded Modal */}
-      <QuotaExceededModal
-        isOpen={showExceededModal}
-        onClose={closeExceededModal}
-        requiredCount={requiredCount}
-      />
     </div>
   )
 }

@@ -15,7 +15,6 @@ import { ProductCategory } from "@/types/outfit"
 import { usePresetStore } from "@/stores/presetStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { useQuota } from "@/hooks/useQuota"
-import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { useGenerationTaskStore, base64ToBlobUrl } from "@/stores/generationTaskStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { Asset } from "@/types"
@@ -57,7 +56,7 @@ function LifestyleOutfitContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const t = useLanguageStore(state => state.t)
-  const { checkQuota, showExceededModal, requiredCount, closeExceededModal, refreshQuota, quota } = useQuota()
+  const { checkQuota, refreshQuota, quota } = useQuota()
   const { addTask, initImageSlots, updateImageSlot, updateTaskStatus, tasks } = useGenerationTaskStore()
   const { userModels, userProducts, addUserAsset, addGeneration } = useAssetStore()
   const presetStore = usePresetStore()
@@ -848,14 +847,6 @@ function LifestyleOutfitContent() {
         <input type="file" ref={cameraInputRef} className="hidden" accept="image/*" capture="environment" onChange={handleCameraCapture} />
         <input type="file" ref={modelUploadRef} className="hidden" accept="image/*" onChange={handleModelUpload} />
         <input type="file" ref={sceneUploadRef} className="hidden" accept="image/*" onChange={handleSceneUpload} />
-        
-        <QuotaExceededModal
-          isOpen={showExceededModal}
-          onClose={closeExceededModal}
-          requiredCount={requiredCount}
-          usedCount={quota?.usedCount || 0}
-          totalQuota={quota?.totalQuota || 0}
-        />
       </div>
     )
   }

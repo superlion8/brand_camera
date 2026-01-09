@@ -17,7 +17,6 @@ import { ProductCategory } from "@/types/outfit"
 import { usePresetStore } from "@/stores/presetStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { useQuota } from "@/hooks/useQuota"
-import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { useGenerationTaskStore, base64ToBlobUrl } from "@/stores/generationTaskStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { Asset } from "@/types"
@@ -206,7 +205,7 @@ function OutfitPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const t = useLanguageStore(state => state.t)
-  const { checkQuota, showExceededModal, requiredCount, closeExceededModal, refreshQuota } = useQuota()
+  const { checkQuota, refreshQuota } = useQuota()
   const { addTask, initImageSlots, updateImageSlot } = useGenerationTaskStore()
   const { userModels, userBackgrounds, userProducts, addUserAsset } = useAssetStore()
   const presetStore = usePresetStore()
@@ -1488,8 +1487,6 @@ function OutfitPageContent() {
           )}
         </AnimatePresence>
         
-        {/* Quota Exceeded Modal */}
-        <QuotaExceededModal isOpen={showExceededModal} onClose={closeExceededModal} requiredCount={requiredCount} />
       </div>
     )
   }
@@ -2009,12 +2006,6 @@ function OutfitPageContent() {
         onChange={handleBgUpload}
       />
       
-      {/* Quota Exceeded Modal */}
-      <QuotaExceededModal
-        isOpen={showExceededModal}
-        onClose={closeExceededModal}
-        requiredCount={requiredCount}
-      />
     </div>
   )
 }

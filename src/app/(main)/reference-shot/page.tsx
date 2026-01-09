@@ -12,7 +12,6 @@ import { useTranslation } from "@/stores/languageStore"
 import { usePresetStore } from "@/stores/presetStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { useQuota } from "@/hooks/useQuota"
-import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { useSettingsStore } from "@/stores/settingsStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
@@ -35,7 +34,7 @@ const ALL_MODELS_STORAGE_URL = 'https://cvdogeigbpussfamctsu.supabase.co/storage
 export default function ReferenceShotPage() {
   const router = useRouter()
   const { t } = useTranslation()
-  const { checkQuota, showExceededModal, requiredCount, closeExceededModal, refreshQuota } = useQuota()
+  const { checkQuota, refreshQuota } = useQuota()
   const presetStore = usePresetStore()
   const { userModels } = useAssetStore()
   const { debugMode } = useSettingsStore()
@@ -937,12 +936,6 @@ export default function ReferenceShotPage() {
         }}
       />
       
-      {/* Quota Exceeded Modal */}
-      <QuotaExceededModal
-        isOpen={showExceededModal}
-        onClose={closeExceededModal}
-        requiredCount={requiredCount}
-      />
     </div>
   )
 }

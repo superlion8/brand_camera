@@ -15,7 +15,6 @@ import Image from "next/image"
 import { PRESET_PRODUCTS } from "@/data/presets"
 import { Asset } from "@/types"
 import { useQuota } from "@/hooks/useQuota"
-import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { BottomNav } from "@/components/shared/BottomNav"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
@@ -35,7 +34,7 @@ function LifestylePageContent() {
   const searchParams = useSearchParams()
   const { user, isLoading: authLoading } = useAuth()
   const t = useLanguageStore(state => state.t)
-  const { checkQuota, refreshQuota, showExceededModal, requiredCount, closeExceededModal, quota } = useQuota()
+  const { checkQuota, refreshQuota, quota } = useQuota()
   const { addTask, updateTaskStatus, updateImageSlot, initImageSlots, tasks } = useGenerationTaskStore()
   const { userProducts, addUserAsset, addGeneration } = useAssetStore()
   
@@ -1508,14 +1507,6 @@ function LifestylePageContent() {
           </>
         )}
       </AnimatePresence>
-
-      <QuotaExceededModal
-        isOpen={showExceededModal}
-        onClose={closeExceededModal}
-        requiredCount={requiredCount}
-        usedCount={quota?.usedCount || 0}
-        totalQuota={quota?.totalQuota || 0}
-      />
     </div>
   )
 }

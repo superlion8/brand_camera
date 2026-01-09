@@ -404,6 +404,13 @@ export const en: Translations = {
     joinDiscord: "Join our Discord",
   },
   
+  // Daily reward
+  dailyReward: {
+    title: "🎁 Daily Login Reward",
+    welcome: "🎉 Welcome New User!",
+    credited: "+{credits} credits added",
+  },
+  
   // Pull to refresh
   pullRefresh: {
     pullToRefresh: "Pull to refresh",

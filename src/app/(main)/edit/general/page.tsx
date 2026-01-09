@@ -11,7 +11,6 @@ import { PRESET_PRODUCTS } from "@/data/presets"
 import Webcam from "react-webcam"
 import { motion, AnimatePresence } from "framer-motion"
 import { useQuota } from "@/hooks/useQuota"
-import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
@@ -101,7 +100,7 @@ export default function GeneralEditPage() {
   const { addTask, updateTaskStatus } = useGenerationTaskStore()
   
   // Quota management
-  const { quota, checkQuota, refreshQuota, showExceededModal, requiredCount, closeExceededModal } = useQuota()
+  const { quota, checkQuota, refreshQuota } = useQuota()
   
   // Camera handlers
   const handleCapture = useCallback(() => {
@@ -973,15 +972,6 @@ export default function GeneralEditPage() {
         )}
       </AnimatePresence>
       
-      {/* Quota Exceeded Modal */}
-      <QuotaExceededModal
-        isOpen={showExceededModal}
-        onClose={closeExceededModal}
-        usedCount={quota?.usedCount}
-        totalQuota={quota?.totalQuota}
-        requiredCount={requiredCount}
-        userEmail={user?.email || ''}
-      />
       
       {/* Zoom Modal */}
       <AnimatePresence>

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-const DEFAULT_QUOTA = 100  // 免费用户默认额度
+const DEFAULT_QUOTA = 10  // 新用户注册赠送 10 credits
 
 // 获取或创建用户额度记录
 async function getOrCreateUserQuota(supabase: any, userId: string, userEmail?: string) {

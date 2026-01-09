@@ -402,6 +402,13 @@ export const zh = {
     joinDiscord: "加入 Discord",
   },
   
+  // Daily reward
+  dailyReward: {
+    title: "🎁 每日登录奖励",
+    welcome: "🎉 欢迎新用户！",
+    credited: "+{credits} credits 已到账",
+  },
+  
   // Pull to refresh
   pullRefresh: {
     pullToRefresh: "下拉刷新",

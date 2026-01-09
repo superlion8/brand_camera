@@ -404,6 +404,13 @@ export const ko: Translations = {
     joinDiscord: "Discord 참여",
   },
   
+  // Daily reward
+  dailyReward: {
+    title: "🎁 일일 로그인 보상",
+    welcome: "🎉 새로운 사용자 환영!",
+    credited: "+{credits} 크레딧 추가됨",
+  },
+  
   // Pull to refresh
   pullRefresh: {
     pullToRefresh: "당겨서 새로고침",

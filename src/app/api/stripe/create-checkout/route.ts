@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { stripe, isSubscriptionPrice } from '@/lib/stripe'
+import { getStripe, isSubscriptionPrice } from '@/lib/stripe'
 import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       customerId = quotaData.stripe_customer_id
     } else {
       // 创建新的 Stripe Customer
-      const customer = await stripe.customers.create({
+      const customer = await getStripe().customers.create({
         email: user.email,
         metadata: {
           supabase_user_id: user.id,
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     const isSubscription = isSubscriptionPrice(priceId)
     
     // 创建 Checkout Session
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       customer: customerId,
       mode: isSubscription ? 'subscription' : 'payment',
       payment_method_types: ['card'],

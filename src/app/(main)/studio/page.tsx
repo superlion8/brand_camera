@@ -17,7 +17,6 @@ import { useSettingsStore } from "@/stores/settingsStore"
 import { PRESET_PRODUCTS } from "@/data/presets"
 import Image from "next/image"
 import { useQuota } from "@/hooks/useQuota"
-import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
@@ -177,7 +176,7 @@ function StudioPageContent() {
   const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
   
   // Quota management
-  const { quota, checkQuota, refreshQuota, showExceededModal, requiredCount, closeExceededModal } = useQuota()
+  const { quota, checkQuota, refreshQuota } = useQuota()
   
   // 从 URL 参数恢复模式和 taskId（刷新后恢复）
   useEffect(() => {
@@ -1770,15 +1769,6 @@ function StudioPageContent() {
         )}
       </AnimatePresence>
       
-      {/* Quota Exceeded Modal */}
-      <QuotaExceededModal
-        isOpen={showExceededModal}
-        onClose={closeExceededModal}
-        usedCount={quota?.usedCount}
-        totalQuota={quota?.totalQuota}
-        requiredCount={requiredCount}
-        userEmail={user?.email || ''}
-      />
     </div>
   )
 }

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-const DEFAULT_QUOTA = 100
+// 新用户注册赠送 10 credits
+const DEFAULT_QUOTA = 10
 
 // POST - Reserve quota: 直接从 user_quotas.used_quota 扣除
 export async function POST(request: NextRequest) {

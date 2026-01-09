@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers/AuthProvider'
 
 interface QuotaInfo {
@@ -9,7 +10,14 @@ interface QuotaInfo {
   remainingQuota: number
 }
 
+interface DailyRewardResult {
+  credited: boolean
+  creditsAdded?: number
+  isNewUser?: boolean
+}
+
 const QUOTA_CACHE_KEY = 'brand_camera_quota_cache'
+const DAILY_REWARD_KEY = 'brand_camera_daily_reward_shown'
 
 // Get cached quota from localStorage
 function getCachedQuota(userId: string): QuotaInfo | null {
@@ -39,7 +47,31 @@ function setCachedQuota(userId: string, quota: QuotaInfo) {
   } catch {}
 }
 
+// Check if daily reward toast was shown today
+function wasDailyRewardShownToday(): boolean {
+  if (typeof window === 'undefined') return true
+  try {
+    const stored = localStorage.getItem(DAILY_REWARD_KEY)
+    if (stored) {
+      const { date } = JSON.parse(stored)
+      const today = new Date().toISOString().split('T')[0]
+      return date === today
+    }
+  } catch {}
+  return false
+}
+
+// Mark daily reward toast as shown today
+function markDailyRewardShown() {
+  if (typeof window === 'undefined') return
+  try {
+    const today = new Date().toISOString().split('T')[0]
+    localStorage.setItem(DAILY_REWARD_KEY, JSON.stringify({ date: today }))
+  } catch {}
+}
+
 export function useQuota() {
+  const router = useRouter()
   const { user } = useAuth()
   
   // Initialize from cache immediately
@@ -50,8 +82,10 @@ export function useQuota() {
     return null
   })
   const [isLoading, setIsLoading] = useState(false)
-  const [showExceededModal, setShowExceededModal] = useState(false)
-  const [requiredCount, setRequiredCount] = useState<number | undefined>(undefined)
+  const [dailyReward, setDailyReward] = useState<DailyRewardResult | null>(null)
+  
+  // Track if we've already claimed daily reward this session
+  const hasClaimedRef = useRef(false)
 
   // Try to load from cache when user changes
   useEffect(() => {
@@ -65,6 +99,48 @@ export function useQuota() {
     }
   }, [user?.id])
 
+  // Claim daily reward (called once on first fetch)
+  const claimDailyReward = useCallback(async () => {
+    if (!user || hasClaimedRef.current) return null
+    hasClaimedRef.current = true
+    
+    try {
+      const response = await fetch('/api/quota/daily-reward', {
+        method: 'POST',
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        
+        if (data.credited) {
+          // Update quota from the response
+          const newQuota = {
+            totalQuota: data.totalQuota,
+            usedCount: data.usedQuota,
+            remainingQuota: data.remainingQuota,
+          }
+          setQuota(newQuota)
+          setCachedQuota(user.id, newQuota)
+          
+          // Only show toast if not already shown today
+          if (!wasDailyRewardShownToday()) {
+            setDailyReward({
+              credited: true,
+              creditsAdded: data.creditsAdded,
+              isNewUser: data.isNewUser,
+            })
+            markDailyRewardShown()
+          }
+          
+          return data
+        }
+      }
+    } catch (error) {
+      console.error('Error claiming daily reward:', error)
+    }
+    return null
+  }, [user])
+
   // Fetch quota from API and update cache
   const fetchQuota = useCallback(async () => {
     if (!user) {
@@ -74,18 +150,33 @@ export function useQuota() {
 
     setIsLoading(true)
     try {
+      // First, try to claim daily reward (will also return updated quota)
+      const rewardResult = await claimDailyReward()
+      
+      // If reward was claimed, quota is already updated
+      if (rewardResult?.credited) {
+        setIsLoading(false)
+        return
+      }
+      
+      // Otherwise, fetch quota normally
       const response = await fetch('/api/quota')
       if (response.ok) {
         const data = await response.json()
-        setQuota(data)
-        setCachedQuota(user.id, data)
+        const newQuota = {
+          totalQuota: data.totalQuota,
+          usedCount: data.usedCount,
+          remainingQuota: data.remainingQuota,
+        }
+        setQuota(newQuota)
+        setCachedQuota(user.id, newQuota)
       }
     } catch (error) {
       console.error('Error fetching quota:', error)
     } finally {
       setIsLoading(false)
     }
-  }, [user])
+  }, [user, claimDailyReward])
 
   // Fetch on mount only if no cache
   useEffect(() => {
@@ -95,42 +186,45 @@ export function useQuota() {
   }, [user, quota, fetchQuota])
 
   // Check if user has enough quota for the specified number of images
-  // Uses local cache first for instant feedback, then verifies with server in background
+  // Redirects to /pricing if insufficient
   const checkQuota = useCallback(async (imageCount: number = 1): Promise<boolean> => {
     if (!user) {
-      // Allow generation for non-logged-in users (will be handled elsewhere)
-      return true
+      // Redirect to login for non-logged-in users
+      router.push('/login')
+      return false
     }
 
     // Fast path: Check local cache first (instant, no network delay)
     if (quota) {
       const localRemaining = quota.remainingQuota
       if (localRemaining < imageCount) {
-        // Definitely not enough - show modal immediately
-        setRequiredCount(imageCount)
-        setShowExceededModal(true)
+        // Not enough credits - redirect to pricing page
+        router.push('/pricing')
         
         // Refresh quota in background to sync latest data
         fetch('/api/quota').then(res => res.json()).then(data => {
-          setQuota({
+          const newQuota = {
             totalQuota: data.totalQuota,
             usedCount: data.usedCount,
             remainingQuota: data.remainingQuota,
-          })
+          }
+          setQuota(newQuota)
+          if (user) setCachedQuota(user.id, newQuota)
         }).catch(() => {})
         
         return false
       }
       
       // Local cache says we have enough - proceed immediately
-      // Server will do final validation during generation
       // Refresh quota in background (non-blocking)
       fetch('/api/quota').then(res => res.json()).then(data => {
-        setQuota({
+        const newQuota = {
           totalQuota: data.totalQuota,
           usedCount: data.usedCount,
           remainingQuota: data.remainingQuota,
-        })
+        }
+        setQuota(newQuota)
+        if (user) setCachedQuota(user.id, newQuota)
       }).catch(() => {})
       
       return true
@@ -138,24 +232,20 @@ export function useQuota() {
 
     // No local cache - need to fetch (only happens on first load)
     try {
-      const response = await fetch('/api/quota', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'check', imageCount }),
-      })
-
+      const response = await fetch('/api/quota')
       const data = await response.json()
       
       // Update local quota state
-      setQuota({
+      const newQuota = {
         totalQuota: data.totalQuota,
         usedCount: data.usedCount,
         remainingQuota: data.remainingQuota,
-      })
+      }
+      setQuota(newQuota)
+      if (user) setCachedQuota(user.id, newQuota)
       
-      if (!data.hasQuota) {
-        setRequiredCount(imageCount)
-        setShowExceededModal(true)
+      if (newQuota.remainingQuota < imageCount) {
+        router.push('/pricing')
         return false
       }
 
@@ -165,28 +255,41 @@ export function useQuota() {
       // On error, allow generation to proceed (fail open)
       return true
     }
-  }, [user, quota])
+  }, [user, quota, router])
 
   // Refresh quota after generation completes
-  // (No longer needs to increment - it's calculated from generations table)
   const refreshQuota = useCallback(async () => {
-    await fetchQuota()
-  }, [fetchQuota])
+    if (!user) return
+    
+    try {
+      const response = await fetch('/api/quota')
+      if (response.ok) {
+        const data = await response.json()
+        const newQuota = {
+          totalQuota: data.totalQuota,
+          usedCount: data.usedCount,
+          remainingQuota: data.remainingQuota,
+        }
+        setQuota(newQuota)
+        setCachedQuota(user.id, newQuota)
+      }
+    } catch (error) {
+      console.error('Error refreshing quota:', error)
+    }
+  }, [user])
 
-  const closeExceededModal = useCallback(() => {
-    setShowExceededModal(false)
-    setRequiredCount(undefined)
+  // Clear daily reward notification (after toast is dismissed)
+  const clearDailyReward = useCallback(() => {
+    setDailyReward(null)
   }, [])
 
   return {
     quota,
     isLoading,
-    showExceededModal,
-    requiredCount,
+    dailyReward,
     checkQuota,
     refreshQuota,
     fetchQuota,
-    closeExceededModal,
+    clearDailyReward,
   }
 }
-

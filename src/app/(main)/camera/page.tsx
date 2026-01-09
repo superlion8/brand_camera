@@ -21,7 +21,6 @@ import Image from "next/image"
 import { PRESET_PRODUCTS } from "@/data/presets"
 import { usePresetStore } from "@/stores/presetStore"
 import { useQuota } from "@/hooks/useQuota"
-import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { BottomNav } from "@/components/shared/BottomNav"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
@@ -256,7 +255,7 @@ function CameraPageContent() {
   }, [loadPresets])
   
   // Quota management
-  const { quota, checkQuota, refreshQuota, showExceededModal, requiredCount, closeExceededModal } = useQuota()
+  const { quota, checkQuota, refreshQuota } = useQuota()
   
   // Helper to sort by pinned status
   const sortByPinned = (assets: Asset[]) => 
@@ -3011,15 +3010,6 @@ function CameraPageContent() {
         )}
       </AnimatePresence>
       
-      {/* Quota Exceeded Modal */}
-      <QuotaExceededModal
-        isOpen={showExceededModal}
-        onClose={closeExceededModal}
-        usedCount={quota?.usedCount}
-        totalQuota={quota?.totalQuota}
-        requiredCount={requiredCount}
-        userEmail={user?.email || ''}
-      />
     </div>
   )
 }

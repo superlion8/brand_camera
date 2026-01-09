@@ -14,7 +14,6 @@ import { useAssetStore } from "@/stores/assetStore"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useQuota } from "@/hooks/useQuota"
-import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { ProductCategory, OutfitItem } from "@/types/outfit"
 
@@ -24,7 +23,7 @@ export default function OutfitSelectPage() {
   const router = useRouter()
   const t = useLanguageStore(state => state.t)
   const { user } = useAuth()
-  const { checkQuota, showExceededModal, closeExceededModal } = useQuota()
+  const { checkQuota } = useQuota()
   const presetStore = usePresetStore()
   const { userModels, userBackgrounds } = useAssetStore()
   const { addTask, updateTaskStatus, updateImageSlot, initImageSlots } = useGenerationTaskStore()
@@ -519,11 +518,6 @@ export default function OutfitSelectPage() {
         )}
       </AnimatePresence>
       
-      {/* 配额不足弹窗 */}
-      <QuotaExceededModal 
-        isOpen={showExceededModal} 
-        onClose={closeExceededModal} 
-      />
     </div>
   )
 }

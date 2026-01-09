@@ -17,7 +17,6 @@ import Image from "next/image"
 import { PRESET_PRODUCTS } from "@/data/presets"
 import { usePresetStore } from "@/stores/presetStore"
 import { useQuota } from "@/hooks/useQuota"
-import { QuotaExceededModal } from "@/components/shared/QuotaExceededModal"
 import { BottomNav } from "@/components/shared/BottomNav"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
@@ -207,7 +206,7 @@ function ProStudioPageContent() {
   const searchParams = useSearchParams()
   const { user, isLoading: authLoading } = useAuth()
   const t = useLanguageStore(state => state.t)
-  const { checkQuota, showExceededModal, requiredCount, closeExceededModal, quota } = useQuota()
+  const { checkQuota, quota } = useQuota()
   const { addTask, updateTaskStatus, updateImageSlot, initImageSlots, tasks } = useGenerationTaskStore()
   const { userProducts, userModels, userBackgrounds, addUserAsset } = useAssetStore()
   const { debugMode } = useSettingsStore()
@@ -2511,14 +2510,6 @@ function ProStudioPageContent() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      <QuotaExceededModal
-        isOpen={showExceededModal}
-        onClose={closeExceededModal}
-        requiredCount={requiredCount}
-        usedCount={quota?.usedCount || 0}
-        totalQuota={quota?.totalQuota || 0}
-      />
     </div>
   )
 }
