@@ -102,7 +102,7 @@
 ### Step 2: 配置 Webhook
 
 1. Developers → Webhooks → Add endpoint
-2. Endpoint URL: `https://your-domain.com/api/stripe/webhook`
+2. Endpoint URL: `https://brandcam.agency/api/stripe/webhook`
 3. 选择事件:
    - `checkout.session.completed` ✅
    - `customer.subscription.created` ✅
