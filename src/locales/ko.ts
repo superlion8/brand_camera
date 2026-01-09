@@ -398,6 +398,16 @@ export const ko: Translations = {
     syncing: "동기화 중...",
     synced: "동기화됨",
     noSettings: "설정 가능한 항목 없음",
+    viewProfile: "프로필 보기",
+    language: "언어",
+    subscription: "구독 관리",
+    joinDiscord: "Discord 참여",
+  },
+  
+  // Quota
+  quota: {
+    creditsLeft: "남은 크레딧",
+    upgrade: "업그레이드",
   },
   
   // Pull to refresh

@@ -396,6 +396,16 @@ export const zh = {
     syncing: "同步中...",
     synced: "已同步",
     noSettings: "暂无可配置项",
+    viewProfile: "查看资料",
+    language: "语言",
+    subscription: "订阅管理",
+    joinDiscord: "加入 Discord",
+  },
+  
+  // Quota
+  quota: {
+    creditsLeft: "剩余额度",
+    upgrade: "升级",
   },
   
   // Pull to refresh

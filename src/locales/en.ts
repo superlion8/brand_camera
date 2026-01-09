@@ -398,6 +398,16 @@ export const en: Translations = {
     syncing: "Syncing...",
     synced: "Synced",
     noSettings: "No settings available",
+    viewProfile: "View profile",
+    language: "Language",
+    subscription: "Subscription",
+    joinDiscord: "Join our Discord",
+  },
+  
+  // Quota
+  quota: {
+    creditsLeft: "Credits Left",
+    upgrade: "Upgrade",
   },
   
   // Pull to refresh
