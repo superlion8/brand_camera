@@ -174,6 +174,8 @@ async function handleSubscriptionCreated(supabase: any, subscription: Stripe.Sub
   const planName = priceId ? getPlanForPrice(priceId) : null
   
   // 创建或更新订阅记录
+  // 使用 as any 绕过 Stripe SDK 类型问题（实际 API 返回这些字段）
+  const subData = subscription as any
   await supabase.from('subscriptions').upsert({
     user_id: finalUserId,
     stripe_customer_id: customerId,
@@ -182,8 +184,12 @@ async function handleSubscriptionCreated(supabase: any, subscription: Stripe.Sub
     status: subscription.status,
     plan_name: planName,
     credits_per_period: credits,
-    current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-    current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+    current_period_start: subData.current_period_start 
+      ? new Date(subData.current_period_start * 1000).toISOString() 
+      : null,
+    current_period_end: subData.current_period_end 
+      ? new Date(subData.current_period_end * 1000).toISOString() 
+      : null,
     cancel_at_period_end: subscription.cancel_at_period_end,
   }, {
     onConflict: 'user_id',
@@ -206,6 +212,7 @@ async function handleSubscriptionUpdated(supabase: any, subscription: Stripe.Sub
   
   const credits = priceId ? getCreditsForPrice(priceId) : 0
   const planName = priceId ? getPlanForPrice(priceId) : null
+  const subData = subscription as any
   
   // 更新订阅记录
   await supabase
@@ -215,11 +222,15 @@ async function handleSubscriptionUpdated(supabase: any, subscription: Stripe.Sub
       status: subscription.status,
       plan_name: planName,
       credits_per_period: credits,
-      current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-      current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+      current_period_start: subData.current_period_start 
+        ? new Date(subData.current_period_start * 1000).toISOString() 
+        : null,
+      current_period_end: subData.current_period_end 
+        ? new Date(subData.current_period_end * 1000).toISOString() 
+        : null,
       cancel_at_period_end: subscription.cancel_at_period_end,
-      canceled_at: subscription.canceled_at 
-        ? new Date(subscription.canceled_at * 1000).toISOString() 
+      canceled_at: subData.canceled_at 
+        ? new Date(subData.canceled_at * 1000).toISOString() 
         : null,
     })
     .eq('stripe_subscription_id', subscription.id)
