@@ -278,12 +278,14 @@ async function handleSubscriptionDeleted(supabase: any, subscription: Stripe.Sub
 }
 
 async function handleInvoicePaid(supabase: any, invoice: Stripe.Invoice) {
+  const invoiceData = invoice as any
+  
   // 只处理订阅相关的发票
-  if (!invoice.subscription) return
+  if (!invoiceData.subscription) return
   
-  console.log('[Webhook] Invoice paid:', invoice.id, 'subscription:', invoice.subscription)
+  console.log('[Webhook] Invoice paid:', invoice.id, 'subscription:', invoiceData.subscription)
   
-  const customerId = invoice.customer as string
+  const customerId = invoiceData.customer as string
   const userId = await getUserIdFromCustomer(supabase, customerId)
   
   if (!userId) {
@@ -295,7 +297,7 @@ async function handleInvoicePaid(supabase: any, invoice: Stripe.Invoice) {
   const { data: subData } = await supabase
     .from('subscriptions')
     .select('credits_per_period')
-    .eq('stripe_subscription_id', invoice.subscription)
+    .eq('stripe_subscription_id', invoiceData.subscription)
     .single()
   
   const credits = subData?.credits_per_period || 0
@@ -316,14 +318,14 @@ async function handleInvoicePaid(supabase: any, invoice: Stripe.Invoice) {
   }
   
   // 记录续费支付
-  const priceId = invoice.lines.data[0]?.price?.id
+  const priceId = invoiceData.lines?.data?.[0]?.price?.id
   await supabase.from('payments').insert({
     user_id: userId,
     stripe_invoice_id: invoice.id,
     stripe_customer_id: customerId,
-    stripe_payment_intent_id: invoice.payment_intent as string,
-    amount: invoice.amount_paid,
-    currency: invoice.currency,
+    stripe_payment_intent_id: invoiceData.payment_intent as string,
+    amount: invoiceData.amount_paid || 0,
+    currency: invoiceData.currency || 'usd',
     status: 'succeeded',
     payment_type: 'subscription',
     plan_name: priceId ? getPlanForPrice(priceId) : null,
@@ -333,11 +335,13 @@ async function handleInvoicePaid(supabase: any, invoice: Stripe.Invoice) {
 }
 
 async function handleInvoicePaymentFailed(supabase: any, invoice: Stripe.Invoice) {
-  if (!invoice.subscription) return
+  const invoiceData = invoice as any
+  
+  if (!invoiceData.subscription) return
   
   console.log('[Webhook] Invoice payment failed:', invoice.id)
   
-  const customerId = invoice.customer as string
+  const customerId = invoiceData.customer as string
   const userId = await getUserIdFromCustomer(supabase, customerId)
   
   if (!userId) return
@@ -348,7 +352,7 @@ async function handleInvoicePaymentFailed(supabase: any, invoice: Stripe.Invoice
     .update({
       status: 'past_due',
     })
-    .eq('stripe_subscription_id', invoice.subscription)
+    .eq('stripe_subscription_id', invoiceData.subscription)
   
   // 这里可以发送通知邮件等
 }
