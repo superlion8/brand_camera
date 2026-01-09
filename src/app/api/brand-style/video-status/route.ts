@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+// 强制动态渲染
+export const dynamic = 'force-dynamic'
+
 // Together AI API base URL (v2 for video)
 const TOGETHER_API_BASE = 'https://api.together.ai/v2'
 
