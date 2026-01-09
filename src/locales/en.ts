@@ -551,6 +551,7 @@ export const en: Translations = {
     exceededDesc: "Your free quota is used up. Please apply for more or try again later.",
     applyMore: "Apply for More",
     close: "Close",
+    dailyRewardClaimed: "🎁 Daily login reward +{amount} credits!",
     needQuota: "This operation needs {required} credits, you only have {remaining} left",
     usedQuota: "You have used {used}/{total} image credits",
     creditsLeft: "Credits Left",

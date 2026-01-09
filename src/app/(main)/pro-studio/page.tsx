@@ -26,6 +26,7 @@ import { useAssetStore } from "@/stores/assetStore"
 import { useSettingsStore } from "@/stores/settingsStore"
 import { useIsDesktop } from "@/hooks/useIsMobile"
 import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
+import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
 
 type PageMode = "camera" | "review" | "processing" | "results"
 
@@ -1118,6 +1119,7 @@ function ProStudioPageContent() {
                   >
                     <Sparkles className="w-5 h-5" />
                     开始生成
+                    <CreditCostBadge cost={4} className="ml-2" />
                   </button>
                 </div>
               </div>

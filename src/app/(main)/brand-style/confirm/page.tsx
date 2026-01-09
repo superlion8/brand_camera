@@ -20,6 +20,7 @@ import {
 import Image from 'next/image'
 import { useIsDesktop } from '@/hooks/useIsMobile'
 import { ScreenLoadingGuard } from '@/components/ui/ScreenLoadingGuard'
+import { CreditCostBadge } from '@/components/shared/CreditCostBadge'
 import { useTranslation } from '@/stores/languageStore'
 
 interface AnalysisData {
@@ -499,6 +500,7 @@ export default function ConfirmPage() {
                 <>
                   <Sparkles className="w-5 h-5" />
                   <span>{t.brandStyle.startGenerate}</span>
+                  <CreditCostBadge cost={14} className="mx-2" />
                   <ArrowRight className="w-5 h-5" />
                 </>
               )}
@@ -521,6 +523,7 @@ export default function ConfirmPage() {
               <>
                 <Sparkles className="w-5 h-5" />
                 <span>{t.brandStyle.startGenerate}</span>
+                <CreditCostBadge cost={14} className="mx-2" />
                 <ArrowRight className="w-5 h-5" />
               </>
             )}

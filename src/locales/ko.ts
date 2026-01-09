@@ -551,6 +551,7 @@ export const ko: Translations = {
     exceededDesc: "무료 할당량이 소진되었습니다. 더 신청하거나 나중에 다시 시도하세요.",
     applyMore: "추가 신청",
     close: "닫기",
+    dailyRewardClaimed: "🎁 일일 로그인 보상 +{amount} 크레딧!",
     needQuota: "이 작업에는 {required}개의 크레딧이 필요하며 {remaining}개만 남아 있습니다",
     usedQuota: "{used}/{total} 이미지 크레딧을 사용했습니다",
     creditsLeft: "남은 크레딧",

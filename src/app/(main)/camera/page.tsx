@@ -27,6 +27,7 @@ import { useLanguageStore } from "@/stores/languageStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { useIsDesktop } from "@/hooks/useIsMobile"
 import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
+import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
 
 // Helper to map API error codes to translated messages
 const getErrorMessage = (error: string, t: any): string => {
@@ -1556,6 +1557,7 @@ function CameraPageContent() {
                         >
                           <Wand2 className="w-5 h-5" />
                           {capturedImage2 ? '去搭配' : '开始生成'}
+                          {!capturedImage2 && <CreditCostBadge cost={4} className="ml-2" />}
                         </button>
                       </div>
                     </div>
@@ -1843,6 +1845,7 @@ function CameraPageContent() {
                     >
                       <Wand2 className="w-5 h-5" />
                       Shoot It
+                      <CreditCostBadge cost={4} className="ml-2" />
                     </motion.button>
                   </div>
                 </div>

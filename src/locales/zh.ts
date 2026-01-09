@@ -549,6 +549,7 @@ export const zh = {
     exceededDesc: "您的免费配额已用完，请申请更多配额或稍后再试。",
     applyMore: "申请更多配额",
     close: "关闭",
+    dailyRewardClaimed: "🎁 每日登录奖励 +{amount} credits!",
     needQuota: "本次操作需要 {required} 张额度，您仅剩 {remaining} 张",
     usedQuota: "您已使用 {used}/{total} 张图片额度",
     creditsLeft: "剩余额度",

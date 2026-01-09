@@ -16,6 +16,7 @@ import { useLanguageStore } from "@/stores/languageStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { useIsDesktop } from "@/hooks/useIsMobile"
 import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
+import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
 
 // Helper to map API error codes to translated messages
 const getErrorMessage = (error: string, t: any): string => {
@@ -630,6 +631,7 @@ export default function GeneralEditPage() {
                 <>
                   <Wand2 className="w-5 h-5" />
                   <span>{t.edit.startGenerate}</span>
+                  <CreditCostBadge cost={4} className="ml-2" />
                 </>
               )}
             </button>

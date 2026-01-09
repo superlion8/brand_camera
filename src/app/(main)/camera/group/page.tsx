@@ -21,6 +21,7 @@ import { useSettingsStore } from "@/stores/settingsStore"
 import { Suspense } from "react"
 import { useIsDesktop } from "@/hooks/useIsMobile"
 import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
+import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
 import { 
   isModelType as isBuyerShowType,  // 买家秀 (model_studio)
   isProStudioType,                  // 专业棚拍 (pro_studio)
@@ -525,6 +526,7 @@ function GroupShootPageContent() {
                           >
                             <Sparkles className="w-5 h-5" />
                             <span>{t.camera.startShoot} ({numImages})</span>
+                            <CreditCostBadge cost={numImages} className="ml-2" />
                           </button>
                         </div>
                       </div>
@@ -691,6 +693,7 @@ function GroupShootPageContent() {
               >
                 <Sparkles className={`w-5 h-5 ${selectedImage ? 'text-amber-500' : ''}`} />
                 <span>{t.camera.startShoot} ({numImages})</span>
+                <CreditCostBadge cost={numImages} className="ml-2" />
               </button>
             </div>
             )}

@@ -24,6 +24,7 @@ import { useAssetStore } from "@/stores/assetStore"
 import { usePresetStore } from "@/stores/presetStore"
 import { useIsDesktop } from "@/hooks/useIsMobile"
 import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
+import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
 
 type PageMode = "camera" | "review" | "processing" | "results"
 
@@ -782,6 +783,7 @@ function LifestylePageContent() {
                         >
                           <Wand2 className="w-5 h-5" />
                           {t.lifestyle?.startGenerate || '开始生成'}
+                          <CreditCostBadge cost={4} className="ml-2" />
                         </button>
                       </div>
                     </div>
@@ -1002,6 +1004,7 @@ function LifestylePageContent() {
                     >
                       <Wand2 className="w-5 h-5" />
                       {t.lifestyle?.startGenerate || '开始生成'}
+                      <CreditCostBadge cost={4} className="ml-2" />
                     </motion.button>
                   </div>
                 </div>
