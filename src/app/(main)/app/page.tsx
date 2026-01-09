@@ -30,32 +30,181 @@ function SectionHeader({ title, icon, className }: { title: string; icon: React.
   )
 }
 
-// Showcase Card - 单张效果图展示
+// Before-After Card with animated reveal (slide effect) - Mobile Only
+function BeforeAfterCard({
+  title,
+  subtitle,
+  beforeImage,
+  afterImage,
+  badge,
+  href,
+}: {
+  title: string
+  subtitle: string
+  beforeImage: string
+  afterImage: string
+  badge?: string
+  href: string
+}) {
+  return (
+    <Link href={href}>
+      <motion.div
+        whileTap={{ scale: 0.95 }}
+        className="min-w-[160px] w-[160px] h-[220px] rounded-[16px] snap-start overflow-hidden relative bg-zinc-100 shadow-sm border border-zinc-100 cursor-pointer group"
+      >
+        {/* Before Image (Base) */}
+        <div className="absolute inset-0">
+          <Image src={beforeImage} alt="Before" fill className="object-cover" />
+          <div className="absolute top-2 left-2 w-[52px] text-center py-0.5 bg-black/40 backdrop-blur-sm rounded text-[9px] font-bold text-white/80 z-10">
+            Original
+          </div>
+        </div>
+
+        {/* After Image (Animated Overlay) */}
+        <motion.div
+          className="absolute inset-y-0 left-0 overflow-hidden border-r border-white/50"
+          animate={{ width: ["0%", "100%", "100%"] }}
+          transition={{
+            duration: 6,
+            ease: "easeInOut",
+            times: [0, 0.8, 1],
+            repeat: Infinity,
+            repeatDelay: 2,
+          }}
+        >
+          <div className="absolute inset-0 w-[160px] h-full">
+            <Image src={afterImage} alt="After" fill className="object-cover" />
+          </div>
+          <div className="absolute top-2 left-2 w-[52px] text-center py-0.5 bg-purple-600/80 backdrop-blur-sm rounded text-[9px] font-bold text-white z-10">
+            Result
+          </div>
+        </motion.div>
+
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent pointer-events-none" />
+
+        {badge && (
+          <div className="absolute top-2 right-2 px-1.5 py-0.5 bg-white/20 backdrop-blur-md rounded text-[9px] font-bold text-white border border-white/20 z-20">
+            {badge}
+          </div>
+        )}
+
+        <div className="absolute bottom-0 left-0 right-0 p-3 z-20">
+          <h3 className="text-sm font-bold text-white leading-tight mb-0.5">{title}</h3>
+          <p className="text-[10px] text-white/70 font-medium">{subtitle}</p>
+        </div>
+      </motion.div>
+    </Link>
+  )
+}
+
+// Before-After Card with fade in/out effect - Mobile Only
+function FadeBeforeAfterCard({
+  title,
+  subtitle,
+  beforeImage,
+  afterImage,
+  badge,
+  href,
+  beforePosition = "center",
+}: {
+  title: string
+  subtitle: string
+  beforeImage: string
+  afterImage: string
+  badge?: string
+  href: string
+  beforePosition?: "center" | "top" | "bottom"
+}) {
+  return (
+    <Link href={href}>
+      <motion.div
+        whileTap={{ scale: 0.95 }}
+        className="min-w-[160px] w-[160px] h-[220px] rounded-[16px] snap-start overflow-hidden relative bg-zinc-100 shadow-sm border border-zinc-100 cursor-pointer group"
+      >
+        {/* Before Image (Base) */}
+        <div className="absolute inset-0">
+          <Image src={beforeImage} alt="Before" fill className={`object-cover ${beforePosition === "top" ? "object-top" : beforePosition === "bottom" ? "object-bottom" : ""}`} />
+        </div>
+
+        {/* After Image (Fade Overlay) */}
+        <motion.div
+          className="absolute inset-0"
+          animate={{ opacity: [0, 0, 1, 1, 0] }}
+          transition={{
+            duration: 10,
+            ease: "easeInOut",
+            times: [0, 0.1, 0.4, 0.9, 1],
+            repeat: Infinity,
+            repeatDelay: 2,
+          }}
+        >
+          <Image src={afterImage} alt="After" fill className="object-cover" />
+        </motion.div>
+
+        {/* Label that changes with image */}
+        <motion.div
+          className="absolute top-2 left-2 w-[52px] text-center py-0.5 bg-black/40 backdrop-blur-sm rounded text-[9px] font-bold text-white/80 z-10"
+          animate={{ opacity: [1, 1, 0, 0, 1] }}
+          transition={{
+            duration: 10,
+            ease: "easeInOut",
+            times: [0, 0.1, 0.4, 0.9, 1],
+            repeat: Infinity,
+            repeatDelay: 2,
+          }}
+        >
+          Original
+        </motion.div>
+        <motion.div
+          className="absolute top-2 left-2 w-[52px] text-center py-0.5 bg-purple-600/80 backdrop-blur-sm rounded text-[9px] font-bold text-white z-10"
+          animate={{ opacity: [0, 0, 1, 1, 0] }}
+          transition={{
+            duration: 10,
+            ease: "easeInOut",
+            times: [0, 0.1, 0.4, 0.9, 1],
+            repeat: Infinity,
+            repeatDelay: 2,
+          }}
+        >
+          Result
+        </motion.div>
+
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent pointer-events-none" />
+
+        {badge && (
+          <div className="absolute top-2 right-2 px-1.5 py-0.5 bg-white/20 backdrop-blur-md rounded text-[9px] font-bold text-white border border-white/20 z-20">
+            {badge}
+          </div>
+        )}
+
+        <div className="absolute bottom-0 left-0 right-0 p-3 z-20">
+          <h3 className="text-sm font-bold text-white leading-tight mb-0.5">{title}</h3>
+          <p className="text-[10px] text-white/70 font-medium">{subtitle}</p>
+        </div>
+      </motion.div>
+    </Link>
+  )
+}
+
+// Showcase Card - 单张效果图展示 (Desktop Only)
 function ShowcaseCard({
   title,
   subtitle,
   image,
   badge,
   href,
-  isDesktop = false,
 }: {
   title: string
   subtitle: string
   image: string
   badge?: string
   href: string
-  isDesktop?: boolean
 }) {
-  const cardClass = isDesktop 
-    ? "w-full aspect-[16/9] rounded-2xl"
-    : "min-w-[160px] w-[160px] h-[220px] rounded-[16px] snap-start"
-
   return (
     <Link href={href}>
       <motion.div
-        whileHover={isDesktop ? { scale: 1.02, y: -4 } : undefined}
-        whileTap={{ scale: 0.95 }}
-        className={`${cardClass} overflow-hidden relative bg-zinc-100 shadow-sm border border-zinc-100 cursor-pointer group`}
+        whileHover={{ scale: 1.02, y: -4 }}
+        className="w-full aspect-[16/9] rounded-2xl overflow-hidden relative bg-zinc-100 shadow-sm border border-zinc-100 cursor-pointer group"
       >
         {/* Main Image */}
         <div className="absolute inset-0">
@@ -65,14 +214,14 @@ function ShowcaseCard({
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent pointer-events-none" />
 
         {badge && (
-          <div className="absolute top-2 right-2 lg:top-3 lg:right-3 px-1.5 lg:px-2 py-0.5 lg:py-1 bg-white/20 backdrop-blur-md rounded text-[9px] lg:text-[10px] font-bold text-white border border-white/20 z-20">
+          <div className="absolute top-3 right-3 px-2 py-1 bg-white/20 backdrop-blur-md rounded text-[10px] font-bold text-white border border-white/20 z-20">
             {badge}
           </div>
         )}
 
-        <div className="absolute bottom-0 left-0 right-0 p-3 lg:p-4 z-20">
-          <h3 className="text-sm lg:text-base font-bold text-white leading-tight mb-0.5">{title}</h3>
-          <p className="text-[10px] lg:text-xs text-white/70 font-medium">{subtitle}</p>
+        <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
+          <h3 className="text-base font-bold text-white leading-tight mb-0.5">{title}</h3>
+          <p className="text-xs text-white/70 font-medium">{subtitle}</p>
         </div>
       </motion.div>
     </Link>
@@ -206,43 +355,46 @@ export default function HomePage() {
             title={t.home.shootModel || "拍模特"}
             icon={<ScanFace className="w-4 h-4 text-purple-600" />}
           />
-          {/* Mobile: Horizontal Scroll */}
+          {/* Mobile: Horizontal Scroll - Before/After 动画 */}
           <div className="lg:hidden flex gap-3 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide snap-x">
-            <ShowcaseCard
+            <BeforeAfterCard
               title={t.home.proStudio || "专业棚拍"}
               subtitle={t.home.proStudioSubtitle || "纯色背景质感"}
-              image={`${FEATURES_URL}/pro-studio.jpg`}
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/pro-studio-before.jpg?v=2`}
+              afterImage={`${HOMEPAGE_STORAGE_URL}/pro-studio-after.png?v=2`}
               href="/pro-studio"
             />
-            <ShowcaseCard
+            <BeforeAfterCard
               title={t.home.lifestyleMode || "LifeStyle 街拍"}
               subtitle={t.home.lifestyleModeSubtitle || "AI 智能匹配模特与街景"}
-              image={`${FEATURES_URL}/lifestyle.jpg`}
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/lifestyle-before.png`}
+              afterImage={`${HOMEPAGE_STORAGE_URL}/lifestyle-after.jpg`}
               badge="NEW"
               href="/lifestyle"
             />
-            <ShowcaseCard
+            <BeforeAfterCard
               title={t.home.modelStudio || "买家秀"}
               subtitle={t.home.modelStudioSubtitle || "真实生活场景"}
-              image={`${FEATURES_URL}/buyer-show.jpg`}
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/model-before.jpg`}
+              afterImage={`${HOMEPAGE_STORAGE_URL}/model-after.png`}
               href="/camera"
             />
-            <ShowcaseCard
+            <BeforeAfterCard
               title={t.home.socialMode || "社媒种草"}
               subtitle={t.home.socialModeSubtitle || "小红书INS风格"}
-              image={`${FEATURES_URL}/social.jpg`}
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/social-before.jpg`}
+              afterImage={`${HOMEPAGE_STORAGE_URL}/social-after.jpg`}
               badge="NEW"
               href="/camera/social"
             />
           </div>
-          {/* Desktop: Grid Layout */}
+          {/* Desktop: Grid Layout - 新功能展示图 */}
           <div className="hidden lg:grid lg:grid-cols-4 gap-4 pb-4">
             <ShowcaseCard
               title={t.home.proStudio || "专业棚拍"}
               subtitle={t.home.proStudioSubtitle || "纯色背景质感"}
               image={`${FEATURES_URL}/pro-studio.jpg`}
               href="/pro-studio"
-              isDesktop
             />
             <ShowcaseCard
               title={t.home.lifestyleMode || "LifeStyle 街拍"}
@@ -250,14 +402,12 @@ export default function HomePage() {
               image={`${FEATURES_URL}/lifestyle.jpg`}
               badge="NEW"
               href="/lifestyle"
-              isDesktop
             />
             <ShowcaseCard
               title={t.home.modelStudio || "买家秀"}
               subtitle={t.home.modelStudioSubtitle || "真实生活场景"}
               image={`${FEATURES_URL}/buyer-show.jpg`}
               href="/camera"
-              isDesktop
             />
             <ShowcaseCard
               title={t.home.socialMode || "社媒种草"}
@@ -265,7 +415,6 @@ export default function HomePage() {
               image={`${FEATURES_URL}/social.jpg`}
               badge="NEW"
               href="/camera/social"
-              isDesktop
             />
           </div>
         </motion.div>
@@ -276,43 +425,47 @@ export default function HomePage() {
             title={t.home.customShot || "定制拍摄"}
             icon={<Sparkles className="w-4 h-4 text-pink-600" />}
           />
-          {/* Mobile: Horizontal Scroll */}
+          {/* Mobile: Horizontal Scroll - Before/After 动画 */}
           <div className="lg:hidden flex gap-3 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide snap-x">
-            <ShowcaseCard
+            <FadeBeforeAfterCard
               title={t.home.groupShoot || "组图拍摄"}
               subtitle={t.home.groupShootSubtitle || "多角度套图"}
-              image={`${FEATURES_URL}/group.jpg`}
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/group-shoot-before.png`}
+              afterImage={`${HOMEPAGE_STORAGE_URL}/group-shoot-after.png`}
               href="/camera/group"
             />
-            <ShowcaseCard
+            <FadeBeforeAfterCard
               title={t.home.referenceShot || "参考图拍摄"}
               subtitle={t.home.referenceShotSubtitle || "复刻风格"}
-              image={`${FEATURES_URL}/reference.jpg`}
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/reference-shot-before.png`}
+              afterImage={`${HOMEPAGE_STORAGE_URL}/reference-shot-after.png`}
               badge="NEW"
               href="/reference-shot"
+              beforePosition="top"
             />
-            <ShowcaseCard
+            <BeforeAfterCard
               title={t.home.productStudio || "商品棚拍"}
               subtitle={t.home.productStudioSubtitle || "电商白底图"}
-              image={`${FEATURES_URL}/product-studio.jpg`}
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/product-before.jpg`}
+              afterImage={`${HOMEPAGE_STORAGE_URL}/product-after.jpg`}
               href="/studio"
             />
-            <ShowcaseCard
+            <FadeBeforeAfterCard
               title={t.home.tryOn || "虚拟换装"}
               subtitle={t.home.tryOnSubtitle || "AI 智能换装"}
-              image={`${FEATURES_URL}/try-on.jpg`}
+              beforeImage={`${HOMEPAGE_STORAGE_URL}/try-on-before.png`}
+              afterImage={`${HOMEPAGE_STORAGE_URL}/try-on-after.png`}
               badge="NEW"
               href="/try-on"
             />
           </div>
-          {/* Desktop: Grid Layout */}
+          {/* Desktop: Grid Layout - 新功能展示图 */}
           <div className="hidden lg:grid lg:grid-cols-4 gap-4 pb-4">
             <ShowcaseCard
               title={t.home.groupShoot || "组图拍摄"}
               subtitle={t.home.groupShootSubtitle || "多角度套图"}
               image={`${FEATURES_URL}/group.jpg`}
               href="/camera/group"
-              isDesktop
             />
             <ShowcaseCard
               title={t.home.referenceShot || "参考图拍摄"}
@@ -320,14 +473,12 @@ export default function HomePage() {
               image={`${FEATURES_URL}/reference.jpg`}
               badge="NEW"
               href="/reference-shot"
-              isDesktop
             />
             <ShowcaseCard
               title={t.home.productStudio || "商品棚拍"}
               subtitle={t.home.productStudioSubtitle || "电商白底图"}
               image={`${FEATURES_URL}/product-studio.jpg`}
               href="/studio"
-              isDesktop
             />
             <ShowcaseCard
               title={t.home.tryOn || "虚拟换装"}
@@ -335,7 +486,6 @@ export default function HomePage() {
               image={`${FEATURES_URL}/try-on.jpg`}
               badge="NEW"
               href="/try-on"
-              isDesktop
             />
           </div>
         </motion.div>
