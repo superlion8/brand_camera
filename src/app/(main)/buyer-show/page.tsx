@@ -1334,8 +1334,8 @@ function CameraPageContent() {
                                 <Check className="w-4 h-4 text-amber-600" />
                               </div>
                               <div>
-                                <h4 className="text-sm font-medium text-zinc-900">高质量输出</h4>
-                                <p className="text-xs text-zinc-500">适合电商平台使用</p>
+                                <h4 className="text-sm font-medium text-zinc-900">{t.proStudio?.highQualityOutput || 'High Quality Output'}</h4>
+                                <p className="text-xs text-zinc-500">{t.proStudio?.highQualityOutputDesc || 'Professional quality images, ready for e-commerce'}</p>
                               </div>
                             </div>
                           </div>
@@ -1472,7 +1472,7 @@ function CameraPageContent() {
                               className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 flex flex-col items-center justify-center gap-1 transition-colors"
                             >
                               <Plus className="w-5 h-5 text-zinc-400" />
-                              <span className="text-[10px] text-zinc-400">上传</span>
+                              <span className="text-[10px] text-zinc-400">{t.proStudio?.upload || 'Upload'}</span>
                             </button>
                             {allModels.slice(0, 7).map(model => (
                               <button
@@ -1525,7 +1525,7 @@ function CameraPageContent() {
                               className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 flex flex-col items-center justify-center gap-1 transition-colors"
                             >
                               <Plus className="w-5 h-5 text-zinc-400" />
-                              <span className="text-[10px] text-zinc-400">上传</span>
+                              <span className="text-[10px] text-zinc-400">{t.proStudio?.upload || 'Upload'}</span>
                             </button>
                             {allBackgrounds.slice(0, 7).map(bg => (
                               <button
@@ -1634,7 +1634,7 @@ function CameraPageContent() {
                                     className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 flex flex-col items-center justify-center gap-1 transition-colors"
                                   >
                                     <Plus className="w-5 h-5 text-zinc-400" />
-                                    <span className="text-[10px] text-zinc-400">上传</span>
+                                    <span className="text-[10px] text-zinc-400">{t.proStudio?.upload || 'Upload'}</span>
                                   </button>
                                   {allModels.map(model => (
                                     <button
@@ -1673,7 +1673,7 @@ function CameraPageContent() {
                                     className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 flex flex-col items-center justify-center gap-1 transition-colors"
                                   >
                                     <Plus className="w-5 h-5 text-zinc-400" />
-                                    <span className="text-[10px] text-zinc-400">上传</span>
+                                    <span className="text-[10px] text-zinc-400">{t.proStudio?.upload || 'Upload'}</span>
                                   </button>
                                   {allBackgrounds.map(bg => (
                                     <button

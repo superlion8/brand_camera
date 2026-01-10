@@ -907,12 +907,12 @@ function ProStudioPageContent() {
                   {/* Main Product */}
                   <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 overflow-hidden">
                     <div className="p-3 border-b border-zinc-100 flex items-center justify-between">
-                      <span className="text-sm font-medium text-zinc-900">主商品</span>
+                      <span className="text-sm font-medium text-zinc-900">{t.proStudio?.mainProduct || 'Main Product'}</span>
                       <button
                         onClick={handleRetake}
                         className="text-xs text-zinc-500 hover:text-zinc-700"
                       >
-                        更换
+                        {t.proStudio?.change || 'Change'}
                       </button>
                     </div>
                     <div className="aspect-square relative bg-zinc-50">
@@ -927,8 +927,8 @@ function ProStudioPageContent() {
                   {/* Additional Products */}
                   <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-4">
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-zinc-900">搭配商品（可选）</span>
-                      <span className="text-xs text-zinc-400">最多4件</span>
+                      <span className="text-sm font-medium text-zinc-900">{t.proStudio?.additionalProducts || 'Additional Products (Optional)'}</span>
+                      <span className="text-xs text-zinc-400">{(t.proStudio?.maxItems || 'Max {count} items').replace('{count}', '4')}</span>
                     </div>
                     <div className="grid grid-cols-4 gap-2">
                       {/* Existing second product */}
@@ -979,14 +979,14 @@ function ProStudioPageContent() {
                           ) : (
                             <>
                               <Plus className="w-5 h-5 text-zinc-400" />
-                              <span className="text-[10px] text-zinc-400">添加</span>
+                              <span className="text-[10px] text-zinc-400">{t.proStudio?.add || 'Add'}</span>
                             </>
                           )}
                         </button>
                       )}
                     </div>
                     <p className="text-xs text-zinc-400 mt-3">
-                      💡 添加更多商品可生成穿搭组合效果
+                      {t.proStudio?.addMoreTip || '💡 Add more products for outfit combination effect'}
                     </p>
                   </div>
                 </div>
@@ -1014,12 +1014,12 @@ function ProStudioPageContent() {
                             }}
                             className="text-xs text-amber-600 hover:text-amber-700 font-medium"
                           >
-                            查看更多 ({allModels.length})
+                            {t.proStudio?.viewMore || 'View More'} ({allModels.length})
                           </button>
                         )}
                       </div>
                     </div>
-                    <p className="text-sm text-zinc-500 mb-4">不选则随机匹配</p>
+                    <p className="text-sm text-zinc-500 mb-4">{t.proStudio?.randomMatch || 'Random if not selected'}</p>
                     <div className="grid grid-cols-4 gap-3">
                       {/* Upload button */}
                       <button
@@ -1027,7 +1027,7 @@ function ProStudioPageContent() {
                         className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-amber-400 flex flex-col items-center justify-center gap-1 transition-colors"
                       >
                         <Plus className="w-5 h-5 text-zinc-400" />
-                        <span className="text-[10px] text-zinc-400">上传</span>
+                        <span className="text-[10px] text-zinc-400">{t.proStudio?.upload || 'Upload'}</span>
                       </button>
                       {/* Model list */}
                       {allModels.slice(0, 7).map(model => (
@@ -1072,12 +1072,12 @@ function ProStudioPageContent() {
                             }}
                             className="text-xs text-amber-600 hover:text-amber-700 font-medium"
                           >
-                            查看更多 ({allBgs.length})
+                            {t.proStudio?.viewMore || 'View More'} ({allBgs.length})
                           </button>
                         )}
                       </div>
                     </div>
-                    <p className="text-sm text-zinc-500 mb-4">不选则随机匹配</p>
+                    <p className="text-sm text-zinc-500 mb-4">{t.proStudio?.randomMatch || 'Random if not selected'}</p>
                     <div className="grid grid-cols-4 gap-3">
                       {/* Upload button */}
                       <button
@@ -1085,7 +1085,7 @@ function ProStudioPageContent() {
                         className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-amber-400 flex flex-col items-center justify-center gap-1 transition-colors"
                       >
                         <Plus className="w-5 h-5 text-zinc-400" />
-                        <span className="text-[10px] text-zinc-400">上传</span>
+                        <span className="text-[10px] text-zinc-400">{t.proStudio?.upload || 'Upload'}</span>
                       </button>
                       {/* Background list */}
                       {allBgs.slice(0, 7).map(bg => (
@@ -1325,7 +1325,7 @@ function ProStudioPageContent() {
                             </div>
                             <div className="text-center">
                               <p className="text-sm font-medium text-zinc-700">{t.proStudio?.uploadProduct || '上传商品图片'}</p>
-                              <p className="text-xs text-zinc-400 mt-1">点击上传或拖拽图片</p>
+                              <p className="text-xs text-zinc-400 mt-1">{t.proStudio?.clickToUploadOrDrag || 'Click to upload or drag & drop'}</p>
                             </div>
                           </button>
                           <div className="mt-4">
@@ -1347,9 +1347,9 @@ function ProStudioPageContent() {
                             <div className="w-16 h-16 mx-auto mb-4 bg-amber-50 rounded-2xl flex items-center justify-center">
                               <Sparkles className="w-8 h-8 text-amber-500" />
                             </div>
-                            <h3 className="text-lg font-semibold text-zinc-900 mb-2">专业棚拍模式</h3>
+                            <h3 className="text-lg font-semibold text-zinc-900 mb-2">{t.proStudio?.proStudioMode || 'Pro Studio Mode'}</h3>
                             <p className="text-sm text-zinc-500 max-w-xs mx-auto">
-                              上传商品图片后，AI 将为你生成 4 张不同风格的专业模特展示图
+                              {t.proStudio?.proStudioModeDesc || 'After uploading product images, AI will generate 4 professional model showcase images in different styles'}
                             </p>
                           </div>
                           
@@ -1359,8 +1359,8 @@ function ProStudioPageContent() {
                                 <Check className="w-4 h-4 text-blue-600" />
                               </div>
                               <div>
-                                <h4 className="text-sm font-medium text-zinc-900">智能模特匹配</h4>
-                                <p className="text-xs text-zinc-500">根据商品自动匹配最合适的模特</p>
+                                <h4 className="text-sm font-medium text-zinc-900">{t.proStudio?.smartModelMatch || 'Smart Model Matching'}</h4>
+                                <p className="text-xs text-zinc-500">{t.proStudio?.smartModelMatchDesc || 'Automatically match the best model for your product'}</p>
                               </div>
                             </div>
                             <div className="flex items-start gap-3">
@@ -1368,8 +1368,8 @@ function ProStudioPageContent() {
                                 <Check className="w-4 h-4 text-purple-600" />
                               </div>
                               <div>
-                                <h4 className="text-sm font-medium text-zinc-900">专业背景场景</h4>
-                                <p className="text-xs text-zinc-500">多种专业摄影背景可选</p>
+                                <h4 className="text-sm font-medium text-zinc-900">{t.proStudio?.proBgScene || 'Professional Background'}</h4>
+                                <p className="text-xs text-zinc-500">{t.proStudio?.proBgSceneDesc || 'Multiple professional photography backgrounds'}</p>
                               </div>
                             </div>
                             <div className="flex items-start gap-3">
@@ -1377,8 +1377,8 @@ function ProStudioPageContent() {
                                 <Check className="w-4 h-4 text-green-600" />
                               </div>
                               <div>
-                                <h4 className="text-sm font-medium text-zinc-900">高质量输出</h4>
-                                <p className="text-xs text-zinc-500">专业级图片质量，可直接用于电商</p>
+                                <h4 className="text-sm font-medium text-zinc-900">{t.proStudio?.highQualityOutput || 'High Quality Output'}</h4>
+                                <p className="text-xs text-zinc-500">{t.proStudio?.highQualityOutputDesc || 'Professional quality images, ready for e-commerce'}</p>
                               </div>
                             </div>
                           </div>
@@ -2023,7 +2023,7 @@ function ProStudioPageContent() {
                             className="w-32 h-32 rounded-2xl bg-zinc-200 dark:bg-zinc-800 flex flex-col items-center justify-center gap-3 hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-colors"
                           >
                             <ImageIcon className="w-10 h-10 text-zinc-500" />
-                            <span className="text-sm text-zinc-600 dark:text-zinc-400">点击上传</span>
+                            <span className="text-sm text-zinc-600 dark:text-zinc-400">{t.proStudio?.clickToUpload || 'Click to upload'}</span>
                           </button>
                           <p className="text-xs text-zinc-500 mt-4">支持 JPG、PNG 格式</p>
                         </div>

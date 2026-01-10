@@ -65,11 +65,46 @@ export default function MyPage() {
 }
 ```
 
-### 5. 🌍 国际化
+### 5. 🌍 国际化（重要！禁止硬编码文本）
+
+**⚠️ 绝对禁止在 JSX 中直接写中文/英文/韩文文本！**
+
 - [ ] `src/locales/zh.ts` - 中文翻译
 - [ ] `src/locales/en.ts` - 英文翻译  
 - [ ] `src/locales/ko.ts` - 韩文翻译
+- [ ] **所有用户可见文本**必须使用 `t.xxx` 翻译 key
 - [ ] **AI 生成的文本**需要根据用户语言设置生成对应语言
+
+**代码规范：**
+```tsx
+// ❌ 错误：硬编码文本
+<h1>专业棚拍模式</h1>
+<p>智能模特匹配</p>
+<button>上传</button>
+
+// ✅ 正确：使用翻译 key
+<h1>{t.proStudio?.title}</h1>
+<p>{t.proStudio?.smartModelMatch}</p>
+<button>{t.common?.upload}</button>
+
+// ⚠️ 可接受但不推荐：fallback 应该用英文（作为默认语言）
+<h1>{t.proStudio?.title || 'Pro Studio Mode'}</h1>
+```
+
+**检测硬编码文本：**
+```bash
+# 运行检测脚本
+./scripts/check-i18n.sh
+
+# 或手动搜索
+grep -rn "[\u4e00-\u9fa5]" src/app src/components --include="*.tsx" | grep -v locales
+```
+
+**添加新翻译 key 的流程：**
+1. 在 `src/locales/zh.ts` 中添加中文
+2. 在 `src/locales/en.ts` 中添加英文
+3. 在 `src/locales/ko.ts` 中添加韩文
+4. 在组件中使用 `t.xxx.yyy`
 
 ```typescript
 // 获取用户语言并传递给后端
