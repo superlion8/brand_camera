@@ -4,6 +4,7 @@ export const ko: Translations = {
   // Common
   common: {
     appName: "브랜드 카메라",
+    appTagline: "AI 포토 스튜디오",
     slogan: "브랜드를 위한 AI 스튜디오",
     search: "검색...",
     loading: "로딩 중...",

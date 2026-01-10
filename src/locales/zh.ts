@@ -2,6 +2,7 @@ export const zh = {
   // Common
   common: {
     appName: "品牌相机",
+    appTagline: "AI 商拍助手",
     slogan: "品牌的AI影棚",
     search: "搜索...",
     loading: "加载中...",

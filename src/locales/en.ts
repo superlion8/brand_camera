@@ -4,6 +4,7 @@ export const en: Translations = {
   // Common
   common: {
     appName: "Brand Camera",
+    appTagline: "AI Photo Studio",
     slogan: "AI Studio for Brands",
     search: "Search...",
     loading: "Loading...",
