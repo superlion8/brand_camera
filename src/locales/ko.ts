@@ -175,6 +175,16 @@ export const ko: Translations = {
     myBackgrounds: "내 것",
     selectModel: "모델 선택",
     selectBg: "배경 선택",
+    // 바이어 쇼 모드
+    buyerShowMode: "바이어 쇼 모드",
+    realScene: "실제 장면",
+    realSceneDesc: "생활감 있는 장면으로 더 몰입감 있게",
+    diverseStyles: "다양한 스타일",
+    diverseStylesDesc: "모델과 배경을 자유롭게 커스터마이징",
+    initializingCamera: "카메라 초기화 중...",
+    cameraUnavailable: "카메라 사용 불가",
+    thisResults: "결과물",
+    generatingSlot: "생성 중...",
   },
   
   // Group Shoot Page
@@ -210,6 +220,19 @@ export const ko: Translations = {
     creatingLifestyle: "AI가 인스타 스타일 사진 제작 중...",
     creatingStudio: "AI가 전문 사진 제작 중...",
     styleMode: "스타일 모드",
+    analyzingFeatures: "이미지 특징 분석 중",
+    designingPoseLifestyle: "라이프스타일 포즈 디자인 중",
+    designingPoseCommercial: "커머셜 포즈 디자인 중",
+    generatingImages: "{count}장의 다양한 이미지 생성 중...",
+    continueInBackground: "백그라운드에서 계속 생성 중:",
+    selectNewImage: "새 이미지 선택",
+    returnHome: "홈으로 돌아가기",
+    debugParams: "생성 파라미터 (디버그)",
+    inputImage: "입력",
+    shootMode: "촬영 모드",
+    generateCount: "생성 수",
+    inputSource: "입력 소스",
+    loadingPhotos: "사진 로딩 중...",
   },
   
   // Edit Page
@@ -248,6 +271,13 @@ export const ko: Translations = {
     generationResult: "생성 결과",
     uploadImage: "이미지 업로드",
     uploadImageDesc: "편집할 이미지 선택",
+    editFailed: "편집 실패",
+    editTimeout: "편집 시간 초과. 더 작은 이미지로 다시 시도하세요.",
+    fromAlbum: "앨범에서 업로드",
+    takePhotoTitle: "사진 촬영",
+    fromAssets: "자산에서 선택",
+    addImage: "이미지 추가",
+    cameraUnavailable: "카메라 사용 불가",
   },
   
   // Studio Page
@@ -347,6 +377,11 @@ export const ko: Translations = {
     modelImages: "장 모델 이미지",
     processingImage: "AI가 이미지 처리 중",
     loadMore: "더 보기",
+    loading: "로딩 중...",
+    completed: "✓ 완료",
+    confirmDelete: "삭제하시겠습니까?",
+    canUseWhenShooting: "촬영 시 선택하여 사용 가능",
+    generationFailed: "생성 실패",
     // AI 모델 관련
     aiModel: "모델",
     geminiPro: "Gemini 3.0 Pro",
@@ -395,6 +430,8 @@ export const ko: Translations = {
     productInner: "이너웨어",
     productShoes: "신발",
     productHat: "모자",
+    pin: "고정",
+    unpin: "고정 해제",
   },
   
   // User Menu
@@ -574,6 +611,10 @@ export const ko: Translations = {
     viewMore: "더 보기",
     clickToUploadOrDrag: "클릭하여 업로드하거나 드래그 앤 드롭",
     clickToUpload: "클릭하여 업로드",
+    noItems: "항목 없음",
+    supportedFormats: "JPG, PNG 형식 지원",
+    details: "상세",
+    longPressToSave: "길게 눌러 이미지 저장",
   },
   
   // Quota
@@ -618,6 +659,8 @@ export const ko: Translations = {
   // Outfit editor
   outfit: {
     title: "코디 구성",
+    outfitStyling: "의상 스타일링",
+    clickToAddProduct: "빈 슬롯을 클릭하여 상품을 추가하고 코디 조합을 생성하세요",
     hat: "모자",
     top: "상의",
     inner: "이너",
@@ -856,6 +899,14 @@ export const ko: Translations = {
   // 라이프스타일 스트릿 촬영
   lifestyle: {
     title: "라이프스타일 촬영",
+    lifestyleMode: "라이프스타일 스트릿 모드",
+    lifestyleModeDesc: "상품 이미지 업로드 후, AI가 패션 스트릿 스타일 쇼케이스 이미지를 생성합니다",
+    smartSceneMatch: "스마트 장면 매칭",
+    smartSceneMatchDesc: "상품에 가장 적합한 스트릿 장면을 자동으로 매칭",
+    fashionModelStyle: "패션 모델 스타일",
+    fashionModelStyleDesc: "전문 패션 모델 쇼케이스 효과",
+    multiStyleOptions: "다양한 스타일 옵션",
+    multiStyleOptionsDesc: "모델과 장면을 자유롭게 커스터마이징",
     cameraNotReady: "카메라가 준비되지 않았습니다. 앨범에서 업로드해주세요",
     autoAnalyzeHint: "AI가 이 의류를 분석하여 최적의 스트릿 모델과 도시 배경을 매칭해드립니다",
     startGenerate: "생성 시작",
@@ -980,6 +1031,12 @@ export const ko: Translations = {
     startGenerate: "생성 시작",
     generating: "생성 중...",
     pendingProduct: "생성 대상 상품",
+    analysisCompleted: "분석 완료",
+    completed: "완료",
+    preparingGenerate: "생성 준비 중...",
+    preparing: "준비 중...",
+    uploaded: "업로드됨",
+    notGenerated: "미생성",
     aiWillGenerate: "AI가 브랜드 스타일을 기반으로 생성합니다:",
     webStyleCount: "웹사이트 스타일 모델 이미지 2장",
     insStyleCount: "INS 스타일 모델 이미지 2장",

@@ -373,7 +373,7 @@ export default function AnalyzingPage() {
               animate={{ opacity: 1, scale: 1 }}
               className="bg-white rounded-2xl p-4 border border-zinc-200"
             >
-              <p className="text-sm text-zinc-500 mb-3">待生成商品</p>
+              <p className="text-sm text-zinc-500 mb-3">{t.brandStyle?.pendingProduct || 'Product to Generate'}</p>
               <div className="relative h-32 rounded-xl overflow-hidden bg-zinc-100">
                 <Image 
                   src={inputData.productImage} 

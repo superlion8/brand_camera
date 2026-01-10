@@ -630,7 +630,7 @@ function AssetCard({
                   ? "bg-amber-50 text-amber-600 hover:bg-amber-100" 
                   : "hover:bg-zinc-100 text-zinc-400 hover:text-amber-600"
               }`}
-              title={isPinned ? "取消置顶" : "置顶"}
+              title={isPinned ? (t.assets?.unpin || "Unpin") : (t.assets?.pin || "Pin")}
             >
               <Pin className="w-4 h-4" />
             </button>

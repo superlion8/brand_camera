@@ -216,7 +216,7 @@ export default function ResultsPage() {
                   </>
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xs text-zinc-400">未生成</span>
+                    <span className="text-xs text-zinc-400">{t.brandStyle?.notGenerated || 'Not Generated'}</span>
                   </div>
                 )}
               </div>

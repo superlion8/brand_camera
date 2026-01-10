@@ -1304,9 +1304,9 @@ function CameraPageContent() {
                             <div className="w-16 h-16 mx-auto mb-4 bg-blue-50 rounded-2xl flex items-center justify-center">
                               <Wand2 className="w-8 h-8 text-blue-500" />
                             </div>
-                            <h3 className="text-lg font-semibold text-zinc-900 mb-2">买家秀模式</h3>
+                            <h3 className="text-lg font-semibold text-zinc-900 mb-2">{t.camera?.buyerShowMode || 'Buyer Show Mode'}</h3>
                             <p className="text-sm text-zinc-500 max-w-xs mx-auto">
-                              {t.common?.uploadProductDesc || '上传商品图片后，AI 将为你生成专业展示图'}
+                              {t.common?.uploadProductDesc || 'After uploading product images, AI will generate professional showcase images'}
                             </p>
                           </div>
                           
@@ -1316,8 +1316,8 @@ function CameraPageContent() {
                                 <Check className="w-4 h-4 text-blue-600" />
                               </div>
                               <div>
-                                <h4 className="text-sm font-medium text-zinc-900">真实场景</h4>
-                                <p className="text-xs text-zinc-500">生活化场景，更有代入感</p>
+                                <h4 className="text-sm font-medium text-zinc-900">{t.camera?.realScene || 'Real Scene'}</h4>
+                                <p className="text-xs text-zinc-500">{t.camera?.realSceneDesc || 'Lifestyle scenarios for better engagement'}</p>
                               </div>
                             </div>
                             <div className="flex items-start gap-3">
@@ -1325,8 +1325,8 @@ function CameraPageContent() {
                                 <Check className="w-4 h-4 text-green-600" />
                               </div>
                               <div>
-                                <h4 className="text-sm font-medium text-zinc-900">多样风格</h4>
-                                <p className="text-xs text-zinc-500">支持自定义模特和背景</p>
+                                <h4 className="text-sm font-medium text-zinc-900">{t.camera?.diverseStyles || 'Diverse Styles'}</h4>
+                                <p className="text-xs text-zinc-500">{t.camera?.diverseStylesDesc || 'Customizable models and backgrounds'}</p>
                               </div>
                             </div>
                             <div className="flex items-start gap-3">
@@ -1363,14 +1363,14 @@ function CameraPageContent() {
                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
                   <div className="text-center text-zinc-400">
                     <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin opacity-50" />
-                    <p className="text-sm">正在初始化相机...</p>
+                    <p className="text-sm">{t.camera?.initializingCamera || 'Initializing camera...'}</p>
                   </div>
                 </div>
               ) : mode === "camera" && !hasCamera && !isDesktop ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
                   <div className="text-center text-zinc-400">
                     <Camera className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                    <p className="text-sm">相机不可用</p>
+                    <p className="text-sm">{t.camera?.cameraUnavailable || 'Camera unavailable'}</p>
                     <p className="text-xs mt-1">{t.camera.productPlaceholder}</p>
                   </div>
                 </div>
@@ -2525,7 +2525,7 @@ function CameraPageContent() {
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <span className="font-semibold ml-2">本次成片</span>
+              <span className="font-semibold ml-2">{t.camera?.thisResults || 'Results'}</span>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-8">
@@ -2552,7 +2552,7 @@ function CameraPageContent() {
                       return (
                         <div key={i} className="aspect-[4/5] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
                           <Loader2 className="w-6 h-6 text-zinc-400 animate-spin mb-2" />
-                          <span className="text-[10px] text-zinc-400">生成中...</span>
+                          <span className="text-[10px] text-zinc-400">{t.camera?.generatingSlot || 'Generating...'}</span>
                         </div>
                       )
                     }
@@ -2628,7 +2628,7 @@ function CameraPageContent() {
                       return (
                         <div key={actualIndex} className="aspect-[4/5] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
                           <Loader2 className="w-6 h-6 text-zinc-400 animate-spin mb-2" />
-                          <span className="text-[10px] text-zinc-400">生成中...</span>
+                          <span className="text-[10px] text-zinc-400">{t.camera?.generatingSlot || 'Generating...'}</span>
                         </div>
                       )
                     }

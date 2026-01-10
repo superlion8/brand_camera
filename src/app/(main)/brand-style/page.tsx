@@ -325,7 +325,7 @@ export default function BrandStylePage() {
                   </button>
                   <div className="absolute bottom-2 left-2 px-2 py-1 bg-green-500 rounded-full flex items-center gap-1">
                     <Check className="w-3 h-3 text-white" />
-                    <span className="text-xs text-white font-medium">已上传</span>
+                    <span className="text-xs text-white font-medium">{t.brandStyle?.uploaded || 'Uploaded'}</span>
                   </div>
                 </div>
               )}

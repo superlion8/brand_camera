@@ -567,7 +567,7 @@ export default function GalleryPage() {
       <div className="h-full w-full bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-zinc-500">加载中...</p>
+          <p className="text-zinc-500">{t.gallery?.loading || 'Loading...'}</p>
         </div>
       </div>
     )
@@ -1109,7 +1109,7 @@ export default function GalleryPage() {
                   className="object-cover"
                 />
                 <div className="absolute top-2 left-2 px-2 py-1 bg-green-500 text-white text-xs rounded-full flex items-center gap-1">
-                  <span>✓ 完成</span>
+                  <span>{t.gallery?.completed || '✓ Done'}</span>
                 </div>
               </div>
             ))
@@ -1798,7 +1798,7 @@ export default function GalleryPage() {
                         </div>
                         <div className="text-left">
                           <p className="font-medium text-zinc-900">{t.gallery.saveAsProduct}</p>
-                          <p className="text-xs text-zinc-500">可在拍摄时选择使用</p>
+                          <p className="text-xs text-zinc-500">{t.gallery?.canUseWhenShooting || 'Can be selected when shooting'}</p>
                         </div>
                       </button>
                       <button
@@ -1845,7 +1845,7 @@ export default function GalleryPage() {
                     <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
                       <Trash2 className="w-6 h-6 text-red-600" />
                     </div>
-                    <h3 className="font-semibold text-zinc-900 text-center mb-2">确认删除？</h3>
+                    <h3 className="font-semibold text-zinc-900 text-center mb-2">{t.gallery?.confirmDelete || 'Confirm Delete?'}</h3>
                     <p className="text-sm text-zinc-500 text-center mb-6">
                       删除后将无法恢复，同一批次生成的所有图片都会被删除
                     </p>
@@ -2214,7 +2214,7 @@ function ImageSlotCard({ task, slot, slotIndex, galleryItemsMap, onImageClick, o
           <div className="w-10 h-10 rounded-full bg-red-200 flex items-center justify-center mb-2">
             <X className="w-5 h-5 text-red-600" />
           </div>
-          <p className="text-xs text-red-600 text-center font-medium">生成失败</p>
+          <p className="text-xs text-red-600 text-center font-medium">{t.gallery?.generationFailed || 'Generation Failed'}</p>
           {slot.error && (
             <p className="text-[10px] text-red-500 text-center mt-1 line-clamp-2">{slot.error}</p>
           )}

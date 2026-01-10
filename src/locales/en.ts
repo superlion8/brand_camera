@@ -176,6 +176,16 @@ export const en: Translations = {
     myBackgrounds: "My",
     selectModel: "Select Model",
     selectBg: "Select Background",
+    // Buyer Show Mode
+    buyerShowMode: "Buyer Show Mode",
+    realScene: "Real Scene",
+    realSceneDesc: "Lifestyle scenarios for better engagement",
+    diverseStyles: "Diverse Styles",
+    diverseStylesDesc: "Customizable models and backgrounds",
+    initializingCamera: "Initializing camera...",
+    cameraUnavailable: "Camera unavailable",
+    thisResults: "Results",
+    generatingSlot: "Generating...",
   },
   
   // Group Shoot Page
@@ -211,6 +221,19 @@ export const en: Translations = {
     creatingLifestyle: "AI creating Instagram-style photos...",
     creatingStudio: "AI creating professional photos...",
     styleMode: "Style Mode",
+    analyzingFeatures: "Analyzing image features",
+    designingPoseLifestyle: "Designing lifestyle poses",
+    designingPoseCommercial: "Designing commercial poses",
+    generatingImages: "Generating {count} diverse images...",
+    continueInBackground: "Generation continues in background:",
+    selectNewImage: "Select New Image",
+    returnHome: "Return Home",
+    debugParams: "Generation Params (Debug)",
+    inputImage: "Input",
+    shootMode: "Shoot Mode",
+    generateCount: "Count",
+    inputSource: "Source",
+    loadingPhotos: "Loading photos...",
   },
   
   // Edit Page
@@ -249,6 +272,13 @@ export const en: Translations = {
     generationResult: "Generation Result",
     uploadImage: "Upload Image",
     uploadImageDesc: "Select an image to edit",
+    editFailed: "Edit failed",
+    editTimeout: "Edit timed out. Please retry with a smaller image.",
+    fromAlbum: "Upload from Album",
+    takePhotoTitle: "Take Photo",
+    fromAssets: "From Assets",
+    addImage: "Add Image",
+    cameraUnavailable: "Camera unavailable",
   },
   
   // Studio Page
@@ -348,6 +378,11 @@ export const en: Translations = {
     modelImages: "model images",
     processingImage: "AI is processing your image",
     loadMore: "Load More",
+    loading: "Loading...",
+    completed: "✓ Done",
+    confirmDelete: "Confirm Delete?",
+    canUseWhenShooting: "Can be selected when shooting",
+    generationFailed: "Generation Failed",
     // AI Model related
     aiModel: "Model",
     geminiPro: "Gemini 3.0 Pro",
@@ -396,6 +431,8 @@ export const en: Translations = {
     productInner: "Innerwear",
     productShoes: "Shoes",
     productHat: "Hats",
+    pin: "Pin",
+    unpin: "Unpin",
   },
   
   // User Menu
@@ -575,6 +612,10 @@ export const en: Translations = {
     viewMore: "View More",
     clickToUploadOrDrag: "Click to upload or drag & drop",
     clickToUpload: "Click to upload",
+    noItems: "No items",
+    supportedFormats: "Supports JPG, PNG formats",
+    details: "Details",
+    longPressToSave: "Long press to save image",
   },
   
   // Quota
@@ -619,6 +660,8 @@ export const en: Translations = {
   // Outfit editor
   outfit: {
     title: "Style Outfit",
+    outfitStyling: "Outfit Styling",
+    clickToAddProduct: "Click empty slots to add products for outfit combination",
     hat: "Hat",
     top: "Top",
     inner: "Inner",
@@ -857,6 +900,14 @@ export const en: Translations = {
   // LifeStyle Street Shot
   lifestyle: {
     title: "LifeStyle Shot",
+    lifestyleMode: "LifeStyle Street Mode",
+    lifestyleModeDesc: "After uploading product images, AI will generate fashion street-style showcase images",
+    smartSceneMatch: "Smart Scene Matching",
+    smartSceneMatchDesc: "Automatically match the best street scene for your product",
+    fashionModelStyle: "Fashion Model Style",
+    fashionModelStyleDesc: "Professional fashion model showcase effect",
+    multiStyleOptions: "Multiple Style Options",
+    multiStyleOptionsDesc: "Customizable models and scenes",
     cameraNotReady: "Camera not ready, please upload from album",
     autoAnalyzeHint: "AI will analyze this garment and match the best street model and city scene for you",
     startGenerate: "Start Generate",
@@ -981,6 +1032,12 @@ export const en: Translations = {
     startGenerate: "Start Generating",
     generating: "Generating...",
     pendingProduct: "Product to Generate",
+    analysisCompleted: "Analysis Complete",
+    completed: "Done",
+    preparingGenerate: "Preparing to generate...",
+    preparing: "Preparing...",
+    uploaded: "Uploaded",
+    notGenerated: "Not Generated",
     aiWillGenerate: "AI will generate based on your brand style:",
     webStyleCount: "2 website style model images",
     insStyleCount: "2 INS style model images",

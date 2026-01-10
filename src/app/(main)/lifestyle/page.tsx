@@ -578,9 +578,9 @@ function LifestylePageContent() {
                             <div className="w-16 h-16 mx-auto mb-4 bg-purple-50 rounded-2xl flex items-center justify-center">
                               <Sparkles className="w-8 h-8 text-purple-500" />
                             </div>
-                            <h3 className="text-lg font-semibold text-zinc-900 mb-2">LifeStyle 街拍模式</h3>
+                            <h3 className="text-lg font-semibold text-zinc-900 mb-2">{t.lifestyle?.lifestyleMode || 'LifeStyle Street Mode'}</h3>
                             <p className="text-sm text-zinc-500 max-w-xs mx-auto">
-                              {t.common?.uploadProductDesc || '上传商品图片后，AI 将为你生成专业展示图'}
+                              {t.lifestyle?.lifestyleModeDesc || 'After uploading product images, AI will generate fashion street-style showcase images'}
                             </p>
                           </div>
                           
@@ -590,8 +590,8 @@ function LifestylePageContent() {
                                 <Check className="w-4 h-4 text-purple-600" />
                               </div>
                               <div>
-                                <h4 className="text-sm font-medium text-zinc-900">智能场景匹配</h4>
-                                <p className="text-xs text-zinc-500">根据商品自动匹配最合适的街景</p>
+                                <h4 className="text-sm font-medium text-zinc-900">{t.lifestyle?.smartSceneMatch || 'Smart Scene Matching'}</h4>
+                                <p className="text-xs text-zinc-500">{t.lifestyle?.smartSceneMatchDesc || 'Automatically match the best street scene for your product'}</p>
                               </div>
                             </div>
                             <div className="flex items-start gap-3">
@@ -599,8 +599,8 @@ function LifestylePageContent() {
                                 <Check className="w-4 h-4 text-pink-600" />
                               </div>
                               <div>
-                                <h4 className="text-sm font-medium text-zinc-900">时尚模特风格</h4>
-                                <p className="text-xs text-zinc-500">专业时尚模特展示效果</p>
+                                <h4 className="text-sm font-medium text-zinc-900">{t.lifestyle?.fashionModelStyle || 'Fashion Model Style'}</h4>
+                                <p className="text-xs text-zinc-500">{t.lifestyle?.fashionModelStyleDesc || 'Professional fashion model showcase effect'}</p>
                               </div>
                             </div>
                             <div className="flex items-start gap-3">
@@ -608,8 +608,8 @@ function LifestylePageContent() {
                                 <Check className="w-4 h-4 text-blue-600" />
                               </div>
                               <div>
-                                <h4 className="text-sm font-medium text-zinc-900">多种风格可选</h4>
-                                <p className="text-xs text-zinc-500">支持自定义模特和场景</p>
+                                <h4 className="text-sm font-medium text-zinc-900">{t.lifestyle?.multiStyleOptions || 'Multiple Style Options'}</h4>
+                                <p className="text-xs text-zinc-500">{t.lifestyle?.multiStyleOptionsDesc || 'Customizable models and scenes'}</p>
                               </div>
                             </div>
                           </div>
@@ -700,7 +700,7 @@ function LifestylePageContent() {
                               className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-purple-400 flex flex-col items-center justify-center gap-1 transition-colors"
                             >
                               <Plus className="w-5 h-5 text-zinc-400" />
-                              <span className="text-[10px] text-zinc-400">上传</span>
+                              <span className="text-[10px] text-zinc-400">{t.proStudio?.upload || 'Upload'}</span>
                             </button>
                             {allModels.slice(0, 7).map(model => (
                               <button
@@ -753,7 +753,7 @@ function LifestylePageContent() {
                               className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-purple-400 flex flex-col items-center justify-center gap-1 transition-colors"
                             >
                               <Plus className="w-5 h-5 text-zinc-400" />
-                              <span className="text-[10px] text-zinc-400">上传</span>
+                              <span className="text-[10px] text-zinc-400">{t.proStudio?.upload || 'Upload'}</span>
                             </button>
                             {allScenes.slice(0, 7).map(scene => (
                               <button
@@ -849,7 +849,7 @@ function LifestylePageContent() {
                                     className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-purple-400 flex flex-col items-center justify-center gap-1 transition-colors"
                                   >
                                     <Plus className="w-5 h-5 text-zinc-400" />
-                                    <span className="text-[10px] text-zinc-400">上传</span>
+                                    <span className="text-[10px] text-zinc-400">{t.proStudio?.upload || 'Upload'}</span>
                                   </button>
                                   {allModels.map(model => (
                                     <button
@@ -888,7 +888,7 @@ function LifestylePageContent() {
                                     className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-purple-400 flex flex-col items-center justify-center gap-1 transition-colors"
                                   >
                                     <Plus className="w-5 h-5 text-zinc-400" />
-                                    <span className="text-[10px] text-zinc-400">上传</span>
+                                    <span className="text-[10px] text-zinc-400">{t.proStudio?.upload || 'Upload'}</span>
                                   </button>
                                   {allScenes.map(scene => (
                                     <button

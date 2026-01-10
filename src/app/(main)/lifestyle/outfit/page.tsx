@@ -34,13 +34,13 @@ interface OutfitSlot {
   }
 }
 
-// Initial slots
-const getInitialSlots = (): OutfitSlot[] => [
-  { id: "帽子", label: "帽子", icon: <HardHat className="w-5 h-5" /> },
-  { id: "上衣", label: "上衣", icon: <Shirt className="w-5 h-5" /> },
-  { id: "内衬", label: "内衬", icon: <Shirt className="w-5 h-5 opacity-60" /> },
-  { id: "裤子", label: "裤子", icon: <Shirt className="w-5 h-5 rotate-180" /> },
-  { id: "鞋子", label: "鞋子", icon: <Footprints className="w-5 h-5" /> },
+// Initial slots - labels will be set dynamically with translations
+const getInitialSlots = (t: any): OutfitSlot[] => [
+  { id: "帽子", label: t?.outfit?.hat || "Hat", icon: <HardHat className="w-5 h-5" /> },
+  { id: "上衣", label: t?.outfit?.top || "Top", icon: <Shirt className="w-5 h-5" /> },
+  { id: "内衬", label: t?.outfit?.inner || "Inner", icon: <Shirt className="w-5 h-5 opacity-60" /> },
+  { id: "裤子", label: t?.outfit?.pants || "Pants", icon: <Shirt className="w-5 h-5 rotate-180" /> },
+  { id: "鞋子", label: t?.outfit?.shoes || "Shoes", icon: <Footprints className="w-5 h-5" /> },
 ]
 
 const labelMap: Record<ProductCategory, string> = {

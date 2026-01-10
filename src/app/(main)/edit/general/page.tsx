@@ -346,7 +346,7 @@ export default function GeneralEditPage() {
       
       if (isGeneratingRef.current) {
         if (error.name === 'AbortError') {
-          alert("编辑超时，请重试。建议使用较小的图片。")
+          alert(t.edit?.editTimeout || "Edit timed out. Please retry with a smaller image.")
         } else {
           const errorMsg = getErrorMessage(error.message, t) || t.errors?.generateFailed || "编辑失败，请重试"
           alert(errorMsg)
@@ -542,7 +542,7 @@ export default function GeneralEditPage() {
                             fileInputRef.current?.click()
                           }}
                           className="w-8 h-8 bg-zinc-100 hover:bg-zinc-200 rounded-full flex items-center justify-center transition-colors"
-                          title="从相册上传"
+                          title={t.edit?.fromAlbum || "Upload from Album"}
                         >
                           <Upload className="w-4 h-4 text-zinc-500" />
                         </button>
@@ -552,7 +552,7 @@ export default function GeneralEditPage() {
                             setShowCamera(true)
                           }}
                           className="w-8 h-8 bg-zinc-100 hover:bg-zinc-200 rounded-full flex items-center justify-center transition-colors"
-                          title="拍照"
+                          title={t.edit?.takePhotoTitle || "Take Photo"}
                         >
                           <Camera className="w-4 h-4 text-zinc-500" />
                         </button>
@@ -562,12 +562,12 @@ export default function GeneralEditPage() {
                             setShowProductPanel(true)
                           }}
                           className="w-8 h-8 bg-zinc-100 hover:bg-zinc-200 rounded-full flex items-center justify-center transition-colors"
-                          title="从素材库选择"
+                          title={t.edit?.fromAssets || "From Assets"}
                         >
                           <FolderHeart className="w-4 h-4 text-zinc-500" />
                         </button>
                       </div>
-                      <span className="text-[10px] text-zinc-400">添加图{inputImages.length + 1}</span>
+                      <span className="text-[10px] text-zinc-400">{t.edit?.addImage || 'Add Image'} {inputImages.length + 1}</span>
                     </div>
                   </div>
                 )}
@@ -727,7 +727,7 @@ export default function GeneralEditPage() {
                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
                   <div className="text-center text-zinc-400">
                     <Camera className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                    <p className="text-sm">相机不可用</p>
+                    <p className="text-sm">{t.edit?.cameraUnavailable || 'Camera unavailable'}</p>
                     <button
                       onClick={() => {
                         setShowCamera(false)

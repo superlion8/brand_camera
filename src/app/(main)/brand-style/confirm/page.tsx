@@ -210,7 +210,7 @@ export default function ConfirmPage() {
               </div>
               <div className="flex items-center gap-2 px-3 py-1.5 bg-green-100 rounded-full">
                 <Check className="w-4 h-4 text-green-600" />
-                <span className="text-sm font-medium text-green-700">分析完成</span>
+                <span className="text-sm font-medium text-green-700">{t.brandStyle?.analysisCompleted || 'Analysis Complete'}</span>
               </div>
             </div>
           </div>
@@ -228,7 +228,7 @@ export default function ConfirmPage() {
           </div>
           <div className="flex items-center gap-1 px-2 py-1 bg-green-100 rounded-full">
             <Check className="w-3 h-3 text-green-600" />
-            <span className="text-xs font-medium text-green-700">完成</span>
+            <span className="text-xs font-medium text-green-700">{t.brandStyle?.completed || 'Done'}</span>
           </div>
         </div>
       )}
@@ -494,7 +494,7 @@ export default function ConfirmPage() {
               {isGenerating ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>正在准备生成...</span>
+                  <span>{t.brandStyle?.preparingGenerate || 'Preparing to generate...'}</span>
                 </>
               ) : (
                 <>
@@ -517,7 +517,7 @@ export default function ConfirmPage() {
             {isGenerating ? (
               <>
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>正在准备...</span>
+                <span>{t.brandStyle?.preparing || 'Preparing...'}</span>
               </>
             ) : (
               <>

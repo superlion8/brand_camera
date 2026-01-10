@@ -65,7 +65,7 @@ function AssetGrid({
   onSelect,
   onUpload,
   onZoom,
-  emptyText = "暂无资源",
+  emptyText = "No items",
   uploadLabel = "Upload"
 }: { 
   items: Asset[]
@@ -2025,7 +2025,7 @@ function ProStudioPageContent() {
                             <ImageIcon className="w-10 h-10 text-zinc-500" />
                             <span className="text-sm text-zinc-600 dark:text-zinc-400">{t.proStudio?.clickToUpload || 'Click to upload'}</span>
                           </button>
-                          <p className="text-xs text-zinc-500 mt-4">支持 JPG、PNG 格式</p>
+                          <p className="text-xs text-zinc-500 mt-4">{t.proStudio?.supportedFormats || 'Supports JPG, PNG formats'}</p>
                         </div>
                       ) : userProducts.length > 0 ? (
                         <div className="grid grid-cols-3 gap-3 pb-20">
@@ -2285,7 +2285,7 @@ function ProStudioPageContent() {
                       >
                         <X className="w-5 h-5 text-zinc-700" />
                       </button>
-                      <span className="font-semibold text-zinc-900">详情</span>
+                      <span className="font-semibold text-zinc-900">{t.proStudio?.details || 'Details'}</span>
                       <div className="w-10" />
                     </div>
 
@@ -2306,7 +2306,7 @@ function ProStudioPageContent() {
                             </div>
                           </div>
                         </div>
-                        <p className="text-center text-zinc-500 text-xs py-2">长按图片保存</p>
+                        <p className="text-center text-zinc-500 text-xs py-2">{t.proStudio?.longPressToSave || 'Long press to save image'}</p>
                       </div>
                       
                       <div className="p-4 pb-8 bg-white">

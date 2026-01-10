@@ -53,12 +53,12 @@ interface OutfitSlot {
 }
 
 // 初始部位配置
-const getInitialSlots = (): OutfitSlot[] => [
-  { id: "帽子", label: "帽子", icon: <HardHat className="w-5 h-5" /> },
-  { id: "上衣", label: "上衣", icon: <Shirt className="w-5 h-5" /> },
-  { id: "内衬", label: "内衬", icon: <Shirt className="w-5 h-5 opacity-60" /> },
-  { id: "裤子", label: "裤子", icon: <Shirt className="w-5 h-5 rotate-180" /> },
-  { id: "鞋子", label: "鞋子", icon: <Footprints className="w-5 h-5" /> },
+const getInitialSlots = (t: any): OutfitSlot[] => [
+  { id: "帽子", label: t?.outfit?.hat || "Hat", icon: <HardHat className="w-5 h-5" /> },
+  { id: "上衣", label: t?.outfit?.top || "Top", icon: <Shirt className="w-5 h-5" /> },
+  { id: "内衬", label: t?.outfit?.inner || "Inner", icon: <Shirt className="w-5 h-5 opacity-60" /> },
+  { id: "裤子", label: t?.outfit?.pants || "Pants", icon: <Shirt className="w-5 h-5 rotate-180" /> },
+  { id: "鞋子", label: t?.outfit?.shoes || "Shoes", icon: <Footprints className="w-5 h-5" /> },
 ]
 
 // Asset Grid Component with Upload Button
@@ -68,7 +68,7 @@ function AssetGrid({
   onSelect,
   onUpload,
   onZoom,
-  emptyText = "暂无资源",
+  emptyText = "No items",
   uploadLabel = "Upload"
 }: { 
   items: Asset[]
@@ -214,7 +214,19 @@ function OutfitPageContent() {
   const shootMode = searchParams.get('mode') === 'camera' ? 'camera' : 'pro_studio'
   const isCameraMode = shootMode === 'camera'
   
-  const [slots, setSlots] = useState<OutfitSlot[]>(() => getInitialSlots())
+  const [slots, setSlots] = useState<OutfitSlot[]>(() => getInitialSlots(null))
+  
+  // Update slots labels when language changes
+  useEffect(() => {
+    setSlots(prev => prev.map(slot => ({
+      ...slot,
+      label: slot.id === "帽子" ? (t?.outfit?.hat || "Hat") :
+             slot.id === "上衣" ? (t?.outfit?.top || "Top") :
+             slot.id === "内衬" ? (t?.outfit?.inner || "Inner") :
+             slot.id === "裤子" ? (t?.outfit?.pants || "Pants") :
+             slot.id === "鞋子" ? (t?.outfit?.shoes || "Shoes") : slot.label
+    })))
+  }, [t])
   const [draggedSlotId, setDraggedSlotId] = useState<ProductCategory | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analyzeError, setAnalyzeError] = useState<string | null>(null)
@@ -1221,8 +1233,8 @@ function OutfitPageContent() {
               {/* Left: Outfit Slots */}
               <div className="w-[420px] shrink-0">
                 <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-6">
-                  <h3 className="font-semibold text-zinc-900 mb-4">服装搭配</h3>
-                  <p className="text-sm text-zinc-500 mb-6">点击空白框添加商品，生成穿搭效果图</p>
+                  <h3 className="font-semibold text-zinc-900 mb-4">{t?.outfit?.outfitStyling || 'Outfit Styling'}</h3>
+                  <p className="text-sm text-zinc-500 mb-6">{t?.outfit?.clickToAddProduct || 'Click empty slots to add products for outfit combination'}</p>
                   
                   {/* Outfit Slots Grid */}
                   <div className="grid grid-cols-3 gap-4">
@@ -1268,7 +1280,7 @@ function OutfitPageContent() {
                       </button>
                     )}
                   </div>
-                  <p className="text-sm text-zinc-500 mb-4">不选则随机匹配</p>
+                  <p className="text-sm text-zinc-500 mb-4">{t?.proStudio?.randomMatch || 'Random if not selected'}</p>
                   <div className="grid grid-cols-5 gap-3">
                     {/* Upload button */}
                     <button
@@ -1276,7 +1288,7 @@ function OutfitPageContent() {
                       className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-amber-400 flex flex-col items-center justify-center gap-1 transition-colors"
                     >
                       <Plus className="w-5 h-5 text-zinc-400" />
-                      <span className="text-[10px] text-zinc-400">上传</span>
+                      <span className="text-[10px] text-zinc-400">{t?.proStudio?.upload || 'Upload'}</span>
                     </button>
                     {/* Model list */}
                     {allModels.slice(0, 9).map(model => (
@@ -1313,7 +1325,7 @@ function OutfitPageContent() {
                       </button>
                     )}
                   </div>
-                  <p className="text-sm text-zinc-500 mb-4">不选则随机匹配</p>
+                  <p className="text-sm text-zinc-500 mb-4">{t?.proStudio?.randomMatch || 'Random if not selected'}</p>
                   <div className="grid grid-cols-5 gap-3">
                     {/* Upload button */}
                     <button
@@ -1321,7 +1333,7 @@ function OutfitPageContent() {
                       className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-amber-400 flex flex-col items-center justify-center gap-1 transition-colors"
                     >
                       <Plus className="w-5 h-5 text-zinc-400" />
-                      <span className="text-[10px] text-zinc-400">上传</span>
+                      <span className="text-[10px] text-zinc-400">{t?.proStudio?.upload || 'Upload'}</span>
                     </button>
                     {/* Background list */}
                     {allBgs.slice(0, 9).map(bg => (
@@ -1382,7 +1394,7 @@ function OutfitPageContent() {
                 className="fixed inset-x-8 top-1/2 -translate-y-1/2 max-w-2xl mx-auto bg-white rounded-2xl z-50 max-h-[70vh] flex flex-col overflow-hidden shadow-xl"
               >
                 <div className="h-14 border-b flex items-center justify-between px-4 shrink-0">
-                  <span className="font-semibold text-lg">选择商品</span>
+                  <span className="font-semibold text-lg">{t?.proStudio?.selectProduct || 'Select Product'}</span>
                   <button onClick={() => setShowAssetPicker(false)} className="text-zinc-400 hover:text-zinc-600">
                     <X className="w-5 h-5" />
                   </button>
@@ -1429,7 +1441,7 @@ function OutfitPageContent() {
                       className="aspect-square rounded-xl border-2 border-dashed border-zinc-300 hover:border-amber-400 flex flex-col items-center justify-center gap-1 transition-colors"
                     >
                       <Plus className="w-6 h-6 text-zinc-400" />
-                      <span className="text-xs text-zinc-400">上传</span>
+                      <span className="text-xs text-zinc-400">{t?.proStudio?.upload || 'Upload'}</span>
                     </button>
                     {/* Products */}
                     {(assetPickerSource === "user" ? userProducts : 

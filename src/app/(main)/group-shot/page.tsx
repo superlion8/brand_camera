@@ -732,9 +732,11 @@ function GroupShootPageContent() {
                 : (t.groupShootPage?.creatingStudio || 'AI 正在创作专业展示图...')}
             </h3>
             <div className={`space-y-1 text-sm mb-8 ${isDesktop ? 'text-zinc-500' : 'text-zinc-400'}`}>
-              <p>分析图片特征</p>
-              <p>设计{styleMode === 'lifestyle' ? '生活化' : '电商展示'}pose</p>
-              <p>生成{numImages}张多样化图片...</p>
+              <p>{t.groupShootPage?.analyzingFeatures || 'Analyzing image features'}</p>
+              <p>{styleMode === 'lifestyle' 
+                ? (t.groupShootPage?.designingPoseLifestyle || 'Designing lifestyle poses')
+                : (t.groupShootPage?.designingPoseCommercial || 'Designing commercial poses')}</p>
+              <p>{(t.groupShootPage?.generatingImages || 'Generating {count} diverse images...').replace('{count}', String(numImages))}</p>
             </div>
             
             {/* Progress dots */}
@@ -760,7 +762,7 @@ function GroupShootPageContent() {
             {/* PC: Action buttons */}
             {isDesktop && (
               <div className="mt-8 space-y-3 w-full max-w-xs">
-                <p className="text-zinc-400 text-xs mb-4">生成将在后台继续，您可以：</p>
+                <p className="text-zinc-400 text-xs mb-4">{t.groupShootPage?.continueInBackground || 'Generation continues in background:'}</p>
                 <button
                   onClick={handleReselect}
                   className={`w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors ${
@@ -770,14 +772,14 @@ function GroupShootPageContent() {
                   }`}
                 >
                   <ImageIcon className="w-5 h-5" />
-                  选择新图片
+                  {t.groupShootPage?.selectNewImage || 'Select New Image'}
                 </button>
                 <button
                   onClick={() => router.push("/")}
                   className="w-full h-12 rounded-full bg-white text-zinc-700 hover:bg-zinc-100 border border-zinc-200 font-medium flex items-center justify-center gap-2 transition-colors"
                 >
                   <Home className="w-5 h-5" />
-                  返回首页
+                  {t.groupShootPage?.returnHome || 'Return Home'}
                 </button>
               </div>
             )}
@@ -805,7 +807,7 @@ function GroupShootPageContent() {
                       className="flex items-center gap-2 text-zinc-600 hover:text-zinc-900"
                     >
                       <ArrowLeft className="w-5 h-5" />
-                      <span className="font-medium">返回</span>
+                      <span className="font-medium">{t.common?.back || 'Back'}</span>
                     </button>
                     <span className="font-semibold text-zinc-900">
                       {styleMode === 'lifestyle' ? (t.groupShootPage?.lifestyleMode || '生活风格') : (t.groupShootPage?.studioMode || '棚拍风格')}
@@ -898,9 +900,9 @@ function GroupShootPageContent() {
             {/* Debug Parameters - 只在调试模式显示 */}
             {debugMode && (
               <div className="mx-4 mb-4 p-4 bg-white rounded-xl border border-zinc-100">
-                <h3 className="text-sm font-semibold text-zinc-700 mb-3">生成参数 (调试模式)</h3>
+                <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.groupShootPage?.debugParams || 'Generation Params (Debug)'}</h3>
                 <div className="flex items-start gap-4">
-                  {/* 输入图 */}
+                  {/* Input Image */}
                   {selectedImage && (
                     <div className="flex flex-col items-center">
                       <div 
@@ -909,14 +911,14 @@ function GroupShootPageContent() {
                       >
                         <img 
                           src={selectedImage} 
-                          alt="输入图" 
+                          alt="Input" 
                           className="w-full h-full object-cover"
                         />
                         <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                           <ZoomIn className="w-4 h-4 text-white" />
                         </div>
                       </div>
-                      <p className="text-[10px] text-zinc-500 mt-1">输入图</p>
+                      <p className="text-[10px] text-zinc-500 mt-1">{t.groupShootPage?.inputImage || 'Input'}</p>
                       <span className="text-[8px] px-1 py-0.5 rounded bg-zinc-100 text-zinc-600 mt-0.5">
                         模特成片
                       </span>
@@ -936,19 +938,19 @@ function GroupShootPageContent() {
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-zinc-500">拍摄模式:</span>
+                      <span className="text-[10px] text-zinc-500">{t.groupShootPage?.shootMode || 'Shoot Mode'}:</span>
                       <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-purple-100 text-purple-700">
-                        {t.groupShootPage?.randomShoot || '随意拍'}
+                        {t.groupShootPage?.randomShoot || 'Random'}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-zinc-500">生成数量:</span>
-                      <span className="text-[10px] font-medium text-zinc-700">{numImages} 张</span>
+                      <span className="text-[10px] text-zinc-500">{t.groupShootPage?.generateCount || 'Count'}:</span>
+                      <span className="text-[10px] font-medium text-zinc-700">{numImages}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-zinc-500">输入来源:</span>
+                      <span className="text-[10px] text-zinc-500">{t.groupShootPage?.inputSource || 'Source'}:</span>
                       <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-cyan-100 text-cyan-700">
-                        从成片选择
+                        {t.groupShootPage?.selectFromPhotos || 'From Photos'}
                       </span>
                     </div>
                   </div>
@@ -1047,7 +1049,7 @@ function GroupShootPageContent() {
                     return (
                       <div className="h-40 flex flex-col items-center justify-center gap-3">
                         <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-                        <p className="text-sm text-zinc-400">加载成片中...</p>
+                        <p className="text-sm text-zinc-400">{t.groupShootPage?.loadingPhotos || 'Loading photos...'}</p>
                       </div>
                     )
                   }

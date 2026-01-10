@@ -174,6 +174,16 @@ export const zh = {
     myBackgrounds: "我的",
     selectModel: "选择模特",
     selectBg: "选择背景",
+    // 买家秀模式
+    buyerShowMode: "买家秀模式",
+    realScene: "真实场景",
+    realSceneDesc: "生活化场景，更有代入感",
+    diverseStyles: "多样风格",
+    diverseStylesDesc: "支持自定义模特和背景",
+    initializingCamera: "正在初始化相机...",
+    cameraUnavailable: "相机不可用",
+    thisResults: "本次成片",
+    generatingSlot: "生成中...",
   },
   
   // Group Shoot Page
@@ -209,6 +219,19 @@ export const zh = {
     creatingLifestyle: "AI 正在创作ins风格组图...",
     creatingStudio: "AI 正在创作专业展示图...",
     styleMode: "风格模式",
+    analyzingFeatures: "分析图片特征",
+    designingPoseLifestyle: "设计生活化pose",
+    designingPoseCommercial: "设计电商展示pose",
+    generatingImages: "生成{count}张多样化图片...",
+    continueInBackground: "生成将在后台继续，您可以：",
+    selectNewImage: "选择新图片",
+    returnHome: "返回主页",
+    debugParams: "生成参数 (调试模式)",
+    inputImage: "输入图",
+    shootMode: "拍摄模式",
+    generateCount: "生成数量",
+    inputSource: "输入来源",
+    loadingPhotos: "加载成片中...",
   },
   
   // Edit Page
@@ -247,6 +270,13 @@ export const zh = {
     generationResult: "生成结果",
     uploadImage: "上传图片",
     uploadImageDesc: "选择需要修图的图片",
+    editFailed: "编辑失败",
+    editTimeout: "编辑超时，请重试。建议使用较小的图片。",
+    fromAlbum: "从相册上传",
+    takePhotoTitle: "拍照",
+    fromAssets: "从素材库选择",
+    addImage: "添加图",
+    cameraUnavailable: "相机不可用",
   },
   
   // Studio Page
@@ -346,6 +376,11 @@ export const zh = {
     modelImages: "张模特图",
     processingImage: "AI 正在处理您的图片",
     loadMore: "加载更多",
+    loading: "加载中...",
+    completed: "✓ 完成",
+    confirmDelete: "确认删除？",
+    canUseWhenShooting: "可在拍摄时选择使用",
+    generationFailed: "生成失败",
     // AI 模型相关
     aiModel: "模型",
     geminiPro: "Gemini 3.0 Pro",
@@ -394,6 +429,8 @@ export const zh = {
     productInner: "内衬",
     productShoes: "鞋子",
     productHat: "帽子",
+    pin: "置顶",
+    unpin: "取消置顶",
   },
   
   // User Menu
@@ -573,6 +610,10 @@ export const zh = {
     viewMore: "查看更多",
     clickToUploadOrDrag: "点击上传或拖拽图片",
     clickToUpload: "点击上传",
+    noItems: "暂无资源",
+    supportedFormats: "支持 JPG、PNG 格式",
+    details: "详情",
+    longPressToSave: "长按图片保存",
   },
   
   // Quota
@@ -617,6 +658,8 @@ export const zh = {
   // Outfit editor (搭配编辑)
   outfit: {
     title: "搭配商品",
+    outfitStyling: "服装搭配",
+    clickToAddProduct: "点击空白框添加商品，生成穿搭效果图",
     hat: "帽子",
     top: "上衣",
     inner: "内衬",
@@ -855,6 +898,14 @@ export const zh = {
   // LifeStyle 街拍
   lifestyle: {
     title: "LifeStyle 街拍",
+    lifestyleMode: "LifeStyle 街拍模式",
+    lifestyleModeDesc: "上传商品图片后，AI 将为你生成时尚街拍风格的展示图",
+    smartSceneMatch: "智能场景匹配",
+    smartSceneMatchDesc: "根据商品自动匹配最合适的街景",
+    fashionModelStyle: "时尚模特风格",
+    fashionModelStyleDesc: "专业时尚模特展示效果",
+    multiStyleOptions: "多种风格可选",
+    multiStyleOptionsDesc: "支持自定义模特和场景",
     cameraNotReady: "相机未准备好，请从相册上传商品图",
     autoAnalyzeHint: "AI 将自动分析这件服装，并为您匹配最佳的街拍模特和城市场景",
     startGenerate: "开始生成",
@@ -979,6 +1030,12 @@ export const zh = {
     startGenerate: "开始生成",
     generating: "生成中...",
     pendingProduct: "待生成商品",
+    analysisCompleted: "分析完成",
+    completed: "完成",
+    preparingGenerate: "正在准备生成...",
+    preparing: "正在准备...",
+    uploaded: "已上传",
+    notGenerated: "未生成",
     aiWillGenerate: "AI 将基于您的品牌风格，为这件商品生成：",
     webStyleCount: "2 张官网风格模特图",
     insStyleCount: "2 张 INS 风格模特图",
