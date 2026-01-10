@@ -10,6 +10,7 @@ import { useModelCreateStore } from "@/stores/modelCreateStore"
 import { useTranslation } from "@/stores/languageStore"
 import { UserMenu } from "@/components/shared/UserMenu"
 import { QuotaIndicator } from "@/components/shared/QuotaIndicator"
+import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher"
 import { useIsDesktop } from "@/hooks/useIsMobile"
 import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 
@@ -323,17 +324,18 @@ export default function HomePage() {
         {/* Left: Logo + App Name */}
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-            <Image src="/logo.png" alt="Brand Camera" width={20} height={20} className="rounded" />
+            <Image src="/logo.png" alt="BrandCam" width={20} height={20} className="rounded" />
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-bold text-zinc-900 leading-tight">{t.common.appName}</span>
+            <span className="text-sm font-bold text-zinc-900 leading-tight">BrandCam</span>
             <span className="text-[10px] text-zinc-400 leading-tight">{t.common?.appTagline || 'AI Photo Studio'}</span>
           </div>
         </div>
         
-        {/* Right: Credits + Avatar */}
+        {/* Right: Credits + Language + Avatar */}
         <div className="flex items-center gap-2">
           <QuotaIndicator compact />
+          <LanguageSwitcher />
           <UserMenu />
         </div>
       </div>
