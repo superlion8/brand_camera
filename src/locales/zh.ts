@@ -410,6 +410,7 @@ export const zh = {
     viewProfile: "查看资料",
     language: "语言",
     subscription: "订阅管理",
+    manageSubscription: "管理订阅",
     joinDiscord: "加入 Discord",
   },
   

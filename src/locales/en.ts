@@ -412,6 +412,7 @@ export const en: Translations = {
     viewProfile: "View profile",
     language: "Language",
     subscription: "Subscription",
+    manageSubscription: "Manage Subscription",
     joinDiscord: "Join our Discord",
   },
   

@@ -29,8 +29,18 @@ export async function POST(request: NextRequest) {
       .single()
     
     if (quotaData?.stripe_customer_id) {
-      customerId = quotaData.stripe_customer_id
-    } else {
+      // 验证 customer 是否在当前 Stripe 环境中存在
+      try {
+        await getStripe().customers.retrieve(quotaData.stripe_customer_id)
+        customerId = quotaData.stripe_customer_id
+      } catch (err: any) {
+        // Customer 不存在（可能是切换了 test/live 模式），需要创建新的
+        console.log('[Stripe] Customer not found, creating new one:', err.message)
+        customerId = undefined
+      }
+    }
+    
+    if (!customerId) {
       // 创建新的 Stripe Customer
       const customer = await getStripe().customers.create({
         email: user.email,

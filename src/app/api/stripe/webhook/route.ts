@@ -195,6 +195,22 @@ async function handleSubscriptionCreated(supabase: any, subscription: Stripe.Sub
     onConflict: 'user_id',
   })
   
+  // 同时更新 user_quotas 的 subscription_credits（不重置 used_quota，保留老用户的使用记录）
+  if (subscription.status === 'active' && credits > 0) {
+    await supabase
+      .from('user_quotas')
+      .upsert({
+        user_id: finalUserId,
+        subscription_credits: credits,
+        credits_reset_at: new Date().toISOString(),
+        stripe_customer_id: customerId,
+      }, {
+        onConflict: 'user_id',
+      })
+    
+    console.log(`[Webhook] Set subscription_credits to ${credits} for user ${finalUserId}`)
+  }
+  
   console.log(`[Webhook] Subscription ${subscription.id} created for user ${finalUserId}`)
 }
 
@@ -266,15 +282,11 @@ async function handleSubscriptionDeleted(supabase: any, subscription: Stripe.Sub
     })
     .eq('stripe_subscription_id', subscription.id)
   
-  // 清零订阅 credits
-  await supabase
-    .from('user_quotas')
-    .update({
-      subscription_credits: 0,
-    })
-    .eq('user_id', userId)
+  // 注意：取消订阅时不清零 subscription_credits
+  // 已给的 credits 让用户继续使用直到用完
+  // 只有下个月续费时才会重新设置 subscription_credits
   
-  console.log(`[Webhook] Subscription ${subscription.id} deleted for user ${userId}`)
+  console.log(`[Webhook] Subscription ${subscription.id} deleted for user ${userId}, credits retained`)
 }
 
 async function handleInvoicePaid(supabase: any, invoice: Stripe.Invoice) {

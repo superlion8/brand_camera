@@ -62,18 +62,15 @@ function calculateAvailableCredits(quotaData: any): {
   const subscriptionCredits = quotaData.subscription_credits || 0
   // 购买的 credits（永久）
   const purchasedCredits = quotaData.purchased_credits || 0
-  // 免费 credits（向后兼容旧用户）
+  // 免费 credits（向后兼容旧用户，注册赠送 + 每日奖励等）
   const freeCredits = quotaData.total_quota || DEFAULT_QUOTA
   
   // 已使用
   const usedCredits = quotaData.used_quota || 0
   
   // 总可用 = 订阅 + 购买 + 免费 - 已使用
-  // 注意：对于有订阅的用户，免费额度不叠加
-  const hasSubscription = subscriptionCredits > 0
-  const totalCredits = hasSubscription 
-    ? subscriptionCredits + purchasedCredits
-    : freeCredits + purchasedCredits
+  // 所有 credits 叠加，老用户的免费额度可以继续使用
+  const totalCredits = subscriptionCredits + purchasedCredits + freeCredits
   
   const availableCredits = Math.max(0, totalCredits - usedCredits)
   
@@ -83,7 +80,7 @@ function calculateAvailableCredits(quotaData: any): {
     availableCredits,
     subscriptionCredits,
     purchasedCredits,
-    freeCredits: hasSubscription ? 0 : freeCredits,
+    freeCredits,
   }
 }
 

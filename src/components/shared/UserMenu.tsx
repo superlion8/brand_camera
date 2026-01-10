@@ -8,7 +8,7 @@ import { useAuth } from "@/components/providers/AuthProvider"
 import { useSettingsStore } from "@/stores/settingsStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { useTranslation, useLanguageStore } from "@/stores/languageStore"
-import { LogOut, Settings, ChevronDown, ChevronRight, X, Bug, Cloud, RefreshCw, BarChart3, Gauge, Inbox, FolderOpen, User, Globe, CreditCard, MessageCircle } from "lucide-react"
+import { LogOut, Settings, ChevronDown, ChevronRight, X, Bug, Cloud, RefreshCw, BarChart3, Gauge, Inbox, FolderOpen, User, Globe, CreditCard, MessageCircle, ExternalLink } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useRouter } from "next/navigation"
 
@@ -35,6 +35,8 @@ export function UserMenu() {
   const [showLanguageMenu, setShowLanguageMenu] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [pendingApplications, setPendingApplications] = useState(0)
+  const [hasSubscription, setHasSubscription] = useState(false)
+  const [isLoadingPortal, setIsLoadingPortal] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   // Fetch pending applications count for admin
@@ -52,6 +54,36 @@ export function UserMenu() {
         .catch(() => {})
     }
   }, [isAdmin])
+
+  // Check if user has active subscription
+  useEffect(() => {
+    if (user) {
+      fetch('/api/stripe/subscription')
+        .then(res => res.json())
+        .then(data => {
+          setHasSubscription(data.hasSubscription === true)
+        })
+        .catch(() => {})
+    }
+  }, [user])
+
+  // Open Stripe Customer Portal
+  const handleManageSubscription = async () => {
+    setIsLoadingPortal(true)
+    try {
+      const res = await fetch('/api/stripe/portal', { method: 'POST' })
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        console.error('Failed to get portal URL:', data.error)
+      }
+    } catch (error) {
+      console.error('Error opening portal:', error)
+    } finally {
+      setIsLoadingPortal(false)
+    }
+  }
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -212,15 +244,30 @@ export function UserMenu() {
                   </AnimatePresence>
                 </div>
 
-                {/* Subscription */}
-                <Link
-                  href="/pricing"
-                  onClick={() => setIsOpen(false)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-zinc-700 hover:bg-zinc-100 transition-colors text-left"
-                >
-                  <CreditCard className="w-4 h-4 text-zinc-400" />
-                  <span className="text-sm">{t.user?.subscription || 'Subscription'}</span>
-                </Link>
+                {/* Subscription - Buy or Manage */}
+                {hasSubscription ? (
+                  <button
+                    onClick={() => {
+                      setIsOpen(false)
+                      handleManageSubscription()
+                    }}
+                    disabled={isLoadingPortal}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-zinc-700 hover:bg-zinc-100 transition-colors text-left disabled:opacity-50"
+                  >
+                    <CreditCard className="w-4 h-4 text-zinc-400" />
+                    <span className="text-sm flex-1">{t.user?.manageSubscription || 'Manage Subscription'}</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-zinc-400" />
+                  </button>
+                ) : (
+                  <Link
+                    href="/pricing"
+                    onClick={() => setIsOpen(false)}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-zinc-700 hover:bg-zinc-100 transition-colors text-left"
+                  >
+                    <CreditCard className="w-4 h-4 text-zinc-400" />
+                    <span className="text-sm">{t.user?.subscription || 'Subscription'}</span>
+                  </Link>
+                )}
 
                 {/* Join our Discord */}
                 <a

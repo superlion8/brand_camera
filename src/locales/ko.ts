@@ -411,6 +411,7 @@ export const ko: Translations = {
     viewProfile: "프로필 보기",
     language: "언어",
     subscription: "구독 관리",
+    manageSubscription: "구독 관리",
     joinDiscord: "Discord 참여",
   },
   
