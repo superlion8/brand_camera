@@ -2481,7 +2481,7 @@ function CameraPageContent() {
               <p>{t.camera.analyzeProduct}</p>
               {activeModel && <p>{t.camera.generateModel} {activeModel.name} ...</p>}
               {selectedModelStyle && selectedModelStyle !== 'auto' && !activeModel && (
-                <p>匹配{selectedModelStyle === 'korean' ? '韩系' : selectedModelStyle === 'western' ? '欧美' : selectedModelStyle}风格...</p>
+                <p>{t.camera?.matchingStyle || 'Matching style...'}</p>
               )}
               {activeBg && <p>{t.camera.renderScene}</p>}
             </div>

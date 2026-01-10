@@ -1185,7 +1185,7 @@ function ProStudioPageContent() {
                               className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-amber-400 flex flex-col items-center justify-center gap-1 transition-colors"
                             >
                               <Plus className="w-5 h-5 text-zinc-400" />
-                              <span className="text-[10px] text-zinc-400">上传</span>
+                              <span className="text-[10px] text-zinc-400">{t.proStudio?.upload || 'Upload'}</span>
                             </button>
                             {allModels.map(model => (
                               <button
@@ -1226,7 +1226,7 @@ function ProStudioPageContent() {
                               className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-amber-400 flex flex-col items-center justify-center gap-1 transition-colors"
                             >
                               <Plus className="w-5 h-5 text-zinc-400" />
-                              <span className="text-[10px] text-zinc-400">上传</span>
+                              <span className="text-[10px] text-zinc-400">{t.proStudio?.upload || 'Upload'}</span>
                             </button>
                             {allBgs.map(bg => (
                               <button
