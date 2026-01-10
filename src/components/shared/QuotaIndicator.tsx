@@ -7,7 +7,11 @@ import { Coins, Crown } from "lucide-react"
 import Link from "next/link"
 import { useTranslation } from "@/stores/languageStore"
 
-export function QuotaIndicator() {
+interface QuotaIndicatorProps {
+  compact?: boolean
+}
+
+export function QuotaIndicator({ compact = false }: QuotaIndicatorProps) {
   const { user } = useAuth()
   const { quota, isLoading, refreshQuota } = useQuota()
   const hasRefreshed = useRef(false)
@@ -44,6 +48,26 @@ export function QuotaIndicator() {
   const isLow = quota.remainingQuota <= 5
   const isExhausted = quota.remainingQuota <= 0
 
+  // Compact mode: Just show credits number with icon
+  if (compact) {
+    return (
+      <Link 
+        href="/pricing" 
+        className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${
+          isExhausted 
+            ? 'bg-red-100 text-red-700' 
+            : isLow 
+              ? 'bg-amber-100 text-amber-700'
+              : 'bg-amber-50 text-amber-600'
+        }`}
+      >
+        <Coins className="w-3.5 h-3.5" />
+        <span>{quota.remainingQuota}</span>
+      </Link>
+    )
+  }
+
+  // Full mode: Show credits + Upgrade button
   return (
     <Link href="/pricing" className="flex items-center gap-2">
       {/* Credits Display */}

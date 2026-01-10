@@ -9,9 +9,7 @@ import { useAssetStore } from "@/stores/assetStore"
 import { useModelCreateStore } from "@/stores/modelCreateStore"
 import { useTranslation } from "@/stores/languageStore"
 import { UserMenu } from "@/components/shared/UserMenu"
-import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher"
 import { QuotaIndicator } from "@/components/shared/QuotaIndicator"
-import { SyncIndicator } from "@/components/shared/SyncIndicator"
 import { useIsDesktop } from "@/hooks/useIsMobile"
 import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 
@@ -321,20 +319,21 @@ export default function HomePage() {
       variants={pageVariants}
     >
       {/* Mobile Header - Hidden on Desktop (handled by TopNav) */}
-      <div className="lg:hidden flex items-center justify-between px-5 py-3 bg-white/90 backdrop-blur-md sticky top-0 z-30 border-b border-zinc-100/50">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center text-white">
+      <div className="lg:hidden flex items-center justify-between px-4 py-2.5 bg-white/95 backdrop-blur-md sticky top-0 z-30 border-b border-zinc-100/50">
+        {/* Left: Logo + App Name */}
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
             <Image src="/logo.png" alt="Brand Camera" width={20} height={20} className="rounded" />
           </div>
-          <span className="text-base font-bold text-zinc-900 tracking-tight">{t.common.appName}</span>
-          <span className="px-1.5 py-0.5 bg-amber-50 rounded-full border border-amber-100 text-[10px] font-bold text-amber-700">
-            {t.beta.tag}
-          </span>
+          <div className="flex flex-col">
+            <span className="text-sm font-bold text-zinc-900 leading-tight">{t.common.appName}</span>
+            <span className="text-[10px] text-zinc-400 leading-tight">AI 商拍助手</span>
+          </div>
         </div>
+        
+        {/* Right: Credits + Avatar */}
         <div className="flex items-center gap-2">
-          <SyncIndicator />
-          <QuotaIndicator />
-          <LanguageSwitcher />
+          <QuotaIndicator compact />
           <UserMenu />
         </div>
       </div>
