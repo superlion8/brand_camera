@@ -399,7 +399,7 @@ function LifestyleOutfitContent() {
     setMode('edit')
     setGeneratedImages([])
     setCurrentTaskId(null)
-    setSlots(getInitialSlots())
+    setSlots(getInitialSlots(t))
   }
   
   // Render slot card
