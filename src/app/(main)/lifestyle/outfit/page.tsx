@@ -61,7 +61,7 @@ function LifestyleOutfitContent() {
   const { userModels, userProducts, addUserAsset, addGeneration } = useAssetStore()
   const presetStore = usePresetStore()
   
-  const [slots, setSlots] = useState<OutfitSlot[]>(() => getInitialSlots())
+  const [slots, setSlots] = useState<OutfitSlot[]>(() => getInitialSlots(t))
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationStatus, setGenerationStatus] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
