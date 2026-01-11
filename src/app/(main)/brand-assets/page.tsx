@@ -585,6 +585,8 @@ function AssetCard({
   isPreset?: boolean
   isPinned?: boolean
 }) {
+  const t = useLanguageStore(state => state.t)
+  
   return (
     <div className="group relative bg-white rounded-xl overflow-hidden shadow-sm border border-zinc-100">
       <div 
