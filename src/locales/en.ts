@@ -935,6 +935,7 @@ export const en: Translations = {
     continueInBackground: "Generation continues in background, you can:",
     returnHome: "Return Home",
     shootMore: "Shoot More",
+    goToPhotos: "Go to Photos",
     retake: "Retake",
     results: "LifeStyle Results",
     shootNextSet: "Shoot Next Set",

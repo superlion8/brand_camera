@@ -933,6 +933,7 @@ export const zh = {
     continueInBackground: "生成将在后台继续，您可以：",
     returnHome: "返回首页",
     shootMore: "拍摄新一组",
+    goToPhotos: "查看相册",
     retake: "重拍",
     results: "LifeStyle 成片",
     shootNextSet: "拍摄下一组",

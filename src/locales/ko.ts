@@ -934,6 +934,7 @@ export const ko: Translations = {
     continueInBackground: "생성이 백그라운드에서 계속됩니다:",
     returnHome: "홈으로 돌아가기",
     shootMore: "더 촬영하기",
+    goToPhotos: "사진 보러가기",
     retake: "다시 찍기",
     results: "라이프스타일 결과",
     shootNextSet: "다음 세트 촬영",
