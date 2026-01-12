@@ -19,6 +19,9 @@ import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { useIsDesktop } from "@/hooks/useIsMobile"
 import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
+import { TASK_CREDIT_COSTS, TaskTypes } from "@/lib/taskTypes"
+
+const CREDIT_COST = TASK_CREDIT_COSTS[TaskTypes.TRY_ON]
 
 // 直接导入 Webcam（类型问题无法用 dynamic 解决）
 import Webcam from "react-webcam"
@@ -195,7 +198,7 @@ export default function TryOnPage() {
   const handleGenerate = async () => {
     if (!personImage || clothingImages.length === 0) return
     
-    const hasQuota = await checkQuota(2)
+    const hasQuota = await checkQuota(CREDIT_COST)
     if (!hasQuota) return
     
     const personImageUrl = personImage.startsWith('data:') ? personImage : 
@@ -537,7 +540,7 @@ export default function TryOnPage() {
                 >
                   <Sparkles className="w-5 h-5" />
                   <span>{t.tryOn?.generate || '开始换装'}</span>
-                  <CreditCostBadge cost={2} className="ml-2" />
+                  <CreditCostBadge cost={CREDIT_COST} className="ml-2" />
                 </button>
               </div>
             </div>
@@ -557,7 +560,7 @@ export default function TryOnPage() {
               >
                 <Sparkles className="w-5 h-5" />
                 <span>{t.tryOn?.generate || '开始换装'}</span>
-                <CreditCostBadge cost={2} className="ml-2" />
+                <CreditCostBadge cost={CREDIT_COST} className="ml-2" />
               </button>
             </div>
           )

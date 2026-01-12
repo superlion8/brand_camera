@@ -19,6 +19,9 @@ import { Asset } from "@/types"
 import { useIsDesktop } from "@/hooks/useIsMobile"
 import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
+import { TASK_CREDIT_COSTS, TaskTypes } from "@/lib/taskTypes"
+
+const CREDIT_COST = TASK_CREDIT_COSTS[TaskTypes.REFERENCE_SHOT]
 
 // Steps
 type Step = 'upload' | 'generating' | 'result'
@@ -113,8 +116,8 @@ export default function ReferenceShotPage() {
   const handleGenerate = async () => {
     if (!canGenerate) return
     
-    // Check quota (2 images: 1 simple + 1 extended)
-    const hasQuota = await checkQuota(2)
+    // Check quota
+    const hasQuota = await checkQuota(CREDIT_COST)
     if (!hasQuota) return
     
     setStep('generating')
@@ -572,7 +575,7 @@ export default function ReferenceShotPage() {
               >
                 <Wand2 className="w-5 h-5" />
                 {t.referenceShot?.generate || '开始生成'}
-                <CreditCostBadge cost={2} className="ml-2" />
+                <CreditCostBadge cost={CREDIT_COST} className="ml-2" />
               </motion.button>
             )}
           </div>
@@ -800,7 +803,7 @@ export default function ReferenceShotPage() {
           >
             <Wand2 className="w-5 h-5" />
             {t.referenceShot?.generate || '开始生成'}
-            <CreditCostBadge cost={2} className="ml-2" />
+            <CreditCostBadge cost={CREDIT_COST} className="ml-2" />
           </motion.button>
         </div>
       )}

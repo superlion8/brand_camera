@@ -17,6 +17,9 @@ import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { useIsDesktop } from "@/hooks/useIsMobile"
 import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
+import { TASK_CREDIT_COSTS, TaskTypes } from "@/lib/taskTypes"
+
+const CREDIT_COST = TASK_CREDIT_COSTS[TaskTypes.EDIT]
 
 // Helper to map API error codes to translated messages
 const getErrorMessage = (error: string, t: any): string => {
@@ -208,8 +211,8 @@ export default function GeneralEditPage() {
     const validImages = inputImages.filter((img): img is string => img !== null)
     if (validImages.length === 0 || !customPrompt.trim()) return
     
-    // Check quota before starting generation (1 image)
-    const hasQuota = await checkQuota(1)
+    // Check quota before starting generation
+    const hasQuota = await checkQuota(CREDIT_COST)
     if (!hasQuota) {
       return // Modal will be shown by the hook
     }
@@ -631,7 +634,7 @@ export default function GeneralEditPage() {
                 <>
                   <Wand2 className="w-5 h-5" />
                   <span>{t.edit.startGenerate}</span>
-                  <CreditCostBadge cost={1} className="ml-2" />
+                  <CreditCostBadge cost={CREDIT_COST} className="ml-2" />
                 </>
               )}
             </button>

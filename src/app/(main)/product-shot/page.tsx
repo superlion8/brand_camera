@@ -23,6 +23,9 @@ import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { useIsDesktop } from "@/hooks/useIsMobile"
 import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
+import { TASK_CREDIT_COSTS, TaskTypes } from "@/lib/taskTypes"
+
+const CREDIT_COST = TASK_CREDIT_COSTS[TaskTypes.PRODUCT_SHOT]
 
 // Helper to map API error codes to translated messages
 const getErrorMessage = (error: string, t: any): string => {
@@ -315,8 +318,8 @@ function StudioPageContent() {
   const handleGenerate = async () => {
     if (!productImage) return
     
-    // Check quota before starting generation (2 images for studio)
-    const hasQuota = await checkQuota(2)
+    // Check quota before starting generation
+    const hasQuota = await checkQuota(CREDIT_COST)
     if (!hasQuota) {
       return // Modal will be shown by the hook
     }
@@ -843,7 +846,7 @@ function StudioPageContent() {
                     >
                       <Sparkles className="w-5 h-5" />
                       <span>{t.camera.startShoot}</span>
-                      <CreditCostBadge cost={2} className="ml-2" />
+                      <CreditCostBadge cost={CREDIT_COST} className="ml-2" />
                     </button>
                   </div>
                   
@@ -1158,7 +1161,7 @@ function StudioPageContent() {
             >
               <Sparkles className="w-5 h-5" />
               <span>{t.camera.startShoot}</span>
-              <CreditCostBadge cost={2} className="ml-2" />
+              <CreditCostBadge cost={CREDIT_COST} className="ml-2" />
             </button>
           </div>
         )}

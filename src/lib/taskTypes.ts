@@ -12,41 +12,82 @@
 // ===== 规范任务类型常量 =====
 // 新代码只使用这些值写入数据库
 export const TaskTypes = {
-  MODEL_STUDIO: 'model_studio',      // 买家秀
+  MODEL_STUDIO: 'model_studio',      // 买家秀 (legacy)
+  BUYER_SHOW: 'buyer_show',          // Buyer Show
   PRODUCT_STUDIO: 'product_studio',  // 商品影棚
-  PRO_STUDIO: 'pro_studio',          // 专业棚拍
-  GROUP_SHOOT: 'group_shoot',        // 组图拍摄
+  PRODUCT_SHOT: 'product_shot',      // Product Shot
+  PRO_STUDIO: 'pro_studio',          // Model Studio (专业棚拍)
+  GROUP_SHOOT: 'group_shoot',        // Group Shoot
   EDIT: 'edit',                      // 通用编辑
   CREATE_MODEL: 'create_model',      // 创建专属模特
-  REFERENCE_SHOT: 'reference_shot',  // 参考图拍摄
-  LIFESTYLE: 'lifestyle',            // LifeStyle 街拍
-  TRY_ON: 'try_on',                  // 虚拟换装
+  REFERENCE_SHOT: 'reference_shot',  // Reference Shot
+  LIFESTYLE: 'lifestyle',            // LifeStyle Shot
+  TRY_ON: 'try_on',                  // Outfit Change (虚拟换装)
   BRAND_STYLE: 'brand_style',        // Clone Brand Style
+  SOCIAL: 'social',                  // Social UGC
 } as const
+
+// ===== Credit 消耗配置（单一数据源） =====
+// 所有页面的 checkQuota 和 CreditCostBadge 都应使用这些值
+export const TASK_CREDIT_COSTS: Record<string, number> = {
+  // Model Shot - 4 images each
+  [TaskTypes.PRO_STUDIO]: 4,
+  [TaskTypes.LIFESTYLE]: 4,
+  [TaskTypes.BUYER_SHOW]: 4,
+  [TaskTypes.MODEL_STUDIO]: 4,
+  [TaskTypes.SOCIAL]: 4,
+  
+  // Custom Shot - 2 images each
+  [TaskTypes.GROUP_SHOOT]: 4,        // 动态: numImages, 默认4
+  [TaskTypes.REFERENCE_SHOT]: 2,
+  [TaskTypes.PRODUCT_SHOT]: 2,
+  [TaskTypes.PRODUCT_STUDIO]: 2,
+  [TaskTypes.TRY_ON]: 2,             // Outfit Change
+  
+  // Single image
+  [TaskTypes.EDIT]: 1,
+  
+  // Special: Brand Style (4 images + 1 video = 4 + 10 = 14)
+  [TaskTypes.BRAND_STYLE]: 14,
+}
+
+/**
+ * 获取任务类型的 credit 消耗
+ * @param taskType 任务类型
+ * @returns credit 数量，默认返回 1
+ */
+export function getTaskCreditCost(taskType: string): number {
+  return TASK_CREDIT_COSTS[taskType] ?? 1
+}
 
 export type CanonicalTaskType = typeof TaskTypes[keyof typeof TaskTypes]
 
 // ===== 类型映射表（单一数据源） =====
 // 将所有历史变种映射到规范类型
 const TYPE_MAP: Record<string, CanonicalTaskType> = {
-  // 买家秀 → model_studio
+  // 买家秀 → model_studio (legacy) / buyer_show
   'camera': TaskTypes.MODEL_STUDIO,
   'camera_model': TaskTypes.MODEL_STUDIO,
   'model': TaskTypes.MODEL_STUDIO,
   'model_studio': TaskTypes.MODEL_STUDIO,
+  'buyer_show': TaskTypes.BUYER_SHOW,
+  'buyershow': TaskTypes.BUYER_SHOW,
   
-  // 商品影棚 → product_studio
+  // 商品影棚 → product_studio / product_shot
   'studio': TaskTypes.PRODUCT_STUDIO,
   'camera_product': TaskTypes.PRODUCT_STUDIO,
   'product': TaskTypes.PRODUCT_STUDIO,
   'product_studio': TaskTypes.PRODUCT_STUDIO,
+  'product_shot': TaskTypes.PRODUCT_SHOT,
+  'productshot': TaskTypes.PRODUCT_SHOT,
   
-  // 专业棚拍 → pro_studio
+  // Model Studio (专业棚拍) → pro_studio
   'pro_studio': TaskTypes.PRO_STUDIO,
   'prostudio': TaskTypes.PRO_STUDIO,
   
   // 组图拍摄 → group_shoot
   'group_shoot': TaskTypes.GROUP_SHOOT,
+  'groupshot': TaskTypes.GROUP_SHOOT,
   
   // 通用编辑 → edit
   'edit': TaskTypes.EDIT,
@@ -55,20 +96,26 @@ const TYPE_MAP: Record<string, CanonicalTaskType> = {
   // 创建专属模特 → create_model
   'create_model': TaskTypes.CREATE_MODEL,
   
-  // 参考图拍摄 → reference_shot
+  // Reference Shot → reference_shot
   'reference_shot': TaskTypes.REFERENCE_SHOT,
+  'referenceshot': TaskTypes.REFERENCE_SHOT,
   
-  // LifeStyle 街拍 → lifestyle
+  // LifeStyle Shot → lifestyle
   'lifestyle': TaskTypes.LIFESTYLE,
   
-  // 虚拟换装 → try_on
+  // Outfit Change (虚拟换装) → try_on
   'try_on': TaskTypes.TRY_ON,
   'tryon': TaskTypes.TRY_ON,
+  'outfit_change': TaskTypes.TRY_ON,
   
   // Clone Brand Style → brand_style
   'brand_style': TaskTypes.BRAND_STYLE,
   'brandstyle': TaskTypes.BRAND_STYLE,
   'brand': TaskTypes.BRAND_STYLE,
+  
+  // Social UGC → social
+  'social': TaskTypes.SOCIAL,
+  'social_ugc': TaskTypes.SOCIAL,
 }
 
 // ===== 核心函数 =====
