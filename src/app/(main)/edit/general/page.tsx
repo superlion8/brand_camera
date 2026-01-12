@@ -980,7 +980,7 @@ export default function GeneralEditPage() {
               exit={isDesktop ? { opacity: 0, scale: 0.95 } : { y: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
               className={isDesktop 
-                ? "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] max-h-[80vh] bg-white rounded-2xl z-50 flex flex-col overflow-hidden shadow-2xl"
+                ? "fixed inset-0 m-auto w-[700px] h-fit max-h-[80vh] bg-white rounded-2xl z-50 flex flex-col overflow-hidden shadow-2xl"
                 : "fixed bottom-0 left-0 right-0 h-[70%] bg-white rounded-t-2xl z-50 flex flex-col overflow-hidden"
               }
             >
@@ -1101,7 +1101,7 @@ export default function GeneralEditPage() {
               exit={isDesktop ? { opacity: 0, scale: 0.95 } : { y: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
               className={isDesktop 
-                ? "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] max-h-[80vh] bg-white rounded-2xl z-50 flex flex-col overflow-hidden shadow-2xl"
+                ? "fixed inset-0 m-auto w-[700px] h-fit max-h-[80vh] bg-white rounded-2xl z-50 flex flex-col overflow-hidden shadow-2xl"
                 : "fixed bottom-0 left-0 right-0 h-[70%] bg-white rounded-t-2xl z-50 flex flex-col overflow-hidden"
               }
             >
