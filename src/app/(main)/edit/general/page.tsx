@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react"
 import Image from "next/image"
-import { Wand2, X, Loader2, Home, ArrowLeft, Camera, FolderHeart, Upload, Images, Trash2, ChevronDown, Sparkles, Settings2, RefreshCw, Pencil } from "lucide-react"
+import { Wand2, X, Loader2, Home, ArrowLeft, Camera, FolderHeart, Upload, Images, Trash2, ChevronDown, Sparkles, Settings2, RefreshCw, Pencil, Heart, Download } from "lucide-react"
 import { fileToBase64, compressBase64Image, fetchWithTimeout, generateId, ensureBase64 } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { useAssetStore } from "@/stores/assetStore"
@@ -74,6 +74,8 @@ export default function GeneralEditPage() {
   
   // Result images for PC layout
   const [resultImages, setResultImages] = useState<string[]>([])
+  // Track which result image is regenerating
+  const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null)
   
   // Check for image passed from gallery page
   useEffect(() => {
@@ -467,6 +469,9 @@ export default function GeneralEditPage() {
     const hasQuota = await checkQuota(singleImageCost)
     if (!hasQuota) return
     
+    // Set regenerating state to show skeleton
+    setRegeneratingIndex(index)
+    
     const taskId = addTask('edit', validImages[0], { customPrompt, inputImageCount: validImages.length, resolution }, 1)
     setCurrentTaskId(taskId)
     updateTaskStatus(taskId, 'generating')
@@ -529,7 +534,41 @@ export default function GeneralEditPage() {
       await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
       await refreshQuota()
       alert(error.message || t.edit?.editFailed || 'Regeneration failed')
+    } finally {
+      setRegeneratingIndex(null)
     }
+  }
+  
+  // Download image
+  const handleDownload = async (imageUrl: string, index: number) => {
+    try {
+      const response = await fetch(imageUrl)
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `edit-result-${index + 1}.png`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Download failed:', error)
+    }
+  }
+  
+  // Favorite image (placeholder - would need backend integration)
+  const [favorites, setFavorites] = useState<Set<number>>(new Set())
+  const handleFavorite = (index: number) => {
+    setFavorites(prev => {
+      const newFavorites = new Set(prev)
+      if (newFavorites.has(index)) {
+        newFavorites.delete(index)
+      } else {
+        newFavorites.add(index)
+      }
+      return newFavorites
+    })
   }
   
   // Use result image as new input for further editing
@@ -809,14 +848,47 @@ export default function GeneralEditPage() {
                     <div className={`grid gap-4 ${resultImages.length === 1 ? 'grid-cols-1 max-w-md mx-auto' : 'grid-cols-2'}`}>
                       {resultImages.map((img, index) => (
                         <div key={index} className="relative group">
-                          <Image
-                            src={img}
-                            alt={`Result ${index + 1}`}
-                            width={500}
-                            height={500}
-                            className="w-full rounded-t-xl cursor-pointer hover:opacity-95 transition-opacity"
-                            onClick={() => setZoomImage(img)}
-                          />
+                          {regeneratingIndex === index ? (
+                            /* Show skeleton when regenerating */
+                            <div className="aspect-square rounded-t-xl bg-zinc-100 animate-pulse flex items-center justify-center">
+                              <div className="text-center">
+                                <Loader2 className="w-8 h-8 text-purple-400 animate-spin mx-auto mb-2" />
+                                <span className="text-xs text-zinc-400">{t.common?.generating || 'Generating...'}</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <Image
+                                src={img}
+                                alt={`Result ${index + 1}`}
+                                width={500}
+                                height={500}
+                                className="w-full rounded-t-xl cursor-pointer hover:opacity-95 transition-opacity"
+                                onClick={() => setZoomImage(img)}
+                              />
+                              {/* Hover actions: favorite & download */}
+                              <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleFavorite(index) }}
+                                  className={`w-8 h-8 rounded-full backdrop-blur-md flex items-center justify-center transition-colors ${
+                                    favorites.has(index) 
+                                      ? 'bg-red-500 text-white' 
+                                      : 'bg-black/40 text-white hover:bg-black/60'
+                                  }`}
+                                  title={t.common?.favorite || 'Favorite'}
+                                >
+                                  <Heart className={`w-4 h-4 ${favorites.has(index) ? 'fill-current' : ''}`} />
+                                </button>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleDownload(img, index) }}
+                                  className="w-8 h-8 rounded-full bg-black/40 text-white hover:bg-black/60 backdrop-blur-md flex items-center justify-center transition-colors"
+                                  title={t.common?.download || 'Download'}
+                                >
+                                  <Download className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </>
+                          )}
                           <span className="absolute top-2 left-2 px-2 py-1 bg-green-500 text-white text-xs rounded font-medium">
                             {index + 1}
                           </span>
@@ -824,14 +896,16 @@ export default function GeneralEditPage() {
                           <div className="flex border-t border-zinc-100 bg-white rounded-b-xl">
                             <button
                               onClick={() => handleRegenerate(index)}
-                              className="flex-1 py-2.5 text-sm font-medium text-zinc-600 hover:text-purple-600 hover:bg-purple-50 transition-colors flex items-center justify-center gap-1.5 border-r border-zinc-100"
+                              disabled={regeneratingIndex !== null}
+                              className="flex-1 py-2.5 text-sm font-medium text-zinc-600 hover:text-purple-600 hover:bg-purple-50 transition-colors flex items-center justify-center gap-1.5 border-r border-zinc-100 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              <RefreshCw className="w-4 h-4" />
+                              <RefreshCw className={`w-4 h-4 ${regeneratingIndex === index ? 'animate-spin' : ''}`} />
                               <span>{t.edit?.regenerate || 'Re-generate'}</span>
                             </button>
                             <button
                               onClick={() => handleEditResult(img)}
-                              className="flex-1 py-2.5 text-sm font-medium text-zinc-600 hover:text-purple-600 hover:bg-purple-50 transition-colors flex items-center justify-center gap-1.5"
+                              disabled={regeneratingIndex !== null}
+                              className="flex-1 py-2.5 text-sm font-medium text-zinc-600 hover:text-purple-600 hover:bg-purple-50 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <Pencil className="w-4 h-4" />
                               <span>{t.edit?.editThis || 'Edit'}</span>
@@ -843,14 +917,47 @@ export default function GeneralEditPage() {
                   ) : resultImage ? (
                     <div className="max-w-md mx-auto">
                       <div className="relative group">
-                        <Image
-                          src={resultImage}
-                          alt="Result"
-                          width={500}
-                          height={500}
-                          className="w-full rounded-t-xl cursor-pointer hover:opacity-95 transition-opacity"
-                          onClick={() => setZoomImage(resultImage)}
-                        />
+                        {regeneratingIndex === 0 ? (
+                          /* Show skeleton when regenerating */
+                          <div className="aspect-square rounded-t-xl bg-zinc-100 animate-pulse flex items-center justify-center">
+                            <div className="text-center">
+                              <Loader2 className="w-8 h-8 text-purple-400 animate-spin mx-auto mb-2" />
+                              <span className="text-xs text-zinc-400">{t.common?.generating || 'Generating...'}</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <Image
+                              src={resultImage}
+                              alt="Result"
+                              width={500}
+                              height={500}
+                              className="w-full rounded-t-xl cursor-pointer hover:opacity-95 transition-opacity"
+                              onClick={() => setZoomImage(resultImage)}
+                            />
+                            {/* Hover actions: favorite & download */}
+                            <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleFavorite(0) }}
+                                className={`w-8 h-8 rounded-full backdrop-blur-md flex items-center justify-center transition-colors ${
+                                  favorites.has(0) 
+                                    ? 'bg-red-500 text-white' 
+                                    : 'bg-black/40 text-white hover:bg-black/60'
+                                }`}
+                                title={t.common?.favorite || 'Favorite'}
+                              >
+                                <Heart className={`w-4 h-4 ${favorites.has(0) ? 'fill-current' : ''}`} />
+                              </button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleDownload(resultImage, 0) }}
+                                className="w-8 h-8 rounded-full bg-black/40 text-white hover:bg-black/60 backdrop-blur-md flex items-center justify-center transition-colors"
+                                title={t.common?.download || 'Download'}
+                              >
+                                <Download className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </>
+                        )}
                         <span className="absolute top-2 left-2 px-2 py-1 bg-green-500 text-white text-xs rounded font-medium">
                           {t.edit?.generationResult || 'Result'}
                         </span>
@@ -858,14 +965,16 @@ export default function GeneralEditPage() {
                         <div className="flex border-t border-zinc-100 bg-white rounded-b-xl">
                           <button
                             onClick={() => handleRegenerate(0)}
-                            className="flex-1 py-2.5 text-sm font-medium text-zinc-600 hover:text-purple-600 hover:bg-purple-50 transition-colors flex items-center justify-center gap-1.5 border-r border-zinc-100"
+                            disabled={regeneratingIndex !== null}
+                            className="flex-1 py-2.5 text-sm font-medium text-zinc-600 hover:text-purple-600 hover:bg-purple-50 transition-colors flex items-center justify-center gap-1.5 border-r border-zinc-100 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            <RefreshCw className="w-4 h-4" />
+                            <RefreshCw className={`w-4 h-4 ${regeneratingIndex === 0 ? 'animate-spin' : ''}`} />
                             <span>{t.edit?.regenerate || 'Re-generate'}</span>
                           </button>
                           <button
                             onClick={() => handleEditResult(resultImage)}
-                            className="flex-1 py-2.5 text-sm font-medium text-zinc-600 hover:text-purple-600 hover:bg-purple-50 transition-colors flex items-center justify-center gap-1.5"
+                            disabled={regeneratingIndex !== null}
+                            className="flex-1 py-2.5 text-sm font-medium text-zinc-600 hover:text-purple-600 hover:bg-purple-50 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <Pencil className="w-4 h-4" />
                             <span>{t.edit?.editThis || 'Edit'}</span>
