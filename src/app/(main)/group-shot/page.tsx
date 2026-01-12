@@ -166,21 +166,34 @@ function GroupShootPageContent() {
     // 更新 URL（便于刷新后恢复状态）
     router.replace('/group-shot?mode=processing')
     
-    // 后台调用 quota/reserve 创建 pending 记录
-    fetch('/api/quota/reserve', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        taskId,
-        imageCount: numImages,
-        taskType: 'group_shoot',
-      }),
-    }).then(() => {
-      console.log('[GroupShoot] Reserved', numImages, 'images for task', taskId)
+    // 先预扣 credits（必须等待成功）
+    try {
+      const reserveRes = await fetch('/api/quota/reserve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskId,
+          imageCount: numImages,
+          taskType: 'group_shoot',
+        }),
+      })
+      
+      if (!reserveRes.ok) {
+        const errorData = await reserveRes.json().catch(() => ({}))
+        console.error('[GroupShoot] Failed to reserve quota:', errorData)
+        setMode('main')
+        router.replace('/group-shot')
+        return
+      }
+      
+      console.log('[GroupShoot] Reserved', numImages, 'credits for task', taskId)
       refreshQuota()
-    }).catch(e => {
-      console.warn('[GroupShoot] Failed to reserve quota:', e)
-    })
+    } catch (e) {
+      console.error('[GroupShoot] Failed to reserve quota:', e)
+      setMode('main')
+      router.replace('/group-shot')
+      return
+    }
 
     // 不压缩，直接使用原图
     const compressedImage = selectedImage
