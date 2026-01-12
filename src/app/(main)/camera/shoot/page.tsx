@@ -285,14 +285,14 @@ export default function ShootPage() {
                   className="px-6 py-3 bg-zinc-900 text-white rounded-xl font-medium hover:bg-zinc-800 transition-colors flex items-center gap-2"
                 >
                   <Upload className="w-5 h-5" />
-                  {t.shoot?.album || '从相册选择'}
+                  {t.shoot?.useAlbum || '从相册选择'}
                 </button>
                 <button
                   onClick={() => setShowAssetPicker(true)}
                   className="px-6 py-3 bg-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-300 transition-colors flex items-center gap-2"
                 >
                   <FolderHeart className="w-5 h-5" />
-                  {t.shoot?.assetLibrary || '素材库'}
+                  {t.shoot?.selectFromAssets || '素材库'}
                 </button>
               </div>
             </div>
