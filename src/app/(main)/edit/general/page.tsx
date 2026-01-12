@@ -975,44 +975,47 @@ export default function GeneralEditPage() {
               onClick={() => setShowProductPanel(false)}
             />
             <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
+              initial={isDesktop ? { opacity: 0, scale: 0.95 } : { y: "100%" }}
+              animate={isDesktop ? { opacity: 1, scale: 1 } : { y: 0 }}
+              exit={isDesktop ? { opacity: 0, scale: 0.95 } : { y: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed bottom-0 left-0 right-0 h-[70%] bg-white rounded-t-2xl z-50 flex flex-col overflow-hidden"
+              className={isDesktop 
+                ? "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] max-h-[80vh] bg-white rounded-2xl z-50 flex flex-col overflow-hidden shadow-2xl"
+                : "fixed bottom-0 left-0 right-0 h-[70%] bg-white rounded-t-2xl z-50 flex flex-col overflow-hidden"
+              }
             >
-              <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
-                <span className="font-semibold">{t.camera.selectProduct}</span>
+              <div className="h-14 border-b flex items-center justify-between px-6 shrink-0">
+                <span className="font-semibold text-lg">{t.camera?.selectProduct || 'Select Product'}</span>
                 <button
                   onClick={() => setShowProductPanel(false)}
                   className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
               
               {/* Source Tabs */}
-              <div className="px-4 py-2 border-b bg-white">
+              <div className="px-6 py-3 border-b bg-white">
                 <div className="flex bg-zinc-100 rounded-lg p-1">
                   <button
                     onClick={() => setProductSourceTab("preset")}
-                    className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${
+                    className={`flex-1 py-2.5 text-sm font-medium rounded-md transition-colors ${
                       productSourceTab === "preset"
                         ? "bg-white text-zinc-900 shadow-sm"
                         : "text-zinc-500 hover:text-zinc-700"
                     }`}
                   >
-                    官方示例 ({PRESET_PRODUCTS.length})
+                    {t.camera?.officialExamples || 'Official Examples'} ({PRESET_PRODUCTS.length})
                   </button>
                   <button
                     onClick={() => setProductSourceTab("user")}
-                    className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${
+                    className={`flex-1 py-2.5 text-sm font-medium rounded-md transition-colors ${
                       productSourceTab === "user"
                         ? "bg-white text-zinc-900 shadow-sm"
                         : "text-zinc-500 hover:text-zinc-700"
                     }`}
                   >
-                    我的商品 ({userProducts.length})
+                    {t.camera?.myProducts || 'My Products'} ({userProducts.length})
                   </button>
                 </div>
               </div>
@@ -1025,7 +1028,7 @@ export default function GeneralEditPage() {
                   </div>
                 )}
                 {productSourceTab === 'preset' ? (
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className={`grid gap-3 ${isDesktop ? 'grid-cols-5' : 'grid-cols-3'}`}>
                     {PRESET_PRODUCTS.map(product => (
                       <button
                         key={product.id}
@@ -1034,17 +1037,17 @@ export default function GeneralEditPage() {
                         className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-purple-500 transition-all bg-white disabled:opacity-50"
                       >
                         <Image src={product.imageUrl} alt={product.name || ''} fill className="object-cover" />
-                        <span className="absolute top-1 left-1 bg-purple-500 text-white text-[8px] px-1 py-0.5 rounded font-medium">
-                          官方
+                        <span className="absolute top-1.5 left-1.5 bg-purple-500 text-white text-[10px] px-1.5 py-0.5 rounded font-medium">
+                          {t.common?.official || 'Official'}
                         </span>
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-1.5 pt-4">
-                          <p className="text-[10px] text-white truncate text-center">{product.name}</p>
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 pt-6">
+                          <p className="text-xs text-white truncate text-center">{product.name}</p>
                         </div>
                       </button>
                     ))}
                   </div>
                 ) : userProducts.length > 0 ? (
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className={`grid gap-3 ${isDesktop ? 'grid-cols-5' : 'grid-cols-3'}`}>
                     {userProducts.map(product => (
                       <button
                         key={product.id}
@@ -1053,17 +1056,17 @@ export default function GeneralEditPage() {
                         className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-purple-500 transition-all bg-white disabled:opacity-50"
                       >
                         <Image src={product.imageUrl} alt={product.name || ''} fill className="object-cover" />
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-1.5 pt-4">
-                          <p className="text-[10px] text-white truncate text-center">{product.name}</p>
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 pt-6">
+                          <p className="text-xs text-white truncate text-center">{product.name}</p>
                         </div>
                       </button>
                     ))}
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-zinc-400">
+                  <div className="flex flex-col items-center justify-center h-full text-zinc-400 py-12">
                     <FolderHeart className="w-12 h-12 mb-3 opacity-30" />
-                    <p className="text-sm">{t.camera.noMyProducts}</p>
-                    <p className="text-xs mt-1">{t.camera.uploadInAssets}</p>
+                    <p className="text-sm">{t.camera?.noMyProducts || 'No products yet'}</p>
+                    <p className="text-xs mt-1">{t.camera?.uploadInAssets || 'Upload in Assets'}</p>
                     <button
                       onClick={() => {
                         setShowProductPanel(false)
@@ -1071,7 +1074,7 @@ export default function GeneralEditPage() {
                       }}
                       className="mt-4 px-4 py-2 bg-purple-500 text-white text-sm rounded-lg hover:bg-purple-600"
                     >
-                      {t.camera.goUpload}
+                      {t.camera?.goUpload || 'Go Upload'}
                     </button>
                   </div>
                 )}
@@ -1093,19 +1096,22 @@ export default function GeneralEditPage() {
               onClick={() => setShowGalleryPanel(false)}
             />
             <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
+              initial={isDesktop ? { opacity: 0, scale: 0.95 } : { y: "100%" }}
+              animate={isDesktop ? { opacity: 1, scale: 1 } : { y: 0 }}
+              exit={isDesktop ? { opacity: 0, scale: 0.95 } : { y: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed bottom-0 left-0 right-0 h-[70%] bg-white rounded-t-2xl z-50 flex flex-col overflow-hidden"
+              className={isDesktop 
+                ? "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] max-h-[80vh] bg-white rounded-2xl z-50 flex flex-col overflow-hidden shadow-2xl"
+                : "fixed bottom-0 left-0 right-0 h-[70%] bg-white rounded-t-2xl z-50 flex flex-col overflow-hidden"
+              }
             >
-              <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
-                <span className="font-semibold">{t.edit.selectFromGallery}</span>
+              <div className="h-14 border-b flex items-center justify-between px-6 shrink-0">
+                <span className="font-semibold text-lg">{t.edit?.selectFromGallery || 'Select from Photos'}</span>
                 <button
                   onClick={() => setShowGalleryPanel(false)}
                   className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
               
@@ -1117,30 +1123,30 @@ export default function GeneralEditPage() {
                   </div>
                 )}
                 {!isLoadingGallery && galleryPhotos.length > 0 ? (
-                  <div className="grid grid-cols-3 gap-3">
-                    {galleryPhotos.map((item, index) => (
+                  <div className={`grid gap-3 ${isDesktop ? 'grid-cols-5' : 'grid-cols-3'}`}>
+                    {galleryPhotos.filter(item => item?.imageUrl).map((item, index) => (
                       <button
                         key={item.id || `gallery-${index}`}
                         disabled={isLoadingAsset}
                         onClick={() => handleSelectFromGallery(item.imageUrl)}
                         className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-purple-500 transition-all bg-white disabled:opacity-50"
                       >
-                        <Image src={item.imageUrl} alt={`${t.edit?.generationResult || '生成结果'} ${index + 1}`} fill className="object-cover" />
-                        <span className={`absolute top-1 left-1 text-white text-[8px] px-1 py-0.5 rounded font-medium ${
+                        <Image src={item.imageUrl} alt={`${t.edit?.generationResult || 'Result'} ${index + 1}`} fill className="object-cover" />
+                        <span className={`absolute top-1.5 left-1.5 text-white text-[10px] px-1.5 py-0.5 rounded font-medium ${
                           item.generation?.type === 'studio' ? 'bg-amber-500' :
                           item.generation?.type === 'edit' ? 'bg-purple-500' : 'bg-blue-500'
                         }`}>
-                          {item.generation?.type === 'studio' ? '影棚' :
-                           item.generation?.type === 'edit' ? (t.nav?.edit || '编辑') : (t.common?.model || '模特')}
+                          {item.generation?.type === 'studio' ? (t.studio?.title || 'Studio') :
+                           item.generation?.type === 'edit' ? (t.nav?.edit || 'Edit') : (t.common?.model || 'Model')}
                         </span>
                       </button>
                     ))}
                   </div>
                 ) : !isLoadingGallery ? (
-                  <div className="flex flex-col items-center justify-center h-full text-zinc-400">
+                  <div className="flex flex-col items-center justify-center h-full text-zinc-400 py-12">
                     <Images className="w-12 h-12 mb-3 opacity-30" />
-                    <p className="text-sm">{t.edit?.noGallery || '暂无生成记录'}</p>
-                    <p className="text-xs mt-1">{t.studio?.goShootToGenerate || '去拍摄生成图片'}</p>
+                    <p className="text-sm">{t.edit?.noGallery || 'No photos yet'}</p>
+                    <p className="text-xs mt-1">{t.studio?.goShootToGenerate || 'Generate some photos first'}</p>
                     <button
                       onClick={() => {
                         setShowGalleryPanel(false)
@@ -1148,7 +1154,7 @@ export default function GeneralEditPage() {
                       }}
                       className="mt-4 px-4 py-2 bg-purple-500 text-white text-sm rounded-lg hover:bg-purple-600"
                     >
-                      {t.edit?.goShoot || '去拍摄'}
+                      {t.edit?.goShoot || 'Go Shoot'}
                     </button>
                   </div>
                 ) : null}
