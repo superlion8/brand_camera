@@ -86,6 +86,8 @@ export interface GenerationParams {
   // Edit params
   customPrompt?: string
   inputImageCount?: number         // 通用编辑输入图片数量
+  numImages?: number               // 生成图片数量
+  resolution?: string              // 分辨率: standard | hd
   // Group shoot params
   shootMode?: 'random' | 'multiangle'
   styleMode?: 'lifestyle' | 'studio'
