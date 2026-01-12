@@ -74,6 +74,7 @@ export async function GET(request: NextRequest) {
         daily: credits.daily,
         subscription: credits.subscription,
         signup: credits.signup,
+        adminGive: credits.adminGive,
         purchased: credits.purchased,
         dailyExpired: credits.dailyExpired,
       },
@@ -124,6 +125,7 @@ export async function POST(request: NextRequest) {
         daily: credits.daily,
         subscription: credits.subscription,
         signup: credits.signup,
+        adminGive: credits.adminGive,
         purchased: credits.purchased,
       },
     })

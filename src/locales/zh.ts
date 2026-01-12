@@ -594,6 +594,8 @@ export const zh = {
     officialExample: "官方示例",
     myProducts: "我的商品",
     styleOutfit: "搭配商品",
+    fromAlbum: "从相册上传",
+    fromAssets: "从资产库选择",
     // PC 页面
     mainProduct: "主商品",
     change: "更换",

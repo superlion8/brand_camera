@@ -2,10 +2,11 @@
  * Credits 系统核心逻辑
  * 
  * Credits 类型和优先级（消费时优先扣除即将过期的）：
- * 1. daily_credits      - 每日奖励，当天有效，次日清零
+ * 1. daily_credits       - 每日奖励，当天有效，次日清零
  * 2. subscription_credits - 订阅赠送，当月有效，续费时重置
- * 3. signup_credits     - 注册赠送，永久有效
- * 4. purchased_credits  - 充值购买，永久有效
+ * 3. signup_credits      - 注册赠送，永久有效
+ * 4. admin_give_credits  - 管理员赠送，永久有效
+ * 5. purchased_credits   - 充值购买，永久有效（最后消费，保护用户付费）
  */
 
 // 默认值
@@ -20,6 +21,7 @@ export interface UserQuotaRecord {
   daily_credits_date: string | null  // ISO date string: 'YYYY-MM-DD'
   subscription_credits: number
   signup_credits: number
+  admin_give_credits: number
   purchased_credits: number
   stripe_customer_id?: string
   created_at?: string
@@ -32,6 +34,7 @@ export interface CreditsInfo {
   daily: number              // 今日奖励余额（如果不是今天的则为 0）
   subscription: number       // 订阅余额
   signup: number             // 注册赠送余额
+  adminGive: number          // 管理员赠送余额
   purchased: number          // 购买余额
   dailyExpired: boolean      // 每日奖励是否已过期
 }
@@ -61,6 +64,7 @@ export function calculateCreditsInfo(quota: UserQuotaRecord | null): CreditsInfo
       daily: 0,
       subscription: 0,
       signup: DEFAULT_SIGNUP_CREDITS,
+      adminGive: 0,
       purchased: 0,
       dailyExpired: true,
     }
@@ -74,15 +78,17 @@ export function calculateCreditsInfo(quota: UserQuotaRecord | null): CreditsInfo
 
   const subscriptionCredits = quota.subscription_credits || 0
   const signupCredits = quota.signup_credits ?? DEFAULT_SIGNUP_CREDITS
+  const adminGiveCredits = quota.admin_give_credits || 0
   const purchasedCredits = quota.purchased_credits || 0
 
-  const available = dailyCredits + subscriptionCredits + signupCredits + purchasedCredits
+  const available = dailyCredits + subscriptionCredits + signupCredits + adminGiveCredits + purchasedCredits
 
   return {
     available,
     daily: dailyCredits,
     subscription: subscriptionCredits,
     signup: signupCredits,
+    adminGive: adminGiveCredits,
     purchased: purchasedCredits,
     dailyExpired,
   }
@@ -90,14 +96,14 @@ export function calculateCreditsInfo(quota: UserQuotaRecord | null): CreditsInfo
 
 /**
  * 计算扣费后的新余额
- * 按优先级消费：daily > subscription > signup > purchased
+ * 按优先级消费：daily > subscription > signup > adminGive > purchased
  * 
  * @returns 更新后的余额对象，如果余额不足返回 null
  */
 export function consumeCredits(
   quota: UserQuotaRecord,
   amount: number
-): Pick<UserQuotaRecord, 'daily_credits' | 'subscription_credits' | 'signup_credits' | 'purchased_credits'> | null {
+): Pick<UserQuotaRecord, 'daily_credits' | 'subscription_credits' | 'signup_credits' | 'admin_give_credits' | 'purchased_credits'> | null {
   const info = calculateCreditsInfo(quota)
   
   // 检查余额是否足够
@@ -111,6 +117,7 @@ export function consumeCredits(
   let daily = info.daily
   let subscription = info.subscription
   let signup = info.signup
+  let adminGive = info.adminGive
   let purchased = info.purchased
 
   // 1. 先扣每日奖励（当天有效）
@@ -134,7 +141,14 @@ export function consumeCredits(
     remaining -= deduct
   }
 
-  // 4. 最后扣购买的
+  // 4. 再扣管理员赠送
+  if (remaining > 0 && adminGive > 0) {
+    const deduct = Math.min(remaining, adminGive)
+    adminGive -= deduct
+    remaining -= deduct
+  }
+
+  // 5. 最后扣购买的（保护用户付费的 credits）
   if (remaining > 0 && purchased > 0) {
     const deduct = Math.min(remaining, purchased)
     purchased -= deduct
@@ -151,38 +165,34 @@ export function consumeCredits(
     daily_credits: daily,
     subscription_credits: subscription,
     signup_credits: signup,
+    admin_give_credits: adminGive,
     purchased_credits: purchased,
   }
 }
 
 /**
  * 计算退款后的新余额
- * 退款按相反优先级：purchased > signup > subscription > daily
- * （优先退还到永久 credits）
+ * 退款退到 admin_give_credits（系统补偿性质）
  */
 export function refundCredits(
   quota: UserQuotaRecord,
   amount: number
-): Pick<UserQuotaRecord, 'daily_credits' | 'subscription_credits' | 'signup_credits' | 'purchased_credits'> {
-  let remaining = amount
-  
+): Pick<UserQuotaRecord, 'daily_credits' | 'subscription_credits' | 'signup_credits' | 'admin_give_credits' | 'purchased_credits'> {
   // 复制当前值
-  let daily = isToday(quota.daily_credits_date) ? (quota.daily_credits || 0) : 0
-  let subscription = quota.subscription_credits || 0
-  let signup = quota.signup_credits ?? DEFAULT_SIGNUP_CREDITS
-  let purchased = quota.purchased_credits || 0
+  const daily = isToday(quota.daily_credits_date) ? (quota.daily_credits || 0) : 0
+  const subscription = quota.subscription_credits || 0
+  const signup = quota.signup_credits ?? DEFAULT_SIGNUP_CREDITS
+  let adminGive = quota.admin_give_credits || 0
+  const purchased = quota.purchased_credits || 0
 
-  // 退款优先退到永久账户（purchased > signup）
-  // 这样对用户更友好
-  
-  // 1. 先退到 purchased（永久）
-  purchased += remaining
-  remaining = 0
+  // 退款退到 admin_give_credits（系统补偿）
+  adminGive += amount
 
   return {
     daily_credits: daily,
     subscription_credits: subscription,
     signup_credits: signup,
+    admin_give_credits: adminGive,
     purchased_credits: purchased,
   }
 }
@@ -198,6 +208,7 @@ export function createDefaultQuota(userId: string, userEmail?: string): Omit<Use
     daily_credits_date: null,
     subscription_credits: 0,
     signup_credits: DEFAULT_SIGNUP_CREDITS,
+    admin_give_credits: 0,
     purchased_credits: 0,
   }
 }

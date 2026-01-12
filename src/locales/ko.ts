@@ -595,6 +595,8 @@ export const ko: Translations = {
     officialExample: "공식 예제",
     myProducts: "내 상품",
     styleOutfit: "코디 구성",
+    fromAlbum: "앨범에서 업로드",
+    fromAssets: "에셋에서 선택",
     // PC 페이지
     mainProduct: "메인 상품",
     change: "변경",

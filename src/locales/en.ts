@@ -596,6 +596,8 @@ export const en: Translations = {
     officialExample: "Official Examples",
     myProducts: "My Products",
     styleOutfit: "Style Outfit",
+    fromAlbum: "From Album",
+    fromAssets: "From Assets",
     // PC page
     mainProduct: "Main Product",
     change: "Change",

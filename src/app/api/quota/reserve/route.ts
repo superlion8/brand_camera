@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
     const updateData: any = {
       subscription_credits: newBalances.subscription_credits,
       signup_credits: newBalances.signup_credits,
+      admin_give_credits: newBalances.admin_give_credits,
       purchased_credits: newBalances.purchased_credits,
     }
     
@@ -115,6 +116,7 @@ export async function POST(request: NextRequest) {
       const rollbackData: any = {
         subscription_credits: quotaData.subscription_credits,
         signup_credits: quotaData.signup_credits,
+        admin_give_credits: quotaData.admin_give_credits,
         purchased_credits: quotaData.purchased_credits,
       }
       if (isToday(quotaData.daily_credits_date)) {
@@ -221,12 +223,13 @@ export async function DELETE(request: NextRequest) {
           .update({
             subscription_credits: newBalances.subscription_credits,
             signup_credits: newBalances.signup_credits,
+            admin_give_credits: newBalances.admin_give_credits,
             purchased_credits: newBalances.purchased_credits,
             // daily_credits 不退还（因为可能已经过期）
           })
           .eq('user_id', user.id)
         
-        console.log('[Quota Release] Refunded', refundCount, 'credits to purchased_credits')
+        console.log('[Quota Release] Refunded', refundCount, 'credits to admin_give_credits')
       }
     }
     
@@ -309,6 +312,7 @@ export async function PUT(request: NextRequest) {
           .update({
             subscription_credits: newBalances.subscription_credits,
             signup_credits: newBalances.signup_credits,
+            admin_give_credits: newBalances.admin_give_credits,
             purchased_credits: newBalances.purchased_credits,
           })
           .eq('user_id', user.id)

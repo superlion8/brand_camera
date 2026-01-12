@@ -108,6 +108,7 @@ END $$;
 COMMENT ON COLUMN user_quotas.daily_credits IS '每日登录奖励余额，当天有效，次日清零';
 COMMENT ON COLUMN user_quotas.daily_credits_date IS '每日奖励的日期，用于判断是否过期';
 COMMENT ON COLUMN user_quotas.signup_credits IS '注册赠送余额，永久有效';
+COMMENT ON COLUMN user_quotas.admin_give_credits IS '管理员赠送余额，永久有效';
 COMMENT ON COLUMN user_quotas.subscription_credits IS '订阅赠送余额，每月重置';
 COMMENT ON COLUMN user_quotas.purchased_credits IS '充值购买余额，永久有效';
 

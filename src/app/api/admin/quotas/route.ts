@@ -79,6 +79,7 @@ export async function GET(request: NextRequest) {
           daily: credits.daily,
           subscription: credits.subscription,
           signup: credits.signup,
+          adminGive: credits.adminGive,
           purchased: credits.purchased,
           dailyExpired: credits.dailyExpired,
         },
@@ -124,6 +125,7 @@ export async function PUT(request: NextRequest) {
       userEmail,
       // 新字段
       signupCredits,
+      adminGiveCredits,
       purchasedCredits,
       subscriptionCredits,
       // 向后兼容
@@ -145,6 +147,9 @@ export async function PUT(request: NextRequest) {
     if (signupCredits !== undefined) {
       updateData.signup_credits = signupCredits
     }
+    if (adminGiveCredits !== undefined) {
+      updateData.admin_give_credits = adminGiveCredits
+    }
     if (purchasedCredits !== undefined) {
       updateData.purchased_credits = purchasedCredits
     }
@@ -152,18 +157,27 @@ export async function PUT(request: NextRequest) {
       updateData.subscription_credits = subscriptionCredits
     }
     
-    // 向后兼容：如果只传了 totalQuota，转换为 purchased_credits
-    if (totalQuota !== undefined && signupCredits === undefined && purchasedCredits === undefined) {
+    // 向后兼容：如果只传了 totalQuota，转换为 admin_give_credits
+    // 这样 admin 通过旧接口加的 credits 会记录到 admin_give_credits
+    if (totalQuota !== undefined && signupCredits === undefined && adminGiveCredits === undefined && purchasedCredits === undefined) {
       // 获取当前数据
       const { data: existing } = await adminClient
         .from('user_quotas')
-        .select('signup_credits')
+        .select('signup_credits, admin_give_credits, purchased_credits, subscription_credits')
         .eq('user_id', userId)
         .single()
       
       const currentSignup = existing?.signup_credits ?? DEFAULT_SIGNUP_CREDITS
-      // totalQuota - signup = purchased
-      updateData.purchased_credits = Math.max(0, totalQuota - currentSignup)
+      const currentAdminGive = existing?.admin_give_credits ?? 0
+      const currentPurchased = existing?.purchased_credits ?? 0
+      const currentSubscription = existing?.subscription_credits ?? 0
+      const currentTotal = currentSignup + currentAdminGive + currentPurchased + currentSubscription
+      
+      // 计算需要增加的 credits，记录到 admin_give_credits
+      const toAdd = Math.max(0, totalQuota - currentTotal)
+      if (toAdd > 0) {
+        updateData.admin_give_credits = currentAdminGive + toAdd
+      }
     }
     
     if (Object.keys(updateData).length === 0) {
@@ -200,6 +214,7 @@ export async function PUT(request: NextRequest) {
           daily: credits.daily,
           subscription: credits.subscription,
           signup: credits.signup,
+          adminGive: credits.adminGive,
           purchased: credits.purchased,
         },
         // 向后兼容

@@ -10,6 +10,7 @@ interface CreditsInfo {
   daily: number
   subscription: number
   signup: number
+  adminGive: number
   purchased: number
   dailyExpired?: boolean
 }
