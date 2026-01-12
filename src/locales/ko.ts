@@ -370,6 +370,7 @@ export const ko: Translations = {
     noFavorites: "즐겨찾기 없음",
     startShooting: "첫 번째 사진을 촬영하세요",
     detail: "상세",
+    quickActions: "빠른 작업",
     goEdit: "편집",
     goTryOn: "피팅하기",
     debugParams: "생성 파라미터 (디버그)",

@@ -369,6 +369,7 @@ export const zh = {
     noFavorites: "暂无收藏图片",
     startShooting: "去拍摄生成你的第一张图片吧",
     detail: "详情",
+    quickActions: "快捷操作",
     goEdit: "去修图",
     goTryOn: "去换装",
     debugParams: "生成参数 (调试模式)",

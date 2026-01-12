@@ -371,6 +371,7 @@ export const en: Translations = {
     noFavorites: "No favorites",
     startShooting: "Go shoot your first photo",
     detail: "Details",
+    quickActions: "Quick Actions",
     goEdit: "Edit",
     goTryOn: "Try On",
     debugParams: "Generation Params (Debug)",

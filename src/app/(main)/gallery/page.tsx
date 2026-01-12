@@ -1257,177 +1257,182 @@ export default function GalleryPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-white"
+            className={isDesktop ? "fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-8" : "fixed inset-0 z-50 bg-white"}
+            onClick={isDesktop ? () => { setSelectedItem(null); setNavigatingTo(null) } : undefined}
           >
-            <div className="h-full flex flex-col overflow-hidden">
-              {/* Header */}
-              <div className="h-14 flex items-center justify-between px-4 bg-white border-b shrink-0">
-                <button
-                  onClick={() => {
-                    setSelectedItem(null)
-                    setNavigatingTo(null)
-                  }}
-                  className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center transition-colors"
-                >
-                  <X className="w-5 h-5 text-zinc-700" />
-                </button>
-                <span className="font-semibold text-zinc-900">{t.gallery.detail}</span>
-                <button
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="w-10 h-10 -mr-2 rounded-full hover:bg-red-50 flex items-center justify-center transition-colors text-zinc-400 hover:text-red-500"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Content - Scrollable */}
-              <div className="flex-1 min-h-0 overflow-y-auto bg-zinc-100 pb-20">
-                <div className="bg-zinc-900">
+            {isDesktop ? (
+              /* ========== PC Web: Refined Modal Design ========== */
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Left: Image Preview */}
+                <div className="w-[55%] bg-zinc-950 flex items-center justify-center relative">
                   <div 
-                    className="relative aspect-square max-h-[50vh] mx-auto cursor-pointer group shrink-0"
+                    className="relative w-full h-full cursor-pointer group"
                     onClick={() => setFullscreenImage(selectedItem.gen.outputImageUrls[selectedItem.index])}
                   >
-                    {/* Use img tag for native long-press save support */}
                     <img 
                       src={selectedItem.gen.outputImageUrls[selectedItem.index]} 
                       alt="Detail" 
                       className="w-full h-full object-contain" 
                     />
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 pointer-events-none">
-                      <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                        <ZoomIn className="w-6 h-6 text-zinc-700" />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-black/30">
+                      <div className="w-14 h-14 rounded-full bg-white/95 flex items-center justify-center shadow-xl transform group-hover:scale-110 transition-transform">
+                        <ZoomIn className="w-6 h-6 text-zinc-800" />
                       </div>
                     </div>
                   </div>
-                  <p className="text-center text-zinc-500 text-xs py-2">{t.imageActions.longPressSave}</p>
+                  {/* Close button on image */}
+                  <button
+                    onClick={() => { setSelectedItem(null); setNavigatingTo(null) }}
+                    className="absolute top-4 left-4 w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center transition-colors backdrop-blur-sm"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
                 
-                <div className="p-4 bg-white pb-8">
-                  {/* Type and date info */}
-                  <div className="flex items-center justify-between mb-4">
+                {/* Right: Info Panel */}
+                <div className="w-[45%] flex flex-col max-h-[90vh]">
+                  {/* Header */}
+                  <div className="px-6 py-5 border-b border-zinc-100 flex items-center justify-between">
                     <div>
                       {(() => {
                         const typeInfo = getTypeLabel(selectedItem.gen, selectedItem.index, debugMode)
                         return (
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className={`px-2 py-0.5 rounded text-xs font-medium text-white ${typeInfo.color}`}>
+                          <div className="flex items-center gap-2">
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold text-white ${typeInfo.color}`}>
                               {typeInfo.label}
                             </span>
                             {typeInfo.subLabel && (
-                              <span className={`px-2 py-0.5 rounded text-xs font-medium text-white ${typeInfo.subColor}`}>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${typeInfo.subColor}`}>
                                 {typeInfo.subLabel}
                               </span>
                             )}
                           </div>
                         )
                       })()}
-                      <p className="text-xs text-zinc-400">
+                      <p className="text-sm text-zinc-400 mt-1">
                         {new Date(selectedItem.gen.createdAt).toLocaleString()}
                       </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleFavoriteToggle(selectedItem.gen.dbId || selectedItem.gen.id, selectedItem.index)}
-                        className={`w-10 h-10 rounded-lg border flex items-center justify-center transition-colors ${
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
                           isFavorited(selectedItem.gen.dbId || selectedItem.gen.id, selectedItem.index)
-                            ? "bg-red-50 border-red-200 text-red-500"
-                            : "border-zinc-200 text-zinc-600 hover:bg-zinc-50"
+                            ? "bg-red-50 text-red-500 shadow-sm"
+                            : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
                         }`}
                       >
-                        <Heart className={`w-4 h-4 ${isFavorited(selectedItem.gen.dbId || selectedItem.gen.id, selectedItem.index) ? "fill-current" : ""}`} />
+                        <Heart className={`w-5 h-5 ${isFavorited(selectedItem.gen.dbId || selectedItem.gen.id, selectedItem.index) ? "fill-current" : ""}`} />
                       </button>
                       <button
                         onClick={() => handleDownload(selectedItem.gen.outputImageUrls[selectedItem.index], selectedItem.gen.dbId || selectedItem.gen.id, selectedItem.index)}
-                        className="w-10 h-10 rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-50 flex items-center justify-center transition-colors"
+                        className="w-10 h-10 rounded-xl bg-zinc-100 text-zinc-500 hover:bg-zinc-200 flex items-center justify-center transition-colors"
                       >
-                        <Download className="w-4 h-4" />
+                        <Download className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => setShowDeleteConfirm(true)}
+                        className="w-10 h-10 rounded-xl bg-zinc-100 text-zinc-400 hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition-colors"
+                      >
+                        <Trash2 className="w-5 h-5" />
                       </button>
                     </div>
                   </div>
-
-                  {/* Action buttons */}
-                  <div className="flex gap-3">
-                    <button 
-                      disabled={!!navigatingTo}
-                      onClick={() => {
-                        const imageUrl = selectedItem.gen.outputImageUrls[selectedItem.index]
-                        sessionStorage.setItem('tryOnImage', imageUrl)
-                        setNavigatingTo('try-on')
-                        router.push("/try-on")
-                      }}
-                      className="flex-1 h-12 rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-70"
-                    >
-                      {navigatingTo === 'try-on' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                      {t.gallery.goTryOn || '去换装'}
-                    </button>
-                    <button 
-                      disabled={!!navigatingTo}
-                      onClick={() => {
-                        const imageUrl = selectedItem.gen.outputImageUrls[selectedItem.index]
-                        sessionStorage.setItem('editImage', imageUrl)
-                        setNavigatingTo('edit')
-                        router.push("/edit/general")
-                      }}
-                      className="flex-1 h-12 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-70"
-                    >
-                      {navigatingTo === 'edit' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
-                      {t.gallery.goEdit}
-                    </button>
-                  </div>
-                  <div className="flex gap-3 mt-3">
-                    <button 
-                      disabled={!!navigatingTo}
-                      onClick={() => {
-                        const imageUrl = selectedItem.gen.outputImageUrls[selectedItem.index]
-                        sessionStorage.setItem('groupShootImage', imageUrl)
-                        setNavigatingTo('group')
-                        router.push("/group-shot")
-                      }}
-                      className="flex-1 h-12 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-70"
-                    >
-                      {navigatingTo === 'group' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Grid3X3 className="w-4 h-4" />}
-                      {t.gallery.goGroupShoot || '拍组图'}
-                    </button>
-                  </div>
-                  {/* 改材质版型按钮 - 所有生成图都可用 */}
-                  {selectedItem.gen && (
-                    <div className="flex gap-3 mt-3">
+                  
+                  {/* Scrollable Content */}
+                  <div className="flex-1 overflow-y-auto px-6 py-5">
+                    {/* Quick Actions - Icon Grid */}
+                    <div className="mb-6">
+                      <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">{t.gallery?.quickActions || 'Quick Actions'}</h3>
+                      <div className="grid grid-cols-4 gap-3">
+                        <button 
+                          disabled={!!navigatingTo}
+                          onClick={() => {
+                            const imageUrl = selectedItem.gen.outputImageUrls[selectedItem.index]
+                            sessionStorage.setItem('tryOnImage', imageUrl)
+                            setNavigatingTo('try-on')
+                            router.push("/try-on")
+                          }}
+                          className="group flex flex-col items-center gap-2 p-4 rounded-xl bg-gradient-to-br from-pink-50 to-purple-50 hover:from-pink-100 hover:to-purple-100 border border-pink-100 transition-all disabled:opacity-50"
+                        >
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-purple-500 flex items-center justify-center shadow-lg shadow-pink-200/50 group-hover:scale-110 transition-transform">
+                            {navigatingTo === 'try-on' ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <Sparkles className="w-5 h-5 text-white" />}
+                          </div>
+                          <span className="text-xs font-medium text-zinc-700">{t.gallery.goTryOn || 'Try On'}</span>
+                        </button>
+                        
+                        <button 
+                          disabled={!!navigatingTo}
+                          onClick={() => {
+                            const imageUrl = selectedItem.gen.outputImageUrls[selectedItem.index]
+                            sessionStorage.setItem('editImage', imageUrl)
+                            setNavigatingTo('edit')
+                            router.push("/edit/general")
+                          }}
+                          className="group flex flex-col items-center gap-2 p-4 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-100 transition-all disabled:opacity-50"
+                        >
+                          <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center shadow-lg shadow-blue-200/50 group-hover:scale-110 transition-transform">
+                            {navigatingTo === 'edit' ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <Wand2 className="w-5 h-5 text-white" />}
+                          </div>
+                          <span className="text-xs font-medium text-zinc-700">{t.gallery.goEdit || 'Edit'}</span>
+                        </button>
+                        
+                        <button 
+                          disabled={!!navigatingTo}
+                          onClick={() => {
+                            const imageUrl = selectedItem.gen.outputImageUrls[selectedItem.index]
+                            sessionStorage.setItem('groupShootImage', imageUrl)
+                            setNavigatingTo('group')
+                            router.push("/group-shot")
+                          }}
+                          className="group flex flex-col items-center gap-2 p-4 rounded-xl bg-cyan-50 hover:bg-cyan-100 border border-cyan-100 transition-all disabled:opacity-50"
+                        >
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-cyan-200/50 group-hover:scale-110 transition-transform">
+                            {navigatingTo === 'group' ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <Grid3X3 className="w-5 h-5 text-white" />}
+                          </div>
+                          <span className="text-xs font-medium text-zinc-700">{t.gallery.goGroupShoot || 'Group'}</span>
+                        </button>
+                        
+                        <button 
+                          disabled={!!navigatingTo}
+                          onClick={() => {
+                            const imageUrl = selectedItem.gen.outputImageUrls[selectedItem.index]
+                            const inputImages: string[] = []
+                            if (selectedItem.gen.params?.productImages && selectedItem.gen.params.productImages.length > 0) {
+                              inputImages.push(...selectedItem.gen.params.productImages)
+                            } else if (selectedItem.gen.inputImageUrl) {
+                              inputImages.push(selectedItem.gen.inputImageUrl)
+                            }
+                            sessionStorage.setItem('modifyMaterial_outputImage', imageUrl)
+                            sessionStorage.setItem('modifyMaterial_inputImages', JSON.stringify(inputImages))
+                            setNavigatingTo('material')
+                            router.push("/gallery/modify-material")
+                          }}
+                          className="group flex flex-col items-center gap-2 p-4 rounded-xl bg-gradient-to-br from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 border border-purple-100 transition-all disabled:opacity-50"
+                        >
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-200/50 group-hover:scale-110 transition-transform">
+                            {navigatingTo === 'material' ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <Palette className="w-5 h-5 text-white" />}
+                          </div>
+                          <span className="text-xs font-medium text-zinc-700">{t.gallery.modifyMaterial || 'Material'}</span>
+                        </button>
+                      </div>
+                      
+                      {/* Save as Asset - Secondary action */}
                       <button 
-                        disabled={!!navigatingTo}
-                        onClick={() => {
-                          const imageUrl = selectedItem.gen.outputImageUrls[selectedItem.index]
-                          // 收集原始商品图
-                          const inputImages: string[] = []
-                          // 优先使用 outfit 模式的多商品图
-                          if (selectedItem.gen.params?.productImages && selectedItem.gen.params.productImages.length > 0) {
-                            inputImages.push(...selectedItem.gen.params.productImages)
-                          }
-                          // 否则使用单个商品图
-                          else if (selectedItem.gen.inputImageUrl) {
-                            inputImages.push(selectedItem.gen.inputImageUrl)
-                          }
-                          // 保存到 sessionStorage
-                          sessionStorage.setItem('modifyMaterial_outputImage', imageUrl)
-                          sessionStorage.setItem('modifyMaterial_inputImages', JSON.stringify(inputImages))
-                          setNavigatingTo('material')
-                          router.push("/gallery/modify-material")
-                        }}
-                        className="flex-1 h-12 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-70"
+                        onClick={() => setShowSaveMenu(true)}
+                        className="w-full mt-3 h-11 rounded-xl border border-zinc-200 hover:bg-zinc-50 text-zinc-600 font-medium flex items-center justify-center gap-2 transition-colors"
                       >
-                        {navigatingTo === 'material' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Palette className="w-4 h-4" />}
-                        {t.gallery.modifyMaterial || '改材质版型'}
+                        <FolderPlus className="w-4 h-4" />
+                        {t.gallery.saveAsAsset || 'Save as Asset'}
                       </button>
                     </div>
-                  )}
-                  <div className="flex gap-3 mt-3">
-                    <button 
-                      onClick={() => setShowSaveMenu(true)}
-                      className="flex-1 h-12 rounded-lg border border-zinc-200 hover:bg-zinc-50 text-zinc-700 font-medium flex items-center justify-center gap-2 transition-colors"
-                    >
-                      <FolderPlus className="w-4 h-4" />
-                      {t.gallery.saveAsAsset || '存为素材'}
-                    </button>
-                  </div>
                   
                   {/* Input Images Section - Show for all users (only user inputs, not random selections) */}
                   {(() => {
@@ -1765,9 +1770,177 @@ export default function GalleryPage() {
                     </div>
                   </div>
                   )}
+                  </div>
+                </div>
+              </motion.div>
+            ) : (
+              /* ========== Mobile Web: Original Full-screen Layout ========== */
+              <div className="h-full flex flex-col overflow-hidden">
+                {/* Header */}
+                <div className="h-14 flex items-center justify-between px-4 bg-white border-b shrink-0">
+                  <button
+                    onClick={() => {
+                      setSelectedItem(null)
+                      setNavigatingTo(null)
+                    }}
+                    className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center transition-colors"
+                  >
+                    <X className="w-5 h-5 text-zinc-700" />
+                  </button>
+                  <span className="font-semibold text-zinc-900">{t.gallery.detail}</span>
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="w-10 h-10 -mr-2 rounded-full hover:bg-red-50 flex items-center justify-center transition-colors text-zinc-400 hover:text-red-500"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Content - Scrollable */}
+                <div className="flex-1 min-h-0 overflow-y-auto bg-zinc-100 pb-20">
+                  <div className="bg-zinc-900">
+                    <div 
+                      className="relative aspect-square max-h-[50vh] mx-auto cursor-pointer group shrink-0"
+                      onClick={() => setFullscreenImage(selectedItem.gen.outputImageUrls[selectedItem.index])}
+                    >
+                      <img 
+                        src={selectedItem.gen.outputImageUrls[selectedItem.index]} 
+                        alt="Detail" 
+                        className="w-full h-full object-contain" 
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 pointer-events-none">
+                        <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                          <ZoomIn className="w-6 h-6 text-zinc-700" />
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-center text-zinc-500 text-xs py-2">{t.imageActions.longPressSave}</p>
+                  </div>
+                  
+                  <div className="p-4 bg-white pb-8">
+                    {/* Type and date info */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        {(() => {
+                          const typeInfo = getTypeLabel(selectedItem.gen, selectedItem.index, debugMode)
+                          return (
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`px-2 py-0.5 rounded text-xs font-medium text-white ${typeInfo.color}`}>
+                                {typeInfo.label}
+                              </span>
+                              {typeInfo.subLabel && (
+                                <span className={`px-2 py-0.5 rounded text-xs font-medium text-white ${typeInfo.subColor}`}>
+                                  {typeInfo.subLabel}
+                                </span>
+                              )}
+                            </div>
+                          )
+                        })()}
+                        <p className="text-xs text-zinc-400">
+                          {new Date(selectedItem.gen.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleFavoriteToggle(selectedItem.gen.dbId || selectedItem.gen.id, selectedItem.index)}
+                          className={`w-10 h-10 rounded-lg border flex items-center justify-center transition-colors ${
+                            isFavorited(selectedItem.gen.dbId || selectedItem.gen.id, selectedItem.index)
+                              ? "bg-red-50 border-red-200 text-red-500"
+                              : "border-zinc-200 text-zinc-600 hover:bg-zinc-50"
+                          }`}
+                        >
+                          <Heart className={`w-4 h-4 ${isFavorited(selectedItem.gen.dbId || selectedItem.gen.id, selectedItem.index) ? "fill-current" : ""}`} />
+                        </button>
+                        <button
+                          onClick={() => handleDownload(selectedItem.gen.outputImageUrls[selectedItem.index], selectedItem.gen.dbId || selectedItem.gen.id, selectedItem.index)}
+                          className="w-10 h-10 rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-50 flex items-center justify-center transition-colors"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex gap-3">
+                      <button 
+                        disabled={!!navigatingTo}
+                        onClick={() => {
+                          const imageUrl = selectedItem.gen.outputImageUrls[selectedItem.index]
+                          sessionStorage.setItem('tryOnImage', imageUrl)
+                          setNavigatingTo('try-on')
+                          router.push("/try-on")
+                        }}
+                        className="flex-1 h-12 rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-70"
+                      >
+                        {navigatingTo === 'try-on' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                        {t.gallery.goTryOn || '去换装'}
+                      </button>
+                      <button 
+                        disabled={!!navigatingTo}
+                        onClick={() => {
+                          const imageUrl = selectedItem.gen.outputImageUrls[selectedItem.index]
+                          sessionStorage.setItem('editImage', imageUrl)
+                          setNavigatingTo('edit')
+                          router.push("/edit/general")
+                        }}
+                        className="flex-1 h-12 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-70"
+                      >
+                        {navigatingTo === 'edit' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                        {t.gallery.goEdit}
+                      </button>
+                    </div>
+                    <div className="flex gap-3 mt-3">
+                      <button 
+                        disabled={!!navigatingTo}
+                        onClick={() => {
+                          const imageUrl = selectedItem.gen.outputImageUrls[selectedItem.index]
+                          sessionStorage.setItem('groupShootImage', imageUrl)
+                          setNavigatingTo('group')
+                          router.push("/group-shot")
+                        }}
+                        className="flex-1 h-12 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-70"
+                      >
+                        {navigatingTo === 'group' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Grid3X3 className="w-4 h-4" />}
+                        {t.gallery.goGroupShoot || '拍组图'}
+                      </button>
+                    </div>
+                    {selectedItem.gen && (
+                      <div className="flex gap-3 mt-3">
+                        <button 
+                          disabled={!!navigatingTo}
+                          onClick={() => {
+                            const imageUrl = selectedItem.gen.outputImageUrls[selectedItem.index]
+                            const inputImages: string[] = []
+                            if (selectedItem.gen.params?.productImages && selectedItem.gen.params.productImages.length > 0) {
+                              inputImages.push(...selectedItem.gen.params.productImages)
+                            } else if (selectedItem.gen.inputImageUrl) {
+                              inputImages.push(selectedItem.gen.inputImageUrl)
+                            }
+                            sessionStorage.setItem('modifyMaterial_outputImage', imageUrl)
+                            sessionStorage.setItem('modifyMaterial_inputImages', JSON.stringify(inputImages))
+                            setNavigatingTo('material')
+                            router.push("/gallery/modify-material")
+                          }}
+                          className="flex-1 h-12 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-70"
+                        >
+                          {navigatingTo === 'material' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Palette className="w-4 h-4" />}
+                          {t.gallery.modifyMaterial || '改材质版型'}
+                        </button>
+                      </div>
+                    )}
+                    <div className="flex gap-3 mt-3">
+                      <button 
+                        onClick={() => setShowSaveMenu(true)}
+                        className="flex-1 h-12 rounded-lg border border-zinc-200 hover:bg-zinc-50 text-zinc-700 font-medium flex items-center justify-center gap-2 transition-colors"
+                      >
+                        <FolderPlus className="w-4 h-4" />
+                        {t.gallery.saveAsAsset || '存为素材'}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
             
             {/* Save Menu */}
             <AnimatePresence>
