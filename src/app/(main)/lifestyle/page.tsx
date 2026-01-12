@@ -41,6 +41,7 @@ function LifestylePageContent() {
   
   const webcamRef = useRef<Webcam>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef2 = useRef<HTMLInputElement>(null)
   const modelUploadRef = useRef<HTMLInputElement>(null)
   const sceneUploadRef = useRef<HTMLInputElement>(null)
   
@@ -61,11 +62,15 @@ function LifestylePageContent() {
   // State
   const [mode, setMode] = useState<PageMode>("camera")
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
+  const [capturedImage2, setCapturedImage2] = useState<string | null>(null)
   const [hasCamera, setHasCamera] = useState(true)
   const [cameraReady, setCameraReady] = useState(false)
   const [permissionChecked, setPermissionChecked] = useState(false)
   const [productFromPhone, setProductFromPhone] = useState(false)
+  const [product2FromPhone, setProduct2FromPhone] = useState(false)
   const [showProductPanel, setShowProductPanel] = useState(false)
+  const [showProduct2Panel, setShowProduct2Panel] = useState(false)
+  const [product2SourceTab, setProduct2SourceTab] = useState<'album' | 'asset'>('album')
   const [lifestyleStatus, setLifestyleStatus] = useState<string>('')
   
   // Custom model/scene selection
@@ -226,9 +231,20 @@ function LifestylePageContent() {
     }
   }
 
+  const handleFileUpload2 = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const base64 = await fileToBase64(file)
+      setCapturedImage2(base64)
+      setProduct2FromPhone(true)
+    }
+  }
+
   const handleRetake = () => {
     setCapturedImage(null)
+    setCapturedImage2(null)
     setProductFromPhone(false)
+    setProduct2FromPhone(false)
     setSelectedModelId(null)
     setSelectedSceneId(null)
     setGeneratedImages([])
@@ -512,6 +528,13 @@ function LifestylePageContent() {
       />
       <input 
         type="file" 
+        ref={fileInputRef2} 
+        className="hidden" 
+        accept="image/*" 
+        onChange={handleFileUpload2}
+      />
+      <input 
+        type="file" 
         ref={modelUploadRef} 
         className="hidden" 
         accept="image/*" 
@@ -691,19 +714,38 @@ function LifestylePageContent() {
                           </div>
                         </div>
                         
-                        {/* Outfit Button */}
-                        <button
-                          onClick={() => {
-                            if (capturedImage) {
-                              sessionStorage.setItem('lifestyleProduct1Image', capturedImage)
-                              router.push('/lifestyle/outfit')
-                            }
-                          }}
-                          className="w-full h-12 rounded-xl border-2 border-dashed border-zinc-300 hover:border-purple-400 flex items-center justify-center gap-2 text-zinc-500 hover:text-purple-600 transition-colors"
-                        >
-                          <Plus className="w-4 h-4" />
-                          <span className="text-sm">{t.lifestyle?.outfitMode || '搭配商品'}</span>
-                        </button>
+                        {/* Additional Products */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm font-medium text-zinc-900">{t.proStudio?.additionalProducts || 'Additional Products (Optional)'}</span>
+                            <span className="text-xs text-zinc-400">{(t.proStudio?.maxItems || 'Max {count} items').replace('{count}', '4')}</span>
+                          </div>
+                          <div className="grid grid-cols-4 gap-2">
+                            {capturedImage2 ? (
+                              <div className="aspect-square rounded-lg overflow-hidden relative group border border-zinc-200">
+                                <img src={capturedImage2} alt="商品2" className="w-full h-full object-cover" />
+                                <button
+                                  onClick={() => setCapturedImage2(null)}
+                                  className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <X className="w-3 h-3 text-white" />
+                                </button>
+                              </div>
+                            ) : null}
+                            {!capturedImage2 && (
+                              <button
+                                onClick={() => setShowProduct2Panel(true)}
+                                className="aspect-square rounded-lg border-2 border-dashed border-zinc-300 hover:border-purple-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                              >
+                                <Plus className="w-5 h-5 text-zinc-400" />
+                                <span className="text-[10px] text-zinc-400">{t.proStudio?.add || 'Add'}</span>
+                              </button>
+                            )}
+                          </div>
+                          <p className="text-xs text-zinc-400 mt-3">
+                            {t.proStudio?.addMoreTip || '💡 Add more products for outfit combination effect'}
+                          </p>
+                        </div>
                         
                         {/* Generate Button */}
                         <button
@@ -1673,6 +1715,233 @@ function LifestylePageContent() {
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+      
+      {/* 第二件商品选择面板 - PC: centered modal */}
+      <AnimatePresence>
+        {showProduct2Panel && isDesktop && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/40 z-[60]"
+              onClick={() => setShowProduct2Panel(false)}
+            />
+            <div className="fixed inset-0 z-[70] flex items-center justify-center pointer-events-none">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }} 
+                animate={{ opacity: 1, scale: 1 }} 
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="w-[90vw] max-w-3xl bg-white rounded-2xl max-h-[80vh] flex flex-col overflow-hidden shadow-xl pointer-events-auto"
+              >
+                <div className="h-14 border-b flex items-center justify-between px-6 shrink-0">
+                  <span className="font-semibold text-lg">{t.proStudio?.styleOutfit || '搭配商品'}</span>
+                  <button 
+                    onClick={() => setShowProduct2Panel(false)} 
+                    className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center"
+                  >
+                    <X className="w-5 h-5 text-zinc-500" />
+                  </button>
+                </div>
+                
+                <div className="px-6 py-3 border-b bg-white shrink-0">
+                  <div className="flex bg-zinc-100 rounded-lg p-1 max-w-md">
+                    <button
+                      onClick={() => setProduct2SourceTab("album")}
+                      className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
+                        product2SourceTab === "album"
+                          ? "bg-white text-zinc-900 shadow-sm"
+                          : "text-zinc-500 hover:text-zinc-700"
+                      }`}
+                    >
+                      {t.proStudio?.fromAlbum || '从相册上传'}
+                    </button>
+                    <button
+                      onClick={() => setProduct2SourceTab("asset")}
+                      className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
+                        product2SourceTab === "asset"
+                          ? "bg-white text-zinc-900 shadow-sm"
+                          : "text-zinc-500 hover:text-zinc-700"
+                      }`}
+                    >
+                      {t.proStudio?.fromAssets || '从资产库选择'}
+                      {userProducts.length > 0 && (
+                        <span className="ml-1 text-zinc-400">({userProducts.length})</span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto p-6">
+                  {product2SourceTab === "album" ? (
+                    <div className="flex flex-col items-center justify-center py-16">
+                      <button
+                        onClick={() => {
+                          setShowProduct2Panel(false)
+                          fileInputRef2.current?.click()
+                        }}
+                        className="w-40 h-40 rounded-2xl bg-zinc-100 flex flex-col items-center justify-center gap-3 hover:bg-zinc-200 transition-colors border-2 border-dashed border-zinc-300"
+                      >
+                        <ImageIcon className="w-12 h-12 text-zinc-400" />
+                        <span className="text-sm text-zinc-600">{t.proStudio?.clickToUpload || 'Click to upload'}</span>
+                      </button>
+                      <p className="text-xs text-zinc-500 mt-4">{t.proStudio?.supportedFormats || 'Supports JPG, PNG formats'}</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-5 gap-4">
+                      {PRESET_PRODUCTS.map(product => (
+                        <div 
+                          key={product.id}
+                          className="relative group cursor-pointer"
+                          onClick={() => {
+                            setCapturedImage2(product.imageUrl)
+                            setProduct2FromPhone(false)
+                            setShowProduct2Panel(false)
+                          }}
+                        >
+                          <div className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-purple-500 transition-all">
+                            <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
+                            <span className="absolute top-2 left-2 bg-purple-500 text-white text-[10px] px-1.5 py-0.5 rounded font-medium">
+                              {t.common?.official || '官方'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-zinc-600 mt-2 truncate text-center">{product.name}</p>
+                        </div>
+                      ))}
+                      {userProducts.map(product => (
+                        <div 
+                          key={product.id}
+                          className="relative group cursor-pointer"
+                          onClick={() => {
+                            setCapturedImage2(product.imageUrl)
+                            setProduct2FromPhone(false)
+                            setShowProduct2Panel(false)
+                          }}
+                        >
+                          <div className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-purple-500 transition-all">
+                            <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
+                          </div>
+                          <p className="text-xs text-zinc-600 mt-2 truncate text-center">{product.name}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
+      
+      {/* 第二件商品选择面板 - Mobile: slide-up */}
+      <AnimatePresence>
+        {showProduct2Panel && !isDesktop && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 z-[60] backdrop-blur-sm"
+              onClick={() => setShowProduct2Panel(false)}
+            />
+            <motion.div 
+              initial={{ y: "100%" }} 
+              animate={{ y: 0 }} 
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed bottom-0 left-0 right-0 h-[60%] bg-white dark:bg-zinc-900 rounded-t-2xl z-[70] flex flex-col overflow-hidden"
+            >
+              <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
+                <span className="font-semibold">{t.proStudio?.styleOutfit || '搭配商品'}</span>
+                <button 
+                  onClick={() => setShowProduct2Panel(false)} 
+                  className="h-8 w-8 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              
+              <div className="px-4 py-2 border-b bg-white dark:bg-zinc-900">
+                <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1">
+                  <button
+                    onClick={() => setProduct2SourceTab("album")}
+                    className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${
+                      product2SourceTab === "album"
+                        ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
+                        : "text-zinc-500 hover:text-zinc-700"
+                    }`}
+                  >
+                    {t.proStudio?.fromAlbum || '从相册上传'}
+                  </button>
+                  <button
+                    onClick={() => setProduct2SourceTab("asset")}
+                    className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${
+                      product2SourceTab === "asset"
+                        ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
+                        : "text-zinc-500 hover:text-zinc-700"
+                    }`}
+                  >
+                    {t.proStudio?.fromAssets || '从资产库选择'}
+                    {userProducts.length > 0 && (
+                      <span className="ml-1 text-zinc-400">({userProducts.length})</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4">
+                {product2SourceTab === "album" ? (
+                  <div className="flex flex-col items-center justify-center h-full">
+                    <button
+                      onClick={() => {
+                        setShowProduct2Panel(false)
+                        fileInputRef2.current?.click()
+                      }}
+                      className="w-32 h-32 rounded-2xl bg-zinc-200 dark:bg-zinc-800 flex flex-col items-center justify-center gap-3 hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-colors"
+                    >
+                      <ImageIcon className="w-10 h-10 text-zinc-500" />
+                      <span className="text-sm text-zinc-600 dark:text-zinc-400">{t.proStudio?.clickToUpload || 'Click to upload'}</span>
+                    </button>
+                    <p className="text-xs text-zinc-500 mt-4">{t.proStudio?.supportedFormats || 'Supports JPG, PNG formats'}</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 gap-3 pb-20">
+                    {PRESET_PRODUCTS.map(product => (
+                      <button
+                        key={product.id}
+                        onClick={() => {
+                          setCapturedImage2(product.imageUrl)
+                          setProduct2FromPhone(false)
+                          setShowProduct2Panel(false)
+                        }}
+                        className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-purple-500 transition-all"
+                      >
+                        <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
+                        <span className="absolute top-1 left-1 bg-purple-500 text-white text-[8px] px-1 py-0.5 rounded font-medium">
+                          {t.common?.official || '官方'}
+                        </span>
+                      </button>
+                    ))}
+                    {userProducts.map(product => (
+                      <button
+                        key={product.id}
+                        onClick={() => {
+                          setCapturedImage2(product.imageUrl)
+                          setProduct2FromPhone(false)
+                          setShowProduct2Panel(false)
+                        }}
+                        className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-purple-500 transition-all"
+                      >
+                        <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
