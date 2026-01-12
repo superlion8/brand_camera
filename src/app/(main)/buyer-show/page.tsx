@@ -1267,37 +1267,10 @@ function CameraPageContent() {
                     </div>
                   </div>
                   
-                  {/* Three-column content */}
-                  <div className="max-w-7xl mx-auto px-8 py-8">
-                    <div className="flex gap-6">
-                      {/* Left: Image Upload */}
-                      <div className="w-[320px] shrink-0">
-                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-zinc-100">
-                          <button
-                            onClick={() => fileInputRef.current?.click()}
-                            className="w-full aspect-[3/4] max-h-[400px] rounded-2xl border-2 border-dashed border-zinc-300 hover:border-blue-400 hover:bg-blue-50/50 flex flex-col items-center justify-center gap-3 transition-all"
-                          >
-                            <div className="w-16 h-16 bg-zinc-100 rounded-2xl flex items-center justify-center">
-                              <ImageIcon className="w-8 h-8 text-zinc-400" />
-                            </div>
-                            <div className="text-center">
-                              <p className="text-sm font-medium text-zinc-700">{t.camera?.uploadProduct || '上传商品图片'}</p>
-                              <p className="text-xs text-zinc-400 mt-1">{t.common?.clickToUploadOrDrag || '点击上传或拖拽图片'}</p>
-                            </div>
-                          </button>
-                          <div className="mt-4">
-                            <button
-                              onClick={() => setShowProductPanel(true)}
-                              className="w-full h-12 rounded-xl border border-zinc-200 bg-white hover:border-blue-400 hover:bg-blue-50/50 flex items-center justify-center gap-2 transition-colors"
-                            >
-                              <FolderHeart className="w-4 h-4 text-zinc-500" />
-                              <span className="text-sm text-zinc-600">{t.camera?.assetLibrary || '素材库'}</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Right: Options */}
+                  {/* Two-column content */}
+                  <div className="max-w-5xl mx-auto px-8 py-8">
+                    <div className="flex gap-8">
+                      {/* Left: Feature Introduction */}
                       <div className="flex-1 min-w-0">
                         <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-6 space-y-6">
                           <div className="text-center py-8">
@@ -1338,6 +1311,33 @@ function CameraPageContent() {
                                 <p className="text-xs text-zinc-500">{t.proStudio?.highQualityOutputDesc || 'Professional quality images, ready for e-commerce'}</p>
                               </div>
                             </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Right: Image Upload */}
+                      <div className="w-[380px] shrink-0">
+                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-zinc-100">
+                          <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="w-full aspect-[3/4] max-h-[400px] rounded-2xl border-2 border-dashed border-zinc-300 hover:border-blue-400 hover:bg-blue-50/50 flex flex-col items-center justify-center gap-3 transition-all"
+                          >
+                            <div className="w-16 h-16 bg-zinc-100 rounded-2xl flex items-center justify-center">
+                              <ImageIcon className="w-8 h-8 text-zinc-400" />
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm font-medium text-zinc-700">{t.camera?.uploadProduct || '上传商品图片'}</p>
+                              <p className="text-xs text-zinc-400 mt-1">{t.common?.clickToUploadOrDrag || '点击上传或拖拽图片'}</p>
+                            </div>
+                          </button>
+                          <div className="mt-4">
+                            <button
+                              onClick={() => setShowProductPanel(true)}
+                              className="w-full h-12 rounded-xl border border-zinc-200 bg-white hover:border-blue-400 hover:bg-blue-50/50 flex items-center justify-center gap-2 transition-colors"
+                            >
+                              <FolderHeart className="w-4 h-4 text-zinc-500" />
+                              <span className="text-sm text-zinc-600">{t.camera?.assetLibrary || '素材库'}</span>
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -2030,9 +2030,163 @@ function CameraPageContent() {
             </AnimatePresence>
 
             
-            {/* Slide-up Panel: Product Assets */}
+            {/* Product Panel - PC: centered modal */}
             <AnimatePresence>
-              {showProductPanel && (
+              {showProductPanel && isDesktop && (
+                <>
+                  <motion.div 
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }} 
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-black/40 z-40"
+                    onClick={() => setShowProductPanel(false)}
+                  />
+                  <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.95 }} 
+                      animate={{ opacity: 1, scale: 1 }} 
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      className="w-[90vw] max-w-3xl bg-white rounded-2xl max-h-[80vh] flex flex-col overflow-hidden shadow-xl pointer-events-auto"
+                    >
+                      <div className="h-14 border-b flex items-center justify-between px-6 shrink-0">
+                        <span className="font-semibold text-lg">{t.camera.selectProduct}</span>
+                        <button 
+                          onClick={() => setShowProductPanel(false)} 
+                          className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center"
+                        >
+                          <X className="w-5 h-5 text-zinc-500" />
+                        </button>
+                      </div>
+                      
+                      <div className="px-6 py-3 border-b bg-white shrink-0">
+                        <div className="flex bg-zinc-100 rounded-lg p-1 max-w-md">
+                          <button
+                            onClick={() => setProductSourceTab("preset")}
+                            className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
+                              productSourceTab === "preset"
+                                ? "bg-white text-zinc-900 shadow-sm"
+                                : "text-zinc-500 hover:text-zinc-700"
+                            }`}
+                          >
+                            {t.camera.officialExamples}
+                            <span className="ml-1 text-zinc-400">({PRESET_PRODUCTS.length})</span>
+                          </button>
+                          <button
+                            onClick={() => setProductSourceTab("user")}
+                            className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
+                              productSourceTab === "user"
+                                ? "bg-white text-zinc-900 shadow-sm"
+                                : "text-zinc-500 hover:text-zinc-700"
+                            }`}
+                          >
+                            {t.camera.myProducts}
+                            {userProducts.length > 0 && (
+                              <span className="ml-1 text-zinc-400">({userProducts.length})</span>
+                            )}
+                          </button>
+                        </div>
+                        
+                        {productSourceTab === "user" && (
+                          <div className="flex gap-2 mt-3 flex-wrap">
+                            {PRODUCT_SUB_TABS.map(cat => {
+                              const count = cat === "all" 
+                                ? userProducts.length 
+                                : userProducts.filter(p => p.category === cat).length
+                              return (
+                                <button
+                                  key={cat}
+                                  onClick={() => setProductSubTab(cat)}
+                                  className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
+                                    productSubTab === cat
+                                      ? "bg-blue-500 text-white"
+                                      : "bg-zinc-200 text-zinc-600 hover:bg-zinc-300"
+                                  }`}
+                                >
+                                  {getProductCategoryLabel(cat, t)}
+                                  <span className="ml-1 opacity-70">({count})</span>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex-1 overflow-y-auto p-6">
+                        {productSourceTab === "preset" ? (
+                          <div className="grid grid-cols-5 gap-4">
+                            {PRESET_PRODUCTS.map(product => (
+                              <div 
+                                key={product.id} 
+                                className="relative group cursor-pointer"
+                                onClick={() => {
+                                  setCapturedImage(product.imageUrl)
+                                  setProductFromPhone(false)
+                                  setMode("review")
+                                  setShowProductPanel(false)
+                                }}
+                              >
+                                <div className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all">
+                                  <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
+                                  <span className="absolute top-2 left-2 bg-blue-500 text-white text-[10px] px-1.5 py-0.5 rounded font-medium">
+                                    {t.common.official}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-zinc-600 mt-2 truncate text-center">{product.name}</p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (() => {
+                          const filteredProducts = productSubTab === "all" 
+                            ? userProducts 
+                            : userProducts.filter(p => p.category === productSubTab)
+                          
+                          return filteredProducts.length > 0 ? (
+                            <div className="grid grid-cols-5 gap-4">
+                              {filteredProducts.map(product => (
+                                <div 
+                                  key={product.id} 
+                                  className="relative group cursor-pointer"
+                                  onClick={() => {
+                                    setCapturedImage(product.imageUrl)
+                                    setProductFromPhone(false)
+                                    setMode("review")
+                                    setShowProductPanel(false)
+                                  }}
+                                >
+                                  <div className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-blue-500 transition-all">
+                                    <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
+                                  </div>
+                                  <p className="text-xs text-zinc-600 mt-2 truncate text-center">{product.name}</p>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center justify-center py-16 text-zinc-400">
+                              <FolderHeart className="w-12 h-12 mb-3 opacity-30" />
+                              <p className="text-sm">{t.camera.noMyProducts}</p>
+                              <p className="text-xs mt-1">{t.camera.uploadInAssets}</p>
+                              <button 
+                                onClick={() => {
+                                  setShowProductPanel(false)
+                                  router.push("/brand-assets")
+                                }}
+                                className="mt-4 px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors"
+                              >
+                                {t.camera.goUpload}
+                              </button>
+                            </div>
+                          )
+                        })()}
+                      </div>
+                    </motion.div>
+                  </div>
+                </>
+              )}
+            </AnimatePresence>
+            
+            {/* Product Panel - Mobile: slide-up */}
+            <AnimatePresence>
+              {showProductPanel && !isDesktop && (
                 <>
                   <motion.div 
                     initial={{ opacity: 0 }} 
