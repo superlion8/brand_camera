@@ -33,8 +33,8 @@ type PageMode = "main" | "processing" | "results"
 type StyleMode = "lifestyle" | "studio"  // 生活模式 / 棚拍模式
 type ShootMode = "random"  // 只保留随意拍模式
 
-// 生成图片数量
-const GROUP_NUM_IMAGES = 4
+// 生成图片数量（与后端 API 保持一致，生成 5 张）
+const GROUP_NUM_IMAGES = 5
 
 // 包装组件以支持 Suspense
 function GroupShootPageContent() {
@@ -164,7 +164,7 @@ function GroupShootPageContent() {
     sessionStorage.setItem('groupTaskId', taskId)
     
     // 更新 URL（便于刷新后恢复状态）
-    router.replace('/camera/group?mode=processing')
+    router.replace('/group-shot?mode=processing')
     
     // 后台调用 quota/reserve 创建 pending 记录
     fetch('/api/quota/reserve', {
@@ -234,7 +234,7 @@ function GroupShootPageContent() {
                   firstCompleted = true
                   setMode("results")
                   // 更新 URL 为 results 模式
-                  router.replace('/camera/group?mode=results')
+                  router.replace('/group-shot?mode=results')
                 }
               } else if (data.type === 'error') {
                 updateImageSlot(taskId, data.index, {
