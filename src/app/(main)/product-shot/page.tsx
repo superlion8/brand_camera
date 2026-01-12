@@ -827,6 +827,24 @@ function StudioPageContent() {
                         </button>
                       </div>
                     </div>
+                    
+                    {/* Generate Button - PC left column */}
+                    <button
+                      onClick={(e) => {
+                        triggerFlyToGallery(e)
+                        handleGenerate()
+                      }}
+                      disabled={!productImage}
+                      className={`w-full h-12 rounded-xl text-base font-semibold gap-2 flex items-center justify-center transition-all ${
+                        !productImage
+                          ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
+                          : "bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-200/50"
+                      }`}
+                    >
+                      <Sparkles className="w-5 h-5" />
+                      <span>{t.camera.startShoot}</span>
+                      <CreditCostBadge cost={4} className="ml-2" />
+                    </button>
                   </div>
                   
                   {/* Right: Settings */}
@@ -925,25 +943,6 @@ function StudioPageContent() {
                         </div>
                       </div>
                       
-                      {/* Generate Button */}
-                      <div className="pt-4 border-t border-zinc-100">
-                        <button
-                          onClick={(e) => {
-                            triggerFlyToGallery(e)
-                            handleGenerate()
-                          }}
-                          disabled={!productImage}
-                          className={`w-full h-12 rounded-xl text-base font-semibold gap-2 flex items-center justify-center transition-all ${
-                            !productImage
-                              ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
-                              : "bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-200/50"
-                          }`}
-                        >
-                          <Sparkles className="w-5 h-5" />
-                          <span>{t.camera.startShoot}</span>
-                          <CreditCostBadge cost={4} className="ml-2" />
-                        </button>
-                </div>
             </div>
                   </div>
                 </div>

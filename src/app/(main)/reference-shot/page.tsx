@@ -554,6 +554,27 @@ export default function ReferenceShotPage() {
                 <p className="text-sm text-red-600">{error}</p>
               </div>
             )}
+            
+            {/* Generate Button - PC only, inside content area */}
+            {isDesktop && (
+              <motion.button
+                onClick={(e) => {
+                  triggerFlyToGallery(e)
+                  handleGenerate()
+                }}
+                disabled={!canGenerate}
+                whileTap={{ scale: 0.98 }}
+                className={`w-full h-14 rounded-xl text-base font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg ${
+                  canGenerate
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
+                }`}
+              >
+                <Wand2 className="w-5 h-5" />
+                {t.referenceShot?.generate || '开始生成'}
+                <CreditCostBadge cost={4} className="ml-2" />
+              </motion.button>
+            )}
           </div>
         )}
         
@@ -761,29 +782,8 @@ export default function ReferenceShotPage() {
         )}
       </div>
       
-      {/* Generate Button - Only show in upload step */}
-      {step === 'upload' && (
-        isDesktop ? (
-          <div className="max-w-4xl mx-auto px-4 pb-8">
-            <motion.button
-              onClick={(e) => {
-                triggerFlyToGallery(e)
-                handleGenerate()
-              }}
-              disabled={!canGenerate}
-              whileTap={{ scale: 0.98 }}
-              className={`w-full h-14 rounded-xl text-base font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg ${
-                canGenerate
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
-              }`}
-            >
-              <Wand2 className="w-5 h-5" />
-              {t.referenceShot?.generate || '开始生成'}
-              <CreditCostBadge cost={4} className="ml-2" />
-            </motion.button>
-          </div>
-        ) : (
+      {/* Generate Button - Mobile only, fixed at bottom */}
+      {step === 'upload' && !isDesktop && (
         <div className="fixed bottom-20 left-0 right-0 p-4 bg-white/95 backdrop-blur-lg border-t border-zinc-100 z-30">
           <motion.button
             onClick={(e) => {
@@ -803,7 +803,6 @@ export default function ReferenceShotPage() {
             <CreditCostBadge cost={4} className="ml-2" />
           </motion.button>
         </div>
-        )
       )}
       
       {/* Model Picker Modal */}
