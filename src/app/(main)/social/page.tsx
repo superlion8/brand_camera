@@ -882,15 +882,17 @@ function SocialPageContent() {
             exit={{ opacity: 0 }}
             className="flex-1 relative overflow-hidden flex flex-col"
           >
-            {/* Top Return Button */}
-            <div className="absolute top-4 left-4 z-20">
-              <button
-                onClick={mode === "review" ? handleRetake : handleReturn}
-                className="w-10 h-10 rounded-full bg-black/20 text-white hover:bg-black/40 backdrop-blur-md flex items-center justify-center transition-colors"
-              >
-                {mode === "review" ? <X className="w-6 h-6" /> : <Home className="w-5 h-5" />}
-              </button>
-            </div>
+            {/* Top Return Button - Hide on PC camera mode (has its own header) */}
+            {!(mode === "camera" && isDesktop) && (
+              <div className="absolute top-4 left-4 z-20">
+                <button
+                  onClick={mode === "review" ? handleRetake : handleReturn}
+                  className="w-10 h-10 rounded-full bg-black/20 text-white hover:bg-black/40 backdrop-blur-md flex items-center justify-center transition-colors"
+                >
+                  {mode === "review" ? <X className="w-6 h-6" /> : <Home className="w-5 h-5" />}
+                </button>
+              </div>
+            )}
             
             {/* Social Mode Badge */}
             <div className="absolute top-4 right-4 z-20">

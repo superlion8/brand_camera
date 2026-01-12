@@ -131,7 +131,7 @@ export const en: Translations = {
     title: "Buyer Show",
     takePhoto: "Photo",
     album: "Album",
-    assetLibrary: "Library",
+    assetLibrary: "Assets",
     uploadProduct: "Upload Product Image",
     uploadProductDesc: "Select a product image to start buyer show",
     selectFromAlbum: "Select from Album",
