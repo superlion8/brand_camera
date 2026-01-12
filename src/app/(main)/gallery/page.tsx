@@ -116,6 +116,9 @@ export default function GalleryPage() {
   // 使用 ref 存储 tasks 的最新值，用于在 fetchGalleryData 中标记已处理的 slots
   const tasksRef = useRef<typeof tasks>([])
   tasksRef.current = tasks
+  // 使用 ref 追踪当前 tab，用于解决 race condition 问题
+  const currentTabRef = useRef<string>('')
+  const currentSubTypeRef = useRef<string>('')
   
   // 标记从服务器获取的图片对应的 slots 为已处理
   // 这样可以防止 append useEffect 重复添加相同的图片
@@ -150,7 +153,10 @@ export default function GalleryPage() {
   const fetchGalleryData = async (page: number = 1, append: boolean = false, forceRefresh: boolean = false) => {
     if (!user) return
     
-    const cacheKey = getCacheKey(activeTab, modelSubType)
+    // 记录请求发起时的 tab 状态，用于解决 race condition
+    const requestTab = activeTab
+    const requestSubType = modelSubType
+    const cacheKey = getCacheKey(requestTab, requestSubType)
     
     // 如果不是强制刷新且有缓存（包括预加载的），直接使用缓存
     if (!forceRefresh && !append) {
@@ -175,11 +181,18 @@ export default function GalleryPage() {
       console.log(`[Gallery] Fetching from server: ${cacheKey}, page=${page}, forceRefresh=${forceRefresh}`)
       
       // 模特 tab 下传递二级分类参数
-      const subType = activeTab === 'model' ? modelSubType : ''
-      const response = await fetch(`/api/gallery?type=${activeTab}&page=${page}&subType=${subType}`, {
+      const subType = requestTab === 'model' ? requestSubType : ''
+      const response = await fetch(`/api/gallery?type=${requestTab}&page=${page}&subType=${subType}`, {
         cache: 'no-store', // 禁用缓存，确保获取最新数据
       })
       const result = await response.json()
+      
+      // 🔧 Race Condition 修复：检查请求返回时 tab 是否已切换
+      // 如果用户已切换到其他 tab，忽略这个过时的响应
+      if (currentTabRef.current !== requestTab || currentSubTypeRef.current !== requestSubType) {
+        console.log(`[Gallery] Ignoring stale response for ${cacheKey}, current tab is ${currentTabRef.current}`)
+        return
+      }
       
       if (result.success) {
         if (append) {
@@ -217,9 +230,12 @@ export default function GalleryPage() {
     } catch (error) {
       console.error('Failed to fetch gallery data:', error)
     } finally {
-      setIsLoading(false)
-      setIsLoadingMore(false)
-      setIsRefreshing(false)
+      // 只有当前 tab 仍然匹配时才更新 loading 状态
+      if (currentTabRef.current === requestTab && currentSubTypeRef.current === requestSubType) {
+        setIsLoading(false)
+        setIsLoadingMore(false)
+        setIsRefreshing(false)
+      }
     }
   }
   
@@ -234,6 +250,19 @@ export default function GalleryPage() {
   // 注意：全局预加载由 GalleryPreloader 组件在首页完成，这里只需使用缓存
   useEffect(() => {
     if (user) {
+      // 🔧 更新当前 tab ref，用于 race condition 检测
+      currentTabRef.current = activeTab
+      currentSubTypeRef.current = modelSubType
+      
+      // 🔧 问题1修复：切换 tab 时，如果没有缓存，先清空数据让 loading 正确显示
+      const cacheKey = getCacheKey(activeTab, modelSubType)
+      const cached = getCache(cacheKey)
+      if (!cached) {
+        // 没有缓存时清空列表，让骨架屏显示
+        setGalleryItems([])
+        setIsLoading(true)
+      }
+      
       // fetchGalleryData 内部会检查缓存，命中则立即返回
       fetchGalleryData(1, false, false)
     }
