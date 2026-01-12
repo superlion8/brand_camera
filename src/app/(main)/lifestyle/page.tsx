@@ -568,11 +568,11 @@ function LifestylePageContent() {
             {/* Viewfinder */}
             <div className={`flex-1 relative ${isDesktop ? 'bg-zinc-50' : 'bg-zinc-900'}`}>
               {mode === "camera" && isDesktop ? (
-                /* PC Desktop: Show upload interface with two-column layout */
+                /* PC Desktop: Show upload interface with wider layout */
                 <div className="absolute inset-0 overflow-y-auto bg-zinc-50">
                   {/* PC Header */}
                   <div className="bg-white border-b border-zinc-200">
-                    <div className="max-w-5xl mx-auto px-8 py-5">
+                    <div className="max-w-7xl mx-auto px-8 py-5">
                       <div className="flex items-center gap-3">
                         <button 
                           onClick={() => router.push('/')}
@@ -585,11 +585,11 @@ function LifestylePageContent() {
                     </div>
                   </div>
                   
-                  {/* Two-column content */}
-                  <div className="max-w-5xl mx-auto px-8 py-8">
-                    <div className="flex gap-8">
+                  {/* Three-column content */}
+                  <div className="max-w-7xl mx-auto px-8 py-8">
+                    <div className="flex gap-6">
                       {/* Left: Image Upload */}
-                      <div className="w-[380px] shrink-0">
+                      <div className="w-[320px] shrink-0">
                         <div className="bg-white rounded-2xl p-6 shadow-sm border border-zinc-100">
                           <button
                             onClick={() => fileInputRef.current?.click()}
@@ -663,11 +663,11 @@ function LifestylePageContent() {
                   </div>
                 </div>
               ) : mode === "review" && isDesktop ? (
-                /* Desktop Review Mode - Two Column Layout */
+                /* Desktop Review Mode - Three Column Layout */
                 <div className="absolute inset-0 overflow-y-auto bg-zinc-50">
                   {/* PC Header */}
                   <div className="bg-white border-b border-zinc-200">
-                    <div className="max-w-5xl mx-auto px-8 py-5">
+                    <div className="max-w-7xl mx-auto px-8 py-5">
                       <div className="flex items-center gap-3">
                         <button 
                           onClick={handleRetake}
@@ -680,11 +680,11 @@ function LifestylePageContent() {
                     </div>
                   </div>
                   
-                  {/* Two-column content */}
-                  <div className="max-w-5xl mx-auto px-8 py-8">
-                    <div className="flex gap-8">
-                        {/* Left: Product Image */}
-                      <div className="w-[380px] shrink-0 space-y-4">
+                  {/* Three-column content */}
+                  <div className="max-w-7xl mx-auto px-8 py-8">
+                    <div className="flex gap-6">
+                      {/* Left: Product Image & Generate Button */}
+                      <div className="w-[320px] shrink-0 space-y-4">
                         <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 overflow-hidden">
                           <div className="p-3 border-b border-zinc-100 flex items-center justify-between">
                             <span className="text-sm font-medium text-zinc-900">{t.lifestyle?.uploadProduct || '商品图'}</span>
@@ -710,21 +710,30 @@ function LifestylePageContent() {
                           <Plus className="w-4 h-4" />
                           <span className="text-sm">{t.lifestyle?.outfitMode || '搭配商品'}</span>
                         </button>
+                        
+                        {/* Generate Button */}
+                        <button
+                          onClick={handleLifestyleGenerate}
+                          className="w-full h-14 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-lg font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg shadow-purple-200/50"
+                        >
+                          <Wand2 className="w-5 h-5" />
+                          {t.lifestyle?.startGenerate || '开始生成'}
+                          <CreditCostBadge cost={4} className="ml-2" />
+                        </button>
                       </div>
                       
-                      {/* Right: Settings */}
-                      <div className="flex-1 min-w-0 space-y-6">
-                        {/* Model Selection */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-6">
-                          <div className="flex items-center justify-between mb-4">
+                      {/* Middle: Model Selection */}
+                      <div className="flex-1 min-w-0">
+                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-5 h-full">
+                          <div className="flex items-center justify-between mb-3">
                             <h3 className="font-semibold text-zinc-900">{t.lifestyle?.selectModel || '选择模特'}</h3>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
                               {selectedModelId && (
                                 <button onClick={() => setSelectedModelId(null)} className="text-xs text-zinc-500 hover:text-zinc-700">
-                                  {t.proStudio?.clearSelection || '清除选择'}
+                                  {t.proStudio?.clearSelection || '清除'}
                                 </button>
                               )}
-                              {allModels.length > 7 && (
+                              {allModels.length > 5 && (
                                 <button 
                                   onClick={() => {
                                     setActiveCustomTab("model")
@@ -737,20 +746,20 @@ function LifestylePageContent() {
                               )}
                             </div>
                           </div>
-                          <p className="text-sm text-zinc-500 mb-4">{t.common?.randomMatchHint || '不选则随机匹配'}</p>
-                          <div className="grid grid-cols-4 gap-3">
+                          <p className="text-xs text-zinc-500 mb-3">{t.common?.randomMatchHint || '不选则随机匹配'}</p>
+                          <div className="grid grid-cols-3 gap-2">
                             <button
                               onClick={() => modelUploadRef.current?.click()}
-                              className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-purple-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                              className="aspect-[3/4] rounded-lg border-2 border-dashed border-zinc-300 hover:border-purple-400 flex flex-col items-center justify-center gap-1 transition-colors"
                             >
-                              <Plus className="w-5 h-5 text-zinc-400" />
+                              <Plus className="w-4 h-4 text-zinc-400" />
                               <span className="text-[10px] text-zinc-400">{t.proStudio?.upload || 'Upload'}</span>
                             </button>
-                            {allModels.slice(0, 7).map(model => (
+                            {allModels.slice(0, 5).map(model => (
                               <button
                                 key={model.id}
                                 onClick={() => setSelectedModelId(selectedModelId === model.id ? null : model.id)}
-                                className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
+                                className={`aspect-[3/4] rounded-lg overflow-hidden relative border-2 transition-all ${
                                   selectedModelId === model.id 
                                     ? 'border-purple-500 ring-2 ring-purple-500/30' 
                                     : 'border-transparent hover:border-purple-300'
@@ -758,26 +767,28 @@ function LifestylePageContent() {
                               >
                                 <Image src={model.imageUrl} alt={model.name || ''} fill className="object-cover" />
                                 {selectedModelId === model.id && (
-                                  <div className="absolute top-1 right-1 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
-                                    <Check className="w-3 h-3 text-white" />
+                                  <div className="absolute top-1 right-1 w-4 h-4 bg-purple-500 rounded-full flex items-center justify-center">
+                                    <Check className="w-2.5 h-2.5 text-white" />
                                   </div>
                                 )}
                               </button>
                             ))}
                           </div>
                         </div>
-                        
-                        {/* Scene Selection */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-6">
-                          <div className="flex items-center justify-between mb-4">
+                      </div>
+                      
+                      {/* Right: Scene Selection */}
+                      <div className="flex-1 min-w-0">
+                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-5 h-full">
+                          <div className="flex items-center justify-between mb-3">
                             <h3 className="font-semibold text-zinc-900">{t.lifestyle?.selectScene || '选择场景'}</h3>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
                               {selectedSceneId && (
                                 <button onClick={() => setSelectedSceneId(null)} className="text-xs text-zinc-500 hover:text-zinc-700">
-                                  {t.proStudio?.clearSelection || '清除选择'}
+                                  {t.proStudio?.clearSelection || '清除'}
                                 </button>
                               )}
-                              {allScenes.length > 7 && (
+                              {allScenes.length > 5 && (
                                 <button 
                                   onClick={() => {
                                     setActiveCustomTab("scene")
@@ -790,20 +801,20 @@ function LifestylePageContent() {
                               )}
                             </div>
                           </div>
-                          <p className="text-sm text-zinc-500 mb-4">{t.common?.randomMatchHint || '不选则随机匹配'}</p>
-                          <div className="grid grid-cols-4 gap-3">
+                          <p className="text-xs text-zinc-500 mb-3">{t.common?.randomMatchHint || '不选则随机匹配'}</p>
+                          <div className="grid grid-cols-3 gap-2">
                             <button
                               onClick={() => sceneUploadRef.current?.click()}
-                              className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-purple-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                              className="aspect-[3/4] rounded-lg border-2 border-dashed border-zinc-300 hover:border-purple-400 flex flex-col items-center justify-center gap-1 transition-colors"
                             >
-                              <Plus className="w-5 h-5 text-zinc-400" />
+                              <Plus className="w-4 h-4 text-zinc-400" />
                               <span className="text-[10px] text-zinc-400">{t.proStudio?.upload || 'Upload'}</span>
                             </button>
-                            {allScenes.slice(0, 7).map(scene => (
+                            {allScenes.slice(0, 5).map(scene => (
                               <button
                                 key={scene.id}
                                 onClick={() => setSelectedSceneId(selectedSceneId === scene.id ? null : scene.id)}
-                                className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
+                                className={`aspect-[3/4] rounded-lg overflow-hidden relative border-2 transition-all ${
                                   selectedSceneId === scene.id 
                                     ? 'border-purple-500 ring-2 ring-purple-500/30' 
                                     : 'border-transparent hover:border-purple-300'
@@ -811,24 +822,14 @@ function LifestylePageContent() {
                               >
                                 <Image src={scene.imageUrl} alt={scene.name || ''} fill className="object-cover" />
                                 {selectedSceneId === scene.id && (
-                                  <div className="absolute top-1 right-1 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
-                                    <Check className="w-3 h-3 text-white" />
+                                  <div className="absolute top-1 right-1 w-4 h-4 bg-purple-500 rounded-full flex items-center justify-center">
+                                    <Check className="w-2.5 h-2.5 text-white" />
                                   </div>
                                 )}
                               </button>
                             ))}
                           </div>
                         </div>
-                        
-                        {/* Generate Button */}
-                        <button
-                          onClick={handleLifestyleGenerate}
-                          className="w-full h-14 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-lg font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg shadow-purple-200/50"
-                        >
-                          <Wand2 className="w-5 h-5" />
-                          {t.lifestyle?.startGenerate || '开始生成'}
-                          <CreditCostBadge cost={4} className="ml-2" />
-                        </button>
                       </div>
                     </div>
                   </div>
@@ -844,12 +845,13 @@ function LifestylePageContent() {
                           className="fixed inset-0 bg-black/40 z-40"
                           onClick={() => setShowCustomPanel(false)}
                         />
-                        <motion.div 
-                          initial={{ opacity: 0, scale: 0.95 }} 
-                          animate={{ opacity: 1, scale: 1 }} 
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          className="fixed inset-x-8 top-1/2 -translate-y-1/2 max-w-3xl mx-auto bg-white rounded-2xl z-50 max-h-[80vh] flex flex-col overflow-hidden shadow-xl"
-                        >
+                        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+                          <motion.div 
+                            initial={{ opacity: 0, scale: 0.95 }} 
+                            animate={{ opacity: 1, scale: 1 }} 
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="w-[90vw] max-w-3xl bg-white rounded-2xl max-h-[80vh] flex flex-col overflow-hidden shadow-xl pointer-events-auto"
+                          >
                           <div className="h-14 border-b flex items-center justify-between px-6 shrink-0">
                             <div className="flex gap-4">
                               <button 
@@ -961,10 +963,11 @@ function LifestylePageContent() {
                               onClick={() => setShowCustomPanel(false)}
                               className="px-8 py-2.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium transition-colors"
                             >
-                              确定
+                              {t.common?.confirm || '确定'}
                             </button>
                           </div>
-                        </motion.div>
+                          </motion.div>
+                        </div>
                       </>
                     )}
                   </AnimatePresence>
