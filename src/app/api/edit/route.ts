@@ -14,36 +14,25 @@ async function ensureBase64Data(image: string): Promise<string> {
   return result || ''
 }
 
-// Model names
-const PRIMARY_IMAGE_MODEL = 'gemini-3-pro-image-preview'
-const FALLBACK_IMAGE_MODEL = 'gemini-2.5-flash-image'
+// Model name
+const IMAGE_MODEL = 'gemini-3-pro-image-preview'
 
-// Retry config - Pro 失败直接降级，不重试
-const PRIMARY_RETRY_COUNT = 0
-const PRIMARY_RETRY_DELAY_MS = 0
-
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
-
-function isRateLimitError(error: any): boolean {
-  const msg = error?.message?.toLowerCase() || ''
-  return msg.includes('429') || 
-         msg.includes('rate') || 
-         msg.includes('quota') ||
-         msg.includes('exhausted') ||
-         msg.includes('resource')
-}
+// Supported aspect ratios: 1:1, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9
+type AspectRatio = '1:1' | '2:3' | '3:2' | '3:4' | '4:3' | '4:5' | '5:4' | '9:16' | '16:9' | '21:9'
+// Supported resolutions: 1K, 2K, 4K
+type Resolution = '1K' | '2K' | '4K'
 
 interface ImageResult {
   image: string
-  model: 'pro' | 'flash'
+  model: 'pro'
 }
 
 interface GenerationOptions {
-  aspectRatio?: '1:1' | '3:4' | '4:3' | '16:9' | '9:16'
-  resolution?: 'standard' | 'hd'
+  aspectRatio?: AspectRatio
+  resolution?: Resolution
 }
 
-async function generateImageWithFallback(
+async function generateImage(
   client: ReturnType<typeof getGenAIClient>,
   parts: any[],
   label: string,
@@ -51,87 +40,41 @@ async function generateImageWithFallback(
 ): Promise<ImageResult | null> {
   const startTime = Date.now()
   
-  // Build config for primary model (gemini-3-pro-image-preview)
-  // Pro model supports: aspectRatio and imageSize directly in config
-  const primaryConfig: any = {
+  // Build config for gemini-3-pro-image-preview
+  const config: any = {
     responseModalities: ['IMAGE'],
     safetySettings,
   }
   
-  // Add aspectRatio if specified (Pro model supports direct aspectRatio)
+  // Add aspectRatio if specified
   if (options?.aspectRatio) {
-    primaryConfig.aspectRatio = options.aspectRatio
+    config.aspectRatio = options.aspectRatio
   }
   
-  // Add imageSize based on resolution (Pro model: "1K" or "2K")
-  if (options?.resolution === 'hd') {
-    primaryConfig.imageSize = '2K'
-  } else {
-    primaryConfig.imageSize = '1K'
-  }
+  // Add imageSize (1K, 2K, 4K)
+  config.imageSize = options?.resolution || '1K'
   
-  console.log(`[${label}] Config: aspectRatio=${options?.aspectRatio}, imageSize=${primaryConfig.imageSize}`)
+  console.log(`[${label}] Config: aspectRatio=${options?.aspectRatio}, imageSize=${config.imageSize}`)
   
-  // Try primary model with retries
-  for (let attempt = 0; attempt <= PRIMARY_RETRY_COUNT; attempt++) {
-    try {
-      if (attempt > 0) {
-        console.log(`[${label}] Retry ${attempt}/${PRIMARY_RETRY_COUNT}...`)
-        await delay(PRIMARY_RETRY_DELAY_MS * attempt)
-      }
-      
-      console.log(`[${label}] Trying ${PRIMARY_IMAGE_MODEL}...`)
-      const response = await client.models.generateContent({
-        model: PRIMARY_IMAGE_MODEL,
-        contents: [{ role: 'user', parts }],
-        config: primaryConfig,
-      })
-      
-      const result = extractImage(response)
-      if (result) {
-        console.log(`[${label}] Success with ${PRIMARY_IMAGE_MODEL} in ${Date.now() - startTime}ms`)
-        return { image: result, model: 'pro' }
-      }
-      throw new Error('No image in response')
-    } catch (err: any) {
-      console.log(`[${label}] ${PRIMARY_IMAGE_MODEL} failed: ${err?.message}`)
-      if (!isRateLimitError(err) || attempt === PRIMARY_RETRY_COUNT) break
-    }
-  }
-  
-  // Build config for fallback model (gemini-2.5-flash-image)
-  // Flash model: aspectRatio goes in imageConfig object, does NOT support imageSize
-  const flashConfig: any = {
-    responseModalities: ['IMAGE'],
-    safetySettings,
-  }
-  
-  // Add aspectRatio via imageConfig for flash model
-  if (options?.aspectRatio) {
-    flashConfig.imageConfig = {
-      aspectRatio: options.aspectRatio
-    }
-  }
-  
-  // Fallback to flash model
   try {
-    console.log(`[${label}] Trying fallback ${FALLBACK_IMAGE_MODEL}...`)
+    console.log(`[${label}] Calling ${IMAGE_MODEL}...`)
     const response = await client.models.generateContent({
-      model: FALLBACK_IMAGE_MODEL,
+      model: IMAGE_MODEL,
       contents: [{ role: 'user', parts }],
-      config: flashConfig,
+      config,
     })
     
     const result = extractImage(response)
     if (result) {
-      console.log(`[${label}] Success with fallback in ${Date.now() - startTime}ms`)
-      return { image: result, model: 'flash' }
+      console.log(`[${label}] Success in ${Date.now() - startTime}ms`)
+      return { image: result, model: 'pro' }
     }
+    console.error(`[${label}] No image in response`)
+    return null
   } catch (err: any) {
-    console.error(`[${label}] Fallback also failed: ${err?.message}`)
+    console.error(`[${label}] Failed: ${err?.message}`)
+    return null
   }
-  
-  return null
 }
 
 export async function POST(request: NextRequest) {
@@ -156,8 +99,8 @@ export async function POST(request: NextRequest) {
       vibeImage, 
       customPrompt,
       taskId, // 任务 ID，用于数据库写入
-      aspectRatio, // 宽高比: '1:1' | '3:4' | '4:3' | '16:9' | '9:16'
-      resolution,  // 分辨率: 'standard' | 'hd'
+      aspectRatio, // 宽高比: '1:1' | '2:3' | '3:2' | '3:4' | '4:3' | '4:5' | '5:4' | '9:16' | '16:9' | '21:9'
+      resolution,  // 分辨率: '1K' | '2K' | '4K'
     } = body
     
     // 兼容处理：支持单图 inputImage 和多图 inputImages
@@ -250,9 +193,9 @@ export async function POST(request: NextRequest) {
     }
     
     console.log(`[Edit] Generating edited image with ${images.length} input image(s), aspectRatio=${aspectRatio}, resolution=${resolution}...`)
-    const result = await generateImageWithFallback(client, parts, 'Edit', {
-      aspectRatio: aspectRatio as '1:1' | '3:4' | '4:3' | '16:9' | '9:16' | undefined,
-      resolution: resolution as 'standard' | 'hd' | undefined,
+    const result = await generateImage(client, parts, 'Edit', {
+      aspectRatio: aspectRatio as AspectRatio | undefined,
+      resolution: (resolution || '1K') as Resolution,
     })
     const duration = Date.now() - startTime
     

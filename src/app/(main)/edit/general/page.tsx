@@ -69,8 +69,8 @@ export default function GeneralEditPage() {
   
   // Generation options
   const [numImages, setNumImages] = useState(1)
-  const [aspectRatio, setAspectRatio] = useState<'1:1' | '3:4' | '4:3' | '16:9' | '9:16'>('1:1')
-  const [resolution, setResolution] = useState<'standard' | 'hd'>('standard')
+  const [aspectRatio, setAspectRatio] = useState<'1:1' | '2:3' | '3:2' | '3:4' | '4:3' | '4:5' | '5:4' | '9:16' | '16:9' | '21:9'>('1:1')
+  const [resolution, setResolution] = useState<'1K' | '2K' | '4K'>('1K')
   
   // Result images for PC layout
   const [resultImages, setResultImages] = useState<string[]>([])
@@ -237,8 +237,10 @@ export default function GeneralEditPage() {
     setActiveImageSlot(inputImages.length)
   }
   
-  // Calculate dynamic credit cost based on numImages
-  const totalCreditCost = BASE_CREDIT_COST * numImages
+  // Calculate dynamic credit cost based on numImages and resolution
+  // 4K costs 2x normal price
+  const perImageCost = resolution === '4K' ? BASE_CREDIT_COST * 2 : BASE_CREDIT_COST
+  const totalCreditCost = perImageCost * numImages
   
   const handleGenerate = async () => {
     const validImages = inputImages.filter((img): img is string => img !== null)
@@ -298,7 +300,7 @@ export default function GeneralEditPage() {
     prompt: string,
     count: number = 1,
     ratio: string = '1:1',
-    res: string = 'standard'
+    res: string = '1K'
   ) => {
     try {
       console.log(`Sending general edit request with ${inputImgs.length} input images, generating ${count} outputs...`)
@@ -460,11 +462,12 @@ export default function GeneralEditPage() {
     const validImages = inputImages.filter((img): img is string => img !== null)
     if (validImages.length === 0 || !customPrompt.trim()) return
     
-    // Check quota for 1 image
-    const hasQuota = await checkQuota(BASE_CREDIT_COST)
+    // Check quota for 1 image (4K costs 2x)
+    const singleImageCost = resolution === '4K' ? BASE_CREDIT_COST * 2 : BASE_CREDIT_COST
+    const hasQuota = await checkQuota(singleImageCost)
     if (!hasQuota) return
     
-    const taskId = addTask('edit', validImages[0], { customPrompt, inputImageCount: validImages.length }, 1)
+    const taskId = addTask('edit', validImages[0], { customPrompt, inputImageCount: validImages.length, resolution }, 1)
     setCurrentTaskId(taskId)
     updateTaskStatus(taskId, 'generating')
     
@@ -709,21 +712,15 @@ export default function GeneralEditPage() {
                     {/* Aspect Ratio */}
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-zinc-500">{t.edit?.aspectRatio || 'Ratio'}:</span>
-                      <div className="flex gap-1">
-                        {(['1:1', '3:4', '4:3'] as const).map(ratio => (
-                          <button
-                            key={ratio}
-                            onClick={() => setAspectRatio(ratio)}
-                            className={`px-2.5 h-8 rounded-lg text-xs font-medium transition-colors ${
-                              aspectRatio === ratio
-                                ? 'bg-purple-600 text-white'
-                                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-                            }`}
-                          >
-                            {ratio}
-                          </button>
+                      <select
+                        value={aspectRatio}
+                        onChange={(e) => setAspectRatio(e.target.value as typeof aspectRatio)}
+                        className="h-8 px-2 rounded-lg text-xs font-medium bg-zinc-100 text-zinc-700 border-0 focus:ring-2 focus:ring-purple-500"
+                      >
+                        {(['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9'] as const).map(ratio => (
+                          <option key={ratio} value={ratio}>{ratio}</option>
                         ))}
-                      </div>
+                      </select>
                     </div>
                     
                     <div className="w-px h-6 bg-zinc-200" />
@@ -732,26 +729,20 @@ export default function GeneralEditPage() {
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-zinc-500">{t.edit?.resolution || 'Quality'}:</span>
                       <div className="flex gap-1">
-                        <button
-                          onClick={() => setResolution('standard')}
-                          className={`px-2.5 h-8 rounded-lg text-xs font-medium transition-colors ${
-                            resolution === 'standard'
-                              ? 'bg-purple-600 text-white'
-                              : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-                          }`}
-                        >
-                          {t.edit?.standardRes || 'SD'}
-                        </button>
-                        <button
-                          onClick={() => setResolution('hd')}
-                          className={`px-2.5 h-8 rounded-lg text-xs font-medium transition-colors ${
-                            resolution === 'hd'
-                              ? 'bg-purple-600 text-white'
-                              : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-                          }`}
-                        >
-                          {t.edit?.hdRes || 'HD'}
-                        </button>
+                        {(['1K', '2K', '4K'] as const).map(res => (
+                          <button
+                            key={res}
+                            onClick={() => setResolution(res)}
+                            className={`px-2.5 h-8 rounded-lg text-xs font-medium transition-colors ${
+                              resolution === res
+                                ? 'bg-purple-600 text-white'
+                                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                            } ${res === '4K' ? 'relative' : ''}`}
+                          >
+                            {res}
+                            {res === '4K' && <span className="ml-0.5 text-[10px] text-purple-200">2x</span>}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </div>
