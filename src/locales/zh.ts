@@ -12,6 +12,8 @@ export const zh = {
     confirm: "确认",
     save: "保存",
     delete: "删除",
+    remove: "移除",
+    goOutfit: "去搭配",
     edit: "编辑",
     back: "返回",
     next: "下一步",

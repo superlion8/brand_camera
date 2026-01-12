@@ -14,6 +14,8 @@ export const ko: Translations = {
     confirm: "확인",
     save: "저장",
     delete: "삭제",
+    remove: "제거",
+    goOutfit: "코디하기",
     edit: "편집",
     back: "뒤로",
     next: "다음",

@@ -14,6 +14,8 @@ export const en: Translations = {
     confirm: "Confirm",
     save: "Save",
     delete: "Delete",
+    remove: "Remove",
+    goOutfit: "Go Outfit",
     edit: "Edit",
     back: "Back",
     next: "Next",
