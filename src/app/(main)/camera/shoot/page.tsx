@@ -15,12 +15,18 @@ import { useLanguageStore } from "@/stores/languageStore"
 import { ProductAnalysis } from "@/types/outfit"
 import { Asset } from "@/types"
 
+import { useIsDesktop } from "@/hooks/useIsMobile"
+import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
+
 export default function ShootPage() {
   const router = useRouter()
   const t = useLanguageStore(state => state.t)
   
   const webcamRef = useRef<Webcam>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // Device detection
+  const { isDesktop, isMobile, isLoading: screenLoading } = useIsDesktop(1024)
   
   // 状态
   const [hasCamera, setHasCamera] = useState(true)
@@ -34,9 +40,16 @@ export default function ShootPage() {
   // 资产库数据
   const { userProducts: products } = useAssetStore()
   
-  // 检查摄像头权限
+  // 检查摄像头权限 - PC Web 跳过
   useEffect(() => {
     const checkCameraPermission = async () => {
+      // Skip camera permission check on desktop - only upload is available
+      if (isDesktop) {
+        setHasCamera(false)
+        setPermissionChecked(true)
+        return
+      }
+      
       try {
         const cachedPermission = localStorage.getItem('cameraPermissionGranted')
         if (cachedPermission === 'true') {
@@ -54,6 +67,16 @@ export default function ShootPage() {
             setHasCamera(false)
             localStorage.setItem('cameraPermissionGranted', 'false')
           }
+          
+          result.addEventListener('change', () => {
+            if (result.state === 'granted') {
+              setCameraReady(true)
+              localStorage.setItem('cameraPermissionGranted', 'true')
+            } else if (result.state === 'denied') {
+              setHasCamera(false)
+              localStorage.setItem('cameraPermissionGranted', 'false')
+            }
+          })
         }
       } catch (e) {
         try {
@@ -68,8 +91,10 @@ export default function ShootPage() {
       setPermissionChecked(true)
     }
     
-    checkCameraPermission()
-  }, [])
+    if (!screenLoading) {
+      checkCameraPermission()
+    }
+  }, [isDesktop, screenLoading])
   
   // 拍照
   const handleCapture = () => {
@@ -171,6 +196,10 @@ export default function ShootPage() {
     setIsAnalyzing(false)
   }
   
+  if (screenLoading) {
+    return <ScreenLoadingGuard><div /></ScreenLoadingGuard>
+  }
+  
   return (
     <div className="fixed inset-0 bg-black flex flex-col">
       {/* Header */}
@@ -241,10 +270,37 @@ export default function ShootPage() {
               className="object-contain"
             />
           </div>
+        ) : isDesktop ? (
+          /* PC Desktop: Show upload interface instead of camera */
+          <div className="absolute inset-0 flex items-center justify-center bg-zinc-50">
+            <div className="text-center p-8 max-w-md">
+              <div className="w-24 h-24 mx-auto mb-6 bg-white rounded-2xl shadow-lg flex items-center justify-center">
+                <Camera className="w-12 h-12 text-zinc-400" />
+              </div>
+              <h2 className="text-xl font-bold text-zinc-900 mb-2">{t.shoot?.title || '拍摄商品'}</h2>
+              <p className="text-zinc-500 mb-6">PC端请直接上传商品图片，相机功能仅在移动端可用</p>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-6 py-3 bg-zinc-900 text-white rounded-xl font-medium hover:bg-zinc-800 transition-colors flex items-center gap-2"
+                >
+                  <Upload className="w-5 h-5" />
+                  {t.shoot?.album || '从相册选择'}
+                </button>
+                <button
+                  onClick={() => setShowAssetPicker(true)}
+                  className="px-6 py-3 bg-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-300 transition-colors flex items-center gap-2"
+                >
+                  <FolderHeart className="w-5 h-5" />
+                  {t.shoot?.assetLibrary || '素材库'}
+                </button>
+              </div>
+            </div>
+          </div>
         ) : (
           <>
             {/* 摄像头区域 */}
-            {hasCamera && cameraReady ? (
+            {hasCamera && cameraReady && !isDesktop ? (
               <Webcam
                 ref={webcamRef}
                 audio={false}

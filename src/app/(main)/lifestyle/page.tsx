@@ -146,20 +146,64 @@ function LifestylePageContent() {
     }
   }, [user, authLoading, router])
 
-  // Camera permission check
+  // Camera permission check - skip on PC Web
   useEffect(() => {
     const checkCameraPermission = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true })
-        stream.getTracks().forEach(track => track.stop())
-        setCameraReady(true)
-      } catch {
+      // Skip camera permission check on desktop - only upload is available
+      if (isDesktop) {
         setHasCamera(false)
+        setPermissionChecked(true)
+        return
+      }
+      
+      try {
+        const cachedPermission = localStorage.getItem('cameraPermissionGranted')
+        if (cachedPermission === 'true') {
+          setCameraReady(true)
+          setPermissionChecked(true)
+          return
+        }
+        
+        if (navigator.permissions && navigator.permissions.query) {
+          const result = await navigator.permissions.query({ name: 'camera' as PermissionName })
+          if (result.state === 'granted') {
+            setCameraReady(true)
+            localStorage.setItem('cameraPermissionGranted', 'true')
+          } else if (result.state === 'denied') {
+            setHasCamera(false)
+            localStorage.setItem('cameraPermissionGranted', 'false')
+          }
+          
+          result.addEventListener('change', () => {
+            if (result.state === 'granted') {
+              setCameraReady(true)
+              localStorage.setItem('cameraPermissionGranted', 'true')
+            } else if (result.state === 'denied') {
+              setHasCamera(false)
+              localStorage.setItem('cameraPermissionGranted', 'false')
+            }
+          })
+        }
+      } catch (e) {
+        console.log('Permission API not supported, trying direct stream access')
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+          stream.getTracks().forEach(track => track.stop())
+          setCameraReady(true)
+          localStorage.setItem('cameraPermissionGranted', 'true')
+        } catch (streamError) {
+          console.log('Camera access denied or unavailable')
+          setHasCamera(false)
+        }
       }
       setPermissionChecked(true)
     }
-    checkCameraPermission()
-  }, [])
+    
+    // Wait for screen loading to determine if desktop
+    if (!screenLoading) {
+      checkCameraPermission()
+    }
+  }, [isDesktop, screenLoading])
 
   const handleCapture = () => {
     if (webcamRef.current) {
@@ -925,7 +969,7 @@ function LifestylePageContent() {
                     )}
                   </AnimatePresence>
                 </div>
-              ) : mode === "camera" ? (
+              ) : mode === "camera" && !isDesktop ? (
                 hasCamera && permissionChecked ? (
                   <Webcam
                     ref={webcamRef}
@@ -942,6 +986,9 @@ function LifestylePageContent() {
                     </div>
                   </div>
                 )
+              ) : mode === "camera" && isDesktop ? (
+                /* PC Desktop shows upload interface - handled above in isDesktop check */
+                null
               ) : (
                 <img src={capturedImage || ""} alt="Captured" className="w-full h-full object-cover" />
               )}
