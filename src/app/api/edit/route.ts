@@ -38,12 +38,39 @@ interface ImageResult {
   model: 'pro' | 'flash'
 }
 
+interface GenerationOptions {
+  aspectRatio?: '1:1' | '3:4' | '4:3' | '16:9' | '9:16'
+  resolution?: 'standard' | 'hd'
+}
+
 async function generateImageWithFallback(
   client: ReturnType<typeof getGenAIClient>,
   parts: any[],
-  label: string
+  label: string,
+  options?: GenerationOptions
 ): Promise<ImageResult | null> {
   const startTime = Date.now()
+  
+  // Build config for primary model (gemini-3-pro-image-preview)
+  // Pro model supports: aspectRatio and imageSize directly in config
+  const primaryConfig: any = {
+    responseModalities: ['IMAGE'],
+    safetySettings,
+  }
+  
+  // Add aspectRatio if specified (Pro model supports direct aspectRatio)
+  if (options?.aspectRatio) {
+    primaryConfig.aspectRatio = options.aspectRatio
+  }
+  
+  // Add imageSize based on resolution (Pro model: "1K" or "2K")
+  if (options?.resolution === 'hd') {
+    primaryConfig.imageSize = '2K'
+  } else {
+    primaryConfig.imageSize = '1K'
+  }
+  
+  console.log(`[${label}] Config: aspectRatio=${options?.aspectRatio}, imageSize=${primaryConfig.imageSize}`)
   
   // Try primary model with retries
   for (let attempt = 0; attempt <= PRIMARY_RETRY_COUNT; attempt++) {
@@ -57,10 +84,7 @@ async function generateImageWithFallback(
       const response = await client.models.generateContent({
         model: PRIMARY_IMAGE_MODEL,
         contents: [{ role: 'user', parts }],
-        config: {
-          responseModalities: ['IMAGE'],
-          safetySettings,
-        },
+        config: primaryConfig,
       })
       
       const result = extractImage(response)
@@ -75,16 +99,27 @@ async function generateImageWithFallback(
     }
   }
   
+  // Build config for fallback model (gemini-2.5-flash-image)
+  // Flash model: aspectRatio goes in imageConfig object, does NOT support imageSize
+  const flashConfig: any = {
+    responseModalities: ['IMAGE'],
+    safetySettings,
+  }
+  
+  // Add aspectRatio via imageConfig for flash model
+  if (options?.aspectRatio) {
+    flashConfig.imageConfig = {
+      aspectRatio: options.aspectRatio
+    }
+  }
+  
   // Fallback to flash model
   try {
     console.log(`[${label}] Trying fallback ${FALLBACK_IMAGE_MODEL}...`)
     const response = await client.models.generateContent({
       model: FALLBACK_IMAGE_MODEL,
       contents: [{ role: 'user', parts }],
-      config: {
-        responseModalities: ['IMAGE'],
-        safetySettings,
-      },
+      config: flashConfig,
     })
     
     const result = extractImage(response)
@@ -121,6 +156,8 @@ export async function POST(request: NextRequest) {
       vibeImage, 
       customPrompt,
       taskId, // 任务 ID，用于数据库写入
+      aspectRatio, // 宽高比: '1:1' | '3:4' | '4:3' | '16:9' | '9:16'
+      resolution,  // 分辨率: 'standard' | 'hd'
     } = body
     
     // 兼容处理：支持单图 inputImage 和多图 inputImages
@@ -212,8 +249,11 @@ export async function POST(request: NextRequest) {
       })
     }
     
-    console.log(`[Edit] Generating edited image with ${images.length} input image(s)...`)
-    const result = await generateImageWithFallback(client, parts, 'Edit')
+    console.log(`[Edit] Generating edited image with ${images.length} input image(s), aspectRatio=${aspectRatio}, resolution=${resolution}...`)
+    const result = await generateImageWithFallback(client, parts, 'Edit', {
+      aspectRatio: aspectRatio as '1:1' | '3:4' | '4:3' | '16:9' | '9:16' | undefined,
+      resolution: resolution as 'standard' | 'hd' | undefined,
+    })
     const duration = Date.now() - startTime
     
     if (!result) {
@@ -282,6 +322,8 @@ export async function POST(request: NextRequest) {
             hasModel: !!modelImage,
             hasBackground: !!backgroundImage,
             hasVibe: !!vibeImage,
+            aspectRatio,
+            resolution,
           },
         })
         
