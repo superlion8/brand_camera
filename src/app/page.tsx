@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { useRef, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowRight, Zap, Palette, Camera, Users, Play, Check } from 'lucide-react'
+import { ArrowRight, Zap, Palette, Camera, Users, Check } from 'lucide-react'
 import { useAuth } from '@/components/providers/AuthProvider'
 
 // Supabase Storage base URL
@@ -382,7 +382,7 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.3 }}
-            className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4"
+            className="mt-10 flex items-center justify-center"
           >
             <Link
               href="/login"
@@ -391,10 +391,6 @@ export default function LandingPage() {
               Start Creating Free
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
-            <button className="px-8 py-4 bg-white border border-zinc-200 rounded-full flex items-center gap-2 shadow-sm hover:shadow-md hover:border-zinc-300 transition-all">
-              <Play className="w-4 h-4 text-zinc-600" />
-              <span className="text-zinc-700 font-medium">Watch Demo</span>
-            </button>
           </motion.div>
           
           {/* Stats */}
@@ -402,15 +398,14 @@ export default function LandingPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.5 }}
-            className="mt-16 flex items-center justify-center gap-8 md:gap-16"
+            className="mt-16 flex items-center justify-center gap-12 md:gap-20"
           >
             {[
               { value: '50K+', label: 'Photos Generated' },
-              { value: '2.5s', label: 'Avg. Generation' },
-              { value: '98%', label: 'Satisfaction' },
+              { value: '1K+', label: 'Stores Using' },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
-                <div className="text-2xl md:text-3xl font-bold text-zinc-900">{stat.value}</div>
+                <div className="text-3xl md:text-4xl font-bold text-zinc-900">{stat.value}</div>
                 <div className="text-sm text-zinc-400 mt-1">{stat.label}</div>
               </div>
             ))}
