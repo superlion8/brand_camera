@@ -116,11 +116,11 @@ async function handleCheckoutCompleted(supabase: any, session: Stripe.Checkout.S
     credits_purchased: priceId ? getCreditsForPrice(priceId) : 0,
   })
   
-  // 如果是一次性支付（充值包），立即增加 credits
+  // 如果是一次性支付（充值包），立即增加 purchased_credits
   if (session.mode === 'payment' && priceId) {
     const credits = getCreditsForPrice(priceId)
     if (credits > 0) {
-      // 增加购买的 credits
+      // 增加购买的 credits 到 purchased_credits（永久有效）
       const { data: quotaData } = await supabase
         .from('user_quotas')
         .select('purchased_credits')
@@ -139,7 +139,7 @@ async function handleCheckoutCompleted(supabase: any, session: Stripe.Checkout.S
           onConflict: 'user_id',
         })
       
-      console.log(`[Webhook] Added ${credits} purchased credits to user ${userId}`)
+      console.log(`[Webhook] Added ${credits} purchased credits to user ${userId}, total: ${currentCredits + credits}`)
     }
   }
   
@@ -174,7 +174,6 @@ async function handleSubscriptionCreated(supabase: any, subscription: Stripe.Sub
   const planName = priceId ? getPlanForPrice(priceId) : null
   
   // 创建或更新订阅记录
-  // 使用 as any 绕过 Stripe SDK 类型问题（实际 API 返回这些字段）
   const subData = subscription as any
   await supabase.from('subscriptions').upsert({
     user_id: finalUserId,
@@ -195,14 +194,13 @@ async function handleSubscriptionCreated(supabase: any, subscription: Stripe.Sub
     onConflict: 'user_id',
   })
   
-  // 同时更新 user_quotas 的 subscription_credits（不重置 used_quota，保留老用户的使用记录）
+  // 设置 subscription_credits（只更新订阅字段，不影响其他 credits）
   if (subscription.status === 'active' && credits > 0) {
     await supabase
       .from('user_quotas')
       .upsert({
         user_id: finalUserId,
         subscription_credits: credits,
-        credits_reset_at: new Date().toISOString(),
         stripe_customer_id: customerId,
       }, {
         onConflict: 'user_id',
@@ -251,7 +249,7 @@ async function handleSubscriptionUpdated(supabase: any, subscription: Stripe.Sub
     })
     .eq('stripe_subscription_id', subscription.id)
   
-  // 如果订阅升级/降级，更新 subscription_credits
+  // 如果订阅升级/降级，更新 subscription_credits（只影响订阅字段）
   if (subscription.status === 'active') {
     await supabase
       .from('user_quotas')
@@ -259,6 +257,8 @@ async function handleSubscriptionUpdated(supabase: any, subscription: Stripe.Sub
         subscription_credits: credits,
       })
       .eq('user_id', userId)
+    
+    console.log(`[Webhook] Updated subscription_credits to ${credits} for user ${userId}`)
   }
 }
 
@@ -282,11 +282,16 @@ async function handleSubscriptionDeleted(supabase: any, subscription: Stripe.Sub
     })
     .eq('stripe_subscription_id', subscription.id)
   
-  // 注意：取消订阅时不清零 subscription_credits
-  // 已给的 credits 让用户继续使用直到用完
-  // 只有下个月续费时才会重新设置 subscription_credits
+  // 订阅取消时，清零 subscription_credits
+  // 但不影响其他类型的 credits（signup, purchased, daily）
+  await supabase
+    .from('user_quotas')
+    .update({
+      subscription_credits: 0,
+    })
+    .eq('user_id', userId)
   
-  console.log(`[Webhook] Subscription ${subscription.id} deleted for user ${userId}, credits retained`)
+  console.log(`[Webhook] Subscription ${subscription.id} deleted for user ${userId}, subscription_credits cleared`)
 }
 
 async function handleInvoicePaid(supabase: any, invoice: Stripe.Invoice) {
@@ -316,17 +321,16 @@ async function handleInvoicePaid(supabase: any, invoice: Stripe.Invoice) {
   
   if (credits > 0) {
     // 重置订阅 credits（每月/每年续费时）
+    // 只更新 subscription_credits，不影响其他类型
     await supabase
       .from('user_quotas')
       .update({
         subscription_credits: credits,
-        credits_reset_at: new Date().toISOString(),
-        // 重置使用量（只重置订阅部分）
-        used_quota: 0,
+        // 不再重置所有 used_quota，因为现在每种 credits 独立计算
       })
       .eq('user_id', userId)
     
-    console.log(`[Webhook] Reset subscription credits to ${credits} for user ${userId}`)
+    console.log(`[Webhook] Reset subscription_credits to ${credits} for user ${userId}`)
   }
   
   // 记录续费支付

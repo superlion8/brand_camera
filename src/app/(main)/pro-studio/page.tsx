@@ -1340,58 +1340,27 @@ function ProStudioPageContent() {
                   {/* Two-column content */}
                   <div className="max-w-5xl mx-auto px-8 py-8">
                     <div className="flex gap-8">
-                      {/* Left: Feature Introduction with Before/After */}
+                      {/* Left: Feature Showcase Card */}
                       <div className="flex-1 min-w-0">
                         <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 overflow-hidden">
-                          {/* Before/After Image Animation */}
-                          <div className="relative aspect-[16/9] overflow-hidden">
-                            {/* Before Image */}
+                          {/* Showcase Image */}
+                          <div className="relative aspect-[16/9] overflow-hidden group">
                             <Image 
-                              src="https://cvdogeigbpussfamctsu.supabase.co/storage/v1/object/public/presets/homepage/pro-studio-before.jpg?v=2" 
-                              alt="Before" 
+                              src="https://cvdogeigbpussfamctsu.supabase.co/storage/v1/object/public/presets/homepage/features/pro-studio.jpg" 
+                              alt="Pro Studio Mode" 
                               fill 
-                              className="object-cover"
+                              className="object-cover transition-transform duration-500 group-hover:scale-105"
                               unoptimized
                             />
-                            <div className="absolute top-3 left-3 px-2 py-1 bg-black/50 backdrop-blur-sm rounded text-xs font-medium text-white z-10">
-                              Original
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                            <div className="absolute bottom-0 left-0 right-0 p-4">
+                              <h3 className="text-lg font-bold text-white">{t.proStudio?.proStudioMode || 'Pro Studio Mode'}</h3>
+                              <p className="text-sm text-white/80 mt-1">{t.home?.proStudioSubtitle || '纯色背景质感'}</p>
                             </div>
-                            
-                            {/* After Image with Animation */}
-                            <motion.div
-                              className="absolute inset-0"
-                              initial={{ clipPath: 'inset(0 100% 0 0)' }}
-                              animate={{ clipPath: ['inset(0 100% 0 0)', 'inset(0 0% 0 0)', 'inset(0 0% 0 0)', 'inset(0 100% 0 0)'] }}
-                              transition={{
-                                duration: 4,
-                                ease: "easeInOut",
-                                times: [0, 0.3, 0.7, 1],
-                                repeat: Infinity,
-                                repeatDelay: 1,
-                              }}
-                            >
-                              <Image 
-                                src="https://cvdogeigbpussfamctsu.supabase.co/storage/v1/object/public/presets/homepage/pro-studio-after.png?v=2" 
-                                alt="After" 
-                                fill 
-                                className="object-cover"
-                                unoptimized
-                              />
-                              <div className="absolute top-3 left-3 px-2 py-1 bg-amber-500 rounded text-xs font-medium text-white z-10">
-                                Result
-                              </div>
-                            </motion.div>
                           </div>
                           
-                          {/* Feature Info */}
-                          <div className="p-6 space-y-4">
-                            <div>
-                              <h3 className="text-lg font-semibold text-zinc-900">{t.proStudio?.proStudioMode || 'Pro Studio Mode'}</h3>
-                              <p className="text-sm text-zinc-500 mt-1">
-                                {t.proStudio?.proStudioModeDesc || 'After uploading product images, AI will generate 4 professional model showcase images in different styles'}
-                              </p>
-                            </div>
-                            
+                          {/* Feature Tags */}
+                          <div className="p-4">
                             <div className="flex flex-wrap gap-2">
                               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-medium rounded-full">
                                 <Check className="w-3 h-3" />

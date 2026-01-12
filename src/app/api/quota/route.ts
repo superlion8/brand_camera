@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-
-const DEFAULT_QUOTA = 10  // 新用户注册赠送 10 credits
+import { 
+  calculateCreditsInfo, 
+  createDefaultQuota, 
+  DEFAULT_SIGNUP_CREDITS,
+  type UserQuotaRecord 
+} from '@/lib/quota'
 
 // 获取或创建用户额度记录
-async function getOrCreateUserQuota(supabase: any, userId: string, userEmail?: string) {
+async function getOrCreateUserQuota(supabase: any, userId: string, userEmail?: string): Promise<UserQuotaRecord> {
   // 先尝试获取
   const { data: existing } = await supabase
     .from('user_quotas')
@@ -13,20 +17,14 @@ async function getOrCreateUserQuota(supabase: any, userId: string, userEmail?: s
     .single()
   
   if (existing) {
-    return existing
+    return existing as UserQuotaRecord
   }
   
   // 不存在则创建
+  const defaultQuota = createDefaultQuota(userId, userEmail)
   const { data: created, error } = await supabase
     .from('user_quotas')
-    .insert({
-      user_id: userId,
-      user_email: userEmail,
-      total_quota: DEFAULT_QUOTA,
-      used_quota: 0,
-      subscription_credits: 0,
-      purchased_credits: 0,
-    })
+    .insert(defaultQuota)
     .select()
     .single()
   
@@ -38,50 +36,10 @@ async function getOrCreateUserQuota(supabase: any, userId: string, userEmail?: s
       .select('*')
       .eq('user_id', userId)
       .single()
-    return retry || { 
-      total_quota: DEFAULT_QUOTA, 
-      used_quota: 0,
-      subscription_credits: 0,
-      purchased_credits: 0,
-    }
+    return (retry as UserQuotaRecord) || defaultQuota as UserQuotaRecord
   }
   
-  return created
-}
-
-// 计算可用 credits
-function calculateAvailableCredits(quotaData: any): {
-  totalCredits: number
-  usedCredits: number
-  availableCredits: number
-  subscriptionCredits: number
-  purchasedCredits: number
-  freeCredits: number
-} {
-  // 订阅 credits（每月重置）
-  const subscriptionCredits = quotaData.subscription_credits || 0
-  // 购买的 credits（永久）
-  const purchasedCredits = quotaData.purchased_credits || 0
-  // 免费 credits（向后兼容旧用户，注册赠送 + 每日奖励等）
-  const freeCredits = quotaData.total_quota || DEFAULT_QUOTA
-  
-  // 已使用
-  const usedCredits = quotaData.used_quota || 0
-  
-  // 总可用 = 订阅 + 购买 + 免费 - 已使用
-  // 所有 credits 叠加，老用户的免费额度可以继续使用
-  const totalCredits = subscriptionCredits + purchasedCredits + freeCredits
-  
-  const availableCredits = Math.max(0, totalCredits - usedCredits)
-  
-  return {
-    totalCredits,
-    usedCredits,
-    availableCredits,
-    subscriptionCredits,
-    purchasedCredits,
-    freeCredits,
-  }
+  return created as UserQuotaRecord
 }
 
 // GET - Get current user's quota
@@ -95,7 +53,7 @@ export async function GET(request: NextRequest) {
   
   try {
     const quotaData = await getOrCreateUserQuota(supabase, user.id, user.email)
-    const credits = calculateAvailableCredits(quotaData)
+    const credits = calculateCreditsInfo(quotaData)
     
     // 获取订阅信息
     const { data: subscription } = await supabase
@@ -105,19 +63,19 @@ export async function GET(request: NextRequest) {
       .single()
     
     return NextResponse.json({
-      // 向后兼容
-      totalQuota: credits.totalCredits,
-      usedCount: credits.usedCredits,
-      remainingQuota: credits.availableCredits,
+      // 向后兼容旧字段
+      totalQuota: credits.available + (credits.dailyExpired ? quotaData.daily_credits || 0 : 0),
+      usedCount: 0,  // 新系统不再使用 usedCount
+      remainingQuota: credits.available,
       
       // 新字段：详细 credits 信息
       credits: {
-        total: credits.totalCredits,
-        used: credits.usedCredits,
-        available: credits.availableCredits,
-        subscription: credits.subscriptionCredits,
-        purchased: credits.purchasedCredits,
-        free: credits.freeCredits,
+        available: credits.available,
+        daily: credits.daily,
+        subscription: credits.subscription,
+        signup: credits.signup,
+        purchased: credits.purchased,
+        dailyExpired: credits.dailyExpired,
       },
       
       // 订阅信息
@@ -152,19 +110,21 @@ export async function POST(request: NextRequest) {
     }
     
     const quotaData = await getOrCreateUserQuota(supabase, user.id, user.email)
-    const credits = calculateAvailableCredits(quotaData)
+    const credits = calculateCreditsInfo(quotaData)
     
     return NextResponse.json({
-      hasQuota: credits.availableCredits >= imageCount,
+      hasQuota: credits.available >= imageCount,
       // 向后兼容
-      totalQuota: credits.totalCredits,
-      usedCount: credits.usedCredits,
-      remainingQuota: credits.availableCredits,
+      totalQuota: credits.available,
+      usedCount: 0,
+      remainingQuota: credits.available,
       // 新字段
       credits: {
-        total: credits.totalCredits,
-        used: credits.usedCredits,
-        available: credits.availableCredits,
+        available: credits.available,
+        daily: credits.daily,
+        subscription: credits.subscription,
+        signup: credits.signup,
+        purchased: credits.purchased,
       },
     })
   } catch (error: any) {

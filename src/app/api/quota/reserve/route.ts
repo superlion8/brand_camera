@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { 
+  calculateCreditsInfo, 
+  consumeCredits, 
+  refundCredits,
+  createDefaultQuota,
+  isToday,
+  type UserQuotaRecord 
+} from '@/lib/quota'
 
-// 新用户注册赠送 10 credits
-const DEFAULT_QUOTA = 10
-
-// POST - Reserve quota: 直接从 user_quotas.used_quota 扣除
+// POST - Reserve quota: 按优先级从各 credits 字段扣除
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
   
@@ -21,62 +26,74 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'taskId and imageCount are required' }, { status: 400 })
     }
     
-    // 1. 先检查并扣除额度（原子操作）
-    // 使用 RPC 或直接 update with check
-    const { data: quotaData, error: quotaError } = await supabase
+    // 1. 获取用户当前 quota
+    let { data: quotaData, error: quotaError } = await supabase
       .from('user_quotas')
       .select('*')
       .eq('user_id', user.id)
       .single()
     
-    let totalQuota = DEFAULT_QUOTA
-    let currentUsed = 0
-    
-    if (quotaData) {
-      totalQuota = quotaData.total_quota || DEFAULT_QUOTA
-      currentUsed = quotaData.used_quota || 0
+    // 如果没有记录，创建一个
+    if (!quotaData) {
+      const defaultQuota = createDefaultQuota(user.id, user.email)
+      const { data: created, error: createError } = await supabase
+        .from('user_quotas')
+        .insert(defaultQuota)
+        .select()
+        .single()
+      
+      if (createError) {
+        console.error('[Quota Reserve] Error creating quota:', createError)
+        return NextResponse.json({ error: 'Failed to create quota' }, { status: 500 })
+      }
+      quotaData = created
     }
     
-    // 检查额度是否足够
-    if (currentUsed + imageCount > totalQuota) {
+    // 2. 计算可用余额并检查
+    const credits = calculateCreditsInfo(quotaData as UserQuotaRecord)
+    
+    if (credits.available < imageCount) {
       return NextResponse.json({ 
         error: 'Insufficient quota',
-        totalQuota,
-        usedCount: currentUsed,
-        remainingQuota: totalQuota - currentUsed,
+        credits: {
+          available: credits.available,
+          required: imageCount,
+        },
       }, { status: 403 })
     }
     
-    // 扣除额度
-    if (quotaData) {
-      // 更新现有记录
-      const { error: updateError } = await supabase
-        .from('user_quotas')
-        .update({ used_quota: currentUsed + imageCount })
-        .eq('user_id', user.id)
-      
-      if (updateError) {
-        console.error('[Quota Reserve] Error updating quota:', updateError)
-        return NextResponse.json({ error: 'Failed to reserve quota' }, { status: 500 })
-      }
-    } else {
-      // 创建新记录
-      const { error: insertError } = await supabase
-        .from('user_quotas')
-        .insert({
-          user_id: user.id,
-          user_email: user.email,
-          total_quota: DEFAULT_QUOTA,
-          used_quota: imageCount,
-        })
-      
-      if (insertError) {
-        console.error('[Quota Reserve] Error creating quota:', insertError)
-        return NextResponse.json({ error: 'Failed to reserve quota' }, { status: 500 })
-      }
+    // 3. 计算扣费后的新余额
+    const newBalances = consumeCredits(quotaData as UserQuotaRecord, imageCount)
+    
+    if (!newBalances) {
+      return NextResponse.json({ 
+        error: 'Failed to calculate new balance',
+      }, { status: 500 })
     }
     
-    // 2. 创建 pending generation 记录
+    // 4. 更新数据库（原子操作）
+    const updateData: any = {
+      subscription_credits: newBalances.subscription_credits,
+      signup_credits: newBalances.signup_credits,
+      purchased_credits: newBalances.purchased_credits,
+    }
+    
+    // 只有当今天的每日奖励有效时才更新 daily_credits
+    if (isToday(quotaData.daily_credits_date)) {
+      updateData.daily_credits = newBalances.daily_credits
+    }
+    
+    const { error: updateError } = await supabase
+      .from('user_quotas')
+      .update(updateData)
+      .eq('user_id', user.id)
+    
+    if (updateError) {
+      console.error('[Quota Reserve] Error updating quota:', updateError)
+      return NextResponse.json({ error: 'Failed to reserve quota' }, { status: 500 })
+    }
+    
+    // 5. 创建 pending generation 记录
     const { data, error } = await supabase
       .from('generations')
       .insert({
@@ -93,20 +110,40 @@ export async function POST(request: NextRequest) {
     if (error) {
       // 如果创建失败，回滚额度
       console.error('[Quota Reserve] Error creating generation, rolling back:', error)
+      
+      // 回滚：把扣掉的 credits 加回去
+      const rollbackData: any = {
+        subscription_credits: quotaData.subscription_credits,
+        signup_credits: quotaData.signup_credits,
+        purchased_credits: quotaData.purchased_credits,
+      }
+      if (isToday(quotaData.daily_credits_date)) {
+        rollbackData.daily_credits = quotaData.daily_credits
+      }
+      
       await supabase
         .from('user_quotas')
-        .update({ used_quota: currentUsed })
+        .update(rollbackData)
         .eq('user_id', user.id)
       
       return NextResponse.json({ error: 'Failed to reserve quota' }, { status: 500 })
     }
     
-    console.log('[Quota Reserve] Reserved', imageCount, 'images for task', taskId, 'used:', currentUsed + imageCount)
+    const newCredits = calculateCreditsInfo({
+      ...quotaData,
+      ...updateData,
+    } as UserQuotaRecord)
+    
+    console.log('[Quota Reserve] Reserved', imageCount, 'credits for task', taskId, 
+      'remaining:', newCredits.available)
     
     return NextResponse.json({ 
       success: true, 
       reservationId: data.id,
       imageCount,
+      credits: {
+        available: newCredits.available,
+      },
     })
   } catch (error: any) {
     console.error('[Quota Reserve] Error:', error)
@@ -172,19 +209,25 @@ export async function DELETE(request: NextRequest) {
     if (refundCount > 0) {
       const { data: quotaData } = await supabase
         .from('user_quotas')
-        .select('used_quota')
+        .select('*')
         .eq('user_id', user.id)
         .single()
       
-      const currentUsed = quotaData?.used_quota || 0
-      const newUsed = Math.max(0, currentUsed - refundCount)
-      
-      await supabase
-        .from('user_quotas')
-        .update({ used_quota: newUsed })
-        .eq('user_id', user.id)
-      
-      console.log('[Quota Release] Refunded', refundCount, 'images, new used:', newUsed)
+      if (quotaData) {
+        const newBalances = refundCredits(quotaData as UserQuotaRecord, refundCount)
+        
+        await supabase
+          .from('user_quotas')
+          .update({
+            subscription_credits: newBalances.subscription_credits,
+            signup_credits: newBalances.signup_credits,
+            purchased_credits: newBalances.purchased_credits,
+            // daily_credits 不退还（因为可能已经过期）
+          })
+          .eq('user_id', user.id)
+        
+        console.log('[Quota Release] Refunded', refundCount, 'credits to purchased_credits')
+      }
     }
     
     return NextResponse.json({ success: true, refundedCount: refundCount })
@@ -254,19 +297,24 @@ export async function PUT(request: NextRequest) {
     if (refundCount > 0) {
       const { data: quotaData } = await supabase
         .from('user_quotas')
-        .select('used_quota')
+        .select('*')
         .eq('user_id', user.id)
         .single()
       
-      const currentUsed = quotaData?.used_quota || 0
-      const newUsed = Math.max(0, currentUsed - refundCount)
-      
-      await supabase
-        .from('user_quotas')
-        .update({ used_quota: newUsed })
-        .eq('user_id', user.id)
-      
-      console.log('[Quota Update] Refunded', refundCount, 'images (original:', originalCount, ', actual:', actualImageCount, '), new used:', newUsed)
+      if (quotaData) {
+        const newBalances = refundCredits(quotaData as UserQuotaRecord, refundCount)
+        
+        await supabase
+          .from('user_quotas')
+          .update({
+            subscription_credits: newBalances.subscription_credits,
+            signup_credits: newBalances.signup_credits,
+            purchased_credits: newBalances.purchased_credits,
+          })
+          .eq('user_id', user.id)
+        
+        console.log('[Quota Update] Refunded', refundCount, 'credits (original:', originalCount, ', actual:', actualImageCount, ')')
+      }
     }
     
     return NextResponse.json({ success: true, refundedCount: refundCount })

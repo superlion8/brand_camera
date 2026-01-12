@@ -1,19 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-
-// 每日登录奖励 credits 数量
-const DAILY_REWARD_CREDITS = 5
-
-// 检查是否是同一天 (UTC)
-function isSameDay(date1: Date, date2: Date): boolean {
-  return (
-    date1.getUTCFullYear() === date2.getUTCFullYear() &&
-    date1.getUTCMonth() === date2.getUTCMonth() &&
-    date1.getUTCDate() === date2.getUTCDate()
-  )
-}
+import { 
+  calculateCreditsInfo, 
+  createDefaultQuota,
+  getTodayDateString,
+  DAILY_REWARD_CREDITS,
+  DEFAULT_SIGNUP_CREDITS,
+  type UserQuotaRecord 
+} from '@/lib/quota'
 
 // POST - 领取每日登录奖励
+// 每日奖励当天有效，次日自动清零
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
   
@@ -23,7 +20,7 @@ export async function POST(request: NextRequest) {
   }
   
   try {
-    const now = new Date()
+    const today = getTodayDateString()
     
     // 1. 获取用户额度信息
     const { data: quotaData, error: quotaError } = await supabase
@@ -33,31 +30,32 @@ export async function POST(request: NextRequest) {
       .single()
     
     // 2. 检查是否已领取今日奖励
-    if (quotaData?.last_daily_reward_at) {
-      const lastRewardDate = new Date(quotaData.last_daily_reward_at)
-      if (isSameDay(lastRewardDate, now)) {
-        // 今天已经领取过了
-        return NextResponse.json({
-          success: true,
-          credited: false,
-          message: 'Already claimed today',
-          totalQuota: quotaData.total_quota,
-          usedQuota: quotaData.used_quota,
-          remainingQuota: quotaData.total_quota - quotaData.used_quota,
-        })
-      }
+    if (quotaData?.daily_credits_date === today) {
+      // 今天已经领取过了
+      const credits = calculateCreditsInfo(quotaData as UserQuotaRecord)
+      return NextResponse.json({
+        success: true,
+        credited: false,
+        message: 'Already claimed today',
+        credits: {
+          available: credits.available,
+          daily: credits.daily,
+          subscription: credits.subscription,
+          signup: credits.signup,
+          purchased: credits.purchased,
+        },
+      })
     }
     
-    // 3. 发放奖励
+    // 3. 发放奖励（直接覆盖，不累加）
     if (quotaData) {
-      // 更新现有记录：增加 total_quota 并更新领取时间
-      const newTotalQuota = (quotaData.total_quota || 10) + DAILY_REWARD_CREDITS
-      
+      // 更新现有记录：设置 daily_credits 和 daily_credits_date
+      // 注意：这会清零昨天未使用的 daily_credits
       const { error: updateError } = await supabase
         .from('user_quotas')
         .update({
-          total_quota: newTotalQuota,
-          last_daily_reward_at: now.toISOString(),
+          daily_credits: DAILY_REWARD_CREDITS,
+          daily_credits_date: today,
         })
         .eq('user_id', user.id)
       
@@ -66,45 +64,63 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to claim reward' }, { status: 500 })
       }
       
-      console.log('[Daily Reward] User', user.email, 'claimed', DAILY_REWARD_CREDITS, 'credits, new total:', newTotalQuota)
+      // 计算更新后的余额
+      const newQuotaData = {
+        ...quotaData,
+        daily_credits: DAILY_REWARD_CREDITS,
+        daily_credits_date: today,
+      } as UserQuotaRecord
+      const credits = calculateCreditsInfo(newQuotaData)
+      
+      console.log('[Daily Reward] User', user.email, 'claimed', DAILY_REWARD_CREDITS, 
+        'daily credits, available:', credits.available)
       
       return NextResponse.json({
         success: true,
         credited: true,
         creditsAdded: DAILY_REWARD_CREDITS,
-        totalQuota: newTotalQuota,
-        usedQuota: quotaData.used_quota || 0,
-        remainingQuota: newTotalQuota - (quotaData.used_quota || 0),
+        credits: {
+          available: credits.available,
+          daily: credits.daily,
+          subscription: credits.subscription,
+          signup: credits.signup,
+          purchased: credits.purchased,
+        },
       })
     } else {
-      // 新用户：创建记录 (10 注册赠送 + 5 每日奖励 = 15)
-      const initialQuota = 10 + DAILY_REWARD_CREDITS
+      // 新用户：创建记录（注册赠送 + 每日奖励）
+      const newQuota = {
+        ...createDefaultQuota(user.id, user.email),
+        daily_credits: DAILY_REWARD_CREDITS,
+        daily_credits_date: today,
+      }
       
       const { error: insertError } = await supabase
         .from('user_quotas')
-        .insert({
-          user_id: user.id,
-          user_email: user.email,
-          total_quota: initialQuota,
-          used_quota: 0,
-          last_daily_reward_at: now.toISOString(),
-        })
+        .insert(newQuota)
       
       if (insertError) {
         console.error('[Daily Reward] Error creating quota:', insertError)
         return NextResponse.json({ error: 'Failed to claim reward' }, { status: 500 })
       }
       
-      console.log('[Daily Reward] New user', user.email, 'initialized with', initialQuota, 'credits')
+      const credits = calculateCreditsInfo(newQuota as UserQuotaRecord)
+      
+      console.log('[Daily Reward] New user', user.email, 'initialized with', 
+        DEFAULT_SIGNUP_CREDITS, 'signup +', DAILY_REWARD_CREDITS, 'daily credits')
       
       return NextResponse.json({
         success: true,
         credited: true,
         creditsAdded: DAILY_REWARD_CREDITS,
         isNewUser: true,
-        totalQuota: initialQuota,
-        usedQuota: 0,
-        remainingQuota: initialQuota,
+        credits: {
+          available: credits.available,
+          daily: credits.daily,
+          subscription: credits.subscription,
+          signup: credits.signup,
+          purchased: credits.purchased,
+        },
       })
     }
   } catch (error: any) {
@@ -123,24 +139,25 @@ export async function GET(request: NextRequest) {
   }
   
   try {
-    const now = new Date()
+    const today = getTodayDateString()
     
     const { data: quotaData } = await supabase
       .from('user_quotas')
-      .select('last_daily_reward_at')
+      .select('daily_credits_date, daily_credits')
       .eq('user_id', user.id)
       .single()
     
-    let canClaim = true
-    
-    if (quotaData?.last_daily_reward_at) {
-      const lastRewardDate = new Date(quotaData.last_daily_reward_at)
-      canClaim = !isSameDay(lastRewardDate, now)
-    }
+    const alreadyClaimed = quotaData?.daily_credits_date === today
+    const expiredCredits = quotaData?.daily_credits_date && 
+                          quotaData.daily_credits_date !== today && 
+                          (quotaData.daily_credits || 0) > 0
     
     return NextResponse.json({
-      canClaim,
+      canClaim: !alreadyClaimed,
+      alreadyClaimed,
       rewardAmount: DAILY_REWARD_CREDITS,
+      // 如果有过期的每日 credits，提示用户
+      expiredCredits: expiredCredits ? quotaData.daily_credits : 0,
     })
   } catch (error: any) {
     console.error('[Daily Reward] Error:', error)
