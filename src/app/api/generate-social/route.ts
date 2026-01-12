@@ -328,7 +328,7 @@ async function processGroup(
     let modelId: string | undefined
 
     if (!modelData) {
-      sendEvent({ type: 'progress', groupIndex, step: 'model', message: `组${groupIndex + 1}: 智能选择模特...` })
+      sendEvent({ type: 'progress', groupIndex, step: 'model', message: `Group ${groupIndex + 1}: Selecting model...` })
       const aiResult = await selectModelByAI(client, productData, groupIndex)
       if (aiResult) {
         modelData = aiResult.modelBase64
@@ -339,7 +339,7 @@ async function processGroup(
     }
 
     if (!modelData) {
-      sendEvent({ type: 'error', groupIndex, error: `组${groupIndex + 1}: 无法获取模特图片` })
+      sendEvent({ type: 'error', groupIndex, error: `Group ${groupIndex + 1}: Failed to fetch model image` })
       return result
     }
 
@@ -347,11 +347,11 @@ async function processGroup(
     result.modelId = modelId
 
     // 2. 获取随机背景图
-    sendEvent({ type: 'progress', groupIndex, step: 'background', message: `组${groupIndex + 1}: 选择场景背景...` })
+    sendEvent({ type: 'progress', groupIndex, step: 'background', message: `Group ${groupIndex + 1}: Selecting background...` })
     const bgResult = await getRandomSocialMediaBackground()
     
     if (!bgResult) {
-      sendEvent({ type: 'error', groupIndex, error: `组${groupIndex + 1}: 无法获取背景图片` })
+      sendEvent({ type: 'error', groupIndex, error: `Group ${groupIndex + 1}: Failed to fetch background image` })
       return result
     }
     
@@ -360,11 +360,11 @@ async function processGroup(
     sendEvent({ type: 'background_selected', groupIndex, url: bgResult.url, fileName: bgResult.fileName })
 
     // 3. 生成服装搭配指令
-    sendEvent({ type: 'progress', groupIndex, step: 'outfit', message: `组${groupIndex + 1}: 设计服装搭配方案...` })
+    sendEvent({ type: 'progress', groupIndex, step: 'outfit', message: `Group ${groupIndex + 1}: Designing outfit...` })
     const outfitInstruct = await generateOutfitInstruct(client, productData, modelData, sceneData, groupIndex)
     
     if (!outfitInstruct) {
-      sendEvent({ type: 'error', groupIndex, error: `组${groupIndex + 1}: 生成搭配方案失败` })
+      sendEvent({ type: 'error', groupIndex, error: `Group ${groupIndex + 1}: Failed to generate outfit plan` })
       return result
     }
     
@@ -385,7 +385,7 @@ async function processGroup(
         step: 'image', 
         localIndex,
         globalIndex,
-        message: `组${groupIndex + 1}: 生成第 ${localIndex + 1}/2 张图片...` 
+        message: `Group ${groupIndex + 1}: Generating image ${localIndex + 1}/2...` 
       })
       
       const imageResult = await generateFinalImage(
@@ -430,11 +430,11 @@ async function processGroup(
 
           return { index: globalIndex, url: uploadedUrl, promptType }
         } else {
-          sendEvent({ type: 'image_error', groupIndex, localIndex, globalIndex, error: '图片上传失败' })
+          sendEvent({ type: 'image_error', groupIndex, localIndex, globalIndex, error: 'Image upload failed' })
           return { index: globalIndex, url: null, promptType }
         }
       } else {
-        sendEvent({ type: 'image_error', groupIndex, localIndex, globalIndex, error: '图片生成失败' })
+        sendEvent({ type: 'image_error', groupIndex, localIndex, globalIndex, error: 'Image generation failed' })
         return { index: globalIndex, url: null, promptType }
       }
     })
@@ -444,7 +444,7 @@ async function processGroup(
 
   } catch (e: any) {
     console.error(`[Social-G${groupIndex}] Group processing failed:`, e)
-    sendEvent({ type: 'error', groupIndex, error: e.message || `组${groupIndex + 1}处理失败` })
+    sendEvent({ type: 'error', groupIndex, error: e.message || `Group ${groupIndex + 1} processing failed` })
   }
 
   return result
@@ -537,7 +537,7 @@ export async function POST(request: NextRequest) {
           
         } catch (err: any) {
           console.error('[Social] Stream error:', err)
-          sendEvent({ type: 'error', error: err.message || '生成失败' })
+          sendEvent({ type: 'error', error: err.message || 'Generation failed' })
         }
         
         controller.close()

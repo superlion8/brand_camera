@@ -379,7 +379,7 @@ export async function POST(request: NextRequest) {
         const imageDataRaw = await ensureBase64Data(startImage)
         
         if (!imageDataRaw) {
-          send({ type: 'error', error: '图片数据无效' })
+          send({ type: 'error', error: 'Invalid image data' })
           controller.close()
           return
         }
@@ -392,7 +392,7 @@ export async function POST(request: NextRequest) {
           console.log(`[GroupShoot] Starting random mode (${isLifestyle ? 'lifestyle' : 'studio'})...`)
           
           // Step 1: Generate pose instructions using VLM (JSON format)
-          send({ type: 'status', message: isLifestyle ? '正在设计ins风格pose...' : '正在分析图片生成pose指令...' })
+          send({ type: 'status', message: isLifestyle ? 'Designing Instagram-style pose...' : 'Analyzing image for pose generation...' })
           
           if (isLifestyle) {
             // ===== 生活模式 =====
@@ -439,13 +439,13 @@ export async function POST(request: NextRequest) {
                 
                 // 必须上传成功才返回
                 if (!taskId) {
-                  send({ type: 'error', index: i, error: '缺少任务ID' })
+                  send({ type: 'error', index: i, error: 'Missing task ID' })
                   continue
                 }
                 
                 const uploaded = await uploadImageToStorage(base64Image, userId, `group_${taskId}_${i}`)
                 if (!uploaded) {
-                  send({ type: 'error', index: i, error: '图片上传失败' })
+                  send({ type: 'error', index: i, error: 'Image upload failed' })
                   continue
                 }
                 
@@ -478,7 +478,7 @@ export async function POST(request: NextRequest) {
                 // Bug 2 修复：只有保存成功时才发送 dbId
                 send({ type: 'image', index: i, image: uploaded, modelType: result.model, ...(saveResult.dbId ? { dbId: saveResult.dbId } : {}) })
               } else {
-                send({ type: 'error', index: i, error: '生成失败' })
+                send({ type: 'error', index: i, error: 'Generation failed' })
               }
             }
           } else {
@@ -526,13 +526,13 @@ export async function POST(request: NextRequest) {
                 
                 // 必须上传成功才返回
                 if (!taskId) {
-                  send({ type: 'error', index: i, error: '缺少任务ID' })
+                  send({ type: 'error', index: i, error: 'Missing task ID' })
                   continue
                 }
                 
                 const uploaded = await uploadImageToStorage(base64Image, userId, `group_${taskId}_${i}`)
                 if (!uploaded) {
-                  send({ type: 'error', index: i, error: '图片上传失败' })
+                  send({ type: 'error', index: i, error: 'Image upload failed' })
                   continue
                 }
                 
@@ -565,7 +565,7 @@ export async function POST(request: NextRequest) {
                 // Bug 2 修复：只有保存成功时才发送 dbId
                 send({ type: 'image', index: i, image: uploaded, modelType: result.model, ...(saveResult.dbId ? { dbId: saveResult.dbId } : {}) })
               } else {
-                send({ type: 'error', index: i, error: '生成失败' })
+                send({ type: 'error', index: i, error: 'Generation failed' })
               }
             }
           }
@@ -608,13 +608,13 @@ export async function POST(request: NextRequest) {
               
               // 必须上传成功才返回
               if (!taskId) {
-                send({ type: 'error', index: i, error: '缺少任务ID' })
+                send({ type: 'error', index: i, error: 'Missing task ID' })
                 continue
               }
               
               const uploaded = await uploadImageToStorage(base64Image, userId, `group_${taskId}_${i}`)
               if (!uploaded) {
-                send({ type: 'error', index: i, error: '图片上传失败' })
+                send({ type: 'error', index: i, error: 'Image upload failed' })
                 continue
               }
               
@@ -645,7 +645,7 @@ export async function POST(request: NextRequest) {
               // Bug 2 修复：只有保存成功时才发送 dbId
               send({ type: 'image', index: i, image: uploaded, modelType: result.model, ...(saveResult.dbId ? { dbId: saveResult.dbId } : {}) })
             } else {
-              send({ type: 'error', index: i, error: '生成失败' })
+              send({ type: 'error', index: i, error: 'Generation failed' })
             }
           }
         }

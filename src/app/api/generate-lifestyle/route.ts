@@ -416,19 +416,19 @@ export async function POST(request: NextRequest) {
         
         // Validate input: need either productImage or outfitItems
         if (!productImage && !isOutfitMode) {
-          send({ type: 'error', error: '缺少商品图片' })
+          send({ type: 'error', error: 'Missing product image' })
           controller.close()
           return
         }
         
         if (!taskId) {
-          send({ type: 'error', error: '缺少任务ID' })
+          send({ type: 'error', error: 'Missing task ID' })
           controller.close()
           return
         }
         
         // Convert product image(s) to base64
-        send({ type: 'status', message: '正在处理商品图片...' })
+        send({ type: 'status', message: 'Processing product image...' })
         
         // For outfit mode, collect all product images
         let allProductImageData: { slot: string; data: string }[] = []
@@ -451,7 +451,7 @@ export async function POST(request: NextRequest) {
           }
           
           if (allProductImageData.length === 0) {
-            send({ type: 'error', error: '服装图片处理失败' })
+            send({ type: 'error', error: 'Failed to process clothing image' })
             controller.close()
             return
           }
@@ -463,17 +463,17 @@ export async function POST(request: NextRequest) {
         const productImageData = primaryProductImageData || await ensureBase64Data(productImage)
         
         if (!productImageData) {
-          send({ type: 'error', error: '商品图片处理失败' })
+          send({ type: 'error', error: 'Failed to process product image' })
           controller.close()
           return
         }
         
         // ========== Step 1: Product Analysis ==========
-        send({ type: 'status', message: '正在分析服装风格...' })
+        send({ type: 'status', message: 'Analyzing clothing style...' })
         const productTag = await analyzeProduct(client, productImageData)
         
         if (!productTag) {
-          send({ type: 'error', error: '服装分析失败，请重试' })
+          send({ type: 'error', error: 'Clothing analysis failed, please retry' })
           controller.close()
           return
         }
@@ -487,13 +487,13 @@ export async function POST(request: NextRequest) {
         
         // Convert user-provided images to base64 if provided
         if (!useAutoModel && modelImage) {
-          send({ type: 'status', message: '正在处理自定义模特图...' })
+          send({ type: 'status', message: 'Processing custom model image...' })
           userModelImageData = await ensureBase64Data(modelImage)
           console.log('[Lifestyle] User provided custom model image')
         }
         
         if (!useAutoScene && sceneImage) {
-          send({ type: 'status', message: '正在处理自定义场景图...' })
+          send({ type: 'status', message: 'Processing custom scene image...' })
           userSceneImageData = await ensureBase64Data(sceneImage)
           console.log('[Lifestyle] User provided custom scene image')
         }
@@ -514,16 +514,16 @@ export async function POST(request: NextRequest) {
           }
         } else {
           // Need AI matching for at least one of model/scene
-          send({ type: 'status', message: '正在筛选匹配的场景...' })
+          send({ type: 'status', message: 'Filtering matching scenes...' })
           const sceneIdList = await filterScenesByTag(supabase, productTag)
           
           if (sceneIdList.length === 0) {
-            send({ type: 'error', error: '未找到匹配的场景' })
+            send({ type: 'error', error: 'No matching scenes found' })
             controller.close()
             return
           }
           
-          send({ type: 'status', message: '正在智能匹配模特和场景...' })
+          send({ type: 'status', message: 'AI matching models and scenes...' })
           const aiMatchResult = await matchModelsAndScenes(
             client,
             supabase,
@@ -533,7 +533,7 @@ export async function POST(request: NextRequest) {
           )
           
           if (!aiMatchResult) {
-            send({ type: 'error', error: '模特场景匹配失败' })
+            send({ type: 'error', error: 'Model and scene matching failed' })
             controller.close()
             return
           }
@@ -542,7 +542,7 @@ export async function POST(request: NextRequest) {
         }
         
         // ========== Step 4: Fetch Materials ==========
-        send({ type: 'status', message: '正在获取模特和场景素材...' })
+        send({ type: 'status', message: 'Fetching model and scene assets...' })
         
         let modelImages: (string | null)[]
         let sceneImages: (string | null)[]
@@ -590,7 +590,7 @@ export async function POST(request: NextRequest) {
         })
         
         // ========== Step 5: Generate Images ==========
-        send({ type: 'status', message: '正在生成时尚街拍...' })
+        send({ type: 'status', message: 'Generating street style photos...' })
         
         // Upload input image once
         let inputImageUrl: string | undefined
@@ -608,7 +608,7 @@ export async function POST(request: NextRequest) {
           
           if (!modelImageData || !sceneImageData) {
             console.error(`[Lifestyle-${i}] Missing material: model=${!!modelImageData}, scene=${!!sceneImageData}`)
-            send({ type: 'image_error', index: i, error: '素材获取失败' })
+            send({ type: 'image_error', index: i, error: 'Failed to fetch assets' })
             return null
           }
           
@@ -622,7 +622,7 @@ export async function POST(request: NextRequest) {
           )
           
           if (!result) {
-            send({ type: 'image_error', index: i, error: '图片生成失败' })
+            send({ type: 'image_error', index: i, error: 'Image generation failed' })
             return null
           }
           
@@ -631,7 +631,7 @@ export async function POST(request: NextRequest) {
           const uploaded = await uploadImageToStorage(base64Image, userId, `lifestyle_${taskId}_${i}`)
           
           if (!uploaded) {
-            send({ type: 'image_error', index: i, error: '图片上传失败' })
+            send({ type: 'image_error', index: i, error: 'Image upload failed' })
             return null
           }
           
@@ -681,7 +681,7 @@ export async function POST(request: NextRequest) {
         
       } catch (error: any) {
         console.error('[Lifestyle] Unexpected error:', error)
-        send({ type: 'error', error: error.message || '生成失败' })
+        send({ type: 'error', error: error.message || 'Generation failed' })
         controller.close()
       }
     },

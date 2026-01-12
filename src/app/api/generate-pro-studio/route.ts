@@ -532,7 +532,7 @@ export async function POST(request: NextRequest) {
 
         try {
           // 1. 处理所有商品图片
-          sendEvent({ type: 'progress', step: 'product', message: '处理商品图片...' })
+          sendEvent({ type: 'progress', step: 'product', message: 'Processing product image...' })
           
           // 收集所有需要处理的商品图片 URL
           const productUrls: string[] = []
@@ -566,7 +566,7 @@ export async function POST(request: NextRequest) {
           }
           
           if (productDataList.length === 0) {
-            sendEvent({ type: 'error', error: '商品图片处理失败' })
+            sendEvent({ type: 'error', error: 'Failed to process product image' })
             controller.close()
             return
           }
@@ -587,7 +587,7 @@ export async function POST(request: NextRequest) {
             sendEvent({ 
               type: 'progress', 
               step: 'analyze', 
-              message: `智能分析中${needModel ? '（选择4个模特）' : ''}${needScene ? '（选择4个场景）' : ''}...` 
+              message: `AI analyzing${needModel ? ' (selecting 4 models)' : ''}${needScene ? ' (selecting 4 scenes)' : ''}...` 
             })
             
             const analysis = await analyzeAndSelect(client, mainProductData, needModel, needScene)
@@ -602,7 +602,7 @@ export async function POST(request: NextRequest) {
             
             // 获取 AI 选择的4个模特图片
             if (needModel && analysis.modelIds.length > 0) {
-              sendEvent({ type: 'progress', step: 'model', message: `获取${analysis.modelIds.length}个模特图片...` })
+              sendEvent({ type: 'progress', step: 'model', message: `Fetching ${analysis.modelIds.length} model images...` })
               for (const modelId of analysis.modelIds) {
                 const modelResult = await getModelImage(modelId)
               if (modelResult) {
@@ -614,7 +614,7 @@ export async function POST(request: NextRequest) {
             
             // 获取 AI 选择的4个场景图片
             if (needScene && analysis.sceneIds.length > 0) {
-              sendEvent({ type: 'progress', step: 'scene', message: `获取${analysis.sceneIds.length}个场景图片...` })
+              sendEvent({ type: 'progress', step: 'scene', message: `Fetching ${analysis.sceneIds.length} scene images...` })
               for (const sceneId of analysis.sceneIds) {
                 const sceneResult = await getSceneImage(sceneId)
               if (sceneResult) {
@@ -627,7 +627,7 @@ export async function POST(request: NextRequest) {
 
           // 4. 处理用户选择的图片（复制4份）
           if (!needModel && modelImage) {
-            sendEvent({ type: 'progress', step: 'model', message: '处理用户选择的模特图片...' })
+            sendEvent({ type: 'progress', step: 'model', message: 'Processing selected model image...' })
             const modelData = await imageToBase64(modelImage)
             if (modelData) {
               const modelUrl = modelImage.startsWith('http') ? modelImage : undefined
@@ -639,7 +639,7 @@ export async function POST(request: NextRequest) {
           }
           
           if (!needScene && backgroundImage) {
-            sendEvent({ type: 'progress', step: 'scene', message: '处理用户选择的场景图片...' })
+            sendEvent({ type: 'progress', step: 'scene', message: 'Processing selected scene image...' })
             const sceneData = await imageToBase64(backgroundImage)
             if (sceneData) {
               const sceneUrl = backgroundImage.startsWith('http') ? backgroundImage : undefined
@@ -652,7 +652,7 @@ export async function POST(request: NextRequest) {
 
           // 5. Fallback: 如果 AI 选择失败或数量不足，随机补充
           if (modelDataList.length < 4) {
-            sendEvent({ type: 'progress', step: 'model', message: '随机补充模特...' })
+            sendEvent({ type: 'progress', step: 'model', message: 'Randomly selecting additional models...' })
             const needed = 4 - modelDataList.length
             for (let i = 0; i < needed; i++) {
             const randomModel = await getRandomPresetBase64('studio-models', 5)
@@ -663,7 +663,7 @@ export async function POST(request: NextRequest) {
           }
           
           if (sceneDataList.length < 4) {
-            sendEvent({ type: 'progress', step: 'scene', message: '随机补充场景...' })
+            sendEvent({ type: 'progress', step: 'scene', message: 'Randomly selecting additional scenes...' })
             const sceneFiles = ['background01', 'background02', 'background03', 'background04', 'background05',
                                'background06', 'background07', 'background08', 'background09', 'background10', 'background11']
             const needed = 4 - sceneDataList.length
@@ -683,12 +683,12 @@ export async function POST(request: NextRequest) {
 
           // 6. 验证必需数据
           if (modelDataList.length === 0) {
-            sendEvent({ type: 'error', error: '无法获取模特图片' })
+            sendEvent({ type: 'error', error: 'Failed to fetch model images' })
             controller.close()
             return
           }
           if (sceneDataList.length === 0) {
-            sendEvent({ type: 'error', error: '无法获取场景图片' })
+            sendEvent({ type: 'error', error: 'Failed to fetch scene images' })
             controller.close()
             return
           }
@@ -702,7 +702,7 @@ export async function POST(request: NextRequest) {
           }
 
           // 7. 并行生成 4 张图片（每张使用不同的模特/场景组合）
-          sendEvent({ type: 'progress', step: 'generate', message: '开始生成 4 张图片...' })
+          sendEvent({ type: 'progress', step: 'generate', message: 'Starting to generate 4 images...' })
           
           let successCount = 0
           const generatePromises = [0, 1, 2, 3].map(async (index) => {
@@ -713,7 +713,7 @@ export async function POST(request: NextRequest) {
               type: 'progress', 
               step: 'image', 
               index, 
-              message: `生成第 ${index + 1}/4 张图片...` 
+              message: `Generating image ${index + 1}/4...` 
             })
             
             // 步骤2: 生成服装搭配
@@ -722,7 +722,7 @@ export async function POST(request: NextRequest) {
             )
             
             if (!outfitInstruct) {
-              sendEvent({ type: 'image_error', index, error: '生成搭配方案失败' })
+              sendEvent({ type: 'image_error', index, error: 'Failed to generate outfit plan' })
               return { index, success: false }
             }
             
@@ -732,7 +732,7 @@ export async function POST(request: NextRequest) {
             )
             
             if (!shotInstruct) {
-              sendEvent({ type: 'image_error', index, error: '生成拍摄指令失败' })
+              sendEvent({ type: 'image_error', index, error: 'Failed to generate shot instructions' })
               return { index, success: false }
             }
             
@@ -791,10 +791,10 @@ export async function POST(request: NextRequest) {
                   ...(saveResult.dbId ? { dbId: saveResult.dbId } : {}),
                 })
               } else {
-                sendEvent({ type: 'image_error', index, error: '图片上传失败' })
+                sendEvent({ type: 'image_error', index, error: 'Image upload failed' })
               }
             } else {
-              sendEvent({ type: 'image_error', index, error: '图片生成失败' })
+              sendEvent({ type: 'image_error', index, error: 'Image generation failed' })
             }
             
             return { index, success: !!imageResult }
@@ -812,7 +812,7 @@ export async function POST(request: NextRequest) {
           
         } catch (err: any) {
           console.error('[ProStudio] Stream error:', err)
-          sendEvent({ type: 'error', error: err.message || '生成失败' })
+          sendEvent({ type: 'error', error: err.message || 'Generation failed' })
         }
         
         controller.close()
