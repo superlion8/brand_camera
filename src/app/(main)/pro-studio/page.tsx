@@ -1340,46 +1340,71 @@ function ProStudioPageContent() {
                   {/* Two-column content */}
                   <div className="max-w-5xl mx-auto px-8 py-8">
                     <div className="flex gap-8">
-                      {/* Left: Feature Introduction */}
+                      {/* Left: Feature Introduction with Before/After */}
                       <div className="flex-1 min-w-0">
-                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-6 space-y-6">
-                          <div className="text-center py-8">
-                            <div className="w-16 h-16 mx-auto mb-4 bg-amber-50 rounded-2xl flex items-center justify-center">
-                              <Sparkles className="w-8 h-8 text-amber-500" />
+                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 overflow-hidden">
+                          {/* Before/After Image Animation */}
+                          <div className="relative aspect-[16/9] overflow-hidden">
+                            {/* Before Image */}
+                            <Image 
+                              src="https://cvdogeigbpussfamctsu.supabase.co/storage/v1/object/public/presets/homepage/pro-studio-before.jpg?v=2" 
+                              alt="Before" 
+                              fill 
+                              className="object-cover"
+                              unoptimized
+                            />
+                            <div className="absolute top-3 left-3 px-2 py-1 bg-black/50 backdrop-blur-sm rounded text-xs font-medium text-white z-10">
+                              Original
                             </div>
-                            <h3 className="text-lg font-semibold text-zinc-900 mb-2">{t.proStudio?.proStudioMode || 'Pro Studio Mode'}</h3>
-                            <p className="text-sm text-zinc-500 max-w-xs mx-auto">
-                              {t.proStudio?.proStudioModeDesc || 'After uploading product images, AI will generate 4 professional model showcase images in different styles'}
-                            </p>
+                            
+                            {/* After Image with Animation */}
+                            <motion.div
+                              className="absolute inset-0"
+                              initial={{ clipPath: 'inset(0 100% 0 0)' }}
+                              animate={{ clipPath: ['inset(0 100% 0 0)', 'inset(0 0% 0 0)', 'inset(0 0% 0 0)', 'inset(0 100% 0 0)'] }}
+                              transition={{
+                                duration: 4,
+                                ease: "easeInOut",
+                                times: [0, 0.3, 0.7, 1],
+                                repeat: Infinity,
+                                repeatDelay: 1,
+                              }}
+                            >
+                              <Image 
+                                src="https://cvdogeigbpussfamctsu.supabase.co/storage/v1/object/public/presets/homepage/pro-studio-after.png?v=2" 
+                                alt="After" 
+                                fill 
+                                className="object-cover"
+                                unoptimized
+                              />
+                              <div className="absolute top-3 left-3 px-2 py-1 bg-amber-500 rounded text-xs font-medium text-white z-10">
+                                Result
+                              </div>
+                            </motion.div>
                           </div>
                           
-                          <div className="border-t border-zinc-100 pt-6 space-y-4">
-                            <div className="flex items-start gap-3">
-                              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
-                                <Check className="w-4 h-4 text-blue-600" />
-                              </div>
-                              <div>
-                                <h4 className="text-sm font-medium text-zinc-900">{t.proStudio?.smartModelMatch || 'Smart Model Matching'}</h4>
-                                <p className="text-xs text-zinc-500">{t.proStudio?.smartModelMatchDesc || 'Automatically match the best model for your product'}</p>
-                              </div>
+                          {/* Feature Info */}
+                          <div className="p-6 space-y-4">
+                            <div>
+                              <h3 className="text-lg font-semibold text-zinc-900">{t.proStudio?.proStudioMode || 'Pro Studio Mode'}</h3>
+                              <p className="text-sm text-zinc-500 mt-1">
+                                {t.proStudio?.proStudioModeDesc || 'After uploading product images, AI will generate 4 professional model showcase images in different styles'}
+                              </p>
                             </div>
-                            <div className="flex items-start gap-3">
-                              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center shrink-0">
-                                <Check className="w-4 h-4 text-purple-600" />
-                              </div>
-                              <div>
-                                <h4 className="text-sm font-medium text-zinc-900">{t.proStudio?.proBgScene || 'Professional Background'}</h4>
-                                <p className="text-xs text-zinc-500">{t.proStudio?.proBgSceneDesc || 'Multiple professional photography backgrounds'}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-start gap-3">
-                              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
-                                <Check className="w-4 h-4 text-green-600" />
-                              </div>
-                              <div>
-                                <h4 className="text-sm font-medium text-zinc-900">{t.proStudio?.highQualityOutput || 'High Quality Output'}</h4>
-                                <p className="text-xs text-zinc-500">{t.proStudio?.highQualityOutputDesc || 'Professional quality images, ready for e-commerce'}</p>
-                              </div>
+                            
+                            <div className="flex flex-wrap gap-2">
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-medium rounded-full">
+                                <Check className="w-3 h-3" />
+                                {t.proStudio?.smartModelMatch || 'Smart Model Matching'}
+                              </span>
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 text-purple-700 text-xs font-medium rounded-full">
+                                <Check className="w-3 h-3" />
+                                {t.proStudio?.proBgScene || 'Professional Background'}
+                              </span>
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 text-xs font-medium rounded-full">
+                                <Check className="w-3 h-3" />
+                                {t.proStudio?.highQualityOutput || 'High Quality Output'}
+                              </span>
                             </div>
                           </div>
                         </div>
