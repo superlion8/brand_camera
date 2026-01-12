@@ -479,7 +479,11 @@ export const zh = {
   // Daily reward
   dailyReward: {
     title: "🎁 每日登录奖励",
-    welcome: "🎉 欢迎新用户！",
+    welcome: "🎉 欢迎！",
+    available: "🎁 每日奖励可领取！",
+    clickToClaim: "点击领取 +{credits} credits",
+    claim: "领取",
+    claimed: "✅ 领取成功！",
     credited: "+{credits} credits 已到账",
   },
   

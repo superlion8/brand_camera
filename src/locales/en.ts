@@ -481,7 +481,11 @@ export const en: Translations = {
   // Daily reward
   dailyReward: {
     title: "🎁 Daily Login Reward",
-    welcome: "🎉 Welcome New User!",
+    welcome: "🎉 Welcome!",
+    available: "🎁 Daily Reward Available!",
+    clickToClaim: "Click to claim +{credits} credits",
+    claim: "Claim",
+    claimed: "✅ Reward Claimed!",
     credited: "+{credits} credits added",
   },
   

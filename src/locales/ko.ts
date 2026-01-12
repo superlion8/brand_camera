@@ -480,7 +480,11 @@ export const ko: Translations = {
   // Daily reward
   dailyReward: {
     title: "🎁 일일 로그인 보상",
-    welcome: "🎉 새로운 사용자 환영!",
+    welcome: "🎉 환영합니다!",
+    available: "🎁 일일 보상 수령 가능!",
+    clickToClaim: "클릭하여 +{credits} 크레딧 받기",
+    claim: "받기",
+    claimed: "✅ 보상 수령 완료!",
     credited: "+{credits} 크레딧 추가됨",
   },
   

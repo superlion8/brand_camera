@@ -29,8 +29,15 @@ interface DailyRewardResult {
   isNewUser?: boolean
 }
 
+// 可领取状态
+interface DailyRewardStatus {
+  canClaim: boolean
+  alreadyClaimed: boolean
+  rewardAmount: number
+}
+
 const QUOTA_CACHE_KEY = 'brand_camera_quota_cache_v2'  // 版本号更新
-const DAILY_REWARD_KEY = 'brand_camera_daily_reward_shown'
+const DAILY_REWARD_CHECK_KEY = 'brand_camera_daily_reward_check'
 
 // Get cached quota from localStorage
 function getCachedQuota(userId: string): QuotaInfo | null {
@@ -60,26 +67,36 @@ function setCachedQuota(userId: string, quota: QuotaInfo) {
   } catch {}
 }
 
-// Check if daily reward toast was shown today
-function wasDailyRewardShownToday(): boolean {
-  if (typeof window === 'undefined') return true
+// Check if we already checked daily reward today (to avoid repeated API calls)
+function getDailyRewardCheckCache(): DailyRewardStatus | null {
+  if (typeof window === 'undefined') return null
   try {
-    const stored = localStorage.getItem(DAILY_REWARD_KEY)
+    const stored = localStorage.getItem(DAILY_REWARD_CHECK_KEY)
     if (stored) {
-      const { date } = JSON.parse(stored)
+      const { date, status } = JSON.parse(stored)
       const today = new Date().toISOString().split('T')[0]
-      return date === today
+      if (date === today) {
+        return status
+      }
     }
   } catch {}
-  return false
+  return null
 }
 
-// Mark daily reward toast as shown today
-function markDailyRewardShown() {
+// Cache daily reward check result
+function setDailyRewardCheckCache(status: DailyRewardStatus) {
   if (typeof window === 'undefined') return
   try {
     const today = new Date().toISOString().split('T')[0]
-    localStorage.setItem(DAILY_REWARD_KEY, JSON.stringify({ date: today }))
+    localStorage.setItem(DAILY_REWARD_CHECK_KEY, JSON.stringify({ date: today, status }))
+  } catch {}
+}
+
+// Clear daily reward check cache (after claiming)
+function clearDailyRewardCheckCache() {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.removeItem(DAILY_REWARD_CHECK_KEY)
   } catch {}
 }
 
@@ -96,9 +113,14 @@ export function useQuota() {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [dailyReward, setDailyReward] = useState<DailyRewardResult | null>(null)
+  const [dailyRewardStatus, setDailyRewardStatus] = useState<DailyRewardStatus | null>(() => {
+    // Initialize from cache
+    return getDailyRewardCheckCache()
+  })
+  const [isClaimingReward, setIsClaimingReward] = useState(false)
   
-  // Track if we've already claimed daily reward this session
-  const hasClaimedRef = useRef(false)
+  // Track if we've already checked daily reward this session
+  const hasCheckedRef = useRef(false)
 
   // Try to load from cache when user changes
   useEffect(() => {
@@ -107,15 +129,53 @@ export function useQuota() {
       if (cached) {
         setQuota(cached)
       }
+      // Also load daily reward status from cache
+      const rewardCache = getDailyRewardCheckCache()
+      if (rewardCache) {
+        setDailyRewardStatus(rewardCache)
+      }
     } else {
       setQuota(null)
+      setDailyRewardStatus(null)
     }
   }, [user?.id])
 
-  // Claim daily reward (called once on first fetch)
+  // Check if daily reward is available (called once on first fetch)
+  const checkDailyReward = useCallback(async () => {
+    if (!user || hasCheckedRef.current) return
+    hasCheckedRef.current = true
+    
+    // Check cache first
+    const cached = getDailyRewardCheckCache()
+    if (cached) {
+      setDailyRewardStatus(cached)
+      return
+    }
+    
+    try {
+      const response = await fetch('/api/quota/daily-reward', {
+        method: 'GET',
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        const status: DailyRewardStatus = {
+          canClaim: data.canClaim,
+          alreadyClaimed: data.alreadyClaimed,
+          rewardAmount: data.rewardAmount || 5,
+        }
+        setDailyRewardStatus(status)
+        setDailyRewardCheckCache(status)
+      }
+    } catch (error) {
+      console.error('Error checking daily reward:', error)
+    }
+  }, [user])
+
+  // Claim daily reward (called when user clicks the claim button)
   const claimDailyReward = useCallback(async () => {
-    if (!user || hasClaimedRef.current) return null
-    hasClaimedRef.current = true
+    if (!user || isClaimingReward) return null
+    setIsClaimingReward(true)
     
     try {
       const response = await fetch('/api/quota/daily-reward', {
@@ -136,24 +196,30 @@ export function useQuota() {
         setCachedQuota(user.id, newQuota)
         
         if (data.credited) {
-          // Only show toast if not already shown today
-          if (!wasDailyRewardShownToday()) {
-            setDailyReward({
-              credited: true,
-              creditsAdded: data.creditsAdded,
-              isNewUser: data.isNewUser,
-            })
-            markDailyRewardShown()
+          setDailyReward({
+            credited: true,
+            creditsAdded: data.creditsAdded,
+            isNewUser: data.isNewUser,
+          })
+          // Update status to already claimed
+          const newStatus: DailyRewardStatus = {
+            canClaim: false,
+            alreadyClaimed: true,
+            rewardAmount: data.creditsAdded || 5,
           }
+          setDailyRewardStatus(newStatus)
+          clearDailyRewardCheckCache()  // Clear cache so next day it will check again
         }
         
         return data
       }
     } catch (error) {
       console.error('Error claiming daily reward:', error)
+    } finally {
+      setIsClaimingReward(false)
     }
     return null
-  }, [user])
+  }, [user, isClaimingReward])
 
   // Fetch quota from API and update cache
   const fetchQuota = useCallback(async () => {
@@ -164,16 +230,10 @@ export function useQuota() {
 
     setIsLoading(true)
     try {
-      // First, try to claim daily reward (will also return updated quota)
-      const rewardResult = await claimDailyReward()
+      // Check if daily reward is available (non-blocking)
+      checkDailyReward()
       
-      // If reward was claimed, quota is already updated
-      if (rewardResult) {
-        setIsLoading(false)
-        return
-      }
-      
-      // Otherwise, fetch quota normally
+      // Fetch quota normally
       const response = await fetch('/api/quota')
       if (response.ok) {
         const data = await response.json()
@@ -191,7 +251,7 @@ export function useQuota() {
     } finally {
       setIsLoading(false)
     }
-  }, [user, claimDailyReward])
+  }, [user, checkDailyReward])
 
   // Fetch on mount only if no cache
   useEffect(() => {
@@ -306,9 +366,12 @@ export function useQuota() {
     quota,
     isLoading,
     dailyReward,
+    dailyRewardStatus,  // 新增：可领取状态
+    isClaimingReward,   // 新增：领取中状态
     checkQuota,
     refreshQuota,
     fetchQuota,
+    claimDailyReward,   // 新增：手动领取方法
     clearDailyReward,
     // 新增：获取详细的 credits 信息
     credits: quota?.credits,
