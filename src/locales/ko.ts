@@ -77,6 +77,7 @@ export const ko: Translations = {
     customShot: "맞춤 촬영",
     brand: "브랜드",
     editingRoom: "편집실",
+    generalEdit: "일반 편집",
     myPhotos: "내 사진",
   },
   

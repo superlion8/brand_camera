@@ -76,6 +76,7 @@ export const zh = {
     customShot: "定制拍摄",
     brand: "品牌",
     editingRoom: "修图室",
+    generalEdit: "通用编辑",
     myPhotos: "我的成片",
   },
   

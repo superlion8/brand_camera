@@ -59,7 +59,14 @@ export function Sidebar({ className }: { className?: string }) {
       icon: <Home className="w-5 h-5" />,
       href: '/app',
     },
-    // 2. Model Shot
+    // 2. General Edit
+    {
+      id: 'general-edit',
+      label: t.nav?.generalEdit || 'General Edit',
+      icon: <Wand2 className="w-5 h-5" />,
+      href: '/edit/general',
+    },
+    // 3. Model Shot
     {
       id: 'model-shot',
       label: t.nav?.modelShot || 'Model Shot',
@@ -71,7 +78,7 @@ export function Sidebar({ className }: { className?: string }) {
         { id: 'social', label: t.home?.socialUGC || 'Social UGC', href: '/social' },
       ],
     },
-    // 3. Custom Shot
+    // 4. Custom Shot
     {
       id: 'custom-shot',
       label: t.nav?.customShot || 'Custom Shot',
@@ -83,7 +90,7 @@ export function Sidebar({ className }: { className?: string }) {
         { id: 'outfit-change', label: t.home?.outfitChange || 'Outfit Change', href: '/try-on' },
       ],
     },
-    // 4. Brand
+    // 5. Brand
     {
       id: 'brand',
       label: t.nav?.brand || 'Brand',
@@ -93,13 +100,6 @@ export function Sidebar({ className }: { className?: string }) {
         { id: 'model-create', label: t.home?.modelCreate || 'Model Create', href: '/model-create' },
         { id: 'brand-style', label: t.home?.brandStyle || 'Brand Style', href: '/brand-style' },
       ],
-    },
-    // 5. Editing Room
-    {
-      id: 'edit',
-      label: t.nav?.editingRoom || 'Editing Room',
-      icon: <Wand2 className="w-5 h-5" />,
-      href: '/edit',
     },
     // 6. My Photos
     {

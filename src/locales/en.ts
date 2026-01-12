@@ -78,6 +78,7 @@ export const en: Translations = {
     customShot: "Custom Shot",
     brand: "Brand",
     editingRoom: "Editing Room",
+    generalEdit: "General Edit",
     myPhotos: "My Photos",
   },
   
