@@ -38,6 +38,7 @@ interface DailyRewardStatus {
 
 const QUOTA_CACHE_KEY = 'brand_camera_quota_cache_v2'  // 版本号更新
 const DAILY_REWARD_CHECK_KEY = 'brand_camera_daily_reward_check'
+const QUOTA_UPDATE_EVENT = 'brand_camera_quota_update'  // 全局事件名
 
 // Get cached quota from localStorage
 function getCachedQuota(userId: string): QuotaInfo | null {
@@ -139,6 +140,18 @@ export function useQuota() {
       setDailyRewardStatus(null)
     }
   }, [user?.id])
+
+  // 监听全局 quota 更新事件，保持所有组件同步
+  useEffect(() => {
+    const handleQuotaUpdate = (event: CustomEvent<QuotaInfo>) => {
+      setQuota(event.detail)
+    }
+    
+    window.addEventListener(QUOTA_UPDATE_EVENT, handleQuotaUpdate as EventListener)
+    return () => {
+      window.removeEventListener(QUOTA_UPDATE_EVENT, handleQuotaUpdate as EventListener)
+    }
+  }, [])
 
   // Check if daily reward is available (called once on first fetch)
   const checkDailyReward = useCallback(async () => {
@@ -351,6 +364,11 @@ export function useQuota() {
         }
         setQuota(newQuota)
         setCachedQuota(user.id, newQuota)
+        
+        // 触发全局事件，让其他组件（如 QuotaIndicator）也能更新
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent(QUOTA_UPDATE_EVENT, { detail: newQuota }))
+        }
       }
     } catch (error) {
       console.error('Error refreshing quota:', error)
