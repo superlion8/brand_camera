@@ -572,7 +572,7 @@ export default function ReferenceShotPage() {
               >
                 <Wand2 className="w-5 h-5" />
                 {t.referenceShot?.generate || '开始生成'}
-                <CreditCostBadge cost={4} className="ml-2" />
+                <CreditCostBadge cost={2} className="ml-2" />
               </motion.button>
             )}
           </div>
@@ -800,7 +800,7 @@ export default function ReferenceShotPage() {
           >
             <Wand2 className="w-5 h-5" />
             {t.referenceShot?.generate || '开始生成'}
-            <CreditCostBadge cost={4} className="ml-2" />
+            <CreditCostBadge cost={2} className="ml-2" />
           </motion.button>
         </div>
       )}

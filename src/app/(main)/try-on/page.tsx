@@ -537,7 +537,7 @@ export default function TryOnPage() {
                 >
                   <Sparkles className="w-5 h-5" />
                   <span>{t.tryOn?.generate || '开始换装'}</span>
-                  <CreditCostBadge cost={4} className="ml-2" />
+                  <CreditCostBadge cost={2} className="ml-2" />
                 </button>
               </div>
             </div>
@@ -557,7 +557,7 @@ export default function TryOnPage() {
               >
                 <Sparkles className="w-5 h-5" />
                 <span>{t.tryOn?.generate || '开始换装'}</span>
-                <CreditCostBadge cost={4} className="ml-2" />
+                <CreditCostBadge cost={2} className="ml-2" />
               </button>
             </div>
           )

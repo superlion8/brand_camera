@@ -631,7 +631,7 @@ export default function GeneralEditPage() {
                 <>
                   <Wand2 className="w-5 h-5" />
                   <span>{t.edit.startGenerate}</span>
-                  <CreditCostBadge cost={4} className="ml-2" />
+                  <CreditCostBadge cost={1} className="ml-2" />
                 </>
               )}
             </button>

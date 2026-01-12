@@ -843,7 +843,7 @@ function StudioPageContent() {
                     >
                       <Sparkles className="w-5 h-5" />
                       <span>{t.camera.startShoot}</span>
-                      <CreditCostBadge cost={4} className="ml-2" />
+                      <CreditCostBadge cost={2} className="ml-2" />
                     </button>
                   </div>
                   
@@ -1158,7 +1158,7 @@ function StudioPageContent() {
             >
               <Sparkles className="w-5 h-5" />
               <span>{t.camera.startShoot}</span>
-              <CreditCostBadge cost={4} className="ml-2" />
+              <CreditCostBadge cost={2} className="ml-2" />
             </button>
           </div>
         )}
