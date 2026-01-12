@@ -634,12 +634,20 @@ export default function GeneralEditPage() {
                           return (
                             <div key={index} className="relative aspect-square group">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={img} alt={`Image ${index + 1}`} className="absolute inset-0 w-full h-full object-cover rounded-lg" />
-                              <div className="absolute top-1 left-1 w-5 h-5 bg-purple-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                              <img 
+                                src={img} 
+                                alt={`Image ${index + 1}`} 
+                                className="absolute inset-0 w-full h-full object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                onClick={() => setZoomImage(img)}
+                              />
+                              <div className="absolute top-1 left-1 w-5 h-5 bg-purple-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center pointer-events-none">
                                 {index + 1}
                               </div>
                               <button
-                                onClick={() => handleRemoveImage(index)}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleRemoveImage(index)
+                                }}
                                 className="absolute top-1 right-1 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                               >
                                 <Trash2 className="w-3 h-3" />
