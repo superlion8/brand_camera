@@ -33,8 +33,8 @@ type PageMode = "main" | "processing" | "results"
 type StyleMode = "lifestyle" | "studio"  // 生活模式 / 棚拍模式
 type ShootMode = "random"  // 只保留随意拍模式
 
-// 生成图片数量（与后端 API 保持一致，生成 5 张）
-const GROUP_NUM_IMAGES = 5
+// 生成图片数量
+const GROUP_NUM_IMAGES = 4
 
 // 包装组件以支持 Suspense
 function GroupShootPageContent() {

@@ -57,7 +57,7 @@ Analyze the provided image. Identify:
 
 # Task
 
-Based on your analysis, generate **5 distinct photography directives** to showcase the product from different angles or in different ways.
+Based on your analysis, generate **4 distinct photography directives** to showcase the product from different angles or in different ways.
 
 # Constraints
 
@@ -65,11 +65,11 @@ Based on your analysis, generate **5 distinct photography directives** to showca
 - **Inventory Consistency:** Work ONLY with the items present in the source image. **Do NOT introduce any new accessories or props.** For example, if the model is not holding a bag in the original image, do NOT write instructions like "holding a bag" or "clutching a purse". If there is no chair, do not ask them to "sit on a chair".
 - **Environment Consistency:** Maintain the original lighting, environment, and background.
 - **Natural & Professional:** Directives should be simple and achievable. Avoid overly dramatic, artistic, or weird poses that distract from the product.
-- **Quantity:** Strictly output 5 variations.
+- **Quantity:** Strictly output 4 variations.
 
 # Output Format
 
-Output **ONLY** a standard JSON array containing 5 objects. Do not wrap the JSON in markdown code blocks. Do not add conversational text.
+Output **ONLY** a standard JSON array containing 4 objects. Do not wrap the JSON in markdown code blocks. Do not add conversational text.
 
 Use this exact JSON schema:
 
@@ -113,7 +113,7 @@ Analyze the provided image. Identify:
 
 # Task
 
-Design a cohesive **5-photo Instagram Carousel (Slide)** sequence based on the original image's context.
+Design a cohesive **4-photo Instagram Carousel (Slide)** sequence based on the original image's context.
 
 The sequence should offer visual variety (mixing wide shots, close-ups, and different angles) to keep the viewer engaged, while maintaining the same lighting and location.
 
@@ -122,11 +122,11 @@ The sequence should offer visual variety (mixing wide shots, close-ups, and diff
 - **Vibe:** Focus on "natural," "effortless," and "candid" aesthetics. Avoid stiff, studio-like commercial posing.
 - **Variety:** Do not repeat the same composition 5 times. Mix detail shots, body shots, and dynamic movement.
 - **Consistency:** Keep the lighting and environment fixed.
-- **Quantity:** Strictly output 5 variations.
+- **Quantity:** Strictly output 4 variations.
 
 # Output Format
 
-Output **ONLY** a standard JSON array containing 5 objects. Do not use markdown code blocks.
+Output **ONLY** a standard JSON array containing 4 objects. Do not use markdown code blocks.
 
 Use this exact JSON schema:
 
@@ -196,7 +196,6 @@ function parseStudioPoseInstructions(text: string): StudioPoseInstruction[] {
     { id: 2, product_focus: 'Side profile of the product', pose_instruction: 'Turn 45 degrees to the right, hands relaxed', camera_position: 'Eye-level, 3/4 view', composition: 'Medium shot, rule of thirds' },
     { id: 3, product_focus: 'Back detail of the product', pose_instruction: 'Turn to show back, look over shoulder', camera_position: 'Eye-level, back view', composition: 'Full body shot, center composed' },
     { id: 4, product_focus: 'Detail shot', pose_instruction: 'Slight lean forward to highlight texture', camera_position: 'Slightly elevated angle', composition: 'Medium close-up shot' },
-    { id: 5, product_focus: 'Dynamic angle', pose_instruction: 'Walking pose with natural movement', camera_position: 'Eye-level, slight angle', composition: 'Full body shot with movement' },
   ]
 
   try {
@@ -222,12 +221,12 @@ function parseStudioPoseInstructions(text: string): StudioPoseInstruction[] {
         composition: p.composition || 'Center composed',
       }))
       
-      if (validPoses.length >= 5) {
+      if (validPoses.length >= 4) {
         console.log('[GroupShoot-Studio] Successfully parsed JSON poses:', validPoses.length)
-        return validPoses.slice(0, 5)
+        return validPoses.slice(0, 4)
       }
       
-      while (validPoses.length < 5) {
+      while (validPoses.length < 4) {
         validPoses.push(defaultPoses[validPoses.length])
       }
       return validPoses
@@ -248,7 +247,6 @@ function parseLifestylePoseInstructions(text: string): LifestylePoseInstruction[
     { slide_number: 2, shot_type: 'Candid Laugh', pose_instruction: 'Natural laugh, looking slightly away', facial_expression: 'Big genuine smile', camera_position: 'Slightly low angle', composition: 'Rule of thirds' },
     { slide_number: 3, shot_type: 'Walking Motion', pose_instruction: 'Mid-stride walking pose', facial_expression: 'Neutral chic', camera_position: 'Side angle, wide shot', composition: 'Leading lines, full body' },
     { slide_number: 4, shot_type: 'Detail/Texture', pose_instruction: 'Close-up focusing on outfit details', facial_expression: 'Looking away softly', camera_position: 'Close-up, shallow depth', composition: 'Tight crop on detail' },
-    { slide_number: 5, shot_type: 'Lifestyle Context', pose_instruction: 'Interact with environment naturally', facial_expression: 'Relaxed, genuine', camera_position: 'Medium wide shot', composition: 'Environmental context visible' },
   ]
 
   try {
@@ -275,12 +273,12 @@ function parseLifestylePoseInstructions(text: string): LifestylePoseInstruction[
         composition: p.composition || 'Center composed',
       }))
       
-      if (validPoses.length >= 5) {
+      if (validPoses.length >= 4) {
         console.log('[GroupShoot-Lifestyle] Successfully parsed JSON poses:', validPoses.length)
-        return validPoses.slice(0, 5)
+        return validPoses.slice(0, 4)
       }
       
-      while (validPoses.length < 5) {
+      while (validPoses.length < 4) {
         validPoses.push(defaultPoses[validPoses.length])
       }
       return validPoses
@@ -418,8 +416,8 @@ export async function POST(request: NextRequest) {
               lifestylePoses = parseLifestylePoseInstructions('')
             }
 
-            // Generate 5 images
-            for (let i = 0; i < 5; i++) {
+            // Generate 4 images
+            for (let i = 0; i < 4; i++) {
               send({ type: 'progress', index: i })
               
               const poseInstruct = lifestylePoses[i]
@@ -505,8 +503,8 @@ export async function POST(request: NextRequest) {
               studioPoses = parseStudioPoseInstructions('')
             }
 
-            // Generate 5 images
-            for (let i = 0; i < 5; i++) {
+            // Generate 4 images
+            for (let i = 0; i < 4; i++) {
               send({ type: 'progress', index: i })
               
               const poseInstruct = studioPoses[i]
