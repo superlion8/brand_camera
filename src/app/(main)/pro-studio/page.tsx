@@ -1431,7 +1431,7 @@ function ProStudioPageContent() {
                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
                   <div className="text-center text-zinc-400">
                     <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin opacity-50" />
-                    <p className="text-sm">正在初始化相机...</p>
+                    <p className="text-sm">{t.camera?.initializingCamera || 'Initializing camera...'}</p>
                   </div>
                 </div>
               ) : mode === "camera" && !hasCamera && !isDesktop ? (

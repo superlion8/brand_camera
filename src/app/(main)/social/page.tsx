@@ -915,7 +915,7 @@ function SocialPageContent() {
                             </div>
                             <div className="text-center">
                               <p className="text-sm font-medium text-zinc-700">{t.social?.uploadProduct || '上传商品图片'}</p>
-                              <p className="text-xs text-zinc-400 mt-1">点击上传或拖拽图片</p>
+                              <p className="text-xs text-zinc-400 mt-1">{t.common?.clickToUploadOrDrag || 'Click to upload or drag and drop'}</p>
                             </div>
                           </button>
                           <div className="mt-4">
@@ -937,9 +937,9 @@ function SocialPageContent() {
                             <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-pink-50 to-purple-50 rounded-2xl flex items-center justify-center">
                               <Sparkles className="w-8 h-8 text-pink-500" />
                             </div>
-                            <h3 className="text-lg font-semibold text-zinc-900 mb-2">社媒种草模式</h3>
+                            <h3 className="text-lg font-semibold text-zinc-900 mb-2">{t.social?.socialMode || '社媒种草模式'}</h3>
                             <p className="text-sm text-zinc-500 max-w-xs mx-auto">
-                              生成小红书、INS 风格的时尚种草图片
+                              {t.social?.socialModeDesc || '生成小红书、INS 风格的时尚种草图片'}
                             </p>
                           </div>
                           
@@ -949,8 +949,8 @@ function SocialPageContent() {
                                 <Check className="w-4 h-4 text-pink-600" />
                               </div>
                               <div>
-                                <h4 className="text-sm font-medium text-zinc-900">小红书风格</h4>
-                                <p className="text-xs text-zinc-500">适合社交媒体分享的时尚风格</p>
+                                <h4 className="text-sm font-medium text-zinc-900">{t.social?.xiaohongshuStyle || '小红书风格'}</h4>
+                                <p className="text-xs text-zinc-500">{t.social?.xiaohongshuStyleDesc || '适合社交媒体分享的时尚风格'}</p>
                               </div>
                             </div>
                             <div className="flex items-start gap-3">
@@ -958,8 +958,8 @@ function SocialPageContent() {
                                 <Check className="w-4 h-4 text-purple-600" />
                               </div>
                               <div>
-                                <h4 className="text-sm font-medium text-zinc-900">精致穿搭展示</h4>
-                                <p className="text-xs text-zinc-500">展示商品搭配效果</p>
+                                <h4 className="text-sm font-medium text-zinc-900">{t.social?.outfitDisplay || '精致穿搭展示'}</h4>
+                                <p className="text-xs text-zinc-500">{t.social?.outfitDisplayDesc || '展示商品搭配效果'}</p>
                               </div>
                             </div>
                             <div className="flex items-start gap-3">
@@ -967,8 +967,8 @@ function SocialPageContent() {
                                 <Check className="w-4 h-4 text-orange-600" />
                               </div>
                               <div>
-                                <h4 className="text-sm font-medium text-zinc-900">种草力 MAX</h4>
-                                <p className="text-xs text-zinc-500">提升商品转化率</p>
+                                <h4 className="text-sm font-medium text-zinc-900">{t.social?.plantingPowerMax || '种草力 MAX'}</h4>
+                                <p className="text-xs text-zinc-500">{t.social?.plantingPowerMaxDesc || '提升商品转化率'}</p>
                               </div>
                             </div>
                           </div>
@@ -996,14 +996,14 @@ function SocialPageContent() {
                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
                   <div className="text-center text-zinc-400">
                     <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin opacity-50" />
-                    <p className="text-sm">正在初始化相机...</p>
+                    <p className="text-sm">{t.camera?.initializingCamera || 'Initializing camera...'}</p>
                   </div>
                 </div>
               ) : mode === "camera" && !hasCamera && !isDesktop ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
                   <div className="text-center text-zinc-400">
                     <Camera className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                    <p className="text-sm">相机不可用</p>
+                    <p className="text-sm">{t.camera?.cameraUnavailable || 'Camera unavailable'}</p>
                     <p className="text-xs mt-1">{t.camera?.productPlaceholder || '请上传商品图片'}</p>
                   </div>
                 </div>
@@ -1229,7 +1229,7 @@ function SocialPageContent() {
                                     className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-pink-400 flex flex-col items-center justify-center gap-1 transition-colors"
                                   >
                                     <Plus className="w-5 h-5 text-zinc-400" />
-                                    <span className="text-[10px] text-zinc-400">上传</span>
+                                    <span className="text-[10px] text-zinc-400">{t.common?.upload || 'Upload'}</span>
                                   </button>
                                   {allModels.map(model => (
                                     <button
@@ -1268,7 +1268,7 @@ function SocialPageContent() {
                                     className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-pink-400 flex flex-col items-center justify-center gap-1 transition-colors"
                                   >
                                     <Plus className="w-5 h-5 text-zinc-400" />
-                                    <span className="text-[10px] text-zinc-400">上传</span>
+                                    <span className="text-[10px] text-zinc-400">{t.common?.upload || 'Upload'}</span>
                                   </button>
                                   {allBackgrounds.map(bg => (
                                     <button

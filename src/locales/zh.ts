@@ -896,6 +896,15 @@ export const zh = {
     selectModel: "选择模特",
     selectBackground: "选择背景",
     group: "组",
+    // PC upload page
+    socialMode: "社媒种草模式",
+    socialModeDesc: "生成小红书、INS 风格的时尚种草图片",
+    xiaohongshuStyle: "小红书风格",
+    xiaohongshuStyleDesc: "适合社交媒体分享的时尚风格",
+    outfitDisplay: "精致穿搭展示",
+    outfitDisplayDesc: "展示商品搭配效果",
+    plantingPowerMax: "种草力 MAX",
+    plantingPowerMaxDesc: "提升商品转化率",
   },
 
   // LifeStyle 街拍

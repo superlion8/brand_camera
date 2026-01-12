@@ -898,6 +898,15 @@ export const en: Translations = {
     selectModel: "Select Model",
     selectBackground: "Select Background",
     group: "Group",
+    // PC upload page
+    socialMode: "Social Media Mode",
+    socialModeDesc: "Generate Xiaohongshu & Instagram style fashion images",
+    xiaohongshuStyle: "Xiaohongshu Style",
+    xiaohongshuStyleDesc: "Fashion style perfect for social media sharing",
+    outfitDisplay: "Elegant Outfit Display",
+    outfitDisplayDesc: "Showcase product outfit combinations",
+    plantingPowerMax: "Influence MAX",
+    plantingPowerMaxDesc: "Boost product conversion rate",
   },
 
   // LifeStyle Street Shot

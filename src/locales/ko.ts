@@ -897,6 +897,15 @@ export const ko: Translations = {
     selectModel: "모델 선택",
     selectBackground: "배경 선택",
     group: "그룹",
+    // PC upload page
+    socialMode: "소셜 미디어 모드",
+    socialModeDesc: "샤오홍슈, 인스타그램 스타일의 패션 이미지 생성",
+    xiaohongshuStyle: "샤오홍슈 스타일",
+    xiaohongshuStyleDesc: "소셜 미디어 공유에 적합한 패션 스타일",
+    outfitDisplay: "세련된 코디 전시",
+    outfitDisplayDesc: "상품 코디 효과 전시",
+    plantingPowerMax: "영향력 MAX",
+    plantingPowerMaxDesc: "상품 전환율 향상",
   },
 
   // 라이프스타일 스트릿 촬영
