@@ -1904,9 +1904,9 @@ function CameraPageContent() {
             </div>
             )}
             
-            {/* Slide-up Panel: Custom */}
+            {/* Slide-up Panel: Custom - Mobile only */}
             <AnimatePresence>
-              {showCustomPanel && (
+              {showCustomPanel && !isDesktop && (
                 <>
                   <motion.div 
                     initial={{ opacity: 0 }} 

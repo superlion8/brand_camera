@@ -1421,9 +1421,9 @@ function LifestylePageContent() {
         )}
       </AnimatePresence>
 
-      {/* Custom Panel - Model/Scene Selection */}
+      {/* Custom Panel - Model/Scene Selection - Mobile only */}
       <AnimatePresence>
-        {showCustomPanel && (
+        {showCustomPanel && !isDesktop && (
           <>
             <motion.div 
               initial={{ opacity: 0 }} 
