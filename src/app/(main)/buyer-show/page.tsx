@@ -1819,7 +1819,8 @@ function CameraPageContent() {
               )}
             </div>
 
-            {/* Bottom Controls Area */}
+            {/* Bottom Controls Area - Hide on PC review mode (already has buttons in 3-column layout) */}
+            {!(mode === "review" && isDesktop) && (
             <div className={`flex flex-col justify-end pb-safe pt-6 px-6 relative z-20 shrink-0 ${
               isDesktop 
                 ? 'bg-white border-t border-zinc-200 min-h-[6rem]' 
@@ -1901,6 +1902,7 @@ function CameraPageContent() {
                 </div>
               )}
             </div>
+            )}
             
             {/* Slide-up Panel: Custom */}
             <AnimatePresence>
