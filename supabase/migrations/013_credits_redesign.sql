@@ -23,6 +23,10 @@ ADD COLUMN IF NOT EXISTS daily_credits_date DATE;
 ALTER TABLE user_quotas 
 ADD COLUMN IF NOT EXISTS signup_credits INT DEFAULT 10;
 
+-- 管理员赠送余额（永久有效）
+ALTER TABLE user_quotas 
+ADD COLUMN IF NOT EXISTS admin_give_credits INT DEFAULT 0;
+
 -- ============================================
 -- 2. 数据迁移
 -- ============================================

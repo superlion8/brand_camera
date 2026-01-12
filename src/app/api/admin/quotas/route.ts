@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { 
+  calculateCreditsInfo, 
+  DEFAULT_SIGNUP_CREDITS,
+  type UserQuotaRecord 
+} from '@/lib/quota'
 
 // Admin emails from environment variable (comma separated)
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
-const DEFAULT_QUOTA = 10  // 新用户注册赠送 10 credits
 
 // GET - Get all user quotas (admin only)
-// 直接从 user_quotas 表读取，速度更快
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
   
@@ -30,7 +33,7 @@ export async function GET(request: NextRequest) {
     const { data: quotasData, error: quotaError } = await adminClient
       .from('user_quotas')
       .select('*')
-      .order('used_quota', { ascending: false })
+      .order('updated_at', { ascending: false })
     
     if (quotaError) {
       console.error('Error fetching quotas:', quotaError)
@@ -57,7 +60,6 @@ export async function GET(request: NextRequest) {
     const { data: authUsers } = await adminClient.auth.admin.listUsers()
     const userIdentityMap = new Map<string, string>()
     for (const authUser of authUsers?.users || []) {
-      // 优先使用手机号（如果有），否则使用 email
       const phone = authUser.phone
       const email = authUser.email
       const identity = phone || email || authUser.id
@@ -65,16 +67,28 @@ export async function GET(request: NextRequest) {
     }
     
     // Format response
-    const quotas = (quotasData || []).map(q => ({
-      id: q.user_id,
-      userId: q.user_id,
-      // 优先使用 auth.users 中的真实标识，其次是 user_quotas 中的 user_email，最后是 user_id
-      userEmail: userIdentityMap.get(q.user_id) || q.user_email || q.user_id,
-      totalQuota: q.total_quota || DEFAULT_QUOTA,
-      usedCount: q.used_quota || 0,
-      remainingQuota: Math.max(0, (q.total_quota || DEFAULT_QUOTA) - (q.used_quota || 0)),
-      updatedAt: lastActivityMap.get(q.user_id) || q.updated_at,
-    }))
+    const quotas = (quotasData || []).map(q => {
+      const credits = calculateCreditsInfo(q as UserQuotaRecord)
+      return {
+        id: q.user_id,
+        userId: q.user_id,
+        userEmail: userIdentityMap.get(q.user_id) || q.user_email || q.user_id,
+        // 新的 credits 详情
+        credits: {
+          available: credits.available,
+          daily: credits.daily,
+          subscription: credits.subscription,
+          signup: credits.signup,
+          purchased: credits.purchased,
+          dailyExpired: credits.dailyExpired,
+        },
+        // 向后兼容
+        totalQuota: credits.available,
+        usedCount: 0,
+        remainingQuota: credits.available,
+        updatedAt: lastActivityMap.get(q.user_id) || q.updated_at,
+      }
+    })
     
     return NextResponse.json({ quotas })
   } catch (error: any) {
@@ -83,7 +97,8 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// PUT - Update user's total quota limit (admin only)
+// PUT - Update user's quota (admin only)
+// 支持更新各种类型的 credits
 export async function PUT(request: NextRequest) {
   const supabase = await createClient()
   
@@ -104,33 +119,63 @@ export async function PUT(request: NextRequest) {
   
   try {
     const body = await request.json()
-    const { userId, totalQuota, userEmail } = body
+    const { 
+      userId, 
+      userEmail,
+      // 新字段
+      signupCredits,
+      purchasedCredits,
+      subscriptionCredits,
+      // 向后兼容
+      totalQuota,
+    } = body
     
     if (!userId) {
       return NextResponse.json({ error: 'userId is required' }, { status: 400 })
     }
     
-    if (typeof totalQuota !== 'number') {
-      return NextResponse.json({ error: 'totalQuota is required' }, { status: 400 })
+    // 构建更新对象
+    const updateData: any = {}
+    
+    if (userEmail !== undefined) {
+      updateData.user_email = userEmail
     }
     
-    // 先获取当前的 used_quota
-    const { data: existingQuota } = await adminClient
-      .from('user_quotas')
-      .select('used_quota')
-      .eq('user_id', userId)
-      .single()
+    // 优先使用新字段
+    if (signupCredits !== undefined) {
+      updateData.signup_credits = signupCredits
+    }
+    if (purchasedCredits !== undefined) {
+      updateData.purchased_credits = purchasedCredits
+    }
+    if (subscriptionCredits !== undefined) {
+      updateData.subscription_credits = subscriptionCredits
+    }
     
-    const currentUsed = existingQuota?.used_quota || 0
+    // 向后兼容：如果只传了 totalQuota，转换为 purchased_credits
+    if (totalQuota !== undefined && signupCredits === undefined && purchasedCredits === undefined) {
+      // 获取当前数据
+      const { data: existing } = await adminClient
+        .from('user_quotas')
+        .select('signup_credits')
+        .eq('user_id', userId)
+        .single()
+      
+      const currentSignup = existing?.signup_credits ?? DEFAULT_SIGNUP_CREDITS
+      // totalQuota - signup = purchased
+      updateData.purchased_credits = Math.max(0, totalQuota - currentSignup)
+    }
+    
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ error: 'No fields to update' }, { status: 400 })
+    }
     
     // Upsert user_quotas
     const { data, error } = await adminClient
       .from('user_quotas')
       .upsert({
         user_id: userId,
-        user_email: userEmail,
-        total_quota: totalQuota,
-        used_quota: currentUsed, // 保留现有的 used_quota
+        ...updateData,
       }, {
         onConflict: 'user_id'
       })
@@ -142,15 +187,25 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update quota' }, { status: 500 })
     }
     
+    const credits = calculateCreditsInfo(data as UserQuotaRecord)
+    
     return NextResponse.json({
       success: true,
       quota: {
-        id: data.id,
+        id: data.user_id,
         userId: data.user_id,
         userEmail: data.user_email,
-        totalQuota: data.total_quota,
-        usedCount: data.used_quota || 0,
-        remainingQuota: Math.max(0, data.total_quota - (data.used_quota || 0)),
+        credits: {
+          available: credits.available,
+          daily: credits.daily,
+          subscription: credits.subscription,
+          signup: credits.signup,
+          purchased: credits.purchased,
+        },
+        // 向后兼容
+        totalQuota: credits.available,
+        usedCount: 0,
+        remainingQuota: credits.available,
       }
     })
   } catch (error: any) {

@@ -970,42 +970,11 @@ function ProStudioPageContent() {
                       {/* Add more button - show if less than 4 additional items */}
                       {!capturedImage2 && (
                         <button
-                          onClick={async () => {
-                            if (!capturedImage) return
-                            setIsAnalyzingProduct(true)
-                            try {
-                              const [analysisResult, uploadedUrl] = await Promise.all([
-                                fetch('/api/analyze-product', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ image: capturedImage })
-                                }).then(res => res.json()).catch(() => ({ success: false })),
-                                user?.id 
-                                  ? ensureImageUrl(capturedImage, user.id, 'product')
-                                  : Promise.resolve(capturedImage)
-                              ])
-                              sessionStorage.setItem('product1Image', uploadedUrl)
-                              sessionStorage.removeItem('product2Image')
-                              if (analysisResult.success && analysisResult.data?.type) {
-                                sessionStorage.setItem('product1Type', analysisResult.data.type)
-                              }
-                            } catch (error) {
-                              sessionStorage.setItem('product1Image', capturedImage)
-                            }
-                            setIsAnalyzingProduct(false)
-                            router.push('/pro-studio/outfit')
-                          }}
-                          disabled={isAnalyzingProduct}
-                          className="aspect-square rounded-lg border-2 border-dashed border-zinc-300 hover:border-amber-400 flex flex-col items-center justify-center gap-1 transition-colors disabled:opacity-50"
+                          onClick={() => fileInputRef2.current?.click()}
+                          className="aspect-square rounded-lg border-2 border-dashed border-zinc-300 hover:border-amber-400 flex flex-col items-center justify-center gap-1 transition-colors"
                         >
-                          {isAnalyzingProduct ? (
-                            <Loader2 className="w-5 h-5 text-zinc-400 animate-spin" />
-                          ) : (
-                            <>
-                              <Plus className="w-5 h-5 text-zinc-400" />
-                              <span className="text-[10px] text-zinc-400">{t.proStudio?.add || 'Add'}</span>
-                            </>
-                          )}
+                          <Plus className="w-5 h-5 text-zinc-400" />
+                          <span className="text-[10px] text-zinc-400">{t.proStudio?.add || 'Add'}</span>
                         </button>
                       )}
                     </div>

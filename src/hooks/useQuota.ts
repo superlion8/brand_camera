@@ -4,10 +4,22 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers/AuthProvider'
 
+// Credits 详情
+interface CreditsInfo {
+  available: number
+  daily: number
+  subscription: number
+  signup: number
+  purchased: number
+  dailyExpired?: boolean
+}
+
+// 向后兼容的 QuotaInfo
 interface QuotaInfo {
   totalQuota: number
   usedCount: number
   remainingQuota: number
+  credits?: CreditsInfo
 }
 
 interface DailyRewardResult {
@@ -16,7 +28,7 @@ interface DailyRewardResult {
   isNewUser?: boolean
 }
 
-const QUOTA_CACHE_KEY = 'brand_camera_quota_cache'
+const QUOTA_CACHE_KEY = 'brand_camera_quota_cache_v2'  // 版本号更新
 const DAILY_REWARD_KEY = 'brand_camera_daily_reward_shown'
 
 // Get cached quota from localStorage
@@ -112,16 +124,17 @@ export function useQuota() {
       if (response.ok) {
         const data = await response.json()
         
+        // Update quota from the response
+        const newQuota: QuotaInfo = {
+          totalQuota: data.credits?.available || 0,
+          usedCount: 0,
+          remainingQuota: data.credits?.available || 0,
+          credits: data.credits,
+        }
+        setQuota(newQuota)
+        setCachedQuota(user.id, newQuota)
+        
         if (data.credited) {
-          // Update quota from the response
-          const newQuota = {
-            totalQuota: data.totalQuota,
-            usedCount: data.usedQuota,
-            remainingQuota: data.remainingQuota,
-          }
-          setQuota(newQuota)
-          setCachedQuota(user.id, newQuota)
-          
           // Only show toast if not already shown today
           if (!wasDailyRewardShownToday()) {
             setDailyReward({
@@ -131,9 +144,9 @@ export function useQuota() {
             })
             markDailyRewardShown()
           }
-          
-          return data
         }
+        
+        return data
       }
     } catch (error) {
       console.error('Error claiming daily reward:', error)
@@ -154,7 +167,7 @@ export function useQuota() {
       const rewardResult = await claimDailyReward()
       
       // If reward was claimed, quota is already updated
-      if (rewardResult?.credited) {
+      if (rewardResult) {
         setIsLoading(false)
         return
       }
@@ -163,10 +176,11 @@ export function useQuota() {
       const response = await fetch('/api/quota')
       if (response.ok) {
         const data = await response.json()
-        const newQuota = {
+        const newQuota: QuotaInfo = {
           totalQuota: data.totalQuota,
           usedCount: data.usedCount,
           remainingQuota: data.remainingQuota,
+          credits: data.credits,
         }
         setQuota(newQuota)
         setCachedQuota(user.id, newQuota)
@@ -203,10 +217,11 @@ export function useQuota() {
         
         // Refresh quota in background to sync latest data
         fetch('/api/quota').then(res => res.json()).then(data => {
-          const newQuota = {
+          const newQuota: QuotaInfo = {
             totalQuota: data.totalQuota,
             usedCount: data.usedCount,
             remainingQuota: data.remainingQuota,
+            credits: data.credits,
           }
           setQuota(newQuota)
           if (user) setCachedQuota(user.id, newQuota)
@@ -218,10 +233,11 @@ export function useQuota() {
       // Local cache says we have enough - proceed immediately
       // Refresh quota in background (non-blocking)
       fetch('/api/quota').then(res => res.json()).then(data => {
-        const newQuota = {
+        const newQuota: QuotaInfo = {
           totalQuota: data.totalQuota,
           usedCount: data.usedCount,
           remainingQuota: data.remainingQuota,
+          credits: data.credits,
         }
         setQuota(newQuota)
         if (user) setCachedQuota(user.id, newQuota)
@@ -236,10 +252,11 @@ export function useQuota() {
       const data = await response.json()
       
       // Update local quota state
-      const newQuota = {
+      const newQuota: QuotaInfo = {
         totalQuota: data.totalQuota,
         usedCount: data.usedCount,
         remainingQuota: data.remainingQuota,
+        credits: data.credits,
       }
       setQuota(newQuota)
       if (user) setCachedQuota(user.id, newQuota)
@@ -265,10 +282,11 @@ export function useQuota() {
       const response = await fetch('/api/quota')
       if (response.ok) {
         const data = await response.json()
-        const newQuota = {
+        const newQuota: QuotaInfo = {
           totalQuota: data.totalQuota,
           usedCount: data.usedCount,
           remainingQuota: data.remainingQuota,
+          credits: data.credits,
         }
         setQuota(newQuota)
         setCachedQuota(user.id, newQuota)
@@ -291,5 +309,7 @@ export function useQuota() {
     refreshQuota,
     fetchQuota,
     clearDailyReward,
+    // 新增：获取详细的 credits 信息
+    credits: quota?.credits,
   }
 }
