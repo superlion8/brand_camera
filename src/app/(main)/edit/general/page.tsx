@@ -387,78 +387,256 @@ export default function GeneralEditPage() {
 
   return (
     <div className="h-full flex flex-col bg-zinc-50">
-      {/* Header */}
-      <div className="h-14 border-b bg-white flex items-center px-4 shrink-0">
-        <button
-          onClick={() => router.push("/edit")}
-          className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5 text-zinc-600" />
-        </button>
-        <div className="flex items-center gap-2 ml-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-            <Wand2 className="w-4 h-4 text-white" />
+      {/* Header - Mobile only */}
+      {!isDesktop && (
+        <div className="h-14 border-b bg-white flex items-center px-4 shrink-0">
+          <button
+            onClick={() => router.push("/edit")}
+            className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 text-zinc-600" />
+          </button>
+          <div className="flex items-center gap-2 ml-2">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+              <Wand2 className="w-4 h-4 text-white" />
+            </div>
+            <span className="font-semibold text-zinc-900">{t.edit?.generalEdit || 'General Edit'}</span>
           </div>
-          <span className="font-semibold text-zinc-900">{t.edit.generalEdit}</span>
         </div>
-      </div>
+      )}
       
-      <div className="flex-1 overflow-y-auto pb-24">
-        {/* Image Area */}
-        <div className="bg-zinc-100 min-h-[280px] flex items-center justify-center relative p-4">
-          {inputImages.length === 0 ? (
-            <div className="w-full max-w-sm space-y-2">
-              {/* Camera */}
-              <button
-                onClick={() => {
-                  setActiveImageSlot(0)
-                  setShowCamera(true)
-                }}
-                className="w-full h-16 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white flex items-center justify-center gap-3 transition-colors shadow-lg shadow-purple-200"
-              >
-                <Camera className="w-5 h-5" />
-                <span className="font-medium">{t.edit.takePhoto}</span>
-              </button>
+      {/* PC Web: Two-column layout */}
+      {isDesktop ? (
+        <div className="flex-1 overflow-y-auto py-8">
+          <div className="max-w-5xl mx-auto px-8">
+            <div className="flex gap-8">
+              {/* Left Column: Image Upload */}
+              <div className="w-[400px] shrink-0">
+                <div className="bg-white rounded-2xl border border-zinc-200 p-6">
+                  <h3 className="font-semibold text-zinc-900 mb-4 flex items-center gap-2">
+                    <Upload className="w-5 h-5 text-purple-600" />
+                    {t.edit?.selectImage || 'Select Image'}
+                  </h3>
+                  
+                  {inputImages.length === 0 ? (
+                    <div className="space-y-3">
+                      {/* Upload options */}
+                      <button
+                        onClick={() => {
+                          setActiveImageSlot(0)
+                          fileInputRef.current?.click()
+                        }}
+                        className="w-full h-32 border-2 border-dashed border-zinc-300 rounded-xl bg-zinc-50 hover:border-purple-400 hover:bg-purple-50/50 flex flex-col items-center justify-center gap-2 transition-colors"
+                      >
+                        <Upload className="w-8 h-8 text-zinc-400" />
+                        <span className="text-sm text-zinc-600 font-medium">{t.edit?.uploadFromAlbum || 'Upload from Album'}</span>
+                        <span className="text-xs text-zinc-400">{t.edit?.clickOrDrag || 'Click or drag image'}</span>
+                      </button>
+                      
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => {
+                            setActiveImageSlot(0)
+                            setShowProductPanel(true)
+                          }}
+                          className="h-12 rounded-xl border border-zinc-200 bg-white hover:border-purple-300 hover:bg-purple-50 flex items-center justify-center gap-2 transition-colors"
+                        >
+                          <FolderHeart className="w-4 h-4 text-purple-500" />
+                          <span className="text-sm text-zinc-700">{t.edit?.fromAssets || 'From Assets'}</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            setActiveImageSlot(0)
+                            setShowGalleryPanel(true)
+                          }}
+                          className="h-12 rounded-xl border border-zinc-200 bg-white hover:border-purple-300 hover:bg-purple-50 flex items-center justify-center gap-2 transition-colors"
+                        >
+                          <Images className="w-4 h-4 text-purple-500" />
+                          <span className="text-sm text-zinc-700">{t.edit?.fromPhotos || 'From Photos'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : resultImage ? (
+                    <div className="relative group">
+                      <Image 
+                        src={resultImage} 
+                        alt="Result"
+                        width={400}
+                        height={500}
+                        className="w-full rounded-xl cursor-pointer hover:opacity-95 transition-opacity"
+                        onClick={() => setZoomImage(resultImage)}
+                      />
+                      <span className="absolute top-2 left-2 px-2 py-1 bg-green-500 text-white text-xs rounded font-medium">{t.edit?.generationResult || 'Result'}</span>
+                      <button
+                        onClick={handleReset}
+                        className="absolute bottom-2 right-2 px-3 py-1.5 bg-white/90 hover:bg-white text-zinc-700 text-sm font-medium rounded-lg shadow transition-colors"
+                      >
+                        {t.edit?.reselect || 'Reselect'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-zinc-600">
+                          {inputImages.filter(Boolean).length}/{MAX_IMAGES} {t.edit?.imagesSelected || 'images'}
+                        </span>
+                        <button onClick={handleReset} className="text-xs text-purple-600 hover:text-purple-700 font-medium">
+                          {t.edit?.clearAll || 'Clear all'}
+                        </button>
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-2">
+                        {inputImages.map((img, index) => {
+                          if (!img || typeof img !== 'string') return null
+                          return (
+                            <div key={index} className="relative aspect-square group">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={img} alt={`Image ${index + 1}`} className="absolute inset-0 w-full h-full object-cover rounded-lg" />
+                              <div className="absolute top-1 left-1 w-5 h-5 bg-purple-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                                {index + 1}
+                              </div>
+                              <button
+                                onClick={() => handleRemoveImage(index)}
+                                className="absolute top-1 right-1 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          )
+                        })}
+                        
+                        {inputImages.filter(Boolean).length < MAX_IMAGES && (
+                          <button
+                            onClick={() => {
+                              setActiveImageSlot(inputImages.length)
+                              fileInputRef.current?.click()
+                            }}
+                            className="aspect-square border-2 border-dashed border-zinc-300 rounded-lg flex flex-col items-center justify-center gap-1 hover:border-purple-400 hover:bg-purple-50/50 transition-colors"
+                          >
+                            <Upload className="w-4 h-4 text-zinc-400" />
+                            <span className="text-[10px] text-zinc-400">+{t.edit?.add || 'Add'}</span>
+                          </button>
+                        )}
+                      </div>
+                      
+                      <div className="p-2 bg-purple-50 rounded-lg border border-purple-100">
+                        <p className="text-xs text-purple-700">
+                          💡 {t.edit?.referenceHint || 'Use "Image 1", "Image 2" to reference images in prompt'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
               
-              <div className="grid grid-cols-3 gap-2">
-                {/* Album */}
-                <button
-                  onClick={() => {
-                    setActiveImageSlot(0)
-                    fileInputRef.current?.click()
-                  }}
-                  className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-1.5 transition-colors"
-                >
-                  <Upload className="w-4 h-4 text-zinc-500" />
-                  <span className="text-xs text-zinc-700">{t.camera.album}</span>
-                </button>
-                
-                {/* Asset library */}
-                <button
-                  onClick={() => {
-                    setActiveImageSlot(0)
-                    setShowProductPanel(true)
-                  }}
-                  className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-1.5 transition-colors"
-                >
-                  <FolderHeart className="w-4 h-4 text-zinc-500" />
-                  <span className="text-xs text-zinc-700">{t.edit.selectFromAssets}</span>
-                </button>
-                
-                {/* Gallery */}
-                <button
-                  onClick={() => {
-                    setActiveImageSlot(0)
-                    setShowGalleryPanel(true)
-                  }}
-                  className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-1.5 transition-colors"
-                >
-                  <Images className="w-4 h-4 text-zinc-500" />
-                  <span className="text-xs text-zinc-700">{t.edit.selectFromGallery}</span>
-                </button>
+              {/* Right Column: Prompt & Generate */}
+              <div className="flex-1 min-w-0">
+                <div className="bg-white rounded-2xl border border-zinc-200 p-6">
+                  <h3 className="font-semibold text-zinc-900 mb-4 flex items-center gap-2">
+                    <Wand2 className="w-5 h-5 text-purple-600" />
+                    {t.edit?.describeEdit || 'Describe your edits'}
+                  </h3>
+                  
+                  <textarea
+                    placeholder={t.edit?.editPlaceholder || 'e.g.: Change pants to blue jeans, remove people in background...'}
+                    value={customPrompt}
+                    onChange={(e) => setCustomPrompt(e.target.value)}
+                    className="w-full min-h-[200px] px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-300 text-sm leading-relaxed"
+                  />
+                  
+                  <p className="text-xs text-zinc-400 mt-2 mb-6">
+                    💡 {t.edit?.editPlaceholder || 'e.g.: Change pants to blue jeans, remove people in background...'}
+                  </p>
+                  
+                  <button
+                    onClick={(e) => {
+                      triggerFlyToGallery(e)
+                      handleGenerate()
+                    }}
+                    disabled={inputImages.filter(Boolean).length === 0 || !customPrompt.trim() || isGenerating}
+                    className={`w-full h-12 rounded-xl text-base font-semibold gap-2 flex items-center justify-center transition-all ${
+                      inputImages.filter(Boolean).length === 0 || !customPrompt.trim() || isGenerating
+                        ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
+                        : "bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white shadow-lg shadow-purple-200"
+                    }`}
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>{t.common?.generating || 'Generating...'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="w-5 h-5" />
+                        <span>{t.edit?.startGenerate || 'Start Generate'}</span>
+                        <CreditCostBadge cost={CREDIT_COST} className="ml-2" />
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
-          ) : resultImage ? (
+          </div>
+        </div>
+      ) : (
+        /* Mobile: Original layout */
+        <div className="flex-1 overflow-y-auto pb-24">
+          {/* Image Area */}
+          <div className="bg-zinc-100 min-h-[280px] flex items-center justify-center relative p-4">
+            {inputImages.length === 0 ? (
+              <div className="w-full max-w-sm space-y-2">
+                {/* Camera */}
+                <button
+                  onClick={() => {
+                    setActiveImageSlot(0)
+                    setShowCamera(true)
+                  }}
+                  className="w-full h-16 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white flex items-center justify-center gap-3 transition-colors shadow-lg shadow-purple-200"
+                >
+                  <Camera className="w-5 h-5" />
+                  <span className="font-medium">{t.edit?.takePhoto || 'Take Photo'}</span>
+                </button>
+                
+                <div className="grid grid-cols-3 gap-2">
+                  {/* Album */}
+                  <button
+                    onClick={() => {
+                      setActiveImageSlot(0)
+                      fileInputRef.current?.click()
+                    }}
+                    className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <Upload className="w-4 h-4 text-zinc-500" />
+                    <span className="text-xs text-zinc-700">{t.camera?.album || 'Album'}</span>
+                  </button>
+                  
+                  {/* Asset library */}
+                  <button
+                    onClick={() => {
+                      setActiveImageSlot(0)
+                      setShowProductPanel(true)
+                    }}
+                    className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <FolderHeart className="w-4 h-4 text-zinc-500" />
+                    <span className="text-xs text-zinc-700">{t.edit?.selectFromAssets || 'Assets'}</span>
+                  </button>
+                  
+                  {/* Gallery */}
+                  <button
+                    onClick={() => {
+                      setActiveImageSlot(0)
+                      setShowGalleryPanel(true)
+                    }}
+                    className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <Images className="w-4 h-4 text-zinc-500" />
+                    <span className="text-xs text-zinc-700">{t.edit?.selectFromGallery || 'Photos'}</span>
+                  </button>
+                </div>
+              </div>
+            ) : resultImage ? (
             // Show result image when generation is complete
             <div className="relative w-full max-w-xs group">
               {/* 点击放大 */}
@@ -584,13 +762,6 @@ export default function GeneralEditPage() {
               </div>
             </div>
           )}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleUpload}
-            className="hidden"
-          />
         </div>
         
         {/* Prompt Input - Main control */}
@@ -641,9 +812,19 @@ export default function GeneralEditPage() {
           </div>
         </div>
       </div>
+      )}
       
-      {/* Loading overlay */}
-      {isGenerating && (
+      {/* File input - shared between PC and Mobile */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleUpload}
+        className="hidden"
+      />
+      
+      {/* Loading overlay - PC uses skeleton, Mobile uses spinner */}
+      {isGenerating && !isDesktop && (
         <div className="fixed inset-0 z-50 bg-zinc-950 flex flex-col items-center justify-center p-8 text-center">
           <div className="relative mb-6">
             <div className="absolute inset-0 bg-purple-500/20 blur-xl rounded-full animate-pulse" />
