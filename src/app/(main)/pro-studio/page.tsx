@@ -2139,9 +2139,17 @@ function ProStudioPageContent() {
                             {url ? (
                               <>
                                 <Image src={url} alt="Result" fill className="object-cover" />
-                                <button className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Heart className="w-3.5 h-3.5 text-zinc-500" />
-                                </button>
+                                <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button className="w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm hover:bg-white">
+                                    <Heart className="w-3.5 h-3.5 text-zinc-500" />
+                                  </button>
+                                  <button 
+                                    onClick={(e) => { e.stopPropagation(); handleDownload(url) }}
+                                    className="w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm hover:bg-white"
+                                  >
+                                    <Download className="w-3.5 h-3.5 text-zinc-500" />
+                                  </button>
+                                </div>
                               </>
                             ) : status === 'failed' ? (
                               <div className="absolute inset-0 flex items-center justify-center text-zinc-400">
@@ -2279,9 +2287,17 @@ function ProStudioPageContent() {
                       onClick={() => setSelectedResultIndex(i)}
                     >
                       <Image src={url} alt="Result" fill className="object-cover" />
-                        <button className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Heart className="w-3.5 h-3.5 text-zinc-500" />
-                      </button>
+                      <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button className="w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm hover:bg-white">
+                          <Heart className="w-3.5 h-3.5 text-zinc-500" />
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleDownload(url) }}
+                          className="w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm hover:bg-white"
+                        >
+                          <Download className="w-3.5 h-3.5 text-zinc-500" />
+                        </button>
+                      </div>
                       <div className="absolute top-2 left-2">
                           <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium text-white ${getImageColor(i)}`}>
                             {getImageLabel(i)}

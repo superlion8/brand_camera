@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { 
   ArrowLeft, Loader2, Image as ImageIcon, 
   X, Home, Check, ZoomIn,
-  Camera, Sparkles, Users, FolderHeart, Heart
+  Camera, Sparkles, Users, FolderHeart, Heart, Download
 } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { fileToBase64, compressBase64Image, ensureBase64 } from "@/lib/utils"
@@ -336,6 +336,24 @@ function GroupShootPageContent() {
   }, [])
 
   const numImages = GROUP_NUM_IMAGES  // 固定4张图
+
+  // Handle download
+  const handleDownload = async (url: string) => {
+    try {
+      const response = await fetch(url)
+      const blob = await response.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = blobUrl
+      link.download = `group-shot-${Date.now()}.jpg`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(blobUrl)
+    } catch (error) {
+      console.error('Download failed:', error)
+    }
+  }
 
   // 防止 hydration 闪烁
   if (screenLoading) {
@@ -745,9 +763,17 @@ function GroupShootPageContent() {
                             {url ? (
                               <>
                                 <Image src={url} alt="Result" fill className="object-cover" />
-                                <button className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Heart className="w-3.5 h-3.5 text-zinc-500" />
-                                </button>
+                                <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button className="w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm hover:bg-white">
+                                    <Heart className="w-3.5 h-3.5 text-zinc-500" />
+                                  </button>
+                                  <button 
+                                    onClick={(e) => { e.stopPropagation(); handleDownload(url) }}
+                                    className="w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm hover:bg-white"
+                                  >
+                                    <Download className="w-3.5 h-3.5 text-zinc-500" />
+                                  </button>
+                                </div>
                               </>
                             ) : status === 'failed' ? (
                               <div className="absolute inset-0 flex items-center justify-center text-zinc-400">

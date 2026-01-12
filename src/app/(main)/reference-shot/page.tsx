@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
-  ArrowLeft, Check, Plus, Upload, Wand2, Loader2, X, Camera, ZoomIn, Image as ImageIcon, Download, Share2, Home, FolderHeart
+  ArrowLeft, Check, Plus, Upload, Wand2, Loader2, X, Camera, ZoomIn, Image as ImageIcon, Download, Share2, Home, FolderHeart, Heart
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
@@ -725,6 +725,11 @@ export default function ReferenceShotPage() {
                     isDesktop ? 'opacity-0 group-hover:opacity-100 transition-opacity' : ''
                   }`}>
                     <button
+                      className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
+                    >
+                      <Heart className="w-5 h-5 text-zinc-700" />
+                    </button>
+                    <button
                       onClick={() => handleDownload(img.url, index)}
                       className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
                     >
@@ -733,12 +738,6 @@ export default function ReferenceShotPage() {
                       ) : (
                         <Download className="w-5 h-5 text-zinc-700" />
                       )}
-                    </button>
-                    <button
-                      onClick={() => setZoomImage(img.url)}
-                      className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
-                    >
-                      <ZoomIn className="w-5 h-5 text-zinc-700" />
                     </button>
                   </div>
                   

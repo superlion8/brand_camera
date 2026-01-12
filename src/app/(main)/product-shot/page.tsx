@@ -1321,9 +1321,17 @@ function StudioPageContent() {
                             {url ? (
                               <>
                                 <Image src={url} alt="Result" fill className="object-cover" />
-                                <button className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Heart className="w-3.5 h-3.5 text-zinc-500" />
-                                </button>
+                                <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button className="w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm hover:bg-white">
+                                    <Heart className="w-3.5 h-3.5 text-zinc-500" />
+                                  </button>
+                                  <button 
+                                    onClick={(e) => { e.stopPropagation(); handleDownload(url, currentGenerationId || undefined, i) }}
+                                    className="w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm hover:bg-white"
+                                  >
+                                    <Download className="w-3.5 h-3.5 text-zinc-500" />
+                                  </button>
+                                </div>
                               </>
                             ) : (
                               <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-100 animate-pulse">
@@ -1411,20 +1419,31 @@ function StudioPageContent() {
                       )}
                     </div>
                     
-                    {/* Favorite button - show on hover for PC */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleFavorite(i)
-                      }}
-                      className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-all ${
-                        currentGenerationId && isFavorited(currentGenerationId, i)
-                          ? 'bg-red-500 text-white'
-                          : `bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500 ${isDesktop ? 'opacity-0 group-hover:opacity-100' : ''}`
-                      }`}
-                    >
-                      <Heart className={`w-4 h-4 ${currentGenerationId && isFavorited(currentGenerationId, i) ? 'fill-current' : ''}`} />
-                    </button>
+                    {/* Action buttons - show on hover for PC */}
+                    <div className={`absolute top-2 right-2 flex gap-1.5 ${isDesktop ? 'opacity-0 group-hover:opacity-100 transition-opacity' : ''}`}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleFavorite(i)
+                        }}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-all ${
+                          currentGenerationId && isFavorited(currentGenerationId, i)
+                            ? 'bg-red-500 text-white'
+                            : 'bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500'
+                        }`}
+                      >
+                        <Heart className={`w-4 h-4 ${currentGenerationId && isFavorited(currentGenerationId, i) ? 'fill-current' : ''}`} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDownload(url, currentGenerationId || undefined, i)
+                        }}
+                        className="w-8 h-8 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm text-zinc-500 hover:text-zinc-700"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
