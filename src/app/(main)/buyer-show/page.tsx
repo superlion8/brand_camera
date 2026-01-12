@@ -1309,11 +1309,11 @@ function CameraPageContent() {
                         </div>
                       </div>
                       
-                      {/* Right: Image Upload */}
+                      {/* Right: Image Upload - Click to open Assets panel */}
                       <div className="w-[380px] shrink-0">
                         <div className="bg-white rounded-2xl p-6 shadow-sm border border-zinc-100">
                           <button
-                            onClick={() => fileInputRef.current?.click()}
+                            onClick={() => setShowProductPanel(true)}
                             className="w-full aspect-[3/4] max-h-[400px] rounded-2xl border-2 border-dashed border-zinc-300 hover:border-blue-400 hover:bg-blue-50/50 flex flex-col items-center justify-center gap-3 transition-all"
                           >
                             <div className="w-16 h-16 bg-zinc-100 rounded-2xl flex items-center justify-center">
@@ -1324,15 +1324,6 @@ function CameraPageContent() {
                               <p className="text-xs text-zinc-400 mt-1">{t.common?.clickToUploadOrDrag || '点击上传或拖拽图片'}</p>
                             </div>
                           </button>
-                          <div className="mt-4">
-                            <button
-                              onClick={() => setShowProductPanel(true)}
-                              className="w-full h-12 rounded-xl border border-zinc-200 bg-white hover:border-blue-400 hover:bg-blue-50/50 flex items-center justify-center gap-2 transition-colors"
-                            >
-                              <FolderHeart className="w-4 h-4 text-zinc-500" />
-                              <span className="text-sm text-zinc-600">{t.camera?.assetLibrary || '素材库'}</span>
-                            </button>
-                          </div>
                         </div>
                       </div>
                     </div>
@@ -2101,6 +2092,17 @@ function CameraPageContent() {
                       <div className="flex-1 overflow-y-auto p-6">
                         {productSourceTab === "preset" ? (
                           <div className="grid grid-cols-5 gap-4">
+                            {/* Upload from Album - First cell */}
+                            <button
+                              onClick={() => {
+                                setShowProductPanel(false)
+                                fileInputRef.current?.click()
+                              }}
+                              className="aspect-square rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-500 flex flex-col items-center justify-center gap-2 transition-colors bg-zinc-50 hover:bg-blue-50"
+                            >
+                              <Plus className="w-8 h-8 text-zinc-400" />
+                              <span className="text-xs text-zinc-500 text-center px-2">{t.proStudio?.fromAlbum || 'From Album'}</span>
+                            </button>
                             {PRESET_PRODUCTS.map(product => (
                               <div 
                                 key={product.id} 
@@ -2127,8 +2129,19 @@ function CameraPageContent() {
                             ? userProducts 
                             : userProducts.filter(p => p.category === productSubTab)
                           
-                          return filteredProducts.length > 0 ? (
+                          return (
                             <div className="grid grid-cols-5 gap-4">
+                              {/* Upload from Album - First cell */}
+                              <button
+                                onClick={() => {
+                                  setShowProductPanel(false)
+                                  fileInputRef.current?.click()
+                                }}
+                                className="aspect-square rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-500 flex flex-col items-center justify-center gap-2 transition-colors bg-zinc-50 hover:bg-blue-50"
+                              >
+                                <Plus className="w-8 h-8 text-zinc-400" />
+                                <span className="text-xs text-zinc-500 text-center px-2">{t.proStudio?.fromAlbum || 'From Album'}</span>
+                              </button>
                               {filteredProducts.map(product => (
                                 <div 
                                   key={product.id} 
@@ -2146,21 +2159,6 @@ function CameraPageContent() {
                                   <p className="text-xs text-zinc-600 mt-2 truncate text-center">{product.name}</p>
                                 </div>
                               ))}
-                            </div>
-                          ) : (
-                            <div className="flex flex-col items-center justify-center py-16 text-zinc-400">
-                              <FolderHeart className="w-12 h-12 mb-3 opacity-30" />
-                              <p className="text-sm">{t.camera.noMyProducts}</p>
-                              <p className="text-xs mt-1">{t.camera.uploadInAssets}</p>
-                              <button 
-                                onClick={() => {
-                                  setShowProductPanel(false)
-                                  router.push("/brand-assets")
-                                }}
-                                className="mt-4 px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors"
-                              >
-                                {t.camera.goUpload}
-                              </button>
                             </div>
                           )
                         })()}
