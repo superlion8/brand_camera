@@ -557,20 +557,22 @@ function LifestylePageContent() {
             exit={{ opacity: 0 }}
             className="flex-1 relative overflow-hidden flex flex-col"
           >
-            {/* Header */}
-            <div className="absolute top-4 left-4 right-4 z-20 flex justify-between items-center">
-              <button
-                onClick={mode === "review" ? handleRetake : () => router.push("/")}
-                className="w-10 h-10 rounded-full bg-black/20 text-white backdrop-blur-md flex items-center justify-center"
-              >
-                {mode === "review" ? <X className="w-6 h-6" /> : <Home className="w-5 h-5" />}
-              </button>
-              <div className="px-3 py-1.5 rounded-full bg-black/20 backdrop-blur-md border border-white/10 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-purple-400" />
-                <span className="text-white text-xs font-medium">{t.lifestyle?.title || 'LifeStyle 街拍'}</span>
+            {/* Header - Mobile only */}
+            {!isDesktop && (
+              <div className="absolute top-4 left-4 right-4 z-20 flex justify-between items-center">
+                <button
+                  onClick={mode === "review" ? handleRetake : () => router.push("/")}
+                  className="w-10 h-10 rounded-full bg-black/20 text-white backdrop-blur-md flex items-center justify-center"
+                >
+                  {mode === "review" ? <X className="w-6 h-6" /> : <Home className="w-5 h-5" />}
+                </button>
+                <div className="px-3 py-1.5 rounded-full bg-black/20 backdrop-blur-md border border-white/10 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-purple-400" />
+                  <span className="text-white text-xs font-medium">{t.lifestyle?.title || 'LifeStyle 街拍'}</span>
+                </div>
+                <div className="w-10" />
               </div>
-              <div className="w-10" />
-            </div>
+            )}
             
             {/* Selection Badges */}
             {mode === "review" && (selectedModel || selectedScene) && (

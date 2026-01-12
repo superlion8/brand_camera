@@ -882,8 +882,8 @@ function SocialPageContent() {
             exit={{ opacity: 0 }}
             className="flex-1 relative overflow-hidden flex flex-col"
           >
-            {/* Top Return Button - Hide on PC camera mode (has its own header) */}
-            {!(mode === "camera" && isDesktop) && (
+            {/* Top Return Button - Mobile only */}
+            {!isDesktop && (
               <div className="absolute top-4 left-4 z-20">
                 <button
                   onClick={mode === "review" ? handleRetake : handleReturn}

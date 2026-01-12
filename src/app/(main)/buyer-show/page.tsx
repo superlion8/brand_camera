@@ -1237,15 +1237,17 @@ function CameraPageContent() {
             exit={{ opacity: 0 }}
             className="flex-1 relative overflow-hidden flex flex-col"
           >
-            {/* Top Return Button */}
-            <div className="absolute top-4 left-4 z-20">
-              <button
-                onClick={mode === "review" ? handleRetake : handleReturn}
-                className="w-10 h-10 rounded-full bg-black/20 text-white hover:bg-black/40 backdrop-blur-md flex items-center justify-center transition-colors"
-              >
-                {mode === "review" ? <X className="w-6 h-6" /> : <Home className="w-5 h-5" />}
-              </button>
-            </div>
+            {/* Top Return Button - Mobile only */}
+            {!isDesktop && (
+              <div className="absolute top-4 left-4 z-20">
+                <button
+                  onClick={mode === "review" ? handleRetake : handleReturn}
+                  className="w-10 h-10 rounded-full bg-black/20 text-white hover:bg-black/40 backdrop-blur-md flex items-center justify-center transition-colors"
+                >
+                  {mode === "review" ? <X className="w-6 h-6" /> : <Home className="w-5 h-5" />}
+                </button>
+              </div>
+            )}
 
             {/* Viewfinder / Captured Image */}
             <div className={`flex-1 relative ${isDesktop && mode === "camera" ? 'bg-zinc-50' : ''}`}>
