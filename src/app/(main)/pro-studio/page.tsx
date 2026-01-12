@@ -2107,59 +2107,103 @@ function ProStudioPageContent() {
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
             exit={{ opacity: 0 }}
-            className={`flex-1 flex flex-col items-center justify-center p-8 text-center ${
-              isDesktop ? 'bg-zinc-50' : 'bg-zinc-950'
-            }`}
+            className={`flex-1 flex flex-col ${isDesktop ? 'bg-zinc-50' : 'bg-zinc-950 items-center justify-center p-8 text-center'}`}
           >
-            <div className="relative mb-6">
-              <div className={`absolute inset-0 blur-xl rounded-full animate-pulse ${
-                isDesktop ? 'bg-amber-500/20' : 'bg-blue-500/20'
-              }`} />
-              <Loader2 className={`w-16 h-16 animate-spin relative z-10 ${
-                isDesktop ? 'text-amber-500' : 'text-blue-500'
-              }`} />
-            </div>
-            
-            <h3 className={`text-2xl font-bold mb-2 ${isDesktop ? 'text-zinc-900' : 'text-white'}`}>
-              {t.proStudio?.creating || 'AI 正在创作...'}
-            </h3>
-            <div className={`space-y-1 text-sm mb-8 ${isDesktop ? 'text-zinc-500' : 'text-zinc-400'}`}>
-              <p>{t.proStudio?.analyzeProduct || '分析商品特征'}</p>
-              {selectedModel && <p>{t.proStudio?.matchingModel || '匹配模特'} {selectedModel.name} ...</p>}
-              {selectedBg && <p>{t.proStudio?.renderingBg || '渲染棚拍背景...'}</p>}
-              <p>{t.proStudio?.generatingProPhoto || '生成专业棚拍图...'}</p>
-            </div>
-            
-            {/* Action buttons */}
-            <div className="space-y-3 w-full max-w-xs">
-              <p className={`text-xs mb-4 ${isDesktop ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                {t.camera.continueInBackground}
-              </p>
-              <button
-                onClick={handleRetake}
-                className={`w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors ${
-                  isDesktop 
-                    ? 'bg-amber-500 text-white hover:bg-amber-600' 
-                    : 'bg-white text-black hover:bg-zinc-200'
-                }`}
-              >
-                <Camera className="w-5 h-5" />
-                {t.camera.shootNew}
-              </button>
-              <button
-                onClick={() => router.push("/")}
-                className={`w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors border ${
-                  isDesktop 
-                    ? 'bg-white text-zinc-700 hover:bg-zinc-100 border-zinc-200' 
-                    : 'bg-white/10 text-white hover:bg-white/20 border-white/20'
-                }`}
-              >
-                <Home className="w-5 h-5" />
-                {t.camera.returnHome}
-              </button>
-            </div>
-            
-            {!isDesktop && <BottomNav forceShow />}
+            {isDesktop ? (
+              /* PC Web: Skeleton grid layout */
+              <>
+                <div className="bg-white border-b border-zinc-200">
+                  <div className="max-w-4xl mx-auto px-8 py-4">
+                    <div className="flex items-center justify-between">
+                      <button onClick={handleRetake} className="flex items-center gap-2 text-zinc-600 hover:text-zinc-900 font-medium">
+                        <ArrowLeft className="w-5 h-5" />
+                        <span>{t.camera?.shootNew || 'Shoot More'}</span>
+                      </button>
+                      <span className="font-bold text-zinc-900">{t.proStudio?.creating || 'Creating studio photos'}</span>
+                      <div className="w-20" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto py-8">
+                  <div className="max-w-4xl mx-auto px-8">
+                    <div className="grid grid-cols-4 gap-3">
+                      {Array.from({ length: PRO_STUDIO_NUM_IMAGES }).map((_, i) => {
+                        const url = generatedImages[i]
+                        const currentTask = tasks.find(t => t.id === currentTaskId)
+                        const slot = currentTask?.imageSlots?.[i]
+                        const status = slot?.status || (url ? 'completed' : 'generating')
+                        
+                        return (
+                          <div key={i} className="aspect-[3/4] rounded-xl bg-zinc-200 overflow-hidden relative group">
+                            {url ? (
+                              <>
+                                <Image src={url} alt="Result" fill className="object-cover" />
+                                <button className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Heart className="w-3.5 h-3.5 text-zinc-500" />
+                                </button>
+                              </>
+                            ) : status === 'failed' ? (
+                              <div className="absolute inset-0 flex items-center justify-center text-zinc-400">
+                                <span className="text-xs">{t.camera?.generationFailed || 'Failed'}</span>
+                              </div>
+                            ) : (
+                              <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-100 animate-pulse">
+                                <Loader2 className="w-6 h-6 text-amber-500 animate-spin mb-2" />
+                                <span className="text-xs text-zinc-400">{t.common?.generating || 'Generating...'}</span>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                    
+                    <div className="flex justify-center gap-3 mt-8">
+                      <button onClick={handleRetake} className="px-6 h-11 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-medium flex items-center gap-2 transition-colors">
+                        <Camera className="w-4 h-4" />
+                        {t.camera?.shootNew || 'Shoot More'}
+                      </button>
+                      <button onClick={() => router.push("/")} className="px-6 h-11 rounded-xl bg-white hover:bg-zinc-100 text-zinc-700 font-medium flex items-center gap-2 transition-colors border border-zinc-200">
+                        <Home className="w-4 h-4" />
+                        {t.camera?.returnHome || 'Return Home'}
+                      </button>
+                      <button onClick={() => router.push("/gallery")} className="px-6 h-11 rounded-xl bg-white hover:bg-zinc-100 text-zinc-700 font-medium flex items-center gap-2 transition-colors border border-zinc-200">
+                        <FolderHeart className="w-4 h-4" />
+                        {t.lifestyle?.goToPhotos || 'Go to Photos'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* Mobile: Original spinner layout */
+              <>
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 blur-xl rounded-full animate-pulse bg-blue-500/20" />
+                  <Loader2 className="w-16 h-16 animate-spin relative z-10 text-blue-500" />
+                </div>
+                <h3 className="text-2xl font-bold mb-2 text-white">{t.proStudio?.creating || 'Creating studio photos'}</h3>
+                <div className="space-y-1 text-sm mb-8 text-zinc-400">
+                  <p>{t.proStudio?.analyzeProduct || 'Analyzing product'}</p>
+                  {selectedModel && <p>{t.proStudio?.matchingModel || 'Matching model'} {selectedModel.name} ...</p>}
+                  {selectedBg && <p>{t.proStudio?.renderingBg || 'Rendering background...'}</p>}
+                </div>
+                
+                <div className="space-y-3 w-full max-w-xs">
+                  <p className="text-xs mb-4 text-zinc-500">{t.camera?.continueInBackground || 'Generation continues in background:'}</p>
+                  <button onClick={handleRetake} className="w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors bg-white text-black hover:bg-zinc-200">
+                    <Camera className="w-5 h-5" />
+                    {t.camera?.shootNew || 'Shoot More'}
+                  </button>
+                  <button onClick={() => router.push("/")} className="w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors border bg-white/10 text-white hover:bg-white/20 border-white/20">
+                    <Home className="w-5 h-5" />
+                    {t.camera?.returnHome || 'Return Home'}
+                  </button>
+                </div>
+                
+                <BottomNav forceShow />
+              </>
+            )}
           </motion.div>
         )}
 

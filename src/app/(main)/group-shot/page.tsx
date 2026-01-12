@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { 
   ArrowLeft, Loader2, Image as ImageIcon, 
   X, Home, Check, ZoomIn,
-  Camera, Sparkles, Users
+  Camera, Sparkles, Users, FolderHeart, Heart
 } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { fileToBase64, compressBase64Image, ensureBase64 } from "@/lib/utils"
@@ -709,82 +709,118 @@ function GroupShootPageContent() {
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
             exit={{ opacity: 0 }}
-            className={`flex-1 flex flex-col items-center justify-center p-8 text-center ${
-              isDesktop ? 'bg-zinc-50' : 'bg-zinc-950'
-            }`}
+            className={`flex-1 flex flex-col ${isDesktop ? 'bg-zinc-50' : 'bg-zinc-950 items-center justify-center p-8 text-center'}`}
           >
-            <div className="relative mb-6">
-              <div className={`absolute inset-0 blur-xl rounded-full animate-pulse ${
-                styleMode === 'lifestyle' 
-                  ? (isDesktop ? 'bg-blue-500/30' : 'bg-blue-500/20')
-                  : (isDesktop ? 'bg-amber-500/30' : 'bg-amber-500/20')
-              }`} />
-              <Loader2 className={`w-16 h-16 animate-spin relative z-10 ${
-                styleMode === 'lifestyle' 
-                  ? (isDesktop ? 'text-blue-600' : 'text-blue-500')
-                  : (isDesktop ? 'text-amber-600' : 'text-amber-500')
-              }`} />
-            </div>
-            
-            <h3 className={`text-2xl font-bold mb-2 ${isDesktop ? 'text-zinc-900' : 'text-white'}`}>
-              {styleMode === 'lifestyle' 
-                ? (t.groupShootPage?.creatingLifestyle || 'AI 正在创作ins风格组图...')
-                : (t.groupShootPage?.creatingStudio || 'AI 正在创作专业展示图...')}
-            </h3>
-            <div className={`space-y-1 text-sm mb-8 ${isDesktop ? 'text-zinc-500' : 'text-zinc-400'}`}>
-              <p>{t.groupShootPage?.analyzingFeatures || 'Analyzing image features'}</p>
-              <p>{styleMode === 'lifestyle' 
-                ? (t.groupShootPage?.designingPoseLifestyle || 'Designing lifestyle poses')
-                : (t.groupShootPage?.designingPoseCommercial || 'Designing commercial poses')}</p>
-              <p>{(t.groupShootPage?.generatingImages || 'Generating {count} diverse images...').replace('{count}', String(numImages))}</p>
-            </div>
-            
-            {/* Progress dots */}
-            <div className="flex gap-2">
-              {Array.from({ length: numImages }).map((_, i) => {
-                const task = tasks.find(t => t.id === currentTaskId)
-                const slot = task?.imageSlots?.[i]
-                const status = slot?.status || 'pending'
-                return (
-                  <div 
-                    key={i}
-                    className={`w-3 h-3 rounded-full transition-colors ${
-                      status === 'completed' ? 'bg-green-500' :
-                      status === 'generating' ? `${styleMode === 'lifestyle' ? 'bg-blue-500' : 'bg-amber-500'} animate-pulse` :
-                      status === 'failed' ? 'bg-red-500' :
-                      isDesktop ? 'bg-zinc-300' : 'bg-zinc-600'
-                    }`}
-                  />
-                )
-              })}
-            </div>
-            
-            {/* PC: Action buttons */}
-            {isDesktop && (
-              <div className="mt-8 space-y-3 w-full max-w-xs">
-                <p className="text-zinc-400 text-xs mb-4">{t.groupShootPage?.continueInBackground || 'Generation continues in background:'}</p>
-                <button
-                  onClick={handleReselect}
-                  className={`w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors ${
-                    styleMode === 'lifestyle' 
-                      ? 'bg-blue-600 text-white hover:bg-blue-700'
-                      : 'bg-amber-600 text-white hover:bg-amber-700'
-                  }`}
-                >
-                  <ImageIcon className="w-5 h-5" />
-                  {t.groupShootPage?.selectNewImage || 'Select New Image'}
-                </button>
-                <button
-                  onClick={() => router.push("/")}
-                  className="w-full h-12 rounded-full bg-white text-zinc-700 hover:bg-zinc-100 border border-zinc-200 font-medium flex items-center justify-center gap-2 transition-colors"
-                >
-                  <Home className="w-5 h-5" />
-                  {t.groupShootPage?.returnHome || 'Return Home'}
-                </button>
-              </div>
+            {isDesktop ? (
+              /* PC Web: Skeleton grid layout */
+              <>
+                <div className="bg-white border-b border-zinc-200">
+                  <div className="max-w-4xl mx-auto px-8 py-4">
+                    <div className="flex items-center justify-between">
+                      <button onClick={handleReselect} className="flex items-center gap-2 text-zinc-600 hover:text-zinc-900 font-medium">
+                        <ArrowLeft className="w-5 h-5" />
+                        <span>{t.groupShootPage?.selectNewImage || 'Select New Image'}</span>
+                      </button>
+                      <span className="font-bold text-zinc-900">
+                        {styleMode === 'lifestyle' 
+                          ? (t.groupShootPage?.creatingLifestyle || 'Creating lifestyle group photos')
+                          : (t.groupShootPage?.creatingStudio || 'Creating studio group photos')}
+                      </span>
+                      <div className="w-20" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto py-8">
+                  <div className="max-w-4xl mx-auto px-8">
+                    <div className={`grid gap-3 ${numImages <= 4 ? 'grid-cols-4' : numImages <= 6 ? 'grid-cols-3' : 'grid-cols-4'}`}>
+                      {Array.from({ length: numImages }).map((_, i) => {
+                        const url = generatedImages[i]
+                        const currentTask = tasks.find(t => t.id === currentTaskId)
+                        const slot = currentTask?.imageSlots?.[i]
+                        const status = slot?.status || (url ? 'completed' : 'generating')
+                        
+                        return (
+                          <div key={i} className="aspect-[3/4] rounded-xl bg-zinc-200 overflow-hidden relative group">
+                            {url ? (
+                              <>
+                                <Image src={url} alt="Result" fill className="object-cover" />
+                                <button className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Heart className="w-3.5 h-3.5 text-zinc-500" />
+                                </button>
+                              </>
+                            ) : status === 'failed' ? (
+                              <div className="absolute inset-0 flex items-center justify-center text-zinc-400">
+                                <span className="text-xs">{t.camera?.generationFailed || 'Failed'}</span>
+                              </div>
+                            ) : (
+                              <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-100 animate-pulse">
+                                <Loader2 className={`w-6 h-6 animate-spin mb-2 ${styleMode === 'lifestyle' ? 'text-blue-500' : 'text-amber-500'}`} />
+                                <span className="text-xs text-zinc-400">{t.common?.generating || 'Generating...'}</span>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                    
+                    <div className="flex justify-center gap-3 mt-8">
+                      <button 
+                        onClick={handleReselect} 
+                        className={`px-6 h-11 rounded-xl text-white font-medium flex items-center gap-2 transition-colors ${
+                          styleMode === 'lifestyle' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-amber-600 hover:bg-amber-700'
+                        }`}
+                      >
+                        <ImageIcon className="w-4 h-4" />
+                        {t.groupShootPage?.selectNewImage || 'Select New Image'}
+                      </button>
+                      <button onClick={() => router.push("/")} className="px-6 h-11 rounded-xl bg-white hover:bg-zinc-100 text-zinc-700 font-medium flex items-center gap-2 transition-colors border border-zinc-200">
+                        <Home className="w-4 h-4" />
+                        {t.groupShootPage?.returnHome || 'Return Home'}
+                      </button>
+                      <button onClick={() => router.push("/gallery")} className="px-6 h-11 rounded-xl bg-white hover:bg-zinc-100 text-zinc-700 font-medium flex items-center gap-2 transition-colors border border-zinc-200">
+                        <FolderHeart className="w-4 h-4" />
+                        {t.lifestyle?.goToPhotos || 'Go to Photos'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* Mobile: Original spinner layout */
+              <>
+                <div className="relative mb-6">
+                  <div className={`absolute inset-0 blur-xl rounded-full animate-pulse ${styleMode === 'lifestyle' ? 'bg-blue-500/20' : 'bg-amber-500/20'}`} />
+                  <Loader2 className={`w-16 h-16 animate-spin relative z-10 ${styleMode === 'lifestyle' ? 'text-blue-500' : 'text-amber-500'}`} />
+                </div>
+                <h3 className="text-2xl font-bold mb-2 text-white">
+                  {styleMode === 'lifestyle' 
+                    ? (t.groupShootPage?.creatingLifestyle || 'Creating lifestyle group photos')
+                    : (t.groupShootPage?.creatingStudio || 'Creating studio group photos')}
+                </h3>
+                <div className="space-y-1 text-sm mb-8 text-zinc-400">
+                  <p>{t.groupShootPage?.analyzingFeatures || 'Analyzing image features'}</p>
+                  <p>{(t.groupShootPage?.generatingImages || 'Generating {count} images...').replace('{count}', String(numImages))}</p>
+                </div>
+                
+                <div className="flex gap-2">
+                  {Array.from({ length: numImages }).map((_, i) => {
+                    const task = tasks.find(t => t.id === currentTaskId)
+                    const slot = task?.imageSlots?.[i]
+                    const status = slot?.status || 'pending'
+                    return (
+                      <div key={i} className={`w-3 h-3 rounded-full transition-colors ${
+                        status === 'completed' ? 'bg-green-500' :
+                        status === 'generating' ? `${styleMode === 'lifestyle' ? 'bg-blue-500' : 'bg-amber-500'} animate-pulse` :
+                        status === 'failed' ? 'bg-red-500' : 'bg-zinc-600'
+                      }`} />
+                    )
+                  })}
+                </div>
+                
+                <BottomNav forceShow />
+              </>
             )}
-            
-            {!isDesktop && <BottomNav forceShow />}
           </motion.div>
         )}
 

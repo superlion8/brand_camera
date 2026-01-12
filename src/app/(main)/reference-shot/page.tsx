@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
-  ArrowLeft, Check, Plus, Upload, Wand2, Loader2, X, Camera, ZoomIn, Image as ImageIcon, Download, Share2, Home
+  ArrowLeft, Check, Plus, Upload, Wand2, Loader2, X, Camera, ZoomIn, Image as ImageIcon, Download, Share2, Home, FolderHeart
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
@@ -587,104 +587,107 @@ export default function ReferenceShotPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className={`flex flex-col items-center justify-center min-h-[60vh] gap-6 px-8 ${
-              isDesktop ? 'max-w-4xl mx-auto' : ''
-            }`}
+            className={`flex-1 flex flex-col ${isDesktop ? 'bg-zinc-50' : ''}`}
           >
-            <div className="relative mb-2">
-              {/* 脉冲发光背景 */}
-              <motion.div
-                className="absolute inset-0 bg-gradient-to-tr from-blue-500/30 to-purple-500/30 blur-2xl rounded-full"
-                animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              />
-              {/* 外圈旋转 */}
-              <motion.div
-                className="w-24 h-24 rounded-full border-4 border-transparent border-t-blue-500 border-r-purple-500"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-              />
-              {/* 内圈反向旋转 */}
-              <motion.div
-                className="absolute inset-2 rounded-full border-4 border-transparent border-b-pink-500 border-l-blue-400"
-                animate={{ rotate: -360 }}
-                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              />
-              {/* 中心图标 */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Wand2 className="w-8 h-8 text-blue-600" />
+            {isDesktop ? (
+              /* PC Web: Skeleton grid layout */
+              <>
+                <div className="bg-white border-b border-zinc-200">
+                  <div className="max-w-4xl mx-auto px-8 py-4">
+                    <div className="flex items-center justify-between">
+                      <button onClick={handleReset} className="flex items-center gap-2 text-zinc-600 hover:text-zinc-900 font-medium">
+                        <ArrowLeft className="w-5 h-5" />
+                        <span>{t.referenceShot?.newGeneration || 'New Generation'}</span>
+                      </button>
+                      <span className="font-bold text-zinc-900">{t.referenceShot?.generating || 'Creating reference shot'}</span>
+                      <div className="w-20" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto py-8">
+                  <div className="max-w-4xl mx-auto px-8">
+                    <div className="grid grid-cols-2 gap-4">
+                      {[0, 1].map((i) => (
+                        <div key={i} className="aspect-[3/4] rounded-xl bg-zinc-200 overflow-hidden relative">
+                          <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-100 animate-pulse">
+                            <Loader2 className="w-6 h-6 text-blue-500 animate-spin mb-2" />
+                            <span className="text-xs text-zinc-400">{loadingMessage || t.common?.generating || 'Generating...'}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="flex justify-center gap-3 mt-8">
+                      <button onClick={handleReset} className="px-6 h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center gap-2 transition-colors">
+                        <Camera className="w-4 h-4" />
+                        {t.referenceShot?.newGeneration || 'New Generation'}
+                      </button>
+                      <button onClick={() => router.push('/')} className="px-6 h-11 rounded-xl bg-white hover:bg-zinc-100 text-zinc-700 font-medium flex items-center gap-2 transition-colors border border-zinc-200">
+                        <Home className="w-4 h-4" />
+                        {t.camera?.returnHome || 'Return Home'}
+                      </button>
+                      <button onClick={() => router.push('/gallery')} className="px-6 h-11 rounded-xl bg-white hover:bg-zinc-100 text-zinc-700 font-medium flex items-center gap-2 transition-colors border border-zinc-200">
+                        <FolderHeart className="w-4 h-4" />
+                        {t.lifestyle?.goToPhotos || 'Go to Photos'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* Mobile: Original spinner layout */
+              <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 px-8">
+                <div className="relative mb-2">
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-tr from-blue-500/30 to-purple-500/30 blur-2xl rounded-full"
+                    animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                  <motion.div
+                    className="w-24 h-24 rounded-full border-4 border-transparent border-t-blue-500 border-r-purple-500"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                  />
+                  <motion.div
+                    className="absolute inset-2 rounded-full border-4 border-transparent border-b-pink-500 border-l-blue-400"
+                    animate={{ rotate: -360 }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Wand2 className="w-8 h-8 text-blue-600" />
+                  </div>
+                </div>
+                
+                <div className="text-center">
+                  <h3 className="text-xl font-bold text-zinc-800 mb-2">{t.referenceShot?.generating || 'Creating reference shot'}</h3>
+                  <p className="text-sm text-zinc-500">{loadingMessage}</p>
+                </div>
+                
+                <div className="flex gap-2 mt-4">
+                  {[1, 2].map((i) => (
+                    <motion.div
+                      key={i}
+                      className="w-2 h-2 rounded-full bg-blue-500"
+                      animate={{ scale: [1, 1.5, 1], opacity: [0.3, 1, 0.3] }}
+                      transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+                    />
+                  ))}
+                </div>
+                
+                <div className="flex flex-col gap-3 w-full max-w-xs mt-8">
+                  <p className="text-xs text-zinc-400 text-center mb-2">{t.camera?.continueInBackground || 'Generation continues in background'}</p>
+                  <button onClick={handleReset} className="w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors bg-zinc-100 text-zinc-700 hover:bg-zinc-200">
+                    <Camera className="w-5 h-5" />
+                    {t.referenceShot?.newGeneration || 'New Generation'}
+                  </button>
+                  <button onClick={() => router.push('/')} className="w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors bg-zinc-100 text-zinc-700 hover:bg-zinc-200">
+                    <Home className="w-5 h-5" />
+                    {t.camera?.returnHome || 'Return Home'}
+                  </button>
+                </div>
               </div>
-            </div>
-            
-            <div className="text-center">
-              <motion.h3
-                className="text-xl font-bold text-zinc-800 mb-2"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                {t.referenceShot?.generating || 'AI 正在创作...'}
-              </motion.h3>
-              <motion.p
-                className="text-sm text-zinc-500"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-              >
-                {loadingMessage}
-              </motion.p>
-            </div>
-            
-            {/* 步骤指示器 */}
-            <motion.div
-              className="flex gap-2 mt-4"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-            >
-              {[1, 2].map((i) => (
-                <motion.div
-                  key={i}
-                  className="w-2 h-2 rounded-full bg-blue-500"
-                  animate={{ scale: [1, 1.5, 1], opacity: [0.3, 1, 0.3] }}
-                  transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
-                />
-              ))}
-            </motion.div>
-            
-            {/* 操作按钮 */}
-            <motion.div
-              className="flex flex-col gap-3 w-full max-w-xs mt-8"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <p className="text-xs text-zinc-400 text-center mb-2">
-                {t.camera?.continueInBackground || '可在后台继续生成'}
-              </p>
-              <button
-                onClick={handleReset}
-                className={`w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors ${
-                  isDesktop 
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
-                }`}
-              >
-                <Camera className="w-5 h-5" />
-                {t.referenceShot?.newGeneration || '重新生成'}
-              </button>
-              <button
-                onClick={() => router.push('/')}
-                className={`w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors ${
-                  isDesktop 
-                    ? 'bg-white text-zinc-700 hover:bg-zinc-100 border border-zinc-200'
-                    : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
-                }`}
-              >
-                <Home className="w-5 h-5" />
-                {t.camera?.returnHome || '返回首页'}
-              </button>
-            </motion.div>
+            )}
           </motion.div>
         )}
         

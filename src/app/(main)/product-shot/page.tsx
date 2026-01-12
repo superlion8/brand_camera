@@ -1293,45 +1293,89 @@ function StudioPageContent() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className={`flex-1 flex flex-col items-center justify-center p-8 ${isDesktop ? '' : 'pb-24'}`}
+            className={`flex-1 flex flex-col ${isDesktop ? 'bg-zinc-50' : 'items-center justify-center p-8 pb-24'}`}
           >
-            <div className="relative mb-6">
-              <div className={`absolute inset-0 blur-xl rounded-full animate-pulse ${
-                isDesktop ? 'bg-amber-500/30' : 'bg-amber-500/20'
-              }`} />
-              <Loader2 className={`w-16 h-16 animate-spin relative z-10 ${
-                isDesktop ? 'text-amber-600' : 'text-amber-500'
-              }`} />
-            </div>
-            <h3 className="text-xl font-bold text-zinc-800 mb-2">{t.studio.generating}</h3>
-            <p className="text-zinc-500 text-sm mb-8">{t.studio.generatingDesc}</p>
-            
-            {/* Navigation buttons during processing */}
-            <div className="space-y-3 w-full max-w-xs">
-              <p className="text-zinc-400 text-xs text-center mb-4">{t.studio.continueInBackground}</p>
-              <button
-                onClick={handleNewProductDuringProcessing}
-                className={`w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors ${
-                  isDesktop 
-                    ? 'bg-amber-600 text-white hover:bg-amber-700'
-                    : 'bg-amber-500 text-white hover:bg-amber-600'
-                }`}
-              >
-                <Camera className="w-5 h-5" />
-                {t.studio.shootNew}
-              </button>
-              <button
-                onClick={handleReturnHomeDuringProcessing}
-                className={`w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors ${
-                  isDesktop 
-                    ? 'bg-white text-zinc-700 hover:bg-zinc-100 border border-zinc-200'
-                    : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
-                }`}
-              >
-                <Home className="w-5 h-5" />
-                {t.studio.returnHome}
-              </button>
-            </div>
+            {isDesktop ? (
+              /* PC Web: Skeleton grid layout */
+              <>
+                <div className="bg-white border-b border-zinc-200">
+                  <div className="max-w-4xl mx-auto px-8 py-4">
+                    <div className="flex items-center justify-between">
+                      <button onClick={handleNewProductDuringProcessing} className="flex items-center gap-2 text-zinc-600 hover:text-zinc-900 font-medium">
+                        <ArrowLeft className="w-5 h-5" />
+                        <span>{t.studio?.shootNew || 'Shoot More'}</span>
+                      </button>
+                      <span className="font-bold text-zinc-900">{t.studio?.generating || 'Creating product photos'}</span>
+                      <div className="w-20" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto py-8">
+                  <div className="max-w-4xl mx-auto px-8">
+                    <div className="grid grid-cols-4 gap-3">
+                      {Array.from({ length: 4 }).map((_, i) => {
+                        const url = generatedImages[i]
+                        return (
+                          <div key={i} className="aspect-square rounded-xl bg-zinc-200 overflow-hidden relative group">
+                            {url ? (
+                              <>
+                                <Image src={url} alt="Result" fill className="object-cover" />
+                                <button className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Heart className="w-3.5 h-3.5 text-zinc-500" />
+                                </button>
+                              </>
+                            ) : (
+                              <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-100 animate-pulse">
+                                <Loader2 className="w-6 h-6 text-amber-500 animate-spin mb-2" />
+                                <span className="text-xs text-zinc-400">{t.common?.generating || 'Generating...'}</span>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                    
+                    <div className="flex justify-center gap-3 mt-8">
+                      <button onClick={handleNewProductDuringProcessing} className="px-6 h-11 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-medium flex items-center gap-2 transition-colors">
+                        <Camera className="w-4 h-4" />
+                        {t.studio?.shootNew || 'Shoot More'}
+                      </button>
+                      <button onClick={handleReturnHomeDuringProcessing} className="px-6 h-11 rounded-xl bg-white hover:bg-zinc-100 text-zinc-700 font-medium flex items-center gap-2 transition-colors border border-zinc-200">
+                        <Home className="w-4 h-4" />
+                        {t.studio?.returnHome || 'Return Home'}
+                      </button>
+                      <button onClick={() => router.push('/gallery')} className="px-6 h-11 rounded-xl bg-white hover:bg-zinc-100 text-zinc-700 font-medium flex items-center gap-2 transition-colors border border-zinc-200">
+                        <FolderHeart className="w-4 h-4" />
+                        {t.lifestyle?.goToPhotos || 'Go to Photos'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* Mobile: Original spinner layout */
+              <>
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 blur-xl rounded-full animate-pulse bg-amber-500/20" />
+                  <Loader2 className="w-16 h-16 animate-spin relative z-10 text-amber-500" />
+                </div>
+                <h3 className="text-xl font-bold text-zinc-800 mb-2">{t.studio?.generating || 'Creating product photos'}</h3>
+                <p className="text-zinc-500 text-sm mb-8">{t.studio?.generatingDesc || 'Please wait...'}</p>
+                
+                <div className="space-y-3 w-full max-w-xs">
+                  <p className="text-zinc-400 text-xs text-center mb-4">{t.studio?.continueInBackground || 'Generation continues in background'}</p>
+                  <button onClick={handleNewProductDuringProcessing} className="w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors bg-amber-500 text-white hover:bg-amber-600">
+                    <Camera className="w-5 h-5" />
+                    {t.studio?.shootNew || 'Shoot More'}
+                  </button>
+                  <button onClick={handleReturnHomeDuringProcessing} className="w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors bg-zinc-100 text-zinc-700 hover:bg-zinc-200">
+                    <Home className="w-5 h-5" />
+                    {t.studio?.returnHome || 'Return Home'}
+                  </button>
+                </div>
+              </>
+            )}
           </motion.div>
         )}
         
