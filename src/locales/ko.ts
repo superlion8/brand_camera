@@ -281,6 +281,8 @@ export const ko: Translations = {
     hdRes: "HD",
     noResultsYet: "결과 없음",
     uploadAndGenerate: "이미지를 업로드하고 생성하여 결과를 확인하세요",
+    regenerate: "다시 생성",
+    editThis: "편집",
     uploadImage: "이미지 업로드",
     uploadImageDesc: "편집할 이미지 선택",
     editFailed: "편집 실패",

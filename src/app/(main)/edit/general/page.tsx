@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react"
 import Image from "next/image"
-import { Wand2, X, Loader2, Home, ArrowLeft, Camera, FolderHeart, Upload, Images, Trash2, ChevronDown, Sparkles, Settings2 } from "lucide-react"
+import { Wand2, X, Loader2, Home, ArrowLeft, Camera, FolderHeart, Upload, Images, Trash2, ChevronDown, Sparkles, Settings2, RefreshCw, Pencil } from "lucide-react"
 import { fileToBase64, compressBase64Image, fetchWithTimeout, generateId, ensureBase64 } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { useAssetStore } from "@/stores/assetStore"
@@ -450,6 +450,90 @@ export default function GeneralEditPage() {
   const handleReset = () => {
     setInputImages([])
     setResultImage(null)
+    setResultImages([])
+    setCustomPrompt("")
+    setActiveImageSlot(0)
+  }
+  
+  // Re-generate a single result image
+  const handleRegenerate = async (index: number) => {
+    const validImages = inputImages.filter((img): img is string => img !== null)
+    if (validImages.length === 0 || !customPrompt.trim()) return
+    
+    // Check quota for 1 image
+    const hasQuota = await checkQuota(BASE_CREDIT_COST)
+    if (!hasQuota) return
+    
+    const taskId = addTask('edit', validImages[0], { customPrompt, inputImageCount: validImages.length }, 1)
+    setCurrentTaskId(taskId)
+    updateTaskStatus(taskId, 'generating')
+    
+    // Reserve quota for 1 image
+    try {
+      await fetch('/api/quota/reserve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskId, imageCount: 1, taskType: 'edit' }),
+      })
+      refreshQuota()
+    } catch (e) {
+      console.warn('[Quota] Failed to reserve:', e)
+    }
+    
+    // Run single image generation
+    try {
+      const compressedImages = await Promise.all(
+        validImages.map(async (img) => {
+          try {
+            return await compressBase64Image(img, 1024)
+          } catch (e) {
+            return img
+          }
+        })
+      )
+      
+      const response = await fetchWithTimeout("/api/edit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          inputImages: compressedImages,
+          customPrompt,
+          taskId,
+          aspectRatio,
+          resolution,
+        }),
+      }, 180000)
+      
+      const data = await response.json()
+      
+      if (data.success && data.image) {
+        // Replace the image at the index
+        setResultImages(prev => {
+          const newImages = [...prev]
+          newImages[index] = data.image
+          return newImages
+        })
+        updateTaskStatus(taskId, 'completed', [data.image])
+        await refreshQuota()
+      } else {
+        // Refund on failure
+        await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
+        await refreshQuota()
+        alert(t.edit?.editFailed || 'Regeneration failed')
+      }
+    } catch (error: any) {
+      console.error('Regenerate error:', error)
+      await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
+      await refreshQuota()
+      alert(error.message || t.edit?.editFailed || 'Regeneration failed')
+    }
+  }
+  
+  // Use result image as new input for further editing
+  const handleEditResult = (imageUrl: string) => {
+    setInputImages([imageUrl])
+    setResultImages([])
+    setResultImage(null)
     setCustomPrompt("")
     setActiveImageSlot(0)
   }
@@ -584,7 +668,7 @@ export default function GeneralEditPage() {
                   )}
                 </div>
                 
-                {/* Prompt Section */}
+                {/* Prompt & Options Combined */}
                 <div className="bg-white rounded-2xl border border-zinc-200 p-5">
                   <h3 className="font-semibold text-zinc-900 mb-3 flex items-center gap-2">
                     <Wand2 className="w-5 h-5 text-purple-600" />
@@ -595,30 +679,23 @@ export default function GeneralEditPage() {
                     placeholder={t.edit?.editPlaceholder || 'e.g.: Change pants to blue jeans, remove people in background...'}
                     value={customPrompt}
                     onChange={(e) => setCustomPrompt(e.target.value)}
-                    className="w-full min-h-[120px] px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-300 text-sm leading-relaxed"
+                    className="w-full min-h-[100px] px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-300 text-sm leading-relaxed"
                   />
-                </div>
-                
-                {/* Generation Options Section */}
-                <div className="bg-white rounded-2xl border border-zinc-200 p-5">
-                  <h3 className="font-semibold text-zinc-900 mb-4 flex items-center gap-2">
-                    <Settings2 className="w-5 h-5 text-purple-600" />
-                    {t.edit?.generationOptions || 'Generation Options'}
-                  </h3>
                   
-                  <div className="space-y-4">
+                  {/* Compact Options Row */}
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
                     {/* Number of Images */}
-                    <div>
-                      <label className="text-sm text-zinc-600 mb-2 block">{t.edit?.numberOfImages || 'Number of Images'}</label>
-                      <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-zinc-500">{t.edit?.numberOfImages || 'Count'}:</span>
+                      <div className="flex gap-1">
                         {[1, 2, 3, 4].map(num => (
                           <button
                             key={num}
                             onClick={() => setNumImages(num)}
-                            className={`flex-1 h-10 rounded-lg text-sm font-medium transition-colors ${
+                            className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
                               numImages === num
                                 ? 'bg-purple-600 text-white'
-                                : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
+                                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
                             }`}
                           >
                             {num}
@@ -627,18 +704,20 @@ export default function GeneralEditPage() {
                       </div>
                     </div>
                     
+                    <div className="w-px h-6 bg-zinc-200" />
+                    
                     {/* Aspect Ratio */}
-                    <div>
-                      <label className="text-sm text-zinc-600 mb-2 block">{t.edit?.aspectRatio || 'Aspect Ratio'}</label>
-                      <div className="flex gap-2 flex-wrap">
-                        {(['1:1', '3:4', '4:3', '16:9', '9:16'] as const).map(ratio => (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-zinc-500">{t.edit?.aspectRatio || 'Ratio'}:</span>
+                      <div className="flex gap-1">
+                        {(['1:1', '3:4', '4:3'] as const).map(ratio => (
                           <button
                             key={ratio}
                             onClick={() => setAspectRatio(ratio)}
-                            className={`px-4 h-9 rounded-lg text-sm font-medium transition-colors ${
+                            className={`px-2.5 h-8 rounded-lg text-xs font-medium transition-colors ${
                               aspectRatio === ratio
                                 ? 'bg-purple-600 text-white'
-                                : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
+                                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
                             }`}
                           >
                             {ratio}
@@ -647,26 +726,28 @@ export default function GeneralEditPage() {
                       </div>
                     </div>
                     
+                    <div className="w-px h-6 bg-zinc-200" />
+                    
                     {/* Resolution */}
-                    <div>
-                      <label className="text-sm text-zinc-600 mb-2 block">{t.edit?.resolution || 'Resolution'}</label>
-                      <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-zinc-500">{t.edit?.resolution || 'Quality'}:</span>
+                      <div className="flex gap-1">
                         <button
                           onClick={() => setResolution('standard')}
-                          className={`flex-1 h-10 rounded-lg text-sm font-medium transition-colors ${
+                          className={`px-2.5 h-8 rounded-lg text-xs font-medium transition-colors ${
                             resolution === 'standard'
                               ? 'bg-purple-600 text-white'
-                              : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
+                              : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
                           }`}
                         >
-                          {t.edit?.standardRes || 'Standard'}
+                          {t.edit?.standardRes || 'SD'}
                         </button>
                         <button
                           onClick={() => setResolution('hd')}
-                          className={`flex-1 h-10 rounded-lg text-sm font-medium transition-colors ${
+                          className={`px-2.5 h-8 rounded-lg text-xs font-medium transition-colors ${
                             resolution === 'hd'
                               ? 'bg-purple-600 text-white'
-                              : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
+                              : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
                           }`}
                         >
                           {t.edit?.hdRes || 'HD'}
@@ -674,34 +755,34 @@ export default function GeneralEditPage() {
                       </div>
                     </div>
                   </div>
+                  
+                  {/* Generate Button */}
+                  <button
+                    onClick={(e) => {
+                      triggerFlyToGallery(e)
+                      handleGenerate()
+                    }}
+                    disabled={inputImages.filter(Boolean).length === 0 || !customPrompt.trim() || isGenerating}
+                    className={`w-full h-12 mt-4 rounded-xl text-base font-semibold gap-2 flex items-center justify-center transition-all ${
+                      inputImages.filter(Boolean).length === 0 || !customPrompt.trim() || isGenerating
+                        ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
+                        : "bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white shadow-lg shadow-purple-200"
+                    }`}
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>{t.common?.generating || 'Generating...'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-5 h-5" />
+                        <span>{t.edit?.startGenerate || 'Start Generate'}</span>
+                        <CreditCostBadge cost={totalCreditCost} className="ml-2" />
+                      </>
+                    )}
+                  </button>
                 </div>
-                
-                {/* Generate Button */}
-                <button
-                  onClick={(e) => {
-                    triggerFlyToGallery(e)
-                    handleGenerate()
-                  }}
-                  disabled={inputImages.filter(Boolean).length === 0 || !customPrompt.trim() || isGenerating}
-                  className={`w-full h-14 rounded-xl text-base font-semibold gap-2 flex items-center justify-center transition-all ${
-                    inputImages.filter(Boolean).length === 0 || !customPrompt.trim() || isGenerating
-                      ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
-                      : "bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white shadow-lg shadow-purple-200"
-                  }`}
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>{t.common?.generating || 'Generating...'}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-5 h-5" />
-                      <span>{t.edit?.startGenerate || 'Start Generate'}</span>
-                      <CreditCostBadge cost={totalCreditCost} className="ml-2" />
-                    </>
-                  )}
-                </button>
               </div>
               
               {/* Right Column: Output Results */}
@@ -734,12 +815,29 @@ export default function GeneralEditPage() {
                             alt={`Result ${index + 1}`}
                             width={500}
                             height={500}
-                            className="w-full rounded-xl cursor-pointer hover:opacity-95 transition-opacity"
+                            className="w-full rounded-t-xl cursor-pointer hover:opacity-95 transition-opacity"
                             onClick={() => setZoomImage(img)}
                           />
                           <span className="absolute top-2 left-2 px-2 py-1 bg-green-500 text-white text-xs rounded font-medium">
                             {index + 1}
                           </span>
+                          {/* Action buttons */}
+                          <div className="flex border-t border-zinc-100 bg-white rounded-b-xl">
+                            <button
+                              onClick={() => handleRegenerate(index)}
+                              className="flex-1 py-2.5 text-sm font-medium text-zinc-600 hover:text-purple-600 hover:bg-purple-50 transition-colors flex items-center justify-center gap-1.5 border-r border-zinc-100"
+                            >
+                              <RefreshCw className="w-4 h-4" />
+                              <span>{t.edit?.regenerate || 'Re-generate'}</span>
+                            </button>
+                            <button
+                              onClick={() => handleEditResult(img)}
+                              className="flex-1 py-2.5 text-sm font-medium text-zinc-600 hover:text-purple-600 hover:bg-purple-50 transition-colors flex items-center justify-center gap-1.5"
+                            >
+                              <Pencil className="w-4 h-4" />
+                              <span>{t.edit?.editThis || 'Edit'}</span>
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -751,12 +849,29 @@ export default function GeneralEditPage() {
                           alt="Result"
                           width={500}
                           height={500}
-                          className="w-full rounded-xl cursor-pointer hover:opacity-95 transition-opacity"
+                          className="w-full rounded-t-xl cursor-pointer hover:opacity-95 transition-opacity"
                           onClick={() => setZoomImage(resultImage)}
                         />
                         <span className="absolute top-2 left-2 px-2 py-1 bg-green-500 text-white text-xs rounded font-medium">
                           {t.edit?.generationResult || 'Result'}
                         </span>
+                        {/* Action buttons */}
+                        <div className="flex border-t border-zinc-100 bg-white rounded-b-xl">
+                          <button
+                            onClick={() => handleRegenerate(0)}
+                            className="flex-1 py-2.5 text-sm font-medium text-zinc-600 hover:text-purple-600 hover:bg-purple-50 transition-colors flex items-center justify-center gap-1.5 border-r border-zinc-100"
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                            <span>{t.edit?.regenerate || 'Re-generate'}</span>
+                          </button>
+                          <button
+                            onClick={() => handleEditResult(resultImage)}
+                            className="flex-1 py-2.5 text-sm font-medium text-zinc-600 hover:text-purple-600 hover:bg-purple-50 transition-colors flex items-center justify-center gap-1.5"
+                          >
+                            <Pencil className="w-4 h-4" />
+                            <span>{t.edit?.editThis || 'Edit'}</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ) : (

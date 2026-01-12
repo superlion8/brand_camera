@@ -282,6 +282,8 @@ export const en: Translations = {
     hdRes: "HD",
     noResultsYet: "No results yet",
     uploadAndGenerate: "Upload an image and generate to see results",
+    regenerate: "Re-generate",
+    editThis: "Edit",
     uploadImage: "Upload Image",
     uploadImageDesc: "Select an image to edit",
     editFailed: "Edit failed",

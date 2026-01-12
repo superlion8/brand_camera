@@ -280,6 +280,8 @@ export const zh = {
     hdRes: "高清",
     noResultsYet: "暂无结果",
     uploadAndGenerate: "上传图片并生成以查看结果",
+    regenerate: "重新生成",
+    editThis: "继续编辑",
     uploadImage: "上传图片",
     uploadImageDesc: "选择需要修图的图片",
     editFailed: "编辑失败",
