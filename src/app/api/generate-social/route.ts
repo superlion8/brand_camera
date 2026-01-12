@@ -417,18 +417,23 @@ async function processGroup(
             taskType: 'social',
           })
 
-          // Bug 3 修复：只有保存成功时才发送 dbId
-          sendEvent({
-            type: 'image',
-            groupIndex,
-            localIndex,
-            globalIndex,
-            image: uploadedUrl,
-            promptType,
-            ...(saveResult.dbId ? { dbId: saveResult.dbId } : {}),
-          })
-
-          return { index: globalIndex, url: uploadedUrl, promptType }
+          // ✅ 检查数据库保存是否成功
+          if (saveResult.success) {
+            sendEvent({
+              type: 'image',
+              groupIndex,
+              localIndex,
+              globalIndex,
+              image: uploadedUrl,
+              promptType,
+              dbId: saveResult.dbId,
+            })
+            return { index: globalIndex, url: uploadedUrl, promptType }
+          } else {
+            console.error(`[Social] Failed to save image ${globalIndex} to database`)
+            sendEvent({ type: 'image_error', groupIndex, localIndex, globalIndex, error: 'Database save failed' })
+            return { index: globalIndex, url: null, promptType }
+          }
         } else {
           sendEvent({ type: 'image_error', groupIndex, localIndex, globalIndex, error: 'Image upload failed' })
           return { index: globalIndex, url: null, promptType }

@@ -781,15 +781,21 @@ export async function POST(request: NextRequest) {
                   },
                 })
 
-                successCount++
-                sendEvent({
-                  type: 'image',
-                  index,
-                  image: uploadedUrl,
-                  modelUrl: modelData.url,
-                  sceneUrl: sceneData.url,
-                  ...(saveResult.dbId ? { dbId: saveResult.dbId } : {}),
-                })
+                // ✅ 必须检查数据库保存是否成功
+                if (saveResult.success) {
+                  successCount++
+                  sendEvent({
+                    type: 'image',
+                    index,
+                    image: uploadedUrl,
+                    modelUrl: modelData.url,
+                    sceneUrl: sceneData.url,
+                    dbId: saveResult.dbId,
+                  })
+                } else {
+                  console.error(`[ProStudio] Failed to save image ${index} to database`)
+                  sendEvent({ type: 'image_error', index, error: 'Database save failed' })
+                }
               } else {
                 sendEvent({ type: 'image_error', index, error: 'Image upload failed' })
               }

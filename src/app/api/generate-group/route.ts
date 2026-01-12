@@ -473,8 +473,13 @@ export async function POST(request: NextRequest) {
                   } : undefined,
                 })
                 
-                // Bug 2 修复：只有保存成功时才发送 dbId
-                send({ type: 'image', index: i, image: uploaded, modelType: result.model, ...(saveResult.dbId ? { dbId: saveResult.dbId } : {}) })
+                // ✅ 检查数据库保存是否成功
+                if (saveResult.success) {
+                  send({ type: 'image', index: i, image: uploaded, modelType: result.model, dbId: saveResult.dbId })
+                } else {
+                  console.error(`[GroupShoot-Lifestyle] Failed to save image ${i} to database`)
+                  send({ type: 'error', index: i, error: 'Database save failed' })
+                }
               } else {
                 send({ type: 'error', index: i, error: 'Generation failed' })
               }
@@ -560,8 +565,13 @@ export async function POST(request: NextRequest) {
                   } : undefined,
                 })
                 
-                // Bug 2 修复：只有保存成功时才发送 dbId
-                send({ type: 'image', index: i, image: uploaded, modelType: result.model, ...(saveResult.dbId ? { dbId: saveResult.dbId } : {}) })
+                // ✅ 检查数据库保存是否成功
+                if (saveResult.success) {
+                  send({ type: 'image', index: i, image: uploaded, modelType: result.model, dbId: saveResult.dbId })
+                } else {
+                  console.error(`[GroupShoot-Studio] Failed to save image ${i} to database`)
+                  send({ type: 'error', index: i, error: 'Database save failed' })
+                }
               } else {
                 send({ type: 'error', index: i, error: 'Generation failed' })
               }
@@ -640,8 +650,13 @@ export async function POST(request: NextRequest) {
                 } : undefined,
               })
               
-              // Bug 2 修复：只有保存成功时才发送 dbId
-              send({ type: 'image', index: i, image: uploaded, modelType: result.model, ...(saveResult.dbId ? { dbId: saveResult.dbId } : {}) })
+              // ✅ 检查数据库保存是否成功
+              if (saveResult.success) {
+                send({ type: 'image', index: i, image: uploaded, modelType: result.model, dbId: saveResult.dbId })
+              } else {
+                console.error(`[GroupShoot-MultiAngle] Failed to save image ${i} to database`)
+                send({ type: 'error', index: i, error: 'Database save failed' })
+              }
             } else {
               send({ type: 'error', index: i, error: 'Generation failed' })
             }

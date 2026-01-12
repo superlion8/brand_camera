@@ -660,17 +660,23 @@ export async function POST(request: NextRequest) {
             } : undefined,
           })
           
-          send({
-            type: 'image',
-            index: i,
-            image: uploaded,
-            modelType: result.model,
-            modelId: modelIds[i],
-            sceneId: sceneIds[i],
-            ...(saveResult.dbId ? { dbId: saveResult.dbId } : {}),
-          })
-          
-          return { index: i, success: true }
+          // ✅ 检查数据库保存是否成功
+          if (saveResult.success) {
+            send({
+              type: 'image',
+              index: i,
+              image: uploaded,
+              modelType: result.model,
+              modelId: modelIds[i],
+              sceneId: sceneIds[i],
+              dbId: saveResult.dbId,
+            })
+            return { index: i, success: true }
+          } else {
+            console.error(`[Lifestyle] Failed to save image ${i} to database`)
+            send({ type: 'image_error', index: i, error: 'Database save failed' })
+            return { index: i, success: false }
+          }
         })
         
         // Wait for all generations to complete

@@ -148,35 +148,42 @@ export async function GET(request: NextRequest) {
 
     // 展开所有图片 - 注意数据库字段是 task_type
     // 兼容旧数据：同时检查 output_image_urls 和 image_urls 字段
+    // ✅ 过滤掉 null 的 URL，只返回有效图片
     const items = generations
       ?.flatMap(gen => {
         const imageUrls = gen.output_image_urls || gen.image_urls
         if (!imageUrls || !Array.isArray(imageUrls)) {
           return []
         }
-        return imageUrls.map((url: string, index: number) => ({
-          id: `${gen.id}-${index}`,
-          generationId: gen.id, // 数据库 UUID，用于收藏 API
-          imageIndex: index,
-          imageUrl: url,
-          type: gen.task_type,
-          createdAt: gen.created_at,
-          generation: {
-            id: gen.task_id || gen.id, // 显示用 task_id，兼容旧数据
-            dbId: gen.id, // 数据库 UUID，用于收藏
-            type: gen.task_type,
-            outputImageUrls: imageUrls, // 兼容旧数据
-            outputGenModes: gen.output_gen_modes,
-            outputModelTypes: gen.output_model_types,
-            inputImageUrl: gen.input_image_url,
-            inputImage2Url: gen.input_image2_url,
-            modelImageUrl: gen.model_image_url,
-            backgroundImageUrl: gen.background_image_url,
-            params: gen.input_params,
-            prompts: gen.prompts,
-            createdAt: gen.created_at,
-          }
-        }))
+        return imageUrls
+          .map((url: string | null, index: number) => {
+            // ✅ 跳过 null URL（生成失败的占位符）
+            if (!url) return null
+            return {
+              id: `${gen.id}-${index}`,
+              generationId: gen.id, // 数据库 UUID，用于收藏 API
+              imageIndex: index,
+              imageUrl: url,
+              type: gen.task_type,
+              createdAt: gen.created_at,
+              generation: {
+                id: gen.task_id || gen.id, // 显示用 task_id，兼容旧数据
+                dbId: gen.id, // 数据库 UUID，用于收藏
+                type: gen.task_type,
+                outputImageUrls: imageUrls.filter((u: string | null) => u !== null), // 只返回有效 URL
+                outputGenModes: gen.output_gen_modes,
+                outputModelTypes: gen.output_model_types,
+                inputImageUrl: gen.input_image_url,
+                inputImage2Url: gen.input_image2_url,
+                modelImageUrl: gen.model_image_url,
+                backgroundImageUrl: gen.background_image_url,
+                params: gen.input_params,
+                prompts: gen.prompts,
+                createdAt: gen.created_at,
+              }
+            }
+          })
+          .filter((item): item is NonNullable<typeof item> => item !== null)
       }) || []
 
     // 第一页时，查询 pending 状态的任务（生成中但还没有结果的）
