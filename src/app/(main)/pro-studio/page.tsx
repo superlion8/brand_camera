@@ -1013,6 +1013,19 @@ function ProStudioPageContent() {
                       {t.proStudio?.addMoreTip || '💡 Add more products for outfit combination effect'}
                     </p>
                   </div>
+                  
+                  {/* Generate Button */}
+                  <button
+                    onClick={async (e) => {
+                      triggerFlyToGallery(e)
+                      handleShootIt()
+                    }}
+                    className="w-full h-14 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-lg font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg shadow-amber-200/50"
+                  >
+                    <Sparkles className="w-5 h-5" />
+                    {t.proStudio?.startGenerate || '开始生成'}
+                    <CreditCostBadge cost={4} className="ml-2" />
+                  </button>
                 </div>
                 
                 {/* Right: Settings */}
@@ -1132,23 +1145,6 @@ function ProStudioPageContent() {
                       ))}
                     </div>
                   </div>
-                </div>
-              </div>
-              
-              {/* Generate Button - Fixed at bottom left */}
-              <div className="max-w-5xl mx-auto px-8 pb-8">
-                <div className="w-[380px]">
-                  <button
-                    onClick={async (e) => {
-                      triggerFlyToGallery(e)
-                      handleShootIt()
-                    }}
-                    className="w-full h-14 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-lg font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg shadow-amber-200/50"
-                  >
-                    <Sparkles className="w-5 h-5" />
-                    {t.proStudio?.startGenerate || '开始生成'}
-                    <CreditCostBadge cost={4} className="ml-2" />
-                  </button>
                 </div>
               </div>
             </div>
