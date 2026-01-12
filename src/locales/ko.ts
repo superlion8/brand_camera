@@ -237,8 +237,13 @@ export const ko: Translations = {
     generateCount: "생성 수",
     inputSource: "입력 소스",
     loadingPhotos: "사진 로딩 중...",
+    shootNextSet: "다음 세트 촬영",
+    generating: "생성 중...",
+    generationFailed: "생성 실패",
+    modelPhoto: "모델 사진",
+    pose: "포즈",
   },
-  
+
   // Edit Page
   edit: {
     title: "AI 편집실",

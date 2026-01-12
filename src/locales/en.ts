@@ -238,8 +238,13 @@ export const en: Translations = {
     generateCount: "Count",
     inputSource: "Source",
     loadingPhotos: "Loading photos...",
+    shootNextSet: "Shoot Next Set",
+    generating: "Generating...",
+    generationFailed: "Generation Failed",
+    modelPhoto: "Model Photo",
+    pose: "Pose",
   },
-  
+
   // Edit Page
   edit: {
     title: "AI Edit Room",

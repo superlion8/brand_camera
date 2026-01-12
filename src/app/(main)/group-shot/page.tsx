@@ -901,7 +901,7 @@ function GroupShootPageContent() {
                   const url = slot?.imageUrl || generatedImages[i]
                   const status = slot?.status || (url ? 'completed' : 'pending')
                   
-                  const labels = [`Pose ${i + 1}`]
+                  const poseLabel = `${t.groupShootPage?.pose || 'Pose'} ${i + 1}`
                   
                   if (status === 'pending' || status === 'generating') {
                     return (
@@ -909,7 +909,7 @@ function GroupShootPageContent() {
                         <Loader2 className={`w-6 h-6 animate-spin mb-2 ${
                           styleMode === 'lifestyle' ? 'text-blue-400' : 'text-amber-400'
                         }`} />
-                        <span className="text-[10px] text-zinc-400">{labels[i] || `图${i+1}`} 生成中...</span>
+                        <span className="text-[10px] text-zinc-400">{poseLabel} {t.groupShootPage?.generating || 'Generating...'}</span>
                       </div>
                     )
                   }
@@ -917,7 +917,7 @@ function GroupShootPageContent() {
                   if (status === 'failed' || !url) {
                     return (
                       <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
-                        {slot?.error || '生成失败'}
+                        {slot?.error || t.groupShootPage?.generationFailed || 'Generation Failed'}
                       </div>
                     )
                   }
@@ -933,7 +933,7 @@ function GroupShootPageContent() {
                         <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium text-white ${
                           styleMode === 'lifestyle' ? 'bg-blue-500' : 'bg-amber-500'
                         }`}>
-                          {labels[i] || `图${i+1}`}
+                          {poseLabel}
                         </span>
                       </div>
                     </div>
@@ -952,7 +952,7 @@ function GroupShootPageContent() {
                           : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600'
                       }`}
                     >
-                      拍摄下一组
+                      {t.groupShootPage?.shootNextSet || 'Shoot Next Set'}
                     </button>
                   </div>
                 )}
@@ -982,7 +982,7 @@ function GroupShootPageContent() {
                       </div>
                       <p className="text-[10px] text-zinc-500 mt-1">{t.groupShootPage?.inputImage || 'Input'}</p>
                       <span className="text-[8px] px-1 py-0.5 rounded bg-zinc-100 text-zinc-600 mt-0.5">
-                        模特成片
+                        {t.groupShootPage?.modelPhoto || 'Model Photo'}
                       </span>
                     </div>
                   )}
@@ -1031,7 +1031,7 @@ function GroupShootPageContent() {
                     : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600'
                 }`}
               >
-                拍摄下一组
+                {t.groupShootPage?.shootNextSet || 'Shoot Next Set'}
               </button>
             </div>
             )}

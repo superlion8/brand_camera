@@ -236,6 +236,11 @@ export const zh = {
     generateCount: "生成数量",
     inputSource: "输入来源",
     loadingPhotos: "加载成片中...",
+    shootNextSet: "拍摄下一组",
+    generating: "生成中...",
+    generationFailed: "生成失败",
+    modelPhoto: "模特成片",
+    pose: "Pose",
   },
   
   // Edit Page
