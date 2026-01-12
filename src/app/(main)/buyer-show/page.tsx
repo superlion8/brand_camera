@@ -482,20 +482,32 @@ function CameraPageContent() {
     router.replace('/camera?mode=processing')
     
     // Reserve quota in background (don't block generation)
-    fetch('/api/quota/reserve', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        taskId,
-        imageCount: CAMERA_NUM_IMAGES,
-        taskType: 'model_studio',
-      }),
-    }).then(() => {
-      console.log('[Quota] Reserved', CAMERA_NUM_IMAGES, 'images for task', taskId)
+    // 预扣配额（必须等待成功）
+    try {
+      const reserveRes = await fetch('/api/quota/reserve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskId,
+          imageCount: CAMERA_NUM_IMAGES,
+          taskType: 'model_studio',
+        }),
+      })
+      
+      if (!reserveRes.ok) {
+        console.error('[BuyerShow] Failed to reserve quota')
+        setMode('camera')
+        router.replace('/buyer-show')
+        return
+      }
+      console.log('[BuyerShow] Reserved', CAMERA_NUM_IMAGES, 'credits for task', taskId)
       refreshQuota()
-    }).catch(e => {
-      console.warn('[Quota] Failed to reserve quota:', e)
-    })
+    } catch (e) {
+      console.error('[BuyerShow] Failed to reserve quota:', e)
+      setMode('camera')
+      router.replace('/buyer-show')
+      return
+    }
     
     // Start background generation with captured values
     runBackgroundGeneration(

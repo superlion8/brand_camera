@@ -405,21 +405,32 @@ function SocialPageContent() {
     // Trigger fly animation
     triggerFlyToGallery()
     
-    // Reserve quota in background
-    fetch('/api/quota/reserve', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        taskId,
-        imageCount: SOCIAL_NUM_IMAGES,
-        taskType: 'social',
-      }),
-    }).then(() => {
-      console.log('[Social] Reserved', SOCIAL_NUM_IMAGES, 'images for task', taskId)
+    // 预扣配额（必须等待成功）
+    try {
+      const reserveRes = await fetch('/api/quota/reserve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskId,
+          imageCount: SOCIAL_NUM_IMAGES,
+          taskType: 'social',
+        }),
+      })
+      
+      if (!reserveRes.ok) {
+        console.error('[Social] Failed to reserve quota')
+        setMode('camera')
+        router.replace('/social')
+        return
+      }
+      console.log('[Social] Reserved', SOCIAL_NUM_IMAGES, 'credits for task', taskId)
       refreshQuota()
-    }).catch(e => {
-      console.warn('[Social] Failed to reserve quota:', e)
-    })
+    } catch (e) {
+      console.error('[Social] Failed to reserve quota:', e)
+      setMode('camera')
+      router.replace('/social')
+      return
+    }
     
     // Start background generation
     runBackgroundGeneration(

@@ -812,21 +812,30 @@ function OutfitPageContent() {
       router.push('/pro-studio?mode=processing')
     }
     
-    // 在后台创建 pending 记录（不阻塞跳转）
-    fetch('/api/quota/reserve', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        taskId,
-        imageCount: numImages,
-        taskType,
-      }),
-    }).then(() => {
-      console.log('[Outfit] Reserved', numImages, 'images for task', taskId)
+    // 预扣配额（必须等待成功）
+    try {
+      const reserveRes = await fetch('/api/quota/reserve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskId,
+          imageCount: numImages,
+          taskType,
+        }),
+      })
+      
+      if (!reserveRes.ok) {
+        console.error('[Outfit] Failed to reserve quota')
+        router.replace('/pro-studio/outfit')
+        return
+      }
+      console.log('[Outfit] Reserved', numImages, 'credits for task', taskId)
       refreshQuota()
-    }).catch(e => {
-      console.warn('[Outfit] Failed to reserve quota:', e)
-    })
+    } catch (e) {
+      console.error('[Outfit] Failed to reserve quota:', e)
+      router.replace('/pro-studio/outfit')
+      return
+    }
     
     // 在后台加载图片并发起生成请求
     const generateInBackground = async () => {

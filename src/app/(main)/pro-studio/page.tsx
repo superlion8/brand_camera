@@ -585,20 +585,31 @@ function ProStudioPageContent() {
       updateImageSlot(taskId, i, { status: 'generating' })
     }
 
-    // 预扣配额
-    fetch('/api/quota/reserve', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        taskId,
-        imageCount: PRO_STUDIO_NUM_IMAGES,
-        taskType: 'pro_studio',
-      }),
-    }).then(() => {
-      console.log('[ProStudio] Reserved', PRO_STUDIO_NUM_IMAGES, 'images for task', taskId)
-    }).catch(e => {
-      console.warn('[ProStudio] Failed to reserve quota:', e)
-    })
+    // 预扣配额（必须等待成功）
+    try {
+      const reserveRes = await fetch('/api/quota/reserve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskId,
+          imageCount: PRO_STUDIO_NUM_IMAGES,
+          taskType: 'pro_studio',
+        }),
+      })
+      
+      if (!reserveRes.ok) {
+        console.error('[ProStudio] Failed to reserve quota')
+        setMode('camera')
+        router.replace('/pro-studio')
+        return
+      }
+      console.log('[ProStudio] Reserved', PRO_STUDIO_NUM_IMAGES, 'credits for task', taskId)
+    } catch (e) {
+      console.error('[ProStudio] Failed to reserve quota:', e)
+      setMode('camera')
+      router.replace('/pro-studio')
+      return
+    }
 
     // 用户选择的模特/背景 URL（如果有）
     const userSelectedModelUrl = selectedModel?.imageUrl || null
