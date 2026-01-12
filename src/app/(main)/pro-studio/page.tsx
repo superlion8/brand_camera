@@ -1132,8 +1132,12 @@ function ProStudioPageContent() {
                       ))}
                     </div>
                   </div>
-                  
-                  {/* Generate Button */}
+                </div>
+              </div>
+              
+              {/* Generate Button - Fixed at bottom left */}
+              <div className="max-w-5xl mx-auto px-8 pb-8">
+                <div className="w-[380px]">
                   <button
                     onClick={async (e) => {
                       triggerFlyToGallery(e)
@@ -1142,7 +1146,7 @@ function ProStudioPageContent() {
                     className="w-full h-14 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-lg font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg shadow-amber-200/50"
                   >
                     <Sparkles className="w-5 h-5" />
-                    开始生成
+                    {t.proStudio?.startGenerate || '开始生成'}
                     <CreditCostBadge cost={4} className="ml-2" />
                   </button>
                 </div>
@@ -1164,7 +1168,7 @@ function ProStudioPageContent() {
                     initial={{ opacity: 0, scale: 0.95 }} 
                     animate={{ opacity: 1, scale: 1 }} 
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="fixed inset-x-8 top-1/2 -translate-y-1/2 max-w-3xl mx-auto bg-white rounded-2xl z-50 max-h-[80vh] flex flex-col overflow-hidden shadow-xl"
+                    className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-3xl bg-white rounded-2xl z-50 max-h-[80vh] flex flex-col overflow-hidden shadow-xl"
                   >
                     <div className="h-14 border-b flex items-center justify-between px-6 shrink-0">
                       <div className="flex gap-4">

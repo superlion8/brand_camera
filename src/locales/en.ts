@@ -609,6 +609,7 @@ export const en: Translations = {
     highQualityOutputDesc: "Professional quality images, ready for e-commerce",
     randomMatch: "Random if not selected",
     upload: "Upload",
+    startGenerate: "Start Generate",
     viewMore: "View More",
     clickToUploadOrDrag: "Click to upload or drag & drop",
     clickToUpload: "Click to upload",

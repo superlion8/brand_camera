@@ -608,6 +608,7 @@ export const ko: Translations = {
     highQualityOutputDesc: "전문 품질 이미지, 이커머스에 바로 사용 가능",
     randomMatch: "선택 안 하면 랜덤",
     upload: "업로드",
+    startGenerate: "생성 시작",
     viewMore: "더 보기",
     clickToUploadOrDrag: "클릭하여 업로드하거나 드래그 앤 드롭",
     clickToUpload: "클릭하여 업로드",

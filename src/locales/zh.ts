@@ -607,6 +607,7 @@ export const zh = {
     highQualityOutputDesc: "专业级图片质量，可直接用于电商",
     randomMatch: "不选则随机匹配",
     upload: "上传",
+    startGenerate: "开始生成",
     viewMore: "查看更多",
     clickToUploadOrDrag: "点击上传或拖拽图片",
     clickToUpload: "点击上传",
