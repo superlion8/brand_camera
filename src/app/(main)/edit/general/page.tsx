@@ -2,12 +2,13 @@
 
 import { useState, useRef, useEffect, useCallback } from "react"
 import Image from "next/image"
-import { Wand2, X, Loader2, Home, ArrowLeft, Camera, FolderHeart, Upload, Images, Trash2, ChevronDown, Sparkles, Settings2, RefreshCw, Pencil, Heart, Download } from "lucide-react"
+import { Wand2, X, Loader2, Home, ArrowLeft, Camera, FolderHeart, Upload, Images, Trash2, Sparkles, RefreshCw, Pencil, Heart, Download } from "lucide-react"
 import { fileToBase64, compressBase64Image, fetchWithTimeout, generateId, ensureBase64 } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { useAssetStore } from "@/stores/assetStore"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
-import { PRESET_PRODUCTS } from "@/data/presets"
+import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
+import { GalleryPickerPanel } from "@/components/shared/GalleryPickerPanel"
 import Webcam from "react-webcam"
 import { motion, AnimatePresence } from "framer-motion"
 import { useQuota } from "@/hooks/useQuota"
@@ -55,17 +56,8 @@ export default function GeneralEditPage() {
   const [showCamera, setShowCamera] = useState(false)
   const [showProductPanel, setShowProductPanel] = useState(false)
   const [showGalleryPanel, setShowGalleryPanel] = useState(false)
-  const [productSourceTab, setProductSourceTab] = useState<'preset' | 'user'>('preset')
   const [hasCamera, setHasCamera] = useState(true)
   const [cameraReady, setCameraReady] = useState(false)
-  const [isLoadingAsset, setIsLoadingAsset] = useState(false)
-  
-  // Gallery panel data (fetched from API, not store) with pagination
-  const [galleryPhotos, setGalleryPhotos] = useState<any[]>([])
-  const [isLoadingGallery, setIsLoadingGallery] = useState(false)
-  const [galleryPage, setGalleryPage] = useState(1)
-  const [galleryHasMore, setGalleryHasMore] = useState(false)
-  const [isLoadingMoreGallery, setIsLoadingMoreGallery] = useState(false)
   
   // Generation options
   const [numImages, setNumImages] = useState(1)
@@ -86,53 +78,12 @@ export default function GeneralEditPage() {
     }
   }, [])
   
-  // Fetch gallery photos when panel opens
-  const fetchGalleryPhotos = useCallback(async (page: number, append: boolean = false) => {
-    if (append) {
-      setIsLoadingMoreGallery(true)
-    } else {
-      setIsLoadingGallery(true)
-    }
-    try {
-      const response = await fetch(`/api/gallery?type=all&page=${page}`)
-      const result = await response.json()
-      if (result.success && result.data?.items) {
-        if (append) {
-          setGalleryPhotos(prev => [...prev, ...result.data.items])
-        } else {
-          setGalleryPhotos(result.data.items)
-        }
-        setGalleryHasMore(result.data.hasMore || false)
-        setGalleryPage(page)
-        console.log('[GeneralEdit] Fetched gallery photos:', result.data.items.length, 'hasMore:', result.data.hasMore)
-      }
-    } catch (error) {
-      console.error('[GeneralEdit] Failed to fetch gallery:', error)
-    } finally {
-      setIsLoadingGallery(false)
-      setIsLoadingMoreGallery(false)
-    }
-  }, [])
-  
-  useEffect(() => {
-    if (showGalleryPanel && user) {
-      setGalleryPage(1)
-      fetchGalleryPhotos(1, false)
-    }
-  }, [showGalleryPanel, user, fetchGalleryPhotos])
-  
-  const handleLoadMoreGallery = () => {
-    if (!isLoadingMoreGallery && galleryHasMore) {
-      fetchGalleryPhotos(galleryPage + 1, true)
-    }
-  }
-  
   // Edit state - only prompt for general edit
   const [customPrompt, setCustomPrompt] = useState("")
   const [resultImage, setResultImage] = useState<string | null>(null)
   const [zoomImage, setZoomImage] = useState<string | null>(null)
   
-  const { addGeneration, userProducts } = useAssetStore()
+  const { addGeneration } = useAssetStore()
   const { addTask, updateTaskStatus } = useGenerationTaskStore()
   
   // Quota management
@@ -173,8 +124,8 @@ export default function GeneralEditPage() {
     setCameraReady(true)
   }, [])
   
-  const handleSelectFromAsset = useCallback((imageUrl: string) => {
-    // 直接使用 URL，后端会转换为 base64
+  // Shared handler for selecting image from asset or gallery
+  const handleSelectImage = useCallback((imageUrl: string) => {
     setInputImages(prev => {
       const newImages = [...prev]
       if (activeImageSlot < prev.length) {
@@ -184,22 +135,6 @@ export default function GeneralEditPage() {
       }
       return newImages
     })
-    setShowProductPanel(false)
-    setResultImage(null)
-  }, [activeImageSlot])
-  
-  const handleSelectFromGallery = useCallback((imageUrl: string) => {
-    // 直接使用 URL，后端会转换为 base64
-    setInputImages(prev => {
-      const newImages = [...prev]
-      if (activeImageSlot < prev.length) {
-        newImages[activeImageSlot] = imageUrl
-      } else if (prev.length < MAX_IMAGES) {
-        newImages.push(imageUrl)
-      }
-      return newImages
-    })
-    setShowGalleryPanel(false)
     setResultImage(null)
   }, [activeImageSlot])
   
@@ -1380,231 +1315,21 @@ export default function GeneralEditPage() {
         )}
       </AnimatePresence>
       
-      {/* Product Selection Panel */}
-      <AnimatePresence>
-        {showProductPanel && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
-              onClick={() => setShowProductPanel(false)}
-            />
-            <motion.div
-              initial={isDesktop ? { opacity: 0, scale: 0.95 } : { y: "100%" }}
-              animate={isDesktop ? { opacity: 1, scale: 1 } : { y: 0 }}
-              exit={isDesktop ? { opacity: 0, scale: 0.95 } : { y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className={isDesktop 
-                ? "fixed inset-0 m-auto w-[700px] h-fit max-h-[80vh] bg-white rounded-2xl z-50 flex flex-col overflow-hidden shadow-2xl"
-                : "fixed bottom-0 left-0 right-0 h-[70%] bg-white rounded-t-2xl z-50 flex flex-col overflow-hidden"
-              }
-            >
-              <div className="h-14 border-b flex items-center justify-between px-6 shrink-0">
-                <span className="font-semibold text-lg">{t.camera?.selectProduct || 'Select Product'}</span>
-                <button
-                  onClick={() => setShowProductPanel(false)}
-                  className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              
-              {/* Source Tabs */}
-              <div className="px-6 py-3 border-b bg-white">
-                <div className="flex bg-zinc-100 rounded-lg p-1">
-                  <button
-                    onClick={() => setProductSourceTab("preset")}
-                    className={`flex-1 py-2.5 text-sm font-medium rounded-md transition-colors ${
-                      productSourceTab === "preset"
-                        ? "bg-white text-zinc-900 shadow-sm"
-                        : "text-zinc-500 hover:text-zinc-700"
-                    }`}
-                  >
-                    {t.camera?.officialExamples || 'Official Examples'} ({PRESET_PRODUCTS.length})
-                  </button>
-                  <button
-                    onClick={() => setProductSourceTab("user")}
-                    className={`flex-1 py-2.5 text-sm font-medium rounded-md transition-colors ${
-                      productSourceTab === "user"
-                        ? "bg-white text-zinc-900 shadow-sm"
-                        : "text-zinc-500 hover:text-zinc-700"
-                    }`}
-                  >
-                    {t.camera?.myProducts || 'My Products'} ({userProducts.length})
-                  </button>
-                </div>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto bg-zinc-50 p-4 relative">
-                {/* Loading overlay */}
-                {isLoadingAsset && (
-                  <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
-                    <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
-                  </div>
-                )}
-                {productSourceTab === 'preset' ? (
-                  <div className={`grid gap-3 ${isDesktop ? 'grid-cols-5' : 'grid-cols-3'}`}>
-                    {PRESET_PRODUCTS.map(product => (
-                      <button
-                        key={product.id}
-                        disabled={isLoadingAsset}
-                        onClick={() => handleSelectFromAsset(product.imageUrl)}
-                        className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-purple-500 transition-all bg-white disabled:opacity-50"
-                      >
-                        <Image src={product.imageUrl} alt={product.name || ''} fill className="object-cover" />
-                        <span className="absolute top-1.5 left-1.5 bg-purple-500 text-white text-[10px] px-1.5 py-0.5 rounded font-medium">
-                          {t.common?.official || 'Official'}
-                        </span>
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 pt-6">
-                          <p className="text-xs text-white truncate text-center">{product.name}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                ) : userProducts.length > 0 ? (
-                  <div className={`grid gap-3 ${isDesktop ? 'grid-cols-5' : 'grid-cols-3'}`}>
-                    {userProducts.map(product => (
-                      <button
-                        key={product.id}
-                        disabled={isLoadingAsset}
-                        onClick={() => handleSelectFromAsset(product.imageUrl)}
-                        className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-purple-500 transition-all bg-white disabled:opacity-50"
-                      >
-                        <Image src={product.imageUrl} alt={product.name || ''} fill className="object-cover" />
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 pt-6">
-                          <p className="text-xs text-white truncate text-center">{product.name}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-zinc-400 py-12">
-                    <FolderHeart className="w-12 h-12 mb-3 opacity-30" />
-                    <p className="text-sm">{t.camera?.noMyProducts || 'No products yet'}</p>
-                    <p className="text-xs mt-1">{t.camera?.uploadInAssets || 'Upload in Assets'}</p>
-                    <button
-                      onClick={() => {
-                        setShowProductPanel(false)
-                        router.push("/brand-assets")
-                      }}
-                      className="mt-4 px-4 py-2 bg-purple-500 text-white text-sm rounded-lg hover:bg-purple-600"
-                    >
-                      {t.camera?.goUpload || 'Go Upload'}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      {/* Asset Picker Panel */}
+      <AssetPickerPanel
+        open={showProductPanel}
+        onClose={() => setShowProductPanel(false)}
+        onSelect={handleSelectImage}
+        themeColor="purple"
+      />
       
-      {/* Gallery Selection Panel */}
-      <AnimatePresence>
-        {showGalleryPanel && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
-              onClick={() => setShowGalleryPanel(false)}
-            />
-            <motion.div
-              initial={isDesktop ? { opacity: 0, scale: 0.95 } : { y: "100%" }}
-              animate={isDesktop ? { opacity: 1, scale: 1 } : { y: 0 }}
-              exit={isDesktop ? { opacity: 0, scale: 0.95 } : { y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className={isDesktop 
-                ? "fixed inset-0 m-auto w-[700px] h-fit max-h-[80vh] bg-white rounded-2xl z-50 flex flex-col overflow-hidden shadow-2xl"
-                : "fixed bottom-0 left-0 right-0 h-[70%] bg-white rounded-t-2xl z-50 flex flex-col overflow-hidden"
-              }
-            >
-              <div className="h-14 border-b flex items-center justify-between px-6 shrink-0">
-                <span className="font-semibold text-lg">{t.edit?.selectFromGallery || 'Select from Photos'}</span>
-                <button
-                  onClick={() => setShowGalleryPanel(false)}
-                  className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto bg-zinc-50 p-4 relative">
-                {/* Loading overlay */}
-                {isLoadingGallery && (
-                  <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
-                    <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
-                  </div>
-                )}
-                {!isLoadingGallery && galleryPhotos.length > 0 ? (
-                  <div className="space-y-4">
-                    <div className={`grid gap-3 ${isDesktop ? 'grid-cols-5' : 'grid-cols-3'}`}>
-                      {galleryPhotos.filter(item => item?.imageUrl).map((item, index) => (
-                        <button
-                          key={item.id || `gallery-${index}`}
-                          disabled={isLoadingAsset}
-                          onClick={() => handleSelectFromGallery(item.imageUrl)}
-                          className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-purple-500 transition-all bg-white disabled:opacity-50"
-                        >
-                          <Image src={item.imageUrl} alt={`${t.edit?.generationResult || 'Result'} ${index + 1}`} fill className="object-cover" />
-                          <span className={`absolute top-1.5 left-1.5 text-white text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                            item.generation?.type === 'studio' ? 'bg-amber-500' :
-                            item.generation?.type === 'edit' ? 'bg-purple-500' : 'bg-blue-500'
-                          }`}>
-                            {item.generation?.type === 'studio' ? (t.studio?.title || 'Studio') :
-                             item.generation?.type === 'edit' ? (t.nav?.edit || 'Edit') : (t.common?.model || 'Model')}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                    
-                    {/* Load More Button */}
-                    {galleryHasMore && (
-                      <div className="flex justify-center pt-2">
-                        <button
-                          onClick={handleLoadMoreGallery}
-                          disabled={isLoadingMoreGallery}
-                          className="px-6 py-2.5 bg-white border border-zinc-200 rounded-lg text-sm font-medium text-zinc-700 hover:bg-zinc-50 hover:border-zinc-300 transition-colors disabled:opacity-50 flex items-center gap-2"
-                        >
-                          {isLoadingMoreGallery ? (
-                            <>
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                              <span>{t.common?.loading || 'Loading...'}</span>
-                            </>
-                          ) : (
-                            <>
-                              <ChevronDown className="w-4 h-4" />
-                              <span>{t.common?.loadMore || 'Load More'}</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ) : !isLoadingGallery ? (
-                  <div className="flex flex-col items-center justify-center h-full text-zinc-400 py-12">
-                    <Images className="w-12 h-12 mb-3 opacity-30" />
-                    <p className="text-sm">{t.edit?.noGallery || 'No photos yet'}</p>
-                    <p className="text-xs mt-1">{t.studio?.goShootToGenerate || 'Generate some photos first'}</p>
-                    <button
-                      onClick={() => {
-                        setShowGalleryPanel(false)
-                        router.push("/buyer-show")
-                      }}
-                      className="mt-4 px-4 py-2 bg-purple-500 text-white text-sm rounded-lg hover:bg-purple-600"
-                    >
-                      {t.edit?.goShoot || 'Go Shoot'}
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      {/* Gallery Picker Panel */}
+      <GalleryPickerPanel
+        open={showGalleryPanel}
+        onClose={() => setShowGalleryPanel(false)}
+        onSelect={handleSelectImage}
+        themeColor="purple"
+      />
       
       
       {/* Zoom Modal */}
