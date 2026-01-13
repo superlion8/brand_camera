@@ -21,6 +21,8 @@ import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer
 import { useImageDownload } from "@/hooks/useImageDownload"
 import { navigateToEdit } from "@/lib/navigation"
 import { ProcessingView } from "@/components/shared/ProcessingView"
+import { ResultsView } from "@/components/shared/ResultsView"
+import { useFavorite } from "@/hooks/useFavorite"
 import { usePresetStore } from "@/stores/presetStore"
 import { useQuota } from "@/hooks/useQuota"
 import { useQuotaReservation } from "@/hooks/useQuotaReservation"
@@ -249,6 +251,9 @@ function ProStudioPageContent() {
   const [generatedModes, setGeneratedModes] = useState<string[]>([])
   const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
+  
+  // Favorite hook
+  const { toggleFavorite, isFavorited } = useFavorite(currentGenerationId)
   const [isAnalyzingProducts, setIsAnalyzingProducts] = useState(false) // 分析商品中
   
   // Preset Store - 动态从云端加载
@@ -1652,124 +1657,34 @@ function ProStudioPageContent() {
 
         {/* Results Mode */}
         {mode === "results" && (
-          <motion.div 
-            key="results"
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            exit={{ opacity: 0, y: 20 }}
-            className="flex-1 flex flex-col bg-zinc-50 overflow-hidden"
+          <ResultsView
+            title={t.camera.results}
+            onBack={handleRetake}
+            images={[0, 1, 2, 3].map((i) => {
+              const currentTask = tasks.find(t => t.id === currentTaskId)
+              const slot = currentTask?.imageSlots?.[i]
+              const url = slot?.imageUrl || generatedImages[i]
+              const status = slot?.status || (url ? 'completed' : 'failed')
+              return {
+                url,
+                status: status as 'completed' | 'pending' | 'generating' | 'failed',
+                error: slot?.error,
+              }
+            })}
+            getBadge={(i) => ({
+              text: getImageLabel(i),
+              className: getImageColor(i),
+            })}
+            themeColor="amber"
+            onFavorite={toggleFavorite}
+            isFavorited={isFavorited}
+            onDownload={(url) => handleDownload(url)}
+            onShootNext={handleRetake}
+            onGoEdit={(url) => navigateToEdit(router, url)}
+            onRegenerate={handleShootIt}
+            onImageClick={(i) => setSelectedResultIndex(i)}
           >
-            {/* Header */}
-            {isDesktop ? (
-              <div className="bg-white border-b border-zinc-200 shrink-0">
-                <div className="max-w-5xl mx-auto px-8 py-4">
-                  <div className="flex items-center gap-3">
-                    <button 
-                      onClick={handleRetake}
-                      className="w-9 h-9 rounded-lg hover:bg-zinc-100 flex items-center justify-center transition-colors"
-                    >
-                      <ArrowLeft className="w-5 h-5 text-zinc-600" />
-                    </button>
-                    <h1 className="text-lg font-semibold text-zinc-900">{t.camera.results}</h1>
-                  </div>
-                </div>
-              </div>
-            ) : (
-            <div className="h-14 flex items-center px-4 border-b bg-white z-10">
-              <button 
-                onClick={handleRetake} 
-                className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <span className="font-semibold ml-2">{t.camera.results}</span>
-            </div>
-            )}
-
-            {/* Content */}
-            <div className={`flex-1 overflow-y-auto ${isDesktop ? 'py-8' : 'p-4 pb-8'}`}>
-              <div className={isDesktop ? 'max-w-4xl mx-auto px-8' : ''}>
-                {/* 4 种机位图片 - 桌面端4列，移动端2列 */}
-                <div className={`grid gap-4 ${isDesktop ? 'grid-cols-4' : 'grid-cols-2 gap-3'}`}>
-                {[0, 1, 2, 3].map((i) => {
-                  const currentTask = tasks.find(t => t.id === currentTaskId)
-                  const slot = currentTask?.imageSlots?.[i]
-                  const url = slot?.imageUrl || generatedImages[i]
-                  const status = slot?.status || (url ? 'completed' : 'failed')
-                  
-                  if (status === 'pending' || status === 'generating') {
-                    return (
-                        <div key={i} className="aspect-[3/4] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
-                        <Loader2 className="w-6 h-6 text-zinc-400 animate-spin mb-2" />
-                          <span className="text-[10px] text-zinc-400">{getImageLabel(i)}</span>
-                      </div>
-                    )
-                  }
-                  
-                  if (status === 'failed' || !url) {
-                    return (
-                        <div key={i} className="aspect-[3/4] bg-zinc-200 rounded-xl flex flex-col items-center justify-center text-zinc-400 text-xs">
-                          <span className="mb-1">{getImageLabel(i)}</span>
-                        <span>{slot?.error || t.camera.generationFailed}</span>
-                      </div>
-                    )
-                  }
-                  
-                  return (
-                    <div 
-                      key={i} 
-                        className="group relative aspect-[3/4] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer hover:shadow-md transition-shadow"
-                      onClick={() => setSelectedResultIndex(i)}
-                    >
-                      <Image src={url} alt="Result" fill className="object-cover" />
-                      <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button className="w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm hover:bg-white">
-                          <Heart className="w-3.5 h-3.5 text-zinc-500" />
-                        </button>
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); handleDownload(url) }}
-                          className="w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm hover:bg-white"
-                        >
-                          <Download className="w-3.5 h-3.5 text-zinc-500" />
-                        </button>
-                      </div>
-                      <div className="absolute top-2 left-2">
-                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium text-white ${getImageColor(i)}`}>
-                            {getImageLabel(i)}
-                        </span>
-                      </div>
-                    </div>
-                  )
-                })}
-                </div>
-                
-                {/* Desktop: Button inline */}
-                {isDesktop && (
-                  <div className="mt-8 flex justify-center">
-                    <button 
-                      onClick={handleRetake}
-                      className="px-8 h-12 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold transition-colors"
-                    >
-                      {t.proStudio?.shootNextSet || t.camera.shootNextSet}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Mobile: Bottom button */}
-            {!isDesktop && (
-            <div className="p-4 pb-20 bg-white border-t shadow-up">
-              <button 
-                onClick={handleRetake}
-                className="w-full h-12 text-lg rounded-lg bg-zinc-900 text-white font-semibold hover:bg-zinc-800 transition-colors"
-              >
-                {t.proStudio?.shootNextSet || t.camera.shootNextSet}
-              </button>
-            </div>
-            )}
-            
-            {/* Result Detail Dialog - Using shared component */}
+            {/* Result Detail Dialog */}
             <ResultDetailDialog
               open={selectedResultIndex !== null && !!(() => {
                 const currentTask = tasks.find(t => t.id === currentTaskId)
@@ -1788,6 +1703,8 @@ function ProStudioPageContent() {
                 text: getImageLabel(selectedResultIndex),
                 className: `${getImageColor(selectedResultIndex)} text-white`
               }] : []}
+              onFavorite={() => selectedResultIndex !== null && toggleFavorite(selectedResultIndex)}
+              isFavorited={selectedResultIndex !== null && isFavorited(selectedResultIndex)}
               onDownload={() => {
                 if (selectedResultIndex === null) return
                 const currentTask = tasks.find(t => t.id === currentTaskId)
@@ -1891,9 +1808,7 @@ function ProStudioPageContent() {
                 </div>
               )}
             </ResultDetailDialog>
-            
-            {!isDesktop && <BottomNav forceShow />}
-          </motion.div>
+          </ResultsView>
         )}
       </AnimatePresence>
 
