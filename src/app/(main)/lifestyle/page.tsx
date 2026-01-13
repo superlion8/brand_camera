@@ -14,6 +14,7 @@ import { fileToBase64, saveProductToAssets, compressBase64Image } from "@/lib/ut
 import Image from "next/image"
 import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
+import { ProcessingView } from "@/components/shared/ProcessingView"
 import { useImageDownload } from "@/hooks/useImageDownload"
 import { Asset } from "@/types"
 import { useQuota } from "@/hooks/useQuota"
@@ -1106,135 +1107,22 @@ function LifestylePageContent() {
         )}
 
         {mode === "processing" && (
-          <motion.div 
-            key="processing"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className={`flex-1 flex flex-col ${isDesktop ? 'bg-zinc-50' : 'bg-zinc-950 items-center justify-center p-8 text-center'}`}
-          >
-            {isDesktop ? (
-              /* PC Web: Skeleton grid layout */
-              <>
-                <div className="bg-white border-b border-zinc-200">
-                  <div className="max-w-4xl mx-auto px-8 py-4">
-                    <div className="flex items-center justify-between">
-                      <button onClick={handleRetake} className="flex items-center gap-2 text-zinc-600 hover:text-zinc-900 font-medium">
-                        <ArrowLeft className="w-5 h-5" />
-                        <span>{t.lifestyle?.shootMore || 'Shoot More'}</span>
-                      </button>
-                      <span className="font-bold text-zinc-900">{t.lifestyle?.creating || 'Creating street style photos'}</span>
-                      <div className="w-20" />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto py-8">
-                  <div className="max-w-4xl mx-auto px-8">
-                    {/* Skeleton Grid */}
-                    <div className="grid grid-cols-4 gap-3">
-                      {Array.from({ length: LIFESTYLE_NUM_IMAGES }).map((_, i) => {
-                        const url = generatedImages[i]
-                        const currentTask = tasks.find(t => t.id === currentTaskId)
-                        const slot = currentTask?.imageSlots?.[i]
-                        const status = slot?.status || (url ? 'completed' : 'generating')
-                        
-                        return (
-                          <div 
-                            key={i} 
-                            className="aspect-[3/4] rounded-xl bg-zinc-200 overflow-hidden relative group"
-                          >
-                            {url ? (
-                              <>
-                                <Image src={url} alt="Result" fill className="object-cover" />
-                                <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <button className="w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm hover:bg-white">
-                                    <Heart className="w-3.5 h-3.5 text-zinc-500" />
-                                  </button>
-                                  <button 
-                                    onClick={(e) => { e.stopPropagation(); handleDownload(url) }}
-                                    className="w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm hover:bg-white"
-                                  >
-                                    <Download className="w-3.5 h-3.5 text-zinc-500" />
-                                  </button>
-                                </div>
-                              </>
-                            ) : status === 'failed' ? (
-                              <div className="absolute inset-0 flex items-center justify-center text-zinc-400">
-                                <span className="text-xs">{t.camera?.generationFailed || 'Failed'}</span>
-                              </div>
-                            ) : (
-                              <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-100 animate-pulse">
-                                <Loader2 className="w-6 h-6 text-zinc-400 animate-spin mb-2" />
-                                <span className="text-xs text-zinc-400">{lifestyleStatus}</span>
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })}
-                    </div>
-                    
-                    {/* Action Buttons */}
-                    <div className="flex justify-center gap-3 mt-8">
-                      <button 
-                        onClick={handleRetake}
-                        className="px-6 h-11 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-medium flex items-center gap-2 transition-colors"
-                      >
-                        <Camera className="w-4 h-4" />
-                        {t.lifestyle?.shootMore || 'Shoot More'}
-                      </button>
-                      <button 
-                        onClick={() => router.push("/")}
-                        className="px-6 h-11 rounded-xl bg-white hover:bg-zinc-100 text-zinc-700 font-medium flex items-center gap-2 transition-colors border border-zinc-200"
-                      >
-                        <Home className="w-4 h-4" />
-                        {t.lifestyle?.returnHome || 'Return Home'}
-                      </button>
-                      <button 
-                        onClick={() => router.push("/gallery")}
-                        className="px-6 h-11 rounded-xl bg-white hover:bg-zinc-100 text-zinc-700 font-medium flex items-center gap-2 transition-colors border border-zinc-200"
-                      >
-                        <FolderHeart className="w-4 h-4" />
-                        {t.lifestyle?.goToPhotos || 'Go to Photos'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </>
-            ) : (
-              /* Mobile: Original spinner layout */
-              <>
-                <div className="w-20 h-20 mb-8 relative">
-                  <div className="absolute inset-0 blur-2xl rounded-full animate-pulse bg-purple-500/20" />
-                  <Loader2 className="w-full h-full animate-spin text-purple-500" />
-                </div>
-                <h3 className="text-2xl font-bold mb-4 text-white">
-                  {t.lifestyle?.creating || 'Creating street style photos'}
-                </h3>
-                <p className="text-sm mb-8 text-zinc-400">{lifestyleStatus}</p>
-                
-                <div className="space-y-3 w-full max-w-xs">
-                  <p className="text-xs mb-4 text-zinc-500">
-                    {t.lifestyle?.continueInBackground || 'Generation continues in background, you can:'}
-                  </p>
-                  <button
-                    onClick={handleRetake}
-                    className="w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors bg-white text-black hover:bg-zinc-200"
-                  >
-                    <Camera className="w-5 h-5" />
-                    {t.lifestyle?.shootMore || 'Shoot More'}
-                  </button>
-                  <button
-                    onClick={() => router.push("/")}
-                    className="w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors border bg-white/10 text-white hover:bg-white/20 border-white/20"
-                  >
-                    <Home className="w-5 h-5" />
-                    {t.lifestyle?.returnHome || 'Return Home'}
-                  </button>
-                </div>
-                
-                {!isDesktop && <BottomNav forceShow />}
-              </>
-            )}
-          </motion.div>
+          <ProcessingView
+            numImages={LIFESTYLE_NUM_IMAGES}
+            generatedImages={generatedImages}
+            imageSlots={tasks.find(t => t.id === currentTaskId)?.imageSlots?.map(slot => ({
+              url: slot.imageUrl,
+              status: slot.status as 'generating' | 'completed' | 'failed'
+            }))}
+            themeColor="purple"
+            title={t.lifestyle?.creating || 'Creating street style photos'}
+            mobileStatusLines={[lifestyleStatus]}
+            onShootMore={handleRetake}
+            onReturnHome={() => router.push("/")}
+            onDownload={(url) => handleDownload(url)}
+            shootMoreText={t.lifestyle?.shootMore || 'Shoot More'}
+            returnHomeText={t.lifestyle?.returnHome || 'Return Home'}
+          />
         )}
 
         {mode === "results" && (

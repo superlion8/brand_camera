@@ -13,6 +13,7 @@ import { fileToBase64, compressBase64Image } from "@/lib/utils"
 import { useQuota } from "@/hooks/useQuota"
 import { useQuotaReservation } from "@/hooks/useQuotaReservation"
 import { navigateToEdit } from "@/lib/navigation"
+import { ProcessingView } from "@/components/shared/ProcessingView"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
@@ -782,95 +783,19 @@ export default function TryOnPage() {
         
         {/* Processing Mode */}
         {mode === 'processing' && (
-          <motion.div
-            key="processing"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className={`flex-1 flex flex-col ${isDesktop ? 'bg-zinc-50' : 'items-center justify-center p-8 pb-24'}`}
-          >
-            {isDesktop ? (
-              /* PC Web: Skeleton grid layout */
-              <>
-                <div className="bg-white border-b border-zinc-200">
-                  <div className="max-w-4xl mx-auto px-8 py-4">
-                    <div className="flex items-center justify-between">
-                      <button onClick={handleNewDuringProcessing} className="flex items-center gap-2 text-zinc-600 hover:text-zinc-900 font-medium">
-                        <ArrowLeft className="w-5 h-5" />
-                        <span>{t.tryOn?.newGeneration || 'New Generation'}</span>
-                      </button>
-                      <span className="font-bold text-zinc-900">{t.tryOn?.generating || 'Creating outfit change'}</span>
-                      <div className="w-20" />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto py-8">
-                  <div className="max-w-4xl mx-auto px-8">
-                    <div className="grid grid-cols-2 gap-4">
-                      {[0, 1].map((i) => {
-                        const url = resultImages[i]
-                        return (
-                          <div key={i} className="aspect-[3/4] rounded-xl bg-zinc-200 overflow-hidden relative group">
-                            {url ? (
-                              <>
-                                <Image src={url} alt="Result" fill className="object-cover" />
-                                <button className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Heart className="w-3.5 h-3.5 text-zinc-500" />
-                                </button>
-                              </>
-                            ) : (
-                              <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-100 animate-pulse">
-                                <Loader2 className="w-6 h-6 text-pink-500 animate-spin mb-2" />
-                                <span className="text-xs text-zinc-400">{t.common?.generating || 'Generating...'}</span>
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })}
-                    </div>
-                    
-                    <div className="flex justify-center gap-3 mt-8">
-                      <button onClick={handleNewDuringProcessing} className="px-6 h-11 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-medium flex items-center gap-2 transition-colors">
-                        <Camera className="w-4 h-4" />
-                        {t.tryOn?.newGeneration || 'New Generation'}
-                      </button>
-                      <button onClick={() => router.push('/')} className="px-6 h-11 rounded-xl bg-white hover:bg-zinc-100 text-zinc-700 font-medium flex items-center gap-2 transition-colors border border-zinc-200">
-                        <Home className="w-4 h-4" />
-                        {t.studio?.returnHome || 'Return Home'}
-                      </button>
-                      <button onClick={() => router.push('/gallery')} className="px-6 h-11 rounded-xl bg-white hover:bg-zinc-100 text-zinc-700 font-medium flex items-center gap-2 transition-colors border border-zinc-200">
-                        <FolderHeart className="w-4 h-4" />
-                        {t.lifestyle?.goToPhotos || 'Go to Photos'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </>
-            ) : (
-              /* Mobile: Original spinner layout */
-              <>
-                <div className="relative mb-6">
-                  <div className="absolute inset-0 blur-xl rounded-full animate-pulse bg-pink-500/20" />
-                  <Loader2 className="w-16 h-16 animate-spin relative z-10 text-pink-500" />
-                </div>
-                <h3 className="text-xl font-bold text-zinc-800 mb-2">{t.tryOn?.generating || 'Creating outfit change'}</h3>
-                <p className="text-zinc-500 text-sm mb-8">{t.tryOn?.generatingDesc || 'Generating 2 outfit images'}</p>
-                
-                <div className="space-y-3 w-full max-w-xs">
-                  <p className="text-zinc-400 text-xs text-center mb-4">{t.studio?.continueInBackground || 'Generation continues in background'}</p>
-                  <button onClick={handleNewDuringProcessing} className="w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors bg-pink-500 text-white hover:bg-pink-600">
-                    <Camera className="w-5 h-5" />
-                    {t.tryOn?.newGeneration || 'New Generation'}
-                  </button>
-                  <button onClick={() => router.push('/')} className="w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors bg-zinc-100 text-zinc-700 hover:bg-zinc-200">
-                    <Home className="w-5 h-5" />
-                    {t.studio?.returnHome || 'Return Home'}
-                  </button>
-                </div>
-              </>
-            )}
-          </motion.div>
+          <ProcessingView
+            numImages={2}
+            generatedImages={resultImages}
+            themeColor="pink"
+            gridCols={2}
+            title={t.tryOn?.generating || 'Creating outfit change'}
+            mobileStatusLines={[t.tryOn?.generatingDesc || 'Generating 2 outfit images']}
+            onShootMore={handleNewDuringProcessing}
+            onReturnHome={() => router.push('/')}
+            shootMoreText={t.tryOn?.newGeneration || 'New Generation'}
+            returnHomeText={t.studio?.returnHome || 'Return Home'}
+            showBottomNav={false}
+          />
         )}
         
         {/* Results Mode */}

@@ -14,6 +14,7 @@ import { useQuota } from "@/hooks/useQuota"
 import { useQuotaReservation } from "@/hooks/useQuotaReservation"
 import { BottomNav } from "@/components/shared/BottomNav"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
+import { ProcessingView } from "@/components/shared/ProcessingView"
 import { useImageDownload } from "@/hooks/useImageDownload"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
@@ -685,132 +686,30 @@ function GroupShootPageContent() {
 
         {/* Processing Mode */}
         {mode === "processing" && (
-          <motion.div 
-            key="processing"
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
-            exit={{ opacity: 0 }}
-            className={`flex-1 flex flex-col ${isDesktop ? 'bg-zinc-50' : 'bg-zinc-950 items-center justify-center p-8 text-center'}`}
-          >
-            {isDesktop ? (
-              /* PC Web: Skeleton grid layout */
-              <>
-                <div className="bg-white border-b border-zinc-200">
-                  <div className="max-w-4xl mx-auto px-8 py-4">
-                    <div className="flex items-center justify-between">
-                      <button onClick={handleReselect} className="flex items-center gap-2 text-zinc-600 hover:text-zinc-900 font-medium">
-                        <ArrowLeft className="w-5 h-5" />
-                        <span>{t.groupShootPage?.selectNewImage || 'Select New Image'}</span>
-                      </button>
-                      <span className="font-bold text-zinc-900">
-                        {styleMode === 'lifestyle' 
-                          ? (t.groupShootPage?.creatingLifestyle || 'Creating lifestyle group photos')
-                          : (t.groupShootPage?.creatingStudio || 'Creating studio group photos')}
-                      </span>
-                      <div className="w-20" />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto py-8">
-                  <div className="max-w-4xl mx-auto px-8">
-                    <div className={`grid gap-3 ${numImages <= 4 ? 'grid-cols-4' : numImages <= 6 ? 'grid-cols-3' : 'grid-cols-4'}`}>
-                      {Array.from({ length: numImages }).map((_, i) => {
-                        const url = generatedImages[i]
-                        const currentTask = tasks.find(t => t.id === currentTaskId)
-                        const slot = currentTask?.imageSlots?.[i]
-                        const status = slot?.status || (url ? 'completed' : 'generating')
-                        
-                        return (
-                          <div key={i} className="aspect-[3/4] rounded-xl bg-zinc-200 overflow-hidden relative group">
-                            {url ? (
-                              <>
-                                <Image src={url} alt="Result" fill className="object-cover" />
-                                <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <button className="w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm hover:bg-white">
-                                    <Heart className="w-3.5 h-3.5 text-zinc-500" />
-                                  </button>
-                                  <button 
-                                    onClick={(e) => { e.stopPropagation(); handleDownload(url) }}
-                                    className="w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm hover:bg-white"
-                                  >
-                                    <Download className="w-3.5 h-3.5 text-zinc-500" />
-                                  </button>
-                                </div>
-                              </>
-                            ) : status === 'failed' ? (
-                              <div className="absolute inset-0 flex items-center justify-center text-zinc-400">
-                                <span className="text-xs">{t.camera?.generationFailed || 'Failed'}</span>
-                              </div>
-                            ) : (
-                              <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-100 animate-pulse">
-                                <Loader2 className={`w-6 h-6 animate-spin mb-2 ${styleMode === 'lifestyle' ? 'text-blue-500' : 'text-amber-500'}`} />
-                                <span className="text-xs text-zinc-400">{t.common?.generating || 'Generating...'}</span>
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })}
-                    </div>
-                    
-                    <div className="flex justify-center gap-3 mt-8">
-                      <button 
-                        onClick={handleReselect} 
-                        className={`px-6 h-11 rounded-xl text-white font-medium flex items-center gap-2 transition-colors ${
-                          styleMode === 'lifestyle' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-amber-600 hover:bg-amber-700'
-                        }`}
-                      >
-                        <ImageIcon className="w-4 h-4" />
-                        {t.groupShootPage?.selectNewImage || 'Select New Image'}
-                      </button>
-                      <button onClick={() => router.push("/")} className="px-6 h-11 rounded-xl bg-white hover:bg-zinc-100 text-zinc-700 font-medium flex items-center gap-2 transition-colors border border-zinc-200">
-                        <Home className="w-4 h-4" />
-                        {t.groupShootPage?.returnHome || 'Return Home'}
-                      </button>
-                      <button onClick={() => router.push("/gallery")} className="px-6 h-11 rounded-xl bg-white hover:bg-zinc-100 text-zinc-700 font-medium flex items-center gap-2 transition-colors border border-zinc-200">
-                        <FolderHeart className="w-4 h-4" />
-                        {t.lifestyle?.goToPhotos || 'Go to Photos'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </>
-            ) : (
-              /* Mobile: Original spinner layout */
-              <>
-                <div className="relative mb-6">
-                  <div className={`absolute inset-0 blur-xl rounded-full animate-pulse ${styleMode === 'lifestyle' ? 'bg-blue-500/20' : 'bg-amber-500/20'}`} />
-                  <Loader2 className={`w-16 h-16 animate-spin relative z-10 ${styleMode === 'lifestyle' ? 'text-blue-500' : 'text-amber-500'}`} />
-                </div>
-                <h3 className="text-2xl font-bold mb-2 text-white">
-                  {styleMode === 'lifestyle' 
-                    ? (t.groupShootPage?.creatingLifestyle || 'Creating lifestyle group photos')
-                    : (t.groupShootPage?.creatingStudio || 'Creating studio group photos')}
-                </h3>
-                <div className="space-y-1 text-sm mb-8 text-zinc-400">
-                  <p>{t.groupShootPage?.analyzingFeatures || 'Analyzing image features'}</p>
-                  <p>{(t.groupShootPage?.generatingImages || 'Generating {count} images...').replace('{count}', String(numImages))}</p>
-                </div>
-                
-                <div className="flex gap-2">
-                  {Array.from({ length: numImages }).map((_, i) => {
-                    const task = tasks.find(t => t.id === currentTaskId)
-                    const slot = task?.imageSlots?.[i]
-                    const status = slot?.status || 'pending'
-                    return (
-                      <div key={i} className={`w-3 h-3 rounded-full transition-colors ${
-                        status === 'completed' ? 'bg-green-500' :
-                        status === 'generating' ? `${styleMode === 'lifestyle' ? 'bg-blue-500' : 'bg-amber-500'} animate-pulse` :
-                        status === 'failed' ? 'bg-red-500' : 'bg-zinc-600'
-                      }`} />
-                    )
-                  })}
-                </div>
-                
-                {!isDesktop && <BottomNav forceShow />}
-              </>
-            )}
-          </motion.div>
+          <ProcessingView
+            numImages={numImages}
+            generatedImages={generatedImages}
+            imageSlots={tasks.find(t => t.id === currentTaskId)?.imageSlots?.map(slot => ({
+              url: slot.imageUrl,
+              status: slot.status as 'generating' | 'completed' | 'failed'
+            }))}
+            themeColor={styleMode === 'lifestyle' ? 'blue' : 'amber'}
+            gridCols={numImages <= 4 ? 4 : numImages <= 6 ? 3 : 4}
+            title={styleMode === 'lifestyle' 
+              ? (t.groupShootPage?.creatingLifestyle || 'Creating lifestyle group photos')
+              : (t.groupShootPage?.creatingStudio || 'Creating studio group photos')}
+            mobileStatusLines={[
+              t.groupShootPage?.analyzingFeatures || 'Analyzing image features',
+              (t.groupShootPage?.generatingImages || 'Generating {count} images...').replace('{count}', String(numImages)),
+            ]}
+            showProgressDots
+            onShootMore={handleReselect}
+            onReturnHome={() => router.push("/")}
+            onDownload={(url) => handleDownload(url)}
+            shootMoreText={t.groupShootPage?.selectNewImage || 'Select New Image'}
+            shootMoreIcon={<ImageIcon className="w-4 h-4" />}
+            returnHomeText={t.groupShootPage?.returnHome || 'Return Home'}
+          />
         )}
 
         {/* Results Mode */}

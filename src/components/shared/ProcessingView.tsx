@@ -38,6 +38,15 @@ interface ProcessingViewProps {
   /** Mobile status lines */
   mobileStatusLines?: ReactNode[]
   
+  /** Grid columns (default: 4) */
+  gridCols?: 2 | 3 | 4
+  
+  /** Image aspect ratio (default: '3/4') */
+  aspectRatio?: '3/4' | '1/1'
+  
+  /** Show progress dots indicator on mobile */
+  showProgressDots?: boolean
+  
   /** Callback when "Shoot More" / "Retake" is clicked */
   onShootMore?: () => void
   
@@ -56,16 +65,60 @@ interface ProcessingViewProps {
   /** Custom return home button text */
   returnHomeText?: string
   
-  /** Show bottom nav on mobile */
+  /** Show bottom nav on mobile (default: true) */
   showBottomNav?: boolean
+  
+  /** Custom icon for shoot more button */
+  shootMoreIcon?: ReactNode
 }
 
-const themeColors: Record<ThemeColor, { spinner: string; button: string; glow: string }> = {
-  blue: { spinner: 'text-blue-500', button: 'bg-blue-600 hover:bg-blue-700', glow: 'bg-blue-500/20' },
-  amber: { spinner: 'text-amber-500', button: 'bg-amber-500 hover:bg-amber-600', glow: 'bg-amber-500/20' },
-  pink: { spinner: 'text-pink-500', button: 'bg-pink-500 hover:bg-pink-600', glow: 'bg-pink-500/20' },
-  purple: { spinner: 'text-purple-500', button: 'bg-purple-500 hover:bg-purple-600', glow: 'bg-purple-500/20' },
-  cyan: { spinner: 'text-cyan-500', button: 'bg-cyan-500 hover:bg-cyan-600', glow: 'bg-cyan-500/20' },
+const themeColors: Record<ThemeColor, { 
+  spinner: string
+  button: string
+  glow: string
+  dot: string
+}> = {
+  blue: { 
+    spinner: 'text-blue-500', 
+    button: 'bg-blue-600 hover:bg-blue-700', 
+    glow: 'bg-blue-500/20',
+    dot: 'bg-blue-500'
+  },
+  amber: { 
+    spinner: 'text-amber-500', 
+    button: 'bg-amber-500 hover:bg-amber-600', 
+    glow: 'bg-amber-500/20',
+    dot: 'bg-amber-500'
+  },
+  pink: { 
+    spinner: 'text-pink-500', 
+    button: 'bg-pink-500 hover:bg-pink-600', 
+    glow: 'bg-pink-500/20',
+    dot: 'bg-pink-500'
+  },
+  purple: { 
+    spinner: 'text-purple-500', 
+    button: 'bg-purple-600 hover:bg-purple-700', 
+    glow: 'bg-purple-500/20',
+    dot: 'bg-purple-500'
+  },
+  cyan: { 
+    spinner: 'text-cyan-500', 
+    button: 'bg-cyan-500 hover:bg-cyan-600', 
+    glow: 'bg-cyan-500/20',
+    dot: 'bg-cyan-500'
+  },
+}
+
+const gridColsClass: Record<2 | 3 | 4, string> = {
+  2: 'grid-cols-2',
+  3: 'grid-cols-3',
+  4: 'grid-cols-4',
+}
+
+const aspectRatioClass: Record<'3/4' | '1/1', string> = {
+  '3/4': 'aspect-[3/4]',
+  '1/1': 'aspect-square',
 }
 
 export function ProcessingView({
@@ -76,6 +129,9 @@ export function ProcessingView({
   title,
   mobileTitle,
   mobileStatusLines = [],
+  gridCols = 4,
+  aspectRatio = '3/4',
+  showProgressDots = false,
   onShootMore,
   onReturnHome,
   onGoToGallery,
@@ -83,6 +139,7 @@ export function ProcessingView({
   shootMoreText,
   returnHomeText,
   showBottomNav = true,
+  shootMoreIcon,
 }: ProcessingViewProps) {
   const router = useRouter()
   const { isDesktop } = useIsDesktop()
@@ -134,13 +191,13 @@ export function ProcessingView({
           
           <div className="flex-1 overflow-y-auto py-8">
             <div className="max-w-4xl mx-auto px-8">
-              <div className="grid grid-cols-4 gap-3">
+              <div className={`grid ${gridColsClass[gridCols]} gap-3`}>
                 {Array.from({ length: numImages }).map((_, i) => {
                   const url = generatedImages[i]
                   const status = getSlotStatus(i)
                   
                   return (
-                    <div key={i} className="aspect-[3/4] rounded-xl bg-zinc-200 overflow-hidden relative group">
+                    <div key={i} className={`${aspectRatioClass[aspectRatio]} rounded-xl bg-zinc-200 overflow-hidden relative group`}>
                       {url ? (
                         <>
                           <Image src={url} alt="Result" fill className="object-cover" />
@@ -176,7 +233,7 @@ export function ProcessingView({
               <div className="flex justify-center gap-3 mt-8">
                 {onShootMore && (
                   <button onClick={onShootMore} className={`px-6 h-11 rounded-xl ${colors.button} text-white font-medium flex items-center gap-2 transition-colors`}>
-                    <Camera className="w-4 h-4" />
+                    {shootMoreIcon || <Camera className="w-4 h-4" />}
                     {shootMoreText || t.camera?.shootNew || 'Shoot More'}
                   </button>
                 )}
@@ -195,18 +252,40 @@ export function ProcessingView({
           </div>
         </>
       ) : (
-        /* Mobile: Original spinner layout */
+        /* Mobile: Unified dark spinner layout */
         <>
           <div className="relative mb-6">
             <div className={`absolute inset-0 ${colors.glow} blur-xl rounded-full animate-pulse`} />
             <Loader2 className={`w-16 h-16 ${colors.spinner} animate-spin relative z-10`} />
           </div>
-          <h3 className="text-white text-2xl font-bold mb-2">{mobileTitle || t.camera?.generating || 'Generating'}</h3>
+          <h3 className="text-white text-2xl font-bold mb-2">{mobileTitle || title}</h3>
+          
           {mobileStatusLines.length > 0 && (
-            <div className="text-zinc-400 space-y-1 text-sm mb-8">
+            <div className="text-zinc-400 space-y-1 text-sm mb-6">
               {mobileStatusLines.map((line, i) => (
                 <p key={i}>{line}</p>
               ))}
+            </div>
+          )}
+          
+          {/* Progress dots */}
+          {showProgressDots && (
+            <div className="flex gap-2 mb-8">
+              {Array.from({ length: numImages }).map((_, i) => {
+                const status = getSlotStatus(i)
+                const isCompleted = status === 'completed'
+                const isGenerating = status === 'generating'
+                return (
+                  <motion.div
+                    key={i}
+                    className={`w-3 h-3 rounded-full ${
+                      isCompleted ? 'bg-green-500' : isGenerating ? colors.dot : 'bg-zinc-600'
+                    }`}
+                    animate={isGenerating ? { scale: [1, 1.3, 1] } : {}}
+                    transition={{ duration: 0.5, repeat: Infinity }}
+                  />
+                )
+              })}
             </div>
           )}
           
@@ -214,7 +293,7 @@ export function ProcessingView({
             <p className="text-zinc-500 text-xs mb-4">{t.camera?.continueInBackground || 'Generation continues in background:'}</p>
             {onShootMore && (
               <button onClick={onShootMore} className="w-full h-12 rounded-full bg-white text-black font-medium flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors">
-                <Camera className="w-5 h-5" />
+                {shootMoreIcon || <Camera className="w-5 h-5" />}
                 {shootMoreText || t.camera?.shootNew || 'Shoot More'}
               </button>
             )}
@@ -226,7 +305,7 @@ export function ProcessingView({
             )}
           </div>
           
-          {showBottomNav && !isDesktop && <BottomNav forceShow />}
+          {showBottomNav && <BottomNav forceShow />}
         </>
       )}
     </motion.div>
