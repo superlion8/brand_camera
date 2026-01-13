@@ -16,6 +16,8 @@ import { fileToBase64, generateId, compressBase64Image } from "@/lib/utils"
 import { Asset } from "@/types"
 import Image from "next/image"
 import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
+import { ModelPickerPanel } from "@/components/shared/ModelPickerPanel"
+import { ScenePickerPanel } from "@/components/shared/ScenePickerPanel"
 import { AssetGrid } from "@/components/shared/AssetGrid"
 import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
@@ -179,6 +181,8 @@ function SocialPageContent() {
   
   // Panel states
   const [showCustomPanel, setShowCustomPanel] = useState(false)
+  const [showModelPicker, setShowModelPicker] = useState(false)
+  const [showScenePicker, setShowScenePicker] = useState(false)
   const [showProductPanel, setShowProductPanel] = useState(false)
   const [productSubTab, setProductSubTab] = useState<ProductSubTab>("all")
   const [zoomProductImage, setZoomProductImage] = useState<string | null>(null)
@@ -971,11 +975,8 @@ function SocialPageContent() {
                                 </button>
                               )}
                               {allModels.length > 5 && (
-                                <button 
-                                  onClick={() => {
-                                    setActiveCustomTab("model")
-                                    setShowCustomPanel(true)
-                                  }}
+                                <button
+                                  onClick={() => setShowModelPicker(true)}
                                   className="text-xs text-pink-600 hover:text-pink-700 font-medium"
                                 >
                                   {t.common?.viewMore || '查看更多'} ({allModels.length})
@@ -1071,143 +1072,7 @@ function SocialPageContent() {
                     </div>
                   </div>
                   
-                  {/* Desktop Modal for View More */}
-                  <AnimatePresence>
-                    {showCustomPanel && (
-                      <>
-                        <motion.div 
-                          initial={{ opacity: 0 }} 
-                          animate={{ opacity: 1 }} 
-                          exit={{ opacity: 0 }}
-                          className="fixed inset-0 bg-black/40 z-40"
-                          onClick={() => setShowCustomPanel(false)}
-                        />
-                        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-                          <motion.div 
-                            initial={{ opacity: 0, scale: 0.95 }} 
-                            animate={{ opacity: 1, scale: 1 }} 
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="w-[90vw] max-w-3xl bg-white rounded-2xl max-h-[80vh] flex flex-col overflow-hidden shadow-xl pointer-events-auto"
-                          >
-                          <div className="h-14 border-b flex items-center justify-between px-6 shrink-0">
-                            <div className="flex gap-4">
-                              <button 
-                                onClick={() => setActiveCustomTab("model")}
-                                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                                  activeCustomTab === "model" ? "bg-pink-500 text-white" : "bg-zinc-100 text-zinc-600"
-                                }`}
-                              >
-                                {t.common?.model || '模特'}
-                              </button>
-                              <button 
-                                onClick={() => setActiveCustomTab("bg")}
-                                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                                  activeCustomTab === "bg" ? "bg-pink-500 text-white" : "bg-zinc-100 text-zinc-600"
-                                }`}
-                              >
-                                {t.common?.background || '背景'}
-                              </button>
-                            </div>
-                            <button 
-                              onClick={() => setShowCustomPanel(false)} 
-                              className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center"
-                            >
-                              <X className="w-5 h-5 text-zinc-500" />
-                            </button>
-                          </div>
-                          <div className="flex-1 overflow-y-auto p-6">
-                            {activeCustomTab === "model" && (
-                              <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm text-zinc-600">{t.social?.selectModel || '选择模特（不选则随机）'}</span>
-                                  {selectedModel && (
-                                    <button onClick={() => setSelectedModel(null)} className="text-xs text-pink-600">
-                                      {t.proStudio?.clearSelection || '清除选择'}
-                                    </button>
-                                  )}
-                                </div>
-                                <div className="grid grid-cols-6 gap-3">
-                                  <button
-                                    onClick={() => modelUploadRef.current?.click()}
-                                    className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-pink-400 flex flex-col items-center justify-center gap-1 transition-colors"
-                                  >
-                                    <Plus className="w-5 h-5 text-zinc-400" />
-                                    <span className="text-[10px] text-zinc-400">{t.common?.upload || 'Upload'}</span>
-                                  </button>
-                                  {allModels.map(model => (
-                                    <button
-                                      key={model.id}
-                                      onClick={() => setSelectedModel(selectedModel === model.id ? null : model.id)}
-                                      className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
-                                        selectedModel === model.id 
-                                          ? 'border-pink-500 ring-2 ring-pink-500/30' 
-                                          : 'border-transparent hover:border-pink-300'
-                                      }`}
-                                    >
-                                      <Image src={model.imageUrl} alt={model.name || ''} fill className="object-cover" />
-                                      {selectedModel === model.id && (
-                                        <div className="absolute top-1 right-1 w-5 h-5 bg-pink-500 rounded-full flex items-center justify-center">
-                                          <Check className="w-3 h-3 text-white" />
-                                        </div>
-                                      )}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                            {activeCustomTab === "bg" && (
-                              <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm text-zinc-600">{t.social?.selectBackground || '选择背景（不选则随机）'}</span>
-                                  {selectedBg && (
-                                    <button onClick={() => setSelectedBg(null)} className="text-xs text-pink-600">
-                                      {t.proStudio?.clearSelection || '清除选择'}
-                                    </button>
-                                  )}
-                                </div>
-                                <div className="grid grid-cols-6 gap-3">
-                                  <button
-                                    onClick={() => bgUploadRef.current?.click()}
-                                    className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-pink-400 flex flex-col items-center justify-center gap-1 transition-colors"
-                                  >
-                                    <Plus className="w-5 h-5 text-zinc-400" />
-                                    <span className="text-[10px] text-zinc-400">{t.common?.upload || 'Upload'}</span>
-                                  </button>
-                                  {allBackgrounds.map(bg => (
-                                    <button
-                                      key={bg.id}
-                                      onClick={() => setSelectedBg(selectedBg === bg.id ? null : bg.id)}
-                                      className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
-                                        selectedBg === bg.id 
-                                          ? 'border-pink-500 ring-2 ring-pink-500/30' 
-                                          : 'border-transparent hover:border-pink-300'
-                                      }`}
-                                    >
-                                      <Image src={bg.imageUrl} alt={bg.name || ''} fill className="object-cover" />
-                                      {selectedBg === bg.id && (
-                                        <div className="absolute top-1 right-1 w-5 h-5 bg-pink-500 rounded-full flex items-center justify-center">
-                                          <Check className="w-3 h-3 text-white" />
-                                        </div>
-                                      )}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                          <div className="h-16 border-t flex items-center justify-center px-6">
-                            <button 
-                              onClick={() => setShowCustomPanel(false)}
-                              className="px-8 py-2.5 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-medium transition-colors"
-                            >
-                              {t.common?.confirm || '确定'}
-                            </button>
-                          </div>
-                          </motion.div>
-                        </div>
-                      </>
-                    )}
-                  </AnimatePresence>
+                  {/* Model and Scene Pickers are rendered at the page level */}
                 </div>
               ) : (
                 /* Mobile Review Mode */
@@ -1347,138 +1212,7 @@ function SocialPageContent() {
             </div>
             )}
             
-            {/* Slide-up Panel: Custom - Mobile only */}
-            <AnimatePresence>
-              {showCustomPanel && !isDesktop && (
-                <>
-                  <motion.div 
-                    initial={{ opacity: 0 }} 
-                    animate={{ opacity: 1 }} 
-                    exit={{ opacity: 0 }}
-                    className="absolute inset-0 bg-black/60 z-40 backdrop-blur-sm"
-                    onClick={() => setShowCustomPanel(false)}
-                  />
-                  <motion.div 
-                    initial={{ y: "100%" }} 
-                    animate={{ y: 0 }} 
-                    exit={{ y: "100%" }}
-                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className="absolute bottom-0 left-0 right-0 h-[60%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
-                  >
-                    <div className="h-14 border-b flex items-center justify-between px-4 shrink-0">
-                      <span className="font-semibold text-lg">{t.camera?.customConfig || '自定义配置'}</span>
-                      <button 
-                        onClick={() => setShowCustomPanel(false)} 
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-pink-600 hover:bg-pink-700 text-white font-medium text-sm transition-colors"
-                      >
-                        {t.camera?.nextStep || '下一步'}
-                        <ArrowRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <div className="p-2 flex gap-2 border-b overflow-x-auto shrink-0">
-                      {[
-                        { id: "model", label: t.common?.model || '模特' },
-                        { id: "bg", label: t.common?.background || '背景' }
-                      ].map(tab => (
-                        <button 
-                          key={tab.id}
-                          onClick={() => setActiveCustomTab(tab.id)}
-                          className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${
-                            activeCustomTab === tab.id 
-                              ? "bg-pink-600 text-white" 
-                              : "bg-zinc-100 text-zinc-600"
-                          }`}
-                        >
-                          {tab.label}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4">
-                      {activeCustomTab === "model" && (
-                        <div className="space-y-4">
-                          {/* Model Subcategory Tabs */}
-                          <div className="flex gap-2 flex-wrap">
-                            <button
-                              onClick={() => setModelSubcategory(null)}
-                              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                                !modelSubcategory
-                                  ? "bg-zinc-900 text-white"
-                                  : "bg-white text-zinc-600 border border-zinc-200"
-                              }`}
-                            >
-                              {t.camera?.allModels || '全部'}
-                            </button>
-                            <button
-                              onClick={() => setModelSubcategory(modelSubcategory === 'mine' ? null : 'mine')}
-                              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                                modelSubcategory === 'mine'
-                                  ? "bg-zinc-900 text-white"
-                                  : "bg-white text-zinc-600 border border-zinc-200"
-                              }`}
-                            >
-                              {t.camera?.myModels || '我的'}
-                              {userModels.length > 0 && <span className="ml-1 text-zinc-400">({userModels.length})</span>}
-                            </button>
-                          </div>
-                          <AssetGrid
-                            items={allModels}
-                            selectedId={selectedModel}
-                            onSelect={(id) => {
-                              setSelectedModel(selectedModel === id ? null : id)
-                            }}
-                            onUpload={() => modelUploadRef.current?.click()}
-                            themeColor="pink"
-                            gridCols={3}
-                            aspectRatio="1/1"
-                            selectionStyle="overlay"
-                            uploadLabel={t.camera?.uploadModel || '上传模特'}
-                          />
-                        </div>
-                      )}
-                      {activeCustomTab === "bg" && (
-                        <div className="space-y-4">
-                          {/* Background Subcategory Tabs */}
-                          <div className="flex gap-2 flex-wrap">
-                            <button
-                              onClick={() => setBgSubcategory(null)}
-                              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                                !bgSubcategory
-                                  ? "bg-zinc-900 text-white"
-                                  : "bg-white text-zinc-600 border border-zinc-200"
-                              }`}
-                            >
-                              {t.camera?.allBackgrounds || '全部'}
-                            </button>
-                            <button
-                              onClick={() => setBgSubcategory(bgSubcategory === 'mine' ? null : 'mine')}
-                              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                                bgSubcategory === 'mine'
-                                  ? "bg-zinc-900 text-white"
-                                  : "bg-white text-zinc-600 border border-zinc-200"
-                              }`}
-                            >
-                              {t.camera?.myBackgrounds || '我的'}
-                              {userBackgrounds.length > 0 && <span className="ml-1 text-zinc-400">({userBackgrounds.length})</span>}
-                            </button>
-                          </div>
-                          <AssetGrid
-                            items={allBackgrounds}
-                            selectedId={selectedBg}
-                            onSelect={(id) => setSelectedBg(selectedBg === id ? null : id)}
-                            onUpload={() => bgUploadRef.current?.click()}
-                            themeColor="pink"
-                            gridCols={3}
-                            aspectRatio="1/1"
-                            selectionStyle="overlay"
-                            uploadLabel={t.camera?.uploadBackground || '上传背景'}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
+            {/* Model and Scene Pickers are rendered at the page level */}
             
             {/* Product Panel - PC: centered modal */}
             <AnimatePresence>
@@ -1889,6 +1623,29 @@ function SocialPageContent() {
         onUploadClick={() => fileInputRef2.current?.click()}
         themeColor="purple"
         title={t.proStudio?.styleOutfit || '搭配商品'}
+      />
+      
+      {/* Model Picker */}
+      <ModelPickerPanel
+        open={showModelPicker}
+        onClose={() => setShowModelPicker(false)}
+        selectedId={selectedModel}
+        customModels={allModels}
+        onSelect={(model) => setSelectedModel(model.id)}
+        themeColor="pink"
+        allowUpload={false}
+      />
+      
+      {/* Scene Picker */}
+      <ScenePickerPanel
+        open={showScenePicker}
+        onClose={() => setShowScenePicker(false)}
+        selectedId={selectedBg}
+        customScenes={allBackgrounds}
+        onSelect={(scene) => setSelectedBg(scene.id)}
+        sceneType="studio"
+        themeColor="pink"
+        allowUpload={false}
       />
     </div>
   )

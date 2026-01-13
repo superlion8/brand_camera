@@ -15,7 +15,7 @@ interface ModelPickerPanelProps {
   onClose: () => void
   onSelect: (model: Asset) => void
   selectedId?: string | null
-  themeColor?: 'purple' | 'amber' | 'blue'
+  themeColor?: 'purple' | 'amber' | 'blue' | 'pink'
   title?: string
   /** Allow uploading custom model */
   allowUpload?: boolean
@@ -43,6 +43,12 @@ const themeClasses = {
     bg: 'bg-blue-500',
     hover: 'hover:border-blue-400 hover:bg-blue-50',
     spinner: 'text-blue-500',
+  },
+  pink: {
+    ring: 'ring-pink-500 border-pink-500',
+    bg: 'bg-pink-500',
+    hover: 'hover:border-pink-400 hover:bg-pink-50',
+    spinner: 'text-pink-500',
   },
 }
 
