@@ -207,7 +207,7 @@ function CameraPageContent() {
     if (urlMode === 'processing' || urlMode === 'results') {
       setMode(urlMode as CameraMode)
       // 从 sessionStorage 恢复 taskId
-      const savedTaskId = sessionStorage.getItem('cameraTaskId')
+      const savedTaskId = sessionStorage.getItem('buyerShowTaskId')
       if (savedTaskId) {
         setCurrentTaskId(savedTaskId)
         
@@ -231,18 +231,18 @@ function CameraPageContent() {
                 } else {
                   console.log('[Camera] No images found in database, returning to camera')
                   setMode('camera')
-                  sessionStorage.removeItem('cameraTaskId')
+                  sessionStorage.removeItem('buyerShowTaskId')
                 }
               } else {
                 console.log('[Camera] Task not found in database, returning to camera')
                 setMode('camera')
-                sessionStorage.removeItem('cameraTaskId')
+                sessionStorage.removeItem('buyerShowTaskId')
               }
             })
             .catch(err => {
               console.error('[Camera] Failed to recover images:', err)
               setMode('camera')
-              sessionStorage.removeItem('cameraTaskId')
+              sessionStorage.removeItem('buyerShowTaskId')
             })
         }
       }
@@ -296,9 +296,9 @@ function CameraPageContent() {
       setGeneratedModelTypes(modelTypes)
       setGeneratedGenModes(genModes)
       setMode('results')
-      // 检查是否仍在camera页面，避免用户离开后强制跳转
-      if (window.location.pathname === '/camera') {
-        router.replace('/camera?mode=results')
+      // 检查是否仍在buyer-show页面，避免用户离开后强制跳转
+      if (window.location.pathname === '/buyer-show') {
+        router.replace('/buyer-show?mode=results')
       }
     }
   }, [mode, currentTaskId, tasks, router])
@@ -475,10 +475,10 @@ function CameraPageContent() {
     setMode("processing")
     
     // 保存 taskId 到 sessionStorage（刷新后可恢复）
-    sessionStorage.setItem('cameraTaskId', taskId)
+    sessionStorage.setItem('buyerShowTaskId', taskId)
     
     // 更新 URL（便于刷新后恢复状态）
-    router.replace('/camera?mode=processing')
+    router.replace('/buyer-show?mode=processing')
     
     // 预扣配额（使用统一 hook）
     const reserveResult = await reserveQuota({
@@ -960,14 +960,14 @@ function CameraPageContent() {
             console.log(`[Camera] Fallback: No dbId received, using taskId: ${taskId}`)
           }
           setMode("results")
-          // 更新 URL 为 results 模式（检查是否仍在camera页面）
-          if (window.location.pathname === '/camera') {
-            router.replace('/camera?mode=results')
+          // 更新 URL 为 results 模式（检查是否仍在buyer-show页面）
+          if (window.location.pathname === '/buyer-show') {
+            router.replace('/buyer-show?mode=results')
           }
         }
         
         // 清理 sessionStorage（任务完成）
-        sessionStorage.removeItem('cameraTaskId')
+        sessionStorage.removeItem('buyerShowTaskId')
       } else {
         // 全部失败，全额退款（使用统一 hook）
         await refundQuota(taskId)
@@ -997,7 +997,7 @@ function CameraPageContent() {
       }
       
       // 清理 sessionStorage（任务失败）
-      sessionStorage.removeItem('cameraTaskId')
+      sessionStorage.removeItem('buyerShowTaskId')
     }
   }
   
