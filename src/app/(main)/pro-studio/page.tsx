@@ -1783,8 +1783,11 @@ function ProStudioPageContent() {
         selectedId={selectedModelId}
         customModels={allModels}
         onSelect={(model) => setSelectedModelId(model.id)}
+        onCustomUpload={(model) => {
+          setCustomModels(prev => [model, ...prev])
+        }}
         themeColor="amber"
-        allowUpload={false}
+        allowUpload
       />
       
       {/* Scene Picker */}
