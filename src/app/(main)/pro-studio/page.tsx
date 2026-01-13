@@ -863,13 +863,24 @@ function ProStudioPageContent() {
                       ) : null}
                       {/* Add more button - show if less than 4 additional items */}
                       {!capturedImage2 && (
-                        <button
+                        <div
                           onClick={() => setShowProduct2Panel(true)}
-                          className="aspect-square rounded-lg border-2 border-dashed border-zinc-300 hover:border-amber-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                          onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-amber-400', 'bg-amber-50') }}
+                          onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-amber-400', 'bg-amber-50') }}
+                          onDrop={async (e) => {
+                            e.preventDefault()
+                            e.currentTarget.classList.remove('border-amber-400', 'bg-amber-50')
+                            const file = e.dataTransfer.files?.[0]
+                            if (file && file.type.startsWith('image/')) {
+                              const base64 = await fileToBase64(file)
+                              setCapturedImage2(base64)
+                            }
+                          }}
+                          className="aspect-square rounded-lg border-2 border-dashed border-zinc-300 hover:border-amber-400 flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer"
                         >
                           <Plus className="w-5 h-5 text-zinc-400" />
                           <span className="text-[10px] text-zinc-400">{t.proStudio?.add || 'Add'}</span>
-                        </button>
+                        </div>
                       )}
                     </div>
                     <p className="text-xs text-zinc-400 mt-3">

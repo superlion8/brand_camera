@@ -17,6 +17,7 @@ import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer
 import { ProcessingView } from "@/components/shared/ProcessingView"
 import { ResultsView } from "@/components/shared/ResultsView"
 import { GalleryPickerPanel } from "@/components/shared/GalleryPickerPanel"
+import { UploadZone } from "@/components/shared/UploadZone"
 import { useFavorite } from "@/hooks/useFavorite"
 import { navigateToEdit } from "@/lib/navigation"
 import { useImageDownload } from "@/hooks/useImageDownload"
@@ -391,35 +392,15 @@ function GroupShootPageContent() {
                         <h3 className="font-semibold text-zinc-900 mb-4">{t.groupShootPage?.uploadImage || '上传图片'}</h3>
                         
                         {!selectedImage ? (
-                          <div className="space-y-3">
-                            {/* 上传按钮 */}
-                            <button
-                              onClick={() => fileInputRef.current?.click()}
-                              className="w-full aspect-[4/3] rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 hover:bg-blue-50/50 flex flex-col items-center justify-center gap-2 transition-colors"
-                            >
-                              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                                <ImageIcon className="w-6 h-6 text-blue-600" />
-                              </div>
-                              <span className="text-sm font-medium text-zinc-700">{t.groupShootPage?.fromAlbum || '从相册选择'}</span>
-                              <span className="text-xs text-zinc-400">{t.common.clickToUploadOrDrag || '点击上传或拖拽图片'}</span>
-                            </button>
-                            
-                            {/* 分隔符 */}
-                            <div className="flex items-center gap-3">
-                              <div className="flex-1 h-px bg-zinc-200"></div>
-                              <span className="text-zinc-400 text-xs">{t.common.or || '或'}</span>
-                              <div className="flex-1 h-px bg-zinc-200"></div>
-                            </div>
-                            
-                            {/* 从成片选择 */}
-                            <button
-                              onClick={() => setShowGalleryPicker(true)}
-                              className="w-full py-3 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-medium text-sm flex items-center justify-center gap-2 transition-colors"
-                            >
-                              <Camera className="w-4 h-4" />
-                              {t.groupShootPage?.selectFromPhotos || '从成片选择'}
-                            </button>
-                          </div>
+                          <UploadZone
+                            onBase64={setSelectedImage}
+                            onFromGallery={() => setShowGalleryPicker(true)}
+                            size="auto"
+                            aspectRatio="4/3"
+                            themeColor="blue"
+                            title={t.groupShootPage?.fromAlbum || '从相册选择'}
+                            showQuickActions
+                          />
                         ) : (
                           /* 已选图片预览 */
                           <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-zinc-100">

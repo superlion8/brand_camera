@@ -502,13 +502,25 @@ export default function TryOnPage() {
                         ))}
                         
                         {clothingImages.length < MAX_CLOTHING_IMAGES && (
-                          <button
+                          <div
                             onClick={() => clothingFileInputRef.current?.click()}
-                            className="aspect-square rounded-xl border-2 border-dashed border-zinc-200 hover:border-pink-400 hover:bg-pink-50/50 transition-all flex flex-col items-center justify-center gap-1"
+                            onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-pink-400', 'bg-pink-50') }}
+                            onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-pink-400', 'bg-pink-50') }}
+                            onDrop={async (e) => {
+                              e.preventDefault()
+                              e.currentTarget.classList.remove('border-pink-400', 'bg-pink-50')
+                              const file = e.dataTransfer.files?.[0]
+                              if (file && file.type.startsWith('image/')) {
+                                const base64 = await fileToBase64(file)
+                                const compressed = await compressBase64Image(base64, 1200)
+                                setClothingImages(prev => [...prev, compressed])
+                              }
+                            }}
+                            className="aspect-square rounded-xl border-2 border-dashed border-zinc-200 hover:border-pink-400 hover:bg-pink-50/50 transition-all flex flex-col items-center justify-center gap-1 cursor-pointer"
                           >
                             <Plus className="w-5 h-5 text-zinc-400" />
                             <span className="text-[10px] text-zinc-400 font-medium">{t.tryOn?.addClothing || 'Add'}</span>
-                          </button>
+                          </div>
                         )}
                       </div>
                       
@@ -656,13 +668,25 @@ export default function TryOnPage() {
                   ))}
                   
                   {clothingImages.length < MAX_CLOTHING_IMAGES && (
-                    <button
+                    <div
                       onClick={() => setShowClothingPanel(true)}
-                      className="w-20 h-20 rounded-xl border-2 border-dashed border-zinc-300 hover:border-pink-400 hover:bg-pink-50/50 transition-colors flex flex-col items-center justify-center gap-1 shrink-0"
+                      onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-pink-400', 'bg-pink-50') }}
+                      onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-pink-400', 'bg-pink-50') }}
+                      onDrop={async (e) => {
+                        e.preventDefault()
+                        e.currentTarget.classList.remove('border-pink-400', 'bg-pink-50')
+                        const file = e.dataTransfer.files?.[0]
+                        if (file && file.type.startsWith('image/')) {
+                          const base64 = await fileToBase64(file)
+                          const compressed = await compressBase64Image(base64, 1200)
+                          setClothingImages(prev => [...prev, compressed])
+                        }
+                      }}
+                      className="w-20 h-20 rounded-xl border-2 border-dashed border-zinc-300 hover:border-pink-400 hover:bg-pink-50/50 transition-colors flex flex-col items-center justify-center gap-1 shrink-0 cursor-pointer"
                     >
                       <Plus className="w-5 h-5 text-zinc-400" />
-                          <span className="text-[10px] text-zinc-400">{t.tryOn?.addClothing || 'Add'}</span>
-                    </button>
+                      <span className="text-[10px] text-zinc-400">{t.tryOn?.addClothing || 'Add'}</span>
+                    </div>
                   )}
                 </div>
               </div>

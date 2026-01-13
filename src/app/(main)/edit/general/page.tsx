@@ -511,16 +511,28 @@ export default function GeneralEditPage() {
                   
                   {inputImages.length === 0 ? (
                     <div className="space-y-3">
-                      <button
+                      <div
                         onClick={() => {
                           setActiveImageSlot(0)
                           fileInputRef.current?.click()
                         }}
-                        className="w-full h-28 border-2 border-dashed border-zinc-300 rounded-xl bg-zinc-50 hover:border-purple-400 hover:bg-purple-50/50 flex flex-col items-center justify-center gap-2 transition-colors"
+                        onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-purple-400', 'bg-purple-50') }}
+                        onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-purple-400', 'bg-purple-50') }}
+                        onDrop={async (e) => {
+                          e.preventDefault()
+                          e.currentTarget.classList.remove('border-purple-400', 'bg-purple-50')
+                          const file = e.dataTransfer.files?.[0]
+                          if (file && file.type.startsWith('image/')) {
+                            const base64 = await fileToBase64(file)
+                            setActiveImageSlot(0)
+                            setInputImages([base64])
+                          }
+                        }}
+                        className="w-full h-28 border-2 border-dashed border-zinc-300 rounded-xl bg-zinc-50 hover:border-purple-400 hover:bg-purple-50/50 flex flex-col items-center justify-center gap-2 transition-colors cursor-pointer"
                       >
                         <Upload className="w-7 h-7 text-zinc-400" />
                         <span className="text-sm text-zinc-600 font-medium">{t.edit?.uploadFromAlbum || 'Upload from Album'}</span>
-                      </button>
+                      </div>
                       
                       <div className="grid grid-cols-2 gap-2">
                         <button
@@ -586,16 +598,28 @@ export default function GeneralEditPage() {
                         })}
                         
                         {inputImages.filter(Boolean).length < MAX_IMAGES && (
-                          <button
+                          <div
                             onClick={() => {
                               setActiveImageSlot(inputImages.length)
                               fileInputRef.current?.click()
                             }}
-                            className="aspect-square border-2 border-dashed border-zinc-300 rounded-lg flex flex-col items-center justify-center gap-1 hover:border-purple-400 hover:bg-purple-50/50 transition-colors"
+                            onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-purple-400', 'bg-purple-50') }}
+                            onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-purple-400', 'bg-purple-50') }}
+                            onDrop={async (e) => {
+                              e.preventDefault()
+                              e.currentTarget.classList.remove('border-purple-400', 'bg-purple-50')
+                              const file = e.dataTransfer.files?.[0]
+                              if (file && file.type.startsWith('image/')) {
+                                const base64 = await fileToBase64(file)
+                                setActiveImageSlot(inputImages.length)
+                                setInputImages(prev => [...prev, base64])
+                              }
+                            }}
+                            className="aspect-square border-2 border-dashed border-zinc-300 rounded-lg flex flex-col items-center justify-center gap-1 hover:border-purple-400 hover:bg-purple-50/50 transition-colors cursor-pointer"
                           >
                             <Upload className="w-4 h-4 text-zinc-400" />
                             <span className="text-[10px] text-zinc-400">+{t.edit?.add || 'Add'}</span>
-                          </button>
+                          </div>
                         )}
                       </div>
                       
