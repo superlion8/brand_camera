@@ -959,6 +959,7 @@ export const ko: Translations = {
   // 라이프스타일 스트릿 촬영
   lifestyle: {
     title: "라이프스타일 촬영",
+    badge: "라이프스타일",
     lifestyleMode: "라이프스타일 스트릿 모드",
     lifestyleModeDesc: "상품 이미지 업로드 후, AI가 패션 스트릿 스타일 쇼케이스 이미지를 생성합니다",
     smartSceneMatch: "스마트 장면 매칭",

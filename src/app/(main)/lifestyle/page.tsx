@@ -14,7 +14,11 @@ import { fileToBase64, saveProductToAssets, compressBase64Image } from "@/lib/ut
 import Image from "next/image"
 import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
+import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
+import { ResultsView } from "@/components/shared/ResultsView"
 import { ProcessingView } from "@/components/shared/ProcessingView"
+import { useFavorite } from "@/hooks/useFavorite"
+import { navigateToEdit } from "@/lib/navigation"
 import { useImageDownload } from "@/hooks/useImageDownload"
 import { Asset } from "@/types"
 import { useQuota } from "@/hooks/useQuota"
@@ -93,6 +97,9 @@ function LifestylePageContent() {
   const [generatedGenModes, setGeneratedGenModes] = useState<('simple' | 'extended')[]>([])
   const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
+  
+  // Favorite hook
+  const { toggleFavorite, isFavorited } = useFavorite(currentGenerationId)
   
   // Combined assets
   const allModels = [...customModels, ...lifestyleModels]
@@ -1126,137 +1133,61 @@ function LifestylePageContent() {
         )}
 
         {mode === "results" && (
-          <motion.div 
-            key="results"
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-            className="flex-1 flex flex-col bg-zinc-50 overflow-hidden"
+          <ResultsView
+            title={t.lifestyle?.results || 'LifeStyle Results'}
+            onBack={handleRetake}
+            images={Array.from({ length: LIFESTYLE_NUM_IMAGES }).map((_, i) => {
+              const url = generatedImages[i]
+              const currentTask = tasks.find(t => t.id === currentTaskId)
+              const slot = currentTask?.imageSlots?.[i]
+              const status = slot?.status || (url ? 'completed' : 'generating')
+              return {
+                url,
+                status: status as 'completed' | 'pending' | 'generating' | 'failed',
+                error: slot?.error,
+              }
+            })}
+            getBadge={() => ({
+              text: t.lifestyle?.badge || 'Lifestyle',
+              className: 'bg-purple-500',
+            })}
+            themeColor="purple"
+            onFavorite={toggleFavorite}
+            isFavorited={isFavorited}
+            onDownload={(url) => handleDownload(url)}
+            onShootNext={handleRetake}
+            onGoEdit={(url) => navigateToEdit(router, url)}
+            onRegenerate={handleLifestyleGenerate}
+            onImageClick={(i) => setSelectedResultIndex(i)}
           >
-            {/* Header */}
-            {isDesktop ? (
-              <div className="bg-white border-b border-zinc-200">
-                <div className="max-w-4xl mx-auto px-8 py-4">
-                  <div className="flex items-center justify-between">
-                    <button onClick={handleRetake} className="flex items-center gap-2 text-zinc-600 hover:text-zinc-900 font-medium">
-                      <ArrowLeft className="w-5 h-5" />
-                      <span>{t.lifestyle?.retake || '重拍'}</span>
-                    </button>
-                    <span className="font-bold text-zinc-900">{t.lifestyle?.results || 'LifeStyle 成片'}</span>
-                    <div className="w-20" />
-                  </div>
-                </div>
-              </div>
-            ) : (
-            <div className="h-14 flex items-center justify-between px-4 border-b bg-white">
-              <button onClick={handleRetake} className="flex items-center gap-2 font-medium">
-                <ArrowLeft className="w-5 h-5" />
-                <span>{t.lifestyle?.retake || '重拍'}</span>
-              </button>
-              <span className="font-bold">{t.lifestyle?.results || 'LifeStyle 成片'}</span>
-              <div className="w-10" />
-            </div>
-            )}
-            
-            {/* Content */}
-            <div className={`flex-1 overflow-y-auto ${isDesktop ? 'py-8' : 'p-4 pb-8'}`}>
-              <div className={`${isDesktop ? 'max-w-4xl mx-auto px-8' : ''}`}>
-                <div className={`grid gap-3 ${isDesktop ? 'grid-cols-4' : 'grid-cols-2'}`}>
-                {Array.from({ length: LIFESTYLE_NUM_IMAGES }).map((_, i) => {
-                  const url = generatedImages[i]
-                  const currentTask = tasks.find(t => t.id === currentTaskId)
-                  const slot = currentTask?.imageSlots?.[i]
-                  const status = slot?.status || (url ? 'completed' : 'generating')
-                  
-                  return (
-                    <div 
-                      key={i} 
-                        className="aspect-[3/4] rounded-xl bg-zinc-200 overflow-hidden relative cursor-pointer group" 
-                      onClick={() => url && setSelectedResultIndex(i)}
-                    >
-                      {url ? (
-                        <>
-                          <Image src={url} alt="Result" fill className="object-cover" />
-                          <div className={`absolute top-2 right-2 flex gap-1.5 ${
-                            isDesktop ? 'opacity-0 group-hover:opacity-100 transition-opacity' : ''
-                          }`}>
-                            <button className="w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm hover:bg-white">
-                              <Heart className="w-3.5 h-3.5 text-zinc-500" />
-                            </button>
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); handleDownload(url) }}
-                              className="w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm hover:bg-white"
-                            >
-                              <Download className="w-3.5 h-3.5 text-zinc-500" />
-                            </button>
-                          </div>
-                        </>
-                      ) : status === 'failed' ? (
-                        <div className="absolute inset-0 flex items-center justify-center text-zinc-400">
-                          <span className="text-xs">{t.camera?.generationFailed || '生成失败'}</span>
-                        </div>
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <Loader2 className="w-6 h-6 text-zinc-400 animate-spin" />
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-                
-                {/* PC: Centered button */}
-                {isDesktop && (
-                  <div className="flex justify-center mt-8">
-                    <button 
-                      onClick={handleRetake} 
-                      className="px-8 h-12 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold transition-colors"
-                    >
-                      {t.lifestyle?.shootNextSet || '拍摄下一组'}
-                    </button>
-            </div>
-                )}
-              </div>
-            </div>
-            
-            {/* Mobile: Bottom button */}
-            {!isDesktop && (
-            <div className="p-4 pb-20 bg-white border-t shadow-up">
-              <button onClick={handleRetake} className="w-full h-12 rounded-lg bg-zinc-900 text-white font-semibold hover:bg-zinc-800 transition-colors">
-                {t.lifestyle?.shootNextSet || '拍摄下一组'}
-              </button>
-            </div>
-            )}
-            
-            {!isDesktop && <BottomNav forceShow />}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Result Detail */}
-      <AnimatePresence>
-        {selectedResultIndex !== null && generatedImages[selectedResultIndex] && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-white flex flex-col">
-            <div className="h-14 flex items-center justify-between px-4 border-b">
-              <button onClick={() => setSelectedResultIndex(null)} className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center">
-                <X className="w-5 h-5" />
-              </button>
-              <span className="font-semibold">{t.lifestyle?.detail || '详情'}</span>
-              <button 
-                onClick={() => handleDownload(generatedImages[selectedResultIndex!])}
-                className="w-10 h-10 -mr-2 rounded-full hover:bg-zinc-100 flex items-center justify-center"
-              >
-                <Download className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="flex-1 bg-zinc-900 flex items-center justify-center overflow-hidden">
-              <img 
-                src={generatedImages[selectedResultIndex!]} 
-                alt="Detail" 
-                className="max-w-full max-h-full object-contain"
-                onClick={() => setFullscreenImage(generatedImages[selectedResultIndex!])} 
-              />
-            </div>
-            <p className="text-center text-zinc-500 text-xs py-2 bg-zinc-900">{t.imageActions?.longPressSave || '长按图片保存'}</p>
-          </motion.div>
+            {/* Result Detail Dialog */}
+            <ResultDetailDialog
+              open={selectedResultIndex !== null && !!generatedImages[selectedResultIndex!]}
+              onClose={() => setSelectedResultIndex(null)}
+              imageUrl={selectedResultIndex !== null ? generatedImages[selectedResultIndex] || '' : ''}
+              badges={[{ text: t.lifestyle?.badge || 'Lifestyle', className: 'bg-purple-100 text-purple-700' }]}
+              onFavorite={() => selectedResultIndex !== null && toggleFavorite(selectedResultIndex)}
+              isFavorited={selectedResultIndex !== null && isFavorited(selectedResultIndex)}
+              onDownload={() => {
+                if (selectedResultIndex === null) return
+                handleDownload(generatedImages[selectedResultIndex])
+              }}
+              onFullscreen={() => {
+                if (selectedResultIndex === null) return
+                setFullscreenImage(generatedImages[selectedResultIndex])
+              }}
+              actions={selectedResultIndex !== null ? [{
+                text: t.gallery?.goEdit || 'Edit',
+                icon: <Wand2 className="w-4 h-4" />,
+                onClick: () => {
+                  const imageUrl = generatedImages[selectedResultIndex]
+                  setSelectedResultIndex(null)
+                  if (imageUrl) navigateToEdit(router, imageUrl)
+                },
+                className: "bg-purple-500 hover:bg-purple-600 text-white"
+              }] : []}
+            />
+          </ResultsView>
         )}
       </AnimatePresence>
       

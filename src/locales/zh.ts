@@ -958,6 +958,7 @@ export const zh = {
   // LifeStyle 街拍
   lifestyle: {
     title: "LifeStyle 街拍",
+    badge: "街拍",
     lifestyleMode: "LifeStyle 街拍模式",
     lifestyleModeDesc: "上传商品图片后，AI 将为你生成时尚街拍风格的展示图",
     smartSceneMatch: "智能场景匹配",

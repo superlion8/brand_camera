@@ -960,6 +960,7 @@ export const en: Translations = {
   // LifeStyle Street Shot
   lifestyle: {
     title: "LifeStyle Shot",
+    badge: "Lifestyle",
     lifestyleMode: "LifeStyle Street Mode",
     lifestyleModeDesc: "After uploading product images, AI will generate fashion street-style showcase images",
     smartSceneMatch: "Smart Scene Matching",
