@@ -1761,6 +1761,7 @@ function CameraPageContent() {
                 }),
               ] : []}
               inputImages={capturedImage ? [{ url: capturedImage, label: t.common?.product || 'Product' }] : []}
+              onInputImageClick={(url) => setFullscreenImage(url)}
             >
               {/* Debug content */}
               {debugMode && selectedResultIndex !== null && (() => {

@@ -50,6 +50,7 @@ export interface PhotoDetailDialogProps {
   onDownload?: () => void
   onDelete?: () => void
   onFullscreen?: () => void
+  onInputImageClick?: (url: string) => void
   
   // Quick Actions (icon grid)
   quickActions?: QuickActionConfig[]
@@ -76,6 +77,7 @@ export function PhotoDetailDialog({
   onDownload,
   onDelete,
   onFullscreen,
+  onInputImageClick,
   quickActions = [],
   onSaveAsAsset,
   saveAsAssetLabel,
@@ -240,7 +242,7 @@ export function PhotoDetailDialog({
                                 className={`w-20 h-20 rounded-xl overflow-hidden bg-zinc-100 cursor-pointer relative group shadow-sm border-2 ${
                                   img.highlight ? (img.highlightColor || 'border-pink-300') : 'border-zinc-200'
                                 }`}
-                                onClick={onFullscreen}
+                                onClick={() => onInputImageClick?.(img.url)}
                               >
                                 <Image 
                                   src={img.url} 
@@ -364,9 +366,12 @@ export function PhotoDetailDialog({
                         <div className="flex flex-wrap gap-3">
                           {inputImages.map((img, index) => (
                             <div key={index} className="flex flex-col items-center">
-                              <div className={`w-16 h-16 rounded-lg overflow-hidden bg-zinc-100 border-2 ${
-                                img.highlight ? (img.highlightColor || 'border-pink-300') : 'border-zinc-200'
-                              }`}>
+                              <div 
+                                className={`w-16 h-16 rounded-lg overflow-hidden bg-zinc-100 border-2 cursor-pointer ${
+                                  img.highlight ? (img.highlightColor || 'border-pink-300') : 'border-zinc-200'
+                                }`}
+                                onClick={() => onInputImageClick?.(img.url)}
+                              >
                                 <Image src={img.url} alt={img.label} width={64} height={64} className="w-full h-full object-cover" />
                               </div>
                               <p className={`text-xs mt-1 ${img.highlight ? 'text-pink-500' : 'text-zinc-500'}`}>
