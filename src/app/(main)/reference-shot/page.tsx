@@ -22,6 +22,8 @@ import { useIsDesktop } from "@/hooks/useIsMobile"
 import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
 import { ModelPickerPanel } from "@/components/shared/ModelPickerPanel"
+import { GalleryPickerPanel } from "@/components/shared/GalleryPickerPanel"
+import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { TASK_CREDIT_COSTS, TaskTypes } from "@/lib/taskTypes"
 
 const CREDIT_COST = TASK_CREDIT_COSTS[TaskTypes.REFERENCE_SHOT]
@@ -63,6 +65,10 @@ export default function ReferenceShotPage() {
   
   // UI states
   const [showModelPicker, setShowModelPicker] = useState(false)
+  const [showRefGalleryPicker, setShowRefGalleryPicker] = useState(false)
+  const [showRefAssetPicker, setShowRefAssetPicker] = useState(false)
+  const [showProductGalleryPicker, setShowProductGalleryPicker] = useState(false)
+  const [showProductAssetPicker, setShowProductAssetPicker] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [loadingMessage, setLoadingMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -390,7 +396,7 @@ export default function ReferenceShotPage() {
                 <p className={`text-zinc-500 mb-2 line-clamp-2 ${isDesktop ? 'text-xs' : 'text-[10px]'}`}>
                   {t.referenceShot?.referenceImageDesc || '上传参考图，AI学习风格'}
                 </p>
-                
+
                 {referenceImage ? (
                   <div className={`relative w-full rounded-xl overflow-hidden bg-zinc-100 ${isDesktop ? 'aspect-square max-h-[280px]' : 'aspect-[3/4]'}`}>
                     <Image src={referenceImage} alt="Reference" fill className="object-cover" />
@@ -402,13 +408,44 @@ export default function ReferenceShotPage() {
                     </button>
                   </div>
                 ) : (
-                  <button
-                    onClick={() => refImageInputRef.current?.click()}
-                    className={`w-full rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 bg-zinc-50 hover:bg-blue-50 transition-all flex flex-col items-center justify-center gap-1 ${isDesktop ? 'aspect-square max-h-[280px]' : 'aspect-[3/4]'}`}
-                  >
-                    <Plus className="w-8 h-8 text-zinc-400" />
-                    <span className="text-xs text-zinc-500">{t.common?.upload || '上传'}</span>
-                  </button>
+                  <div className="space-y-2">
+                    {/* Drag & Drop Area */}
+                    <div
+                      onClick={() => refImageInputRef.current?.click()}
+                      onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-blue-400', 'bg-blue-50') }}
+                      onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50') }}
+                      onDrop={async (e) => {
+                        e.preventDefault()
+                        e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50')
+                        const file = e.dataTransfer.files?.[0]
+                        if (file && file.type.startsWith('image/')) {
+                          const base64 = await fileToBase64(file)
+                          setReferenceImage(base64)
+                        }
+                      }}
+                      className={`w-full rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 bg-zinc-50 hover:bg-blue-50 transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${isDesktop ? 'aspect-square max-h-[200px]' : 'aspect-[4/3]'}`}
+                    >
+                      <Plus className="w-6 h-6 text-zinc-400" />
+                      <span className="text-xs text-zinc-500">{t.common?.upload || '上传'}</span>
+                    </div>
+                    {/* Quick Actions */}
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        onClick={() => setShowRefGalleryPicker(true)}
+                        className="h-8 rounded-lg border border-zinc-200 bg-white hover:border-blue-300 hover:bg-blue-50 flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        <ImageIcon className="w-3.5 h-3.5 text-zinc-500" />
+                        <span className="text-[10px] text-zinc-600">{t.common?.fromGallery || 'Photos'}</span>
+                      </button>
+                      <button
+                        onClick={() => setShowRefAssetPicker(true)}
+                        className="h-8 rounded-lg border border-zinc-200 bg-white hover:border-blue-300 hover:bg-blue-50 flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        <FolderHeart className="w-3.5 h-3.5 text-zinc-500" />
+                        <span className="text-[10px] text-zinc-600">{t.common?.fromAssets || 'Assets'}</span>
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
               
@@ -420,7 +457,7 @@ export default function ReferenceShotPage() {
                 <p className={`text-zinc-500 mb-2 line-clamp-2 ${isDesktop ? 'text-xs' : 'text-[10px]'}`}>
                   {t.referenceShot?.productImageDesc || '上传商品图'}
                 </p>
-                
+
                 {productImage ? (
                   <div className={`relative w-full rounded-xl overflow-hidden bg-zinc-100 ${isDesktop ? 'aspect-square max-h-[280px]' : 'aspect-[3/4]'}`}>
                     <Image src={productImage} alt="Product" fill className="object-cover" />
@@ -432,13 +469,44 @@ export default function ReferenceShotPage() {
                     </button>
                   </div>
                 ) : (
-                  <button
-                    onClick={() => productImageInputRef.current?.click()}
-                    className={`w-full rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 bg-zinc-50 hover:bg-blue-50 transition-all flex flex-col items-center justify-center gap-1 ${isDesktop ? 'aspect-square max-h-[280px]' : 'aspect-[3/4]'}`}
-                  >
-                    <Plus className="w-8 h-8 text-zinc-400" />
-                    <span className="text-xs text-zinc-500">{t.common?.upload || '上传'}</span>
-                  </button>
+                  <div className="space-y-2">
+                    {/* Drag & Drop Area */}
+                    <div
+                      onClick={() => productImageInputRef.current?.click()}
+                      onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-blue-400', 'bg-blue-50') }}
+                      onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50') }}
+                      onDrop={async (e) => {
+                        e.preventDefault()
+                        e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50')
+                        const file = e.dataTransfer.files?.[0]
+                        if (file && file.type.startsWith('image/')) {
+                          const base64 = await fileToBase64(file)
+                          setProductImage(base64)
+                        }
+                      }}
+                      className={`w-full rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 bg-zinc-50 hover:bg-blue-50 transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${isDesktop ? 'aspect-square max-h-[200px]' : 'aspect-[4/3]'}`}
+                    >
+                      <Plus className="w-6 h-6 text-zinc-400" />
+                      <span className="text-xs text-zinc-500">{t.common?.upload || '上传'}</span>
+                    </div>
+                    {/* Quick Actions */}
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        onClick={() => setShowProductGalleryPicker(true)}
+                        className="h-8 rounded-lg border border-zinc-200 bg-white hover:border-blue-300 hover:bg-blue-50 flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        <ImageIcon className="w-3.5 h-3.5 text-zinc-500" />
+                        <span className="text-[10px] text-zinc-600">{t.common?.fromGallery || 'Photos'}</span>
+                      </button>
+                      <button
+                        onClick={() => setShowProductAssetPicker(true)}
+                        className="h-8 rounded-lg border border-zinc-200 bg-white hover:border-blue-300 hover:bg-blue-50 flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        <FolderHeart className="w-3.5 h-3.5 text-zinc-500" />
+                        <span className="text-[10px] text-zinc-600">{t.common?.fromAssets || 'Assets'}</span>
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
@@ -824,6 +892,62 @@ export default function ReferenceShotPage() {
             setShowModelPicker(false)
           })
         }}
+      />
+
+      {/* Reference Image - Gallery Picker */}
+      <GalleryPickerPanel
+        open={showRefGalleryPicker}
+        onClose={() => setShowRefGalleryPicker(false)}
+        onSelect={(imageUrl) => {
+          setReferenceImage(imageUrl)
+          setShowRefGalleryPicker(false)
+        }}
+        themeColor="blue"
+        title={t.referenceShot?.selectReference || 'Select Reference'}
+      />
+
+      {/* Reference Image - Asset Picker */}
+      <AssetPickerPanel
+        open={showRefAssetPicker}
+        onClose={() => setShowRefAssetPicker(false)}
+        onSelect={(imageUrl) => {
+          setReferenceImage(imageUrl)
+          setShowRefAssetPicker(false)
+        }}
+        onUploadClick={() => {
+          setShowRefAssetPicker(false)
+          refImageInputRef.current?.click()
+        }}
+        themeColor="blue"
+        title={t.referenceShot?.selectReference || 'Select Reference'}
+      />
+
+      {/* Product Image - Gallery Picker */}
+      <GalleryPickerPanel
+        open={showProductGalleryPicker}
+        onClose={() => setShowProductGalleryPicker(false)}
+        onSelect={(imageUrl) => {
+          setProductImage(imageUrl)
+          setShowProductGalleryPicker(false)
+        }}
+        themeColor="blue"
+        title={t.referenceShot?.selectProduct || 'Select Product'}
+      />
+
+      {/* Product Image - Asset Picker */}
+      <AssetPickerPanel
+        open={showProductAssetPicker}
+        onClose={() => setShowProductAssetPicker(false)}
+        onSelect={(imageUrl) => {
+          setProductImage(imageUrl)
+          setShowProductAssetPicker(false)
+        }}
+        onUploadClick={() => {
+          setShowProductAssetPicker(false)
+          productImageInputRef.current?.click()
+        }}
+        themeColor="blue"
+        title={t.referenceShot?.selectProduct || 'Select Product'}
       />
       
     </div>
