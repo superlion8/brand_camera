@@ -20,6 +20,7 @@ import { AssetGrid } from "@/components/shared/AssetGrid"
 import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { useImageDownload } from "@/hooks/useImageDownload"
+import { useFavorite } from "@/hooks/useFavorite"
 import { navigateToEdit } from "@/lib/navigation"
 import { ProcessingView } from "@/components/shared/ProcessingView"
 import { usePresetStore } from "@/stores/presetStore"
@@ -189,7 +190,8 @@ function SocialPageContent() {
   const [modelSubcategory, setModelSubcategory] = useState<'mine' | null>(null)
   const [bgSubcategory, setBgSubcategory] = useState<'mine' | null>(null)
   
-  const { addGeneration, addUserAsset, userModels, userBackgrounds, userProducts, addFavorite, removeFavorite, isFavorited, favorites, generations } = useAssetStore()
+  const { addGeneration, addUserAsset, userModels, userBackgrounds, userProducts, generations } = useAssetStore()
+  const { toggleFavorite, isFavorited } = useFavorite(currentGenerationId)
   const { addTask, updateTaskStatus, updateImageSlot, initImageSlots, tasks } = useGenerationTaskStore()
   const { debugMode } = useSettingsStore()
   
@@ -670,28 +672,6 @@ function SocialPageContent() {
   
   // Handle go to edit with image
   const handleGoToEdit = (imageUrl: string) => navigateToEdit(router, imageUrl)
-  
-  // Handle favorite toggle for result images
-  const handleResultFavorite = async (imageIndex: number) => {
-    if (!currentGenerationId) return
-    
-    const currentlyFavorited = isFavorited(currentGenerationId, imageIndex)
-    
-    if (currentlyFavorited) {
-      const fav = favorites.find(
-        (f) => f.generationId === currentGenerationId && f.imageIndex === imageIndex
-      )
-      if (fav) {
-        await removeFavorite(fav.id)
-      }
-    } else {
-      await addFavorite({
-        generationId: currentGenerationId,
-        imageIndex,
-        createdAt: new Date().toISOString(),
-      })
-    }
-  }
   
   // Handle download - using shared hook with tracking
   const { downloadImage } = useImageDownload({ 
@@ -1841,16 +1821,16 @@ function SocialPageContent() {
                             <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button 
                                 className={`w-7 h-7 rounded-full flex items-center justify-center shadow-sm ${
-                                  currentGenerationId && isFavorited(currentGenerationId, globalIndex) 
+                                  isFavorited(globalIndex) 
                                     ? "bg-red-500 text-white" 
                                     : "bg-white/90 backdrop-blur hover:bg-white"
                                 }`}
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  handleResultFavorite(globalIndex)
+                                  toggleFavorite(globalIndex)
                                 }}
                               >
-                                <Heart className={`w-3.5 h-3.5 ${currentGenerationId && isFavorited(currentGenerationId, globalIndex) ? "fill-current" : "text-zinc-500"}`} />
+                                <Heart className={`w-3.5 h-3.5 ${isFavorited(globalIndex) ? "fill-current" : "text-zinc-500"}`} />
                               </button>
                             </div>
                             <div className="absolute top-2 left-2">
@@ -1931,16 +1911,16 @@ function SocialPageContent() {
                                 <Image src={url} alt={`Result ${globalIndex + 1}`} fill className="object-cover" />
                                 <button 
                                   className={`absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center shadow-sm transition-colors ${
-                                    currentGenerationId && isFavorited(currentGenerationId, globalIndex) 
+                                    isFavorited(globalIndex) 
                                       ? "bg-red-500 text-white" 
                                       : "bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500"
                                   }`}
                                   onClick={(e) => {
                                     e.stopPropagation()
-                                    handleResultFavorite(globalIndex)
+                                    toggleFavorite(globalIndex)
                                   }}
                                 >
-                                  <Heart className={`w-3 h-3 ${currentGenerationId && isFavorited(currentGenerationId, globalIndex) ? "fill-current" : ""}`} />
+                                  <Heart className={`w-3 h-3 ${isFavorited(globalIndex) ? "fill-current" : ""}`} />
                                 </button>
                                 <div className="absolute bottom-1.5 left-1.5">
                                   <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${
@@ -1995,8 +1975,8 @@ function SocialPageContent() {
                   className: Math.floor(selectedResultIndex / SOCIAL_IMAGES_PER_GROUP) === 0 ? 'bg-pink-100 text-pink-600' : 'bg-purple-100 text-purple-600'
                 }
               ] : []}
-              onFavorite={() => selectedResultIndex !== null && handleResultFavorite(selectedResultIndex)}
-              isFavorited={!!(currentGenerationId && selectedResultIndex !== null && isFavorited(currentGenerationId, selectedResultIndex))}
+              onFavorite={() => selectedResultIndex !== null && toggleFavorite(selectedResultIndex)}
+              isFavorited={selectedResultIndex !== null && isFavorited(selectedResultIndex)}
               onDownload={() => {
                 if (selectedResultIndex === null) return
                 const currentTask = tasks.find(t => t.id === currentTaskId)

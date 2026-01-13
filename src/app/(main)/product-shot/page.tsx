@@ -17,6 +17,7 @@ import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { useImageDownload } from "@/hooks/useImageDownload"
+import { useFavorite } from "@/hooks/useFavorite"
 import { navigateToEdit } from "@/lib/navigation"
 import { ProcessingView } from "@/components/shared/ProcessingView"
 import { GalleryPickerPanel } from "@/components/shared/GalleryPickerPanel"
@@ -178,10 +179,11 @@ function StudioPageContent() {
   const [saturation, setSaturation] = useState(0)
   const [brightness, setBrightness] = useState(1)
   
-  const { addGeneration, addFavorite, removeFavorite, isFavorited, favorites, userProducts, generations, addUserAsset } = useAssetStore()
+  const { addGeneration, userProducts, generations, addUserAsset } = useAssetStore()
   const { addTask, updateTaskStatus, tasks } = useGenerationTaskStore()
   const { debugMode } = useSettingsStore()
   const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
+  const { toggleFavorite, isFavorited } = useFavorite(currentGenerationId)
   
   // Quota management
   const { quota, checkQuota } = useQuota()
@@ -549,25 +551,6 @@ function StudioPageContent() {
   })
   const handleDownload = (url: string, generationId?: string, imageIndex?: number) =>
     downloadImage(url, { generationId, imageIndex })
-  
-  const handleFavorite = async (imageIndex: number) => {
-    if (!currentGenerationId) return
-    
-    const currentlyFavorited = isFavorited(currentGenerationId, imageIndex)
-    
-    if (currentlyFavorited) {
-      const fav = favorites.find(
-        (f) => f.generationId === currentGenerationId && f.imageIndex === imageIndex
-      )
-      if (fav) await removeFavorite(fav.id)
-    } else {
-      await addFavorite({
-        generationId: currentGenerationId,
-        imageIndex,
-        createdAt: new Date().toISOString(),
-      })
-    }
-  }
   
   // Handle go to edit with image
   const handleGoToEdit = (imageUrl: string) => navigateToEdit(router, imageUrl)
@@ -1282,15 +1265,15 @@ function StudioPageContent() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
-                          handleFavorite(i)
+                          toggleFavorite(i)
                         }}
                         className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-all ${
-                          currentGenerationId && isFavorited(currentGenerationId, i)
+                          isFavorited(i)
                             ? 'bg-red-500 text-white'
                             : 'bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500'
                         }`}
                       >
-                        <Heart className={`w-4 h-4 ${currentGenerationId && isFavorited(currentGenerationId, i) ? 'fill-current' : ''}`} />
+                        <Heart className={`w-4 h-4 ${isFavorited(i) ? 'fill-current' : ''}`} />
                       </button>
                       <button
                         onClick={(e) => {
@@ -1352,8 +1335,8 @@ function StudioPageContent() {
                 { text: t.gallery.productStudio, className: 'bg-amber-100 text-amber-700' },
                 ...(generatedModelTypes[selectedResultIndex] === 'flash' ? [{ text: 'Gemini 2.5', className: 'bg-amber-100 text-amber-700 text-[10px]' }] : [])
               ] : []}
-              onFavorite={() => selectedResultIndex !== null && handleFavorite(selectedResultIndex)}
-              isFavorited={!!(currentGenerationId && selectedResultIndex !== null && isFavorited(currentGenerationId, selectedResultIndex))}
+              onFavorite={() => selectedResultIndex !== null && toggleFavorite(selectedResultIndex)}
+              isFavorited={selectedResultIndex !== null && isFavorited(selectedResultIndex)}
               onDownload={() => {
                 if (selectedResultIndex === null) return
                 handleDownload(generatedImages[selectedResultIndex], currentGenerationId || undefined, selectedResultIndex)

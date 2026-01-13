@@ -22,6 +22,7 @@ import { AssetGrid } from "@/components/shared/AssetGrid"
 import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { useImageDownload } from "@/hooks/useImageDownload"
+import { useFavorite } from "@/hooks/useFavorite"
 import { navigateToEdit } from "@/lib/navigation"
 import { ProcessingView } from "@/components/shared/ProcessingView"
 import { usePresetStore } from "@/stores/presetStore"
@@ -202,9 +203,10 @@ function CameraPageContent() {
   const [productFromPhone, setProductFromPhone] = useState(false)
   const [product2FromPhone, setProduct2FromPhone] = useState(false)
   
-  const { addGeneration, addUserAsset, userModels, userBackgrounds, userProducts, addFavorite, removeFavorite, isFavorited, favorites, generations } = useAssetStore()
+  const { addGeneration, addUserAsset, userModels, userBackgrounds, userProducts, generations } = useAssetStore()
   const { addTask, updateTaskStatus, updateImageSlot, initImageSlots, tasks } = useGenerationTaskStore()
   const { debugMode } = useSettingsStore()
+  const { toggleFavorite, isFavorited } = useFavorite(currentGenerationId)
   
   // 从 URL 参数读取 mode（从 outfit 页面跳转过来时）
   useEffect(() => {
@@ -1023,28 +1025,6 @@ function CameraPageContent() {
   
   const handleReturn = () => {
     router.push("/")
-  }
-  
-  // Handle favorite toggle for result images
-  const handleResultFavorite = async (imageIndex: number) => {
-    if (!currentGenerationId) return
-    
-    const currentlyFavorited = isFavorited(currentGenerationId, imageIndex)
-    
-    if (currentlyFavorited) {
-      const fav = favorites.find(
-        (f) => f.generationId === currentGenerationId && f.imageIndex === imageIndex
-      )
-      if (fav) {
-        await removeFavorite(fav.id)
-      }
-    } else {
-      await addFavorite({
-        generationId: currentGenerationId,
-        imageIndex,
-        createdAt: new Date().toISOString(),
-      })
-    }
   }
   
   // Handle go to edit with image
@@ -2020,16 +2000,16 @@ function CameraPageContent() {
                           <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button 
                               className={`w-7 h-7 rounded-full flex items-center justify-center shadow-sm ${
-                                currentGenerationId && isFavorited(currentGenerationId, i) 
+                                isFavorited(i) 
                                   ? "bg-red-500 text-white" 
                                   : "bg-white/90 backdrop-blur hover:bg-white"
                               }`}
                               onClick={(e) => {
                                 e.stopPropagation()
-                                handleResultFavorite(i)
+                                toggleFavorite(i)
                               }}
                             >
-                              <Heart className={`w-3.5 h-3.5 ${currentGenerationId && isFavorited(currentGenerationId, i) ? "fill-current" : "text-zinc-500"}`} />
+                              <Heart className={`w-3.5 h-3.5 ${isFavorited(i) ? "fill-current" : "text-zinc-500"}`} />
                             </button>
                           </div>
                           <div className="absolute top-2 left-2">
@@ -2087,16 +2067,16 @@ function CameraPageContent() {
                               <Image src={url} alt="Result" fill className="object-cover" />
                               <button 
                                 className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center shadow-sm transition-colors ${
-                                  currentGenerationId && isFavorited(currentGenerationId, i) 
+                                  isFavorited(i) 
                                     ? "bg-red-500 text-white" 
                                     : "bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500"
                                 }`}
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  handleResultFavorite(i)
+                                  toggleFavorite(i)
                                 }}
                               >
-                                <Heart className={`w-3.5 h-3.5 ${currentGenerationId && isFavorited(currentGenerationId, i) ? "fill-current" : ""}`} />
+                                <Heart className={`w-3.5 h-3.5 ${isFavorited(i) ? "fill-current" : ""}`} />
                               </button>
                               <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
                                 <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-500 text-white">
@@ -2155,16 +2135,16 @@ function CameraPageContent() {
                               <Image src={url} alt="Result" fill className="object-cover" />
                               <button 
                                 className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center shadow-sm transition-colors ${
-                                  currentGenerationId && isFavorited(currentGenerationId, actualIndex) 
+                                  isFavorited(actualIndex) 
                                     ? "bg-red-500 text-white" 
                                     : "bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500"
                                 }`}
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  handleResultFavorite(actualIndex)
+                                  toggleFavorite(actualIndex)
                                 }}
                               >
-                                <Heart className={`w-3.5 h-3.5 ${currentGenerationId && isFavorited(currentGenerationId, actualIndex) ? "fill-current" : ""}`} />
+                                <Heart className={`w-3.5 h-3.5 ${isFavorited(actualIndex) ? "fill-current" : ""}`} />
                               </button>
                               <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
                                 <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-blue-500 text-white">
@@ -2236,8 +2216,8 @@ function CameraPageContent() {
                   className: "bg-amber-100 text-amber-700 text-[10px]"
                 }] : [])
               ] : []}
-              onFavorite={() => selectedResultIndex !== null && handleResultFavorite(selectedResultIndex)}
-              isFavorited={!!(currentGenerationId && selectedResultIndex !== null && isFavorited(currentGenerationId, selectedResultIndex))}
+              onFavorite={() => selectedResultIndex !== null && toggleFavorite(selectedResultIndex)}
+              isFavorited={selectedResultIndex !== null && isFavorited(selectedResultIndex)}
               onDownload={() => {
                 if (selectedResultIndex === null) return
                 const currentTask = tasks.find(t => t.id === currentTaskId)
