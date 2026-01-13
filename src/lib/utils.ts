@@ -277,6 +277,7 @@ export function isValidImage(image: string | null | undefined): boolean {
 
 // Save product image to user assets (shared utility for camera, pro-studio, studio)
 // Returns true if saved successfully, false if skipped or failed
+// Skip if image is already a cloud URL (from Supabase Storage) - means it's already in assets
 export async function saveProductToAssets(
   imageUrl: string,
   addUserAsset: (asset: { id: string; type: 'product'; name: string; imageUrl: string }) => Promise<void>,
@@ -284,6 +285,19 @@ export async function saveProductToAssets(
 ): Promise<boolean> {
   if (!isValidImage(imageUrl)) {
     console.log('[saveProductToAssets] Invalid or empty image, skipping')
+    return false
+  }
+  
+  // Skip if image is already a cloud URL (from Supabase Storage or other CDN)
+  // This prevents re-saving images that are already in the asset library
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    console.log('[saveProductToAssets] Image is already a cloud URL, skipping save to avoid duplicate')
+    return false
+  }
+  
+  // Only save base64/data URL images (newly uploaded from phone/camera)
+  if (!imageUrl.startsWith('data:')) {
+    console.log('[saveProductToAssets] Image is not a data URL, skipping')
     return false
   }
   
@@ -295,7 +309,7 @@ export async function saveProductToAssets(
       imageUrl: imageUrl,
     }
     
-    console.log('[saveProductToAssets] Saving product to assets:', asset.id)
+    console.log('[saveProductToAssets] Saving new product to assets:', asset.id)
     await addUserAsset(asset)
     console.log('[saveProductToAssets] Product saved successfully')
     return true
