@@ -888,6 +888,7 @@ export const zh = {
     result: "修改结果",
     before: "修改前",
     after: "修改后",
+    original: "原图",
     modifyAgain: "再次修改",
     backToGallery: "返回成片",
     targetImage: "目标图片",

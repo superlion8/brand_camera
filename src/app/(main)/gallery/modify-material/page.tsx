@@ -930,6 +930,10 @@ function ModifyMaterialContent() {
                     fill
                     className="object-cover"
                   />
+                  {/* 原图标记 */}
+                  <div className="absolute top-2 left-2 px-2.5 py-1 bg-zinc-800/70 rounded-full text-xs font-medium text-white">
+                    {t.modifyMaterial?.original || 'Original'}
+                  </div>
                 </button>
               </div>
               
@@ -949,6 +953,10 @@ function ModifyMaterialContent() {
                         fill
                         className="object-cover"
                       />
+                      {/* AI 生成标记 */}
+                      <div className="absolute top-2 left-2 px-2.5 py-1 bg-purple-600/80 rounded-full text-xs font-medium text-white">
+                        AI {idx + 1}
+                      </div>
                     </button>
                   </div>
                 ))

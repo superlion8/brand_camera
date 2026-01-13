@@ -889,6 +889,7 @@ export const ko: Translations = {
     result: "결과",
     before: "수정 전",
     after: "수정 후",
+    original: "원본",
     modifyAgain: "다시 수정",
     backToGallery: "갤러리로 돌아가기",
     targetImage: "대상 이미지",

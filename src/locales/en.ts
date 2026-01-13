@@ -890,6 +890,7 @@ export const en: Translations = {
     result: "Result",
     before: "Before",
     after: "After",
+    original: "Original",
     modifyAgain: "Modify Again",
     backToGallery: "Back to Gallery",
     targetImage: "Target Image",
