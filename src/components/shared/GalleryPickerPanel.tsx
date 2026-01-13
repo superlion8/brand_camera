@@ -178,15 +178,18 @@ export function GalleryPickerPanel({
             </div>
             
             {/* Content */}
-            <div className="flex-1 overflow-y-auto bg-zinc-50 p-4 relative">
-              {/* Loading overlay */}
-              {loading && (
-                <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
-                  <Loader2 className={`w-8 h-8 ${theme.spinner} animate-spin`} />
+            <div className="flex-1 overflow-y-auto bg-zinc-50 p-4">
+              {/* Loading skeleton */}
+              {loading ? (
+                <div className={`grid gap-3 ${isDesktop ? 'grid-cols-5' : 'grid-cols-3'}`}>
+                  {Array.from({ length: isDesktop ? 20 : 12 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="aspect-square rounded-xl bg-zinc-200 animate-pulse"
+                    />
+                  ))}
                 </div>
-              )}
-              
-              {!loading && photos.length > 0 ? (
+              ) : photos.length > 0 ? (
                 <div className="space-y-4">
                   <div className={`grid gap-3 ${isDesktop ? 'grid-cols-5' : 'grid-cols-3'}`}>
                     {photos.filter(item => item?.imageUrl).map((item, index) => (
@@ -232,7 +235,7 @@ export function GalleryPickerPanel({
                     </div>
                   )}
                 </div>
-              ) : !loading ? (
+              ) : (
                 <div className="flex flex-col items-center justify-center h-full text-zinc-400 py-12">
                   <Images className="w-12 h-12 mb-3 opacity-30" />
                   <p className="text-sm">{t.edit?.noGallery || 'No photos yet'}</p>
@@ -247,7 +250,7 @@ export function GalleryPickerPanel({
                     {defaultEmptyAction.label}
                   </button>
                 </div>
-              ) : null}
+              )}
             </div>
           </motion.div>
         </>
