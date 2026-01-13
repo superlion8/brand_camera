@@ -14,6 +14,7 @@ import { fileToBase64, saveProductToAssets, compressBase64Image } from "@/lib/ut
 import Image from "next/image"
 import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
+import { useImageDownload } from "@/hooks/useImageDownload"
 import { Asset } from "@/types"
 import { useQuota } from "@/hooks/useQuota"
 import { useQuotaReservation } from "@/hooks/useQuotaReservation"
@@ -475,22 +476,8 @@ function LifestylePageContent() {
     }
   }
 
-  const handleDownload = async (url: string) => {
-    try {
-      const response = await fetch(url)
-      const blob = await response.blob()
-      const blobUrl = URL.createObjectURL(blob)
-      const link = document.createElement("a")
-      link.href = blobUrl
-      link.download = `lifestyle-${Date.now()}.jpg`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(blobUrl)
-    } catch (error) {
-      console.error("Download failed:", error)
-    }
-  }
+  const { downloadImage } = useImageDownload({ filenamePrefix: 'lifestyle' })
+  const handleDownload = (url: string) => downloadImage(url)
 
   if (authLoading || !user) {
     return (

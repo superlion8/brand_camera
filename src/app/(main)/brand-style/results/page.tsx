@@ -20,6 +20,7 @@ import Image from 'next/image'
 import { useIsDesktop } from '@/hooks/useIsMobile'
 import { ScreenLoadingGuard } from '@/components/ui/ScreenLoadingGuard'
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
+import { useImageDownload } from "@/hooks/useImageDownload"
 import { useTranslation } from '@/stores/languageStore'
 
 // Helper to proxy Instagram CDN images
@@ -83,22 +84,10 @@ export default function ResultsPage() {
     }
   }, [router])
 
-  const handleDownload = async (url: string, filename: string) => {
-    try {
-      const response = await fetch(url)
-      const blob = await response.blob()
-      const downloadUrl = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = downloadUrl
-      a.download = filename
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(downloadUrl)
-    } catch (error) {
-      console.error('Download failed:', error)
-    }
-  }
+  // Download image - using shared hook
+  const { downloadImage } = useImageDownload({ filenamePrefix: 'brand-style' })
+  const handleDownload = (url: string, filename: string) =>
+    downloadImage(url, { filename })
 
   // Find images by id - with safe access
   const getImageById = (id: string) => {

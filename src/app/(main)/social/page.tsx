@@ -18,6 +18,7 @@ import Image from "next/image"
 import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
+import { useImageDownload } from "@/hooks/useImageDownload"
 import { usePresetStore } from "@/stores/presetStore"
 import { useQuota } from "@/hooks/useQuota"
 import { useQuotaReservation } from "@/hooks/useQuotaReservation"
@@ -692,49 +693,13 @@ function SocialPageContent() {
     }
   }
   
-  // Handle download
-  const handleDownload = async (url: string, generationId?: string, imageIndex?: number) => {
-    fetch('/api/track/download', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        imageUrl: url,
-        generationId,
-        imageIndex,
-        source: 'social',
-      }),
-    }).catch(() => {})
-    
-    try {
-      let blob: Blob
-      
-      if (url.startsWith('data:')) {
-        const response = await fetch(url)
-        blob = await response.blob()
-      } else {
-        const response = await fetch(url)
-        blob = await response.blob()
-      }
-      
-      const blobUrl = URL.createObjectURL(blob)
-      const link = document.createElement("a")
-      link.href = blobUrl
-      link.download = `social-${Date.now()}.jpg`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(blobUrl)
-    } catch (error) {
-      console.error("Download failed:", error)
-      const link = document.createElement("a")
-      link.href = url
-      link.download = `social-${Date.now()}.jpg`
-      link.target = "_blank"
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-    }
-  }
+  // Handle download - using shared hook with tracking
+  const { downloadImage } = useImageDownload({ 
+    trackingSource: 'social', 
+    filenamePrefix: 'social' 
+  })
+  const handleDownload = (url: string, generationId?: string, imageIndex?: number) =>
+    downloadImage(url, { generationId, imageIndex })
   
   // Asset grid component with upload card
   const AssetGrid = ({ 

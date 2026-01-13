@@ -14,6 +14,7 @@ import { createClient } from "@/lib/supabase/client"
 import { useTranslation } from "@/stores/languageStore"
 import { generateId } from "@/lib/utils"
 import { useIsDesktop } from "@/hooks/useIsMobile"
+import { useImageDownload } from "@/hooks/useImageDownload"
 import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 
 // 创建模式类型
@@ -559,30 +560,10 @@ export default function ModelCreatePage() {
     }
   }
   
-  // 下载图片
-  const handleDownload = async (imageUrl: string, index: number) => {
-    try {
-      const response = await fetch(imageUrl)
-      const blob = await response.blob()
-      const file = new File([blob], `custom-model-${index + 1}.png`, { type: 'image/png' })
-      
-      if (isIOS && navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file] })
-      } else {
-        const blobUrl = URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = blobUrl
-        link.download = file.name
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        URL.revokeObjectURL(blobUrl)
-      }
-    } catch (error: any) {
-      if (error.name === 'AbortError') return
-      console.error('Download error:', error)
-    }
-  }
+  // 下载图片 - using shared hook
+  const { downloadImage } = useImageDownload({ filenamePrefix: 'custom-model' })
+  const handleDownload = (imageUrl: string, index: number) =>
+    downloadImage(imageUrl, { filename: `custom-model-${index + 1}.png` })
   
   // 防止 hydration 闪烁
   if (screenLoading) {

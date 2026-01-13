@@ -13,6 +13,7 @@ import { usePresetStore } from "@/stores/presetStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { useQuota } from "@/hooks/useQuota"
 import { useQuotaReservation } from "@/hooks/useQuotaReservation"
+import { useImageDownload } from "@/hooks/useImageDownload"
 import { useSettingsStore } from "@/stores/settingsStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
@@ -331,33 +332,10 @@ export default function ReferenceShotPage() {
     }
   }
   
-  // Download image
-  const handleDownload = async (imageUrl: string, index: number) => {
-    try {
-      const response = await fetch(imageUrl)
-      const blob = await response.blob()
-      const filename = `reference-shot-${index + 1}.png`
-      const file = new File([blob], filename, { type: blob.type })
-      
-      // Check if iOS and can share
-      const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)
-      if (isIOS && navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file] })
-      } else {
-        // Standard download
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = filename
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        URL.revokeObjectURL(url)
-      }
-    } catch (err) {
-      console.error('Download failed:', err)
-    }
-  }
+  // Download image - using shared hook
+  const { downloadImage } = useImageDownload({ filenamePrefix: 'reference-shot' })
+  const handleDownload = (imageUrl: string, index: number) =>
+    downloadImage(imageUrl, { filename: `reference-shot-${index + 1}.png` })
   
   // Reset and start over
   const handleReset = () => {

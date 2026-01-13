@@ -16,6 +16,7 @@ import { useSettingsStore } from "@/stores/settingsStore"
 import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
+import { useImageDownload } from "@/hooks/useImageDownload"
 import { GalleryPickerPanel } from "@/components/shared/GalleryPickerPanel"
 import Image from "next/image"
 import { useQuota } from "@/hooks/useQuota"
@@ -539,34 +540,13 @@ function StudioPageContent() {
     router.push('/')
   }
   
-  const handleDownload = async (url: string, generationId?: string, imageIndex?: number) => {
-    // Track download event (don't await, fire and forget)
-    fetch('/api/track/download', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        imageUrl: url,
-        generationId,
-        imageIndex,
-        source: 'studio',
-      }),
-    }).catch(() => {}) // Silently ignore tracking errors
-    
-    try {
-      const response = await fetch(url)
-      const blob = await response.blob()
-      const blobUrl = URL.createObjectURL(blob)
-      const link = document.createElement("a")
-      link.href = blobUrl
-      link.download = `studio-${Date.now()}.jpg`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(blobUrl)
-    } catch (error) {
-      console.error("Download failed:", error)
-    }
-  }
+  // Handle download - using shared hook with tracking
+  const { downloadImage } = useImageDownload({ 
+    trackingSource: 'studio', 
+    filenamePrefix: 'studio' 
+  })
+  const handleDownload = (url: string, generationId?: string, imageIndex?: number) =>
+    downloadImage(url, { generationId, imageIndex })
   
   const handleFavorite = async (imageIndex: number) => {
     if (!currentGenerationId) return

@@ -20,6 +20,7 @@ import Image from "next/image"
 import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
+import { useImageDownload } from "@/hooks/useImageDownload"
 import { usePresetStore } from "@/stores/presetStore"
 import { useQuota } from "@/hooks/useQuota"
 import { useQuotaReservation } from "@/hooks/useQuotaReservation"
@@ -1049,53 +1050,13 @@ function CameraPageContent() {
     router.push("/edit/general")
   }
   
-  // Handle download
-  const handleDownload = async (url: string, generationId?: string, imageIndex?: number) => {
-    // Track download event (don't await, fire and forget)
-    fetch('/api/track/download', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        imageUrl: url,
-        generationId,
-        imageIndex,
-        source: 'camera',
-      }),
-    }).catch(() => {}) // Silently ignore tracking errors
-    
-    try {
-      let blob: Blob
-      
-      if (url.startsWith('data:')) {
-        // Handle base64 data URL
-        const response = await fetch(url)
-        blob = await response.blob()
-      } else {
-        // Handle regular URL
-        const response = await fetch(url)
-        blob = await response.blob()
-      }
-      
-      const blobUrl = URL.createObjectURL(blob)
-      const link = document.createElement("a")
-      link.href = blobUrl
-      link.download = `brand-camera-${Date.now()}.jpg`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(blobUrl)
-    } catch (error) {
-      console.error("Download failed:", error)
-      // Fallback to direct link
-      const link = document.createElement("a")
-      link.href = url
-      link.download = `brand-camera-${Date.now()}.jpg`
-      link.target = "_blank"
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-    }
-  }
+  // Handle download - using shared hook with tracking
+  const { downloadImage } = useImageDownload({ 
+    trackingSource: 'camera', 
+    filenamePrefix: 'brand-camera' 
+  })
+  const handleDownload = (url: string, generationId?: string, imageIndex?: number) =>
+    downloadImage(url, { generationId, imageIndex })
   
   // Asset grid component with upload card
   const AssetGrid = ({ 

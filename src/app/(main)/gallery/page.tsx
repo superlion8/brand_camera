@@ -12,6 +12,7 @@ import { Generation, Favorite, Asset } from "@/types"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
+import { useImageDownload } from "@/hooks/useImageDownload"
 import { generateId } from "@/lib/utils"
 import { 
   isModelRelatedType, 
@@ -103,6 +104,12 @@ export default function GalleryPage() {
   const { user } = useAuth()
   const { tasks, removeTask, _hasHydrated: tasksHydrated } = useGenerationTaskStore()
   const { debugMode } = useSettingsStore()
+  
+  // Image download hook - must be called before any conditional returns
+  const { downloadImage } = useImageDownload({ 
+    trackingSource: 'gallery', 
+    filenamePrefix: 'brand-camera' 
+  })
   const { t } = useTranslation()
   
   // 使用全局 galleryStore 缓存（支持预加载）
@@ -706,56 +713,9 @@ export default function GalleryPage() {
     }
   }
   
-  const handleDownload = async (url: string, generationId?: string, imageIndex?: number) => {
-    // Track download event (don't await, fire and forget)
-    fetch('/api/track/download', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        imageUrl: url,
-        generationId,
-        imageIndex,
-        source: 'gallery',
-      }),
-    }).catch(() => {}) // Silently ignore tracking errors
-    
-    // 检测是否是 iOS
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-    
-    try {
-      const response = await fetch(url)
-      const blob = await response.blob()
-      const file = new File([blob], `brand-camera-${Date.now()}.png`, { type: 'image/png' })
-      
-      // 只有 iOS 使用系统分享（会显示"存储图像"选项），Android 直接下载
-      if (isIOS && navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file] })
-      } else {
-        // 直接下载
-        const blobUrl = URL.createObjectURL(blob)
-        const link = document.createElement("a")
-        link.href = blobUrl
-        link.download = file.name
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        URL.revokeObjectURL(blobUrl)
-      }
-    } catch (error: any) {
-      // 用户取消分享不算错误
-      if (error.name === 'AbortError') return
-      
-      console.error("Download failed:", error)
-      // 回退：直接打开链接
-      const link = document.createElement("a")
-      link.href = url
-      link.download = `brand-camera-${Date.now()}.png`
-      link.target = "_blank"
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-    }
-  }
+  // Handle download - using shared hook
+  const handleDownload = (url: string, generationId?: string, imageIndex?: number) =>
+    downloadImage(url, { generationId, imageIndex, filename: `brand-camera-${Date.now()}.png` })
   
   // Pull to refresh handlers
   const handleTouchStart = (e: React.TouchEvent) => {

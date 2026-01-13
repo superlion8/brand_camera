@@ -13,6 +13,7 @@ import Webcam from "react-webcam"
 import { motion, AnimatePresence } from "framer-motion"
 import { useQuota } from "@/hooks/useQuota"
 import { useQuotaReservation } from "@/hooks/useQuotaReservation"
+import { useImageDownload } from "@/hooks/useImageDownload"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
@@ -442,22 +443,9 @@ export default function GeneralEditPage() {
   }
   
   // Download image
-  const handleDownload = async (imageUrl: string, index: number) => {
-    try {
-      const response = await fetch(imageUrl)
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `edit-result-${index + 1}.png`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      window.URL.revokeObjectURL(url)
-    } catch (error) {
-      console.error('Download failed:', error)
-    }
-  }
+  const { downloadImage } = useImageDownload({ filenamePrefix: 'edit-result' })
+  const handleDownload = (imageUrl: string, index: number) => 
+    downloadImage(imageUrl, { filename: `edit-result-${index + 1}.png` })
   
   // Favorite image (placeholder - would need backend integration)
   const [favorites, setFavorites] = useState<Set<number>>(new Set())

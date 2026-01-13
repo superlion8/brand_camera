@@ -17,6 +17,7 @@ import Image from "next/image"
 import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
+import { useImageDownload } from "@/hooks/useImageDownload"
 import { usePresetStore } from "@/stores/presetStore"
 import { useQuota } from "@/hooks/useQuota"
 import { useQuotaReservation } from "@/hooks/useQuotaReservation"
@@ -804,34 +805,8 @@ function ProStudioPageContent() {
   }
 
   // Download handler with iOS share support
-  const handleDownload = async (url: string) => {
-    try {
-      const response = await fetch(url)
-      const blob = await response.blob()
-      
-      // Check if iOS and navigator.share is available
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-      if (isIOS && navigator.share && navigator.canShare) {
-        const file = new File([blob], `pro-studio-${Date.now()}.jpg`, { type: 'image/jpeg' })
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file] })
-          return
-        }
-      }
-      
-      // Fallback to download link
-      const blobUrl = URL.createObjectURL(blob)
-      const link = document.createElement("a")
-      link.href = blobUrl
-      link.download = `pro-studio-${Date.now()}.jpg`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(blobUrl)
-    } catch (error) {
-      console.error("Download failed:", error)
-    }
-  }
+  const { downloadImage } = useImageDownload({ filenamePrefix: 'pro-studio' })
+  const handleDownload = (url: string) => downloadImage(url)
 
   // 登录状态检查中或未登录时显示加载
   if (authLoading || !user) {

@@ -14,6 +14,7 @@ import { generateId, compressBase64Image } from "@/lib/utils"
 import { useTranslation } from "@/stores/languageStore"
 import { useQuota } from "@/hooks/useQuota"
 import { useQuotaReservation } from "@/hooks/useQuotaReservation"
+import { useImageDownload } from "@/hooks/useImageDownload"
 
 type GenerationStatus = 'idle' | 'generating-prompts' | 'generating-images' | 'completed' | 'error'
 
@@ -264,42 +265,10 @@ export default function ModelCreateGenerate() {
     }
   }
   
-  // 下载/分享图片 (iOS 用分享，Android 用下载)
-  const handleDownload = async (imageUrl: string, index: number) => {
-    try {
-      const response = await fetch(imageUrl)
-      const blob = await response.blob()
-      const file = new File([blob], `custom-model-${index + 1}.png`, { type: 'image/png' })
-      
-      // iOS 使用系统分享（会显示"存储图像"选项）
-      if (isIOS && navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file] })
-      } else {
-        // Android 或不支持分享的平台直接下载
-        const blobUrl = URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = blobUrl
-        link.download = file.name
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        URL.revokeObjectURL(blobUrl)
-      }
-    } catch (error: any) {
-      // 用户取消分享不算错误
-      if (error.name === 'AbortError') return
-      
-      console.error('Download error:', error)
-      // 回退：直接打开链接
-      const link = document.createElement('a')
-      link.href = imageUrl
-      link.download = `custom-model-${index + 1}.png`
-      link.target = '_blank'
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-    }
-  }
+  // 下载/分享图片 - using shared hook
+  const { downloadImage } = useImageDownload({ filenamePrefix: 'custom-model' })
+  const handleDownload = (imageUrl: string, index: number) =>
+    downloadImage(imageUrl, { filename: `custom-model-${index + 1}.png` })
   
   // 返回首页
   const handleGoHome = () => {

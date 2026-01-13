@@ -14,6 +14,7 @@ import { useQuota } from "@/hooks/useQuota"
 import { useQuotaReservation } from "@/hooks/useQuotaReservation"
 import { BottomNav } from "@/components/shared/BottomNav"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
+import { useImageDownload } from "@/hooks/useImageDownload"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
@@ -314,22 +315,8 @@ function GroupShootPageContent() {
   const numImages = GROUP_NUM_IMAGES  // 固定4张图
 
   // Handle download
-  const handleDownload = async (url: string) => {
-    try {
-      const response = await fetch(url)
-      const blob = await response.blob()
-      const blobUrl = URL.createObjectURL(blob)
-      const link = document.createElement("a")
-      link.href = blobUrl
-      link.download = `group-shot-${Date.now()}.jpg`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(blobUrl)
-    } catch (error) {
-      console.error('Download failed:', error)
-    }
-  }
+  const { downloadImage } = useImageDownload({ filenamePrefix: 'group-shot' })
+  const handleDownload = (url: string) => downloadImage(url)
 
   // 防止 hydration 闪烁
   if (screenLoading) {
