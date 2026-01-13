@@ -15,6 +15,9 @@ import { useQuotaReservation } from "@/hooks/useQuotaReservation"
 import { BottomNav } from "@/components/shared/BottomNav"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { ProcessingView } from "@/components/shared/ProcessingView"
+import { ResultsView } from "@/components/shared/ResultsView"
+import { useFavorite } from "@/hooks/useFavorite"
+import { navigateToEdit } from "@/lib/navigation"
 import { useImageDownload } from "@/hooks/useImageDownload"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
@@ -68,8 +71,13 @@ function GroupShootPageContent() {
   
   // Results state
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
+  const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
   const [generatedImages, setGeneratedImages] = useState<string[]>([])
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
+  const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
+  
+  // Favorite hook
+  const { toggleFavorite, isFavorited } = useFavorite(currentGenerationId)
   
   // 从 URL 参数恢复模式和 taskId（刷新后恢复）
   useEffect(() => {
@@ -714,192 +722,39 @@ function GroupShootPageContent() {
 
         {/* Results Mode */}
         {mode === "results" && (
-          <motion.div 
-            key="results"
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            exit={{ opacity: 0, y: 20 }}
-            className="flex-1 flex flex-col bg-zinc-50 overflow-hidden"
-          >
-            {/* Header */}
-            {isDesktop ? (
-              <div className="bg-white border-b border-zinc-200">
-                <div className="max-w-4xl mx-auto px-8 py-4">
-                  <div className="flex items-center justify-between">
-                    <button 
-                      onClick={handleReselect} 
-                      className="flex items-center gap-2 text-zinc-600 hover:text-zinc-900"
-                    >
-                      <ArrowLeft className="w-5 h-5" />
-                      <span className="font-medium">{t.common?.back || 'Back'}</span>
-                    </button>
-                    <span className="font-semibold text-zinc-900">
-                      {styleMode === 'lifestyle' ? (t.groupShootPage?.lifestyleMode || '生活风格') : (t.groupShootPage?.studioMode || '棚拍风格')}
-                    </span>
-                    <div className="w-20" />
-                  </div>
-                </div>
-              </div>
-            ) : (
-            <div className="h-14 flex items-center px-4 border-b bg-white z-10 shrink-0">
-              <button 
-                onClick={handleReselect} 
-                className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <span className="font-semibold ml-2">
-                {styleMode === 'lifestyle' ? (t.groupShootPage?.lifestyleMode || '生活风格') : (t.groupShootPage?.studioMode || '棚拍风格')}
-              </span>
-            </div>
-            )}
-
-            <div className={`flex-1 overflow-y-auto ${isDesktop ? 'py-8' : 'p-4 pb-32'}`}>
-              <div className={`${isDesktop ? 'max-w-4xl mx-auto px-8' : ''}`}>
-                <div className={`grid gap-3 ${isDesktop ? 'grid-cols-4' : 'grid-cols-2'}`}>
-                {Array.from({ length: numImages }).map((_, i) => {
-                  const task = tasks.find(t => t.id === currentTaskId)
-                  const slot = task?.imageSlots?.[i]
-                  const url = slot?.imageUrl || generatedImages[i]
-                  const status = slot?.status || (url ? 'completed' : 'pending')
-                  
-                  const poseLabel = `${t.groupShootPage?.pose || 'Pose'} ${i + 1}`
-                  
-                  if (status === 'pending' || status === 'generating') {
-                    return (
-                      <div key={i} className="aspect-[4/5] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
-                        <Loader2 className={`w-6 h-6 animate-spin mb-2 ${
-                          styleMode === 'lifestyle' ? 'text-blue-400' : 'text-amber-400'
-                        }`} />
-                        <span className="text-[10px] text-zinc-400">{poseLabel} {t.groupShootPage?.generating || 'Generating...'}</span>
-                      </div>
-                    )
-                  }
-                  
-                  if (status === 'failed' || !url) {
-                    return (
-                      <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
-                        {slot?.error || t.groupShootPage?.generationFailed || 'Generation Failed'}
-                      </div>
-                    )
-                  }
-                  
-                  return (
-                    <div 
-                      key={i} 
-                      className="group relative aspect-[4/5] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer"
-                      onClick={() => setFullscreenImage(url)}
-                    >
-                      <Image src={url} alt="Result" fill className="object-cover" />
-                      <div className="absolute top-2 left-2">
-                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium text-white ${
-                          styleMode === 'lifestyle' ? 'bg-blue-500' : 'bg-amber-500'
-                        }`}>
-                          {poseLabel}
-                        </span>
-                      </div>
-                    </div>
-                  )
-                })}
-                </div>
-                
-                {/* PC: Centered button */}
-                {isDesktop && (
-                  <div className="flex justify-center mt-8">
-                    <button 
-                      onClick={handleReselect}
-                      className={`px-8 h-12 text-lg rounded-xl font-semibold transition-colors ${
-                        styleMode === 'lifestyle' 
-                          ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600'
-                          : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600'
-                      }`}
-                    >
-                      {t.groupShootPage?.shootNextSet || 'Shoot Next Set'}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Debug Parameters - 只在调试模式显示 */}
-            {debugMode && (
-              <div className="mx-4 mb-4 p-4 bg-white rounded-xl border border-zinc-100">
-                <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.groupShootPage?.debugParams || 'Generation Params (Debug)'}</h3>
-                <div className="flex items-start gap-4">
-                  {/* Input Image */}
-                  {selectedImage && (
-                    <div className="flex flex-col items-center">
-                      <div 
-                        className="w-16 h-16 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"
-                        onClick={() => setFullscreenImage(selectedImage)}
-                      >
-                        <img 
-                          src={selectedImage} 
-                          alt="Input" 
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <ZoomIn className="w-4 h-4 text-white" />
-                        </div>
-                      </div>
-                      <p className="text-[10px] text-zinc-500 mt-1">{t.groupShootPage?.inputImage || 'Input'}</p>
-                      <span className="text-[8px] px-1 py-0.5 rounded bg-zinc-100 text-zinc-600 mt-0.5">
-                        {t.groupShootPage?.modelPhoto || 'Model Photo'}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* 模式信息 */}
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-zinc-500">{t.groupShootPage?.styleMode || '风格模式'}:</span>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                        styleMode === 'lifestyle'
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'bg-amber-100 text-amber-700'
-                      }`}>
-                        {styleMode === 'lifestyle' ? (t.groupShootPage?.lifestyleMode || '生活风格') : (t.groupShootPage?.studioMode || '棚拍风格')}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-zinc-500">{t.groupShootPage?.shootMode || 'Shoot Mode'}:</span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-purple-100 text-purple-700">
-                        {t.groupShootPage?.randomShoot || 'Random'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-zinc-500">{t.groupShootPage?.generateCount || 'Count'}:</span>
-                      <span className="text-[10px] font-medium text-zinc-700">{numImages}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-zinc-500">{t.groupShootPage?.inputSource || 'Source'}:</span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-cyan-100 text-cyan-700">
-                        {t.groupShootPage?.selectFromPhotos || 'From Photos'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* Mobile: Bottom button */}
-            {!isDesktop && (
-            <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t max-w-md mx-auto">
-              <button 
-                onClick={handleReselect}
-                className={`w-full h-12 text-lg rounded-xl font-semibold transition-colors ${
-                  styleMode === 'lifestyle' 
-                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600'
-                    : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600'
-                }`}
-              >
-                {t.groupShootPage?.shootNextSet || 'Shoot Next Set'}
-              </button>
-            </div>
-            )}
-            
-            {!isDesktop && <BottomNav forceShow />}
-          </motion.div>
+          <ResultsView
+            title={styleMode === 'lifestyle' ? (t.groupShootPage?.lifestyleMode || 'Lifestyle') : (t.groupShootPage?.studioMode || 'Studio')}
+            onBack={handleReselect}
+            images={Array.from({ length: numImages }).map((_, i) => {
+              const task = tasks.find(t => t.id === currentTaskId)
+              const slot = task?.imageSlots?.[i]
+              const url = slot?.imageUrl || generatedImages[i]
+              const status = slot?.status || (url ? 'completed' : 'pending')
+              return {
+                url,
+                status: status as 'completed' | 'pending' | 'generating' | 'failed',
+                error: slot?.error,
+              }
+            })}
+            getBadge={(i) => ({
+              text: `${t.groupShootPage?.pose || 'Pose'} ${i + 1}`,
+              className: styleMode === 'lifestyle' ? 'bg-blue-500' : 'bg-amber-500',
+            })}
+            aspectRatio="4/5"
+            themeColor={styleMode === 'lifestyle' ? 'blue' : 'amber'}
+            onFavorite={toggleFavorite}
+            isFavorited={isFavorited}
+            onDownload={(url) => handleDownload(url)}
+            onShootNext={handleReselect}
+            onGoEdit={(url) => navigateToEdit(router, url)}
+            onRegenerate={handleStartGeneration}
+            onImageClick={(i) => {
+              const task = tasks.find(t => t.id === currentTaskId)
+              const slot = task?.imageSlots?.[i]
+              const url = slot?.imageUrl || generatedImages[i]
+              if (url) setFullscreenImage(url)
+            }}
+          />
         )}
       </AnimatePresence>
 

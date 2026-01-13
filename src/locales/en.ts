@@ -1164,6 +1164,7 @@ export const en: Translations = {
   // Virtual Try-On
   tryOn: {
     title: "Virtual Try-On",
+    badge: "Try-On",
     subtitle: "AI Smart Try-On Experience",
     personImage: "Person Photo",
     personImageDesc: "Upload a person photo as the try-on base",

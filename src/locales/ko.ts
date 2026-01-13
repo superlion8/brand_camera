@@ -1163,6 +1163,7 @@ export const ko: Translations = {
   // 가상 피팅
   tryOn: {
     title: "가상 피팅",
+    badge: "피팅",
     subtitle: "AI 스마트 피팅 체험",
     personImage: "인물 사진",
     personImageDesc: "피팅 기본이 될 인물 사진을 업로드하세요",

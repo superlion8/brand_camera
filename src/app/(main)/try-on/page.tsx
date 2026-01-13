@@ -14,6 +14,8 @@ import { useQuota } from "@/hooks/useQuota"
 import { useQuotaReservation } from "@/hooks/useQuotaReservation"
 import { navigateToEdit } from "@/lib/navigation"
 import { ProcessingView } from "@/components/shared/ProcessingView"
+import { ResultsView } from "@/components/shared/ResultsView"
+import { useFavorite } from "@/hooks/useFavorite"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
@@ -60,8 +62,12 @@ export default function TryOnPage() {
   // Result states
   const [resultImages, setResultImages] = useState<string[]>([])
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
+  const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
   const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
+  
+  // Favorite hook
+  const { toggleFavorite, isFavorited } = useFavorite(currentGenerationId)
   
   // Camera states
   const [cameraTarget, setCameraTarget] = useState<'person' | 'clothing'>('person')
@@ -800,82 +806,49 @@ export default function TryOnPage() {
         
         {/* Results Mode */}
         {mode === 'results' && (
-          <motion.div
-            key="results"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex-1 overflow-y-auto"
+          <ResultsView
+            title={t.tryOn?.resultTitle || 'Try-On Complete'}
+            onBack={() => setMode('main')}
+            images={resultImages.filter((url): url is string => !!url).map((url) => ({
+              url,
+              status: 'completed' as const,
+            }))}
+            getBadge={() => ({
+              text: t.tryOn?.badge || 'Try-On',
+              className: 'bg-pink-500',
+            })}
+            themeColor="pink"
+            onFavorite={toggleFavorite}
+            isFavorited={isFavorited}
+            onDownload={async (url) => {
+              try {
+                const response = await fetch(url)
+                const blob = await response.blob()
+                const blobUrl = URL.createObjectURL(blob)
+                const link = document.createElement("a")
+                link.href = blobUrl
+                link.download = `try-on-${Date.now()}.jpg`
+                document.body.appendChild(link)
+                link.click()
+                document.body.removeChild(link)
+                URL.revokeObjectURL(blobUrl)
+              } catch (error) {
+                console.error("Download failed:", error)
+              }
+            }}
+            onShootNext={() => setMode('main')}
+            onGoEdit={(url) => navigateToEdit(router, url)}
+            onRegenerate={handleGenerate}
+            onImageClick={(i) => setSelectedResultIndex(i)}
           >
-            <div className={`${isDesktop ? 'max-w-4xl mx-auto py-8 px-4' : 'p-4 pb-40'}`}>
-              <div className="text-center mb-4">
-                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-2">
-                  <Check className="w-5 h-5 text-green-600" />
-                </div>
-                <h3 className="text-lg font-bold text-zinc-800">{t.tryOn?.resultTitle || '换装完成'}</h3>
-                <p className="text-xs text-zinc-500">{t.tryOn?.resultDesc || '点击图片查看详情'}</p>
-              </div>
-              
-              <div className={`grid gap-3 ${isDesktop ? 'grid-cols-4' : 'grid-cols-2'}`}>
-                {resultImages.filter((url): url is string => !!url).map((url, i) => (
-                  <button
-                    key={i}
-                    className="relative aspect-[3/4] bg-zinc-100 rounded-xl overflow-hidden cursor-pointer group"
-                    onClick={() => setSelectedResultIndex(i)}
-                  >
-                    <Image src={url} alt={`Result ${i + 1}`} fill className="object-cover" />
-                    <div className="absolute top-2 left-2">
-                      <span className="px-2 py-1 rounded text-[10px] font-medium bg-pink-500 text-white">
-                        换装
-                      </span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-              
-              {/* PC: Centered buttons */}
-              {isDesktop && (
-                <div className="flex justify-center gap-3 mt-8">
-                  <button
-                    onClick={() => setMode('main')}
-                    className="px-8 h-12 border border-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 transition-colors"
-                  >
-                    {t.tryOn?.newGeneration || '重新换装'}
-                  </button>
-                  <button
-                    onClick={() => router.push('/edit')}
-                    className="px-8 h-12 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-xl font-medium hover:from-pink-600 hover:to-purple-600 transition-colors"
-                  >
-                    {t.edit?.title || '修图工具'}
-                  </button>
-                </div>
-              )}
-            </div>
-            
-            {/* Mobile: Fixed bottom buttons */}
-            {!isDesktop && (
-              <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t flex gap-3 max-w-md mx-auto z-40">
-                <button
-                  onClick={() => setMode('main')}
-                  className="flex-1 h-12 border border-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 transition-colors"
-                >
-                  {t.tryOn?.newGeneration || '重新换装'}
-                </button>
-                <button
-                  onClick={() => router.push('/edit')}
-                  className="flex-1 h-12 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-xl font-medium hover:from-pink-600 hover:to-purple-600 transition-colors"
-                >
-                  {t.edit?.title || '修图工具'}
-                </button>
-              </div>
-            )}
-            
-            {/* Result Detail Dialog - Using shared component */}
+            {/* Result Detail Dialog */}
             <ResultDetailDialog
               open={selectedResultIndex !== null && !!resultImages[selectedResultIndex!]}
               onClose={() => setSelectedResultIndex(null)}
               imageUrl={selectedResultIndex !== null ? resultImages[selectedResultIndex] || '' : ''}
               badges={[{ text: t.tryOn?.title || 'Virtual Try-On', className: 'bg-pink-100 text-pink-700' }]}
+              onFavorite={() => selectedResultIndex !== null && toggleFavorite(selectedResultIndex)}
+              isFavorited={selectedResultIndex !== null && isFavorited(selectedResultIndex)}
               onDownload={async () => {
                 if (selectedResultIndex === null) return
                 const url = resultImages[selectedResultIndex]
@@ -949,13 +922,13 @@ export default function TryOnPage() {
               ] : []}
             />
             
-            {/* Fullscreen Image Viewer - Using shared component */}
+            {/* Fullscreen Image Viewer */}
             <FullscreenImageViewer
               open={!!fullscreenImage}
               onClose={() => setFullscreenImage(null)}
               imageUrl={fullscreenImage || ''}
             />
-          </motion.div>
+          </ResultsView>
         )}
       </AnimatePresence>
       

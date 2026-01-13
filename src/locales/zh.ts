@@ -1162,6 +1162,7 @@ export const zh = {
   // 虚拟换装
   tryOn: {
     title: "虚拟换装",
+    badge: "换装",
     subtitle: "AI 智能换装体验",
     personImage: "人物照片",
     personImageDesc: "上传一张人物照片作为换装基础",
