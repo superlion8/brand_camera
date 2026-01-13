@@ -1960,109 +1960,213 @@ function SocialPageContent() {
             exit={{ opacity: 0, y: 20 }}
             className="flex-1 flex flex-col bg-zinc-50 overflow-hidden"
           >
-            <div className="h-14 flex items-center px-4 border-b bg-white z-10">
-              <button 
-                onClick={handleRetake} 
-                className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <span className="font-semibold ml-2">{t.social?.result || '本次成片'}</span>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 pb-8">
-              {/* 2组 × 2图 网格布局 */}
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold text-zinc-900 flex items-center gap-2">
-                  <span className="w-1 h-4 bg-gradient-to-b from-pink-500 to-purple-500 rounded-full" />
-                  {t.social?.resultTitle || '社媒种草图'}
-                </h3>
-                <span className="text-[10px] text-zinc-400">{t.social?.description || '4 张社媒风格图'}</span>
-              </div>
-              
-              {/* 按组显示 */}
-              {Array.from({ length: SOCIAL_NUM_GROUPS }).map((_, groupIndex) => (
-                <div key={groupIndex} className="mb-6">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${
-                      groupIndex === 0 
-                        ? 'bg-pink-100 text-pink-600' 
-                        : 'bg-purple-100 text-purple-600'
-                    }`}>
-                      {t.social?.group || '组'} {GROUP_LABELS[groupIndex]}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    {Array.from({ length: SOCIAL_IMAGES_PER_GROUP }).map((_, localIndex) => {
-                      const globalIndex = groupIndex * SOCIAL_IMAGES_PER_GROUP + localIndex
-                      const currentTask = tasks.find(t => t.id === currentTaskId)
-                      const slot = currentTask?.imageSlots?.[globalIndex]
-                      const url = slot?.imageUrl || generatedImages[globalIndex]
-                      const status = slot?.status || (url ? 'completed' : 'failed')
-                      
-                      if (status === 'pending' || status === 'generating') {
-                        return (
-                          <div key={globalIndex} className="aspect-[3/4] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
-                            <Loader2 className="w-5 h-5 text-pink-400 animate-spin mb-1" />
-                            <span className="text-[9px] text-zinc-400">{t.common?.generating || '生成中'}</span>
-                          </div>
-                        )
-                      }
-                      
-                      if (status === 'failed' || !url) {
-                        return (
-                          <div key={globalIndex} className="aspect-[3/4] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-[10px] px-2 text-center">
-                            {slot?.error || t.camera?.generationFailed || '生成失败'}
-                          </div>
-                        )
-                      }
-                      
-                      return (
-                        <div 
-                          key={globalIndex} 
-                          className="group relative aspect-[3/4] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer"
-                          onClick={() => setSelectedResultIndex(globalIndex)}
-                        >
-                          <Image src={url} alt={`Result ${globalIndex + 1}`} fill className="object-cover" />
-                          <button 
-                            className={`absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center shadow-sm transition-colors ${
-                              currentGenerationId && isFavorited(currentGenerationId, globalIndex) 
-                                ? "bg-red-500 text-white" 
-                                : "bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500"
-                            }`}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleResultFavorite(globalIndex)
-                            }}
-                          >
-                            <Heart className={`w-3 h-3 ${currentGenerationId && isFavorited(currentGenerationId, globalIndex) ? "fill-current" : ""}`} />
-                          </button>
-                          {/* 图片标签：组+序号 */}
-                          <div className="absolute bottom-1.5 left-1.5">
-                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${
-                              groupIndex === 0 
-                                ? 'bg-pink-500/80 text-white' 
-                                : 'bg-purple-500/80 text-white'
-                            }`}>
-                              {GROUP_LABELS[groupIndex]}-{localIndex + 1}
-                            </span>
-                          </div>
-                        </div>
-                      )
-                    })}
+            {/* Header - PC vs Mobile */}
+            {isDesktop ? (
+              <div className="bg-white border-b border-zinc-200 shrink-0">
+                <div className="max-w-5xl mx-auto px-8 py-4">
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={handleRetake}
+                      className="w-9 h-9 rounded-lg hover:bg-zinc-100 flex items-center justify-center transition-colors"
+                    >
+                      <ArrowLeft className="w-5 h-5 text-zinc-600" />
+                    </button>
+                    <h1 className="text-lg font-semibold text-zinc-900">{t.social?.result || 'Results'}</h1>
                   </div>
                 </div>
-              ))}
+              </div>
+            ) : (
+              <div className="h-14 flex items-center px-4 border-b bg-white z-10">
+                <button 
+                  onClick={handleRetake} 
+                  className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <span className="font-semibold ml-2">{t.social?.result || 'Results'}</span>
+              </div>
+            )}
+
+            {/* Content - PC: 4 columns, Mobile: 2x2 grouped */}
+            <div className={`flex-1 overflow-y-auto ${isDesktop ? 'py-8' : 'p-4 pb-8'}`}>
+              <div className={isDesktop ? 'max-w-4xl mx-auto px-8' : ''}>
+                {isDesktop ? (
+                  /* PC: Simple 4-column grid */
+                  <>
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-sm font-bold text-zinc-900 flex items-center gap-2">
+                        <span className="w-1 h-4 bg-gradient-to-b from-pink-500 to-purple-500 rounded-full" />
+                        {t.social?.resultTitle || 'Social Media Images'}
+                      </h3>
+                    </div>
+                    <div className="grid grid-cols-4 gap-4">
+                      {Array.from({ length: SOCIAL_NUM_GROUPS * SOCIAL_IMAGES_PER_GROUP }).map((_, globalIndex) => {
+                        const groupIndex = Math.floor(globalIndex / SOCIAL_IMAGES_PER_GROUP)
+                        const localIndex = globalIndex % SOCIAL_IMAGES_PER_GROUP
+                        const currentTask = tasks.find(t => t.id === currentTaskId)
+                        const slot = currentTask?.imageSlots?.[globalIndex]
+                        const url = slot?.imageUrl || generatedImages[globalIndex]
+                        const status = slot?.status || (url ? 'completed' : 'failed')
+                        
+                        if (status === 'pending' || status === 'generating') {
+                          return (
+                            <div key={globalIndex} className="aspect-[3/4] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
+                              <Loader2 className="w-5 h-5 text-pink-400 animate-spin mb-1" />
+                              <span className="text-[9px] text-zinc-400">{t.common?.generating || 'Generating...'}</span>
+                            </div>
+                          )
+                        }
+                        
+                        if (status === 'failed' || !url) {
+                          return (
+                            <div key={globalIndex} className="aspect-[3/4] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-[10px] px-2 text-center">
+                              {slot?.error || t.camera?.generationFailed || 'Failed'}
+                            </div>
+                          )
+                        }
+                        
+                        return (
+                          <div 
+                            key={globalIndex} 
+                            className="group relative aspect-[3/4] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer hover:shadow-md transition-shadow"
+                            onClick={() => setSelectedResultIndex(globalIndex)}
+                          >
+                            <Image src={url} alt={`Result ${globalIndex + 1}`} fill className="object-cover" />
+                            <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button 
+                                className={`w-7 h-7 rounded-full flex items-center justify-center shadow-sm ${
+                                  currentGenerationId && isFavorited(currentGenerationId, globalIndex) 
+                                    ? "bg-red-500 text-white" 
+                                    : "bg-white/90 backdrop-blur hover:bg-white"
+                                }`}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleResultFavorite(globalIndex)
+                                }}
+                              >
+                                <Heart className={`w-3.5 h-3.5 ${currentGenerationId && isFavorited(currentGenerationId, globalIndex) ? "fill-current" : "text-zinc-500"}`} />
+                              </button>
+                            </div>
+                            <div className="absolute top-2 left-2">
+                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium text-white ${
+                                groupIndex === 0 ? 'bg-pink-500' : 'bg-purple-500'
+                              }`}>
+                                {GROUP_LABELS[groupIndex]}-{localIndex + 1}
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    
+                    {/* PC: Centered button */}
+                    <div className="mt-8 flex justify-center">
+                      <button 
+                        onClick={handleRetake}
+                        className="px-8 h-12 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white font-semibold hover:from-pink-600 hover:to-purple-600 transition-colors"
+                      >
+                        {t.camera?.shootNextSet || 'Shoot Next Set'}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  /* Mobile: Grouped layout */
+                  <>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-bold text-zinc-900 flex items-center gap-2">
+                        <span className="w-1 h-4 bg-gradient-to-b from-pink-500 to-purple-500 rounded-full" />
+                        {t.social?.resultTitle || 'Social Media Images'}
+                      </h3>
+                      <span className="text-[10px] text-zinc-400">{t.social?.description || '4 social style images'}</span>
+                    </div>
+                    
+                    {Array.from({ length: SOCIAL_NUM_GROUPS }).map((_, groupIndex) => (
+                      <div key={groupIndex} className="mb-6">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${
+                            groupIndex === 0 
+                              ? 'bg-pink-100 text-pink-600' 
+                              : 'bg-purple-100 text-purple-600'
+                          }`}>
+                            {t.social?.group || 'Group'} {GROUP_LABELS[groupIndex]}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          {Array.from({ length: SOCIAL_IMAGES_PER_GROUP }).map((_, localIndex) => {
+                            const globalIndex = groupIndex * SOCIAL_IMAGES_PER_GROUP + localIndex
+                            const currentTask = tasks.find(t => t.id === currentTaskId)
+                            const slot = currentTask?.imageSlots?.[globalIndex]
+                            const url = slot?.imageUrl || generatedImages[globalIndex]
+                            const status = slot?.status || (url ? 'completed' : 'failed')
+                            
+                            if (status === 'pending' || status === 'generating') {
+                              return (
+                                <div key={globalIndex} className="aspect-[3/4] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
+                                  <Loader2 className="w-5 h-5 text-pink-400 animate-spin mb-1" />
+                                  <span className="text-[9px] text-zinc-400">{t.common?.generating || 'Generating...'}</span>
+                                </div>
+                              )
+                            }
+                            
+                            if (status === 'failed' || !url) {
+                              return (
+                                <div key={globalIndex} className="aspect-[3/4] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-[10px] px-2 text-center">
+                                  {slot?.error || t.camera?.generationFailed || 'Failed'}
+                                </div>
+                              )
+                            }
+                            
+                            return (
+                              <div 
+                                key={globalIndex} 
+                                className="group relative aspect-[3/4] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer"
+                                onClick={() => setSelectedResultIndex(globalIndex)}
+                              >
+                                <Image src={url} alt={`Result ${globalIndex + 1}`} fill className="object-cover" />
+                                <button 
+                                  className={`absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center shadow-sm transition-colors ${
+                                    currentGenerationId && isFavorited(currentGenerationId, globalIndex) 
+                                      ? "bg-red-500 text-white" 
+                                      : "bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500"
+                                  }`}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleResultFavorite(globalIndex)
+                                  }}
+                                >
+                                  <Heart className={`w-3 h-3 ${currentGenerationId && isFavorited(currentGenerationId, globalIndex) ? "fill-current" : ""}`} />
+                                </button>
+                                <div className="absolute bottom-1.5 left-1.5">
+                                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${
+                                    groupIndex === 0 
+                                      ? 'bg-pink-500/80 text-white' 
+                                      : 'bg-purple-500/80 text-white'
+                                  }`}>
+                                    {GROUP_LABELS[groupIndex]}-{localIndex + 1}
+                                  </span>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
             </div>
 
-            <div className="p-4 pb-20 bg-white border-t shadow-up">
-              <button 
-                onClick={handleRetake}
-                className="w-full h-12 text-lg rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 text-white font-semibold hover:from-pink-600 hover:to-purple-600 transition-colors"
-              >
-                {t.camera?.shootNextSet || '继续拍摄'}
-              </button>
-            </div>
+            {/* Mobile: Bottom button */}
+            {!isDesktop && (
+              <div className="p-4 pb-20 bg-white border-t shadow-up">
+                <button 
+                  onClick={handleRetake}
+                  className="w-full h-12 text-lg rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 text-white font-semibold hover:from-pink-600 hover:to-purple-600 transition-colors"
+                >
+                  {t.camera?.shootNextSet || 'Shoot Next Set'}
+                </button>
+              </div>
+            )}
             
             {/* Result Detail Dialog */}
             {selectedResultIndex !== null && (() => {
