@@ -403,8 +403,8 @@ function GroupShootPageContent() {
                           />
                         ) : (
                           /* 已选图片预览 */
-                          <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-zinc-100">
-                            <Image src={selectedImage} alt="Selected" fill className="object-cover" />
+                          <div className="relative rounded-xl overflow-hidden bg-zinc-100">
+                            <img src={selectedImage} alt="Selected" className="w-full h-auto max-h-[350px] object-contain" />
                             <button
                               onClick={() => setSelectedImage(null)}
                               className="absolute top-3 right-3 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors"
