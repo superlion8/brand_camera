@@ -16,7 +16,7 @@ import { BottomNav } from "@/components/shared/BottomNav"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { ProcessingView } from "@/components/shared/ProcessingView"
 import { ResultsView } from "@/components/shared/ResultsView"
-import { ItemPickerPanel, PickerItem } from "@/components/shared/ItemPickerPanel"
+import { GalleryPickerPanel } from "@/components/shared/GalleryPickerPanel"
 import { useFavorite } from "@/hooks/useFavorite"
 import { navigateToEdit } from "@/lib/navigation"
 import { useImageDownload } from "@/hooks/useImageDownload"
@@ -760,59 +760,18 @@ function GroupShootPageContent() {
       </AnimatePresence>
 
       {/* Gallery Picker - 从成片选择 */}
-      <ItemPickerPanel
+      <GalleryPickerPanel
         open={showGalleryPicker}
         onClose={() => setShowGalleryPicker(false)}
         title={t.groupShootPage?.selectFromPhotos || 'Select from Photos'}
-        subtitle={t.groupShootPage?.modelCategory || 'Select model photo'}
-        tabs={[
-          { id: 'all', label: t.groupShootPage?.all || 'All' },
-          { id: 'buyer', label: t.groupShootPage?.buyerShow || 'Buyer Show' },
-          { id: 'pro', label: t.groupShootPage?.proStudio || 'Pro Studio' },
-          { id: 'group', label: t.groupShootPage?.groupPhoto || 'Group' },
-        ]}
-        activeTab={gallerySubType}
-        onTabChange={(tabId) => setGallerySubType(tabId as typeof gallerySubType)}
-        items={(() => {
-          const filteredGenerations = modelGenerations.filter(gen => {
-            if (gallerySubType === 'all') return true
-            if (gallerySubType === 'buyer') return isBuyerShowType(gen.type)
-            if (gallerySubType === 'pro') return isProStudioType(gen.type)
-            if (gallerySubType === 'group') return isGroupShootType(gen.type)
-            return true
-          })
-          return filteredGenerations.flatMap((gen, gi) =>
-            (gen.outputImageUrls || [])
-              .filter((url): url is string => typeof url === 'string' && url.length > 0)
-              .map((url, ui): PickerItem => ({
-                id: `${gen.id || gi}-${ui}`,
-                imageUrl: url,
-                badge: {
-                  text: isProStudioType(gen.type) 
-                    ? (t.groupShootPage?.proStudio || 'Pro') 
-                    : isGroupShootType(gen.type) 
-                      ? (t.groupShootPage?.groupPhoto || 'Group') 
-                      : (t.groupShootPage?.buyerShow || 'Buyer'),
-                  className: isProStudioType(gen.type) 
-                    ? 'bg-amber-500' 
-                    : isGroupShootType(gen.type) 
-                      ? 'bg-cyan-500' 
-                      : 'bg-blue-500',
-                },
-              }))
-          )
-        })()}
-        loading={!generations || generations.length === 0}
-        loadingText={t.groupShootPage?.loadingPhotos || 'Loading photos...'}
-        emptyText={t.groupShootPage?.noPhotos || 'No photos'}
-        emptySubtext={t.groupShootPage?.goShootFirst || 'Go shoot some photos first'}
-        onSelect={(item) => {
-          const gen = modelGenerations.find(g => 
-            (g.outputImageUrls || []).includes(item.imageUrl)
-          )
-          handleSelectFromGallery(item.imageUrl, gen?.type)
-        }}
+        defaultTab="model"
+        showTabs={true}
         themeColor={styleMode === 'lifestyle' ? 'blue' : 'amber'}
+        onSelect={(imageUrl) => handleSelectFromGallery(imageUrl)}
+        emptyAction={{
+          label: t.groupShootPage?.goShootFirst || 'Go Shoot',
+          href: '/buyer-show',
+        }}
       />
 
       {/* Fullscreen Image - Using shared component */}

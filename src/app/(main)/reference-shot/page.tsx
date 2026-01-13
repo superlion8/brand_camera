@@ -21,7 +21,7 @@ import { Asset } from "@/types"
 import { useIsDesktop } from "@/hooks/useIsMobile"
 import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
-import { ItemPickerPanel, PickerItem } from "@/components/shared/ItemPickerPanel"
+import { ModelPickerPanel } from "@/components/shared/ModelPickerPanel"
 import { TASK_CREDIT_COSTS, TaskTypes } from "@/lib/taskTypes"
 
 const CREDIT_COST = TASK_CREDIT_COSTS[TaskTypes.REFERENCE_SHOT]
@@ -761,26 +761,13 @@ export default function ReferenceShotPage() {
       )}
       
       {/* Model Picker */}
-      <ItemPickerPanel
+      <ModelPickerPanel
         open={showModelPicker}
         onClose={() => setShowModelPicker(false)}
         title={t.referenceShot?.selectModel || 'Select Model'}
-        showUpload
-        uploadLabel={t.referenceShot?.uploadCustomModel || 'Upload Custom Model'}
-        onUpload={() => modelImageInputRef.current?.click()}
-        items={allModels.map((model): PickerItem => ({
-          id: model.id,
-          imageUrl: model.imageUrl,
-          label: model.name,
-        }))}
         selectedId={selectedModelId}
-        onSelect={(item) => {
-          const model = allModels.find(m => m.id === item.id)
-          if (model) handleModelSelect(model)
-        }}
-        emptyText={t.referenceShot?.noModels || 'No models'}
-        gridCols={2}
-        aspectRatio="3/4"
+        customModels={userModels}
+        onSelect={handleModelSelect}
         themeColor="blue"
       />
       
