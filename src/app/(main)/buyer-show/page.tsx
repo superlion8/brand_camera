@@ -25,6 +25,7 @@ import { useImageDownload } from "@/hooks/useImageDownload"
 import { useFavorite } from "@/hooks/useFavorite"
 import { navigateToEdit } from "@/lib/navigation"
 import { ProcessingView } from "@/components/shared/ProcessingView"
+import { ResultsView } from "@/components/shared/ResultsView"
 import { usePresetStore } from "@/stores/presetStore"
 import { useQuota } from "@/hooks/useQuota"
 import { useQuotaReservation } from "@/hooks/useQuotaReservation"
@@ -1926,269 +1927,34 @@ function CameraPageContent() {
         )}
 
         {mode === "results" && (
-          <motion.div 
-            key="results"
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            exit={{ opacity: 0, y: 20 }}
-            className="flex-1 flex flex-col bg-zinc-50 overflow-hidden"
+          <ResultsView
+            title={t.camera?.thisResults || 'Results'}
+            onBack={handleRetake}
+            images={[0, 1, 2, 3].map((i) => {
+              const currentTask = tasks.find(t => t.id === currentTaskId)
+              const slot = currentTask?.imageSlots?.[i]
+              const url = slot?.imageUrl || generatedImages[i]
+              const status = slot?.status || (url ? 'completed' : 'failed')
+              return {
+                url,
+                status: status as 'completed' | 'pending' | 'generating' | 'failed',
+                error: slot?.error,
+              }
+            })}
+            getBadge={(i) => ({
+              text: i < 2 ? (t.gallery?.simpleMode || 'Simple') : (t.gallery?.extendedMode || 'Extended'),
+              className: i < 2 ? 'bg-green-500' : 'bg-blue-500',
+            })}
+            themeColor="blue"
+            onFavorite={toggleFavorite}
+            isFavorited={isFavorited}
+            onDownload={(url, i) => handleDownload(url, currentGenerationId || undefined, i)}
+            onShootNext={handleRetake}
+            onGoEdit={handleGoToEdit}
+            onRegenerate={handleShootIt}
+            onImageClick={(i) => setSelectedResultIndex(i)}
           >
-            {/* Header - PC vs Mobile */}
-            {isDesktop ? (
-              <div className="bg-white border-b border-zinc-200 shrink-0">
-                <div className="max-w-5xl mx-auto px-8 py-4">
-                  <div className="flex items-center gap-3">
-                    <button 
-                      onClick={handleRetake}
-                      className="w-9 h-9 rounded-lg hover:bg-zinc-100 flex items-center justify-center transition-colors"
-                    >
-                      <ArrowLeft className="w-5 h-5 text-zinc-600" />
-                    </button>
-                    <h1 className="text-lg font-semibold text-zinc-900">{t.camera?.thisResults || 'Results'}</h1>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="h-14 flex items-center px-4 border-b bg-white z-10">
-                <button 
-                  onClick={handleRetake} 
-                  className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center"
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                </button>
-                <span className="font-semibold ml-2">{t.camera?.thisResults || 'Results'}</span>
-              </div>
-            )}
-
-            {/* Content - PC: 4 columns, Mobile: 2 columns with sections */}
-            <div className={`flex-1 overflow-y-auto ${isDesktop ? 'py-8' : 'p-4 space-y-6 pb-8'}`}>
-              <div className={isDesktop ? 'max-w-4xl mx-auto px-8' : ''}>
-                {isDesktop ? (
-                  /* PC: Simple 4-column grid */
-                  <div className="grid grid-cols-4 gap-4">
-                    {[0, 1, 2, 3].map((i) => {
-                      const currentTask = tasks.find(t => t.id === currentTaskId)
-                      const slot = currentTask?.imageSlots?.[i]
-                      const url = slot?.imageUrl || generatedImages[i]
-                      const status = slot?.status || (url ? 'completed' : 'failed')
-                      const isSimple = i < 2
-                      
-                      if (status === 'pending' || status === 'generating') {
-                        return (
-                          <div key={i} className="aspect-[3/4] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
-                            <Loader2 className="w-6 h-6 text-zinc-400 animate-spin mb-2" />
-                            <span className="text-[10px] text-zinc-400">{t.camera?.generatingSlot || 'Generating...'}</span>
-                          </div>
-                        )
-                      }
-                      
-                      if (status === 'failed' || !url) {
-                        return (
-                          <div key={i} className="aspect-[3/4] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
-                            {slot?.error || t.camera.generationFailed}
-                          </div>
-                        )
-                      }
-                      
-                      return (
-                        <div 
-                          key={i} 
-                          className="group relative aspect-[3/4] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer hover:shadow-md transition-shadow"
-                          onClick={() => setSelectedResultIndex(i)}
-                        >
-                          <Image src={url} alt="Result" fill className="object-cover" />
-                          <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button 
-                              className={`w-7 h-7 rounded-full flex items-center justify-center shadow-sm ${
-                                isFavorited(i) 
-                                  ? "bg-red-500 text-white" 
-                                  : "bg-white/90 backdrop-blur hover:bg-white"
-                              }`}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                toggleFavorite(i)
-                              }}
-                            >
-                              <Heart className={`w-3.5 h-3.5 ${isFavorited(i) ? "fill-current" : "text-zinc-500"}`} />
-                            </button>
-                          </div>
-                          <div className="absolute top-2 left-2">
-                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium text-white ${isSimple ? 'bg-green-500' : 'bg-blue-500'}`}>
-                              {isSimple ? (t.gallery?.simpleMode || 'Simple') : (t.gallery?.extendedMode || 'Extended')}
-                            </span>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  /* Mobile: Sectioned layout */
-                  <>
-                    {/* Simple Mode Images */}
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
-                          <span className="w-1 h-4 bg-green-500 rounded-full" />
-                          {t.gallery?.simpleMode || 'Simple Mode'}
-                        </h3>
-                        <span className="text-[10px] text-zinc-400">{t.camera.simpleModeDesc}</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        {[0, 1].map((i) => {
-                          const currentTask = tasks.find(t => t.id === currentTaskId)
-                          const slot = currentTask?.imageSlots?.[i]
-                          const url = slot?.imageUrl || generatedImages[i]
-                          const status = slot?.status || (url ? 'completed' : 'failed')
-                          const modelType = slot?.modelType || generatedModelTypes[i]
-                          
-                          if (status === 'pending' || status === 'generating') {
-                            return (
-                              <div key={i} className="aspect-[4/5] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
-                                <Loader2 className="w-6 h-6 text-zinc-400 animate-spin mb-2" />
-                                <span className="text-[10px] text-zinc-400">{t.camera?.generatingSlot || 'Generating...'}</span>
-                              </div>
-                            )
-                          }
-                          
-                          if (status === 'failed' || !url) {
-                            return (
-                              <div key={i} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
-                                {slot?.error || t.camera.generationFailed}
-                              </div>
-                            )
-                          }
-                          
-                          return (
-                            <div 
-                              key={i} 
-                              className="group relative aspect-[4/5] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer"
-                              onClick={() => setSelectedResultIndex(i)}
-                            >
-                              <Image src={url} alt="Result" fill className="object-cover" />
-                              <button 
-                                className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center shadow-sm transition-colors ${
-                                  isFavorited(i) 
-                                    ? "bg-red-500 text-white" 
-                                    : "bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500"
-                                }`}
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  toggleFavorite(i)
-                                }}
-                              >
-                                <Heart className={`w-3.5 h-3.5 ${isFavorited(i) ? "fill-current" : ""}`} />
-                              </button>
-                              <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
-                                <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-green-500 text-white">
-                                  {t.gallery?.simpleMode || 'Simple'}
-                                </span>
-                                {modelType === 'flash' && (
-                                  <span className="px-1 py-0.5 rounded text-[8px] font-medium bg-amber-500 text-white">2.5</span>
-                                )}
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Extended Mode Images */}
-                    <div className="mt-6">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
-                          <span className="w-1 h-4 bg-blue-600 rounded-full" />
-                          {t.gallery?.extendedMode || 'Extended Mode'}
-                        </h3>
-                        <span className="text-[10px] text-zinc-400">{t.camera.extendedModeDesc}</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        {[2, 3].map((actualIndex) => {
-                          const currentTask = tasks.find(t => t.id === currentTaskId)
-                          const slot = currentTask?.imageSlots?.[actualIndex]
-                          const url = slot?.imageUrl || generatedImages[actualIndex]
-                          const status = slot?.status || (url ? 'completed' : 'failed')
-                          const modelType = slot?.modelType || generatedModelTypes[actualIndex]
-                          
-                          if (status === 'pending' || status === 'generating') {
-                            return (
-                              <div key={actualIndex} className="aspect-[4/5] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
-                                <Loader2 className="w-6 h-6 text-zinc-400 animate-spin mb-2" />
-                                <span className="text-[10px] text-zinc-400">{t.camera?.generatingSlot || 'Generating...'}</span>
-                              </div>
-                            )
-                          }
-                          
-                          if (status === 'failed' || !url) {
-                            return (
-                              <div key={actualIndex} className="aspect-[4/5] bg-zinc-200 rounded-xl flex items-center justify-center text-zinc-400 text-xs">
-                                {slot?.error || t.camera.generationFailed}
-                              </div>
-                            )
-                          }
-                          
-                          return (
-                            <div 
-                              key={actualIndex} 
-                              className="group relative aspect-[4/5] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border border-zinc-200 cursor-pointer"
-                              onClick={() => setSelectedResultIndex(actualIndex)}
-                            >
-                              <Image src={url} alt="Result" fill className="object-cover" />
-                              <button 
-                                className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center shadow-sm transition-colors ${
-                                  isFavorited(actualIndex) 
-                                    ? "bg-red-500 text-white" 
-                                    : "bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500"
-                                }`}
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  toggleFavorite(actualIndex)
-                                }}
-                              >
-                                <Heart className={`w-3.5 h-3.5 ${isFavorited(actualIndex) ? "fill-current" : ""}`} />
-                              </button>
-                              <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
-                                <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-blue-500 text-white">
-                                  {t.gallery?.extendedMode || 'Extended'}
-                                </span>
-                                {modelType === 'flash' && (
-                                  <span className="px-1 py-0.5 rounded text-[8px] font-medium bg-amber-500 text-white">2.5</span>
-                                )}
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  </>
-                )}
-                
-                {/* PC: Button inline */}
-                {isDesktop && (
-                  <div className="mt-8 flex justify-center">
-                    <button 
-                      onClick={handleRetake}
-                      className="px-8 h-12 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold transition-colors"
-                    >
-                      {t.camera.shootNextSet}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Mobile: Bottom button */}
-            {!isDesktop && (
-              <div className="p-4 pb-20 bg-white border-t shadow-up">
-                <button 
-                  onClick={handleRetake}
-                  className="w-full h-12 text-lg rounded-lg bg-zinc-900 text-white font-semibold hover:bg-zinc-800 transition-colors"
-                >
-                  {t.camera.shootNextSet}
-                </button>
-              </div>
-            )}
-            
-            {/* Result Detail Dialog - Using shared component */}
+            {/* Result Detail Dialog */}
             <ResultDetailDialog
               open={selectedResultIndex !== null && !!(() => {
                 const currentTask = tasks.find(t => t.id === currentTaskId)
@@ -2205,7 +1971,7 @@ function CameraPageContent() {
               badges={selectedResultIndex !== null ? [
                 {
                   text: selectedResultIndex < 2 ? (t.gallery?.simpleMode || "Simple") : (t.gallery?.extendedMode || "Extended"),
-                  className: selectedResultIndex < 3 ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
+                  className: selectedResultIndex < 2 ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
                 },
                 ...(((() => {
                   const currentTask = tasks.find(t => t.id === currentTaskId)
@@ -2349,10 +2115,7 @@ function CameraPageContent() {
                 )
               })()}
             </ResultDetailDialog>
-            
-            {/* Bottom Navigation - Mobile only */}
-            {!isDesktop && <BottomNav forceShow />}
-          </motion.div>
+          </ResultsView>
         )}
       </AnimatePresence>
       
