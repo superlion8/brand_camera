@@ -404,166 +404,315 @@ export default function TryOnPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex-1 overflow-y-auto pb-40"
+            className={`flex-1 overflow-y-auto ${isDesktop ? 'bg-gradient-to-br from-zinc-50 via-white to-rose-50/30' : 'pb-40'}`}
           >
-            {/* Person Image Upload Area */}
-            <div className={`bg-zinc-100 flex items-center justify-center relative p-4 ${isDesktop ? 'min-h-[160px]' : 'min-h-[200px]'}`}>
-              {!personImage ? (
-                <div className={`w-full space-y-2 ${isDesktop ? 'max-w-md' : 'max-w-sm'}`}>
-                  {/* Take Photo - Mobile only */}
-                  {!isDesktop && (
-                    <button
-                      onClick={() => {
-                        setCameraTarget('person')
-                        setMode('camera')
-                      }}
-                      className="w-full h-14 rounded-xl bg-pink-500 hover:bg-pink-600 text-white flex items-center justify-center gap-3 transition-colors shadow-lg shadow-pink-200"
-                    >
-                      <Camera className="w-5 h-5" />
-                      <span className="font-medium">{t.tryOn?.takePhoto || '拍摄人物照片'}</span>
-                    </button>
-                  )}
+            {isDesktop ? (
+              /* ========== PC Desktop Layout ========== */
+              <div className="max-w-6xl mx-auto px-8 py-10">
+                <div className="grid grid-cols-2 gap-10">
+                  {/* Left Column: Person Image */}
+                  <div className="space-y-6">
+                    <div>
+                      <h2 className="text-lg font-semibold text-zinc-800 mb-1">{t.tryOn?.personImage || 'Person Photo'}</h2>
+                      <p className="text-sm text-zinc-500">{t.tryOn?.uploadDesc || 'Upload a full-body photo for best results'}</p>
+                    </div>
+                    
+                    {!personImage ? (
+                      <div className="aspect-[3/4] rounded-2xl border-2 border-dashed border-zinc-200 bg-white/80 backdrop-blur flex flex-col items-center justify-center hover:border-pink-300 hover:bg-pink-50/30 transition-all group cursor-pointer"
+                        onClick={() => personFileInputRef.current?.click()}
+                      >
+                        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-pink-100 to-rose-100 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                          <Upload className="w-8 h-8 text-pink-500" />
+                        </div>
+                        <p className="text-zinc-600 font-medium mb-1">{t.common?.clickToUploadOrDrag || 'Click to upload'}</p>
+                        <p className="text-zinc-400 text-sm">{t.tryOn?.personImageHint || 'JPG, PNG up to 10MB'}</p>
+                        
+                        <div className="flex gap-3 mt-6">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              personFileInputRef.current?.click()
+                            }}
+                            className="px-5 py-2.5 rounded-xl bg-white border border-zinc-200 hover:border-pink-400 hover:bg-pink-50 flex items-center gap-2 transition-all shadow-sm"
+                          >
+                            <Upload className="w-4 h-4 text-zinc-500" />
+                            <span className="text-sm font-medium text-zinc-700">{t.tryOn?.fromAlbum || 'From Album'}</span>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setGalleryTarget('person')
+                              setShowGalleryPanel(true)
+                            }}
+                            className="px-5 py-2.5 rounded-xl bg-white border border-zinc-200 hover:border-pink-400 hover:bg-pink-50 flex items-center gap-2 transition-all shadow-sm"
+                          >
+                            <FolderHeart className="w-4 h-4 text-zinc-500" />
+                            <span className="text-sm font-medium text-zinc-700">{t.tryOn?.fromGallery || 'From Photos'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-white shadow-xl shadow-zinc-200/50 group">
+                        <Image 
+                          src={personImage.startsWith('data:') ? personImage : 
+                            personImage.startsWith('http') ? personImage : `data:image/jpeg;base64,${personImage}`}
+                          alt="Person"
+                          fill
+                          className="object-contain bg-zinc-50"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <button
+                          onClick={() => setPersonImage(null)}
+                          className="absolute bottom-4 right-4 px-4 py-2 bg-white/95 hover:bg-white text-zinc-700 text-sm font-medium rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition-all flex items-center gap-2"
+                        >
+                          <X className="w-4 h-4" />
+                          {t.common?.change || 'Change'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   
-                  <div className={`grid gap-2 ${isDesktop ? 'grid-cols-2' : 'grid-cols-2'}`}>
+                  {/* Right Column: Clothing + Settings */}
+                  <div className="space-y-8">
+                    {/* Clothing Images Section */}
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-zinc-100">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="text-base font-semibold text-zinc-800">{t.tryOn?.clothingImages || 'Clothing Images'}</h3>
+                          <p className="text-sm text-zinc-500 mt-0.5">
+                            {t.tryOn?.clothingImagesDesc || 'Upload clothing items to try on (up to 5)'}
+                          </p>
+                        </div>
+                        <span className="text-xs font-medium text-zinc-400 bg-zinc-100 px-2.5 py-1 rounded-full">
+                          {clothingImages.length}/{MAX_CLOTHING_IMAGES}
+                        </span>
+                      </div>
+                      
+                      <div className="grid grid-cols-5 gap-3">
+                        {clothingImages.map((img, index) => (
+                          <div key={index} className="relative aspect-square rounded-xl overflow-hidden bg-zinc-100 border border-zinc-200 group">
+                            <Image
+                              src={img.startsWith('data:') ? img : 
+                                img.startsWith('http') ? img : `data:image/jpeg;base64,${img}`}
+                              alt={`Clothing ${index + 1}`}
+                              fill
+                              className="object-cover"
+                            />
+                            <button
+                              onClick={() => removeClothingImage(index)}
+                              className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                        
+                        {clothingImages.length < MAX_CLOTHING_IMAGES && (
+                          <button
+                            onClick={() => clothingFileInputRef.current?.click()}
+                            className="aspect-square rounded-xl border-2 border-dashed border-zinc-200 hover:border-pink-400 hover:bg-pink-50/50 transition-all flex flex-col items-center justify-center gap-1.5"
+                          >
+                            <Plus className="w-6 h-6 text-zinc-400" />
+                            <span className="text-xs text-zinc-400 font-medium">{t.tryOn?.addClothing || 'Add'}</span>
+                          </button>
+                        )}
+                      </div>
+                      
+                      {clothingImages.length === 0 && (
+                        <div className="mt-4 flex gap-3">
+                          <button
+                            onClick={() => clothingFileInputRef.current?.click()}
+                            className="flex-1 h-11 rounded-xl bg-zinc-50 border border-zinc-200 hover:border-pink-400 hover:bg-pink-50 flex items-center justify-center gap-2 transition-all"
+                          >
+                            <Upload className="w-4 h-4 text-zinc-500" />
+                            <span className="text-sm font-medium text-zinc-600">{t.tryOn?.fromAlbum || 'From Album'}</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              setGalleryTarget('clothing')
+                              setShowGalleryPanel(true)
+                            }}
+                            className="flex-1 h-11 rounded-xl bg-zinc-50 border border-zinc-200 hover:border-pink-400 hover:bg-pink-50 flex items-center justify-center gap-2 transition-all"
+                          >
+                            <FolderHeart className="w-4 h-4 text-zinc-500" />
+                            <span className="text-sm font-medium text-zinc-600">{t.tryOn?.fromGallery || 'From Photos'}</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Style Prompt Section */}
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-zinc-100">
+                      <h3 className="text-base font-semibold text-zinc-800 mb-1">
+                        {t.common?.style || 'Style'}
+                        <span className="text-sm text-zinc-400 font-normal ml-2">({t.common?.custom || 'Custom'})</span>
+                      </h3>
+                      <p className="text-sm text-zinc-500 mb-4">{t.tryOn?.promptDesc || 'Describe the try-on effect you want'}</p>
+                      <textarea
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                        placeholder={t.tryOn?.promptPlaceholder || 'e.g., Natural lighting, casual street style...'}
+                        className="w-full h-24 px-4 py-3 rounded-xl border border-zinc-200 bg-zinc-50/50 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-400 transition-all placeholder:text-zinc-400"
+                      />
+                    </div>
+                    
+                    {/* Generate Button */}
                     <button
-                      onClick={() => personFileInputRef.current?.click()}
-                      className={`rounded-xl border-2 border-zinc-200 bg-white hover:border-pink-400 flex items-center justify-center gap-2 transition-colors ${isDesktop ? 'h-16 px-6' : 'h-14'}`}
-                    >
-                      <Upload className="w-4 h-4 text-zinc-500" />
-                      <span className="text-sm text-zinc-700">{t.tryOn?.fromAlbum || '相册'}</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setGalleryTarget('person')
-                        setShowGalleryPanel(true)
+                      onClick={(e) => {
+                        triggerFlyToGallery(e)
+                        handleGenerate()
                       }}
-                      className={`rounded-xl border-2 border-zinc-200 bg-white hover:border-pink-400 flex items-center justify-center gap-2 transition-colors ${isDesktop ? 'h-16 px-6' : 'h-14'}`}
+                      disabled={!canGenerate}
+                      className={`w-full h-14 rounded-xl text-base font-semibold gap-3 flex items-center justify-center transition-all ${
+                        !canGenerate
+                          ? "bg-zinc-100 text-zinc-400 cursor-not-allowed border border-zinc-200"
+                          : "bg-gradient-to-r from-pink-500 via-rose-500 to-purple-500 hover:from-pink-600 hover:via-rose-600 hover:to-purple-600 text-white shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40"
+                      }`}
                     >
-                      <FolderHeart className="w-4 h-4 text-zinc-500" />
-                      <span className="text-sm text-zinc-700">{t.tryOn?.fromGallery || '成片'}</span>
+                      <Sparkles className="w-5 h-5" />
+                      <span>{t.tryOn?.generate || 'Start Try-On'}</span>
+                      <CreditCostBadge cost={CREDIT_COST} />
                     </button>
                   </div>
                 </div>
-              ) : (
-                <div className="relative w-full max-w-xs">
-                  <Image 
-                    src={personImage.startsWith('data:') ? personImage : 
-                      personImage.startsWith('http') ? personImage : `data:image/jpeg;base64,${personImage}`}
-                    alt="Person"
-                    width={300}
-                    height={400}
-                    className="w-full rounded-xl shadow-lg object-contain bg-white"
-                  />
-                  <button
-                    onClick={() => setPersonImage(null)}
-                    className="absolute bottom-2 right-2 px-3 py-1.5 bg-white/90 hover:bg-white text-zinc-700 text-sm font-medium rounded-lg shadow transition-colors"
-                  >
-                    {t.edit?.editNew || '更换'}
-                  </button>
-                </div>
-              )}
-            </div>
-            
-            {/* Settings Panel */}
-            <div className="p-4 bg-white rounded-t-2xl -mt-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] relative z-10 space-y-5">
-              {/* Clothing Images */}
-              <div>
-                <h3 className="text-sm font-semibold text-zinc-700 mb-2">{t.tryOn?.clothingImages || '服装图片'}</h3>
-                <p className="text-xs text-zinc-400 mb-3">
-                  {t.tryOn?.clothingImagesDesc || '上传想要搭配的衣服（最多5件）'}
-                </p>
-                
-                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                  {clothingImages.map((img, index) => (
-                    <div key={index} className="relative w-20 h-20 rounded-xl overflow-hidden bg-zinc-100 shrink-0 border-2 border-zinc-200">
-                      <Image
-                        src={img.startsWith('data:') ? img : 
-                          img.startsWith('http') ? img : `data:image/jpeg;base64,${img}`}
-                        alt={`Clothing ${index + 1}`}
-                        fill
-                        className="object-cover"
+              </div>
+            ) : (
+              /* ========== Mobile Layout ========== */
+              <>
+                {/* Person Image Upload Area */}
+                <div className="bg-zinc-100 flex items-center justify-center relative p-4 min-h-[200px]">
+                  {!personImage ? (
+                    <div className="w-full space-y-2 max-w-sm">
+                      <button
+                        onClick={() => {
+                          setCameraTarget('person')
+                          setMode('camera')
+                        }}
+                        className="w-full h-14 rounded-xl bg-pink-500 hover:bg-pink-600 text-white flex items-center justify-center gap-3 transition-colors shadow-lg shadow-pink-200"
+                      >
+                        <Camera className="w-5 h-5" />
+                        <span className="font-medium">{t.tryOn?.takePhoto || 'Take Photo'}</span>
+                      </button>
+                      
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => personFileInputRef.current?.click()}
+                          className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-pink-400 flex items-center justify-center gap-2 transition-colors"
+                        >
+                          <Upload className="w-4 h-4 text-zinc-500" />
+                          <span className="text-sm text-zinc-700">{t.tryOn?.fromAlbum || 'Album'}</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setGalleryTarget('person')
+                            setShowGalleryPanel(true)
+                          }}
+                          className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-pink-400 flex items-center justify-center gap-2 transition-colors"
+                        >
+                          <FolderHeart className="w-4 h-4 text-zinc-500" />
+                          <span className="text-sm text-zinc-700">{t.tryOn?.fromGallery || 'Photos'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative w-full max-w-xs">
+                      <Image 
+                        src={personImage.startsWith('data:') ? personImage : 
+                          personImage.startsWith('http') ? personImage : `data:image/jpeg;base64,${personImage}`}
+                        alt="Person"
+                        width={300}
+                        height={400}
+                        className="w-full rounded-xl shadow-lg object-contain bg-white"
                       />
                       <button
-                        onClick={() => removeClothingImage(index)}
-                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center"
+                        onClick={() => setPersonImage(null)}
+                        className="absolute bottom-2 right-2 px-3 py-1.5 bg-white/90 hover:bg-white text-zinc-700 text-sm font-medium rounded-lg shadow transition-colors"
                       >
-                        <X className="w-3 h-3" />
+                        {t.common?.change || 'Change'}
                       </button>
                     </div>
-                  ))}
-                  
-                  {clothingImages.length < MAX_CLOTHING_IMAGES && (
-                    <button
-                      onClick={() => setShowClothingPanel(true)}
-                      className="w-20 h-20 rounded-xl border-2 border-dashed border-zinc-300 hover:border-pink-400 hover:bg-pink-50/50 transition-colors flex flex-col items-center justify-center gap-1 shrink-0"
-                    >
-                      <Plus className="w-5 h-5 text-zinc-400" />
-                      <span className="text-[10px] text-zinc-400">{t.tryOn?.addClothing || '添加'}</span>
-                    </button>
                   )}
                 </div>
-              </div>
-              
-              {/* Prompt Input */}
-              <div>
-                <h3 className="text-sm font-semibold text-zinc-700 mb-2">
-                  {t.common?.style || '风格描述'}
-                  <span className="text-xs text-zinc-400 font-normal ml-2">({t.common?.custom || '可选'})</span>
-                </h3>
-                <textarea
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder={t.tryOn?.promptPlaceholder || '描述你想要的换装效果（可选）'}
-                  className="w-full h-20 px-4 py-3 rounded-xl border border-zinc-200 bg-zinc-50 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-400 transition-colors"
-                />
-              </div>
-            </div>
+                
+                {/* Settings Panel */}
+                <div className="p-4 bg-white rounded-t-2xl -mt-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] relative z-10 space-y-5">
+                  {/* Clothing Images */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-zinc-700 mb-2">{t.tryOn?.clothingImages || 'Clothing Images'}</h3>
+                    <p className="text-xs text-zinc-400 mb-3">
+                      {t.tryOn?.clothingImagesDesc || 'Upload clothing to try on (up to 5)'}
+                    </p>
+                    
+                    <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                      {clothingImages.map((img, index) => (
+                        <div key={index} className="relative w-20 h-20 rounded-xl overflow-hidden bg-zinc-100 shrink-0 border-2 border-zinc-200">
+                          <Image
+                            src={img.startsWith('data:') ? img : 
+                              img.startsWith('http') ? img : `data:image/jpeg;base64,${img}`}
+                            alt={`Clothing ${index + 1}`}
+                            fill
+                            className="object-cover"
+                          />
+                          <button
+                            onClick={() => removeClothingImage(index)}
+                            className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                      
+                      {clothingImages.length < MAX_CLOTHING_IMAGES && (
+                        <button
+                          onClick={() => setShowClothingPanel(true)}
+                          className="w-20 h-20 rounded-xl border-2 border-dashed border-zinc-300 hover:border-pink-400 hover:bg-pink-50/50 transition-colors flex flex-col items-center justify-center gap-1 shrink-0"
+                        >
+                          <Plus className="w-5 h-5 text-zinc-400" />
+                          <span className="text-[10px] text-zinc-400">{t.tryOn?.addClothing || 'Add'}</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Prompt Input */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-zinc-700 mb-2">
+                      {t.common?.style || 'Style'}
+                      <span className="text-xs text-zinc-400 font-normal ml-2">({t.common?.custom || 'Optional'})</span>
+                    </h3>
+                    <textarea
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.target.value)}
+                      placeholder={t.tryOn?.promptPlaceholder || 'Describe the try-on effect you want (optional)'}
+                      className="w-full h-20 px-4 py-3 rounded-xl border border-zinc-200 bg-zinc-50 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-400 transition-colors"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
           </motion.div>
         )}
         
-        {/* Generate Button for main mode */}
-        {mode === 'main' && (
-          isDesktop ? (
-            <div className="p-4 bg-white border-t">
-              <div className="max-w-4xl mx-auto">
-                <button
-                  onClick={(e) => {
-                    triggerFlyToGallery(e)
-                    handleGenerate()
-                  }}
-                  disabled={!canGenerate}
-                  className={`w-full h-14 rounded-xl text-base font-semibold gap-2 flex items-center justify-center transition-all ${
-                    !canGenerate
-                      ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
-                      : "bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white shadow-lg"
-                  }`}
-                >
-                  <Sparkles className="w-5 h-5" />
-                  <span>{t.tryOn?.generate || '开始换装'}</span>
-                  <CreditCostBadge cost={CREDIT_COST} className="ml-2" />
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-white via-white to-transparent max-w-md mx-auto z-40">
-              <button
-                onClick={(e) => {
-                  triggerFlyToGallery(e)
-                  handleGenerate()
-                }}
-                disabled={!canGenerate}
-                className={`w-full h-14 rounded-full text-base font-semibold gap-2 flex items-center justify-center transition-all ${
-                  !canGenerate
-                    ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
-                    : "bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white shadow-lg shadow-pink-200"
-                }`}
-              >
-                <Sparkles className="w-5 h-5" />
-                <span>{t.tryOn?.generate || '开始换装'}</span>
-                <CreditCostBadge cost={CREDIT_COST} className="ml-2" />
-              </button>
-            </div>
-          )
+        {/* Generate Button for main mode - Mobile only (PC button is in the layout) */}
+        {mode === 'main' && !isDesktop && (
+          <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-white via-white to-transparent max-w-md mx-auto z-40">
+            <button
+              onClick={(e) => {
+                triggerFlyToGallery(e)
+                handleGenerate()
+              }}
+              disabled={!canGenerate}
+              className={`w-full h-14 rounded-full text-base font-semibold gap-2 flex items-center justify-center transition-all ${
+                !canGenerate
+                  ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
+                  : "bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white shadow-lg shadow-pink-200"
+              }`}
+            >
+              <Sparkles className="w-5 h-5" />
+              <span>{t.tryOn?.generate || 'Start Try-On'}</span>
+              <CreditCostBadge cost={CREDIT_COST} className="ml-2" />
+            </button>
+          </div>
         )}
         
         {/* Camera Mode */}
