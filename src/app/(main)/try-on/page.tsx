@@ -1192,7 +1192,8 @@ export default function TryOnPage() {
                 </div>
                 
                 <p className="text-xs text-zinc-400 text-center pt-2">
-                  还可添加 {MAX_CLOTHING_IMAGES - clothingImages.length} 件服装
+                  {(t.tryOn?.clothingRemaining || 'Can add {count} more')
+                    .replace('{count}', String(MAX_CLOTHING_IMAGES - clothingImages.length))}
                 </p>
               </div>
             </motion.div>

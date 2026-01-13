@@ -23,6 +23,7 @@ export const ko: Translations = {
     retry: "재시도",
     upload: "업로드",
     download: "다운로드",
+    clickToEnlarge: "클릭하여 확대",
     share: "공유",
     favorite: "즐겨찾기",
     unfavorite: "즐겨찾기 해제",
@@ -307,6 +308,7 @@ export const ko: Translations = {
     uploadFromAlbum: "앨범에서 업로드",
     clickOrDrag: "클릭 또는 드래그하세요",
     imagesSelected: "개 이미지",
+    selectedImagesCount: "{count}개 이미지 선택됨 (최대 {max}개)",
     clearAll: "전체 삭제",
     reselect: "다시 선택",
     referenceHint: "프롬프트에서 '이미지 1', '이미지 2'로 참조하세요",
@@ -1178,6 +1180,7 @@ export const ko: Translations = {
     fromAlbum: "앨범에서 선택",
     takePhoto: "사진 촬영",
     uploadDesc: "가상 피팅을 시작할 이미지 선택",
+    clothingRemaining: "{count}개의 의류 추가 가능",
   },
 
   // Admin

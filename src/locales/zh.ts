@@ -21,6 +21,7 @@ export const zh = {
     retry: "重试",
     upload: "上传",
     download: "下载",
+    clickToEnlarge: "点击放大",
     share: "分享",
     favorite: "收藏",
     unfavorite: "取消收藏",
@@ -306,6 +307,7 @@ export const zh = {
     uploadFromAlbum: "从相册上传",
     clickOrDrag: "点击或拖拽图片",
     imagesSelected: "张图片",
+    selectedImagesCount: "已选择 {count} 张图片（最多 {max} 张）",
     clearAll: "清空全部",
     reselect: "重选",
     referenceHint: "在描述中使用「图1」「图2」来引用对应图片",
@@ -1177,6 +1179,7 @@ export const zh = {
     fromAlbum: "从相册选择",
     takePhoto: "拍照",
     uploadDesc: "选择图片开始虚拟试穿",
+    clothingRemaining: "还可添加 {count} 件服装",
   },
 
   // Admin

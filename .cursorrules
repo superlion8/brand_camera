@@ -91,14 +91,23 @@ export default function MyPage() {
 <h1>{t.proStudio?.title || 'Pro Studio Mode'}</h1>
 ```
 
-**检测硬编码文本：**
+**🚨 自动检测工具：**
 ```bash
-# 运行检测脚本
-./scripts/check-i18n.sh
+# 开发时检测（只警告）
+npm run check-i18n         # 快速扫描
+npm run check-i18n:strict  # 详细报告
 
-# 或手动搜索
-grep -rn "[\u4e00-\u9fa5]" src/app src/components --include="*.tsx" | grep -v locales
+# CI 模式（发现问题阻止构建）
+npm run check-i18n:ci      # 用于 CI/CD pipeline
 ```
+
+**检测重点：**
+- ❌ 按钮文本：`<button>去修图</button>`
+- ❌ span 文本：`<span>图片 1</span>`
+- ❌ JSX 直接文本：`<div>专业棚拍</div>`
+- ✅ 忽略：admin 页面、错误消息、调试信息、注释
+
+**⚠️ 建议在 CI 中添加 `npm run check-i18n:ci` 以阻止硬编码中文进入生产环境！**
 
 **添加新翻译 key 的流程：**
 1. 在 `src/locales/zh.ts` 中添加中文

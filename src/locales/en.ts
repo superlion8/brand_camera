@@ -23,6 +23,7 @@ export const en: Translations = {
     retry: "Retry",
     upload: "Upload",
     download: "Download",
+    clickToEnlarge: "Click to enlarge",
     share: "Share",
     favorite: "Favorite",
     unfavorite: "Unfavorite",
@@ -308,6 +309,7 @@ export const en: Translations = {
     uploadFromAlbum: "Upload from Album",
     clickOrDrag: "Click or drag image",
     imagesSelected: "images",
+    selectedImagesCount: "{count} images selected (max {max})",
     clearAll: "Clear all",
     reselect: "Reselect",
     referenceHint: "Use 'Image 1', 'Image 2' to reference images in prompt",
@@ -1179,6 +1181,7 @@ export const en: Translations = {
     fromAlbum: "From Album",
     takePhoto: "Take Photo",
     uploadDesc: "Select images to start virtual try-on",
+    clothingRemaining: "Can add {count} more clothing item(s)",
   },
 
   // Admin

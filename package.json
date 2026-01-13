@@ -7,6 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "check-i18n": "bash scripts/check-i18n.sh",
+    "check-i18n:strict": "ts-node --project tsconfig.scripts.json scripts/check-i18n-strict.ts",
+    "check-i18n:ci": "ts-node --project tsconfig.scripts.json scripts/check-i18n-strict.ts --ci",
     "upload-presets": "ts-node --project tsconfig.scripts.json scripts/upload-presets.ts"
   },
   "dependencies": {

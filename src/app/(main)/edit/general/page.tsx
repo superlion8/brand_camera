@@ -975,14 +975,14 @@ export default function GeneralEditPage() {
               {/* 点击提示 */}
               <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/10 transition-colors rounded-xl pointer-events-none">
                 <span className="text-white text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 px-3 py-1.5 rounded-full">
-                  点击放大
+                  {t.common?.clickToEnlarge || 'Click to enlarge'}
                 </span>
               </div>
               <button
                 onClick={handleReset}
                 className="absolute bottom-2 right-2 px-3 py-1.5 bg-white/90 hover:bg-white text-zinc-700 text-sm font-medium rounded-lg shadow transition-colors z-10"
               >
-                重选
+                {t.edit?.reselect || 'Reselect'}
               </button>
             </div>
           ) : (
@@ -990,13 +990,15 @@ export default function GeneralEditPage() {
             <div className="w-full max-w-md">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm text-zinc-600 font-medium">
-                  已选择 {inputImages.filter(Boolean).length} 张图片（最多 {MAX_IMAGES} 张）
+                  {(t.edit?.selectedImagesCount || '{count} images selected (max {max})')
+                    .replace('{count}', String(inputImages.filter(Boolean).length))
+                    .replace('{max}', String(MAX_IMAGES))}
                 </span>
                 <button
                   onClick={handleReset}
                   className="text-xs text-purple-600 hover:text-purple-700 font-medium"
                 >
-                  清空全部
+                  {t.edit?.clearAll || 'Clear all'}
                 </button>
               </div>
               
