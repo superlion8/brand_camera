@@ -59,7 +59,7 @@ const LIGHT_DIR_DESC_CN: Record<string, string> = {
 
 // Build studio prompt based on photo type
 function buildStudioPrompt(
-  photoType: 'studio' | 'hanging',
+  photoType: 'flatlay' | 'hanging',
   lightType: string,
   lightDirection: string,
   bgColor: string
@@ -68,20 +68,20 @@ function buildStudioPrompt(
   const lightDirDesc = LIGHT_DIR_DESC_CN[lightDirection] || lightDirection
   
   if (photoType === 'hanging') {
-    // 挂拍图 prompt
+    // 挂拍图 prompt - 衣架悬挂展示
     return `一张电商服装详情页用的专业挂拍照片，主体是图中的主要商品，挂在简约银色衣架上，用木质衣架撑起，正面平整展开，画面极简，高级买手店陈列风格，自然柔和室内光线，衣服细节清晰，有轻微自然阴影，高分辨率，无模特，无多余物体，无文字无水印。
 
 背景放在${bgColor}的背景上，光源使用${lightTypeDesc}类型，光源从${lightDirDesc}方向。`
   }
   
-  // 棚拍图 prompt (default)
-  return `一张电商详情页用的专业产品摄影图，主体是图中的主要商品。
+  // 平铺图 prompt (flatlay) - 俯拍平铺展示
+  return `一张电商详情页用的专业平铺俯拍照片（flat lay），拍摄视角为正上方俯视，主体是图中的主要商品平整铺放在${bgColor}的背景上。
 
-背景放在${bgColor}的背景上，画面干净简约，产品居中摆放，正面展示。
+画面极简干净，商品居中平铺展示，完全展开无褶皱，四周留白适当。
 
-光源使用${lightTypeDesc}类型，光源从${lightDirDesc}方向，细腻高光和阴影。
+光源使用${lightTypeDesc}类型，光源从${lightDirDesc}方向照射，产生轻微柔和阴影，增加立体感。
 
-真实质感，高分辨率，适合淘宝/天猫/京东/amazon商品详情页，无文字无水印。
+真实质感，高分辨率，Instagram风格，适合电商详情页和社交媒体展示，无文字无水印。
 
 如果图中有人物要去掉图中的人物，其他和商品不相关的元素也都要去掉。`
 }
@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { 
       productImage, 
-      photoType = 'studio', // 'studio' 棚拍图 or 'hanging' 挂拍图
+      photoType = 'flatlay', // 'flatlay' 平铺图 or 'hanging' 挂拍图
       lightType = 'Softbox',
       lightDirection = 'front',
       lightColor = '#FFFFFF',

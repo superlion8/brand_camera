@@ -48,7 +48,7 @@ const LIGHT_TYPE_IDS = ['Softbox', 'Sunlight', 'Dramatic', 'Neon'] as const
 const LIGHT_TYPE_ICONS = { Softbox: Lightbulb, Sunlight: Sun, Dramatic: Sparkles, Neon: Zap }
 
 // Photo types
-const PHOTO_TYPE_IDS = ['studio', 'hanging'] as const
+const PHOTO_TYPE_IDS = ['flatlay', 'hanging'] as const
 
 // Aspect ratios
 const ASPECT_RATIO_IDS = ['original', '1:1', '3:4', '4:3', '16:9', '9:16'] as const
@@ -169,7 +169,7 @@ function StudioPageContent() {
   const [cameraReady, setCameraReady] = useState(false)
   
   // Settings
-  const [photoType, setPhotoType] = useState<'studio' | 'hanging'>('studio')
+  const [photoType, setPhotoType] = useState<'flatlay' | 'hanging'>('flatlay')
   const [lightType, setLightType] = useState('Softbox')
   const [aspectRatio, setAspectRatio] = useState('original')
   const [lightDirection, setLightDirection] = useState('front')
@@ -371,7 +371,7 @@ function StudioPageContent() {
   const runBackgroundGeneration = async (
     taskId: string,
     inputImage: string,
-    photoTypeVal: 'studio' | 'hanging',
+    photoTypeVal: 'flatlay' | 'hanging',
     lightTypeVal: string,
     lightDirectionVal: string,
     bgColorVal: string,
@@ -742,16 +742,16 @@ function StudioPageContent() {
                       <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.studio.photoType}</h3>
                       <div className="grid grid-cols-2 gap-3">
                         <button
-                          onClick={() => setPhotoType('studio')}
+                          onClick={() => setPhotoType('flatlay')}
                           className={`py-3 px-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5 ${
-                            photoType === 'studio'
+                            photoType === 'flatlay'
                               ? 'border-amber-500 bg-amber-50'
                               : 'border-zinc-200 bg-white hover:border-zinc-300'
                           }`}
                         >
-                          <span className="text-xl">📦</span>
-                          <span className={`text-xs font-medium ${photoType === 'studio' ? 'text-amber-700' : 'text-zinc-600'}`}>
-                            {t.studio.studioShot}
+                          <span className="text-xl">🎯</span>
+                          <span className={`text-xs font-medium ${photoType === 'flatlay' ? 'text-amber-700' : 'text-zinc-600'}`}>
+                            {t.studio.flatLay}
                           </span>
                         </button>
                         <button
@@ -762,7 +762,7 @@ function StudioPageContent() {
                               : 'border-zinc-200 bg-white hover:border-zinc-300'
                           }`}
                         >
-                          <span className="text-xl">👔</span>
+                          <span className="text-xl">👕</span>
                           <span className={`text-xs font-medium ${photoType === 'hanging' ? 'text-amber-700' : 'text-zinc-600'}`}>
                             {t.studio.hangingShot}
                           </span>
@@ -957,18 +957,18 @@ function StudioPageContent() {
                 <h3 className="text-sm font-semibold text-zinc-700 mb-2">{t.studio.photoType}</h3>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setPhotoType('studio')}
+                    onClick={() => setPhotoType('flatlay')}
                     className={`flex-1 py-3 px-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5 ${
-                      photoType === 'studio'
+                      photoType === 'flatlay'
                         ? 'border-amber-500 bg-amber-50'
                         : 'border-zinc-200 bg-white hover:border-zinc-300'
                     }`}
                   >
-                    <span className="text-xl">📦</span>
-                    <span className={`text-xs font-medium ${photoType === 'studio' ? 'text-amber-700' : 'text-zinc-600'}`}>
-                      {t.studio.studioShot}
+                    <span className="text-xl">🎯</span>
+                    <span className={`text-xs font-medium ${photoType === 'flatlay' ? 'text-amber-700' : 'text-zinc-600'}`}>
+                      {t.studio.flatLay}
                     </span>
-                    <span className="text-[10px] text-zinc-400">{t.studio.studioShotDesc}</span>
+                    <span className="text-[10px] text-zinc-400">{t.studio.flatLayDesc}</span>
                   </button>
                   <button
                     onClick={() => setPhotoType('hanging')}
@@ -978,7 +978,7 @@ function StudioPageContent() {
                         : 'border-zinc-200 bg-white hover:border-zinc-300'
                     }`}
                   >
-                    <span className="text-xl">👔</span>
+                    <span className="text-xl">👕</span>
                     <span className={`text-xs font-medium ${photoType === 'hanging' ? 'text-amber-700' : 'text-zinc-600'}`}>
                       {t.studio.hangingShot}
                     </span>

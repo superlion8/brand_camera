@@ -75,7 +75,7 @@ export interface GenerationParams {
   perImageModels?: { name: string; imageUrl: string; isRandom?: boolean; isPreset?: boolean }[]
   perImageBackgrounds?: { name: string; imageUrl: string; isRandom?: boolean; isPreset?: boolean }[]
   // Studio params
-  photoType?: 'studio' | 'hanging'
+  photoType?: 'flatlay' | 'hanging'
   lightType?: string
   lightDirection?: string
   lightColor?: string
