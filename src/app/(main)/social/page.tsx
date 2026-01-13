@@ -1736,8 +1736,11 @@ function SocialPageContent() {
         selectedId={selectedModel}
         customModels={allModels}
         onSelect={(model) => setSelectedModel(model.id)}
+        onCustomUpload={(model) => {
+          addUserAsset(model)
+        }}
         themeColor="pink"
-        allowUpload={false}
+        allowUpload
       />
       
       {/* Scene Picker */}

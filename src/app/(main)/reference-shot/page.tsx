@@ -836,7 +836,11 @@ export default function ReferenceShotPage() {
         selectedId={selectedModelId}
         customModels={userModels}
         onSelect={handleModelSelect}
+        onCustomUpload={(model) => {
+          useAssetStore.getState().addUserAsset(model)
+        }}
         themeColor="blue"
+        allowUpload
       />
       
       {/* Zoom Image Modal */}

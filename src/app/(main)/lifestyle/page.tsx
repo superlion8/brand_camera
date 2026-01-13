@@ -1128,8 +1128,11 @@ function LifestylePageContent() {
         selectedId={selectedModelId}
         customModels={allModels}
         onSelect={(model) => setSelectedModelId(model.id)}
+        onCustomUpload={(model) => {
+          setCustomModels(prev => [model, ...prev])
+        }}
         themeColor="purple"
-        allowUpload={false}
+        allowUpload
       />
       
       {/* Scene Picker */}
