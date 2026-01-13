@@ -242,10 +242,14 @@ export default function AdminQuotasPage() {
                     
                     {/* Credits Summary - Quick view */}
                     {credits && (
-                      <div className="grid grid-cols-4 gap-2 mb-3">
+                      <div className="grid grid-cols-5 gap-2 mb-3">
                         <div className="text-center p-2 bg-emerald-50 rounded-lg">
                           <p className="text-lg font-bold text-emerald-600">{credits.signup}</p>
                           <p className="text-[10px] text-emerald-600/70">注册</p>
+                        </div>
+                        <div className="text-center p-2 bg-pink-50 rounded-lg">
+                          <p className={`text-lg font-bold ${credits.dailyExpired ? 'text-zinc-400' : 'text-pink-600'}`}>{credits.daily}</p>
+                          <p className="text-[10px] text-pink-600/70">签到</p>
                         </div>
                         <div className="text-center p-2 bg-purple-50 rounded-lg">
                           <p className="text-lg font-bold text-purple-600">{credits.adminGive}</p>
