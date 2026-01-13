@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { X, Loader2, Images, ChevronDown } from "lucide-react"
+import { X, Loader2, Images, ChevronDown, Users, Lightbulb, Grid3X3, Palette, Sparkles, Heart } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useIsDesktop } from "@/hooks/useIsMobile"
 import { useAuth } from "@/components/providers/AuthProvider"
@@ -18,6 +18,8 @@ interface GalleryItem {
   }
 }
 
+type TabType = 'all' | 'model' | 'product' | 'group' | 'reference' | 'brand' | 'favorites'
+
 interface GalleryPickerPanelProps {
   open: boolean
   onClose: () => void
@@ -25,7 +27,8 @@ interface GalleryPickerPanelProps {
   isLoading?: boolean
   themeColor?: 'purple' | 'amber' | 'blue'
   title?: string
-  galleryType?: 'all' | 'model' | 'edit' | 'studio'
+  defaultTab?: TabType
+  showTabs?: boolean
   emptyAction?: {
     label: string
     href: string
@@ -64,7 +67,8 @@ export function GalleryPickerPanel({
   isLoading: externalLoading = false,
   themeColor = 'purple',
   title,
-  galleryType = 'all',
+  defaultTab = 'all',
+  showTabs = true,
   emptyAction,
 }: GalleryPickerPanelProps) {
   const router = useRouter()
@@ -73,6 +77,7 @@ export function GalleryPickerPanel({
   const { isDesktop } = useIsDesktop()
   const { getCache, setCache } = useGalleryStore()
   
+  const [activeTab, setActiveTab] = useState<TabType>(defaultTab)
   const [photos, setPhotos] = useState<GalleryItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [page, setPage] = useState(1)
@@ -86,16 +91,26 @@ export function GalleryPickerPanel({
     href: '/buyer-show',
   }
   
-  // Cache key for this gallery type
-  const cacheKey = getCacheKey(galleryType, '')
-
+  // Tabs configuration
+  const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
+    { id: 'all', label: t.gallery?.all || 'All', icon: null },
+    { id: 'model', label: t.gallery?.model || 'Model', icon: <Users className="w-3.5 h-3.5" /> },
+    { id: 'product', label: t.gallery?.product || 'Product', icon: <Lightbulb className="w-3.5 h-3.5" /> },
+    { id: 'group', label: t.gallery?.groupShoot || 'Group', icon: <Grid3X3 className="w-3.5 h-3.5" /> },
+    { id: 'reference', label: t.gallery?.referenceShot || 'Reference', icon: <Palette className="w-3.5 h-3.5" /> },
+    { id: 'brand', label: t.gallery?.brand || 'Brand', icon: <Sparkles className="w-3.5 h-3.5" /> },
+    { id: 'favorites', label: t.gallery?.favorites || 'Favorites', icon: <Heart className="w-3.5 h-3.5" /> },
+  ]
+  
   // Fetch gallery photos (with cache support)
-  const fetchPhotos = useCallback(async (pageNum: number, append: boolean = false) => {
+  const fetchPhotos = useCallback(async (tab: TabType, pageNum: number, append: boolean = false) => {
+    const key = getCacheKey(tab, '')
+    
     // Try to use cache for first page
     if (pageNum === 1 && !append) {
-      const cached = getCache(cacheKey)
+      const cached = getCache(key)
       if (cached && cached.items.length > 0) {
-        console.log('[GalleryPickerPanel] Using cached data for', cacheKey)
+        console.log('[GalleryPickerPanel] Using cached data for', key)
         setPhotos(cached.items)
         setHasMore(cached.hasMore)
         setPage(cached.currentPage)
@@ -110,7 +125,7 @@ export function GalleryPickerPanel({
     }
     
     try {
-      const response = await fetch(`/api/gallery?type=${galleryType}&page=${pageNum}`)
+      const response = await fetch(`/api/gallery?type=${tab}&page=${pageNum}`)
       const result = await response.json()
       
       if (result.success && result.data?.items) {
@@ -123,7 +138,7 @@ export function GalleryPickerPanel({
         setPage(pageNum)
         
         // Update cache
-        setCache(cacheKey, {
+        setCache(key, {
           items: newItems,
           hasMore: result.data.hasMore || false,
           currentPage: pageNum,
@@ -137,18 +152,25 @@ export function GalleryPickerPanel({
       setIsLoading(false)
       setIsLoadingMore(false)
     }
-  }, [galleryType, cacheKey, getCache, setCache, photos])
+  }, [getCache, setCache, photos])
 
-  // Load data when panel opens
+  // Load data when panel opens or tab changes
   useEffect(() => {
     if (open && user) {
-      fetchPhotos(1, false)
+      fetchPhotos(activeTab, 1, false)
     }
-  }, [open, user]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, user, activeTab]) // eslint-disable-line react-hooks/exhaustive-deps
+  
+  // Handle tab change
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab)
+    setPhotos([])
+    setPage(1)
+  }
 
   const handleLoadMore = () => {
     if (!isLoadingMore && hasMore) {
-      fetchPhotos(page + 1, true)
+      fetchPhotos(activeTab, page + 1, true)
     }
   }
 
@@ -192,14 +214,36 @@ export function GalleryPickerPanel({
             }
           >
             {/* Header */}
-            <div className={`${isDesktop ? 'h-14 px-6' : 'h-12 px-4'} border-b flex items-center justify-between shrink-0`}>
-              <span className={`font-semibold ${isDesktop ? 'text-lg' : ''}`}>{displayTitle}</span>
-              <button
-                onClick={onClose}
-                className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center"
-              >
-                <X className={isDesktop ? "w-5 h-5" : "w-4 h-4"} />
-              </button>
+            <div className="shrink-0">
+              <div className={`${isDesktop ? 'h-14 px-6' : 'h-12 px-4'} border-b flex items-center justify-between`}>
+                <span className={`font-semibold ${isDesktop ? 'text-lg' : ''}`}>{displayTitle}</span>
+                <button
+                  onClick={onClose}
+                  className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center"
+                >
+                  <X className={isDesktop ? "w-5 h-5" : "w-4 h-4"} />
+                </button>
+              </div>
+              
+              {/* Category Tabs */}
+              {showTabs && (
+                <div className={`${isDesktop ? 'px-6 py-3' : 'px-4 py-2'} border-b bg-white flex gap-2 overflow-x-auto hide-scrollbar`}>
+                  {tabs.map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => handleTabChange(tab.id)}
+                      className={`flex items-center gap-1.5 ${isDesktop ? 'px-4 py-2 text-sm' : 'px-3 py-1.5 text-xs'} font-medium rounded-full transition-colors whitespace-nowrap ${
+                        activeTab === tab.id
+                          ? 'bg-zinc-900 text-white'
+                          : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                      }`}
+                    >
+                      {tab.icon}
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             
             {/* Content */}
