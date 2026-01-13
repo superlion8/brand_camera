@@ -62,6 +62,7 @@ export const zh = {
     clearSelection: "清除选择",
     change: "更换",
     clickToUploadOrDrag: "点击上传或拖拽图片",
+    dropHere: "释放以上传",
     uploadProductDesc: "上传商品图片后，AI 将为你生成专业展示图",
     white: "白色",
     user: "用户",

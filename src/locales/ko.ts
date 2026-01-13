@@ -64,6 +64,7 @@ export const ko: Translations = {
     clearSelection: "선택 취소",
     change: "변경",
     clickToUploadOrDrag: "클릭하여 업로드 또는 드래그 앤 드롭",
+    dropHere: "여기에 놓아 업로드",
     uploadProductDesc: "상품 이미지 업로드 후 AI가 전문 디스플레이 생성",
     white: "흰색",
     user: "사용자",

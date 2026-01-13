@@ -580,12 +580,25 @@ function StudioPageContent() {
             </button>
           )}
           
-          {/* PC: Larger upload area */}
+          {/* PC: Larger upload area with drag & drop support */}
           {isDesktop ? (
             <div className="space-y-4">
-              <button
+              <div
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full aspect-[3/4] max-h-[400px] rounded-2xl border-2 border-dashed border-zinc-300 hover:border-amber-400 hover:bg-amber-50/50 flex flex-col items-center justify-center gap-3 transition-all"
+                onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-amber-400', 'bg-amber-50') }}
+                onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-amber-400', 'bg-amber-50') }}
+                onDrop={async (e) => {
+                  e.preventDefault()
+                  e.currentTarget.classList.remove('border-amber-400', 'bg-amber-50')
+                  const file = e.dataTransfer.files?.[0]
+                  if (file && file.type.startsWith('image/')) {
+                    const base64 = await fileToBase64(file)
+                    setProductImage(base64)
+                    setProductFromPhone(true)
+                    setMode('main')
+                  }
+                }}
+                className="w-full aspect-[3/4] max-h-[400px] rounded-2xl border-2 border-dashed border-zinc-300 hover:border-amber-400 hover:bg-amber-50/50 flex flex-col items-center justify-center gap-3 transition-all cursor-pointer"
               >
                 <div className="w-16 h-16 bg-zinc-100 rounded-2xl flex items-center justify-center">
                   <Upload className="w-8 h-8 text-zinc-400" />
@@ -594,7 +607,7 @@ function StudioPageContent() {
                   <p className="text-sm font-medium text-zinc-700">{t.studio.shootProduct}</p>
                   <p className="text-xs text-zinc-400 mt-1">{t.common?.clickToUploadOrDrag || 'Click to upload or drag image'}</p>
                 </div>
-              </button>
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => setShowGalleryPanel(true)}

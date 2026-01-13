@@ -64,6 +64,7 @@ export const en: Translations = {
     clearSelection: "Clear",
     change: "Change",
     clickToUploadOrDrag: "Click to upload or drag and drop",
+    dropHere: "Drop here to upload",
     uploadProductDesc: "Upload product image, AI will generate professional display",
     white: "White",
     user: "User",

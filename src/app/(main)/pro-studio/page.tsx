@@ -1124,12 +1124,25 @@ function ProStudioPageContent() {
                         </div>
                       </div>
                       
-                      {/* Right: Image Upload - Click to open Assets panel */}
+                      {/* Right: Image Upload - Click to open Assets panel or drag & drop */}
                       <div className="w-[380px] shrink-0">
                         <div className="bg-white rounded-2xl p-6 shadow-sm border border-zinc-100">
-                          <button
+                          <div
                             onClick={() => setShowProductPanel(true)}
-                            className="w-full aspect-[3/4] max-h-[400px] rounded-2xl border-2 border-dashed border-zinc-300 hover:border-amber-400 hover:bg-amber-50/50 flex flex-col items-center justify-center gap-3 transition-all"
+                            onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-amber-400', 'bg-amber-50') }}
+                            onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-amber-400', 'bg-amber-50') }}
+                            onDrop={async (e) => {
+                              e.preventDefault()
+                              e.currentTarget.classList.remove('border-amber-400', 'bg-amber-50')
+                              const file = e.dataTransfer.files?.[0]
+                              if (file && file.type.startsWith('image/')) {
+                                const base64 = await fileToBase64(file)
+                                setCapturedImage(base64)
+                                setProductFromPhone(true)
+                                setMode("review")
+                              }
+                            }}
+                            className="w-full aspect-[3/4] max-h-[400px] rounded-2xl border-2 border-dashed border-zinc-300 hover:border-amber-400 hover:bg-amber-50/50 flex flex-col items-center justify-center gap-3 transition-all cursor-pointer"
                           >
                             <div className="w-16 h-16 bg-zinc-100 rounded-2xl flex items-center justify-center">
                               <ImageIcon className="w-8 h-8 text-zinc-400" />
@@ -1138,7 +1151,7 @@ function ProStudioPageContent() {
                               <p className="text-sm font-medium text-zinc-700">{t.proStudio?.uploadProduct || '上传商品图片'}</p>
                               <p className="text-xs text-zinc-400 mt-1">{t.proStudio?.clickToUploadOrDrag || 'Click to upload or drag & drop'}</p>
                             </div>
-                          </button>
+                          </div>
                         </div>
                       </div>
                     </div>

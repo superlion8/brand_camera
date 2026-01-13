@@ -405,6 +405,18 @@ export default function TryOnPage() {
                         <div 
                           className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50/50 flex flex-col items-center justify-center hover:border-pink-300 hover:bg-pink-50/30 transition-all group cursor-pointer"
                           onClick={() => personFileInputRef.current?.click()}
+                          onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-pink-400', 'bg-pink-50') }}
+                          onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-pink-400', 'bg-pink-50') }}
+                          onDrop={async (e) => {
+                            e.preventDefault()
+                            e.currentTarget.classList.remove('border-pink-400', 'bg-pink-50')
+                            const file = e.dataTransfer.files?.[0]
+                            if (file && file.type.startsWith('image/')) {
+                              const base64 = await fileToBase64(file)
+                              const compressed = await compressBase64Image(base64, 1200)
+                              setPersonImage(compressed)
+                            }
+                          }}
                         >
                           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-100 to-rose-100 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
                             <Upload className="w-7 h-7 text-pink-500" />
