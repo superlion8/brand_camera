@@ -2,7 +2,6 @@
 
 import { useState, useRef, useCallback, useEffect, Suspense } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
 import { 
   ArrowLeft, Upload, Loader2, Download, Heart, 
   Sun, Sparkles, Lightbulb, Zap, Home, FolderHeart, X, Camera, ZoomIn, Wand2,
@@ -16,6 +15,7 @@ import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { useSettingsStore } from "@/stores/settingsStore"
 import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
+import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { GalleryPickerPanel } from "@/components/shared/GalleryPickerPanel"
 import Image from "next/image"
 import { useQuota } from "@/hooks/useQuota"
@@ -1509,38 +1509,12 @@ function StudioPageContent() {
               )}
             </ResultDetailDialog>
             
-            {/* Fullscreen Image Viewer */}
-            {fullscreenImage && (
-              <div 
-                className="fixed inset-0 z-[60] bg-black flex items-center justify-center"
-                onClick={() => setFullscreenImage(null)}
-              >
-                <button
-                  onClick={() => setFullscreenImage(null)}
-                  className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/20 text-white hover:bg-white/30 flex items-center justify-center transition-colors"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-                <TransformWrapper
-                  initialScale={1}
-                  minScale={0.5}
-                  maxScale={4}
-                  centerOnInit
-                >
-                  <TransformComponent
-                    wrapperClass="!w-full !h-full"
-                    contentClass="!w-full !h-full flex items-center justify-center"
-                  >
-                    <img
-                      src={fullscreenImage}
-                      alt="Fullscreen"
-                      className="max-w-full max-h-full object-contain"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </TransformComponent>
-                </TransformWrapper>
-              </div>
-            )}
+            {/* Fullscreen Image Viewer - Using shared component */}
+            <FullscreenImageViewer
+              open={!!fullscreenImage}
+              onClose={() => setFullscreenImage(null)}
+              imageUrl={fullscreenImage || ''}
+            />
           </motion.div>
         )}
       </AnimatePresence>

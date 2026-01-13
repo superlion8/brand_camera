@@ -16,6 +16,7 @@ import { Asset } from "@/types"
 import Image from "next/image"
 import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
+import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { usePresetStore } from "@/stores/presetStore"
 import { useQuota } from "@/hooks/useQuota"
 import { useQuotaReservation } from "@/hooks/useQuotaReservation"
@@ -2086,23 +2087,12 @@ function ProStudioPageContent() {
         )}
       </AnimatePresence>
 
-      {/* Fullscreen Image */}
-      <AnimatePresence>
-        {fullscreenImage && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black flex items-center justify-center"
-            onClick={() => setFullscreenImage(null)}
-          >
-            <img src={fullscreenImage} alt="Fullscreen" className="max-w-full max-h-full object-contain" />
-            <button className="absolute top-4 right-4 w-10 h-10 bg-black/50 rounded-full flex items-center justify-center">
-              <X className="w-6 h-6 text-white" />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Fullscreen Image - Using shared component */}
+      <FullscreenImageViewer
+        open={!!fullscreenImage}
+        onClose={() => setFullscreenImage(null)}
+        imageUrl={fullscreenImage || ''}
+      />
       
       {/* 第二件商品选择面板 */}
       <AssetPickerPanel

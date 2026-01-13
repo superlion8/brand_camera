@@ -10,6 +10,7 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { motion, AnimatePresence } from "framer-motion"
+import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 
 interface DailyStat {
   date: string
@@ -1116,31 +1117,11 @@ export default function AdminDashboard() {
       
       {/* Fullscreen Image Viewer */}
       <AnimatePresence>
-        {fullscreenImage && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
-            onClick={() => setFullscreenImage(null)}
-          >
-            <button
-              onClick={() => setFullscreenImage(null)}
-              className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
-            >
-              <X className="w-6 h-6 text-white" />
-            </button>
-            <motion.img
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              src={fullscreenImage}
-              alt="Fullscreen"
-              className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </motion.div>
-        )}
+        <FullscreenImageViewer
+          open={!!fullscreenImage}
+          onClose={() => setFullscreenImage(null)}
+          imageUrl={fullscreenImage || ''}
+        />
       </AnimatePresence>
     </div>
   )

@@ -9,7 +9,7 @@ import { Asset, AssetType } from "@/types"
 import { fileToBase64, generateId } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { usePresetStore } from "@/stores/presetStore"
-import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
+import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { motion, AnimatePresence } from "framer-motion"
 import { useLanguageStore } from "@/stores/languageStore"
 import { useIsDesktop } from "@/hooks/useIsMobile"
@@ -548,51 +548,12 @@ export default function BrandAssetsPage() {
         </div>
       </div>
       
-      {/* Fullscreen Zoom Viewer */}
-      <AnimatePresence>
-        {zoomImage && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black flex items-center justify-center"
-          >
-            <TransformWrapper
-              initialScale={1}
-              minScale={0.5}
-              maxScale={4}
-              limitToBounds={false}
-              doubleClick={{ disabled: false }}
-              wheel={{ smoothStep: 0.01 }}
-              pinch={{ disabled: false }}
-            >
-              <TransformComponent
-                wrapperStyle={{ width: '100%', height: '100%' }}
-                contentStyle={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <Image
-                  src={zoomImage}
-                  alt="Fullscreen"
-                  width={1080}
-                  height={1920}
-                  style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-                  unoptimized
-                />
-              </TransformComponent>
-            </TransformWrapper>
-
-            <button
-              onClick={() => setZoomImage(null)}
-              className="absolute top-4 right-4 z-[101] w-10 h-10 rounded-full bg-white/20 text-white hover:bg-white/40 backdrop-blur-md flex items-center justify-center transition-colors"
-            >
-              <X className="w-6 h-6" />
-            </button>
-            <div className="absolute bottom-4 left-0 right-0 text-center text-white/80 text-sm z-[101]">
-              {t.imageActions.longPressSaveZoom}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Fullscreen Zoom Viewer - Using shared component */}
+      <FullscreenImageViewer
+        open={!!zoomImage}
+        onClose={() => setZoomImage(null)}
+        imageUrl={zoomImage || ''}
+      />
     </div>
   )
 }

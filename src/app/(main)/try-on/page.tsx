@@ -23,14 +23,13 @@ import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
 import { TASK_CREDIT_COSTS, TaskTypes } from "@/lib/taskTypes"
 import { GalleryPickerPanel } from "@/components/shared/GalleryPickerPanel"
 import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
+import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 
 const CREDIT_COST = TASK_CREDIT_COSTS[TaskTypes.TRY_ON]
 
 // 直接导入 Webcam（类型问题无法用 dynamic 解决）
 import Webcam from "react-webcam"
 // 动态导入 zoom-pan-pinch 组件，减少初始加载时间
-const TransformWrapper = dynamic(() => import("react-zoom-pan-pinch").then(mod => mod.TransformWrapper), { ssr: false })
-const TransformComponent = dynamic(() => import("react-zoom-pan-pinch").then(mod => mod.TransformComponent), { ssr: false })
 
 const MAX_CLOTHING_IMAGES = 5
 
@@ -1025,38 +1024,12 @@ export default function TryOnPage() {
               ] : []}
             />
             
-            {/* Fullscreen Image Viewer */}
-            {fullscreenImage && (
-              <div 
-                className="fixed inset-0 z-[60] bg-black flex items-center justify-center"
-                onClick={() => setFullscreenImage(null)}
-              >
-                <button
-                  onClick={() => setFullscreenImage(null)}
-                  className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/20 text-white hover:bg-white/30 flex items-center justify-center transition-colors"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-                <TransformWrapper
-                  initialScale={1}
-                  minScale={0.5}
-                  maxScale={4}
-                  centerOnInit
-                >
-                  <TransformComponent
-                    wrapperClass="!w-full !h-full"
-                    contentClass="!w-full !h-full flex items-center justify-center"
-                  >
-                    <img
-                      src={fullscreenImage}
-                      alt="Fullscreen"
-                      className="max-w-full max-h-full object-contain"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </TransformComponent>
-                </TransformWrapper>
-              </div>
-            )}
+            {/* Fullscreen Image Viewer - Using shared component */}
+            <FullscreenImageViewer
+              open={!!fullscreenImage}
+              onClose={() => setFullscreenImage(null)}
+              imageUrl={fullscreenImage || ''}
+            />
           </motion.div>
         )}
       </AnimatePresence>

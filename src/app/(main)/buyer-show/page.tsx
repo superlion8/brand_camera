@@ -2,7 +2,6 @@
 
 import { useState, useRef, useCallback, useEffect, Suspense } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
 import Webcam from "react-webcam"
 import { 
   ArrowLeft, ArrowRight, Check, Loader2, Image as ImageIcon, 
@@ -20,6 +19,7 @@ import { Asset, ModelStyle, ModelGender } from "@/types"
 import Image from "next/image"
 import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
+import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { usePresetStore } from "@/stores/presetStore"
 import { useQuota } from "@/hooks/useQuota"
 import { useQuotaReservation } from "@/hooks/useQuotaReservation"
@@ -2560,69 +2560,12 @@ function CameraPageContent() {
         )}
       </AnimatePresence>
       
-      {/* Fullscreen Image Viewer */}
-      <AnimatePresence>
-        {fullscreenImage && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-black flex items-center justify-center"
-          >
-            {/* Close button */}
-            <button
-              onClick={() => setFullscreenImage(null)}
-              className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
-            >
-              <X className="w-6 h-6 text-white" />
-            </button>
-            
-            {/* Image with zoom */}
-            <TransformWrapper
-              initialScale={1}
-              minScale={0.5}
-              maxScale={4}
-              centerOnInit
-              doubleClick={{ mode: "reset" }}
-              panning={{ velocityDisabled: true }}
-              onPinchingStop={(ref) => {
-                // Reset to scale 1 if zoomed out too much
-                if (ref.state.scale < 1) {
-                  ref.resetTransform()
-                }
-              }}
-            >
-              {({ resetTransform }) => (
-                <TransformComponent
-                  wrapperClass="!w-full !h-full"
-                  contentClass="!w-full !h-full flex items-center justify-center"
-                >
-                  <motion.div
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.9, opacity: 0 }}
-                    transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                    className="relative w-full h-full flex items-center justify-center"
-                  >
-                    {/* Use img tag for native long-press save support */}
-                    <img
-                      src={fullscreenImage}
-                      alt="Fullscreen"
-                      className="max-w-full max-h-full object-contain"
-                      draggable={false}
-                    />
-                  </motion.div>
-                </TransformComponent>
-              )}
-            </TransformWrapper>
-            
-            {/* Tap to close hint */}
-            <div className="absolute bottom-8 left-0 right-0 text-center pointer-events-none">
-              <span className="text-white/60 text-sm">{t.imageActions.longPressSaveZoom}</span>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Fullscreen Image Viewer - Using shared component */}
+      <FullscreenImageViewer
+        open={!!fullscreenImage}
+        onClose={() => setFullscreenImage(null)}
+        imageUrl={fullscreenImage || ''}
+      />
       
     </div>
   )

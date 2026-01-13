@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
+import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { ArrowLeft, Loader2, Check, ChevronDown, Sparkles, AlertCircle, Wand2, Home, X, Image as ImageIcon } from 'lucide-react'
 import { useTranslation } from '@/stores/languageStore'
 import { useQuota } from '@/hooks/useQuota'
@@ -942,28 +943,11 @@ function ModifyMaterialContent() {
         
         {/* 全屏图片查看 */}
         <AnimatePresence>
-          {fullscreenImage && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 bg-black flex items-center justify-center"
-              onClick={() => setFullscreenImage(null)}
-            >
-              <button 
-                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center z-10"
-                onClick={() => setFullscreenImage(null)}
-              >
-                <X className="w-6 h-6 text-white" />
-              </button>
-              <Image
-                src={fullscreenImage}
-                alt="Fullscreen"
-                fill
-                className="object-contain"
-              />
-            </motion.div>
-          )}
+          <FullscreenImageViewer
+            open={!!fullscreenImage}
+            onClose={() => setFullscreenImage(null)}
+            imageUrl={fullscreenImage || ''}
+          />
         </AnimatePresence>
       </div>
     )

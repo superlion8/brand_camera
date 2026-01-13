@@ -22,6 +22,7 @@ import { useGenerationTaskStore, base64ToBlobUrl } from "@/stores/generationTask
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { Asset } from "@/types"
 import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
+import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 
 // 商品分类
 type ProductSubTab = "all" | "top" | "pants" | "inner" | "shoes" | "hat"
@@ -1362,26 +1363,12 @@ function OutfitPageContent() {
           title={t?.proStudio?.selectProduct || 'Select Product'}
         />
         
-        {/* Fullscreen Image Preview */}
-        <AnimatePresence>
-          {fullscreenImage && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
-              onClick={() => setFullscreenImage(null)}
-            >
-              <img src={fullscreenImage} alt="Preview" className="max-w-[90%] max-h-[90%] object-contain" />
-              <button
-                onClick={() => setFullscreenImage(null)}
-                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Fullscreen Image Preview - Using shared component */}
+        <FullscreenImageViewer
+          open={!!fullscreenImage}
+          onClose={() => setFullscreenImage(null)}
+          imageUrl={fullscreenImage || ''}
+        />
         
       </div>
     )

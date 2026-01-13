@@ -15,7 +15,7 @@ import {
 import Image from 'next/image'
 import { useIsDesktop } from '@/hooks/useIsMobile'
 import { ScreenLoadingGuard } from '@/components/ui/ScreenLoadingGuard'
-import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
+import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { useTranslation } from '@/stores/languageStore'
 import { useQuotaReservation } from '@/hooks/useQuotaReservation'
 
@@ -439,38 +439,12 @@ export default function GeneratingPage() {
         </div>
       </div>
 
-      {/* Image Zoom Modal */}
-      <AnimatePresence>
-        {zoomImage && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
-            onClick={() => setZoomImage(null)}
-          >
-            <button
-              onClick={() => setZoomImage(null)}
-              className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
-            >
-              <X className="w-6 h-6 text-white" />
-            </button>
-            <TransformWrapper>
-              <TransformComponent>
-                <div className="relative w-[90vw] h-[80vh]">
-                  <Image
-                    src={zoomImage}
-                    alt="Zoomed"
-                    fill
-                    className="object-contain"
-                    unoptimized
-                  />
-                </div>
-              </TransformComponent>
-            </TransformWrapper>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Image Zoom Modal - Using shared component */}
+      <FullscreenImageViewer
+        open={!!zoomImage}
+        onClose={() => setZoomImage(null)}
+        imageUrl={zoomImage || ''}
+      />
     </div>
   )
 }

@@ -19,7 +19,7 @@ import {
 import Image from 'next/image'
 import { useIsDesktop } from '@/hooks/useIsMobile'
 import { ScreenLoadingGuard } from '@/components/ui/ScreenLoadingGuard'
-import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
+import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { useTranslation } from '@/stores/languageStore'
 
 // Helper to proxy Instagram CDN images
@@ -474,36 +474,12 @@ export default function ResultsPage() {
         </div>
       )}
 
-      {/* Image Zoom Modal */}
-      <AnimatePresence>
-        {selectedImage && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black flex items-center justify-center"
-            onClick={() => setSelectedImage(null)}
-          >
-            <button
-              onClick={() => setSelectedImage(null)}
-              className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors"
-            >
-              <X className="w-6 h-6 text-white" />
-            </button>
-            
-            <TransformWrapper>
-              <TransformComponent>
-                <img 
-                  src={selectedImage} 
-                  alt="Zoomed" 
-                  className="max-w-full max-h-full object-contain"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </TransformComponent>
-            </TransformWrapper>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Image Zoom Modal - Using shared component */}
+      <FullscreenImageViewer
+        open={!!selectedImage}
+        onClose={() => setSelectedImage(null)}
+        imageUrl={selectedImage || ''}
+      />
     </div>
   )
 }

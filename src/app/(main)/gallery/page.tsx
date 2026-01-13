@@ -11,7 +11,7 @@ import { useTranslation } from "@/stores/languageStore"
 import { Generation, Favorite, Asset } from "@/types"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch"
+import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { generateId } from "@/lib/utils"
 import { 
   isModelRelatedType, 
@@ -2094,103 +2094,35 @@ export default function GalleryPage() {
         )}
       </AnimatePresence>
       
-      {/* Fullscreen Image Viewer */}
-      <AnimatePresence>
-        {fullscreenImage && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-black flex items-center justify-center"
-          >
-            {/* Top bar with close and download buttons */}
-            <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between">
-              <div /> {/* Spacer */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={async () => {
-                    if (!fullscreenImage) return
-                    // 检测是否是 iOS
-                    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-                    try {
-                      const response = await fetch(fullscreenImage)
-                      const blob = await response.blob()
-                      const file = new File([blob], `brand-camera-${Date.now()}.png`, { type: 'image/png' })
-                      
-                      // 只有 iOS 使用系统分享，Android 直接下载
-                      if (isIOS && navigator.share && navigator.canShare?.({ files: [file] })) {
-                        await navigator.share({
-                          files: [file],
-                        })
-                      } else {
-                        // 直接下载
-                        const url = URL.createObjectURL(blob)
-                        const a = document.createElement('a')
-                        a.href = url
-                        a.download = file.name
-                        document.body.appendChild(a)
-                        a.click()
-                        document.body.removeChild(a)
-                        URL.revokeObjectURL(url)
-                      }
-                    } catch (e: any) {
-                      // 用户取消分享不算错误
-                      if (e.name !== 'AbortError') {
-                        console.error('Share/Download failed:', e)
-                      }
-                    }
-                  }}
-                  className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
-                >
-                  <Download className="w-5 h-5 text-white" />
-                </button>
-                <button
-                  onClick={() => setFullscreenImage(null)}
-                  className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
-                >
-                  <X className="w-6 h-6 text-white" />
-                </button>
-              </div>
-            </div>
-            
-            <TransformWrapper
-              initialScale={1}
-              minScale={0.5}
-              maxScale={4}
-              centerOnInit
-              doubleClick={{ mode: "reset" }}
-              panning={{ velocityDisabled: true }}
-            >
-              {() => (
-                <TransformComponent
-                  wrapperClass="!w-full !h-full"
-                  contentClass="!w-full !h-full flex items-center justify-center"
-                >
-                  <motion.div
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.9, opacity: 0 }}
-                    transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                    className="relative w-full h-full flex items-center justify-center"
-                  >
-                    {/* Use img tag for native long-press save support */}
-                    <img
-                      src={fullscreenImage}
-                      alt="Fullscreen"
-                      className="max-w-full max-h-full object-contain"
-                      draggable={false}
-                    />
-                  </motion.div>
-                </TransformComponent>
-              )}
-            </TransformWrapper>
-            
-            <div className="absolute bottom-8 left-0 right-0 text-center pointer-events-none">
-              <span className="text-white/60 text-sm">{t.imageActions.pinchToZoom}</span>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Fullscreen Image Viewer - Using shared component */}
+      <FullscreenImageViewer
+        open={!!fullscreenImage}
+        onClose={() => setFullscreenImage(null)}
+        imageUrl={fullscreenImage || ''}
+        onDownload={async () => {
+          if (!fullscreenImage) return
+          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+          try {
+            const response = await fetch(fullscreenImage)
+            const blob = await response.blob()
+            const file = new File([blob], `brand-camera-${Date.now()}.png`, { type: 'image/png' })
+            if (isIOS && navigator.share && navigator.canShare?.({ files: [file] })) {
+              await navigator.share({ files: [file] })
+            } else {
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = url
+              a.download = file.name
+              document.body.appendChild(a)
+              a.click()
+              document.body.removeChild(a)
+              URL.revokeObjectURL(url)
+            }
+          } catch (e: any) {
+            if (e.name !== 'AbortError') console.error('Share/Download failed:', e)
+          }
+        }}
+      />
     </div>
   )
 }
