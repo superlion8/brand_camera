@@ -108,7 +108,7 @@ async function generateInstructions(
   modelImageData: string,
   backgroundImageData: string,
   label: string,
-  productImage2Data?: string | null
+  additionalProducts: string[] = []
 ): Promise<string | null> {
   try {
     const instructPrompt = buildInstructPrompt()
@@ -118,10 +118,10 @@ async function generateInstructions(
       { text: instructPrompt },
       { inlineData: { mimeType: 'image/jpeg', data: productImageData } },  // {{product}}
     ]
-    // Add second product if available
-    if (productImage2Data) {
-      parts.push({ inlineData: { mimeType: 'image/jpeg', data: productImage2Data } }) // {{product2}}
-    }
+    // Add all additional products (up to 3)
+    additionalProducts.forEach((productData, idx) => {
+      parts.push({ inlineData: { mimeType: 'image/jpeg', data: productData } }) // {{product2}}, {{product3}}, etc.
+    })
     parts.push({ inlineData: { mimeType: 'image/jpeg', data: modelImageData } })    // {{model}}
     parts.push({ inlineData: { mimeType: 'image/jpeg', data: backgroundImageData } }) // {{background}}
     
@@ -223,7 +223,8 @@ export async function POST(request: NextRequest) {
       index, // 0 or 1
       taskId, // 任务 ID，用于数据库写入
       productImage, 
-      productImage2, 
+      productImage2, // Legacy: single second product
+      additionalProducts, // New: array of up to 3 additional products
       modelImage, 
       modelStyle, 
       modelGender, 
@@ -245,6 +246,15 @@ export async function POST(request: NextRequest) {
       bgIsPreset: topLevelBgIsPreset,
     } = body
     
+    // Merge legacy productImage2 with new additionalProducts array
+    const allAdditionalProducts: string[] = []
+    if (additionalProducts && Array.isArray(additionalProducts)) {
+      allAdditionalProducts.push(...additionalProducts)
+    } else if (productImage2) {
+      // Legacy support: single productImage2
+      allAdditionalProducts.push(productImage2)
+    }
+    
     // outfit 模式检查
     const hasOutfitItems = outfitItems && (outfitItems.inner || outfitItems.top || outfitItems.pants || outfitItems.hat || outfitItems.shoes)
     
@@ -261,7 +271,12 @@ export async function POST(request: NextRequest) {
     
     // 所有图片都支持 URL 格式（后端转换），减少前端请求体大小
     const productImageData = await ensureBase64Data(productImage)
-    const productImage2Data = productImage2 ? await ensureBase64Data(productImage2) : null
+    // Process all additional products (up to 3)
+    const additionalProductsData = await Promise.all(
+      allAdditionalProducts.slice(0, 3).map(img => ensureBase64Data(img))
+    )
+    // Filter out nulls and keep valid base64 data
+    const validAdditionalProducts = additionalProductsData.filter((d): d is string => d !== null)
     const vibeImageData = vibeImage ? await ensureBase64Data(vibeImage) : null
     
     // 处理模特图片：支持 URL、base64、或随机选择
@@ -341,9 +356,10 @@ export async function POST(request: NextRequest) {
         { text: PRODUCT_PROMPT },
         { inlineData: { mimeType: 'image/jpeg', data: productImageData } },
       ]
-      if (productImage2Data) {
-        parts.push({ inlineData: { mimeType: 'image/jpeg', data: productImage2Data } })
-      }
+      // Add all additional products
+      validAdditionalProducts.forEach(productData => {
+        parts.push({ inlineData: { mimeType: 'image/jpeg', data: productData } })
+      })
       
       result = await generateImageWithFallback(client, parts, label)
       
@@ -380,16 +396,16 @@ export async function POST(request: NextRequest) {
         console.log(`[${label}] Using outfit mode with ${Object.values(outfitImagesData).filter(Boolean).length} items`)
         result = await generateImageWithFallback(client, parts, label)
       } else {
-        // 兼容旧模式：使用 productImage + productImage2（如果有）
+        // 兼容旧模式：使用 productImage + additional products
         usedPrompt = SIMPLE_MODEL_PROMPT
         const parts: any[] = [
           { text: SIMPLE_MODEL_PROMPT },
           { inlineData: { mimeType: 'image/jpeg', data: productImageData } }, // {{product}}
         ]
-        // 如果有第二件商品，也添加进去
-        if (productImage2Data) {
-          parts.push({ inlineData: { mimeType: 'image/jpeg', data: productImage2Data } }) // {{product2}}
-        }
+        // Add all additional products
+        validAdditionalProducts.forEach(productData => {
+          parts.push({ inlineData: { mimeType: 'image/jpeg', data: productData } })
+        })
         parts.push({ inlineData: { mimeType: 'image/jpeg', data: backgroundImageData } }) // {{background}}
         parts.push({ inlineData: { mimeType: 'image/jpeg', data: modelImageData } }) // {{model}}
         result = await generateImageWithFallback(client, parts, label)
@@ -469,10 +485,10 @@ export async function POST(request: NextRequest) {
         result = await generateImageWithFallback(client, imageParts, label)
         
       } else {
-        // 兼容旧模式：支持 productImage + productImage2
+        // 兼容旧模式：支持 productImage + additional products
         console.log(`[${label}] Step 1: Generating instructions...`)
         const instructPrompt = await generateInstructions(
-          client, productImageData!, modelImageData, backgroundImageData, label, productImage2Data
+          client, productImageData!, modelImageData, backgroundImageData, label, validAdditionalProducts
         )
         
         // Step 2: Generate image
@@ -490,10 +506,10 @@ export async function POST(request: NextRequest) {
         const parts: any[] = [
           { inlineData: { mimeType: 'image/jpeg', data: productImageData } },  // {{product}}
         ]
-        // Add second product if available
-        if (productImage2Data) {
-          parts.push({ inlineData: { mimeType: 'image/jpeg', data: productImage2Data } }) // {{product2}}
-        }
+        // Add all additional products
+        validAdditionalProducts.forEach(productData => {
+          parts.push({ inlineData: { mimeType: 'image/jpeg', data: productData } })
+        })
         parts.push({ inlineData: { mimeType: 'image/jpeg', data: modelImageData } })    // {{model}}
         parts.push({ inlineData: { mimeType: 'image/jpeg', data: backgroundImageData } }) // {{background}}
         parts.push({ text: modelPrompt })
@@ -564,7 +580,7 @@ export async function POST(request: NextRequest) {
       // 收集所有商品图并上传
       const allInputs = [
         productImage,
-        productImage2,
+        ...allAdditionalProducts, // All additional products (up to 3)
         outfitItems?.inner,
         outfitItems?.top,
         outfitItems?.pants,

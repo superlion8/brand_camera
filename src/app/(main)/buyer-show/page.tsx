@@ -104,7 +104,8 @@ function CameraPageContent() {
   const [mode, setMode] = useState<CameraMode>("camera")
   const modeRef = useRef<CameraMode>("camera") // Track mode for async callbacks
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
-  const [capturedImage2, setCapturedImage2] = useState<string | null>(null) // Second product image
+  const [additionalProducts, setAdditionalProducts] = useState<string[]>([]) // Up to 3 additional products (4 total max)
+  const MAX_ADDITIONAL_PRODUCTS = 3 // Main product + 3 additional = 4 total
   const [hasCamera, setHasCamera] = useState(true)
   const [cameraReady, setCameraReady] = useState(false)
   const [permissionChecked, setPermissionChecked] = useState(false)
@@ -206,7 +207,7 @@ function CameraPageContent() {
   
   // Track if product images came from phone upload (not asset library)
   const [productFromPhone, setProductFromPhone] = useState(false)
-  const [product2FromPhone, setProduct2FromPhone] = useState(false)
+  const [additionalFromPhone, setAdditionalFromPhone] = useState<boolean[]>([])
   
   const { addGeneration, addUserAsset, userModels, userBackgrounds, userProducts, generations } = useAssetStore()
   const { addTask, updateTaskStatus, updateImageSlot, initImageSlots, tasks } = useGenerationTaskStore()
@@ -366,15 +367,18 @@ function CameraPageContent() {
     }
   }, [])
   
-  // Upload second product image
+  // Upload additional product image
   const handleUpload2 = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
+    if (file && additionalProducts.length < MAX_ADDITIONAL_PRODUCTS) {
       const base64 = await fileToBase64(file)
-      setCapturedImage2(base64)
-      setProduct2FromPhone(true) // Mark as uploaded from phone
+      setAdditionalProducts(prev => [...prev, base64])
+      setAdditionalFromPhone(prev => [...prev, true]) // Mark as uploaded from phone
+      setShowProduct2Panel(false)
     }
-  }, [])
+    // Reset input value so the same file can be selected again
+    e.target.value = ''
+  }, [additionalProducts.length])
   
   // Upload model image directly in selector
   const handleModelUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -425,9 +429,9 @@ function CameraPageContent() {
   
   const handleRetake = () => {
     setCapturedImage(null)
-    setCapturedImage2(null)
+    setAdditionalProducts([])
     setProductFromPhone(false)
-    setProduct2FromPhone(false)
+    setAdditionalFromPhone([])
     setGeneratedImages([])
     setGeneratedModelTypes([])
     setGeneratedGenModes([])
@@ -455,9 +459,9 @@ function CameraPageContent() {
     const currentModelGender = selectedModelGender
     const currentModel = activeModel // May be undefined - random selection happens per-image
     const currentBg = activeBg       // May be undefined - random selection happens per-image
-    const currentProduct2 = capturedImage2
+    const currentAdditionalProducts = [...additionalProducts] // Copy array to avoid closure issues
     const currentProductFromPhone = productFromPhone
-    const currentProduct2FromPhone = product2FromPhone
+    const currentAdditionalFromPhone = [...additionalFromPhone]
     
     // Track if user selected or will use random (per-image)
     const modelIsUserSelected = !!activeModel
@@ -471,9 +475,12 @@ function CameraPageContent() {
     if (currentProductFromPhone && capturedImage) {
       saveProductToAssets(capturedImage, addUserAsset, t.common.product)
     }
-    if (currentProduct2FromPhone && currentProduct2) {
-      saveProductToAssets(currentProduct2, addUserAsset, t.common.product)
-    }
+    // Save additional products that came from phone
+    currentAdditionalProducts.forEach((img, idx) => {
+      if (currentAdditionalFromPhone[idx] && img) {
+        saveProductToAssets(img, addUserAsset, t.common.product)
+      }
+    })
     
     // Create task and switch to processing mode
     const params = {
@@ -481,7 +488,7 @@ function CameraPageContent() {
       modelGender: currentModelGender || undefined,
       model: currentModel?.name || '每张随机',
       background: currentBg?.name || '每张随机',
-      hasProduct2: !!currentProduct2,
+      additionalProductsCount: currentAdditionalProducts.length,
       modelIsUserSelected, // Track if user selected or system random
       bgIsUserSelected,    // Track if user selected or system random
     }
@@ -516,13 +523,13 @@ function CameraPageContent() {
     runBackgroundGeneration(
       taskId, 
       capturedImage,
-      currentProduct2,
+      currentAdditionalProducts,
       currentModelStyle,
       currentModelGender,
       currentModel,
       currentBg,
       currentProductFromPhone,
-      currentProduct2FromPhone,
+      currentAdditionalFromPhone,
       modelIsUserSelected,
       bgIsUserSelected
     )
@@ -533,13 +540,13 @@ function CameraPageContent() {
   const runBackgroundGeneration = async (
     taskId: string, 
     inputImage: string,
-    inputImage2: string | null,
+    additionalImages: string[], // Up to 3 additional products
     modelStyle: ModelStyle | null,
     modelGender: ModelGender | null,
     model: Asset | undefined,
     background: Asset | undefined,
     fromPhone: boolean,
-    fromPhone2: boolean,
+    additionalFromPhoneFlags: boolean[],
     modelIsUserSelected: boolean,
     bgIsUserSelected: boolean
   ) => {
@@ -548,13 +555,17 @@ function CameraPageContent() {
       console.log("Preparing images...")
       console.log("User selected model:", model?.name || 'none (will use random per image)')
       console.log("User selected background:", background?.name || 'none (will use random per image)')
-      console.log("Has second product:", !!inputImage2)
+      console.log("Additional products count:", additionalImages.length)
       
       // 压缩图片以减少请求体大小（Vercel 限制 4.5MB）
       console.log("[Camera] Compressing product images...")
       const compressedProduct = await compressBase64Image(inputImage, 1280)
-      const compressedProduct2 = inputImage2 ? await compressBase64Image(inputImage2, 1280) : null
-      console.log(`[Camera] Compressed: ${(inputImage.length / 1024).toFixed(0)}KB -> ${(compressedProduct.length / 1024).toFixed(0)}KB`)
+      // Compress all additional products
+      const compressedAdditional = await Promise.all(
+        additionalImages.map(img => compressBase64Image(img, 1280))
+      )
+      console.log(`[Camera] Compressed main: ${(inputImage.length / 1024).toFixed(0)}KB -> ${(compressedProduct.length / 1024).toFixed(0)}KB`)
+      console.log(`[Camera] Compressed ${compressedAdditional.length} additional products`)
       
       // 直接使用 URL，后端会转换为 base64（减少前端请求体大小）
       const userModelUrl = model?.imageUrl || null
@@ -676,7 +687,7 @@ function CameraPageContent() {
         
         const payload = {
           productImage: compressedProduct,
-          productImage2: compressedProduct2,
+          additionalProducts: compressedAdditional, // Array of up to 3 additional products
           modelImage: modelForThisImage,
           modelStyle: modelStyle,
           modelGender: modelGender,
@@ -941,7 +952,7 @@ function CameraPageContent() {
           id,
           type: "camera_model",
           inputImageUrl: inputImage,
-          inputImage2Url: inputImage2 || undefined,
+          inputImage2Url: additionalImages[0] || undefined, // Legacy: first additional product
           outputImageUrls: savedImages,
           outputModelTypes: savedModelTypes, // Pro or Flash for each image
           outputGenModes: savedGenModes, // Simple or Extended for each image
@@ -958,6 +969,7 @@ function CameraPageContent() {
             bgIsUserSelected,    // true = user selected, false = system random
             perImageModels: savedPerImageModels,
             perImageBackgrounds: savedPerImageBgs,
+            productImages: [inputImage, ...additionalImages].filter(Boolean), // All product images
           },
         }, allSavedToDb) // 后端已写入数据库时，跳过前端的云端同步
         
@@ -1269,21 +1281,26 @@ function CameraPageContent() {
                         <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-4">
                           <div className="flex items-center justify-between mb-3">
                             <span className="text-sm font-medium text-zinc-900">{t.proStudio?.additionalProducts || 'Additional Products (Optional)'}</span>
-                            <span className="text-xs text-zinc-400">{(t.proStudio?.maxItems || 'Max {count} items').replace('{count}', '4')}</span>
+                            <span className="text-xs text-zinc-400">{additionalProducts.length + 1}/4</span>
                           </div>
                           <div className="grid grid-cols-4 gap-2">
-                            {capturedImage2 ? (
-                              <div className="aspect-square rounded-lg overflow-hidden relative group border border-zinc-200">
-                                <img src={capturedImage2} alt="商品2" className="w-full h-full object-cover" />
+                            {/* Display existing additional products */}
+                            {additionalProducts.map((img, idx) => (
+                              <div key={idx} className="aspect-square rounded-lg overflow-hidden relative group border border-zinc-200">
+                                <img src={img} alt={`商品${idx + 2}`} className="w-full h-full object-cover" />
                                 <button
-                                  onClick={() => setCapturedImage2(null)}
+                                  onClick={() => {
+                                    setAdditionalProducts(prev => prev.filter((_, i) => i !== idx))
+                                    setAdditionalFromPhone(prev => prev.filter((_, i) => i !== idx))
+                                  }}
                                   className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                                 >
                                   <X className="w-3 h-3 text-white" />
                                 </button>
                               </div>
-                            ) : null}
-                            {!capturedImage2 && (
+                            ))}
+                            {/* Add button - show if less than 3 additional items */}
+                            {additionalProducts.length < MAX_ADDITIONAL_PRODUCTS && (
                               <button
                                 onClick={() => setShowProduct2Panel(true)}
                                 className="aspect-square rounded-lg border-2 border-dashed border-zinc-300 hover:border-blue-400 flex flex-col items-center justify-center gap-1 transition-colors"
@@ -1293,8 +1310,8 @@ function CameraPageContent() {
                               </button>
                             )}
                           </div>
-                          <p className="text-xs text-zinc-400 mt-3">
-                            {t.proStudio?.addMoreTip || '💡 Add more products for outfit combination effect'}
+                          <p className="text-xs text-amber-600 mt-3">
+                            {t.proStudio?.maxItemsWarning || '⚠️ Max 4 products total. Too many items may affect quality.'}
                           </p>
                         </div>
                         
@@ -1448,9 +1465,9 @@ function CameraPageContent() {
                 </div>
               ) : (
                 /* Mobile Review Mode */
-                <div className="absolute inset-0 flex">
-                  {/* Main product image */}
-                  <div className={`relative ${capturedImage2 ? 'w-1/2' : 'w-full'} h-full`}>
+                <div className="absolute inset-0 flex flex-col">
+                  {/* Main product image - takes most space */}
+                  <div className="relative flex-1">
                     <img 
                       src={capturedImage || ""} 
                       alt={t.camera.product1} 
@@ -1461,25 +1478,31 @@ function CameraPageContent() {
                     </span>
                   </div>
                   
-                  {/* Second product image or add button */}
-                  {capturedImage2 ? (
-                    <div className="relative w-1/2 h-full border-l-2 border-white/30">
-                      <img 
-                        src={capturedImage2} 
-                        alt={t.camera.product2} 
-                        className="w-full h-full object-cover"
-                      />
-                      <span className="absolute top-2 left-2 px-2 py-1 bg-black/50 text-white text-xs rounded backdrop-blur-md">
-                        {t.camera.product2}
-                      </span>
-                      <button
-                        onClick={() => setCapturedImage2(null)}
-                        className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                  {/* Additional products strip at bottom */}
+                  {additionalProducts.length > 0 && (
+                    <div className="h-20 flex border-t-2 border-white/30">
+                      {additionalProducts.map((img, idx) => (
+                        <div key={idx} className="relative flex-1 border-r border-white/20 last:border-r-0">
+                          <img src={img} alt={`${t.camera.product2} ${idx + 1}`} className="w-full h-full object-cover" />
+                          <span className="absolute top-1 left-1 px-1.5 py-0.5 bg-black/50 text-white text-[10px] rounded">
+                            +{idx + 1}
+                          </span>
+                          <button
+                            onClick={() => {
+                              setAdditionalProducts(prev => prev.filter((_, i) => i !== idx))
+                              setAdditionalFromPhone(prev => prev.filter((_, i) => i !== idx))
+                            }}
+                            className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
                     </div>
-                  ) : mode === "review" && !capturedImage2 && (
+                  )}
+                  
+                  {/* Add more button - only show if less than max */}
+                  {mode === "review" && additionalProducts.length < MAX_ADDITIONAL_PRODUCTS && (
                     <button
                       onClick={async () => {
                         // 上传图片到 Storage，避免 sessionStorage 存大量 base64
@@ -1654,13 +1677,16 @@ function CameraPageContent() {
               title={t.camera.selectProduct}
             />
             
-            {/* 第二件商品选择面板 */}
+            {/* 额外商品选择面板 */}
             <AssetPickerPanel
               open={showProduct2Panel}
               onClose={() => setShowProduct2Panel(false)}
               onSelect={(imageUrl) => {
-                setCapturedImage2(imageUrl)
-                                setProduct2FromPhone(false)
+                if (additionalProducts.length < MAX_ADDITIONAL_PRODUCTS) {
+                  setAdditionalProducts(prev => [...prev, imageUrl])
+                  setAdditionalFromPhone(prev => [...prev, false])
+                }
+                setShowProduct2Panel(false)
               }}
               onUploadClick={() => fileInputRef2.current?.click()}
               themeColor="blue"
@@ -1794,7 +1820,7 @@ function CameraPageContent() {
               ] : []}
               inputImages={[
                 ...(capturedImage ? [{ url: capturedImage, label: `${t.common?.product || 'Product'} 1` }] : []),
-                ...(capturedImage2 ? [{ url: capturedImage2, label: `${t.common?.product || 'Product'} 2` }] : []),
+                ...additionalProducts.map((img, idx) => ({ url: img, label: `${t.common?.product || 'Product'} ${idx + 2}` })),
               ]}
               onInputImageClick={(url) => setFullscreenImage(url)}
             >
