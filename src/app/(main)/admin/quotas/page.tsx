@@ -2,8 +2,18 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, RefreshCw, Search, Edit2, Check, X, Plus, Minus, Users } from "lucide-react"
+import { ArrowLeft, RefreshCw, Search, Check, X, Plus, Minus, Users, Gift, Crown, ShoppingCart, Sparkles, ChevronDown, ChevronUp } from "lucide-react"
 import { useAuth } from "@/components/providers/AuthProvider"
+
+interface CreditsDetail {
+  available: number
+  daily: number
+  subscription: number
+  signup: number
+  adminGive: number
+  purchased: number
+  dailyExpired?: boolean
+}
 
 interface UserQuota {
   id: string
@@ -12,6 +22,7 @@ interface UserQuota {
   totalQuota: number
   usedCount: number
   remainingQuota: number
+  credits?: CreditsDetail
   createdAt: string
   updatedAt: string
 }
@@ -26,6 +37,7 @@ export default function AdminQuotasPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState<number>(0)
   const [isSaving, setIsSaving] = useState(false)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const fetchQuotas = useCallback(async () => {
     setIsLoading(true)
@@ -201,93 +213,172 @@ export default function AdminQuotasPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {filteredQuotas.map((quota) => (
-              <div key={quota.id} className="bg-white rounded-xl p-4 shadow-sm border border-zinc-100">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-zinc-900 truncate">{quota.userEmail}</p>
-                    <p className="text-xs text-zinc-400 mt-0.5">
-                      更新于 {new Date(quota.updatedAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-                
-                {/* Progress bar */}
-                <div className="mb-3">
-                  <div className="flex justify-between text-xs text-zinc-500 mb-1">
-                    <span>已使用 {quota.usedCount}</span>
-                    <span>剩余 {quota.remainingQuota}</span>
-                  </div>
-                  <div className="h-2 bg-zinc-100 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full transition-all ${
-                        quota.remainingQuota <= 0 
-                          ? 'bg-red-500' 
-                          : quota.remainingQuota <= 5 
-                            ? 'bg-amber-500' 
-                            : 'bg-green-500'
-                      }`}
-                      style={{ width: `${Math.min((quota.usedCount / quota.totalQuota) * 100, 100)}%` }}
-                    />
-                  </div>
-                </div>
-                
-                {/* Quota adjustment */}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-zinc-500">
-                    总额度: 
-                  </span>
-                  
-                  {editingId === quota.userId ? (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        value={editValue}
-                        onChange={(e) => setEditValue(Math.max(0, parseInt(e.target.value) || 0))}
-                        className="w-20 h-8 px-2 border border-zinc-200 rounded text-center text-sm"
-                        min={0}
-                      />
+            {filteredQuotas.map((quota) => {
+              const credits = quota.credits
+              const isExpanded = expandedId === quota.userId
+              
+              return (
+                <div key={quota.id} className="bg-white rounded-xl shadow-sm border border-zinc-100 overflow-hidden">
+                  {/* Main Info */}
+                  <div className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-zinc-900 truncate">{quota.userEmail}</p>
+                        <p className="text-xs text-zinc-400 mt-0.5">
+                          更新于 {new Date(quota.updatedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      {/* Expand button */}
                       <button
-                        onClick={() => handleEditSave(quota.userId)}
-                        disabled={isSaving}
-                        className="w-8 h-8 bg-green-100 text-green-600 rounded-lg flex items-center justify-center hover:bg-green-200"
+                        onClick={() => setExpandedId(isExpanded ? null : quota.userId)}
+                        className="ml-2 w-8 h-8 rounded-lg hover:bg-zinc-100 flex items-center justify-center text-zinc-400"
                       >
-                        <Check className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={handleEditCancel}
-                        className="w-8 h-8 bg-zinc-100 text-zinc-600 rounded-lg flex items-center justify-center hover:bg-zinc-200"
-                      >
-                        <X className="w-4 h-4" />
+                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       </button>
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleQuickAdjust(quota.userId, quota.totalQuota, -10)}
-                        disabled={isSaving || quota.totalQuota < 10}
-                        className="w-8 h-8 bg-zinc-100 text-zinc-600 rounded-lg flex items-center justify-center hover:bg-zinc-200 disabled:opacity-50"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleEditStart(quota)}
-                        className="min-w-[60px] h-8 px-3 bg-blue-50 text-blue-600 rounded-lg font-medium text-sm hover:bg-blue-100"
-                      >
-                        {quota.totalQuota}
-                      </button>
-                      <button
-                        onClick={() => handleQuickAdjust(quota.userId, quota.totalQuota, 10)}
-                        disabled={isSaving}
-                        className="w-8 h-8 bg-zinc-100 text-zinc-600 rounded-lg flex items-center justify-center hover:bg-zinc-200 disabled:opacity-50"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
+                    
+                    {/* Credits Summary - Quick view */}
+                    {credits && (
+                      <div className="grid grid-cols-4 gap-2 mb-3">
+                        <div className="text-center p-2 bg-emerald-50 rounded-lg">
+                          <p className="text-lg font-bold text-emerald-600">{credits.signup}</p>
+                          <p className="text-[10px] text-emerald-600/70">注册</p>
+                        </div>
+                        <div className="text-center p-2 bg-purple-50 rounded-lg">
+                          <p className="text-lg font-bold text-purple-600">{credits.adminGive}</p>
+                          <p className="text-[10px] text-purple-600/70">赠送</p>
+                        </div>
+                        <div className="text-center p-2 bg-amber-50 rounded-lg">
+                          <p className="text-lg font-bold text-amber-600">{credits.purchased}</p>
+                          <p className="text-[10px] text-amber-600/70">购买</p>
+                        </div>
+                        <div className="text-center p-2 bg-blue-50 rounded-lg">
+                          <p className="text-lg font-bold text-blue-600">{credits.subscription}</p>
+                          <p className="text-[10px] text-blue-600/70">订阅</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Total & Adjustment */}
+                    <div className="flex items-center justify-between pt-2 border-t border-zinc-100">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-zinc-500">总额度:</span>
+                        <span className="text-lg font-bold text-zinc-900">{quota.totalQuota}</span>
+                      </div>
+                      
+                      {editingId === quota.userId ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            value={editValue}
+                            onChange={(e) => setEditValue(Math.max(0, parseInt(e.target.value) || 0))}
+                            className="w-20 h-8 px-2 border border-zinc-200 rounded text-center text-sm"
+                            min={0}
+                          />
+                          <button
+                            onClick={() => handleEditSave(quota.userId)}
+                            disabled={isSaving}
+                            className="w-8 h-8 bg-green-100 text-green-600 rounded-lg flex items-center justify-center hover:bg-green-200"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={handleEditCancel}
+                            className="w-8 h-8 bg-zinc-100 text-zinc-600 rounded-lg flex items-center justify-center hover:bg-zinc-200"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleQuickAdjust(quota.userId, quota.totalQuota, -10)}
+                            disabled={isSaving || quota.totalQuota < 10}
+                            className="w-8 h-8 bg-zinc-100 text-zinc-600 rounded-lg flex items-center justify-center hover:bg-zinc-200 disabled:opacity-50"
+                          >
+                            <Minus className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleEditStart(quota)}
+                            className="min-w-[60px] h-8 px-3 bg-blue-50 text-blue-600 rounded-lg font-medium text-sm hover:bg-blue-100"
+                          >
+                            {quota.totalQuota}
+                          </button>
+                          <button
+                            onClick={() => handleQuickAdjust(quota.userId, quota.totalQuota, 10)}
+                            disabled={isSaving}
+                            className="w-8 h-8 bg-zinc-100 text-zinc-600 rounded-lg flex items-center justify-center hover:bg-zinc-200 disabled:opacity-50"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Expanded Details */}
+                  {isExpanded && credits && (
+                    <div className="px-4 pb-4 pt-2 bg-zinc-50 border-t border-zinc-100">
+                      <p className="text-xs font-medium text-zinc-500 mb-3">额度明细</p>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between py-2 px-3 bg-white rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-emerald-100 flex items-center justify-center">
+                              <Gift className="w-3.5 h-3.5 text-emerald-600" />
+                            </div>
+                            <span className="text-sm text-zinc-700">注册奖励</span>
+                          </div>
+                          <span className="font-semibold text-emerald-600">{credits.signup}</span>
+                        </div>
+                        <div className="flex items-center justify-between py-2 px-3 bg-white rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center">
+                              <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                            </div>
+                            <span className="text-sm text-zinc-700">管理员赠送</span>
+                          </div>
+                          <span className="font-semibold text-purple-600">{credits.adminGive}</span>
+                        </div>
+                        <div className="flex items-center justify-between py-2 px-3 bg-white rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-amber-100 flex items-center justify-center">
+                              <ShoppingCart className="w-3.5 h-3.5 text-amber-600" />
+                            </div>
+                            <span className="text-sm text-zinc-700">购买额度</span>
+                          </div>
+                          <span className="font-semibold text-amber-600">{credits.purchased}</span>
+                        </div>
+                        <div className="flex items-center justify-between py-2 px-3 bg-white rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center">
+                              <Crown className="w-3.5 h-3.5 text-blue-600" />
+                            </div>
+                            <span className="text-sm text-zinc-700">订阅额度</span>
+                          </div>
+                          <span className="font-semibold text-blue-600">{credits.subscription}</span>
+                        </div>
+                        {credits.daily > 0 && (
+                          <div className="flex items-center justify-between py-2 px-3 bg-white rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-full bg-pink-100 flex items-center justify-center">
+                                <Gift className="w-3.5 h-3.5 text-pink-600" />
+                              </div>
+                              <span className="text-sm text-zinc-700">每日签到</span>
+                              {credits.dailyExpired && (
+                                <span className="text-[10px] px-1.5 py-0.5 bg-zinc-200 text-zinc-500 rounded">已过期</span>
+                              )}
+                            </div>
+                            <span className={`font-semibold ${credits.dailyExpired ? 'text-zinc-400 line-through' : 'text-pink-600'}`}>
+                              {credits.daily}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
