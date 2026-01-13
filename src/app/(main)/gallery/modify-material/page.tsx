@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { ArrowLeft, Loader2, Check, ChevronDown, Sparkles, AlertCircle, Wand2, Home, X, Image as ImageIcon } from 'lucide-react'
 import { useTranslation } from '@/stores/languageStore'
+import { useIsDesktop } from '@/hooks/useIsMobile'
+import { ScreenLoadingGuard } from '@/components/ui/ScreenLoadingGuard'
 import { useQuota } from '@/hooks/useQuota'
 import { useQuotaReservation } from '@/hooks/useQuotaReservation'
 import { useGenerationTaskStore } from '@/stores/generationTaskStore'
@@ -334,6 +336,7 @@ function ProductCard({
 function ModifyMaterialContent() {
   const router = useRouter()
   const { t, language } = useTranslation()
+  const { isDesktop, isLoading: screenLoading } = useIsDesktop(1024)
   const { checkQuota } = useQuota()
   const { reserveQuota, refundQuota, partialRefund } = useQuotaReservation()
   const { addTask, updateTaskStatus, initImageSlots, updateImageSlot } = useGenerationTaskStore()
@@ -654,19 +657,26 @@ function ModifyMaterialContent() {
     ))
   }
   
+  // 防止 hydration 闪烁
+  if (screenLoading) {
+    return <ScreenLoadingGuard><div /></ScreenLoadingGuard>
+  }
+
   // 渲染图片选择界面
   if (phase === 'select') {
     return (
-      <div className="min-h-screen bg-zinc-50">
+      <div className={`min-h-screen bg-zinc-50 ${isDesktop ? '' : ''}`}>
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-white border-b border-zinc-100 px-4 py-3 flex items-center gap-3">
-          <button onClick={() => router.back()} className="p-2 -ml-2 rounded-full hover:bg-zinc-100">
-            <ArrowLeft className="w-5 h-5 text-zinc-600" />
-          </button>
-          <h1 className="text-lg font-semibold">{t.modifyMaterial?.title || '改材质版型'}</h1>
+        <div className={`sticky top-0 z-10 bg-white border-b border-zinc-100 ${isDesktop ? '' : ''}`}>
+          <div className={`flex items-center gap-3 ${isDesktop ? 'max-w-4xl mx-auto px-8 py-4' : 'px-4 py-3'}`}>
+            <button onClick={() => router.back()} className="p-2 -ml-2 rounded-full hover:bg-zinc-100">
+              <ArrowLeft className="w-5 h-5 text-zinc-600" />
+            </button>
+            <h1 className="text-lg font-semibold">{t.modifyMaterial?.title || '改材质版型'}</h1>
+          </div>
         </div>
         
-        <div className="p-4 space-y-6">
+        <div className={`${isDesktop ? 'max-w-4xl mx-auto px-8 py-8' : 'p-4'} space-y-6`}>
           {/* 说明 */}
           <div className="bg-purple-50 rounded-xl p-4">
             <p className="text-sm text-purple-800">
@@ -674,49 +684,54 @@ function ModifyMaterialContent() {
             </p>
           </div>
           
-          {/* 上传图片 */}
-          <div>
-            <p className="text-sm font-medium text-zinc-700 mb-3">{t.modifyMaterial?.uploadImage || '上传图片'}</p>
-            <input 
-              type="file" 
-              ref={fileInputRef}
-              accept="image/*" 
-              className="hidden" 
-              onChange={handleFileUpload}
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full h-32 rounded-xl border-2 border-dashed border-zinc-300 hover:border-purple-400 hover:bg-purple-50/50 transition-colors flex flex-col items-center justify-center gap-2"
-            >
-              <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
-                <Wand2 className="w-6 h-6 text-purple-500" />
+          {/* PC: 两列布局 */}
+          <div className={isDesktop ? 'grid grid-cols-2 gap-6' : 'space-y-6'}>
+            {/* 上传图片 */}
+            <div>
+              <p className="text-sm font-medium text-zinc-700 mb-3">{t.modifyMaterial?.uploadImage || '上传图片'}</p>
+              <input 
+                type="file" 
+                ref={fileInputRef}
+                accept="image/*" 
+                className="hidden" 
+                onChange={handleFileUpload}
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className={`w-full rounded-xl border-2 border-dashed border-zinc-300 hover:border-purple-400 hover:bg-purple-50/50 transition-colors flex flex-col items-center justify-center gap-2 ${isDesktop ? 'h-48' : 'h-32'}`}
+              >
+                <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                  <Wand2 className="w-6 h-6 text-purple-500" />
+                </div>
+                <span className="text-sm text-zinc-500">{t.modifyMaterial?.uploadImage || '上传图片'}</span>
+              </button>
+            </div>
+            
+            {/* 分隔线 - 仅移动端 */}
+            {!isDesktop && (
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-zinc-200" />
+                <span className="text-xs text-zinc-400">{t.common?.or || '或'}</span>
+                <div className="flex-1 h-px bg-zinc-200" />
               </div>
-              <span className="text-sm text-zinc-500">{t.modifyMaterial?.uploadImage || '上传图片'}</span>
-            </button>
-          </div>
-          
-          {/* 分隔线 */}
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-zinc-200" />
-            <span className="text-xs text-zinc-400">{t.common?.or || '或'}</span>
-            <div className="flex-1 h-px bg-zinc-200" />
-          </div>
-          
-          {/* 从成片选择 */}
-          <div>
-            <p className="text-sm font-medium text-zinc-700 mb-3">{t.modifyMaterial?.selectFromGallery || '从成片选择'}</p>
-            <button
-              onClick={() => {
-                setShowGalleryPicker(true)
-                loadGalleryItems()
-              }}
-              className="w-full h-32 rounded-xl border-2 border-dashed border-zinc-300 hover:border-purple-400 hover:bg-purple-50/50 transition-colors flex flex-col items-center justify-center gap-2"
-            >
-              <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
-                <ImageIcon className="w-6 h-6 text-purple-500" />
-              </div>
-              <span className="text-sm text-zinc-500">{t.modifyMaterial?.selectFromGallery || '从成片选择'}</span>
-            </button>
+            )}
+            
+            {/* 从成片选择 */}
+            <div>
+              <p className="text-sm font-medium text-zinc-700 mb-3">{t.modifyMaterial?.selectFromGallery || '从成片选择'}</p>
+              <button
+                onClick={() => {
+                  setShowGalleryPicker(true)
+                  loadGalleryItems()
+                }}
+                className={`w-full rounded-xl border-2 border-dashed border-zinc-300 hover:border-purple-400 hover:bg-purple-50/50 transition-colors flex flex-col items-center justify-center gap-2 ${isDesktop ? 'h-48' : 'h-32'}`}
+              >
+                <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                  <ImageIcon className="w-6 h-6 text-purple-500" />
+                </div>
+                <span className="text-sm text-zinc-500">{t.modifyMaterial?.selectFromGallery || '从成片选择'}</span>
+              </button>
+            </div>
           </div>
         </div>
         
@@ -790,12 +805,12 @@ function ModifyMaterialContent() {
   // 渲染加载/分析状态
   if (phase === 'loading' || phase === 'analyzing') {
     return (
-      <div className="min-h-screen bg-zinc-50 flex flex-col items-center justify-center p-4">
+      <div className={`min-h-screen bg-zinc-50 flex flex-col items-center justify-center p-4 ${isDesktop ? 'pt-20' : ''}`}>
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
         >
-          <Sparkles className="w-12 h-12 text-blue-500" />
+          <Sparkles className="w-12 h-12 text-purple-500" />
         </motion.div>
         <p className="mt-4 text-zinc-600 font-medium">
           {t.modifyMaterial?.analyzing || '正在分析商品特征...'}
@@ -810,7 +825,7 @@ function ModifyMaterialContent() {
   // 渲染生成中状态（参考商品影棚风格）
   if (phase === 'generating') {
     return (
-      <div className="min-h-screen bg-zinc-50 flex flex-col items-center justify-center p-8 pb-24">
+      <div className={`min-h-screen bg-zinc-50 flex flex-col items-center justify-center p-8 ${isDesktop ? '' : 'pb-24'}`}>
         {/* 带 glow 效果的 Loader */}
         <div className="relative mb-6">
           <div className="absolute inset-0 bg-purple-500/20 blur-xl rounded-full animate-pulse" />
@@ -835,21 +850,21 @@ function ModifyMaterialContent() {
           />
         </div>
         
-        {/* 导航按钮（参考商品影棚） */}
-        <div className="space-y-3 w-full max-w-xs">
+        {/* 导航按钮 */}
+        <div className={`space-y-3 w-full ${isDesktop ? 'max-w-sm' : 'max-w-xs'}`}>
           <p className="text-zinc-400 text-xs text-center mb-4">
             {t.modifyMaterial?.continueInBackground || '可继续操作，生成在后台进行'}
           </p>
           <button
             onClick={() => router.push('/gallery')}
-            className="w-full h-12 rounded-full bg-purple-500 text-white font-medium flex items-center justify-center gap-2 hover:bg-purple-600 transition-colors"
+            className={`w-full h-12 bg-purple-500 text-white font-medium flex items-center justify-center gap-2 hover:bg-purple-600 transition-colors ${isDesktop ? 'rounded-xl' : 'rounded-full'}`}
           >
             <ArrowLeft className="w-5 h-5" />
             {t.modifyMaterial?.backToGallery || '返回成片'}
           </button>
           <button
             onClick={() => router.push('/')}
-            className="w-full h-12 rounded-full bg-zinc-100 text-zinc-700 font-medium flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors"
+            className={`w-full h-12 bg-zinc-100 text-zinc-700 font-medium flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors ${isDesktop ? 'rounded-xl' : 'rounded-full'}`}
           >
             <Home className="w-5 h-5" />
             {t.modifyMaterial?.returnHome || '返回首页'}
@@ -865,81 +880,132 @@ function ModifyMaterialContent() {
       <div className="min-h-screen bg-zinc-50 flex flex-col">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-lg border-b border-zinc-200">
-          <div className="flex items-center h-14 px-4">
+          <div className={`flex items-center h-14 ${isDesktop ? 'max-w-5xl mx-auto px-8' : 'px-4'}`}>
             <button 
               onClick={() => router.push('/gallery')}
               className="w-10 h-10 rounded-full hover:bg-zinc-100 flex items-center justify-center"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <h1 className="flex-1 text-center font-semibold">
+            <h1 className={`flex-1 font-semibold ${isDesktop ? 'ml-2' : 'text-center'}`}>
               {t.modifyMaterial?.result || '修改结果'} ({resultImages.length})
             </h1>
-            <div className="w-10" />
+            {!isDesktop && <div className="w-10" />}
           </div>
         </div>
         
-        {/* Result Images - 支持滚动到底部 */}
-        <div className="flex-1 p-4 pb-40 overflow-y-auto">
-          {/* 原图 - 点击放大 */}
-          <div className="mb-4">
-            <p className="text-sm font-medium text-zinc-600 mb-2">{t.modifyMaterial?.before || '修改前'}</p>
-            <button 
-              onClick={() => setFullscreenImage(outputImage)}
-              className="relative w-full aspect-[3/4] rounded-xl overflow-hidden bg-zinc-200 cursor-pointer active:scale-[0.98] transition-transform"
-            >
-              <Image
-                src={outputImage}
-                alt="Original"
-                fill
-                className="object-cover"
-              />
-            </button>
+        {/* Result Images */}
+        <div className={`flex-1 overflow-y-auto ${isDesktop ? 'py-8' : 'p-4 pb-40'}`}>
+          <div className={isDesktop ? 'max-w-5xl mx-auto px-8' : ''}>
+            {/* PC: 网格布局 */}
+            <div className={isDesktop ? 'grid grid-cols-3 gap-6' : ''}>
+              {/* 原图 - 点击放大 */}
+              <div className={isDesktop ? '' : 'mb-4'}>
+                <p className="text-sm font-medium text-zinc-600 mb-2">{t.modifyMaterial?.before || '修改前'}</p>
+                <button 
+                  onClick={() => setFullscreenImage(outputImage)}
+                  className={`relative w-full rounded-xl overflow-hidden bg-zinc-200 cursor-pointer hover:ring-2 hover:ring-purple-500 transition-all ${isDesktop ? 'aspect-[3/4]' : 'aspect-[3/4]'}`}
+                >
+                  <Image
+                    src={outputImage}
+                    alt="Original"
+                    fill
+                    className="object-cover"
+                  />
+                </button>
+              </div>
+              
+              {/* 生成的图片 - 点击放大 */}
+              {isDesktop ? (
+                // PC: 每张图单独一列
+                resultImages.map((img, idx) => (
+                  <div key={idx}>
+                    <p className="text-sm font-medium text-zinc-600 mb-2">{t.modifyMaterial?.after || '修改后'} {idx + 1}</p>
+                    <button 
+                      onClick={() => setFullscreenImage(img)}
+                      className="relative w-full aspect-[3/4] rounded-xl overflow-hidden bg-zinc-200 cursor-pointer hover:ring-2 hover:ring-purple-500 transition-all"
+                    >
+                      <Image
+                        src={img}
+                        alt={`Result ${idx + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                    </button>
+                  </div>
+                ))
+              ) : (
+                // 移动端: 2列网格
+                <>
+                  <p className="text-sm font-medium text-zinc-600 mb-2">{t.modifyMaterial?.after || '修改后'}</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {resultImages.map((img, idx) => (
+                      <button 
+                        key={idx} 
+                        onClick={() => setFullscreenImage(img)}
+                        className="relative aspect-[3/4] rounded-xl overflow-hidden bg-zinc-200 cursor-pointer active:scale-[0.98] transition-transform"
+                      >
+                        <Image
+                          src={img}
+                          alt={`Result ${idx + 1}`}
+                          fill
+                          className="object-cover"
+                        />
+                        <div className="absolute top-2 left-2 px-2 py-1 bg-black/50 rounded-full text-xs text-white">
+                          {idx + 1}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+            
+            {/* PC: 按钮在内容下方 */}
+            {isDesktop && (
+              <div className="flex gap-4 mt-8 max-w-md mx-auto">
+                <button
+                  onClick={() => {
+                    setPhase('editing')
+                    setResultImages([])
+                  }}
+                  className="flex-1 h-12 rounded-xl border-2 border-zinc-300 text-zinc-700 font-medium hover:bg-zinc-50 transition-colors"
+                >
+                  {t.modifyMaterial?.modifyAgain || '再次修改'}
+                </button>
+                <button
+                  onClick={() => router.push('/gallery')}
+                  className="flex-1 h-12 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-medium shadow-lg shadow-purple-200 transition-colors"
+                >
+                  {t.modifyMaterial?.backToGallery || '返回成片'}
+                </button>
+              </div>
+            )}
           </div>
-          
-          {/* 生成的图片 - 点击放大 */}
-          <p className="text-sm font-medium text-zinc-600 mb-2">{t.modifyMaterial?.after || '修改后'}</p>
-          <div className="grid grid-cols-2 gap-3">
-            {resultImages.map((img, idx) => (
-              <button 
-                key={idx} 
-                onClick={() => setFullscreenImage(img)}
-                className="relative aspect-[3/4] rounded-xl overflow-hidden bg-zinc-200 cursor-pointer active:scale-[0.98] transition-transform"
+        </div>
+        
+        {/* Actions - 仅移动端 */}
+        {!isDesktop && (
+          <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-white via-white to-transparent max-w-md mx-auto z-40">
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setPhase('editing')
+                  setResultImages([])
+                }}
+                className="flex-1 h-12 rounded-full border-2 border-zinc-300 text-zinc-700 font-medium hover:bg-zinc-50 transition-colors"
               >
-                <Image
-                  src={img}
-                  alt={`Result ${idx + 1}`}
-                  fill
-                  className="object-cover"
-                />
-                <div className="absolute top-2 left-2 px-2 py-1 bg-black/50 rounded-full text-xs text-white">
-                  {idx + 1}
-                </div>
+                {t.modifyMaterial?.modifyAgain || '再次修改'}
               </button>
-            ))}
+              <button
+                onClick={() => router.push('/gallery')}
+                className="flex-1 h-12 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-lg shadow-blue-200 transition-colors"
+              >
+                {t.modifyMaterial?.backToGallery || '返回成片'}
+              </button>
+            </div>
           </div>
-        </div>
-        
-        {/* Actions - 参考 studio 的吸底样式 */}
-        <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-white via-white to-transparent max-w-md mx-auto z-40">
-          <div className="flex gap-3">
-            <button
-              onClick={() => {
-                setPhase('editing')
-                setResultImages([])
-              }}
-              className="flex-1 h-12 rounded-full border-2 border-zinc-300 text-zinc-700 font-medium hover:bg-zinc-50 transition-colors"
-            >
-              {t.modifyMaterial?.modifyAgain || '再次修改'}
-            </button>
-            <button
-              onClick={() => router.push('/gallery')}
-              className="flex-1 h-12 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-lg shadow-blue-200 transition-colors"
-            >
-              {t.modifyMaterial?.backToGallery || '返回成片'}
-            </button>
-          </div>
-        </div>
+        )}
         
         {/* 全屏图片查看 */}
         <AnimatePresence>
@@ -958,83 +1024,113 @@ function ModifyMaterialContent() {
     <div className="min-h-screen bg-zinc-50 flex flex-col">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-lg border-b border-zinc-200">
-        <div className="flex items-center h-14 px-4">
+        <div className={`flex items-center h-14 ${isDesktop ? 'max-w-5xl mx-auto px-8' : 'px-4'}`}>
           <button 
             onClick={() => router.back()}
             className="w-10 h-10 rounded-full hover:bg-zinc-100 flex items-center justify-center"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="flex-1 text-center font-semibold">
+          <h1 className={`flex-1 font-semibold ${isDesktop ? 'ml-2' : 'text-center'}`}>
             {t.modifyMaterial?.title || '改材质版型'}
           </h1>
-          <div className="w-10" />
+          {!isDesktop && <div className="w-10" />}
         </div>
       </div>
       
-      {/* Content - pb-40 给底部按钮留空间 */}
-      <div className="flex-1 overflow-y-auto pb-40">
-        {/* Output Image Preview */}
-        <div className="p-4">
-          <p className="text-sm font-medium text-zinc-600 mb-2">
-            {t.modifyMaterial?.targetImage || '目标图片'}
-          </p>
-          <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-zinc-200">
-            <Image
-              src={outputImage}
-              alt="Target"
-              fill
-              className="object-cover"
-            />
-          </div>
-        </div>
-        
-        {/* Error Message */}
-        {error && (
-          <div className="mx-4 mb-4 p-3 rounded-lg bg-red-50 border border-red-200 flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
-            <p className="text-sm text-red-600">{error}</p>
-          </div>
-        )}
-        
-        {/* Product Cards */}
-        <div className="px-4 space-y-4">
-          <p className="text-sm font-medium text-zinc-600">
-            {t.modifyMaterial?.selectProducts || '选择要修改的商品'}
-          </p>
-          
-          {productStates.length === 0 ? (
-            <div className="p-8 text-center text-zinc-400">
-              <p>{t.modifyMaterial?.noProductsFound || '未检测到商品'}</p>
+      {/* Content */}
+      <div className={`flex-1 overflow-y-auto ${isDesktop ? 'py-8' : 'pb-40'}`}>
+        <div className={isDesktop ? 'max-w-5xl mx-auto px-8' : ''}>
+          {/* PC: 两列布局 */}
+          <div className={isDesktop ? 'flex gap-8' : ''}>
+            {/* 左栏：图片预览 */}
+            <div className={isDesktop ? 'w-[360px] shrink-0' : ''}>
+              <div className={isDesktop ? 'sticky top-24' : 'p-4'}>
+                <p className="text-sm font-medium text-zinc-600 mb-2">
+                  {t.modifyMaterial?.targetImage || '目标图片'}
+                </p>
+                <div className={`relative rounded-xl overflow-hidden bg-zinc-200 ${isDesktop ? 'aspect-[3/4]' : 'aspect-[3/4]'}`}>
+                  <Image
+                    src={outputImage}
+                    alt="Target"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                
+                {/* PC: 生成按钮在左栏底部 */}
+                {isDesktop && (
+                  <button
+                    onClick={handleGenerate}
+                    disabled={!productStates.some(s => s.enabled)}
+                    className={`w-full h-12 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all mt-4 ${
+                      productStates.some(s => s.enabled)
+                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg shadow-purple-200'
+                        : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
+                    }`}
+                  >
+                    <Wand2 className="w-5 h-5" />
+                    {t.modifyMaterial?.startModify || '开始修改'}
+                  </button>
+                )}
+              </div>
             </div>
-          ) : (
-            productStates.map((state, index) => (
-              <ProductCard
-                key={index}
-                state={state}
-                onToggle={() => updateProductState(index, { enabled: !state.enabled })}
-                onUpdate={(updates) => updateProductState(index, updates)}
-              />
-            ))
-          )}
+            
+            {/* 右栏：商品卡片 */}
+            <div className={`flex-1 min-w-0 ${isDesktop ? '' : 'px-4'}`}>
+              {/* Error Message */}
+              {error && (
+                <div className={`mb-4 p-3 rounded-lg bg-red-50 border border-red-200 flex items-center gap-2 ${isDesktop ? '' : ''}`}>
+                  <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
+                  <p className="text-sm text-red-600">{error}</p>
+                </div>
+              )}
+              
+              {/* Product Cards */}
+              <div className="space-y-4">
+                <p className="text-sm font-medium text-zinc-600">
+                  {t.modifyMaterial?.selectProducts || '选择要修改的商品'}
+                </p>
+                
+                {productStates.length === 0 ? (
+                  <div className="p-8 text-center text-zinc-400">
+                    <p>{t.modifyMaterial?.noProductsFound || '未检测到商品'}</p>
+                  </div>
+                ) : (
+                  <div className={isDesktop ? 'space-y-4' : 'space-y-4'}>
+                    {productStates.map((state, index) => (
+                      <ProductCard
+                        key={index}
+                        state={state}
+                        onToggle={() => updateProductState(index, { enabled: !state.enabled })}
+                        onUpdate={(updates) => updateProductState(index, updates)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       
-      {/* Bottom Action - 参考 studio 的吸底样式 */}
-      <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-white via-white to-transparent max-w-md mx-auto z-40">
-        <button
-          onClick={handleGenerate}
-          disabled={!productStates.some(s => s.enabled)}
-          className={`w-full h-14 rounded-full font-semibold flex items-center justify-center gap-2 transition-all ${
-            productStates.some(s => s.enabled)
-              ? 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg shadow-purple-200'
-              : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
-          }`}
-        >
-          <Wand2 className="w-5 h-5" />
-          {t.modifyMaterial?.startModify || '开始修改'}
-        </button>
-      </div>
+      {/* Bottom Action - 仅移动端 */}
+      {!isDesktop && (
+        <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-white via-white to-transparent max-w-md mx-auto z-40">
+          <button
+            onClick={handleGenerate}
+            disabled={!productStates.some(s => s.enabled)}
+            className={`w-full h-14 rounded-full font-semibold flex items-center justify-center gap-2 transition-all ${
+              productStates.some(s => s.enabled)
+                ? 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg shadow-purple-200'
+                : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
+            }`}
+          >
+            <Wand2 className="w-5 h-5" />
+            {t.modifyMaterial?.startModify || '开始修改'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

@@ -749,7 +749,7 @@ function StudioPageContent() {
                               : 'border-zinc-200 bg-white hover:border-zinc-300'
                           }`}
                         >
-                          <span className="text-xl">🎯</span>
+                          <span className="text-xl">⬇️</span>
                           <span className={`text-xs font-medium ${photoType === 'flatlay' ? 'text-amber-700' : 'text-zinc-600'}`}>
                             {t.studio.flatLay}
                           </span>
@@ -762,7 +762,7 @@ function StudioPageContent() {
                               : 'border-zinc-200 bg-white hover:border-zinc-300'
                           }`}
                         >
-                          <span className="text-xl">👕</span>
+                          <span className="text-xl">🧥</span>
                           <span className={`text-xs font-medium ${photoType === 'hanging' ? 'text-amber-700' : 'text-zinc-600'}`}>
                             {t.studio.hangingShot}
                           </span>
@@ -982,7 +982,7 @@ function StudioPageContent() {
                         : 'border-zinc-200 bg-white hover:border-zinc-300'
                     }`}
                   >
-                    <span className="text-xl">🎯</span>
+                    <span className="text-xl">⬇️</span>
                     <span className={`text-xs font-medium ${photoType === 'flatlay' ? 'text-amber-700' : 'text-zinc-600'}`}>
                       {t.studio.flatLay}
                     </span>
@@ -996,7 +996,7 @@ function StudioPageContent() {
                         : 'border-zinc-200 bg-white hover:border-zinc-300'
                     }`}
                   >
-                    <span className="text-xl">👕</span>
+                    <span className="text-xl">🧥</span>
                     <span className={`text-xs font-medium ${photoType === 'hanging' ? 'text-amber-700' : 'text-zinc-600'}`}>
                       {t.studio.hangingShot}
                     </span>
