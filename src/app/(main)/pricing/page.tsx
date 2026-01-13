@@ -70,7 +70,7 @@ export default function PricingPage() {
   const [loadingPriceId, setLoadingPriceId] = useState<string | null>(null)
   const router = useRouter()
   const { user } = useAuth()
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   
   const handleSubscribe = async (priceId: string) => {
     if (!user) {
@@ -86,6 +86,7 @@ export default function PricingPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           priceId,
+          locale: language, // 传递语言，让 Stripe Checkout 显示对应语言界面
           successUrl: `${window.location.origin}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
           cancelUrl: `${window.location.origin}/pricing`,
         }),

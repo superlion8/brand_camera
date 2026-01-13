@@ -12,11 +12,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '请先登录' }, { status: 401 })
     }
     
-    const { priceId, successUrl, cancelUrl } = await request.json()
+    const { priceId, successUrl, cancelUrl, currency, locale } = await request.json()
     
     if (!priceId) {
       return NextResponse.json({ error: '缺少价格 ID' }, { status: 400 })
     }
+    
+    // 货币映射（根据语言自动选择）
+    const currencyMap: Record<string, string> = {
+      zh: 'cny',
+      ko: 'krw',
+      en: 'usd',
+    }
+    const selectedCurrency = currency || currencyMap[locale] || 'usd'
+    
+    // Stripe Checkout 语言映射
+    const localeMap: Record<string, string> = {
+      zh: 'zh',
+      ko: 'ko',
+      en: 'en',
+    }
+    const checkoutLocale = localeMap[locale] || 'auto'
     
     // 获取或创建 Stripe Customer
     let customerId: string | undefined
@@ -66,7 +82,7 @@ export async function POST(request: NextRequest) {
     const isSubscription = isSubscriptionPrice(priceId)
     
     // 创建 Checkout Session
-    const session = await getStripe().checkout.sessions.create({
+    const sessionConfig: any = {
       customer: customerId,
       mode: isSubscription ? 'subscription' : 'payment',
       payment_method_types: ['card'],
@@ -78,30 +94,34 @@ export async function POST(request: NextRequest) {
       ],
       success_url: successUrl || `${request.headers.get('origin')}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancelUrl || `${request.headers.get('origin')}/pricing`,
+      locale: checkoutLocale, // Stripe Checkout 界面语言
       metadata: {
         user_id: user.id,
         price_id: priceId,
+        currency: selectedCurrency,
       },
-      // 订阅相关配置
-      ...(isSubscription && {
-        subscription_data: {
-          metadata: {
-            user_id: user.id,
-          },
-        },
-      }),
-      // 一次性支付相关配置
-      ...(!isSubscription && {
-        payment_intent_data: {
-          metadata: {
-            user_id: user.id,
-            price_id: priceId,
-          },
-        },
-      }),
       // 允许促销码
       allow_promotion_codes: true,
-    })
+    }
+    
+    // 订阅相关配置
+    if (isSubscription) {
+      sessionConfig.subscription_data = {
+        metadata: {
+          user_id: user.id,
+        },
+      }
+    } else {
+      // 一次性支付：可以指定货币（需要 price 支持该货币，或使用 price_data）
+      sessionConfig.payment_intent_data = {
+        metadata: {
+          user_id: user.id,
+          price_id: priceId,
+        },
+      }
+    }
+    
+    const session = await getStripe().checkout.sessions.create(sessionConfig)
     
     return NextResponse.json({ url: session.url })
     
