@@ -18,7 +18,7 @@ import { useQuota } from "@/hooks/useQuota"
 import { useGenerationTaskStore, base64ToBlobUrl } from "@/stores/generationTaskStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { Asset } from "@/types"
-import { PRESET_PRODUCTS } from "@/data/presets"
+import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { BottomNav } from "@/components/shared/BottomNav"
 
 // Product slot type
@@ -607,106 +607,26 @@ function LifestyleOutfitContent() {
         </AnimatePresence>
         
         {/* Asset picker panel */}
-        <AnimatePresence>
-          {showAssetPicker && (
-            <>
-              <motion.div 
-                initial={{ opacity: 0 }} 
-                animate={{ opacity: 1 }} 
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
-                onClick={() => setShowAssetPicker(false)}
-              />
-              <motion.div 
-                initial={{ y: "100%" }} 
-                animate={{ y: 0 }} 
-                exit={{ y: "100%" }}
-                transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className="fixed bottom-0 left-0 right-0 h-[80%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
-              >
-                <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
-                  <span className="font-semibold text-zinc-900 dark:text-white">
-                    {t.outfit?.selectProduct || '选择商品'} - {uploadTargetSlot ? labelMap[uploadTargetSlot] : ''}
-                  </span>
-                  <button onClick={() => setShowAssetPicker(false)} className="h-8 w-8 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center">
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-                
-                <div className="px-4 py-2 border-b shrink-0">
-                  <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1">
-                    <button
-                      onClick={() => setAssetPickerSource("preset")}
-                      className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
-                        assetPickerSource === "preset"
-                          ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
-                          : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-                      }`}
-                    >
-                      {t.common?.official || '官方'}{t.common?.preset || '预设'}
-                      <span className="ml-1 text-xs opacity-60">({PRESET_PRODUCTS.length})</span>
-                    </button>
-                    <button
-                      onClick={() => setAssetPickerSource("user")}
-                      className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
-                        assetPickerSource === "user"
-                          ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
-                          : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-                      }`}
-                    >
-                      {t.common?.my || '我的'}{t.nav?.assets || '资产'}
-                      <span className="ml-1 text-xs opacity-60">({userProducts.length})</span>
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto p-4">
-                  {(() => {
-                    const displayProducts = assetPickerSource === "preset" ? PRESET_PRODUCTS : userProducts
-                    
-                    if (displayProducts.length > 0) {
-                      return (
-                        <div className="grid grid-cols-3 gap-3">
-                          {displayProducts.map(product => (
-                            <div
-                              key={product.id}
-                              className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-purple-500 active:border-purple-600 transition-all group cursor-pointer"
-                              onClick={() => {
-                                if (uploadTargetSlot) {
-                                  setSlots(prev => prev.map(slot => 
-                                    slot.id === uploadTargetSlot
-                                      ? { ...slot, product: { imageUrl: product.imageUrl } }
-                                      : slot
-                                  ))
-                                }
-                                setShowAssetPicker(false)
-                                setUploadTargetSlot(null)
-                              }}
-                            >
-                              <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover pointer-events-none" />
-                              {product.name && (
-                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                  <p className="text-white text-xs truncate">{product.name}</p>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )
-                    } else {
-                      return (
-                        <div className="flex flex-col items-center justify-center h-full text-zinc-400">
-                          <FolderHeart className="w-12 h-12 mb-3 opacity-30" />
-                          <p className="text-sm">{t.outfit?.noProducts || '暂无商品'}</p>
-                        </div>
-                      )
-                    }
-                  })()}
-                </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
+        <AssetPickerPanel
+          open={showAssetPicker}
+          onClose={() => {
+            setShowAssetPicker(false)
+            setUploadTargetSlot(null)
+          }}
+          onSelect={(imageUrl) => {
+            if (uploadTargetSlot) {
+              setSlots(prev => prev.map(slot => 
+                slot.id === uploadTargetSlot
+                  ? { ...slot, product: { imageUrl } }
+                  : slot
+              ))
+            }
+            setUploadTargetSlot(null)
+          }}
+          onUploadClick={() => fileInputRef.current?.click()}
+          themeColor="purple"
+          title={`${t.outfit?.selectProduct || '选择商品'}${uploadTargetSlot ? ` - ${labelMap[uploadTargetSlot]}` : ''}`}
+        />
         
         {/* Custom panel */}
         <AnimatePresence>

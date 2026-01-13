@@ -14,7 +14,8 @@ import { fileToBase64, compressBase64Image, generateId, ensureBase64, saveProduc
 import { useAssetStore } from "@/stores/assetStore"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { useSettingsStore } from "@/stores/settingsStore"
-import { PRESET_PRODUCTS } from "@/data/presets"
+import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
+import { GalleryPickerPanel } from "@/components/shared/GalleryPickerPanel"
 import Image from "next/image"
 import { useQuota } from "@/hooks/useQuota"
 import { useAuth } from "@/components/providers/AuthProvider"
@@ -152,11 +153,9 @@ function StudioPageContent() {
   const [generatedModelTypes, setGeneratedModelTypes] = useState<('pro' | 'flash')[]>([])
   const [showProductPanel, setShowProductPanel] = useState(false)
   const [showGalleryPanel, setShowGalleryPanel] = useState(false)
-  const [productSourceTab, setProductSourceTab] = useState<'preset' | 'user'>('preset')
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null)
   const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null)
-  const [isLoadingAsset, setIsLoadingAsset] = useState(false)
   
   // Camera state
   const [hasCamera, setHasCamera] = useState(true)
@@ -1650,192 +1649,24 @@ function StudioPageContent() {
       </AnimatePresence>
       
       {/* Product Selection Panel */}
-      <AnimatePresence>
-        {showProductPanel && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
-              onClick={() => setShowProductPanel(false)}
-            />
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed bottom-0 left-0 right-0 h-[70%] bg-white rounded-t-2xl z-50 flex flex-col overflow-hidden"
-            >
-              <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
-                <span className="font-semibold">{t.studio.selectProduct}</span>
-                <button
-                  onClick={() => setShowProductPanel(false)}
-                  className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              
-              {/* Source Tabs */}
-              <div className="px-4 py-2 border-b bg-white">
-                <div className="flex bg-zinc-100 rounded-lg p-1">
-                  <button
-                    onClick={() => setProductSourceTab("preset")}
-                    className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${
-                      productSourceTab === "preset"
-                        ? "bg-white text-zinc-900 shadow-sm"
-                        : "text-zinc-500 hover:text-zinc-700"
-                    }`}
-                  >
-                    {t.studio.officialExamples} ({PRESET_PRODUCTS.length})
-                  </button>
-                  <button
-                    onClick={() => setProductSourceTab("user")}
-                    className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${
-                      productSourceTab === "user"
-                        ? "bg-white text-zinc-900 shadow-sm"
-                        : "text-zinc-500 hover:text-zinc-700"
-                    }`}
-                  >
-                    {t.studio.myProducts} ({userProducts.length})
-                  </button>
-                </div>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto bg-zinc-50 p-4 relative">
-                {/* Loading overlay */}
-                {isLoadingAsset && (
-                  <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
-                    <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
-                  </div>
-                )}
-                {productSourceTab === 'preset' ? (
-                  <div className="grid grid-cols-3 gap-3">
-                    {PRESET_PRODUCTS.map(product => (
-                      <button
-                        key={product.id}
-                        disabled={isLoadingAsset}
-                        onClick={() => handleSelectFromAsset(product.imageUrl)}
-                        className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-amber-500 transition-all bg-white disabled:opacity-50"
-                      >
-                        <Image src={product.imageUrl} alt={product.name || ''} fill className="object-cover" />
-                        <span className="absolute top-1 left-1 bg-amber-500 text-white text-[8px] px-1 py-0.5 rounded font-medium">
-                          {t.common.official}
-                        </span>
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-1.5 pt-4">
-                          <p className="text-[10px] text-white truncate text-center">{product.name}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                ) : userProducts.length > 0 ? (
-                  <div className="grid grid-cols-3 gap-3">
-                    {userProducts.map(product => (
-                      <button
-                        key={product.id}
-                        disabled={isLoadingAsset}
-                        onClick={() => handleSelectFromAsset(product.imageUrl)}
-                        className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-amber-500 transition-all bg-white disabled:opacity-50"
-                      >
-                        <Image src={product.imageUrl} alt={product.name || ''} fill className="object-cover" />
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-1.5 pt-4">
-                          <p className="text-[10px] text-white truncate text-center">{product.name}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-zinc-400">
-                    <FolderHeart className="w-12 h-12 mb-3 opacity-30" />
-                    <p className="text-sm">{t.studio.noMyProducts}</p>
-                    <p className="text-xs mt-1">{t.studio.uploadInAssets}</p>
-                    <button
-                      onClick={() => {
-                        setShowProductPanel(false)
-                        router.push("/brand-assets")
-                      }}
-                      className="mt-4 px-4 py-2 bg-amber-500 text-white text-sm rounded-lg hover:bg-amber-600"
-                    >
-                      {t.studio.goUpload}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      <AssetPickerPanel
+        open={showProductPanel}
+        onClose={() => setShowProductPanel(false)}
+        onSelect={handleSelectFromAsset}
+        onUploadClick={() => fileInputRef.current?.click()}
+        themeColor="amber"
+      />
       
       {/* Gallery Selection Panel */}
-      <AnimatePresence>
-        {showGalleryPanel && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
-              onClick={() => setShowGalleryPanel(false)}
-            />
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed bottom-0 left-0 right-0 h-[70%] bg-white rounded-t-2xl z-50 flex flex-col overflow-hidden"
-            >
-              <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
-                <span className="font-semibold">{t.edit.selectFromGallery}</span>
-                <button
-                  onClick={() => setShowGalleryPanel(false)}
-                  className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto bg-zinc-50 p-4 relative">
-                {/* Loading overlay */}
-                {isLoadingAsset && (
-                  <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
-                    <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
-                  </div>
-                )}
-                {generations.length > 0 ? (
-                  <div className="grid grid-cols-3 gap-2">
-                    {generations.flatMap(gen => 
-                      (gen.outputImageUrls || []).map((url, idx) => (
-                        <button
-                          key={`${gen.id}-${idx}`}
-                          disabled={isLoadingAsset}
-                          onClick={async () => {
-                            setIsLoadingAsset(true)
-                            // 直接使用 URL，后端会转换为 base64
-                            setProductImage(url)
-                            setProductFromPhone(false) // From gallery, don't save again
-                            setShowGalleryPanel(false)
-                            setIsLoadingAsset(false)
-                          }}
-                          className="aspect-[4/5] rounded-lg overflow-hidden relative border-2 border-transparent hover:border-amber-500 transition-all bg-white disabled:opacity-50"
-                        >
-                          <Image src={url} alt={`Gallery ${idx + 1}`} fill className="object-cover" />
-                        </button>
-                      ))
-                    ).slice(0, 30)}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-zinc-400">
-                    <Home className="w-12 h-12 mb-3 opacity-30" />
-                    <p className="text-sm">{t.studio.noGalleryImages}</p>
-                    <p className="text-xs mt-1">{t.studio.goShootToGenerate}</p>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      <GalleryPickerPanel
+        open={showGalleryPanel}
+        onClose={() => setShowGalleryPanel(false)}
+        onSelect={(url) => {
+          setProductImage(url)
+          setProductFromPhone(false)
+        }}
+        themeColor="amber"
+      />
       
     </div>
   )
