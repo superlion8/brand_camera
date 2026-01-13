@@ -1792,7 +1792,10 @@ function CameraPageContent() {
                   }
                 }),
               ] : []}
-              inputImages={capturedImage ? [{ url: capturedImage, label: t.common?.product || 'Product' }] : []}
+              inputImages={[
+                ...(capturedImage ? [{ url: capturedImage, label: `${t.common?.product || 'Product'} 1` }] : []),
+                ...(capturedImage2 ? [{ url: capturedImage2, label: `${t.common?.product || 'Product'} 2` }] : []),
+              ]}
               onInputImageClick={(url) => setFullscreenImage(url)}
             >
               {/* Debug content */}
