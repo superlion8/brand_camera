@@ -230,7 +230,7 @@ export function ResultsView({
 
       {/* Content */}
       <div className={`flex-1 overflow-y-auto ${isDesktop ? 'py-8' : 'p-4 pb-8'}`}>
-        <div className={isDesktop ? 'max-w-4xl mx-auto px-8' : ''}>
+        <div className={isDesktop ? 'max-w-6xl mx-auto px-8' : ''}>
           {/* Image Grid */}
           <div className={`grid gap-4 ${isDesktop ? `grid-cols-${gridCols.desktop}` : `grid-cols-${gridCols.mobile} gap-3`}`}>
             {images.map((img, i) => {

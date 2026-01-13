@@ -438,6 +438,12 @@ function CameraPageContent() {
   const handleShootIt = async () => {
     if (!capturedImage) return
     
+    // Clear previous results first (for Regenerate to show skeleton)
+    setGeneratedImages([])
+    setGeneratedModelTypes([])
+    setGeneratedGenModes([])
+    setGeneratedPrompts([])
+    
     // Check quota before starting generation
     const hasQuota = await checkQuota(CAMERA_NUM_IMAGES)
     if (!hasQuota) {
@@ -1340,16 +1346,16 @@ function CameraPageContent() {
                               <div
                                 key={model.id}
                                 className={`aspect-[3/4] rounded-lg overflow-hidden relative border-2 transition-all group ${
-                                  selectedModel === model.id
-                                    ? 'border-blue-500 ring-2 ring-blue-500/30'
+                                  selectedModel === model.id 
+                                    ? 'border-blue-500 ring-2 ring-blue-500/30' 
                                     : 'border-transparent hover:border-blue-300'
                                 }`}
                               >
                                 <button
                                   onClick={() => setSelectedModel(selectedModel === model.id ? null : model.id)}
                                   className="absolute inset-0"
-                                >
-                                  <Image src={model.imageUrl} alt={model.name || ''} fill className="object-cover" />
+                              >
+                                <Image src={model.imageUrl} alt={model.name || ''} fill className="object-cover" />
                                 </button>
                                 {selectedModel === model.id && (
                                   <div className="absolute top-1 right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
@@ -1364,7 +1370,7 @@ function CameraPageContent() {
                                   className="absolute bottom-1 right-1 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
                                 >
                                   <ZoomIn className="w-3 h-3 text-white" />
-                                </button>
+                              </button>
                               </div>
                             ))}
                           </div>
@@ -1405,23 +1411,23 @@ function CameraPageContent() {
                               <div
                                 key={bg.id}
                                 className={`aspect-[3/4] rounded-lg overflow-hidden relative border-2 transition-all group ${
-                                  selectedBg === bg.id
-                                    ? 'border-blue-500 ring-2 ring-blue-500/30'
+                                  selectedBg === bg.id 
+                                    ? 'border-blue-500 ring-2 ring-blue-500/30' 
                                     : 'border-transparent hover:border-blue-300'
                                 }`}
                               >
                                 <button
                                   onClick={() => setSelectedBg(selectedBg === bg.id ? null : bg.id)}
                                   className="absolute inset-0"
-                                >
-                                  <Image src={bg.imageUrl} alt={bg.name || ''} fill className="object-cover" />
+                              >
+                                <Image src={bg.imageUrl} alt={bg.name || ''} fill className="object-cover" />
                                 </button>
                                 {selectedBg === bg.id && (
                                   <div className="absolute top-1 right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
                                     <Check className="w-2.5 h-2.5 text-white" />
                                   </div>
                                 )}
-                                <button
+                              <button 
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     setFullscreenImage(bg.imageUrl)
@@ -1429,14 +1435,14 @@ function CameraPageContent() {
                                   className="absolute bottom-1 right-1 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
                                 >
                                   <ZoomIn className="w-3 h-3 text-white" />
-                                </button>
+                              </button>
+                            </div>
+                                  ))}
+                                </div>
                               </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                                </div>
+                                        </div>
+                                </div>
                   
                   {/* Model and Scene Pickers are rendered at the page level */}
                 </div>
@@ -1690,10 +1696,10 @@ function CameraPageContent() {
             title={t.camera?.thisResults || 'Results'}
             onBack={handleRetake}
             images={[0, 1, 2, 3].map((i) => {
-              const currentTask = tasks.find(t => t.id === currentTaskId)
-              const slot = currentTask?.imageSlots?.[i]
-              const url = slot?.imageUrl || generatedImages[i]
-              const status = slot?.status || (url ? 'completed' : 'failed')
+                    const currentTask = tasks.find(t => t.id === currentTaskId)
+                    const slot = currentTask?.imageSlots?.[i]
+                    const url = slot?.imageUrl || generatedImages[i]
+                    const status = slot?.status || (url ? 'completed' : 'failed')
               return {
                 url,
                 status: status as 'completed' | 'pending' | 'generating' | 'failed',
@@ -1744,7 +1750,7 @@ function CameraPageContent() {
               }}
               onFullscreen={() => {
                 if (selectedResultIndex === null) return
-                const currentTask = tasks.find(t => t.id === currentTaskId)
+                    const currentTask = tasks.find(t => t.id === currentTaskId)
                 const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
                 const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
                 if (selectedImageUrl) setFullscreenImage(selectedImageUrl)
@@ -1776,9 +1782,9 @@ function CameraPageContent() {
                   }
                 }),
                 createQuickActions.material(() => {
-                  const currentTask = tasks.find(t => t.id === currentTaskId)
-                  const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
-                  const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
+              const currentTask = tasks.find(t => t.id === currentTaskId)
+              const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+              const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
                   if (selectedImageUrl) {
                     sessionStorage.setItem('modifyMaterial_outputImage', selectedImageUrl)
                     sessionStorage.setItem('modifyMaterial_inputImages', JSON.stringify([capturedImage].filter(Boolean)))
@@ -1792,106 +1798,106 @@ function CameraPageContent() {
               {/* Debug content */}
               {debugMode && selectedResultIndex !== null && (() => {
                 const generation = currentGenerationId ? generations.find(g => g.id === currentGenerationId) : null
-                const savedParams = generation?.params
-                
-                return (
-                  <div className="mt-4 pt-4 border-t border-zinc-100">
-                    <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.camera.debugParams}</h3>
-                    
-                    {generatedPrompts[selectedResultIndex] && (
-                      <div className="mb-4">
-                        <p className="text-xs font-medium text-zinc-500 mb-2">Prompt</p>
-                        <div className="bg-zinc-50 rounded-lg p-3 max-h-32 overflow-y-auto">
-                          <pre className="text-[11px] text-zinc-600 whitespace-pre-wrap font-mono leading-relaxed">
-                            {generatedPrompts[selectedResultIndex]}
-                          </pre>
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-4 gap-2">
-                        {(capturedImage || generation?.inputImageUrl) && (
-                          <div className="flex flex-col items-center">
-                            <div 
-                              className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"
-                              onClick={() => setFullscreenImage(capturedImage || generation?.inputImageUrl || '')}
-                            >
-                              <img src={capturedImage || generation?.inputImageUrl || ''} alt={t.camera.productOriginal} className="w-full h-full object-cover" />
-                              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <ZoomIn className="w-4 h-4 text-white" />
+                        const savedParams = generation?.params
+                        
+                        return (
+                        <div className="mt-4 pt-4 border-t border-zinc-100">
+                          <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.camera.debugParams}</h3>
+                          
+                          {generatedPrompts[selectedResultIndex] && (
+                            <div className="mb-4">
+                              <p className="text-xs font-medium text-zinc-500 mb-2">Prompt</p>
+                              <div className="bg-zinc-50 rounded-lg p-3 max-h-32 overflow-y-auto">
+                                <pre className="text-[11px] text-zinc-600 whitespace-pre-wrap font-mono leading-relaxed">
+                                  {generatedPrompts[selectedResultIndex]}
+                                </pre>
                               </div>
                             </div>
-                            <p className="text-[10px] text-zinc-500 mt-1">{t.camera.productOriginal}</p>
-                          </div>
-                        )}
-                        
-                        {(() => {
-                          const perImageModel = savedParams?.perImageModels?.[selectedResultIndex]
-                          const modelUrl = perImageModel?.imageUrl || savedParams?.modelImage || activeModel?.imageUrl
-                          const modelName = perImageModel?.name || savedParams?.model || activeModel?.name
-                          if (!modelUrl) return null
-                          return (
-                            <div className="flex flex-col items-center">
+                          )}
+                          
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-4 gap-2">
+                              {(capturedImage || generation?.inputImageUrl) && (
+                                <div className="flex flex-col items-center">
+                                  <div 
+                                    className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"
+                                    onClick={() => setFullscreenImage(capturedImage || generation?.inputImageUrl || '')}
+                                  >
+                              <img src={capturedImage || generation?.inputImageUrl || ''} alt={t.camera.productOriginal} className="w-full h-full object-cover" />
+                                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                      <ZoomIn className="w-4 h-4 text-white" />
+                                    </div>
+                                  </div>
+                                  <p className="text-[10px] text-zinc-500 mt-1">{t.camera.productOriginal}</p>
+                                </div>
+                              )}
+                              
+                              {(() => {
+                                const perImageModel = savedParams?.perImageModels?.[selectedResultIndex]
+                                const modelUrl = perImageModel?.imageUrl || savedParams?.modelImage || activeModel?.imageUrl
+                                const modelName = perImageModel?.name || savedParams?.model || activeModel?.name
+                                if (!modelUrl) return null
+                                return (
+                                  <div className="flex flex-col items-center">
                               <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group" onClick={() => setFullscreenImage(modelUrl)}>
                                 <Image src={modelUrl} alt="Model" width={56} height={56} className="w-full h-full object-cover" />
-                                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                  <ZoomIn className="w-4 h-4 text-white" />
-                                </div>
-                              </div>
+                                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <ZoomIn className="w-4 h-4 text-white" />
+                                      </div>
+                                    </div>
                               <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{modelName || t.common.model}</p>
-                            </div>
-                          )
-                        })()}
-                        
-                        {(() => {
-                          const perImageBg = savedParams?.perImageBackgrounds?.[selectedResultIndex]
-                          const bgUrl = perImageBg?.imageUrl || savedParams?.backgroundImage || activeBg?.imageUrl
-                          const bgName = perImageBg?.name || savedParams?.background || activeBg?.name
-                          if (!bgUrl) return null
-                          return (
-                            <div className="flex flex-col items-center">
+                                  </div>
+                                )
+                              })()}
+                              
+                              {(() => {
+                                const perImageBg = savedParams?.perImageBackgrounds?.[selectedResultIndex]
+                                const bgUrl = perImageBg?.imageUrl || savedParams?.backgroundImage || activeBg?.imageUrl
+                                const bgName = perImageBg?.name || savedParams?.background || activeBg?.name
+                                if (!bgUrl) return null
+                                return (
+                                  <div className="flex flex-col items-center">
                               <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group" onClick={() => setFullscreenImage(bgUrl)}>
                                 <Image src={bgUrl} alt="Background" width={56} height={56} className="w-full h-full object-cover" />
-                                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                  <ZoomIn className="w-4 h-4 text-white" />
-                                </div>
-                              </div>
+                                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <ZoomIn className="w-4 h-4 text-white" />
+                                      </div>
+                                    </div>
                               <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{bgName || t.common.background}</p>
+                                  </div>
+                                )
+                              })()}
                             </div>
-                          )
-                        })()}
-                      </div>
-                      
-                      {(generatedModelTypes[selectedResultIndex] || generation?.outputModelTypes?.[selectedResultIndex]) && (
-                        <div className="mt-3 mb-3">
-                          <span className={`px-2 py-1 rounded text-[10px] font-medium ${
-                            (generatedModelTypes[selectedResultIndex] || generation?.outputModelTypes?.[selectedResultIndex]) === 'pro' 
+                            
+                            {(generatedModelTypes[selectedResultIndex] || generation?.outputModelTypes?.[selectedResultIndex]) && (
+                              <div className="mt-3 mb-3">
+                                <span className={`px-2 py-1 rounded text-[10px] font-medium ${
+                                  (generatedModelTypes[selectedResultIndex] || generation?.outputModelTypes?.[selectedResultIndex]) === 'pro' 
                               ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                          }`}>
+                                }`}>
                             Model: Gemini {(generatedModelTypes[selectedResultIndex] || generation?.outputModelTypes?.[selectedResultIndex]) === 'pro' ? '3.0 Pro' : '2.5 Flash'}
-                          </span>
-                        </div>
-                      )}
-                      
+                                </span>
+                              </div>
+                            )}
+                            
                       {((savedParams?.modelStyle || selectedModelStyle) && (savedParams?.modelStyle || selectedModelStyle) !== 'auto') && (
-                        <div className="flex gap-2 flex-wrap">
-                          <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
-                            {t.common.style}: {(savedParams?.modelStyle || selectedModelStyle) === 'korean' ? t.common.korean : 
-                                   (savedParams?.modelStyle || selectedModelStyle) === 'western' ? t.common.western : 
-                                   (savedParams?.modelStyle || selectedModelStyle)}
-                          </span>
-                          {(savedParams?.modelGender || selectedModelGender) && (
-                            <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
-                              {t.common.gender}: {MODEL_GENDERS.find(g => g.id === (savedParams?.modelGender || selectedModelGender))?.label}
-                            </span>
-                          )}
-                        </div>
+                              <div className="flex gap-2 flex-wrap">
+                                  <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
+                                    {t.common.style}: {(savedParams?.modelStyle || selectedModelStyle) === 'korean' ? t.common.korean : 
+                                           (savedParams?.modelStyle || selectedModelStyle) === 'western' ? t.common.western : 
+                                           (savedParams?.modelStyle || selectedModelStyle)}
+                                  </span>
+                                {(savedParams?.modelGender || selectedModelGender) && (
+                                  <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
+                                    {t.common.gender}: {MODEL_GENDERS.find(g => g.id === (savedParams?.modelGender || selectedModelGender))?.label}
+                                  </span>
+                                )}
+                              </div>
                       )}
-                    </div>
-                  </div>
-                )
-              })()}
+                          </div>
+                        </div>
+                        )
+                      })()}
             </PhotoDetailDialog>
           </ResultsView>
         )}

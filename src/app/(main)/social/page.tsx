@@ -384,7 +384,11 @@ function SocialPageContent() {
   
   const handleShootIt = async () => {
     if (!capturedImage) return
-    
+
+    // Clear previous results first (for Regenerate to show skeleton)
+    setGeneratedImages([])
+    setGeneratedModelTypes([])
+
     // Check quota before starting generation
     const hasQuota = await checkQuota(SOCIAL_NUM_IMAGES)
     if (!hasQuota) {

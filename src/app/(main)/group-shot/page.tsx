@@ -163,6 +163,9 @@ function GroupShootPageContent() {
   const handleStartGeneration = async () => {
     if (!selectedImage) return
 
+    // Clear previous results first (for Regenerate to show skeleton)
+    setGeneratedImages([])
+
     const numImages = GROUP_NUM_IMAGES  // 固定4张图
     const hasQuota = await checkQuota(numImages)
     if (!hasQuota) return
@@ -183,9 +186,9 @@ function GroupShootPageContent() {
     
     // 预扣配额（使用统一 hook）
     const reserveResult = await reserveQuota({
-      taskId,
-      imageCount: numImages,
-      taskType: 'group_shoot',
+          taskId,
+          imageCount: numImages,
+          taskType: 'group_shoot',
     })
     
     if (!reserveResult.success) {
@@ -686,8 +689,8 @@ function GroupShootPageContent() {
             themeColor={styleMode === 'lifestyle' ? 'blue' : 'amber'}
             gridCols={numImages <= 4 ? 4 : numImages <= 6 ? 3 : 4}
             title={styleMode === 'lifestyle' 
-              ? (t.groupShootPage?.creatingLifestyle || 'Creating lifestyle group photos')
-              : (t.groupShootPage?.creatingStudio || 'Creating studio group photos')}
+                          ? (t.groupShootPage?.creatingLifestyle || 'Creating lifestyle group photos')
+                          : (t.groupShootPage?.creatingStudio || 'Creating studio group photos')}
             mobileStatusLines={[
               t.groupShootPage?.analyzingFeatures || 'Analyzing image features',
               (t.groupShootPage?.generatingImages || 'Generating {count} images...').replace('{count}', String(numImages)),
@@ -708,10 +711,10 @@ function GroupShootPageContent() {
             title={styleMode === 'lifestyle' ? (t.groupShootPage?.lifestyleMode || 'Lifestyle') : (t.groupShootPage?.studioMode || 'Studio')}
             onBack={handleReselect}
             images={Array.from({ length: numImages }).map((_, i) => {
-              const task = tasks.find(t => t.id === currentTaskId)
-              const slot = task?.imageSlots?.[i]
-              const url = slot?.imageUrl || generatedImages[i]
-              const status = slot?.status || (url ? 'completed' : 'pending')
+                  const task = tasks.find(t => t.id === currentTaskId)
+                  const slot = task?.imageSlots?.[i]
+                  const url = slot?.imageUrl || generatedImages[i]
+                  const status = slot?.status || (url ? 'completed' : 'pending')
               return {
                 url,
                 status: status as 'completed' | 'pending' | 'generating' | 'failed',

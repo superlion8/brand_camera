@@ -325,7 +325,10 @@ function StudioPageContent() {
   
   const handleGenerate = async () => {
     if (!productImage) return
-    
+
+    // Clear previous results first (for Regenerate to show skeleton)
+    setGeneratedImages([])
+
     // Check quota before starting generation
     const hasQuota = await checkQuota(CREDIT_COST)
     if (!hasQuota) {

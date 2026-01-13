@@ -483,6 +483,10 @@ function ProStudioPageContent() {
   const handleShootIt = async () => {
     if (!capturedImage) return
 
+    // Clear previous results first (for Regenerate to show skeleton)
+    setGeneratedImages([])
+    setGeneratedModes([])
+
     // 如果有第二张商品，跳转到搭配页面
     if (capturedImage2) {
       // 上传图片到 Storage，避免 sessionStorage 存大量 base64

@@ -304,7 +304,11 @@ function LifestylePageContent() {
 
   const handleLifestyleGenerate = async () => {
     if (!capturedImage) return
-    
+
+    // Clear previous results first (for Regenerate to show skeleton)
+    setGeneratedImages([])
+    setGeneratedModelTypes([])
+
     const hasQuota = await checkQuota(LIFESTYLE_NUM_IMAGES)
     if (!hasQuota) return
     

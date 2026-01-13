@@ -199,7 +199,10 @@ export default function TryOnPage() {
   // Start generation
   const handleGenerate = async () => {
     if (!personImage || clothingImages.length === 0) return
-    
+
+    // Clear previous results first (for Regenerate to show skeleton)
+    setResultImages([])
+
     const hasQuota = await checkQuota(CREDIT_COST)
     if (!hasQuota) return
     
@@ -887,53 +890,53 @@ export default function TryOnPage() {
               isFavorited={selectedResultIndex !== null && isFavorited(selectedResultIndex)}
               onDownload={async () => {
                 if (selectedResultIndex === null) return
-                const url = resultImages[selectedResultIndex]
-                try {
-                  const response = await fetch(url)
-                  const blob = await response.blob()
-                  const blobUrl = URL.createObjectURL(blob)
-                  const link = document.createElement("a")
-                  link.href = blobUrl
-                  link.download = `try-on-${Date.now()}.jpg`
-                  document.body.appendChild(link)
-                  link.click()
-                  document.body.removeChild(link)
-                  URL.revokeObjectURL(blobUrl)
-                } catch (error) {
-                  console.error("Download failed:", error)
-                }
-              }}
+                            const url = resultImages[selectedResultIndex]
+                            try {
+                              const response = await fetch(url)
+                              const blob = await response.blob()
+                              const blobUrl = URL.createObjectURL(blob)
+                              const link = document.createElement("a")
+                              link.href = blobUrl
+                              link.download = `try-on-${Date.now()}.jpg`
+                              document.body.appendChild(link)
+                              link.click()
+                              document.body.removeChild(link)
+                              URL.revokeObjectURL(blobUrl)
+                            } catch (error) {
+                              console.error("Download failed:", error)
+                            }
+                          }}
               onFullscreen={() => {
                 if (selectedResultIndex === null) return
                 setFullscreenImage(resultImages[selectedResultIndex])
               }}
               quickActions={selectedResultIndex !== null ? [
                 createQuickActions.tryOn(() => {
-                  const imageUrl = resultImages[selectedResultIndex]
-                  setPersonImage(imageUrl)
-                  setClothingImages([])
-                  setSelectedResultIndex(null)
-                  setMode('main')
+                              const imageUrl = resultImages[selectedResultIndex]
+                              setPersonImage(imageUrl)
+                              setClothingImages([])
+                              setSelectedResultIndex(null)
+                              setMode('main')
                 }),
                 createQuickActions.edit(() => {
-                  const imageUrl = resultImages[selectedResultIndex]
+                              const imageUrl = resultImages[selectedResultIndex]
                   navigateToEdit(router, imageUrl)
                 }),
                 createQuickActions.groupShoot(() => {
-                  const imageUrl = resultImages[selectedResultIndex]
-                  sessionStorage.setItem('groupShootImage', imageUrl)
-                  setSelectedResultIndex(null)
-                  router.push("/group-shot")
+                            const imageUrl = resultImages[selectedResultIndex]
+                            sessionStorage.setItem('groupShootImage', imageUrl)
+                            setSelectedResultIndex(null)
+                            router.push("/group-shot")
                 }),
                 createQuickActions.material(() => {
-                  const imageUrl = resultImages[selectedResultIndex]
+                            const imageUrl = resultImages[selectedResultIndex]
                   const inputImgs: string[] = []
                   if (clothingImages.length > 0) inputImgs.push(...clothingImages)
                   if (personImage) inputImgs.push(personImage)
-                  sessionStorage.setItem('modifyMaterial_outputImage', imageUrl)
+                            sessionStorage.setItem('modifyMaterial_outputImage', imageUrl)
                   sessionStorage.setItem('modifyMaterial_inputImages', JSON.stringify(inputImgs))
-                  setSelectedResultIndex(null)
-                  router.push("/gallery/modify-material")
+                            setSelectedResultIndex(null)
+                            router.push("/gallery/modify-material")
                 }),
               ] : []}
               inputImages={[
