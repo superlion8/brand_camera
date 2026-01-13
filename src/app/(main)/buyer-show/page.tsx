@@ -22,6 +22,7 @@ import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { useImageDownload } from "@/hooks/useImageDownload"
 import { navigateToEdit } from "@/lib/navigation"
+import { ProcessingView } from "@/components/shared/ProcessingView"
 import { usePresetStore } from "@/stores/presetStore"
 import { useQuota } from "@/hooks/useQuota"
 import { useQuotaReservation } from "@/hooks/useQuotaReservation"
@@ -1972,120 +1973,25 @@ function CameraPageContent() {
         )}
 
         {mode === "processing" && (
-          <motion.div 
-            key="processing"
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
-            exit={{ opacity: 0 }}
-            className={`flex-1 flex flex-col ${isDesktop ? 'bg-zinc-50' : 'bg-zinc-950 items-center justify-center p-8 text-center'}`}
-          >
-            {isDesktop ? (
-              /* PC Web: Skeleton grid layout */
-              <>
-                <div className="bg-white border-b border-zinc-200">
-                  <div className="max-w-4xl mx-auto px-8 py-4">
-                    <div className="flex items-center justify-between">
-                      <button onClick={handleNewPhotoDuringProcessing} className="flex items-center gap-2 text-zinc-600 hover:text-zinc-900 font-medium">
-                        <ArrowLeft className="w-5 h-5" />
-                        <span>{t.camera?.shootNew || 'Shoot More'}</span>
-                      </button>
-                      <span className="font-bold text-zinc-900">{t.camera?.generating || 'Creating buyer show photos'}</span>
-                      <div className="w-20" />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto py-8">
-                  <div className="max-w-4xl mx-auto px-8">
-                    <div className="grid grid-cols-4 gap-3">
-                      {Array.from({ length: CAMERA_NUM_IMAGES }).map((_, i) => {
-                        const url = generatedImages[i]
-                        const currentTask = tasks.find(t => t.id === currentTaskId)
-                        const slot = currentTask?.imageSlots?.[i]
-                        const status = slot?.status || (url ? 'completed' : 'generating')
-                        
-                        return (
-                          <div key={i} className="aspect-[3/4] rounded-xl bg-zinc-200 overflow-hidden relative group">
-                            {url ? (
-                              <>
-                                <Image src={url} alt="Result" fill className="object-cover" />
-                                <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <button className="w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm hover:bg-white">
-                                    <Heart className="w-3.5 h-3.5 text-zinc-500" />
-                                  </button>
-                                  <button 
-                                    onClick={(e) => { e.stopPropagation(); handleDownload(url, currentGenerationId || undefined, i) }}
-                                    className="w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm hover:bg-white"
-                                  >
-                                    <Download className="w-3.5 h-3.5 text-zinc-500" />
-                                  </button>
-                                </div>
-                              </>
-                            ) : status === 'failed' ? (
-                              <div className="absolute inset-0 flex items-center justify-center text-zinc-400">
-                                <span className="text-xs">{t.camera?.generationFailed || 'Failed'}</span>
-                              </div>
-                            ) : (
-                              <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-100 animate-pulse">
-                                <Loader2 className="w-6 h-6 text-blue-500 animate-spin mb-2" />
-                                <span className="text-xs text-zinc-400">{t.common?.generating || 'Generating...'}</span>
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })}
-                    </div>
-                    
-                    <div className="flex justify-center gap-3 mt-8">
-                      <button onClick={handleNewPhotoDuringProcessing} className="px-6 h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center gap-2 transition-colors">
-                        <Camera className="w-4 h-4" />
-                        {t.camera?.shootNew || 'Shoot More'}
-                      </button>
-                      <button onClick={handleReturnDuringProcessing} className="px-6 h-11 rounded-xl bg-white hover:bg-zinc-100 text-zinc-700 font-medium flex items-center gap-2 transition-colors border border-zinc-200">
-                        <Home className="w-4 h-4" />
-                        {t.camera?.returnHome || 'Return Home'}
-                      </button>
-                      <button onClick={() => router.push("/gallery")} className="px-6 h-11 rounded-xl bg-white hover:bg-zinc-100 text-zinc-700 font-medium flex items-center gap-2 transition-colors border border-zinc-200">
-                        <FolderHeart className="w-4 h-4" />
-                        {t.lifestyle?.goToPhotos || 'Go to Photos'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </>
-            ) : (
-              /* Mobile: Original spinner layout */
-              <>
-                <div className="relative mb-6">
-                  <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full animate-pulse" />
-                  <Loader2 className="w-16 h-16 text-blue-500 animate-spin relative z-10" />
-                </div>
-                <h3 className="text-white text-2xl font-bold mb-2">{t.camera?.generating || 'Generating'}</h3>
-                <div className="text-zinc-400 space-y-1 text-sm mb-8">
-                  <p>{t.camera?.analyzeProduct || 'Analyzing product'}</p>
-                  {activeModel && <p>{t.camera?.generateModel || 'Using model'} {activeModel.name} ...</p>}
-                  {selectedModelStyle && selectedModelStyle !== 'auto' && !activeModel && (
-                    <p>{t.camera?.matchingStyle || 'Matching style...'}</p>
-                  )}
-                  {activeBg && <p>{t.camera?.renderScene || 'Rendering scene'}</p>}
-                </div>
-                
-                <div className="space-y-3 w-full max-w-xs">
-                  <p className="text-zinc-500 text-xs mb-4">{t.camera?.continueInBackground || 'Generation continues in background:'}</p>
-                  <button onClick={handleNewPhotoDuringProcessing} className="w-full h-12 rounded-full bg-white text-black font-medium flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors">
-                    <Camera className="w-5 h-5" />
-                    {t.camera?.shootNew || 'Shoot More'}
-                  </button>
-                  <button onClick={handleReturnDuringProcessing} className="w-full h-12 rounded-full bg-white/10 text-white font-medium flex items-center justify-center gap-2 hover:bg-white/20 transition-colors border border-white/20">
-                    <Home className="w-5 h-5" />
-                    {t.camera?.returnHome || 'Return Home'}
-                  </button>
-                </div>
-                
-                {!isDesktop && <BottomNav forceShow />}
-              </>
-            )}
-          </motion.div>
+          <ProcessingView
+            numImages={CAMERA_NUM_IMAGES}
+            generatedImages={generatedImages}
+            imageSlots={tasks.find(t => t.id === currentTaskId)?.imageSlots?.map(slot => ({
+              url: slot.imageUrl,
+              status: slot.status as 'generating' | 'completed' | 'failed'
+            }))}
+            themeColor="blue"
+            title={t.camera?.generating || 'Creating buyer show photos'}
+            mobileStatusLines={[
+              t.camera?.analyzeProduct || 'Analyzing product',
+              ...(activeModel ? [`${t.camera?.generateModel || 'Using model'} ${activeModel.name} ...`] : []),
+              ...(selectedModelStyle && selectedModelStyle !== 'auto' && !activeModel ? [t.camera?.matchingStyle || 'Matching style...'] : []),
+              ...(activeBg ? [t.camera?.renderScene || 'Rendering scene'] : []),
+            ]}
+            onShootMore={handleNewPhotoDuringProcessing}
+            onReturnHome={handleReturnDuringProcessing}
+            onDownload={(url, i) => handleDownload(url, currentGenerationId || undefined, i)}
+          />
         )}
 
         {mode === "results" && (
