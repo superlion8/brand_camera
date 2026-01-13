@@ -21,7 +21,7 @@ import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { ModelPickerPanel } from "@/components/shared/ModelPickerPanel"
 import { ScenePickerPanel } from "@/components/shared/ScenePickerPanel"
 import { AssetGrid } from "@/components/shared/AssetGrid"
-import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
+import { PhotoDetailDialog, createQuickActions } from "@/components/shared/PhotoDetailDialog"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { useImageDownload } from "@/hooks/useImageDownload"
 import { useFavorite } from "@/hooks/useFavorite"
@@ -1687,8 +1687,8 @@ function CameraPageContent() {
             onRegenerate={handleShootIt}
             onImageClick={(i) => setSelectedResultIndex(i)}
           >
-            {/* Result Detail Dialog */}
-            <ResultDetailDialog
+            {/* Photo Detail Dialog */}
+            <PhotoDetailDialog
               open={selectedResultIndex !== null && !!(() => {
                 const currentTask = tasks.find(t => t.id === currentTaskId)
                 const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex!]
@@ -1704,16 +1704,8 @@ function CameraPageContent() {
               badges={selectedResultIndex !== null ? [
                 {
                   text: selectedResultIndex < 2 ? (t.gallery?.simpleMode || "Simple") : (t.gallery?.extendedMode || "Extended"),
-                  className: selectedResultIndex < 2 ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
+                  className: selectedResultIndex < 2 ? "bg-green-500 text-white" : "bg-blue-500 text-white"
                 },
-                ...(((() => {
-                  const currentTask = tasks.find(t => t.id === currentTaskId)
-                  const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
-                  return selectedSlot?.modelType || generatedModelTypes[selectedResultIndex]
-                })() === 'flash') ? [{
-                  text: "Gemini 2.5",
-                  className: "bg-amber-100 text-amber-700 text-[10px]"
-                }] : [])
               ] : []}
               onFavorite={() => selectedResultIndex !== null && toggleFavorite(selectedResultIndex)}
               isFavorited={selectedResultIndex !== null && isFavorited(selectedResultIndex)}
@@ -1731,18 +1723,44 @@ function CameraPageContent() {
                 const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
                 if (selectedImageUrl) setFullscreenImage(selectedImageUrl)
               }}
-              actions={selectedResultIndex !== null ? [{
-                text: t.gallery?.goEdit || 'Edit',
-                icon: <Wand2 className="w-4 h-4" />,
-                onClick: () => {
+              quickActions={selectedResultIndex !== null ? [
+                createQuickActions.tryOn(() => {
+                  const currentTask = tasks.find(t => t.id === currentTaskId)
+                  const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+                  const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
+                  if (selectedImageUrl) {
+                    sessionStorage.setItem('tryOnImage', selectedImageUrl)
+                    router.push('/try-on')
+                  }
+                }),
+                createQuickActions.edit(() => {
                   const currentTask = tasks.find(t => t.id === currentTaskId)
                   const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
                   const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
                   setSelectedResultIndex(null)
                   if (selectedImageUrl) handleGoToEdit(selectedImageUrl)
-                },
-                className: "bg-blue-600 hover:bg-blue-700 text-white"
-              }] : []}
+                }),
+                createQuickActions.groupShoot(() => {
+                  const currentTask = tasks.find(t => t.id === currentTaskId)
+                  const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+                  const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
+                  if (selectedImageUrl) {
+                    sessionStorage.setItem('groupShootImage', selectedImageUrl)
+                    router.push('/group-shot')
+                  }
+                }),
+                createQuickActions.material(() => {
+                  const currentTask = tasks.find(t => t.id === currentTaskId)
+                  const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+                  const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
+                  if (selectedImageUrl) {
+                    sessionStorage.setItem('modifyMaterial_outputImage', selectedImageUrl)
+                    sessionStorage.setItem('modifyMaterial_inputImages', JSON.stringify([capturedImage].filter(Boolean)))
+                    router.push('/gallery/modify-material')
+                  }
+                }),
+              ] : []}
+              inputImages={capturedImage ? [{ url: capturedImage, label: t.common?.product || 'Product' }] : []}
             >
               {/* Debug content */}
               {debugMode && selectedResultIndex !== null && (() => {
@@ -1847,7 +1865,7 @@ function CameraPageContent() {
                   </div>
                 )
               })()}
-            </ResultDetailDialog>
+            </PhotoDetailDialog>
           </ResultsView>
         )}
       </AnimatePresence>
