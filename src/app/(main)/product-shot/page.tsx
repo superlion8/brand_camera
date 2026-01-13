@@ -17,6 +17,7 @@ import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { useImageDownload } from "@/hooks/useImageDownload"
+import { navigateToEdit } from "@/lib/navigation"
 import { GalleryPickerPanel } from "@/components/shared/GalleryPickerPanel"
 import Image from "next/image"
 import { useQuota } from "@/hooks/useQuota"
@@ -568,10 +569,7 @@ function StudioPageContent() {
   }
   
   // Handle go to edit with image
-  const handleGoToEdit = (imageUrl: string) => {
-    sessionStorage.setItem('editImage', imageUrl)
-    router.push("/edit/general")
-  }
+  const handleGoToEdit = (imageUrl: string) => navigateToEdit(router, imageUrl)
   
   const handleReset = () => {
     setProductImage(null)

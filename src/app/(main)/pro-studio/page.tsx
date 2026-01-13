@@ -18,6 +18,7 @@ import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { useImageDownload } from "@/hooks/useImageDownload"
+import { navigateToEdit } from "@/lib/navigation"
 import { usePresetStore } from "@/stores/presetStore"
 import { useQuota } from "@/hooks/useQuota"
 import { useQuotaReservation } from "@/hooks/useQuotaReservation"
@@ -1976,9 +1977,8 @@ function ProStudioPageContent() {
                     const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
                     const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
                     if (selectedImageUrl) {
-                      sessionStorage.setItem('editImage', selectedImageUrl)
                       setSelectedResultIndex(null)
-                      router.push("/edit/general")
+                      navigateToEdit(router, selectedImageUrl)
                     }
                   },
                   className: "bg-blue-600 hover:bg-blue-700 text-white"

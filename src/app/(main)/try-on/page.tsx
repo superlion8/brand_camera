@@ -12,6 +12,7 @@ import {
 import { fileToBase64, compressBase64Image } from "@/lib/utils"
 import { useQuota } from "@/hooks/useQuota"
 import { useQuotaReservation } from "@/hooks/useQuotaReservation"
+import { navigateToEdit } from "@/lib/navigation"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
@@ -990,8 +991,7 @@ export default function TryOnPage() {
                   icon: <Wand2 className="w-4 h-4" />,
                   onClick: () => {
                     const imageUrl = resultImages[selectedResultIndex]
-                    sessionStorage.setItem('editImage', imageUrl)
-                    router.push("/edit/general")
+                    navigateToEdit(router, imageUrl)
                   },
                   className: "bg-blue-600 hover:bg-blue-700 text-white"
                 },

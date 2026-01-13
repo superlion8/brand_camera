@@ -19,6 +19,7 @@ import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { useImageDownload } from "@/hooks/useImageDownload"
+import { navigateToEdit } from "@/lib/navigation"
 import { usePresetStore } from "@/stores/presetStore"
 import { useQuota } from "@/hooks/useQuota"
 import { useQuotaReservation } from "@/hooks/useQuotaReservation"
@@ -666,10 +667,7 @@ function SocialPageContent() {
   }
   
   // Handle go to edit with image
-  const handleGoToEdit = (imageUrl: string) => {
-    sessionStorage.setItem('editImage', imageUrl)
-    router.push("/edit/general")
-  }
+  const handleGoToEdit = (imageUrl: string) => navigateToEdit(router, imageUrl)
   
   // Handle favorite toggle for result images
   const handleResultFavorite = async (imageIndex: number) => {

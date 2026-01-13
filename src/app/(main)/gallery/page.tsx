@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { useImageDownload } from "@/hooks/useImageDownload"
+import { navigateToEdit } from "@/lib/navigation"
 import { generateId } from "@/lib/utils"
 import { 
   isModelRelatedType, 
@@ -1361,9 +1362,8 @@ export default function GalleryPage() {
                           disabled={!!navigatingTo}
                           onClick={() => {
                             const imageUrl = selectedItem.gen.outputImageUrls[selectedItem.index]
-                            sessionStorage.setItem('editImage', imageUrl)
                             setNavigatingTo('edit')
-                            router.push("/edit/general")
+                            navigateToEdit(router, imageUrl)
                           }}
                           className="group flex flex-col items-center gap-2 p-4 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-100 transition-all disabled:opacity-50"
                         >
@@ -1868,9 +1868,8 @@ export default function GalleryPage() {
                         disabled={!!navigatingTo}
                         onClick={() => {
                           const imageUrl = selectedItem.gen.outputImageUrls[selectedItem.index]
-                          sessionStorage.setItem('editImage', imageUrl)
                           setNavigatingTo('edit')
-                          router.push("/edit/general")
+                          navigateToEdit(router, imageUrl)
                         }}
                         className="flex-1 h-12 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-70"
                       >
