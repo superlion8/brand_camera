@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { X, Loader2, FolderHeart } from "lucide-react"
+import { X, Loader2, FolderHeart, Plus, ZoomIn } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useIsDesktop } from "@/hooks/useIsMobile"
 import { useAssetStore } from "@/stores/assetStore"
@@ -14,29 +14,34 @@ interface AssetPickerPanelProps {
   open: boolean
   onClose: () => void
   onSelect: (imageUrl: string) => void
+  onUploadClick?: () => void  // 点击"从相册上传"时的回调
   isLoading?: boolean
   themeColor?: 'purple' | 'amber' | 'blue'
   title?: string
+  showUploadEntry?: boolean  // 是否显示上传入口
 }
 
 const themeClasses = {
   purple: {
     accent: 'bg-purple-500',
-    accentHover: 'hover:border-purple-500',
+    accentHover: 'hover:border-purple-500 active:border-purple-600',
     button: 'bg-purple-500 hover:bg-purple-600',
     spinner: 'text-purple-500',
+    uploadHover: 'hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20',
   },
   amber: {
     accent: 'bg-amber-500',
-    accentHover: 'hover:border-amber-500',
+    accentHover: 'hover:border-amber-500 active:border-amber-600',
     button: 'bg-amber-500 hover:bg-amber-600',
     spinner: 'text-amber-500',
+    uploadHover: 'hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20',
   },
   blue: {
     accent: 'bg-blue-500',
-    accentHover: 'hover:border-blue-500',
+    accentHover: 'hover:border-blue-500 active:border-blue-600',
     button: 'bg-blue-500 hover:bg-blue-600',
     spinner: 'text-blue-500',
+    uploadHover: 'hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20',
   },
 }
 
@@ -44,15 +49,18 @@ export function AssetPickerPanel({
   open,
   onClose,
   onSelect,
+  onUploadClick,
   isLoading = false,
   themeColor = 'purple',
   title,
+  showUploadEntry = true,
 }: AssetPickerPanelProps) {
   const router = useRouter()
   const { t } = useTranslation()
   const { isDesktop } = useIsDesktop()
   const { userProducts } = useAssetStore()
   const [sourceTab, setSourceTab] = useState<'preset' | 'user'>('preset')
+  const [zoomImage, setZoomImage] = useState<string | null>(null)
   
   const theme = themeClasses[themeColor]
   const displayTitle = title || t.camera?.selectProduct || 'Select Product'
@@ -60,6 +68,11 @@ export function AssetPickerPanel({
   const handleSelect = (imageUrl: string) => {
     onSelect(imageUrl)
     onClose()
+  }
+
+  const handleUploadClick = () => {
+    onClose()
+    onUploadClick?.()
   }
 
   return (
@@ -82,93 +95,155 @@ export function AssetPickerPanel({
             exit={isDesktop ? { opacity: 0, scale: 0.95 } : { y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
             className={isDesktop 
-              ? "fixed inset-0 m-auto w-[700px] h-fit max-h-[80vh] bg-white rounded-2xl z-50 flex flex-col overflow-hidden shadow-2xl"
-              : "fixed bottom-0 left-0 right-0 h-[70%] bg-white rounded-t-2xl z-50 flex flex-col overflow-hidden"
+              ? "fixed inset-0 m-auto w-[700px] h-fit max-h-[80vh] bg-white dark:bg-zinc-900 rounded-2xl z-50 flex flex-col overflow-hidden shadow-2xl"
+              : "fixed bottom-0 left-0 right-0 h-[80%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
             }
           >
             {/* Header */}
-            <div className={`${isDesktop ? 'h-14 px-6' : 'h-12 px-4'} border-b flex items-center justify-between shrink-0`}>
-              <span className={`font-semibold ${isDesktop ? 'text-lg' : ''}`}>{displayTitle}</span>
+            <div className={`${isDesktop ? 'h-14 px-6' : 'h-12 px-4'} border-b border-zinc-200 dark:border-zinc-700 flex items-center justify-between shrink-0`}>
+              <span className={`font-semibold ${isDesktop ? 'text-lg' : ''} text-zinc-900 dark:text-white`}>{displayTitle}</span>
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center"
+                className="w-8 h-8 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center"
               >
-                <X className={isDesktop ? "w-5 h-5" : "w-4 h-4"} />
+                <X className={`${isDesktop ? 'w-5 h-5' : 'w-4 h-4'} text-zinc-500 dark:text-zinc-400`} />
               </button>
             </div>
             
             {/* Source Tabs */}
-            <div className={`${isDesktop ? 'px-6 py-3' : 'px-4 py-2'} border-b bg-white`}>
-              <div className="flex bg-zinc-100 rounded-lg p-1">
+            <div className={`${isDesktop ? 'px-6 py-3' : 'px-4 py-2'} border-b border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shrink-0`}>
+              <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1">
                 <button
                   onClick={() => setSourceTab("preset")}
                   className={`flex-1 ${isDesktop ? 'py-2.5 text-sm' : 'py-2 text-xs'} font-medium rounded-md transition-colors ${
                     sourceTab === "preset"
-                      ? "bg-white text-zinc-900 shadow-sm"
-                      : "text-zinc-500 hover:text-zinc-700"
+                      ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
+                      : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
                   }`}
                 >
-                  {t.camera?.officialExamples || 'Official Examples'} ({PRESET_PRODUCTS.length})
+                  {t.camera?.officialExamples || 'Official Examples'}
+                  <span className="ml-1 text-zinc-400 dark:text-zinc-500">({PRESET_PRODUCTS.length})</span>
                 </button>
                 <button
                   onClick={() => setSourceTab("user")}
                   className={`flex-1 ${isDesktop ? 'py-2.5 text-sm' : 'py-2 text-xs'} font-medium rounded-md transition-colors ${
                     sourceTab === "user"
-                      ? "bg-white text-zinc-900 shadow-sm"
-                      : "text-zinc-500 hover:text-zinc-700"
+                      ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
+                      : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
                   }`}
                 >
-                  {t.camera?.myProducts || 'My Products'} ({userProducts.length})
+                  {t.camera?.myProducts || 'My Products'}
+                  {userProducts.length > 0 && (
+                    <span className="ml-1 text-zinc-400 dark:text-zinc-500">({userProducts.length})</span>
+                  )}
                 </button>
               </div>
             </div>
             
             {/* Content */}
-            <div className="flex-1 overflow-y-auto bg-zinc-50 p-4 relative">
+            <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4 relative">
               {/* Loading overlay */}
               {isLoading && (
-                <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
+                <div className="absolute inset-0 bg-white/80 dark:bg-zinc-900/80 flex items-center justify-center z-10 rounded-lg">
                   <Loader2 className={`w-8 h-8 ${theme.spinner} animate-spin`} />
                 </div>
               )}
               
               {sourceTab === 'preset' ? (
-                <div className={`grid gap-3 ${isDesktop ? 'grid-cols-5' : 'grid-cols-3'}`}>
-                  {PRESET_PRODUCTS.map(product => (
+                <div className={`grid gap-3 ${isDesktop ? 'grid-cols-5' : 'grid-cols-3'} pb-4`}>
+                  {/* Upload from Album Entry */}
+                  {showUploadEntry && onUploadClick && (
                     <button
-                      key={product.id}
+                      onClick={handleUploadClick}
                       disabled={isLoading}
-                      onClick={() => handleSelect(product.imageUrl)}
-                      className={`aspect-square rounded-xl overflow-hidden relative border-2 border-transparent ${theme.accentHover} transition-all bg-white disabled:opacity-50`}
+                      className={`aspect-square rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-600 ${theme.uploadHover} flex flex-col items-center justify-center gap-2 transition-colors bg-zinc-50 dark:bg-zinc-800 disabled:opacity-50`}
                     >
-                      <Image src={product.imageUrl} alt={product.name || ''} fill className="object-cover" />
-                      <span className={`absolute top-1.5 left-1.5 ${theme.accent} text-white ${isDesktop ? 'text-[10px] px-1.5 py-0.5' : 'text-[8px] px-1 py-0.5'} rounded font-medium`}>
-                        {t.common?.official || 'Official'}
+                      <Plus className="w-8 h-8 text-zinc-400 dark:text-zinc-500" />
+                      <span className="text-xs text-zinc-500 dark:text-zinc-400 text-center px-2">
+                        {t.proStudio?.fromAlbum || 'From Album'}
                       </span>
-                      <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent ${isDesktop ? 'p-2 pt-6' : 'p-1.5 pt-4'}`}>
-                        <p className={`${isDesktop ? 'text-xs' : 'text-[10px]'} text-white truncate text-center`}>{product.name}</p>
-                      </div>
                     </button>
+                  )}
+                  
+                  {PRESET_PRODUCTS.map(product => (
+                    <div 
+                      key={product.id}
+                      className={`relative group ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}
+                    >
+                      <button
+                        disabled={isLoading}
+                        onClick={() => handleSelect(product.imageUrl)}
+                        className={`w-full aspect-square rounded-xl overflow-hidden relative border-2 border-transparent ${theme.accentHover} transition-all bg-white dark:bg-zinc-800`}
+                        style={{ touchAction: 'manipulation' }}
+                      >
+                        <Image src={product.imageUrl} alt={product.name || ''} fill className="object-cover pointer-events-none" />
+                        <span className={`absolute top-1.5 left-1.5 ${theme.accent} text-white ${isDesktop ? 'text-[10px] px-1.5 py-0.5' : 'text-[8px] px-1 py-0.5'} rounded font-medium pointer-events-none`}>
+                          {t.common?.official || 'Official'}
+                        </span>
+                        <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent ${isDesktop ? 'p-2 pt-6' : 'p-1.5 pt-4'} pointer-events-none`}>
+                          <p className={`${isDesktop ? 'text-xs' : 'text-[10px]'} text-white truncate text-center`}>{product.name}</p>
+                        </div>
+                      </button>
+                      {/* Zoom Button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setZoomImage(product.imageUrl)
+                        }}
+                        className="absolute bottom-1.5 right-1.5 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10"
+                      >
+                        <ZoomIn className="w-3 h-3 text-white" />
+                      </button>
+                    </div>
                   ))}
                 </div>
               ) : userProducts.length > 0 ? (
-                <div className={`grid gap-3 ${isDesktop ? 'grid-cols-5' : 'grid-cols-3'}`}>
-                  {userProducts.map(product => (
+                <div className={`grid gap-3 ${isDesktop ? 'grid-cols-5' : 'grid-cols-3'} pb-4`}>
+                  {/* Upload from Album Entry */}
+                  {showUploadEntry && onUploadClick && (
                     <button
-                      key={product.id}
+                      onClick={handleUploadClick}
                       disabled={isLoading}
-                      onClick={() => handleSelect(product.imageUrl)}
-                      className={`aspect-square rounded-xl overflow-hidden relative border-2 border-transparent ${theme.accentHover} transition-all bg-white disabled:opacity-50`}
+                      className={`aspect-square rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-600 ${theme.uploadHover} flex flex-col items-center justify-center gap-2 transition-colors bg-zinc-50 dark:bg-zinc-800 disabled:opacity-50`}
                     >
-                      <Image src={product.imageUrl} alt={product.name || ''} fill className="object-cover" />
-                      <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent ${isDesktop ? 'p-2 pt-6' : 'p-1.5 pt-4'}`}>
-                        <p className={`${isDesktop ? 'text-xs' : 'text-[10px]'} text-white truncate text-center`}>{product.name}</p>
-                      </div>
+                      <Plus className="w-8 h-8 text-zinc-400 dark:text-zinc-500" />
+                      <span className="text-xs text-zinc-500 dark:text-zinc-400 text-center px-2">
+                        {t.proStudio?.fromAlbum || 'From Album'}
+                      </span>
                     </button>
+                  )}
+                  
+                  {userProducts.map(product => (
+                    <div 
+                      key={product.id}
+                      className={`relative group ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}
+                    >
+                      <button
+                        disabled={isLoading}
+                        onClick={() => handleSelect(product.imageUrl)}
+                        className={`w-full aspect-square rounded-xl overflow-hidden relative border-2 border-transparent ${theme.accentHover} transition-all bg-white dark:bg-zinc-800`}
+                        style={{ touchAction: 'manipulation' }}
+                      >
+                        <Image src={product.imageUrl} alt={product.name || ''} fill className="object-cover pointer-events-none" />
+                        <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent ${isDesktop ? 'p-2 pt-6' : 'p-1.5 pt-4'} pointer-events-none`}>
+                          <p className={`${isDesktop ? 'text-xs' : 'text-[10px]'} text-white truncate text-center`}>{product.name}</p>
+                        </div>
+                      </button>
+                      {/* Zoom Button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setZoomImage(product.imageUrl)
+                        }}
+                        className="absolute bottom-1.5 right-1.5 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10"
+                      >
+                        <ZoomIn className="w-3 h-3 text-white" />
+                      </button>
+                    </div>
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center h-full text-zinc-400 py-12">
+                <div className="flex flex-col items-center justify-center h-full text-zinc-400 dark:text-zinc-500 py-12">
                   <FolderHeart className="w-12 h-12 mb-3 opacity-30" />
                   <p className="text-sm">{t.camera?.noMyProducts || 'No products yet'}</p>
                   <p className="text-xs mt-1">{t.camera?.uploadInAssets || 'Upload in Assets'}</p>
@@ -185,6 +260,40 @@ export function AssetPickerPanel({
               )}
             </div>
           </motion.div>
+          
+          {/* Zoom Modal */}
+          <AnimatePresence>
+            {zoomImage && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center"
+                onClick={() => setZoomImage(null)}
+              >
+                <button
+                  onClick={() => setZoomImage(null)}
+                  className="absolute top-4 right-4 w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors z-10"
+                >
+                  <X className="w-6 h-6 text-white" />
+                </button>
+                <motion.div
+                  initial={{ scale: 0.9 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0.9 }}
+                  className="relative w-full max-w-lg aspect-square mx-4"
+                  onClick={e => e.stopPropagation()}
+                >
+                  <Image
+                    src={zoomImage}
+                    alt="Preview"
+                    fill
+                    className="object-contain"
+                  />
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </>
       )}
     </AnimatePresence>

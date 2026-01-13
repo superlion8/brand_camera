@@ -1320,6 +1320,7 @@ export default function GeneralEditPage() {
         open={showProductPanel}
         onClose={() => setShowProductPanel(false)}
         onSelect={handleSelectImage}
+        onUploadClick={() => fileInputRef.current?.click()}
         themeColor="purple"
       />
       
