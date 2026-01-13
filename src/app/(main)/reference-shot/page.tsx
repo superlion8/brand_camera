@@ -21,6 +21,7 @@ import { Asset } from "@/types"
 import { useIsDesktop } from "@/hooks/useIsMobile"
 import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
+import { ItemPickerPanel, PickerItem } from "@/components/shared/ItemPickerPanel"
 import { TASK_CREDIT_COSTS, TaskTypes } from "@/lib/taskTypes"
 
 const CREDIT_COST = TASK_CREDIT_COSTS[TaskTypes.REFERENCE_SHOT]
@@ -759,83 +760,29 @@ export default function ReferenceShotPage() {
         </div>
       )}
       
-      {/* Model Picker Modal */}
-      <AnimatePresence>
-        {showModelPicker && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
-              onClick={() => setShowModelPicker(false)}
-            />
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed bottom-0 left-0 right-0 h-[80%] bg-white rounded-t-2xl z-50 flex flex-col overflow-hidden"
-            >
-              <div className="h-14 border-b flex items-center justify-between px-4 shrink-0">
-                <span className="font-semibold text-lg">{t.referenceShot?.selectModel || '选择模特'}</span>
-                <button
-                  onClick={() => setShowModelPicker(false)}
-                  className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto p-4">
-                {/* Upload custom model button */}
-                <div className="mb-4">
-                  <button
-                    onClick={() => modelImageInputRef.current?.click()}
-                    className="w-full p-4 rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 bg-zinc-50 hover:bg-blue-50 transition-all flex items-center justify-center gap-2"
-                  >
-                    <Upload className="w-5 h-5 text-zinc-500" />
-                    <span className="text-sm font-medium text-zinc-600">
-                      {t.referenceShot?.uploadCustomModel || '上传自定义模特'}
-                    </span>
-                  </button>
-                </div>
-                
-                {/* Model grid */}
-                <div className="grid grid-cols-2 gap-3">
-                  {allModels.map((model) => (
-                    <button
-                      key={model.id}
-                      onClick={() => handleModelSelect(model)}
-                      className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
-                        selectedModelId === model.id
-                          ? 'border-blue-500 ring-2 ring-blue-500/30'
-                          : 'border-transparent hover:border-blue-300'
-                      }`}
-                    >
-                      <Image src={model.imageUrl} alt={model.name || ''} fill className="object-cover" />
-                      {selectedModelId === model.id && (
-                        <div className="absolute top-2 left-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                          <Check className="w-4 h-4 text-white" />
-                        </div>
-                      )}
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 pt-6">
-                        <p className="text-xs text-white truncate text-center">{model.name}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-                
-                {allModels.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-12 text-zinc-400">
-                    <p className="text-sm">{t.referenceShot?.noModels || '暂无模特'}</p>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      {/* Model Picker */}
+      <ItemPickerPanel
+        open={showModelPicker}
+        onClose={() => setShowModelPicker(false)}
+        title={t.referenceShot?.selectModel || 'Select Model'}
+        showUpload
+        uploadLabel={t.referenceShot?.uploadCustomModel || 'Upload Custom Model'}
+        onUpload={() => modelImageInputRef.current?.click()}
+        items={allModels.map((model): PickerItem => ({
+          id: model.id,
+          imageUrl: model.imageUrl,
+          label: model.name,
+        }))}
+        selectedId={selectedModelId}
+        onSelect={(item) => {
+          const model = allModels.find(m => m.id === item.id)
+          if (model) handleModelSelect(model)
+        }}
+        emptyText={t.referenceShot?.noModels || 'No models'}
+        gridCols={2}
+        aspectRatio="3/4"
+        themeColor="blue"
+      />
       
       {/* Zoom Image Modal */}
       <AnimatePresence>

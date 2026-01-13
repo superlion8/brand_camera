@@ -16,6 +16,7 @@ import { BottomNav } from "@/components/shared/BottomNav"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { ProcessingView } from "@/components/shared/ProcessingView"
 import { ResultsView } from "@/components/shared/ResultsView"
+import { ItemPickerPanel, PickerItem } from "@/components/shared/ItemPickerPanel"
 import { useFavorite } from "@/hooks/useFavorite"
 import { navigateToEdit } from "@/lib/navigation"
 import { useImageDownload } from "@/hooks/useImageDownload"
@@ -758,132 +759,61 @@ function GroupShootPageContent() {
         )}
       </AnimatePresence>
 
-      {/* Gallery Picker Modal - 只显示模特分类的成片 */}
-      <AnimatePresence>
-        {showGalleryPicker && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/50"
-            onClick={() => setShowGalleryPicker(false)}
-          >
-            <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 25 }}
-              className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl max-h-[75vh] flex flex-col"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="p-4 border-b">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h3 className="font-semibold">{t.groupShootPage?.selectFromPhotos || '从成片选择'}</h3>
-                    <p className="text-xs text-zinc-400 mt-0.5">{t.groupShootPage?.modelCategory || '选择模特成片'}</p>
-                  </div>
-                  <button onClick={() => setShowGalleryPicker(false)}>
-                    <X className="w-5 h-5 text-zinc-400" />
-                  </button>
-                </div>
-                
-                {/* 子分类 Tabs */}
-                <div className="flex gap-2">
-                  {[
-                    { id: 'all', label: t.groupShootPage?.all || '全部' },
-                    { id: 'buyer', label: t.groupShootPage?.buyerShow || '买家秀' },
-                    { id: 'pro', label: t.groupShootPage?.proStudio || '专业棚拍' },
-                    { id: 'group', label: t.groupShootPage?.groupPhoto || '组图' },
-                  ].map(tab => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setGallerySubType(tab.id as typeof gallerySubType)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                        gallerySubType === tab.id
-                          ? 'bg-zinc-900 text-white'
-                          : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto p-4">
-                {(() => {
-                  // 根据子分类过滤（与成片页面 API 逻辑保持一致）
-                  const filteredGenerations = modelGenerations.filter(gen => {
-                    if (gallerySubType === 'all') return true
-                    if (gallerySubType === 'buyer') return isBuyerShowType(gen.type) // 买家秀
-                    if (gallerySubType === 'pro') return isProStudioType(gen.type) // 专业棚拍
-                    if (gallerySubType === 'group') return isGroupShootType(gen.type) // 组图
-                    return true
-                  })
-                  
-                  // 检查是否有数据在加载
-                  const isLoading = !generations || generations.length === 0
-                  
-                  if (isLoading) {
-                    return (
-                      <div className="h-40 flex flex-col items-center justify-center gap-3">
-                        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-                        <p className="text-sm text-zinc-400">{t.groupShootPage?.loadingPhotos || 'Loading photos...'}</p>
-                      </div>
-                    )
-                  }
-                  
-                  if (filteredGenerations.length === 0) {
-                    const subTypeLabel = gallerySubType === 'buyer' 
-                      ? (t.groupShootPage?.buyerShow || '买家秀')
-                      : gallerySubType === 'pro' 
-                        ? (t.groupShootPage?.proStudio || '专业棚拍')
-                        : gallerySubType === 'group' 
-                          ? (t.groupShootPage?.groupPhoto || '组图')
-                          : ''
-                    return (
-                      <div className="h-40 flex flex-col items-center justify-center text-zinc-400 text-sm gap-2">
-                        <p>{t.groupShootPage?.noPhotos || '暂无成片'}{subTypeLabel && ` (${subTypeLabel})`}</p>
-                        <p className="text-xs">{t.groupShootPage?.goShootFirst || '先去拍摄一些照片吧'}</p>
-                      </div>
-                    )
-                  }
-                  
-                  return (
-                    <div className="grid grid-cols-3 gap-2">
-                      {filteredGenerations.flatMap((gen, gi) => 
-                        (gen.outputImageUrls || [])
-                          .filter((url): url is string => typeof url === 'string' && url.length > 0)
-                          .map((url, ui) => (
-                            <button
-                              key={`${gen.id || gi}-${ui}`}
-                              onClick={() => handleSelectFromGallery(url, gen.type)}
-                              className="aspect-square rounded-lg overflow-hidden relative hover:ring-2 hover:ring-blue-500 transition-all"
-                            >
-                              <Image src={url} alt="" fill className="object-cover" />
-                              {/* 类型标签 */}
-                              <div className="absolute bottom-1 left-1">
-                                <span className={`px-1 py-0.5 rounded text-[8px] font-medium text-white ${
-                                  isProStudioType(gen.type)
-                                    ? 'bg-amber-500' 
-                                    : isGroupShootType(gen.type)
-                                      ? 'bg-cyan-500'
-                                      : 'bg-blue-500'
-                                }`}>
-                                  {isProStudioType(gen.type) ? (t.groupShootPage?.proStudio || '棚拍') : isGroupShootType(gen.type) ? (t.groupShootPage?.groupPhoto || '组图') : (t.groupShootPage?.buyerShow || '买家秀')}
-                                </span>
-                              </div>
-                            </button>
-                          ))
-                      )}
-                    </div>
-                  )
-                })()}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Gallery Picker - 从成片选择 */}
+      <ItemPickerPanel
+        open={showGalleryPicker}
+        onClose={() => setShowGalleryPicker(false)}
+        title={t.groupShootPage?.selectFromPhotos || 'Select from Photos'}
+        subtitle={t.groupShootPage?.modelCategory || 'Select model photo'}
+        tabs={[
+          { id: 'all', label: t.groupShootPage?.all || 'All' },
+          { id: 'buyer', label: t.groupShootPage?.buyerShow || 'Buyer Show' },
+          { id: 'pro', label: t.groupShootPage?.proStudio || 'Pro Studio' },
+          { id: 'group', label: t.groupShootPage?.groupPhoto || 'Group' },
+        ]}
+        activeTab={gallerySubType}
+        onTabChange={(tabId) => setGallerySubType(tabId as typeof gallerySubType)}
+        items={(() => {
+          const filteredGenerations = modelGenerations.filter(gen => {
+            if (gallerySubType === 'all') return true
+            if (gallerySubType === 'buyer') return isBuyerShowType(gen.type)
+            if (gallerySubType === 'pro') return isProStudioType(gen.type)
+            if (gallerySubType === 'group') return isGroupShootType(gen.type)
+            return true
+          })
+          return filteredGenerations.flatMap((gen, gi) =>
+            (gen.outputImageUrls || [])
+              .filter((url): url is string => typeof url === 'string' && url.length > 0)
+              .map((url, ui): PickerItem => ({
+                id: `${gen.id || gi}-${ui}`,
+                imageUrl: url,
+                badge: {
+                  text: isProStudioType(gen.type) 
+                    ? (t.groupShootPage?.proStudio || 'Pro') 
+                    : isGroupShootType(gen.type) 
+                      ? (t.groupShootPage?.groupPhoto || 'Group') 
+                      : (t.groupShootPage?.buyerShow || 'Buyer'),
+                  className: isProStudioType(gen.type) 
+                    ? 'bg-amber-500' 
+                    : isGroupShootType(gen.type) 
+                      ? 'bg-cyan-500' 
+                      : 'bg-blue-500',
+                },
+              }))
+          )
+        })()}
+        loading={!generations || generations.length === 0}
+        loadingText={t.groupShootPage?.loadingPhotos || 'Loading photos...'}
+        emptyText={t.groupShootPage?.noPhotos || 'No photos'}
+        emptySubtext={t.groupShootPage?.goShootFirst || 'Go shoot some photos first'}
+        onSelect={(item) => {
+          const gen = modelGenerations.find(g => 
+            (g.outputImageUrls || []).includes(item.imageUrl)
+          )
+          handleSelectFromGallery(item.imageUrl, gen?.type)
+        }}
+        themeColor={styleMode === 'lifestyle' ? 'blue' : 'amber'}
+      />
 
       {/* Fullscreen Image - Using shared component */}
       <FullscreenImageViewer
