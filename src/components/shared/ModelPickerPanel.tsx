@@ -160,15 +160,34 @@ export function ModelPickerPanel({
               {/* Upload button */}
               {allowUpload && (
                 <div className="mb-4">
-                  <button
+                  <div
                     onClick={() => fileInputRef.current?.click()}
-                    className={`w-full p-4 rounded-xl border-2 border-dashed border-zinc-300 ${theme.hover} bg-zinc-50 transition-all flex items-center justify-center gap-2`}
+                    onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-' + themeColor + '-400', 'bg-' + themeColor + '-50') }}
+                    onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-' + themeColor + '-400', 'bg-' + themeColor + '-50') }}
+                    onDrop={async (e) => {
+                      e.preventDefault()
+                      e.currentTarget.classList.remove('border-' + themeColor + '-400', 'bg-' + themeColor + '-50')
+                      const file = e.dataTransfer.files?.[0]
+                      if (file && file.type.startsWith('image/')) {
+                        const base64 = await fileToBase64(file)
+                        const newModel: Asset = {
+                          id: `custom-model-${Date.now()}`,
+                          type: 'model',
+                          name: 'Custom Model',
+                          imageUrl: base64,
+                        }
+                        onCustomUpload?.(newModel)
+                        onSelect(newModel)
+                        onClose()
+                      }
+                    }}
+                    className={`w-full p-4 rounded-xl border-2 border-dashed border-zinc-300 ${theme.hover} bg-zinc-50 transition-all flex items-center justify-center gap-2 cursor-pointer`}
                   >
                     <Upload className="w-5 h-5 text-zinc-500" />
                     <span className="text-sm font-medium text-zinc-600">
                       {t.referenceShot?.uploadCustomModel || 'Upload Custom Model'}
                     </span>
-                  </button>
+                  </div>
                 </div>
               )}
               

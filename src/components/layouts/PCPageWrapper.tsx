@@ -3,7 +3,7 @@
 import { ReactNode } from 'react'
 import { Home } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { cn } from '@/lib/utils'
+import { cn, fileToBase64 } from '@/lib/utils'
 import { useTranslation } from '@/stores/languageStore'
 
 interface PCPageWrapperProps {
@@ -186,6 +186,7 @@ export function PCImageUploadArea({
   image,
   onUpload,
   onClear,
+  onDrop,
   aspectRatio = '3/4',
   placeholder,
   uploadText,
@@ -194,6 +195,7 @@ export function PCImageUploadArea({
   image: string | null
   onUpload: () => void
   onClear?: () => void
+  onDrop?: (base64: string) => void
   aspectRatio?: string
   placeholder?: ReactNode
   uploadText?: string
@@ -227,9 +229,20 @@ export function PCImageUploadArea({
   }
 
   return (
-    <button
+    <div
       onClick={onUpload}
-      className="w-full bg-zinc-100 rounded-2xl border-2 border-dashed border-zinc-300 hover:border-amber-400 hover:bg-amber-50/50 transition-all"
+      onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-amber-400', 'bg-amber-50') }}
+      onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-amber-400', 'bg-amber-50') }}
+      onDrop={async (e) => {
+        e.preventDefault()
+        e.currentTarget.classList.remove('border-amber-400', 'bg-amber-50')
+        const file = e.dataTransfer.files?.[0]
+        if (file && file.type.startsWith('image/') && onDrop) {
+          const base64 = await fileToBase64(file)
+          onDrop(base64)
+        }
+      }}
+      className="w-full bg-zinc-100 rounded-2xl border-2 border-dashed border-zinc-300 hover:border-amber-400 hover:bg-amber-50/50 transition-all cursor-pointer"
       style={{ aspectRatio }}
     >
       <div className="flex flex-col items-center justify-center h-full p-8">
@@ -243,7 +256,7 @@ export function PCImageUploadArea({
           </>
         )}
       </div>
-    </button>
+    </div>
   )
 }
 

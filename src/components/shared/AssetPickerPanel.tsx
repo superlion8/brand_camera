@@ -8,11 +8,14 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useIsDesktop } from "@/hooks/useIsMobile"
 import { useAssetStore } from "@/stores/assetStore"
 import { useTranslation } from "@/stores/languageStore"
+import { fileToBase64 } from "@/lib/utils"
+
 interface AssetPickerPanelProps {
   open: boolean
   onClose: () => void
   onSelect: (imageUrl: string) => void
   onUploadClick?: () => void  // 点击"从相册上传"时的回调
+  onDropUpload?: (base64: string) => void  // 拖放上传时的回调
   isLoading?: boolean
   themeColor?: 'purple' | 'amber' | 'blue'
   title?: string
@@ -48,6 +51,7 @@ export function AssetPickerPanel({
   onClose,
   onSelect,
   onUploadClick,
+  onDropUpload,
   isLoading = false,
   themeColor = 'purple',
   title,
@@ -120,16 +124,31 @@ export function AssetPickerPanel({
                 <div className={`grid gap-3 ${isDesktop ? 'grid-cols-5' : 'grid-cols-3'} pb-4`}>
                   {/* Upload from Album Entry */}
                   {showUploadEntry && onUploadClick && (
-                    <button
+                    <div
                       onClick={handleUploadClick}
-                      disabled={isLoading}
-                      className={`aspect-square rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-600 ${theme.uploadHover} flex flex-col items-center justify-center gap-2 transition-colors bg-zinc-50 dark:bg-zinc-800 disabled:opacity-50`}
+                      onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-' + themeColor + '-400', 'bg-' + themeColor + '-50') }}
+                      onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-' + themeColor + '-400', 'bg-' + themeColor + '-50') }}
+                      onDrop={async (e) => {
+                        e.preventDefault()
+                        e.currentTarget.classList.remove('border-' + themeColor + '-400', 'bg-' + themeColor + '-50')
+                        const file = e.dataTransfer.files?.[0]
+                        if (file && file.type.startsWith('image/')) {
+                          const base64 = await fileToBase64(file)
+                          if (onDropUpload) {
+                            onDropUpload(base64)
+                          } else {
+                            onSelect(base64)
+                          }
+                          onClose()
+                        }
+                      }}
+                      className={`aspect-square rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-600 ${theme.uploadHover} flex flex-col items-center justify-center gap-2 transition-colors bg-zinc-50 dark:bg-zinc-800 cursor-pointer ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}
                     >
                       <Plus className="w-8 h-8 text-zinc-400 dark:text-zinc-500" />
                       <span className="text-xs text-zinc-500 dark:text-zinc-400 text-center px-2">
                         {t.proStudio?.fromAlbum || 'From Album'}
                       </span>
-                    </button>
+                    </div>
                   )}
                   
                   {userProducts.map(product => (

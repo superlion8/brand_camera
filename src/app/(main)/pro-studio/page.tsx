@@ -929,13 +929,31 @@ function ProStudioPageContent() {
                     <p className="text-xs text-zinc-500 mb-3">{t.proStudio?.randomMatch || 'Random if not selected'}</p>
                     <div className="grid grid-cols-3 gap-2">
                       {/* Upload button */}
-                      <button
+                      <div
                         onClick={() => modelUploadRef.current?.click()}
-                        className="aspect-[3/4] rounded-lg border-2 border-dashed border-zinc-300 hover:border-amber-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                        onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-amber-400', 'bg-amber-50') }}
+                        onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-amber-400', 'bg-amber-50') }}
+                        onDrop={async (e) => {
+                          e.preventDefault()
+                          e.currentTarget.classList.remove('border-amber-400', 'bg-amber-50')
+                          const file = e.dataTransfer.files?.[0]
+                          if (file && file.type.startsWith('image/')) {
+                            const base64 = await fileToBase64(file)
+                            const newModel: Asset = {
+                              id: `custom-model-${Date.now()}`,
+                              type: 'model',
+                              name: '自定义模特',
+                              imageUrl: base64,
+                            }
+                            setCustomModels(prev => [newModel, ...prev])
+                            setSelectedModelId(newModel.id)
+                          }
+                        }}
+                        className="aspect-[3/4] rounded-lg border-2 border-dashed border-zinc-300 hover:border-amber-400 flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer"
                       >
                         <Plus className="w-4 h-4 text-zinc-400" />
                         <span className="text-[10px] text-zinc-400">{t.proStudio?.upload || 'Upload'}</span>
-                      </button>
+                      </div>
                       {/* Model list */}
                       {allModels.slice(0, 5).map(model => (
                         <div
@@ -1000,13 +1018,31 @@ function ProStudioPageContent() {
                     <p className="text-xs text-zinc-500 mb-3">{t.proStudio?.randomMatch || 'Random if not selected'}</p>
                     <div className="grid grid-cols-3 gap-2">
                       {/* Upload button */}
-                      <button
+                      <div
                         onClick={() => bgUploadRef.current?.click()}
-                        className="aspect-[3/4] rounded-lg border-2 border-dashed border-zinc-300 hover:border-amber-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                        onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-amber-400', 'bg-amber-50') }}
+                        onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-amber-400', 'bg-amber-50') }}
+                        onDrop={async (e) => {
+                          e.preventDefault()
+                          e.currentTarget.classList.remove('border-amber-400', 'bg-amber-50')
+                          const file = e.dataTransfer.files?.[0]
+                          if (file && file.type.startsWith('image/')) {
+                            const base64 = await fileToBase64(file)
+                            const newBg: Asset = {
+                              id: `custom-bg-${Date.now()}`,
+                              type: 'background',
+                              name: '自定义背景',
+                              imageUrl: base64,
+                            }
+                            setCustomBgs(prev => [newBg, ...prev])
+                            setSelectedBgId(newBg.id)
+                          }
+                        }}
+                        className="aspect-[3/4] rounded-lg border-2 border-dashed border-zinc-300 hover:border-amber-400 flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer"
                       >
                         <Plus className="w-4 h-4 text-zinc-400" />
                         <span className="text-[10px] text-zinc-400">{t.proStudio?.upload || 'Upload'}</span>
-                      </button>
+                      </div>
                       {/* Background list */}
                       {allBgs.slice(0, 5).map(bg => (
                         <div

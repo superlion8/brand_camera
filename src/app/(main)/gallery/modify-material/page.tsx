@@ -696,15 +696,33 @@ function ModifyMaterialContent() {
                 className="hidden" 
                 onChange={handleFileUpload}
               />
-              <button
+              <div
                 onClick={() => fileInputRef.current?.click()}
-                className={`w-full rounded-xl border-2 border-dashed border-zinc-300 hover:border-purple-400 hover:bg-purple-50/50 transition-colors flex flex-col items-center justify-center gap-2 ${isDesktop ? 'h-48' : 'h-32'}`}
+                onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-purple-400', 'bg-purple-50') }}
+                onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-purple-400', 'bg-purple-50') }}
+                onDrop={async (e) => {
+                  e.preventDefault()
+                  e.currentTarget.classList.remove('border-purple-400', 'bg-purple-50')
+                  const file = e.dataTransfer.files?.[0]
+                  if (file && file.type.startsWith('image/')) {
+                    const reader = new FileReader()
+                    reader.onload = (event) => {
+                      const base64 = event.target?.result as string
+                      setOutputImage(base64)
+                      setInputImages([])
+                      setError(t.modifyMaterial?.noInputImages || '请上传原始商品图用于分析材质')
+                      setPhase('editing')
+                    }
+                    reader.readAsDataURL(file)
+                  }
+                }}
+                className={`w-full rounded-xl border-2 border-dashed border-zinc-300 hover:border-purple-400 hover:bg-purple-50/50 transition-colors flex flex-col items-center justify-center gap-2 cursor-pointer ${isDesktop ? 'h-48' : 'h-32'}`}
               >
                 <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
                   <Wand2 className="w-6 h-6 text-purple-500" />
                 </div>
                 <span className="text-sm text-zinc-500">{t.modifyMaterial?.uploadImage || '上传图片'}</span>
-              </button>
+              </div>
             </div>
             
             {/* 分隔线 - 仅移动端 */}

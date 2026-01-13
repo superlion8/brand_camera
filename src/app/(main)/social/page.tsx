@@ -947,13 +947,24 @@ function SocialPageContent() {
                               </div>
                             ) : null}
                             {!capturedImage2 && (
-                              <button
+                              <div
                                 onClick={() => setShowProduct2Panel(true)}
-                                className="aspect-square rounded-lg border-2 border-dashed border-zinc-300 hover:border-pink-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                                onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-pink-400', 'bg-pink-50') }}
+                                onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-pink-400', 'bg-pink-50') }}
+                                onDrop={async (e) => {
+                                  e.preventDefault()
+                                  e.currentTarget.classList.remove('border-pink-400', 'bg-pink-50')
+                                  const file = e.dataTransfer.files?.[0]
+                                  if (file && file.type.startsWith('image/')) {
+                                    const base64 = await fileToBase64(file)
+                                    setCapturedImage2(base64)
+                                  }
+                                }}
+                                className="aspect-square rounded-lg border-2 border-dashed border-zinc-300 hover:border-pink-400 flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer"
                               >
                                 <Plus className="w-5 h-5 text-zinc-400" />
                                 <span className="text-[10px] text-zinc-400">{t.proStudio?.add || 'Add'}</span>
-                              </button>
+                              </div>
                             )}
                           </div>
                           <p className="text-xs text-zinc-400 mt-3">
@@ -998,13 +1009,31 @@ function SocialPageContent() {
                           </div>
                           <p className="text-xs text-zinc-500 mb-3">{t.common?.randomMatchHint || '不选则随机匹配'}</p>
                           <div className="grid grid-cols-3 gap-2">
-                            <button
+                            <div
                               onClick={() => modelUploadRef.current?.click()}
-                              className="aspect-[3/4] rounded-lg border-2 border-dashed border-zinc-300 hover:border-pink-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                              onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-pink-400', 'bg-pink-50') }}
+                              onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-pink-400', 'bg-pink-50') }}
+                              onDrop={async (e) => {
+                                e.preventDefault()
+                                e.currentTarget.classList.remove('border-pink-400', 'bg-pink-50')
+                                const file = e.dataTransfer.files?.[0]
+                                if (file && file.type.startsWith('image/')) {
+                                  const base64 = await fileToBase64(file)
+                                  const newAsset = {
+                                    id: generateId(),
+                                    type: 'model' as const,
+                                    name: `${t.common.model} ${new Date().toLocaleDateString()}`,
+                                    imageUrl: base64,
+                                  }
+                                  addUserAsset(newAsset)
+                                  setSelectedModel(newAsset.id)
+                                }
+                              }}
+                              className="aspect-[3/4] rounded-lg border-2 border-dashed border-zinc-300 hover:border-pink-400 flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer"
                             >
                               <Plus className="w-4 h-4 text-zinc-400" />
                               <span className="text-[10px] text-zinc-400">{t.proStudio?.upload || '上传'}</span>
-                            </button>
+                            </div>
                             {allModels.slice(0, 5).map(model => (
                               <div
                                 key={model.id}
@@ -1066,13 +1095,31 @@ function SocialPageContent() {
                           </div>
                           <p className="text-xs text-zinc-500 mb-3">{t.common?.randomMatchHint || '不选则随机匹配'}</p>
                           <div className="grid grid-cols-3 gap-2">
-                            <button
+                            <div
                               onClick={() => bgUploadRef.current?.click()}
-                              className="aspect-[3/4] rounded-lg border-2 border-dashed border-zinc-300 hover:border-pink-400 flex flex-col items-center justify-center gap-1 transition-colors"
+                              onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-pink-400', 'bg-pink-50') }}
+                              onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-pink-400', 'bg-pink-50') }}
+                              onDrop={async (e) => {
+                                e.preventDefault()
+                                e.currentTarget.classList.remove('border-pink-400', 'bg-pink-50')
+                                const file = e.dataTransfer.files?.[0]
+                                if (file && file.type.startsWith('image/')) {
+                                  const base64 = await fileToBase64(file)
+                                  const newAsset = {
+                                    id: generateId(),
+                                    type: 'background' as const,
+                                    name: `${t.common.background} ${new Date().toLocaleDateString()}`,
+                                    imageUrl: base64,
+                                  }
+                                  addUserAsset(newAsset)
+                                  setSelectedBg(newAsset.id)
+                                }
+                              }}
+                              className="aspect-[3/4] rounded-lg border-2 border-dashed border-zinc-300 hover:border-pink-400 flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer"
                             >
                               <Plus className="w-4 h-4 text-zinc-400" />
                               <span className="text-[10px] text-zinc-400">{t.proStudio?.upload || '上传'}</span>
-                            </button>
+                            </div>
                             {allBackgrounds.slice(0, 5).map(bg => (
                               <div
                                 key={bg.id}

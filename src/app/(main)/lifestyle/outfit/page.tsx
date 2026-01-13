@@ -675,13 +675,31 @@ function LifestyleOutfitContent() {
                         )}
                       </div>
                       <div className="grid grid-cols-2 gap-3">
-                        <button
+                        <div
                           onClick={() => modelUploadRef.current?.click()}
-                          className="aspect-[3/4] rounded-xl overflow-hidden relative border-2 border-dashed border-zinc-300 hover:border-purple-400 transition-all flex flex-col items-center justify-center bg-zinc-50 hover:bg-purple-50"
+                          onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-purple-400', 'bg-purple-50') }}
+                          onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-purple-400', 'bg-purple-50') }}
+                          onDrop={async (e) => {
+                            e.preventDefault()
+                            e.currentTarget.classList.remove('border-purple-400', 'bg-purple-50')
+                            const file = e.dataTransfer.files?.[0]
+                            if (file && file.type.startsWith('image/')) {
+                              const base64 = await fileToBase64(file)
+                              const newModel: Asset = {
+                                id: `custom-lifestyle-model-${Date.now()}`,
+                                type: 'model',
+                                name: t.lifestyle?.streetModel || '街拍模特',
+                                imageUrl: base64,
+                              }
+                              setCustomModels(prev => [newModel, ...prev])
+                              setSelectedModelId(newModel.id)
+                            }
+                          }}
+                          className="aspect-[3/4] rounded-xl overflow-hidden relative border-2 border-dashed border-zinc-300 hover:border-purple-400 transition-all flex flex-col items-center justify-center bg-zinc-50 hover:bg-purple-50 cursor-pointer"
                         >
                           <Plus className="w-10 h-10 text-zinc-400" />
                           <span className="text-sm text-zinc-500 mt-2">{t.common?.upload || '上传'}</span>
-                        </button>
+                        </div>
                         {allModels.map(item => (
                           <div
                             key={item.id}
