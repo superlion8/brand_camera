@@ -66,7 +66,8 @@ export default function AdminQuotasPage() {
 
   const handleEditStart = (quota: UserQuota) => {
     setEditingId(quota.userId)
-    setEditValue(quota.totalQuota)
+    // 编辑的是 adminGive 而不是 totalQuota
+    setEditValue(quota.credits?.adminGive || 0)
   }
 
   const handleEditCancel = () => {
@@ -77,10 +78,11 @@ export default function AdminQuotasPage() {
   const handleEditSave = async (userId: string) => {
     setIsSaving(true)
     try {
+      // 直接设置 adminGiveCredits
       const response = await fetch('/api/admin/quotas', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, totalQuota: editValue }),
+        body: JSON.stringify({ userId, adminGiveCredits: editValue }),
       })
       
       if (!response.ok) {
@@ -91,7 +93,7 @@ export default function AdminQuotasPage() {
       if (data.success) {
         setQuotas(quotas.map(q => 
           q.userId === userId 
-            ? { ...q, totalQuota: data.quota.totalQuota, remainingQuota: data.quota.remainingQuota }
+            ? { ...q, totalQuota: data.quota.totalQuota, remainingQuota: data.quota.remainingQuota, credits: data.quota.credits }
             : q
         ))
         setEditingId(null)
@@ -103,14 +105,15 @@ export default function AdminQuotasPage() {
     }
   }
 
-  const handleQuickAdjust = async (userId: string, currentQuota: number, delta: number) => {
-    const newQuota = Math.max(0, currentQuota + delta)
+  // 调整赠送额度 (adminGiveCredits)
+  const handleQuickAdjust = async (userId: string, currentAdminGive: number, delta: number) => {
+    const newAdminGive = Math.max(0, currentAdminGive + delta)
     setIsSaving(true)
     try {
       const response = await fetch('/api/admin/quotas', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, totalQuota: newQuota }),
+        body: JSON.stringify({ userId, adminGiveCredits: newAdminGive }),
       })
       
       if (!response.ok) {
@@ -121,7 +124,7 @@ export default function AdminQuotasPage() {
       if (data.success) {
         setQuotas(quotas.map(q => 
           q.userId === userId 
-            ? { ...q, totalQuota: data.quota.totalQuota, remainingQuota: data.quota.remainingQuota }
+            ? { ...q, totalQuota: data.quota.totalQuota, remainingQuota: data.quota.remainingQuota, credits: data.quota.credits }
             : q
         ))
       }
@@ -259,59 +262,71 @@ export default function AdminQuotasPage() {
                       </div>
                     )}
                     
-                    {/* Total & Adjustment */}
-                    <div className="flex items-center justify-between pt-2 border-t border-zinc-100">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-zinc-500">总额度:</span>
-                        <span className="text-lg font-bold text-zinc-900">{quota.totalQuota}</span>
+                    {/* Usage Stats & Adjustment */}
+                    <div className="flex items-center justify-between pt-3 border-t border-zinc-100">
+                      {/* Left: Usage info */}
+                      <div className="flex items-center gap-4">
+                        <div>
+                          <span className="text-xs text-zinc-400">已用</span>
+                          <p className="text-base font-semibold text-red-500">{quota.usedCount}</p>
+                        </div>
+                        <div>
+                          <span className="text-xs text-zinc-400">剩余</span>
+                          <p className="text-base font-semibold text-green-600">{quota.remainingQuota}</p>
+                        </div>
                       </div>
                       
-                      {editingId === quota.userId ? (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            value={editValue}
-                            onChange={(e) => setEditValue(Math.max(0, parseInt(e.target.value) || 0))}
-                            className="w-20 h-8 px-2 border border-zinc-200 rounded text-center text-sm"
-                            min={0}
-                          />
-                          <button
-                            onClick={() => handleEditSave(quota.userId)}
-                            disabled={isSaving}
-                            className="w-8 h-8 bg-green-100 text-green-600 rounded-lg flex items-center justify-center hover:bg-green-200"
-                          >
-                            <Check className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={handleEditCancel}
-                            className="w-8 h-8 bg-zinc-100 text-zinc-600 rounded-lg flex items-center justify-center hover:bg-zinc-200"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleQuickAdjust(quota.userId, quota.totalQuota, -10)}
-                            disabled={isSaving || quota.totalQuota < 10}
-                            className="w-8 h-8 bg-zinc-100 text-zinc-600 rounded-lg flex items-center justify-center hover:bg-zinc-200 disabled:opacity-50"
-                          >
-                            <Minus className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleEditStart(quota)}
-                            className="min-w-[60px] h-8 px-3 bg-blue-50 text-blue-600 rounded-lg font-medium text-sm hover:bg-blue-100"
-                          >
-                            {quota.totalQuota}
-                          </button>
-                          <button
-                            onClick={() => handleQuickAdjust(quota.userId, quota.totalQuota, 10)}
-                            disabled={isSaving}
-                            className="w-8 h-8 bg-zinc-100 text-zinc-600 rounded-lg flex items-center justify-center hover:bg-zinc-200 disabled:opacity-50"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
-                        </div>
+                      {/* Right: Admin give adjustment */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-zinc-400">调整赠送</span>
+                        {editingId === quota.userId ? (
+                          <>
+                            <input
+                              type="number"
+                              value={editValue}
+                              onChange={(e) => setEditValue(Math.max(0, parseInt(e.target.value) || 0))}
+                              className="w-16 h-8 px-2 border border-purple-300 rounded text-center text-sm bg-purple-50"
+                              min={0}
+                            />
+                            <button
+                              onClick={() => handleEditSave(quota.userId)}
+                              disabled={isSaving}
+                              className="w-8 h-8 bg-green-100 text-green-600 rounded-lg flex items-center justify-center hover:bg-green-200"
+                            >
+                              <Check className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={handleEditCancel}
+                              className="w-8 h-8 bg-zinc-100 text-zinc-600 rounded-lg flex items-center justify-center hover:bg-zinc-200"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => handleQuickAdjust(quota.userId, credits?.adminGive || 0, -10)}
+                              disabled={isSaving || (credits?.adminGive || 0) < 10}
+                              className="w-8 h-8 bg-zinc-100 text-zinc-600 rounded-lg flex items-center justify-center hover:bg-zinc-200 disabled:opacity-50"
+                            >
+                              <Minus className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleEditStart(quota)}
+                              className="min-w-[50px] h-8 px-3 bg-purple-50 text-purple-600 rounded-lg font-medium text-sm hover:bg-purple-100"
+                            >
+                              {credits?.adminGive || 0}
+                            </button>
+                            <button
+                              onClick={() => handleQuickAdjust(quota.userId, credits?.adminGive || 0, 10)}
+                              disabled={isSaving}
+                              className="w-8 h-8 bg-zinc-100 text-zinc-600 rounded-lg flex items-center justify-center hover:bg-zinc-200 disabled:opacity-50"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+                      </div>
                       )}
                     </div>
                   </div>
