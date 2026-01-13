@@ -19,6 +19,7 @@ import { ensureImageUrl } from "@/lib/supabase/storage"
 import { Asset, ModelStyle, ModelGender } from "@/types"
 import Image from "next/image"
 import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
+import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
 import { usePresetStore } from "@/stores/presetStore"
 import { useQuota } from "@/hooks/useQuota"
 import { useQuotaReservation } from "@/hooks/useQuotaReservation"
@@ -2391,281 +2392,167 @@ function CameraPageContent() {
               </div>
             )}
             
-            {/* Result Detail Dialog */}
-            {selectedResultIndex !== null && (() => {
-              // 获取当前选中图片的 URL（优先 imageSlots，回退 generatedImages）
-              const currentTask = tasks.find(t => t.id === currentTaskId)
-              const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
-              const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
-              const selectedModelType = selectedSlot?.modelType || generatedModelTypes[selectedResultIndex]
-              
-              if (!selectedImageUrl) return null
-              
-              return (
-              <>
-              {/* Backdrop for PC */}
-              {isDesktop && (
-                <div 
-                  className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
-                  onClick={() => setSelectedResultIndex(null)}
-                />
-              )}
-              <div className={`fixed z-50 bg-white overflow-hidden ${
-                isDesktop 
-                  ? 'inset-0 m-auto w-[600px] h-fit max-h-[90vh] rounded-2xl shadow-2xl' 
-                  : 'inset-0'
-              }`}>
-                <div className="h-full flex flex-col">
-                  {/* Header */}
-                  <div className={`h-14 flex items-center justify-between bg-white border-b shrink-0 ${isDesktop ? 'px-6' : 'px-4'}`}>
-                    <button
-                      onClick={() => setSelectedResultIndex(null)}
-                      className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center transition-colors"
-                    >
-                      <X className="w-5 h-5 text-zinc-700" />
-                    </button>
-                    <span className="font-semibold text-zinc-900">{t.common.detail}</span>
-                    <div className="w-10" />
-                  </div>
-
-                  {/* Content */}
-                  <div className={`flex-1 overflow-y-auto ${isDesktop ? '' : 'bg-zinc-100 pb-24'}`}>
-                    <div className={isDesktop ? 'bg-zinc-100 p-4' : 'bg-zinc-900'}>
-                      <div 
-                        className={`relative cursor-pointer group ${isDesktop ? 'max-w-md mx-auto rounded-xl overflow-hidden shadow-lg' : 'aspect-[4/5]'}`}
-                        onClick={() => setFullscreenImage(selectedImageUrl)}
-                      >
-                        {/* Use img tag for native long-press save support */}
-                        <img 
-                          src={selectedImageUrl} 
-                          alt="Detail" 
-                          className={`w-full object-contain ${isDesktop ? 'max-h-[50vh] bg-white' : 'h-full'}`}
-                        />
-                        {/* Zoom hint */}
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 pointer-events-none">
-                          <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                            <ZoomIn className="w-6 h-6 text-zinc-700" />
-                          </div>
-                        </div>
-                      </div>
-                      {!isDesktop && <p className="text-center text-zinc-500 text-xs py-2">{t.imageActions.longPressSave}</p>}
-                    </div>
+            {/* Result Detail Dialog - Using shared component */}
+            <ResultDetailDialog
+              open={selectedResultIndex !== null && !!(() => {
+                const currentTask = tasks.find(t => t.id === currentTaskId)
+                const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex!]
+                return selectedSlot?.imageUrl || generatedImages[selectedResultIndex!]
+              })()}
+              onClose={() => setSelectedResultIndex(null)}
+              imageUrl={(() => {
+                if (selectedResultIndex === null) return ''
+                const currentTask = tasks.find(t => t.id === currentTaskId)
+                const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+                return selectedSlot?.imageUrl || generatedImages[selectedResultIndex] || ''
+              })()}
+              badges={selectedResultIndex !== null ? [
+                {
+                  text: selectedResultIndex < 2 ? (t.gallery?.simpleMode || "Simple") : (t.gallery?.extendedMode || "Extended"),
+                  className: selectedResultIndex < 3 ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
+                },
+                ...(((() => {
+                  const currentTask = tasks.find(t => t.id === currentTaskId)
+                  const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+                  return selectedSlot?.modelType || generatedModelTypes[selectedResultIndex]
+                })() === 'flash') ? [{
+                  text: "Gemini 2.5",
+                  className: "bg-amber-100 text-amber-700 text-[10px]"
+                }] : [])
+              ] : []}
+              onFavorite={() => selectedResultIndex !== null && handleResultFavorite(selectedResultIndex)}
+              isFavorited={!!(currentGenerationId && selectedResultIndex !== null && isFavorited(currentGenerationId, selectedResultIndex))}
+              onDownload={() => {
+                if (selectedResultIndex === null) return
+                const currentTask = tasks.find(t => t.id === currentTaskId)
+                const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+                const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
+                if (selectedImageUrl) handleDownload(selectedImageUrl, currentGenerationId || undefined, selectedResultIndex)
+              }}
+              onFullscreen={() => {
+                if (selectedResultIndex === null) return
+                const currentTask = tasks.find(t => t.id === currentTaskId)
+                const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+                const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
+                if (selectedImageUrl) setFullscreenImage(selectedImageUrl)
+              }}
+              actions={selectedResultIndex !== null ? [{
+                text: t.gallery?.goEdit || 'Edit',
+                icon: <Wand2 className="w-4 h-4" />,
+                onClick: () => {
+                  const currentTask = tasks.find(t => t.id === currentTaskId)
+                  const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+                  const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
+                  setSelectedResultIndex(null)
+                  if (selectedImageUrl) handleGoToEdit(selectedImageUrl)
+                },
+                className: "bg-blue-600 hover:bg-blue-700 text-white"
+              }] : []}
+            >
+              {/* Debug content */}
+              {debugMode && selectedResultIndex !== null && (() => {
+                const generation = currentGenerationId ? generations.find(g => g.id === currentGenerationId) : null
+                const savedParams = generation?.params
+                
+                return (
+                  <div className="mt-4 pt-4 border-t border-zinc-100">
+                    <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.camera.debugParams}</h3>
                     
-                    <div className="p-4 pb-8 bg-white">
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            {/* Generation mode badge */}
-                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                              selectedResultIndex < 3 
-                                ? "bg-green-100 text-green-700" 
-                                : "bg-blue-100 text-blue-700"
-                            }`}>
-                              {selectedResultIndex < 2 ? (t.gallery?.simpleMode || "Simple") : (t.gallery?.extendedMode || "Extended")}
-                            </span>
-                            {selectedModelType === 'flash' && (
-                              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700">
-                                Gemini 2.5
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-zinc-400">
-                            {t.common.justNow}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleResultFavorite(selectedResultIndex)}
-                            className={`w-10 h-10 rounded-lg border flex items-center justify-center transition-colors ${
-                              currentGenerationId && isFavorited(currentGenerationId, selectedResultIndex)
-                                ? "bg-red-50 border-red-200 text-red-500"
-                                : "border-zinc-200 text-zinc-600 hover:bg-zinc-50"
-                            }`}
-                          >
-                            <Heart className={`w-4 h-4 ${currentGenerationId && isFavorited(currentGenerationId, selectedResultIndex) ? "fill-current" : ""}`} />
-                          </button>
-                          <button
-                            onClick={() => handleDownload(selectedImageUrl, currentGenerationId || undefined, selectedResultIndex)}
-                            className="w-10 h-10 rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-50 flex items-center justify-center transition-colors"
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
+                    {generatedPrompts[selectedResultIndex] && (
+                      <div className="mb-4">
+                        <p className="text-xs font-medium text-zinc-500 mb-2">Prompt</p>
+                        <div className="bg-zinc-50 rounded-lg p-3 max-h-32 overflow-y-auto">
+                          <pre className="text-[11px] text-zinc-600 whitespace-pre-wrap font-mono leading-relaxed">
+                            {generatedPrompts[selectedResultIndex]}
+                          </pre>
                         </div>
                       </div>
-
-                      {/* Generation Parameters - Only show in debug mode */}
-                      {debugMode && (() => {
-                        // Get generation record from store to display saved params
-                        const generation = currentGenerationId 
-                          ? generations.find(g => g.id === currentGenerationId)
-                          : null
-                        const savedParams = generation?.params
-                        
-                        return (
-                        <div className="mt-4 pt-4 border-t border-zinc-100">
-                          <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.camera.debugParams}</h3>
-                          
-                          {/* This image's prompt */}
-                          {generatedPrompts[selectedResultIndex] && (
-                            <div className="mb-4">
-                              <p className="text-xs font-medium text-zinc-500 mb-2">Prompt</p>
-                              <div className="bg-zinc-50 rounded-lg p-3 max-h-32 overflow-y-auto">
-                                <pre className="text-[11px] text-zinc-600 whitespace-pre-wrap font-mono leading-relaxed">
-                                  {generatedPrompts[selectedResultIndex]}
-                                </pre>
+                    )}
+                    
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-4 gap-2">
+                        {(capturedImage || generation?.inputImageUrl) && (
+                          <div className="flex flex-col items-center">
+                            <div 
+                              className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"
+                              onClick={() => setFullscreenImage(capturedImage || generation?.inputImageUrl || '')}
+                            >
+                              <img src={capturedImage || generation?.inputImageUrl || ''} alt={t.camera.productOriginal} className="w-full h-full object-cover" />
+                              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <ZoomIn className="w-4 h-4 text-white" />
                               </div>
                             </div>
-                          )}
-                          
-                          {/* Reference images */}
-                          <div className="space-y-3">
-                            {/* Reference images grid */}
-                            <div className="grid grid-cols-4 gap-2">
-                              {/* Input Product Image - from captured or saved */}
-                              {(capturedImage || generation?.inputImageUrl) && (
-                                <div className="flex flex-col items-center">
-                                  <div 
-                                    className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"
-                                    onClick={() => setFullscreenImage(capturedImage || generation?.inputImageUrl || '')}
-                                  >
-                                    <img 
-                                      src={capturedImage || generation?.inputImageUrl || ''} 
-                                      alt={t.camera.productOriginal} 
-                                      className="w-full h-full object-cover"
-                                    />
-                                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                      <ZoomIn className="w-4 h-4 text-white" />
-                                    </div>
-                                  </div>
-                                  <p className="text-[10px] text-zinc-500 mt-1">{t.camera.productOriginal}</p>
-                                </div>
-                              )}
-                              
-                              {/* Model Image - use per-image data if available */}
-                              {(() => {
-                                const perImageModel = savedParams?.perImageModels?.[selectedResultIndex]
-                                const modelUrl = perImageModel?.imageUrl || savedParams?.modelImage || activeModel?.imageUrl
-                                const modelName = perImageModel?.name || savedParams?.model || activeModel?.name
-                                if (!modelUrl) return null
-                                return (
-                                  <div className="flex flex-col items-center">
-                                    <div 
-                                      className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"
-                                      onClick={() => setFullscreenImage(modelUrl)}
-                                    >
-                                      <Image 
-                                        src={modelUrl} 
-                                        alt="模特" 
-                                        width={56}
-                                        height={56}
-                                        className="w-full h-full object-cover"
-                                      />
-                                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                        <ZoomIn className="w-4 h-4 text-white" />
-                                      </div>
-                                    </div>
-                                    <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">
-                                      {modelName || t.common.model}
-                                    </p>
-                                  </div>
-                                )
-                              })()}
-                              
-                              {/* Background Image - use per-image data if available */}
-                              {(() => {
-                                const perImageBg = savedParams?.perImageBackgrounds?.[selectedResultIndex]
-                                const bgUrl = perImageBg?.imageUrl || savedParams?.backgroundImage || activeBg?.imageUrl
-                                const bgName = perImageBg?.name || savedParams?.background || activeBg?.name
-                                if (!bgUrl) return null
-                                return (
-                                  <div className="flex flex-col items-center">
-                                    <div 
-                                      className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"
-                                      onClick={() => setFullscreenImage(bgUrl)}
-                                    >
-                                      <Image 
-                                        src={bgUrl} 
-                                        alt="背景" 
-                                        width={56}
-                                        height={56}
-                                        className="w-full h-full object-cover"
-                                      />
-                                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                        <ZoomIn className="w-4 h-4 text-white" />
-                                      </div>
-                                    </div>
-                                    <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">
-                                      {bgName || t.common.background}
-                                    </p>
-                                  </div>
-                                )
-                              })()}
-                              
-                            </div>
-                            
-                            {/* Model Version (AI Model used) */}
-                            {(generatedModelTypes[selectedResultIndex] || generation?.outputModelTypes?.[selectedResultIndex]) && (
-                              <div className="mt-3 mb-3">
-                                <span className={`px-2 py-1 rounded text-[10px] font-medium ${
-                                  (generatedModelTypes[selectedResultIndex] || generation?.outputModelTypes?.[selectedResultIndex]) === 'pro' 
-                                    ? 'bg-green-100 text-green-700' 
-                                    : 'bg-amber-100 text-amber-700'
-                                }`}>
-                                  模型: Gemini {(generatedModelTypes[selectedResultIndex] || generation?.outputModelTypes?.[selectedResultIndex]) === 'pro' ? '3.0 Pro' : '2.5 Flash'}
-                                  {(generatedModelTypes[selectedResultIndex] || generation?.outputModelTypes?.[selectedResultIndex]) === 'flash' && ' (降级)'}
-                                </span>
-                                {(generatedGenModes[selectedResultIndex] || generation?.outputGenModes?.[selectedResultIndex]) && (
-                                  <span className={`ml-2 px-2 py-1 rounded text-[10px] font-medium ${
-                                    (generatedGenModes[selectedResultIndex] || generation?.outputGenModes?.[selectedResultIndex]) === 'simple'
-                                      ? 'bg-blue-100 text-blue-700'
-                                      : 'bg-purple-100 text-purple-700'
-                                  }`}>
-                                    {(generatedGenModes[selectedResultIndex] || generation?.outputGenModes?.[selectedResultIndex]) === 'simple' ? (t.gallery?.simpleMode || 'Simple') : (t.gallery?.extendedMode || 'Extended')}
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                            
-                            {/* Style params - prefer saved, fallback to current selection */}
-                            {((savedParams?.modelStyle || selectedModelStyle) && (savedParams?.modelStyle || selectedModelStyle) !== 'auto') || 
-                             (savedParams?.modelGender || selectedModelGender) ? (
-                              <div className="flex gap-2 flex-wrap">
-                                {(savedParams?.modelStyle || selectedModelStyle) && (savedParams?.modelStyle || selectedModelStyle) !== 'auto' && (
-                                  <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
-                                    {t.common.style}: {(savedParams?.modelStyle || selectedModelStyle) === 'korean' ? t.common.korean : 
-                                           (savedParams?.modelStyle || selectedModelStyle) === 'western' ? t.common.western : 
-                                           (savedParams?.modelStyle || selectedModelStyle)}
-                                  </span>
-                                )}
-                                {(savedParams?.modelGender || selectedModelGender) && (
-                                  <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
-                                    {t.common.gender}: {MODEL_GENDERS.find(g => g.id === (savedParams?.modelGender || selectedModelGender))?.label}
-                                  </span>
-                                )}
-                              </div>
-                            ) : null}
+                            <p className="text-[10px] text-zinc-500 mt-1">{t.camera.productOriginal}</p>
                           </div>
+                        )}
+                        
+                        {(() => {
+                          const perImageModel = savedParams?.perImageModels?.[selectedResultIndex]
+                          const modelUrl = perImageModel?.imageUrl || savedParams?.modelImage || activeModel?.imageUrl
+                          const modelName = perImageModel?.name || savedParams?.model || activeModel?.name
+                          if (!modelUrl) return null
+                          return (
+                            <div className="flex flex-col items-center">
+                              <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group" onClick={() => setFullscreenImage(modelUrl)}>
+                                <Image src={modelUrl} alt="Model" width={56} height={56} className="w-full h-full object-cover" />
+                                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <ZoomIn className="w-4 h-4 text-white" />
+                                </div>
+                              </div>
+                              <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{modelName || t.common.model}</p>
+                            </div>
+                          )
+                        })()}
+                        
+                        {(() => {
+                          const perImageBg = savedParams?.perImageBackgrounds?.[selectedResultIndex]
+                          const bgUrl = perImageBg?.imageUrl || savedParams?.backgroundImage || activeBg?.imageUrl
+                          const bgName = perImageBg?.name || savedParams?.background || activeBg?.name
+                          if (!bgUrl) return null
+                          return (
+                            <div className="flex flex-col items-center">
+                              <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group" onClick={() => setFullscreenImage(bgUrl)}>
+                                <Image src={bgUrl} alt="Background" width={56} height={56} className="w-full h-full object-cover" />
+                                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <ZoomIn className="w-4 h-4 text-white" />
+                                </div>
+                              </div>
+                              <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{bgName || t.common.background}</p>
+                            </div>
+                          )
+                        })()}
+                      </div>
+                      
+                      {(generatedModelTypes[selectedResultIndex] || generation?.outputModelTypes?.[selectedResultIndex]) && (
+                        <div className="mt-3 mb-3">
+                          <span className={`px-2 py-1 rounded text-[10px] font-medium ${
+                            (generatedModelTypes[selectedResultIndex] || generation?.outputModelTypes?.[selectedResultIndex]) === 'pro' 
+                              ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                          }`}>
+                            Model: Gemini {(generatedModelTypes[selectedResultIndex] || generation?.outputModelTypes?.[selectedResultIndex]) === 'pro' ? '3.0 Pro' : '2.5 Flash'}
+                          </span>
                         </div>
-                        )
-                      })()}
-
-                      <button 
-                        onClick={() => {
-                          setSelectedResultIndex(null)
-                          handleGoToEdit(selectedImageUrl)
-                        }}
-                        className="w-full h-12 mt-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2 transition-colors"
-                      >
-                        <Wand2 className="w-4 h-4" />
-                        {t.gallery?.goEdit || 'Edit'}
-                      </button>
+                      )}
+                      
+                      {((savedParams?.modelStyle || selectedModelStyle) && (savedParams?.modelStyle || selectedModelStyle) !== 'auto') && (
+                        <div className="flex gap-2 flex-wrap">
+                          <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
+                            {t.common.style}: {(savedParams?.modelStyle || selectedModelStyle) === 'korean' ? t.common.korean : 
+                                   (savedParams?.modelStyle || selectedModelStyle) === 'western' ? t.common.western : 
+                                   (savedParams?.modelStyle || selectedModelStyle)}
+                          </span>
+                          {(savedParams?.modelGender || selectedModelGender) && (
+                            <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
+                              {t.common.gender}: {MODEL_GENDERS.find(g => g.id === (savedParams?.modelGender || selectedModelGender))?.label}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              </div>
-              </>
-              )
-            })()}
+                )
+              })()}
+            </ResultDetailDialog>
             
             {/* Bottom Navigation - Mobile only */}
             {!isDesktop && <BottomNav forceShow />}

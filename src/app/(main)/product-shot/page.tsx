@@ -15,6 +15,7 @@ import { useAssetStore } from "@/stores/assetStore"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { useSettingsStore } from "@/stores/settingsStore"
 import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
+import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
 import { GalleryPickerPanel } from "@/components/shared/GalleryPickerPanel"
 import Image from "next/image"
 import { useQuota } from "@/hooks/useQuota"
@@ -1447,150 +1448,66 @@ function StudioPageContent() {
               </div>
             )}
             
-            {/* Result Detail Dialog */}
-            {selectedResultIndex !== null && generatedImages[selectedResultIndex] && (
-              <>
-              {/* Backdrop for PC */}
-              {isDesktop && (
-                <div 
-                  className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
-                  onClick={() => setSelectedResultIndex(null)}
-                />
-              )}
-              <div className={`fixed z-50 bg-white overflow-hidden ${
-                isDesktop 
-                  ? 'inset-0 m-auto w-[600px] h-fit max-h-[90vh] rounded-2xl shadow-2xl' 
-                  : 'inset-0'
-              }`}>
-                <div className="h-full flex flex-col">
-                  {/* Header */}
-                  <div className={`h-14 flex items-center justify-between bg-white border-b shrink-0 ${isDesktop ? 'px-6' : 'px-4'}`}>
-                    <button
-                      onClick={() => setSelectedResultIndex(null)}
-                      className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center transition-colors"
-                    >
-                      <X className="w-5 h-5 text-zinc-700" />
-                    </button>
-                    <span className="font-semibold text-zinc-900">{t.common.detail}</span>
-                    <div className="w-10" />
-                  </div>
-
-                  {/* Content */}
-                  <div className={`flex-1 overflow-y-auto ${isDesktop ? '' : 'bg-zinc-100 pb-24'}`}>
-                    <div className={isDesktop ? 'bg-zinc-100 p-4' : ''}>
-                      <div 
-                        className={`relative cursor-pointer group ${isDesktop ? 'max-w-md mx-auto rounded-xl overflow-hidden shadow-lg bg-white' : 'aspect-square bg-zinc-900'}`}
-                        onClick={() => setFullscreenImage(generatedImages[selectedResultIndex])}
-                      >
-                        <Image 
-                          src={generatedImages[selectedResultIndex]} 
-                          alt="Detail" 
-                          fill={!isDesktop}
-                          width={isDesktop ? 400 : undefined}
-                          height={isDesktop ? 400 : undefined}
-                          className={`object-contain ${isDesktop ? 'max-h-[50vh] w-full' : ''}`}
-                        />
-                        {/* Zoom hint */}
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
-                          <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                            <ZoomIn className="w-6 h-6 text-zinc-700" />
+            {/* Result Detail Dialog - Using shared component */}
+            <ResultDetailDialog
+              open={selectedResultIndex !== null && !!generatedImages[selectedResultIndex!]}
+              onClose={() => setSelectedResultIndex(null)}
+              imageUrl={selectedResultIndex !== null ? generatedImages[selectedResultIndex] || '' : ''}
+              badges={selectedResultIndex !== null ? [
+                { text: t.gallery.productStudio, className: 'bg-amber-100 text-amber-700' },
+                ...(generatedModelTypes[selectedResultIndex] === 'flash' ? [{ text: 'Gemini 2.5', className: 'bg-amber-100 text-amber-700 text-[10px]' }] : [])
+              ] : []}
+              onFavorite={() => selectedResultIndex !== null && handleFavorite(selectedResultIndex)}
+              isFavorited={!!(currentGenerationId && selectedResultIndex !== null && isFavorited(currentGenerationId, selectedResultIndex))}
+              onDownload={() => {
+                if (selectedResultIndex === null) return
+                handleDownload(generatedImages[selectedResultIndex], currentGenerationId || undefined, selectedResultIndex)
+              }}
+              onFullscreen={() => {
+                if (selectedResultIndex === null) return
+                setFullscreenImage(generatedImages[selectedResultIndex])
+              }}
+              actions={selectedResultIndex !== null ? [{
+                text: t.gallery.goEdit,
+                icon: <Wand2 className="w-4 h-4" />,
+                onClick: () => {
+                  const imageUrl = generatedImages[selectedResultIndex]
+                  setSelectedResultIndex(null)
+                  if (imageUrl) handleGoToEdit(imageUrl)
+                },
+                className: "bg-amber-500 hover:bg-amber-600 text-white"
+              }] : []}
+            >
+              {/* Debug content */}
+              {debugMode && selectedResultIndex !== null && (
+                <div className="mt-4 pt-4 border-t border-zinc-100">
+                  <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.studio.debugParams}</h3>
+                  <div className="space-y-3">
+                    {productImage && (
+                      <div className="flex gap-3">
+                        <div className="flex flex-col items-center">
+                          <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
+                            <img src={productImage} alt={t.studio.productOriginal} className="w-full h-full object-cover" />
                           </div>
+                          <p className="text-[10px] text-zinc-500 mt-1">{t.studio.productOriginal}</p>
                         </div>
                       </div>
-                    </div>
-                    
-                    <div className="p-4 bg-white">
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">
-                              {t.gallery.productStudio}
-                            </span>
-                            {generatedModelTypes[selectedResultIndex] === 'flash' && (
-                              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700">
-                                Gemini 2.5
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-zinc-400">
-                            {t.common.justNow}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleFavorite(selectedResultIndex)}
-                            className={`w-10 h-10 rounded-lg border flex items-center justify-center transition-colors ${
-                              currentGenerationId && isFavorited(currentGenerationId, selectedResultIndex)
-                                ? "bg-red-50 border-red-200 text-red-500"
-                                : "border-zinc-200 text-zinc-600 hover:bg-zinc-50"
-                            }`}
-                          >
-                            <Heart className={`w-4 h-4 ${currentGenerationId && isFavorited(currentGenerationId, selectedResultIndex) ? "fill-current" : ""}`} />
-                          </button>
-                          <button
-                            onClick={() => handleDownload(generatedImages[selectedResultIndex], currentGenerationId || undefined, selectedResultIndex)}
-                            className="w-10 h-10 rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-50 flex items-center justify-center transition-colors"
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Generation Parameters - Only show in debug mode */}
-                      {debugMode && (
-                      <div className="mt-4 pt-4 border-t border-zinc-100">
-                        <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.studio.debugParams}</h3>
-                        
-                        {/* Reference images */}
-                        <div className="space-y-3">
-                          <div className="flex gap-3 overflow-x-auto pb-2">
-                            {/* Input Product Image */}
-                            {productImage && (
-                              <div className="flex flex-col items-center shrink-0">
-                                <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
-                                  <img 
-                                    src={productImage} 
-                                    alt={t.studio.productOriginal}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                                <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{t.studio.productOriginal}</p>
-                              </div>
-                            )}
-                          </div>
-                          
-                          {/* Settings params */}
-                          <div className="flex gap-2 flex-wrap">
-                            <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
-                              {t.studio.lightSource}: {LIGHT_TYPES.find(lt => lt.id === lightType)?.label || lightType}
-                            </span>
-                            <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
-                              {t.studio.aspectRatio}: {aspectRatio}
-                            </span>
-                            <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600 flex items-center gap-1">
-                              {t.studio.bgColor}: <span className="w-3 h-3 rounded-full border" style={{ backgroundColor: bgColor }} />
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      )}
-
-                      <button 
-                        onClick={() => {
-                          setSelectedResultIndex(null)
-                          handleGoToEdit(generatedImages[selectedResultIndex])
-                        }}
-                        className="w-full h-12 mt-4 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-medium flex items-center justify-center gap-2 transition-colors"
-                      >
-                        <Wand2 className="w-4 h-4" />
-                        {t.gallery.goEdit}
-                      </button>
+                    )}
+                    <div className="flex gap-2 flex-wrap">
+                      <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
+                        {t.studio.lightSource}: {LIGHT_TYPES.find(lt => lt.id === lightType)?.label || lightType}
+                      </span>
+                      <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
+                        {t.studio.aspectRatio}: {aspectRatio}
+                      </span>
+                      <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600 flex items-center gap-1">
+                        {t.studio.bgColor}: <span className="w-3 h-3 rounded-full border" style={{ backgroundColor: bgColor }} />
+                      </span>
                     </div>
                   </div>
                 </div>
-              </div>
-              </>
-            )}
+              )}
+            </ResultDetailDialog>
             
             {/* Fullscreen Image Viewer */}
             {fullscreenImage && (

@@ -22,6 +22,7 @@ import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
 import { TASK_CREDIT_COSTS, TaskTypes } from "@/lib/taskTypes"
 import { GalleryPickerPanel } from "@/components/shared/GalleryPickerPanel"
+import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
 
 const CREDIT_COST = TASK_CREDIT_COSTS[TaskTypes.TRY_ON]
 
@@ -944,167 +945,85 @@ export default function TryOnPage() {
               </div>
             )}
             
-            {/* Result Detail Dialog */}
-            {selectedResultIndex !== null && resultImages[selectedResultIndex] && (
-              <>
-              {/* Backdrop for PC */}
-              {isDesktop && (
-                <div 
-                  className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
-                  onClick={() => setSelectedResultIndex(null)}
-                />
-              )}
-              <div className={`fixed z-50 bg-white overflow-hidden ${
-                isDesktop 
-                  ? 'inset-0 m-auto w-[600px] h-fit max-h-[90vh] rounded-2xl shadow-2xl' 
-                  : 'inset-0'
-              }`}>
-                <div className="h-full flex flex-col">
-                  {/* Header */}
-                  <div className={`h-14 flex items-center justify-between bg-white border-b shrink-0 ${isDesktop ? 'px-6' : 'px-4'}`}>
-                    <button
-                      onClick={() => setSelectedResultIndex(null)}
-                      className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center transition-colors"
-                    >
-                      <X className="w-5 h-5 text-zinc-700" />
-                    </button>
-                    <span className="font-semibold text-zinc-900">{t.common?.detail || 'Details'}</span>
-                    <div className="w-10" />
-                  </div>
-
-                  {/* Content */}
-                  <div className={`flex-1 overflow-y-auto ${isDesktop ? '' : 'bg-zinc-100 pb-24'}`}>
-                    <div className={isDesktop ? 'bg-zinc-100 p-4' : ''}>
-                      <div 
-                        className={`relative cursor-pointer group ${isDesktop ? 'max-w-md mx-auto rounded-xl overflow-hidden shadow-lg bg-white' : 'aspect-[3/4] bg-zinc-900'}`}
-                        onClick={() => setFullscreenImage(resultImages[selectedResultIndex])}
-                      >
-                        <Image 
-                          src={resultImages[selectedResultIndex]} 
-                          alt="Detail" 
-                          fill={!isDesktop}
-                          width={isDesktop ? 400 : undefined}
-                          height={isDesktop ? 533 : undefined}
-                          className={`object-contain ${isDesktop ? 'max-h-[50vh] w-full' : ''}`}
-                        />
-                        {/* Zoom hint */}
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
-                          <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                            <ZoomIn className="w-6 h-6 text-zinc-700" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="p-4 bg-white">
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="px-2 py-0.5 rounded text-xs font-medium bg-pink-100 text-pink-700">
-                              {t.tryOn?.title || '虚拟换装'}
-                            </span>
-                          </div>
-                          <p className="text-xs text-zinc-400">
-                            {t.common?.justNow || '刚刚'}
-                          </p>
-                        </div>
-                        <button
-                          onClick={async () => {
-                            const url = resultImages[selectedResultIndex]
-                            try {
-                              const response = await fetch(url)
-                              const blob = await response.blob()
-                              const blobUrl = URL.createObjectURL(blob)
-                              const link = document.createElement("a")
-                              link.href = blobUrl
-                              link.download = `try-on-${Date.now()}.jpg`
-                              document.body.appendChild(link)
-                              link.click()
-                              document.body.removeChild(link)
-                              URL.revokeObjectURL(blobUrl)
-                            } catch (error) {
-                              console.error("Download failed:", error)
-                            }
-                          }}
-                          className="w-10 h-10 rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-50 flex items-center justify-center transition-colors"
-                        >
-                          <Download className="w-4 h-4" />
-                        </button>
-                      </div>
-
-                      {/* Action buttons */}
-                      <div className="space-y-3">
-                        {/* Row 1: 继续换装 + 去修图 */}
-                        <div className="flex gap-3">
-                          <button 
-                            onClick={() => {
-                              const imageUrl = resultImages[selectedResultIndex]
-                              setPersonImage(imageUrl)
-                              setClothingImages([])
-                              setSelectedResultIndex(null)
-                              setMode('main')
-                            }}
-                            className="flex-1 h-12 rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-medium flex items-center justify-center gap-2 transition-colors"
-                          >
-                            <Sparkles className="w-4 h-4" />
-                            {t.gallery?.goTryOn || '继续换装'}
-                          </button>
-                          <button 
-                            onClick={() => {
-                              const imageUrl = resultImages[selectedResultIndex]
-                              sessionStorage.setItem('editImage', imageUrl)
-                              router.push("/edit/general")
-                            }}
-                            className="flex-1 h-12 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2 transition-colors"
-                          >
-                            <Wand2 className="w-4 h-4" />
-                            {t.gallery?.goEdit || '去修图'}
-                          </button>
-                        </div>
-                        
-                        {/* Row 2: 拍组图 */}
-                        <button 
-                          onClick={() => {
-                            const imageUrl = resultImages[selectedResultIndex]
-                            sessionStorage.setItem('groupShootImage', imageUrl)
-                            setSelectedResultIndex(null)
-                            router.push("/group-shot")
-                          }}
-                          className="w-full h-12 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-medium flex items-center justify-center gap-2 transition-colors"
-                        >
-                          <Grid3X3 className="w-4 h-4" />
-                          {t.gallery?.goGroupShoot || '拍组图'}
-                        </button>
-                        
-                        {/* Row 3: 改材质版型 */}
-                        <button 
-                          onClick={() => {
-                            const imageUrl = resultImages[selectedResultIndex]
-                            // 收集原始输入图
-                            const inputImages: string[] = []
-                            if (clothingImages.length > 0) {
-                              inputImages.push(...clothingImages)
-                            }
-                            if (personImage) {
-                              inputImages.push(personImage)
-                            }
-                            sessionStorage.setItem('modifyMaterial_outputImage', imageUrl)
-                            sessionStorage.setItem('modifyMaterial_inputImages', JSON.stringify(inputImages))
-                            setSelectedResultIndex(null)
-                            router.push("/gallery/modify-material")
-                          }}
-                          className="w-full h-12 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium flex items-center justify-center gap-2 transition-colors"
-                        >
-                          <Palette className="w-4 h-4" />
-                          {t.gallery?.modifyMaterial || '改材质版型'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              </>
-            )}
+            {/* Result Detail Dialog - Using shared component */}
+            <ResultDetailDialog
+              open={selectedResultIndex !== null && !!resultImages[selectedResultIndex!]}
+              onClose={() => setSelectedResultIndex(null)}
+              imageUrl={selectedResultIndex !== null ? resultImages[selectedResultIndex] || '' : ''}
+              badges={[{ text: t.tryOn?.title || 'Virtual Try-On', className: 'bg-pink-100 text-pink-700' }]}
+              onDownload={async () => {
+                if (selectedResultIndex === null) return
+                const url = resultImages[selectedResultIndex]
+                try {
+                  const response = await fetch(url)
+                  const blob = await response.blob()
+                  const blobUrl = URL.createObjectURL(blob)
+                  const link = document.createElement("a")
+                  link.href = blobUrl
+                  link.download = `try-on-${Date.now()}.jpg`
+                  document.body.appendChild(link)
+                  link.click()
+                  document.body.removeChild(link)
+                  URL.revokeObjectURL(blobUrl)
+                } catch (error) {
+                  console.error("Download failed:", error)
+                }
+              }}
+              onFullscreen={() => {
+                if (selectedResultIndex === null) return
+                setFullscreenImage(resultImages[selectedResultIndex])
+              }}
+              actions={selectedResultIndex !== null ? [
+                {
+                  text: t.gallery?.goTryOn || 'Continue Try-On',
+                  icon: <Sparkles className="w-4 h-4" />,
+                  onClick: () => {
+                    const imageUrl = resultImages[selectedResultIndex]
+                    setPersonImage(imageUrl)
+                    setClothingImages([])
+                    setSelectedResultIndex(null)
+                    setMode('main')
+                  },
+                  className: "bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white"
+                },
+                {
+                  text: t.gallery?.goEdit || 'Edit',
+                  icon: <Wand2 className="w-4 h-4" />,
+                  onClick: () => {
+                    const imageUrl = resultImages[selectedResultIndex]
+                    sessionStorage.setItem('editImage', imageUrl)
+                    router.push("/edit/general")
+                  },
+                  className: "bg-blue-600 hover:bg-blue-700 text-white"
+                },
+                {
+                  text: t.gallery?.goGroupShoot || 'Group Shot',
+                  icon: <Grid3X3 className="w-4 h-4" />,
+                  onClick: () => {
+                    const imageUrl = resultImages[selectedResultIndex]
+                    sessionStorage.setItem('groupShootImage', imageUrl)
+                    setSelectedResultIndex(null)
+                    router.push("/group-shot")
+                  },
+                  className: "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white"
+                },
+                {
+                  text: t.gallery?.modifyMaterial || 'Modify Material',
+                  icon: <Palette className="w-4 h-4" />,
+                  onClick: () => {
+                    const imageUrl = resultImages[selectedResultIndex]
+                    const inputImages: string[] = []
+                    if (clothingImages.length > 0) inputImages.push(...clothingImages)
+                    if (personImage) inputImages.push(personImage)
+                    sessionStorage.setItem('modifyMaterial_outputImage', imageUrl)
+                    sessionStorage.setItem('modifyMaterial_inputImages', JSON.stringify(inputImages))
+                    setSelectedResultIndex(null)
+                    router.push("/gallery/modify-material")
+                  },
+                  className: "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+                }
+              ] : []}
+            />
             
             {/* Fullscreen Image Viewer */}
             {fullscreenImage && (

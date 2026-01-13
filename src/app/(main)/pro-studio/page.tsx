@@ -15,6 +15,7 @@ import { ensureImageUrl } from "@/lib/supabase/storage"
 import { Asset } from "@/types"
 import Image from "next/image"
 import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
+import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
 import { usePresetStore } from "@/stores/presetStore"
 import { useQuota } from "@/hooks/useQuota"
 import { useQuotaReservation } from "@/hooks/useQuotaReservation"
@@ -1956,242 +1957,129 @@ function ProStudioPageContent() {
             </div>
             )}
             
-            {/* Result Detail Dialog */}
-            {selectedResultIndex !== null && (() => {
-              const currentTask = tasks.find(t => t.id === currentTaskId)
-              const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
-              const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
-              const selectedModelType = selectedSlot?.modelType
-              
-              if (!selectedImageUrl) return null
-              
-              return (
-                <>
-                {/* Backdrop for PC */}
-                {isDesktop && (
-                  <div 
-                    className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
-                    onClick={() => setSelectedResultIndex(null)}
-                  />
-                )}
-                <div className={`fixed z-50 bg-white overflow-hidden ${
-                  isDesktop 
-                    ? 'inset-0 m-auto w-[600px] h-fit max-h-[90vh] rounded-2xl shadow-2xl' 
-                    : 'inset-0'
-                }`}>
-                  <div className="h-full flex flex-col">
-                    <div className={`h-14 flex items-center justify-between bg-white border-b shrink-0 ${isDesktop ? 'px-6' : 'px-4'}`}>
-                      <button
-                        onClick={() => setSelectedResultIndex(null)}
-                        className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center transition-colors"
-                      >
-                        <X className="w-5 h-5 text-zinc-700" />
-                      </button>
-                      <span className="font-semibold text-zinc-900">{t.proStudio?.details || 'Details'}</span>
-                      <div className="w-10" />
-                    </div>
-
-                    <div className={`flex-1 overflow-y-auto ${isDesktop ? '' : 'bg-zinc-100 pb-24'}`}>
-                      <div className={isDesktop ? 'bg-zinc-100 p-4' : 'bg-zinc-900'}>
-                        <div 
-                          className={`relative cursor-pointer group ${isDesktop ? 'max-w-md mx-auto rounded-xl overflow-hidden shadow-lg' : 'aspect-square max-h-[50vh] mx-auto'}`}
-                          onClick={() => setFullscreenImage(selectedImageUrl)}
-                        >
-                          <img 
-                            src={selectedImageUrl} 
-                            alt="Detail" 
-                            className={`w-full object-contain ${isDesktop ? 'max-h-[50vh] bg-white' : 'h-full'}`}
-                          />
-                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 pointer-events-none">
-                            <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                              <ZoomIn className="w-6 h-6 text-zinc-700" />
-                            </div>
+            {/* Result Detail Dialog - Using shared component */}
+            <ResultDetailDialog
+              open={selectedResultIndex !== null && !!(() => {
+                const currentTask = tasks.find(t => t.id === currentTaskId)
+                const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex!]
+                return selectedSlot?.imageUrl || generatedImages[selectedResultIndex!]
+              })()}
+              onClose={() => setSelectedResultIndex(null)}
+              imageUrl={(() => {
+                if (selectedResultIndex === null) return ''
+                const currentTask = tasks.find(t => t.id === currentTaskId)
+                const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+                return selectedSlot?.imageUrl || generatedImages[selectedResultIndex] || ''
+              })()}
+              title={t.proStudio?.details || 'Details'}
+              badges={selectedResultIndex !== null ? [{
+                text: getImageLabel(selectedResultIndex),
+                className: `${getImageColor(selectedResultIndex)} text-white`
+              }] : []}
+              onDownload={() => {
+                if (selectedResultIndex === null) return
+                const currentTask = tasks.find(t => t.id === currentTaskId)
+                const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+                const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
+                if (selectedImageUrl) handleDownload(selectedImageUrl)
+              }}
+              onFullscreen={() => {
+                if (selectedResultIndex === null) return
+                const currentTask = tasks.find(t => t.id === currentTaskId)
+                const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+                const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
+                if (selectedImageUrl) setFullscreenImage(selectedImageUrl)
+              }}
+              mobileHint={t.proStudio?.longPressToSave || 'Long press to save'}
+              actions={selectedResultIndex !== null ? [
+                {
+                  text: t.gallery?.goEdit || 'Edit',
+                  icon: <Wand2 className="w-4 h-4" />,
+                  onClick: () => {
+                    const currentTask = tasks.find(t => t.id === currentTaskId)
+                    const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+                    const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
+                    if (selectedImageUrl) {
+                      sessionStorage.setItem('editImage', selectedImageUrl)
+                      setSelectedResultIndex(null)
+                      router.push("/edit/general")
+                    }
+                  },
+                  className: "bg-blue-600 hover:bg-blue-700 text-white"
+                },
+                {
+                  text: t.gallery?.goGroupShoot || 'Group Shot',
+                  icon: <Grid3X3 className="w-4 h-4" />,
+                  onClick: () => {
+                    const currentTask = tasks.find(t => t.id === currentTaskId)
+                    const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+                    const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
+                    if (selectedImageUrl) {
+                      sessionStorage.setItem('groupShootImage', selectedImageUrl)
+                      setSelectedResultIndex(null)
+                      router.push("/group-shot")
+                    }
+                  },
+                  className: "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white"
+                }
+              ] : []}
+            >
+              {/* Debug content */}
+              {debugMode && selectedResultIndex !== null && (
+                <div className="mt-4 pt-4 border-t border-zinc-100">
+                  <h3 className="text-sm font-semibold text-zinc-700 mb-3">Debug Parameters</h3>
+                  <div className="grid grid-cols-3 gap-2">
+                    {capturedImage && (
+                      <div className="flex flex-col items-center">
+                        <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group" onClick={() => setFullscreenImage(capturedImage)}>
+                          <img src={capturedImage} alt="Product" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <ZoomIn className="w-4 h-4 text-white" />
                           </div>
                         </div>
-                        {!isDesktop && <p className="text-center text-zinc-500 text-xs py-2">{t.proStudio?.longPressToSave || 'Long press to save image'}</p>}
+                        <p className="text-[10px] text-zinc-500 mt-1">Product</p>
                       </div>
-                      
-                      <div className="p-4 pb-8 bg-white">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${getImageColor(selectedResultIndex)} text-white`}>
-                              {getImageLabel(selectedResultIndex)}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <button className="w-10 h-10 rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-50 flex items-center justify-center transition-colors">
-                              <Heart className="w-4 h-4" />
-                            </button>
-                            <button 
-                              onClick={() => selectedImageUrl && handleDownload(selectedImageUrl)}
-                              className="w-10 h-10 rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-50 flex items-center justify-center transition-colors"
-                            >
-                              <Download className="w-4 h-4" />
-                            </button>
+                    )}
+                    {selectedModel ? (
+                      <div className="flex flex-col items-center">
+                        <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group" onClick={() => setFullscreenImage(selectedModel.imageUrl)}>
+                          <img src={selectedModel.imageUrl} alt="Model" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <ZoomIn className="w-4 h-4 text-white" />
                           </div>
                         </div>
-                        
-                        {/* Action buttons - 去修图 & 拍组图 */}
-                        <div className="flex gap-3">
-                          <button 
-                            type="button"
-                            onClick={() => {
-                              if (selectedImageUrl) {
-                                sessionStorage.setItem('editImage', selectedImageUrl)
-                                setSelectedResultIndex(null)
-                                router.push("/edit/general")
-                              }
-                            }}
-                            className="flex-1 h-12 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2 transition-colors"
-                          >
-                            <Wand2 className="w-4 h-4" />
-                            {t.gallery?.goEdit || 'Edit'}
-                          </button>
-                          <button 
-                            type="button"
-                            onClick={() => {
-                              if (selectedImageUrl) {
-                                sessionStorage.setItem('groupShootImage', selectedImageUrl)
-                                setSelectedResultIndex(null)
-                                router.push("/group-shot")
-                              }
-                            }}
-                            className="flex-1 h-12 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-medium flex items-center justify-center gap-2 transition-colors"
-                          >
-                            <Grid3X3 className="w-4 h-4" />
-                            {t.gallery?.goGroupShoot || 'Group Shot'}
-                          </button>
-                        </div>
-                        
-                        {/* Debug Parameters - 只在调试模式显示 */}
-                        {debugMode && (
-                          <div className="mt-4 pt-4 border-t border-zinc-100">
-                            <h3 className="text-sm font-semibold text-zinc-700 mb-3">生成参数 (调试模式)</h3>
-                            <div className="grid grid-cols-3 gap-2">
-                              {/* 商品图 */}
-                              {capturedImage && (
-                                <div className="flex flex-col items-center">
-                                  <div 
-                                    className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"
-                                    onClick={() => setFullscreenImage(capturedImage)}
-                                  >
-                                    <img 
-                                      src={capturedImage} 
-                                      alt="商品" 
-                                      className="w-full h-full object-cover"
-                                    />
-                                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                      <ZoomIn className="w-4 h-4 text-white" />
-                                    </div>
-                                  </div>
-                                  <p className="text-[10px] text-zinc-500 mt-1">商品</p>
-                                  <span className="text-[8px] px-1 py-0.5 rounded bg-zinc-100 text-zinc-600">
-                                    输入图
-                                  </span>
-                                </div>
-                              )}
-                              
-                              {/* 模特图 */}
-                              {selectedModel && (
-                                <div className="flex flex-col items-center">
-                                  <div 
-                                    className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"
-                                    onClick={() => setFullscreenImage(selectedModel.imageUrl)}
-                                  >
-                                    <img 
-                                      src={selectedModel.imageUrl} 
-                                      alt="模特" 
-                                      className="w-full h-full object-cover"
-                                    />
-                                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                      <ZoomIn className="w-4 h-4 text-white" />
-                                    </div>
-                                  </div>
-                                  <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{selectedModel.name}</p>
-                                  <span className="text-[8px] px-1 py-0.5 rounded bg-blue-100 text-blue-600">
-                                    用户选择
-                                  </span>
-                                  <span className="text-[8px] px-1 py-0.5 rounded bg-purple-100 text-purple-600 mt-0.5">
-                                    {(selectedModel as any).category === 'studio' ? '高级模特' : '普通模特'}
-                                  </span>
-                                </div>
-                              )}
-                              {!selectedModel && (
-                                <div className="flex flex-col items-center">
-                                  <div className="w-14 h-14 rounded-lg bg-zinc-100 flex items-center justify-center">
-                                    <span className="text-xs text-zinc-400">随机</span>
-                                  </div>
-                                  <p className="text-[10px] text-zinc-500 mt-1">模特</p>
-                                  <span className="text-[8px] px-1 py-0.5 rounded bg-amber-100 text-amber-600">
-                                    随机
-                                  </span>
-                                  <span className="text-[8px] px-1 py-0.5 rounded bg-purple-100 text-purple-600 mt-0.5">
-                                    高级模特
-                                  </span>
-                                </div>
-                              )}
-                              
-                              {/* 背景图 */}
-                              {selectedBg && (
-                                <div className="flex flex-col items-center">
-                                  <div 
-                                    className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group"
-                                    onClick={() => setFullscreenImage(selectedBg.imageUrl)}
-                                  >
-                                    <img 
-                                      src={selectedBg.imageUrl} 
-                                      alt="背景" 
-                                      className="w-full h-full object-cover"
-                                    />
-                                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                      <ZoomIn className="w-4 h-4 text-white" />
-                                    </div>
-                                  </div>
-                                  <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{selectedBg.name}</p>
-                                  <span className="text-[8px] px-1 py-0.5 rounded bg-blue-100 text-blue-600">
-                                    用户选择
-                                  </span>
-                                  <span className="text-[8px] px-1 py-0.5 rounded bg-green-100 text-green-600 mt-0.5">
-                                    {(selectedBg as any).category === 'studio-light' ? '打光背景' : 
-                                     (selectedBg as any).category === 'studio-solid' ? '纯色背景' : 
-                                     (selectedBg as any).category === 'studio-pattern' ? '花色背景' : '影棚背景'}
-                                  </span>
-                                </div>
-                              )}
-                              {!selectedBg && (
-                                <div className="flex flex-col items-center">
-                                  <div className="w-14 h-14 rounded-lg bg-zinc-100 flex items-center justify-center">
-                                    <span className="text-xs text-zinc-400">随机</span>
-                                  </div>
-                                  <p className="text-[10px] text-zinc-500 mt-1">背景</p>
-                                  <span className="text-[8px] px-1 py-0.5 rounded bg-amber-100 text-amber-600">
-                                    随机
-                                  </span>
-                                  <span className="text-[8px] px-1 py-0.5 rounded bg-green-100 text-green-600 mt-0.5">
-                                    影棚背景
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                            
-                            {/* 生成模式信息 */}
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              <span className="text-[10px] px-2 py-1 rounded bg-zinc-100 text-zinc-600">
-                                模式: 专业棚拍
-                              </span>
-                              <span className="text-[10px] px-2 py-1 rounded bg-zinc-100 text-zinc-600">
-                                生成: 6张 (背景库2 + AI背景2 + 扩展2)
-                              </span>
-                            </div>
-                          </div>
-                        )}
+                        <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{selectedModel.name}</p>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="flex flex-col items-center">
+                        <div className="w-14 h-14 rounded-lg bg-zinc-100 flex items-center justify-center">
+                          <span className="text-xs text-zinc-400">Random</span>
+                        </div>
+                        <p className="text-[10px] text-zinc-500 mt-1">Model</p>
+                      </div>
+                    )}
+                    {selectedBg ? (
+                      <div className="flex flex-col items-center">
+                        <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group" onClick={() => setFullscreenImage(selectedBg.imageUrl)}>
+                          <img src={selectedBg.imageUrl} alt="Background" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <ZoomIn className="w-4 h-4 text-white" />
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{selectedBg.name}</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center">
+                        <div className="w-14 h-14 rounded-lg bg-zinc-100 flex items-center justify-center">
+                          <span className="text-xs text-zinc-400">Random</span>
+                        </div>
+                        <p className="text-[10px] text-zinc-500 mt-1">Background</p>
+                      </div>
+                    )}
                   </div>
                 </div>
-                </>
-              )
-            })()}
+              )}
+            </ResultDetailDialog>
             
             {!isDesktop && <BottomNav forceShow />}
           </motion.div>
