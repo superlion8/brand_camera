@@ -68,6 +68,7 @@ export const en: Translations = {
     user: "User",
     error: "Error",
     reselect: "Reselect",
+    generationFailed: "Generation failed",
   },
   
   // Navigation

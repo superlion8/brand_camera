@@ -66,6 +66,7 @@ export const zh = {
     user: "用户",
     error: "错误",
     reselect: "重新选择",
+    generationFailed: "生成失败",
   },
   
   // Navigation

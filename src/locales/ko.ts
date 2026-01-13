@@ -68,6 +68,7 @@ export const ko: Translations = {
     user: "사용자",
     error: "오류",
     reselect: "다시 선택",
+    generationFailed: "생성 실패",
   },
   
   // Navigation
