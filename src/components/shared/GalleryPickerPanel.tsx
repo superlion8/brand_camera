@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useIsDesktop } from "@/hooks/useIsMobile"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useTranslation } from "@/stores/languageStore"
+import { useGalleryStore, getCacheKey } from "@/stores/galleryStore"
 
 interface GalleryItem {
   id: string
@@ -70,6 +71,7 @@ export function GalleryPickerPanel({
   const { t } = useTranslation()
   const { user } = useAuth()
   const { isDesktop } = useIsDesktop()
+  const { getCache, setCache } = useGalleryStore()
   
   const [photos, setPhotos] = useState<GalleryItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -83,9 +85,24 @@ export function GalleryPickerPanel({
     label: t.edit?.goShoot || 'Go Shoot',
     href: '/buyer-show',
   }
+  
+  // Cache key for this gallery type
+  const cacheKey = getCacheKey(galleryType, '')
 
-  // Fetch gallery photos
+  // Fetch gallery photos (with cache support)
   const fetchPhotos = useCallback(async (pageNum: number, append: boolean = false) => {
+    // Try to use cache for first page
+    if (pageNum === 1 && !append) {
+      const cached = getCache(cacheKey)
+      if (cached && cached.items.length > 0) {
+        console.log('[GalleryPickerPanel] Using cached data for', cacheKey)
+        setPhotos(cached.items)
+        setHasMore(cached.hasMore)
+        setPage(cached.currentPage)
+        return
+      }
+    }
+    
     if (append) {
       setIsLoadingMore(true)
     } else {
@@ -97,13 +114,22 @@ export function GalleryPickerPanel({
       const result = await response.json()
       
       if (result.success && result.data?.items) {
-        if (append) {
-          setPhotos(prev => [...prev, ...result.data.items])
-        } else {
-          setPhotos(result.data.items)
-        }
+        const newItems = append 
+          ? [...photos, ...result.data.items]
+          : result.data.items
+        
+        setPhotos(newItems)
         setHasMore(result.data.hasMore || false)
         setPage(pageNum)
+        
+        // Update cache
+        setCache(cacheKey, {
+          items: newItems,
+          hasMore: result.data.hasMore || false,
+          currentPage: pageNum,
+          pendingTasks: [],
+          fetchedAt: Date.now(),
+        })
       }
     } catch (error) {
       console.error('[GalleryPickerPanel] Failed to fetch:', error)
@@ -111,15 +137,14 @@ export function GalleryPickerPanel({
       setIsLoading(false)
       setIsLoadingMore(false)
     }
-  }, [galleryType])
+  }, [galleryType, cacheKey, getCache, setCache, photos])
 
-  // Fetch when panel opens
+  // Load data when panel opens
   useEffect(() => {
     if (open && user) {
-      setPage(1)
       fetchPhotos(1, false)
     }
-  }, [open, user, fetchPhotos])
+  }, [open, user]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLoadMore = () => {
     if (!isLoadingMore && hasMore) {
