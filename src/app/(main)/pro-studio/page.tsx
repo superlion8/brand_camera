@@ -15,6 +15,8 @@ import { ensureImageUrl } from "@/lib/supabase/storage"
 import { Asset } from "@/types"
 import Image from "next/image"
 import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
+import { ModelPickerPanel } from "@/components/shared/ModelPickerPanel"
+import { ScenePickerPanel } from "@/components/shared/ScenePickerPanel"
 import { AssetGrid } from "@/components/shared/AssetGrid"
 import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
@@ -234,6 +236,8 @@ function ProStudioPageContent() {
   
   // Panel state
   const [showCustomPanel, setShowCustomPanel] = useState(false)
+  const [showModelPicker, setShowModelPicker] = useState(false)
+  const [showScenePicker, setShowScenePicker] = useState(false)
   const [showProductPanel, setShowProductPanel] = useState(false)
   const [productSubTab, setProductSubTab] = useState<ProductSubTab>("all")
   const [zoomProductImage, setZoomProductImage] = useState<string | null>(null)
@@ -903,10 +907,7 @@ function ProStudioPageContent() {
                         )}
                         {allModels.length > 5 && (
                           <button 
-                            onClick={() => {
-                              setActiveCustomTab("model")
-                              setShowCustomPanel(true)
-                            }}
+                            onClick={() => setShowModelPicker(true)}
                             className="text-xs text-amber-600 hover:text-amber-700 font-medium"
                           >
                             {t.proStudio?.viewMore || 'View More'} ({allModels.length})
@@ -962,11 +963,8 @@ function ProStudioPageContent() {
                           </button>
                         )}
                         {allBgs.length > 5 && (
-                          <button 
-                            onClick={() => {
-                              setActiveCustomTab("bg")
-                              setShowCustomPanel(true)
-                            }}
+                          <button
+                            onClick={() => setShowScenePicker(true)}
                             className="text-xs text-amber-600 hover:text-amber-700 font-medium"
                           >
                             {t.proStudio?.viewMore || 'View More'} ({allBgs.length})
@@ -1009,147 +1007,7 @@ function ProStudioPageContent() {
               </div>
             </div>
             
-            {/* Desktop Modal for View More */}
-            <AnimatePresence>
-              {showCustomPanel && (
-                <>
-                  <motion.div 
-                    initial={{ opacity: 0 }} 
-                    animate={{ opacity: 1 }} 
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-black/40 z-40"
-                    onClick={() => setShowCustomPanel(false)}
-                  />
-                  <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-                    <motion.div 
-                      initial={{ opacity: 0, scale: 0.95 }} 
-                      animate={{ opacity: 1, scale: 1 }} 
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      className="w-[90vw] max-w-3xl bg-white rounded-2xl max-h-[80vh] flex flex-col overflow-hidden shadow-xl pointer-events-auto"
-                    >
-                    <div className="h-14 border-b flex items-center justify-between px-6 shrink-0">
-                      <div className="flex gap-4">
-                        <button 
-                          onClick={() => setActiveCustomTab("model")}
-                          className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                            activeCustomTab === "model" ? "bg-amber-500 text-white" : "bg-zinc-100 text-zinc-600"
-                          }`}
-                        >
-                          {t.proStudio?.proModel || "专业模特"}
-                        </button>
-                        <button 
-                          onClick={() => setActiveCustomTab("bg")}
-                          className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                            activeCustomTab === "bg" ? "bg-amber-500 text-white" : "bg-zinc-100 text-zinc-600"
-                          }`}
-                        >
-                          {t.proStudio?.studioBg || "棚拍背景"}
-                        </button>
-                      </div>
-                      <button 
-                        onClick={() => setShowCustomPanel(false)} 
-                        className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center"
-                      >
-                        <X className="w-5 h-5 text-zinc-500" />
-                      </button>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-6">
-                      {activeCustomTab === "model" && (
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-zinc-600">{t.proStudio?.selectModel || '选择模特（不选则随机）'}</span>
-                            {selectedModelId && (
-                              <button onClick={() => setSelectedModelId(null)} className="text-xs text-amber-600">
-                                {t.proStudio?.clearSelection || '清除选择'}
-                              </button>
-                            )}
-                          </div>
-                          <div className="grid grid-cols-6 gap-3">
-                            <button
-                              onClick={() => modelUploadRef.current?.click()}
-                              className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-amber-400 flex flex-col items-center justify-center gap-1 transition-colors"
-                            >
-                              <Plus className="w-5 h-5 text-zinc-400" />
-                              <span className="text-[10px] text-zinc-400">{t.proStudio?.upload || 'Upload'}</span>
-                            </button>
-                            {allModels.map(model => (
-                              <button
-                                key={model.id}
-                                onClick={() => {
-                                  setSelectedModelId(selectedModelId === model.id ? null : model.id)
-                                }}
-                                className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
-                                  selectedModelId === model.id 
-                                    ? 'border-amber-500 ring-2 ring-amber-500/30' 
-                                    : 'border-transparent hover:border-amber-300'
-                                }`}
-                              >
-                                <Image src={model.imageUrl} alt={model.name || ''} fill className="object-cover" />
-                                {selectedModelId === model.id && (
-                                  <div className="absolute top-1 right-1 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center">
-                                    <Check className="w-3 h-3 text-white" />
-                                  </div>
-                                )}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {activeCustomTab === "bg" && (
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-zinc-600">{t.proStudio?.selectBg || '选择背景（不选则随机）'}</span>
-                            {selectedBgId && (
-                              <button onClick={() => setSelectedBgId(null)} className="text-xs text-amber-600">
-                                {t.proStudio?.clearSelection || '清除选择'}
-                              </button>
-                            )}
-                          </div>
-                          <div className="grid grid-cols-6 gap-3">
-                            <button
-                              onClick={() => bgUploadRef.current?.click()}
-                              className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-300 hover:border-amber-400 flex flex-col items-center justify-center gap-1 transition-colors"
-                            >
-                              <Plus className="w-5 h-5 text-zinc-400" />
-                              <span className="text-[10px] text-zinc-400">{t.proStudio?.upload || 'Upload'}</span>
-                            </button>
-                            {allBgs.map(bg => (
-                              <button
-                                key={bg.id}
-                                onClick={() => {
-                                  setSelectedBgId(selectedBgId === bg.id ? null : bg.id)
-                                }}
-                                className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
-                                  selectedBgId === bg.id 
-                                    ? 'border-amber-500 ring-2 ring-amber-500/30' 
-                                    : 'border-transparent hover:border-amber-300'
-                                }`}
-                              >
-                                <Image src={bg.imageUrl} alt={bg.name || ''} fill className="object-cover" />
-                                {selectedBgId === bg.id && (
-                                  <div className="absolute top-1 right-1 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center">
-                                    <Check className="w-3 h-3 text-white" />
-                                  </div>
-                                )}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-4 border-t">
-                      <button 
-                        onClick={() => setShowCustomPanel(false)}
-                        className="w-full h-12 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold transition-colors"
-                      >
-                        {t.common?.confirm || '确定'}
-                      </button>
-                    </div>
-                    </motion.div>
-                  </div>
-                </>
-              )}
-            </AnimatePresence>
+            {/* Model and Scene Pickers are rendered at the page level */}
           </motion.div>
         )}
 
@@ -1830,6 +1688,29 @@ function ProStudioPageContent() {
         onUploadClick={() => fileInputRef2.current?.click()}
         themeColor="amber"
         title={t.proStudio?.styleOutfit || '搭配商品'}
+      />
+      
+      {/* Model Picker */}
+      <ModelPickerPanel
+        open={showModelPicker}
+        onClose={() => setShowModelPicker(false)}
+        selectedId={selectedModelId}
+        customModels={allModels}
+        onSelect={(model) => setSelectedModelId(model.id)}
+        themeColor="amber"
+        allowUpload={false}
+      />
+      
+      {/* Scene Picker */}
+      <ScenePickerPanel
+        open={showScenePicker}
+        onClose={() => setShowScenePicker(false)}
+        selectedId={selectedBgId}
+        customScenes={allBgs}
+        onSelect={(scene) => setSelectedBgId(scene.id)}
+        sceneType="studio"
+        themeColor="amber"
+        allowUpload={false}
       />
     </div>
   )
