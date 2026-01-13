@@ -314,7 +314,7 @@ function OutfitPageContent() {
       const newModel: Asset = {
         id: `custom-model-${Date.now()}`,
         type: 'model',
-        name: `自定义模特`,
+        name: t.outfit?.customModel || 'Custom Model',
         imageUrl: base64,
       }
       setCustomModels(prev => [newModel, ...prev])
@@ -332,7 +332,7 @@ function OutfitPageContent() {
       const newBg: Asset = {
         id: `custom-bg-${Date.now()}`,
         type: 'background',
-        name: `自定义背景`,
+        name: t.outfit?.customBg || 'Custom Background',
         imageUrl: base64,
       }
       setCustomBgs(prev => [newBg, ...prev])

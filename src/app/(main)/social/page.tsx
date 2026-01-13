@@ -30,7 +30,7 @@ import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
 // Helper to map API error codes to translated messages
 const getErrorMessage = (error: string, t: any): string => {
   if (error === 'RESOURCE_BUSY') {
-    return t.errors?.resourceBusy || '资源紧张，请稀后重试'
+    return t.errors?.resourceBusy || 'Resource busy, please try again later'
   }
   return error
 }

@@ -121,10 +121,10 @@ export function UserMenu() {
   // 手机用户显示手机号，其他用户显示名字或邮箱前缀
   const displayName = phone 
     ? phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') // 隐藏中间4位
-    : user.user_metadata?.full_name || user.email?.split("@")[0] || "用户"
+    : user.user_metadata?.full_name || user.email?.split("@")[0] || t.common?.user || "User"
   
   // 副标题：手机用户显示"手机号登录"，其他显示邮箱
-  const subtitle = isPhoneUser ? (phone || '手机号登录') : user.email
+  const subtitle = isPhoneUser ? (phone || t.auth?.phoneLogin || 'Phone Login') : user.email
 
   const currentLang = LANGUAGES.find(l => l.code === language) || LANGUAGES[0]
 
@@ -293,7 +293,7 @@ export function UserMenu() {
                       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-zinc-700 hover:bg-zinc-100 transition-colors text-left"
                     >
                       <BarChart3 className="w-4 h-4 text-blue-500" />
-                      <span className="text-sm">Admin 看板</span>
+                      <span className="text-sm">{t.admin?.dashboard || 'Admin Dashboard'}</span>
                     </button>
                     <button
                       onClick={() => {
@@ -303,7 +303,7 @@ export function UserMenu() {
                       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-zinc-700 hover:bg-zinc-100 transition-colors text-left"
                     >
                       <Gauge className="w-4 h-4 text-amber-500" />
-                      <span className="text-sm">管理用户额度</span>
+                      <span className="text-sm">{t.admin?.manageQuotas || 'Manage Quotas'}</span>
                     </button>
                     <button
                       onClick={() => {
@@ -313,7 +313,7 @@ export function UserMenu() {
                       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-zinc-700 hover:bg-zinc-100 transition-colors text-left"
                     >
                       <Inbox className="w-4 h-4 text-purple-500" />
-                      <span className="text-sm">额度申请</span>
+                      <span className="text-sm">{t.admin?.applications || 'Applications'}</span>
                       {pendingApplications > 0 && (
                         <span className="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
                           {pendingApplications}
@@ -328,7 +328,7 @@ export function UserMenu() {
                       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-zinc-700 hover:bg-zinc-100 transition-colors text-left"
                     >
                       <FolderOpen className="w-4 h-4 text-green-500" />
-                      <span className="text-sm">资源管理</span>
+                      <span className="text-sm">{t.admin?.resourceManagement || 'Resources'}</span>
                     </button>
                   </div>
                 )}

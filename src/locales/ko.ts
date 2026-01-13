@@ -64,6 +64,10 @@ export const ko: Translations = {
     change: "변경",
     clickToUploadOrDrag: "클릭하여 업로드 또는 드래그 앤 드롭",
     uploadProductDesc: "상품 이미지 업로드 후 AI가 전문 디스플레이 생성",
+    white: "흰색",
+    user: "사용자",
+    error: "오류",
+    reselect: "다시 선택",
   },
   
   // Navigation
@@ -311,6 +315,7 @@ export const ko: Translations = {
   // Studio Page
   studio: {
     title: "상품 스튜디오",
+    badge: "스튜디오",
     photoType: "사진 유형",
     studioShot: "스튜디오 촬영",
     studioShotDesc: "전문 상품 촬영",

@@ -31,7 +31,7 @@ const CREDIT_COST = TASK_CREDIT_COSTS[TaskTypes.PRODUCT_SHOT]
 // Helper to map API error codes to translated messages
 const getErrorMessage = (error: string, t: any): string => {
   if (error === 'RESOURCE_BUSY') {
-    return t.errors?.resourceBusy || '资源紧张，请稍后重试'
+    return t.errors?.resourceBusy || 'Resource busy, please try again later'
   }
   return error
 }
@@ -1092,7 +1092,7 @@ function StudioPageContent() {
                         bgColor === '#FFFFFF' ? 'border-amber-500 scale-110' : 'border-zinc-200 shadow-sm'
                       }`}
                       style={{ background: '#FFFFFF' }}
-                      title="白色"
+                      title={t.common?.white || "White"}
                     />
                   </div>
                 </div>
@@ -1409,7 +1409,7 @@ function StudioPageContent() {
                     {/* Model type badge */}
                     <div className="absolute top-2 left-2 flex gap-1">
                       <span className="px-2 py-1 rounded text-[10px] font-medium bg-amber-500 text-white">
-                        影棚
+                        {t.studio?.badge || 'Studio'}
                       </span>
                       {generatedModelTypes[i] === 'flash' && (
                         <span className="px-1.5 py-1 rounded text-[9px] font-medium bg-amber-600 text-white">

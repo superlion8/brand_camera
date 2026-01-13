@@ -9,7 +9,7 @@ interface LoadingSpinnerProps {
   progress?: number
 }
 
-export function LoadingSpinner({ className, message = "处理中...", progress }: LoadingSpinnerProps) {
+export function LoadingSpinner({ className, message = "Processing...", progress }: LoadingSpinnerProps) {
   return (
     <div className={cn("flex flex-col items-center justify-center gap-4", className)}>
       <div className="relative">

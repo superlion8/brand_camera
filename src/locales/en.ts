@@ -64,6 +64,10 @@ export const en: Translations = {
     change: "Change",
     clickToUploadOrDrag: "Click to upload or drag and drop",
     uploadProductDesc: "Upload product image, AI will generate professional display",
+    white: "White",
+    user: "User",
+    error: "Error",
+    reselect: "Reselect",
   },
   
   // Navigation
@@ -312,6 +316,7 @@ export const en: Translations = {
   // Studio Page
   studio: {
     title: "Product Studio",
+    badge: "Studio",
     photoType: "Photo Type",
     studioShot: "Studio Shot",
     studioShotDesc: "Professional photography",

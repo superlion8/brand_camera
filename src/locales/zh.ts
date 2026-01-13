@@ -62,6 +62,10 @@ export const zh = {
     change: "更换",
     clickToUploadOrDrag: "点击上传或拖拽图片",
     uploadProductDesc: "上传商品图片后，AI 将为你生成专业展示图",
+    white: "白色",
+    user: "用户",
+    error: "错误",
+    reselect: "重新选择",
   },
   
   // Navigation
@@ -310,6 +314,7 @@ export const zh = {
   // Studio Page
   studio: {
     title: "商品影棚",
+    badge: "影棚",
     photoType: "商品图类型",
     studioShot: "棚拍图",
     studioShotDesc: "专业产品摄影",

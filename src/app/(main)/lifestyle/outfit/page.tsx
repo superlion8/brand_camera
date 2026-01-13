@@ -352,7 +352,7 @@ function LifestyleOutfitContent() {
                 })
                 break
               case 'error':
-                setGenerationStatus(`错误: ${event.error}`)
+                setGenerationStatus(`${t.common?.error || 'Error'}: ${event.error}`)
                 updateTaskStatus(taskId, 'failed')
                 break
               case 'complete':
@@ -389,7 +389,7 @@ function LifestyleOutfitContent() {
         }
       }
     } catch (error: any) {
-      setGenerationStatus(`生成失败: ${error.message}`)
+      setGenerationStatus(`${t.common?.generationFailed || 'Generation failed'}: ${error.message}`)
       updateTaskStatus(taskId, 'failed')
       setIsGenerating(false)
     }
