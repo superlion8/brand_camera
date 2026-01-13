@@ -4,7 +4,6 @@ import { Search, Bell, Loader2 } from 'lucide-react'
 import { QuotaIndicator } from '@/components/shared/QuotaIndicator'
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
 import { UserMenu } from '@/components/shared/UserMenu'
-import { SyncIndicator } from '@/components/shared/SyncIndicator'
 import { useTranslation } from '@/stores/languageStore'
 import { useGenerationTaskStore } from '@/stores/generationTaskStore'
 
@@ -41,7 +40,6 @@ export function TopNav({ className }: { className?: string }) {
             </span>
           </div>
         )}
-        <SyncIndicator />
         <QuotaIndicator />
         
         {/* Notifications */}
