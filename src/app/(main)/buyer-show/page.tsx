@@ -2402,10 +2402,22 @@ function CameraPageContent() {
               if (!selectedImageUrl) return null
               
               return (
-              <div className="fixed inset-0 z-50 bg-white overflow-hidden">
+              <>
+              {/* Backdrop for PC */}
+              {isDesktop && (
+                <div 
+                  className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+                  onClick={() => setSelectedResultIndex(null)}
+                />
+              )}
+              <div className={`fixed z-50 bg-white overflow-hidden ${
+                isDesktop 
+                  ? 'inset-0 m-auto w-[600px] h-fit max-h-[90vh] rounded-2xl shadow-2xl' 
+                  : 'inset-0'
+              }`}>
                 <div className="h-full flex flex-col">
                   {/* Header */}
-                  <div className="h-14 flex items-center justify-between px-4 bg-white border-b shrink-0">
+                  <div className={`h-14 flex items-center justify-between bg-white border-b shrink-0 ${isDesktop ? 'px-6' : 'px-4'}`}>
                     <button
                       onClick={() => setSelectedResultIndex(null)}
                       className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center transition-colors"
@@ -2417,17 +2429,17 @@ function CameraPageContent() {
                   </div>
 
                   {/* Content */}
-                  <div className="flex-1 overflow-y-auto bg-zinc-100 pb-24">
-                    <div className="bg-zinc-900">
+                  <div className={`flex-1 overflow-y-auto ${isDesktop ? '' : 'bg-zinc-100 pb-24'}`}>
+                    <div className={isDesktop ? 'bg-zinc-100 p-4' : 'bg-zinc-900'}>
                       <div 
-                        className="relative aspect-[4/5] cursor-pointer group"
+                        className={`relative cursor-pointer group ${isDesktop ? 'max-w-md mx-auto rounded-xl overflow-hidden shadow-lg' : 'aspect-[4/5]'}`}
                         onClick={() => setFullscreenImage(selectedImageUrl)}
                       >
                         {/* Use img tag for native long-press save support */}
                         <img 
                           src={selectedImageUrl} 
                           alt="Detail" 
-                          className="w-full h-full object-contain" 
+                          className={`w-full object-contain ${isDesktop ? 'max-h-[50vh] bg-white' : 'h-full'}`}
                         />
                         {/* Zoom hint */}
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 pointer-events-none">
@@ -2436,7 +2448,7 @@ function CameraPageContent() {
                           </div>
                         </div>
                       </div>
-                      <p className="text-center text-zinc-500 text-xs py-2">{t.imageActions.longPressSave}</p>
+                      {!isDesktop && <p className="text-center text-zinc-500 text-xs py-2">{t.imageActions.longPressSave}</p>}
                     </div>
                     
                     <div className="p-4 pb-8 bg-white">
@@ -2651,6 +2663,7 @@ function CameraPageContent() {
                   </div>
                 </div>
               </div>
+              </>
               )
             })()}
             

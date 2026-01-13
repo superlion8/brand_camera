@@ -946,36 +946,52 @@ export default function TryOnPage() {
             
             {/* Result Detail Dialog */}
             {selectedResultIndex !== null && resultImages[selectedResultIndex] && (
-              <div className="fixed inset-0 z-50 bg-white overflow-hidden">
+              <>
+              {/* Backdrop for PC */}
+              {isDesktop && (
+                <div 
+                  className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+                  onClick={() => setSelectedResultIndex(null)}
+                />
+              )}
+              <div className={`fixed z-50 bg-white overflow-hidden ${
+                isDesktop 
+                  ? 'inset-0 m-auto w-[600px] h-fit max-h-[90vh] rounded-2xl shadow-2xl' 
+                  : 'inset-0'
+              }`}>
                 <div className="h-full flex flex-col">
                   {/* Header */}
-                  <div className="h-14 flex items-center justify-between px-4 bg-white border-b shrink-0">
+                  <div className={`h-14 flex items-center justify-between bg-white border-b shrink-0 ${isDesktop ? 'px-6' : 'px-4'}`}>
                     <button
                       onClick={() => setSelectedResultIndex(null)}
                       className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center transition-colors"
                     >
                       <X className="w-5 h-5 text-zinc-700" />
                     </button>
-                    <span className="font-semibold text-zinc-900">{t.common?.detail || '详情'}</span>
+                    <span className="font-semibold text-zinc-900">{t.common?.detail || 'Details'}</span>
                     <div className="w-10" />
                   </div>
 
                   {/* Content */}
-                  <div className="flex-1 overflow-y-auto bg-zinc-100 pb-24">
-                    <div 
-                      className="relative aspect-[3/4] bg-zinc-900 cursor-pointer group"
-                      onClick={() => setFullscreenImage(resultImages[selectedResultIndex])}
-                    >
-                      <Image 
-                        src={resultImages[selectedResultIndex]} 
-                        alt="Detail" 
-                        fill 
-                        className="object-contain" 
-                      />
-                      {/* Zoom hint */}
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
-                        <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                          <ZoomIn className="w-6 h-6 text-zinc-700" />
+                  <div className={`flex-1 overflow-y-auto ${isDesktop ? '' : 'bg-zinc-100 pb-24'}`}>
+                    <div className={isDesktop ? 'bg-zinc-100 p-4' : ''}>
+                      <div 
+                        className={`relative cursor-pointer group ${isDesktop ? 'max-w-md mx-auto rounded-xl overflow-hidden shadow-lg bg-white' : 'aspect-[3/4] bg-zinc-900'}`}
+                        onClick={() => setFullscreenImage(resultImages[selectedResultIndex])}
+                      >
+                        <Image 
+                          src={resultImages[selectedResultIndex]} 
+                          alt="Detail" 
+                          fill={!isDesktop}
+                          width={isDesktop ? 400 : undefined}
+                          height={isDesktop ? 533 : undefined}
+                          className={`object-contain ${isDesktop ? 'max-h-[50vh] w-full' : ''}`}
+                        />
+                        {/* Zoom hint */}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
+                          <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                            <ZoomIn className="w-6 h-6 text-zinc-700" />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1087,6 +1103,7 @@ export default function TryOnPage() {
                   </div>
                 </div>
               </div>
+              </>
             )}
             
             {/* Fullscreen Image Viewer */}
