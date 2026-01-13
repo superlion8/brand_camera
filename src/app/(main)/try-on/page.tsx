@@ -1221,7 +1221,7 @@ export default function TryOnPage() {
         onClose={() => setShowGalleryPanel(false)}
         onSelect={handleGallerySelect}
         title={galleryTarget === 'person' ? (t.tryOn?.personImage || 'Select Person Photo') : (t.tryOn?.clothingImages || 'Select Clothing')}
-        themeColor="pink"
+        themeColor="purple"
       />
       
     </div>
