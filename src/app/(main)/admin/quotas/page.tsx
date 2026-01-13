@@ -327,7 +327,6 @@ export default function AdminQuotasPage() {
                           </>
                         )}
                       </div>
-                      )}
                     </div>
                   </div>
                   
