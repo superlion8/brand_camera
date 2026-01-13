@@ -899,6 +899,24 @@ function StudioPageContent() {
                               title={color.label}
                             />
                           ))}
+                          {/* Custom color from picker */}
+                          {(() => {
+                            const isPreset = bgColor === '#FFFFFF' || PRESET_BG_COLORS.some(c => c.colors[0] === bgColor)
+                            return (
+                              <div
+                                className={`w-10 h-10 rounded-full border-2 transition-all ${
+                                  !isPreset 
+                                    ? 'border-amber-500 ring-2 ring-amber-500/20' 
+                                    : 'border-dashed border-zinc-300'
+                                }`}
+                                style={{ 
+                                  background: !isPreset ? bgColor : 'linear-gradient(135deg, #f5f5f5 25%, #e5e5e5 25%, #e5e5e5 50%, #f5f5f5 50%, #f5f5f5 75%, #e5e5e5 75%)',
+                                  backgroundSize: '8px 8px'
+                                }}
+                                title={t.studio?.customColor || 'Custom'}
+                              />
+                            )
+                          })()}
                         </div>
                         {/* Color Picker */}
                         <div className="bg-zinc-100 rounded-xl p-3 space-y-3">
@@ -1068,6 +1086,14 @@ function StudioPageContent() {
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-sm font-semibold text-zinc-700">{t.studio.backgroundColor}</h3>
                   <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setBgColor('#FFFFFF')}
+                      className={`w-6 h-6 rounded-full border-2 overflow-hidden transition-all ${
+                        bgColor === '#FFFFFF' ? 'border-amber-500 scale-110' : 'border-zinc-200 shadow-sm'
+                      }`}
+                      style={{ background: '#FFFFFF' }}
+                      title={t.common?.white || "White"}
+                    />
                     {PRESET_BG_COLORS.map(preset => (
                       <button
                         key={preset.id}
@@ -1081,14 +1107,22 @@ function StudioPageContent() {
                         title={preset.label}
                       />
                     ))}
-                    <button
-                      onClick={() => setBgColor('#FFFFFF')}
-                      className={`w-6 h-6 rounded-full border-2 overflow-hidden transition-all ${
-                        bgColor === '#FFFFFF' ? 'border-amber-500 scale-110' : 'border-zinc-200 shadow-sm'
-                      }`}
-                      style={{ background: '#FFFFFF' }}
-                      title={t.common?.white || "White"}
-                    />
+                    {/* Custom color indicator */}
+                    {(() => {
+                      const isPreset = bgColor === '#FFFFFF' || PRESET_BG_COLORS.some(c => c.colors[0] === bgColor)
+                      return (
+                        <div
+                          className={`w-6 h-6 rounded-full border-2 overflow-hidden transition-all ${
+                            !isPreset ? 'border-amber-500 scale-110' : 'border-dashed border-zinc-300'
+                          }`}
+                          style={{ 
+                            background: !isPreset ? bgColor : 'linear-gradient(135deg, #f5f5f5 25%, #e5e5e5 25%, #e5e5e5 50%, #f5f5f5 50%, #f5f5f5 75%, #e5e5e5 75%)',
+                            backgroundSize: '6px 6px'
+                          }}
+                          title={t.studio?.customColor || 'Custom'}
+                        />
+                      )
+                    })()}
                   </div>
                 </div>
                 

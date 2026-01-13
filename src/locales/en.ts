@@ -369,6 +369,7 @@ export const en: Translations = {
     productOriginal: "Original Product",
     lightSource: "Light",
     bgColor: "Background",
+    customColor: "Custom",
     fromAlbum: "Upload from Album",
     generationFailed: "Generation failed, please retry",
     officialExamples: "Official Examples",

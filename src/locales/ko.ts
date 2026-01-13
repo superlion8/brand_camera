@@ -368,6 +368,7 @@ export const ko: Translations = {
     productOriginal: "원본 상품",
     lightSource: "조명",
     bgColor: "배경",
+    customColor: "사용자 정의",
     fromAlbum: "앨범에서 업로드",
     generationFailed: "생성 실패, 다시 시도하세요",
     officialExamples: "공식 예시",

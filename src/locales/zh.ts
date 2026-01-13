@@ -367,6 +367,7 @@ export const zh = {
     productOriginal: "商品原图",
     lightSource: "光源",
     bgColor: "背景",
+    customColor: "自定义",
     fromAlbum: "从相册上传",
     generationFailed: "生成失败，请重试",
     officialExamples: "官方示例",
