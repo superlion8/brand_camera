@@ -16,7 +16,7 @@ import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { ModelPickerPanel } from "@/components/shared/ModelPickerPanel"
 import { ScenePickerPanel } from "@/components/shared/ScenePickerPanel"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
-import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
+import { PhotoDetailDialog, createQuickActions } from "@/components/shared/PhotoDetailDialog"
 import { ResultsView } from "@/components/shared/ResultsView"
 import { ProcessingView } from "@/components/shared/ProcessingView"
 import { useFavorite } from "@/hooks/useFavorite"
@@ -1022,12 +1022,12 @@ function LifestylePageContent() {
             onRegenerate={handleLifestyleGenerate}
             onImageClick={(i) => setSelectedResultIndex(i)}
           >
-            {/* Result Detail Dialog */}
-            <ResultDetailDialog
+            {/* Photo Detail Dialog */}
+            <PhotoDetailDialog
               open={selectedResultIndex !== null && !!generatedImages[selectedResultIndex!]}
               onClose={() => setSelectedResultIndex(null)}
               imageUrl={selectedResultIndex !== null ? generatedImages[selectedResultIndex] || '' : ''}
-              badges={[{ text: t.lifestyle?.badge || 'Lifestyle', className: 'bg-purple-100 text-purple-700' }]}
+              badges={[{ text: t.lifestyle?.badge || 'Lifestyle', className: 'bg-purple-500 text-white' }]}
               onFavorite={() => selectedResultIndex !== null && toggleFavorite(selectedResultIndex)}
               isFavorited={selectedResultIndex !== null && isFavorited(selectedResultIndex)}
               onDownload={() => {
@@ -1038,16 +1038,37 @@ function LifestylePageContent() {
                 if (selectedResultIndex === null) return
                 setFullscreenImage(generatedImages[selectedResultIndex])
               }}
-              actions={selectedResultIndex !== null ? [{
-                text: t.gallery?.goEdit || 'Edit',
-                icon: <Wand2 className="w-4 h-4" />,
-                onClick: () => {
+              quickActions={selectedResultIndex !== null ? [
+                createQuickActions.tryOn(() => {
+                  const imageUrl = generatedImages[selectedResultIndex]
+                  if (imageUrl) {
+                    sessionStorage.setItem('tryOnImage', imageUrl)
+                    router.push('/try-on')
+                  }
+                }),
+                createQuickActions.edit(() => {
                   const imageUrl = generatedImages[selectedResultIndex]
                   setSelectedResultIndex(null)
                   if (imageUrl) navigateToEdit(router, imageUrl)
-                },
-                className: "bg-purple-500 hover:bg-purple-600 text-white"
-              }] : []}
+                }),
+                createQuickActions.groupShoot(() => {
+                  const imageUrl = generatedImages[selectedResultIndex]
+                  if (imageUrl) {
+                    sessionStorage.setItem('groupShootImage', imageUrl)
+                    router.push('/group-shot')
+                  }
+                }),
+                createQuickActions.material(() => {
+                  const imageUrl = generatedImages[selectedResultIndex]
+                  if (imageUrl) {
+                    sessionStorage.setItem('modifyMaterial_outputImage', imageUrl)
+                    sessionStorage.setItem('modifyMaterial_inputImages', JSON.stringify([capturedImage].filter(Boolean)))
+                    router.push('/gallery/modify-material')
+                  }
+                }),
+              ] : []}
+              inputImages={capturedImage ? [{ url: capturedImage, label: t.common?.product || 'Product' }] : []}
+              onInputImageClick={(url) => setFullscreenImage(url)}
             />
           </ResultsView>
         )}

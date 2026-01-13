@@ -26,7 +26,7 @@ import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
 import { TASK_CREDIT_COSTS, TaskTypes } from "@/lib/taskTypes"
 import { GalleryPickerPanel } from "@/components/shared/GalleryPickerPanel"
-import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
+import { PhotoDetailDialog, createQuickActions } from "@/components/shared/PhotoDetailDialog"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 
 const CREDIT_COST = TASK_CREDIT_COSTS[TaskTypes.TRY_ON]
@@ -841,12 +841,12 @@ export default function TryOnPage() {
             onRegenerate={handleGenerate}
             onImageClick={(i) => setSelectedResultIndex(i)}
           >
-            {/* Result Detail Dialog */}
-            <ResultDetailDialog
+            {/* Photo Detail Dialog */}
+            <PhotoDetailDialog
               open={selectedResultIndex !== null && !!resultImages[selectedResultIndex!]}
               onClose={() => setSelectedResultIndex(null)}
               imageUrl={selectedResultIndex !== null ? resultImages[selectedResultIndex] || '' : ''}
-              badges={[{ text: t.tryOn?.title || 'Virtual Try-On', className: 'bg-pink-100 text-pink-700' }]}
+              badges={[{ text: t.tryOn?.badge || 'Try-On', className: 'bg-pink-500 text-white' }]}
               onFavorite={() => selectedResultIndex !== null && toggleFavorite(selectedResultIndex)}
               isFavorited={selectedResultIndex !== null && isFavorited(selectedResultIndex)}
               onDownload={async () => {
@@ -871,55 +871,40 @@ export default function TryOnPage() {
                 if (selectedResultIndex === null) return
                 setFullscreenImage(resultImages[selectedResultIndex])
               }}
-              actions={selectedResultIndex !== null ? [
-                {
-                  text: t.gallery?.goTryOn || 'Continue Try-On',
-                  icon: <Sparkles className="w-4 h-4" />,
-                  onClick: () => {
-                    const imageUrl = resultImages[selectedResultIndex]
-                    setPersonImage(imageUrl)
-                    setClothingImages([])
-                    setSelectedResultIndex(null)
-                    setMode('main')
-                  },
-                  className: "bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white"
-                },
-                {
-                  text: t.gallery?.goEdit || 'Edit',
-                  icon: <Wand2 className="w-4 h-4" />,
-                  onClick: () => {
-                    const imageUrl = resultImages[selectedResultIndex]
-                    navigateToEdit(router, imageUrl)
-                  },
-                  className: "bg-blue-600 hover:bg-blue-700 text-white"
-                },
-                {
-                  text: t.gallery?.goGroupShoot || 'Group Shot',
-                  icon: <Grid3X3 className="w-4 h-4" />,
-                  onClick: () => {
-                    const imageUrl = resultImages[selectedResultIndex]
-                    sessionStorage.setItem('groupShootImage', imageUrl)
-                    setSelectedResultIndex(null)
-                    router.push("/group-shot")
-                  },
-                  className: "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white"
-                },
-                {
-                  text: t.gallery?.modifyMaterial || 'Modify Material',
-                  icon: <Palette className="w-4 h-4" />,
-                  onClick: () => {
-                    const imageUrl = resultImages[selectedResultIndex]
-                    const inputImages: string[] = []
-                    if (clothingImages.length > 0) inputImages.push(...clothingImages)
-                    if (personImage) inputImages.push(personImage)
-                    sessionStorage.setItem('modifyMaterial_outputImage', imageUrl)
-                    sessionStorage.setItem('modifyMaterial_inputImages', JSON.stringify(inputImages))
-                    setSelectedResultIndex(null)
-                    router.push("/gallery/modify-material")
-                  },
-                  className: "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
-                }
+              quickActions={selectedResultIndex !== null ? [
+                createQuickActions.tryOn(() => {
+                  const imageUrl = resultImages[selectedResultIndex]
+                  setPersonImage(imageUrl)
+                  setClothingImages([])
+                  setSelectedResultIndex(null)
+                  setMode('main')
+                }),
+                createQuickActions.edit(() => {
+                  const imageUrl = resultImages[selectedResultIndex]
+                  navigateToEdit(router, imageUrl)
+                }),
+                createQuickActions.groupShoot(() => {
+                  const imageUrl = resultImages[selectedResultIndex]
+                  sessionStorage.setItem('groupShootImage', imageUrl)
+                  setSelectedResultIndex(null)
+                  router.push("/group-shot")
+                }),
+                createQuickActions.material(() => {
+                  const imageUrl = resultImages[selectedResultIndex]
+                  const inputImgs: string[] = []
+                  if (clothingImages.length > 0) inputImgs.push(...clothingImages)
+                  if (personImage) inputImgs.push(personImage)
+                  sessionStorage.setItem('modifyMaterial_outputImage', imageUrl)
+                  sessionStorage.setItem('modifyMaterial_inputImages', JSON.stringify(inputImgs))
+                  setSelectedResultIndex(null)
+                  router.push("/gallery/modify-material")
+                }),
               ] : []}
+              inputImages={[
+                ...(personImage ? [{ url: personImage, label: t.tryOn?.personImage || 'Person' }] : []),
+                ...clothingImages.map((url, i) => ({ url, label: `${t.tryOn?.clothingImages || 'Clothing'} ${i + 1}` }))
+              ]}
+              onInputImageClick={(url) => setFullscreenImage(url)}
             />
             
             {/* Fullscreen Image Viewer */}

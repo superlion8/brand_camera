@@ -19,7 +19,7 @@ import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { ModelPickerPanel } from "@/components/shared/ModelPickerPanel"
 import { ScenePickerPanel } from "@/components/shared/ScenePickerPanel"
 import { AssetGrid } from "@/components/shared/AssetGrid"
-import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
+import { PhotoDetailDialog, createQuickActions } from "@/components/shared/PhotoDetailDialog"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { useImageDownload } from "@/hooks/useImageDownload"
 import { useFavorite } from "@/hooks/useFavorite"
@@ -1505,8 +1505,8 @@ function SocialPageContent() {
             onRegenerate={handleShootIt}
             onImageClick={(i) => setSelectedResultIndex(i)}
           >
-            {/* Result Detail Dialog */}
-            <ResultDetailDialog
+            {/* Photo Detail Dialog */}
+            <PhotoDetailDialog
               open={selectedResultIndex !== null && !!(() => {
                 const currentTask = tasks.find(t => t.id === currentTaskId)
                 const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex!]
@@ -1520,10 +1520,10 @@ function SocialPageContent() {
                 return selectedSlot?.imageUrl || generatedImages[selectedResultIndex] || ''
               })()}
               badges={selectedResultIndex !== null ? [
-                { text: t.social?.title || 'Social', className: 'bg-gradient-to-r from-pink-100 to-purple-100 text-pink-700' },
+                { text: t.social?.title || 'Social', className: 'bg-gradient-to-r from-pink-500 to-purple-500 text-white' },
                 {
                   text: `${t.social?.group || 'Group'} ${GROUP_LABELS[Math.floor(selectedResultIndex / SOCIAL_IMAGES_PER_GROUP)]}-${(selectedResultIndex % SOCIAL_IMAGES_PER_GROUP) + 1}`,
-                  className: Math.floor(selectedResultIndex / SOCIAL_IMAGES_PER_GROUP) === 0 ? 'bg-pink-100 text-pink-600' : 'bg-purple-100 text-purple-600'
+                  className: Math.floor(selectedResultIndex / SOCIAL_IMAGES_PER_GROUP) === 0 ? 'bg-pink-500 text-white' : 'bg-purple-500 text-white'
                 }
               ] : []}
               onFavorite={() => selectedResultIndex !== null && toggleFavorite(selectedResultIndex)}
@@ -1542,36 +1542,55 @@ function SocialPageContent() {
                 const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
                 if (selectedImageUrl) setFullscreenImage(selectedImageUrl)
               }}
-              actions={selectedResultIndex !== null ? [{
-                text: t.gallery?.goEdit || 'Edit',
-                icon: <Wand2 className="w-4 h-4" />,
-                onClick: () => {
+              quickActions={selectedResultIndex !== null ? [
+                createQuickActions.tryOn(() => {
+                  const currentTask = tasks.find(t => t.id === currentTaskId)
+                  const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+                  const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
+                  if (selectedImageUrl) {
+                    sessionStorage.setItem('tryOnImage', selectedImageUrl)
+                    router.push('/try-on')
+                  }
+                }),
+                createQuickActions.edit(() => {
                   const currentTask = tasks.find(t => t.id === currentTaskId)
                   const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
                   const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
                   setSelectedResultIndex(null)
                   if (selectedImageUrl) handleGoToEdit(selectedImageUrl)
-                },
-                className: "bg-blue-600 hover:bg-blue-700 text-white"
-              }] : []}
+                }),
+                createQuickActions.groupShoot(() => {
+                  const currentTask = tasks.find(t => t.id === currentTaskId)
+                  const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+                  const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
+                  if (selectedImageUrl) {
+                    sessionStorage.setItem('groupShootImage', selectedImageUrl)
+                    router.push('/group-shot')
+                  }
+                }),
+                createQuickActions.material(() => {
+                  const currentTask = tasks.find(t => t.id === currentTaskId)
+                  const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+                  const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
+                  if (selectedImageUrl) {
+                    sessionStorage.setItem('modifyMaterial_outputImage', selectedImageUrl)
+                    sessionStorage.setItem('modifyMaterial_inputImages', JSON.stringify([capturedImage].filter(Boolean)))
+                    router.push('/gallery/modify-material')
+                  }
+                }),
+              ] : []}
+              inputImages={capturedImage ? [{ url: capturedImage, label: t.common?.product || 'Product' }] : []}
+              onInputImageClick={(url) => setFullscreenImage(url)}
             >
               {/* Debug content */}
               {debugMode && selectedResultIndex !== null && (() => {
                 const generation = currentGenerationId ? generations.find(g => g.id === currentGenerationId) : null
                 const savedParams = generation?.params
-                
+
                 return (
                   <div className="mt-4 pt-4 border-t border-zinc-100">
                     <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.camera?.debugParams || 'Debug'}</h3>
                     <div className="grid grid-cols-3 gap-2">
-                      {(capturedImage || generation?.inputImageUrl) && (
-                        <div className="flex flex-col items-center">
-                          <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group" onClick={() => setFullscreenImage(capturedImage || generation?.inputImageUrl || '')}>
-                            <img src={capturedImage || generation?.inputImageUrl || ''} alt="Product" className="w-full h-full object-cover" />
-                          </div>
-                          <p className="text-[10px] text-zinc-500 mt-1">{t.common?.product || 'Product'}</p>
-                        </div>
-                      )}
                       {(() => {
                         const modelUrl = savedParams?.modelImage || activeModel?.imageUrl
                         if (!modelUrl) return null
@@ -1600,7 +1619,7 @@ function SocialPageContent() {
                   </div>
                 )
               })()}
-            </ResultDetailDialog>
+            </PhotoDetailDialog>
           </ResultsView>
         )}
       </AnimatePresence>

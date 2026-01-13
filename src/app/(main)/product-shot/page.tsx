@@ -14,7 +14,7 @@ import { useAssetStore } from "@/stores/assetStore"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { useSettingsStore } from "@/stores/settingsStore"
 import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
-import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
+import { PhotoDetailDialog, createQuickActions } from "@/components/shared/PhotoDetailDialog"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { useImageDownload } from "@/hooks/useImageDownload"
 import { useFavorite } from "@/hooks/useFavorite"
@@ -1252,14 +1252,13 @@ function StudioPageContent() {
             onRegenerate={handleGenerate}
             onImageClick={(i) => setSelectedResultIndex(i)}
           >
-            {/* Result Detail Dialog */}
-            <ResultDetailDialog
+            {/* Photo Detail Dialog */}
+            <PhotoDetailDialog
               open={selectedResultIndex !== null && !!generatedImages[selectedResultIndex!]}
               onClose={() => setSelectedResultIndex(null)}
               imageUrl={selectedResultIndex !== null ? generatedImages[selectedResultIndex] || '' : ''}
               badges={selectedResultIndex !== null ? [
-                { text: t.gallery.productStudio, className: 'bg-amber-100 text-amber-700' },
-                ...(generatedModelTypes[selectedResultIndex] === 'flash' ? [{ text: 'Gemini 2.5', className: 'bg-amber-100 text-amber-700 text-[10px]' }] : [])
+                { text: t.gallery.productStudio, className: 'bg-amber-500 text-white' },
               ] : []}
               onFavorite={() => selectedResultIndex !== null && toggleFavorite(selectedResultIndex)}
               isFavorited={selectedResultIndex !== null && isFavorited(selectedResultIndex)}
@@ -1271,47 +1270,41 @@ function StudioPageContent() {
                 if (selectedResultIndex === null) return
                 setFullscreenImage(generatedImages[selectedResultIndex])
               }}
-              actions={selectedResultIndex !== null ? [{
-                text: t.gallery.goEdit,
-                icon: <Wand2 className="w-4 h-4" />,
-                onClick: () => {
+              quickActions={selectedResultIndex !== null ? [
+                createQuickActions.edit(() => {
                   const imageUrl = generatedImages[selectedResultIndex]
                   setSelectedResultIndex(null)
                   if (imageUrl) handleGoToEdit(imageUrl)
-                },
-                className: "bg-amber-500 hover:bg-amber-600 text-white"
-              }] : []}
+                }),
+                createQuickActions.groupShoot(() => {
+                  const imageUrl = generatedImages[selectedResultIndex]
+                  if (imageUrl) {
+                    sessionStorage.setItem('groupShootImage', imageUrl)
+                    router.push('/group-shot')
+                  }
+                }),
+              ] : []}
+              inputImages={productImage ? [{ url: productImage, label: t.common?.product || 'Product' }] : []}
+              onInputImageClick={(url) => setFullscreenImage(url)}
             >
               {/* Debug content */}
               {debugMode && selectedResultIndex !== null && (
                 <div className="mt-4 pt-4 border-t border-zinc-100">
                   <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.studio.debugParams}</h3>
-                  <div className="space-y-3">
-                    {productImage && (
-                      <div className="flex gap-3">
-                        <div className="flex flex-col items-center">
-                          <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100">
-                            <img src={productImage} alt={t.studio.productOriginal} className="w-full h-full object-cover" />
-                          </div>
-                          <p className="text-[10px] text-zinc-500 mt-1">{t.studio.productOriginal}</p>
-                        </div>
-                      </div>
-                    )}
-                    <div className="flex gap-2 flex-wrap">
-                      <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
-                        {t.studio.lightSource}: {LIGHT_TYPES.find(lt => lt.id === lightType)?.label || lightType}
-                      </span>
-                      <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
-                        {t.studio.aspectRatio}: {aspectRatio}
-                      </span>
-                      <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600 flex items-center gap-1">
-                        {t.studio.bgColor}: <span className="w-3 h-3 rounded-full border" style={{ backgroundColor: bgColor }} />
-                      </span>
-                    </div>
+                  <div className="flex gap-2 flex-wrap">
+                    <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
+                      {t.studio.lightSource}: {LIGHT_TYPES.find(lt => lt.id === lightType)?.label || lightType}
+                    </span>
+                    <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600">
+                      {t.studio.aspectRatio}: {aspectRatio}
+                    </span>
+                    <span className="px-2 py-1 bg-zinc-100 rounded text-[10px] text-zinc-600 flex items-center gap-1">
+                      {t.studio.bgColor}: <span className="w-3 h-3 rounded-full border" style={{ backgroundColor: bgColor }} />
+                    </span>
                   </div>
                 </div>
               )}
-            </ResultDetailDialog>
+            </PhotoDetailDialog>
             
             {/* Fullscreen Image Viewer */}
             <FullscreenImageViewer

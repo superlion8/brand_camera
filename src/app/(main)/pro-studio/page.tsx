@@ -18,7 +18,7 @@ import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { ModelPickerPanel } from "@/components/shared/ModelPickerPanel"
 import { ScenePickerPanel } from "@/components/shared/ScenePickerPanel"
 import { AssetGrid } from "@/components/shared/AssetGrid"
-import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
+import { PhotoDetailDialog, createQuickActions } from "@/components/shared/PhotoDetailDialog"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { useImageDownload } from "@/hooks/useImageDownload"
 import { navigateToEdit } from "@/lib/navigation"
@@ -1542,8 +1542,8 @@ function ProStudioPageContent() {
             onRegenerate={handleShootIt}
             onImageClick={(i) => setSelectedResultIndex(i)}
           >
-            {/* Result Detail Dialog */}
-            <ResultDetailDialog
+            {/* Photo Detail Dialog */}
+            <PhotoDetailDialog
               open={selectedResultIndex !== null && !!(() => {
                 const currentTask = tasks.find(t => t.id === currentTaskId)
                 const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex!]
@@ -1556,7 +1556,6 @@ function ProStudioPageContent() {
                 const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
                 return selectedSlot?.imageUrl || generatedImages[selectedResultIndex] || ''
               })()}
-              title={t.proStudio?.details || 'Details'}
               badges={selectedResultIndex !== null ? [{
                 text: getImageLabel(selectedResultIndex),
                 className: `${getImageColor(selectedResultIndex)} text-white`
@@ -1577,55 +1576,54 @@ function ProStudioPageContent() {
                 const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
                 if (selectedImageUrl) setFullscreenImage(selectedImageUrl)
               }}
-              mobileHint={t.proStudio?.longPressToSave || 'Long press to save'}
-              actions={selectedResultIndex !== null ? [
-                {
-                  text: t.gallery?.goEdit || 'Edit',
-                  icon: <Wand2 className="w-4 h-4" />,
-                  onClick: () => {
-                    const currentTask = tasks.find(t => t.id === currentTaskId)
-                    const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
-                    const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
-                    if (selectedImageUrl) {
-                      setSelectedResultIndex(null)
-                      navigateToEdit(router, selectedImageUrl)
-                    }
-                  },
-                  className: "bg-blue-600 hover:bg-blue-700 text-white"
-                },
-                {
-                  text: t.gallery?.goGroupShoot || 'Group Shot',
-                  icon: <Grid3X3 className="w-4 h-4" />,
-                  onClick: () => {
-                    const currentTask = tasks.find(t => t.id === currentTaskId)
-                    const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
-                    const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
-                    if (selectedImageUrl) {
-                      sessionStorage.setItem('groupShootImage', selectedImageUrl)
-                      setSelectedResultIndex(null)
-                      router.push("/group-shot")
-                    }
-                  },
-                  className: "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white"
-                }
+              quickActions={selectedResultIndex !== null ? [
+                createQuickActions.tryOn(() => {
+                  const currentTask = tasks.find(t => t.id === currentTaskId)
+                  const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+                  const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
+                  if (selectedImageUrl) {
+                    sessionStorage.setItem('tryOnImage', selectedImageUrl)
+                    router.push('/try-on')
+                  }
+                }),
+                createQuickActions.edit(() => {
+                  const currentTask = tasks.find(t => t.id === currentTaskId)
+                  const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+                  const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
+                  if (selectedImageUrl) {
+                    setSelectedResultIndex(null)
+                    navigateToEdit(router, selectedImageUrl)
+                  }
+                }),
+                createQuickActions.groupShoot(() => {
+                  const currentTask = tasks.find(t => t.id === currentTaskId)
+                  const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+                  const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
+                  if (selectedImageUrl) {
+                    sessionStorage.setItem('groupShootImage', selectedImageUrl)
+                    setSelectedResultIndex(null)
+                    router.push("/group-shot")
+                  }
+                }),
+                createQuickActions.material(() => {
+                  const currentTask = tasks.find(t => t.id === currentTaskId)
+                  const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+                  const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
+                  if (selectedImageUrl) {
+                    sessionStorage.setItem('modifyMaterial_outputImage', selectedImageUrl)
+                    sessionStorage.setItem('modifyMaterial_inputImages', JSON.stringify([capturedImage].filter(Boolean)))
+                    router.push('/gallery/modify-material')
+                  }
+                }),
               ] : []}
+              inputImages={capturedImage ? [{ url: capturedImage, label: t.common?.product || 'Product' }] : []}
+              onInputImageClick={(url) => setFullscreenImage(url)}
             >
               {/* Debug content */}
               {debugMode && selectedResultIndex !== null && (
                 <div className="mt-4 pt-4 border-t border-zinc-100">
                   <h3 className="text-sm font-semibold text-zinc-700 mb-3">Debug Parameters</h3>
                   <div className="grid grid-cols-3 gap-2">
-                    {capturedImage && (
-                      <div className="flex flex-col items-center">
-                        <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group" onClick={() => setFullscreenImage(capturedImage)}>
-                          <img src={capturedImage} alt="Product" className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <ZoomIn className="w-4 h-4 text-white" />
-                          </div>
-                        </div>
-                        <p className="text-[10px] text-zinc-500 mt-1">Product</p>
-                      </div>
-                    )}
                     {selectedModel ? (
                       <div className="flex flex-col items-center">
                         <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group" onClick={() => setFullscreenImage(selectedModel.imageUrl)}>
@@ -1665,7 +1663,7 @@ function ProStudioPageContent() {
                   </div>
                 </div>
               )}
-            </ResultDetailDialog>
+            </PhotoDetailDialog>
           </ResultsView>
         )}
       </AnimatePresence>
