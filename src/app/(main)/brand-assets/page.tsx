@@ -46,7 +46,7 @@ export default function BrandAssetsPage() {
   const typeTabs = [
     { value: "product" as AssetType, label: t.assets.products, icon: Package },
     { value: "model" as AssetType, label: t.assets.models, icon: Users },
-    { value: "background" as AssetType, label: t.assets.backgrounds, icon: ImageIcon },
+    { value: "background" as AssetType, label: t.assets.scenes, icon: ImageIcon },
   ]
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [activeType, setActiveType] = useState<AssetType>("product")
@@ -147,18 +147,43 @@ export default function BrandAssetsPage() {
     fileInputRef.current?.click()
   }
   
+  // Generate incremental asset name: product1, model1, scene1...
+  const generateAssetName = (type: AssetType, existingAssets: Asset[]): string => {
+    const prefix = type === 'background' ? 'scene' : type
+    const pattern = new RegExp(`^${prefix}(\\d+)$`, 'i')
+    
+    let maxNumber = 0
+    existingAssets.forEach(asset => {
+      const match = asset.name?.match(pattern)
+      if (match) {
+        const num = parseInt(match[1], 10)
+        if (num > maxNumber) maxNumber = num
+      }
+    })
+    
+    return `${prefix}${maxNumber + 1}`
+  }
+  
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
     
+    // Get existing assets for the upload type to calculate next number
+    const existingAssets = uploadType === 'product' ? userProducts 
+      : uploadType === 'model' ? userModels 
+      : uploadType === 'background' ? userBackgrounds 
+      : userVibes
+    
     // Process all files and add them using addUserAsset (which syncs to cloud)
+    let currentAssets = [...existingAssets]
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
       const base64 = await fileToBase64(file)
+      const assetName = generateAssetName(uploadType, currentAssets)
       const newAsset: Asset = {
         id: generateId(),
         type: uploadType,
-        name: file.name.replace(/\.[^/.]+$/, ""),
+        name: assetName,
         imageUrl: base64,
         // 如果上传的是商品且选择了具体分类，则设置 category
         ...(uploadType === 'product' && productSubTab !== 'all' && { category: productSubTab }),
@@ -166,6 +191,8 @@ export default function BrandAssetsPage() {
       
       // Use addUserAsset which handles both local state and cloud sync
       await addUserAsset(newAsset)
+      // Track the new asset for incremental naming when uploading multiple files
+      currentAssets = [...currentAssets, newAsset]
     }
     
     // Switch to user tab after upload
@@ -403,7 +430,7 @@ export default function BrandAssetsPage() {
                   : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
               }`}
             >
-              {t.assets.normalBackgrounds || '普通背景'}
+              {t.assets.normalScenes || 'Regular Scenes'}
               <span className="ml-1 opacity-70">({backgroundPresets.normal.length})</span>
             </button>
             <button
@@ -414,7 +441,7 @@ export default function BrandAssetsPage() {
                   : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
               }`}
             >
-              {t.assets.studioBackgrounds || '棚拍背景'}
+              {t.assets.studioScenes || 'Studio Scenes'}
               <span className="ml-1 opacity-70">({backgroundPresets.studio.length})</span>
             </button>
           </div>
@@ -504,7 +531,7 @@ export default function BrandAssetsPage() {
             </div>
             <p className="text-zinc-600 mb-2 text-center">
               {activeSource === "user" 
-                ? (activeType === "model" ? t.assets.noModels : activeType === "background" ? t.assets.noBackgrounds : t.assets.noProducts)
+                ? (activeType === "model" ? t.assets.noModels : activeType === "background" ? t.assets.noScenes : t.assets.noProducts)
                 : t.common.preset
               }
             </p>

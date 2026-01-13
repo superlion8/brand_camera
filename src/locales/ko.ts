@@ -447,19 +447,19 @@ export const ko: Translations = {
   assets: {
     title: "브랜드 자산",
     models: "모델",
-    backgrounds: "배경",
+    scenes: "장면",
     products: "상품",
     upload: "업로드",
     noModels: "모델 자산 없음",
-    noBackgrounds: "배경 자산 없음",
+    noScenes: "장면 자산 없음",
     noProducts: "상품 자산 없음",
     clickUpload: "클릭하여 업로드",
     noAssets: "자산 없음",
     // 하위 카테고리
     normalModels: "일반 모델",
     studioModels: "프로 모델",
-    normalBackgrounds: "일반 배경",
-    studioBackgrounds: "스튜디오 배경",
+    normalScenes: "일반 장면",
+    studioScenes: "스튜디오 장면",
     // 상품 카테고리
     productTop: "상의",
     productPants: "바지",

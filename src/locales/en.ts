@@ -448,19 +448,19 @@ export const en: Translations = {
   assets: {
     title: "Brand Assets",
     models: "Models",
-    backgrounds: "Backgrounds",
+    scenes: "Scenes",
     products: "Products",
     upload: "Upload",
     noModels: "No model assets",
-    noBackgrounds: "No background assets",
+    noScenes: "No scene assets",
     noProducts: "No product assets",
     clickUpload: "Click to upload",
     noAssets: "No assets",
     // Sub-categories
     normalModels: "Regular Models",
     studioModels: "Pro Models",
-    normalBackgrounds: "Regular Backgrounds",
-    studioBackgrounds: "Studio Backgrounds",
+    normalScenes: "Regular Scenes",
+    studioScenes: "Studio Scenes",
     // Product categories
     productTop: "Tops",
     productPants: "Pants",

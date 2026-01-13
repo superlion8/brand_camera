@@ -446,19 +446,19 @@ export const zh = {
   assets: {
     title: "品牌资产",
     models: "模特",
-    backgrounds: "环境",
+    scenes: "场景",
     products: "商品",
     upload: "上传",
     noModels: "暂无模特资产",
-    noBackgrounds: "暂无环境资产",
+    noScenes: "暂无场景资产",
     noProducts: "暂无商品资产",
     clickUpload: "点击上传",
     noAssets: "暂无资产",
     // 二级分类
     normalModels: "普通模特",
     studioModels: "高级模特",
-    normalBackgrounds: "普通背景",
-    studioBackgrounds: "棚拍背景",
+    normalScenes: "普通场景",
+    studioScenes: "棚拍场景",
     // 商品分类
     productTop: "上衣",
     productPants: "裤子",
