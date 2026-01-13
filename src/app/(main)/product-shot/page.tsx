@@ -20,6 +20,7 @@ import { useImageDownload } from "@/hooks/useImageDownload"
 import { useFavorite } from "@/hooks/useFavorite"
 import { navigateToEdit } from "@/lib/navigation"
 import { ProcessingView } from "@/components/shared/ProcessingView"
+import { ResultsView } from "@/components/shared/ResultsView"
 import { GalleryPickerPanel } from "@/components/shared/GalleryPickerPanel"
 import Image from "next/image"
 import { useQuota } from "@/hooks/useQuota"
@@ -1230,103 +1231,28 @@ function StudioPageContent() {
         
         {/* Results Mode */}
         {mode === 'results' && (
-          <motion.div
-            key="results"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex-1 overflow-y-auto"
+          <ResultsView
+            title={t.studio.results}
+            onBack={handleReset}
+            images={generatedImages.map((url, i) => ({
+              url,
+              status: 'completed' as const,
+            }))}
+            getBadge={(i) => ({
+              text: generatedModelTypes[i] === 'flash' ? `${t.studio?.badge || 'Studio'} 2.5` : (t.studio?.badge || 'Studio'),
+              className: 'bg-amber-500',
+            })}
+            themeColor="amber"
+            aspectRatio="1/1"
+            onFavorite={toggleFavorite}
+            isFavorited={isFavorited}
+            onDownload={(url, i) => handleDownload(url, currentGenerationId || undefined, i)}
+            onShootNext={handleReset}
+            onGoEdit={handleGoToEdit}
+            onRegenerate={handleGenerate}
+            onImageClick={(i) => setSelectedResultIndex(i)}
           >
-            <div className={`${isDesktop ? 'max-w-4xl mx-auto py-8 px-4' : 'p-4 pb-40'}`}>
-              <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.studio.results}</h3>
-              <div className={`grid gap-3 ${isDesktop ? 'grid-cols-4' : 'grid-cols-2'}`}>
-                {generatedImages.map((url, i) => (
-                  <div 
-                    key={i}
-                    className="relative aspect-square bg-zinc-100 rounded-xl overflow-hidden cursor-pointer group"
-                    onClick={() => setSelectedResultIndex(i)}
-                  >
-                    <Image src={url} alt={`Result ${i + 1}`} fill className="object-cover" />
-                    
-                    {/* Model type badge */}
-                    <div className="absolute top-2 left-2 flex gap-1">
-                      <span className="px-2 py-1 rounded text-[10px] font-medium bg-amber-500 text-white">
-                        {t.studio?.badge || 'Studio'}
-                      </span>
-                      {generatedModelTypes[i] === 'flash' && (
-                        <span className="px-1.5 py-1 rounded text-[9px] font-medium bg-amber-600 text-white">
-                          2.5
-                        </span>
-                      )}
-                    </div>
-                    
-                    {/* Action buttons - show on hover for PC */}
-                    <div className={`absolute top-2 right-2 flex gap-1.5 ${isDesktop ? 'opacity-0 group-hover:opacity-100 transition-opacity' : ''}`}>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          toggleFavorite(i)
-                        }}
-                        className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-all ${
-                          isFavorited(i)
-                            ? 'bg-red-500 text-white'
-                            : 'bg-white/90 backdrop-blur text-zinc-500 hover:text-red-500'
-                        }`}
-                      >
-                        <Heart className={`w-4 h-4 ${isFavorited(i) ? 'fill-current' : ''}`} />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDownload(url, currentGenerationId || undefined, i)
-                        }}
-                        className="w-8 h-8 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm text-zinc-500 hover:text-zinc-700"
-                      >
-                        <Download className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              {/* PC: Centered buttons */}
-              {isDesktop && (
-                <div className="flex justify-center gap-3 mt-8">
-                  <button
-                    onClick={() => setMode('main')}
-                    className="px-8 h-12 border border-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 transition-colors"
-                  >
-                    {t.studio.adjustParams}
-                  </button>
-                  <button
-                    onClick={handleReset}
-                    className="px-8 h-12 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 transition-colors"
-                  >
-                    {t.studio.shootNew}
-                  </button>
-                </div>
-              )}
-            </div>
-            
-            {/* Mobile: Actions - positioned above BottomNav */}
-            {!isDesktop && (
-              <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t flex gap-3 max-w-md mx-auto z-40">
-                <button
-                  onClick={() => setMode('main')}
-                  className="flex-1 h-12 border border-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-50 transition-colors"
-                >
-                  {t.studio.adjustParams}
-                </button>
-                <button
-                  onClick={handleReset}
-                  className="flex-1 h-12 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 transition-colors"
-                >
-                  {t.studio.shootNew}
-                </button>
-              </div>
-            )}
-            
-            {/* Result Detail Dialog - Using shared component */}
+            {/* Result Detail Dialog */}
             <ResultDetailDialog
               open={selectedResultIndex !== null && !!generatedImages[selectedResultIndex!]}
               onClose={() => setSelectedResultIndex(null)}
@@ -1387,13 +1313,13 @@ function StudioPageContent() {
               )}
             </ResultDetailDialog>
             
-            {/* Fullscreen Image Viewer - Using shared component */}
+            {/* Fullscreen Image Viewer */}
             <FullscreenImageViewer
               open={!!fullscreenImage}
               onClose={() => setFullscreenImage(null)}
               imageUrl={fullscreenImage || ''}
             />
-          </motion.div>
+          </ResultsView>
         )}
       </AnimatePresence>
       

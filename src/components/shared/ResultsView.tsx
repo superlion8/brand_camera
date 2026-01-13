@@ -35,6 +35,10 @@ interface ResultsViewProps {
   // Theme color
   themeColor?: ThemeColor
   
+  // Layout customization
+  aspectRatio?: '3/4' | '1/1' | '4/5'
+  gridCols?: { mobile: number; desktop: number }
+  
   // Favorite/Download
   onFavorite: (index: number) => void
   isFavorited: (index: number) => boolean
@@ -94,6 +98,8 @@ export function ResultsView({
   images,
   getBadge,
   themeColor = 'blue',
+  aspectRatio = '3/4',
+  gridCols = { mobile: 2, desktop: 4 },
   onFavorite,
   isFavorited,
   onDownload,
@@ -110,6 +116,18 @@ export function ResultsView({
   
   // Selection mode for "Go Edit"
   const [selectMode, setSelectMode] = useState<'view' | 'edit'>('view')
+  
+  // Aspect ratio class mapping
+  const aspectRatioClass = {
+    '3/4': 'aspect-[3/4]',
+    '1/1': 'aspect-square',
+    '4/5': 'aspect-[4/5]',
+  }[aspectRatio]
+  
+  // Grid cols class
+  const gridColsClass = isDesktop 
+    ? `grid-cols-${gridCols.desktop}` 
+    : `grid-cols-${gridCols.mobile}`
   
   // Get completed images
   const completedImages = images
@@ -213,14 +231,14 @@ export function ResultsView({
       {/* Content */}
       <div className={`flex-1 overflow-y-auto ${isDesktop ? 'py-8' : 'p-4 pb-8'}`}>
         <div className={isDesktop ? 'max-w-4xl mx-auto px-8' : ''}>
-          {/* Image Grid - PC: 4 columns, Mobile: 2 columns */}
-          <div className={`grid gap-4 ${isDesktop ? 'grid-cols-4' : 'grid-cols-2 gap-3'}`}>
+          {/* Image Grid */}
+          <div className={`grid gap-4 ${isDesktop ? `grid-cols-${gridCols.desktop}` : `grid-cols-${gridCols.mobile} gap-3`}`}>
             {images.map((img, i) => {
               const badge = getBadge(i)
               
               if (img.status === 'pending' || img.status === 'generating') {
                 return (
-                  <div key={i} className="aspect-[3/4] bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200">
+                  <div key={i} className={`${aspectRatioClass} bg-zinc-100 rounded-xl flex flex-col items-center justify-center border border-zinc-200`}>
                     <Loader2 className="w-6 h-6 text-zinc-400 animate-spin mb-2" />
                     <span className="text-[10px] text-zinc-400">{t.common?.generating || 'Generating...'}</span>
                   </div>
@@ -229,7 +247,7 @@ export function ResultsView({
               
               if (img.status === 'failed' || !img.url) {
                 return (
-                  <div key={i} className="aspect-[3/4] bg-zinc-200 rounded-xl flex flex-col items-center justify-center text-zinc-400 text-xs px-2 text-center">
+                  <div key={i} className={`${aspectRatioClass} bg-zinc-200 rounded-xl flex flex-col items-center justify-center text-zinc-400 text-xs px-2 text-center`}>
                     <span className="mb-1">{badge.text}</span>
                     <span>{img.error || t.camera?.generationFailed || 'Failed'}</span>
                   </div>
@@ -239,7 +257,7 @@ export function ResultsView({
               return (
                 <div 
                   key={i} 
-                  className={`group relative aspect-[3/4] bg-zinc-100 rounded-xl overflow-hidden shadow-sm border-2 cursor-pointer hover:shadow-md transition-all ${
+                  className={`group relative ${aspectRatioClass} bg-zinc-100 rounded-xl overflow-hidden shadow-sm border-2 cursor-pointer hover:shadow-md transition-all ${
                     selectMode === 'edit' 
                       ? 'border-blue-400 ring-2 ring-blue-200' 
                       : 'border-zinc-200'
