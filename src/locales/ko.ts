@@ -133,7 +133,13 @@ export const ko: Translations = {
     myGallery: "내 완성작",
     viewAll: "전체 보기",
   },
-  
+
+  // Results View
+  results: {
+    selectForEdit: "편집할 이미지 선택",
+    regenerate: "다시 생성",
+  },
+
   // Camera Page
   camera: {
     title: "모델 스튜디오",

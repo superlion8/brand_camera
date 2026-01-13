@@ -133,6 +133,12 @@ export const zh = {
     viewAll: "查看全部",
   },
   
+  // Results View
+  results: {
+    selectForEdit: "选择要编辑的图片",
+    regenerate: "重新生成",
+  },
+  
   // Camera Page
   camera: {
     title: "买家秀",

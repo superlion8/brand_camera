@@ -134,7 +134,13 @@ export const en: Translations = {
     myGallery: "My Photos",
     viewAll: "View All",
   },
-  
+
+  // Results View
+  results: {
+    selectForEdit: "Select image to edit",
+    regenerate: "Regenerate",
+  },
+
   // Camera Page
   camera: {
     title: "Buyer Show",
