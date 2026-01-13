@@ -4,6 +4,7 @@ import { ReactNode } from 'react'
 import { Home } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/stores/languageStore'
 
 interface PCPageWrapperProps {
   children: ReactNode
@@ -187,8 +188,8 @@ export function PCImageUploadArea({
   onClear,
   aspectRatio = '3/4',
   placeholder,
-  uploadText = '上传图片',
-  clearText = '重新选择'
+  uploadText,
+  clearText
 }: {
   image: string | null
   onUpload: () => void
@@ -198,6 +199,11 @@ export function PCImageUploadArea({
   uploadText?: string
   clearText?: string
 }) {
+  const { t } = useTranslation()
+  
+  const displayUploadText = uploadText || t.common?.upload || 'Upload'
+  const displayClearText = clearText || t.common?.reselect || 'Reselect'
+  
   if (image) {
     return (
       <div className="relative bg-zinc-100 rounded-2xl overflow-hidden">
@@ -213,7 +219,7 @@ export function PCImageUploadArea({
             onClick={onClear}
             className="absolute bottom-4 right-4 px-4 py-2 bg-white/90 hover:bg-white text-zinc-700 text-sm font-medium rounded-xl shadow-lg transition-colors"
           >
-            {clearText}
+            {displayClearText}
           </button>
         )}
       </div>
@@ -232,8 +238,8 @@ export function PCImageUploadArea({
             <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4">
               <Home className="w-8 h-8 text-zinc-400" />
             </div>
-            <span className="text-sm font-medium text-zinc-600">{uploadText}</span>
-            <span className="text-xs text-zinc-400 mt-1">点击上传或拖拽图片</span>
+            <span className="text-sm font-medium text-zinc-600">{displayUploadText}</span>
+            <span className="text-xs text-zinc-400 mt-1">{t.common?.clickToUploadOrDrag || 'Click to upload or drag image'}</span>
           </>
         )}
       </div>

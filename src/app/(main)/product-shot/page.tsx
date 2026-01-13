@@ -665,7 +665,7 @@ function StudioPageContent() {
                 </div>
                 <div className="text-center">
                   <p className="text-sm font-medium text-zinc-700">{t.studio.shootProduct}</p>
-                  <p className="text-xs text-zinc-400 mt-1">点击上传或拖拽图片</p>
+                  <p className="text-xs text-zinc-400 mt-1">{t.common?.clickToUploadOrDrag || 'Click to upload or drag image'}</p>
                 </div>
               </button>
               <div className="grid grid-cols-2 gap-2">
