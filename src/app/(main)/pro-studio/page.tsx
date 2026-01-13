@@ -15,6 +15,7 @@ import { ensureImageUrl } from "@/lib/supabase/storage"
 import { Asset } from "@/types"
 import Image from "next/image"
 import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
+import { AssetGrid } from "@/components/shared/AssetGrid"
 import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { useImageDownload } from "@/hooks/useImageDownload"
@@ -63,82 +64,6 @@ const IMAGE_LABELS: { zh: string; en: string; color: string }[] = [
   { zh: '图片 3', en: 'Image 3', color: 'bg-amber-500' },
   { zh: '图片 4', en: 'Image 4', color: 'bg-green-500' },
 ]
-
-// Asset Grid Component with Upload Button
-function AssetGrid({ 
-  items, 
-  selectedId, 
-  onSelect,
-  onUpload,
-  onZoom,
-  emptyText = "No items",
-  uploadLabel = "Upload"
-}: { 
-  items: Asset[]
-  selectedId: string | null
-  onSelect: (id: string) => void
-  onUpload?: () => void
-  onZoom?: (url: string) => void
-  emptyText?: string
-  uploadLabel?: string
-}) {
-  return (
-    <div className="grid grid-cols-2 gap-3">
-      {/* Upload Button as first cell */}
-      {onUpload && (
-        <button
-          onClick={onUpload}
-          className="aspect-[3/4] rounded-xl overflow-hidden relative border-2 border-dashed border-zinc-300 hover:border-blue-400 transition-all flex flex-col items-center justify-center bg-zinc-50 hover:bg-blue-50"
-        >
-          <Plus className="w-10 h-10 text-zinc-400" />
-          <span className="text-sm text-zinc-500 mt-2">{uploadLabel || 'Upload'}</span>
-        </button>
-      )}
-      {items.map(item => (
-        <div
-          key={item.id}
-          className={`aspect-[3/4] rounded-xl overflow-hidden relative border-2 transition-all ${
-            selectedId === item.id 
-              ? "border-blue-500 ring-2 ring-blue-500/30" 
-              : "border-transparent hover:border-blue-300"
-          }`}
-        >
-          <button
-            onClick={() => onSelect(item.id)}
-            className="absolute inset-0"
-          >
-            <Image src={item.imageUrl} alt={item.name || ""} fill className="object-cover" />
-          </button>
-          {selectedId === item.id && (
-            <div className="absolute top-2 left-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-              <Check className="w-4 h-4 text-white" />
-            </div>
-          )}
-          {/* Zoom button */}
-          {onZoom && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                onZoom(item.imageUrl)
-              }}
-              className="absolute bottom-2 right-2 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors"
-            >
-              <ZoomIn className="w-4 h-4 text-white" />
-            </button>
-          )}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 pt-6 pointer-events-none">
-            <p className="text-xs text-white truncate text-center">{item.name}</p>
-          </div>
-        </div>
-      ))}
-      {items.length === 0 && !onUpload && (
-        <div className="col-span-2 flex flex-col items-center justify-center py-12 text-zinc-400">
-          <p className="text-sm">{emptyText}</p>
-        </div>
-      )}
-    </div>
-  )
-}
 
 // Background Grid with categories and Upload Button
 function BackgroundGrid({
@@ -1646,12 +1571,13 @@ function ProStudioPageContent() {
                               </button>
                             )}
                           </div>
-                          <AssetGrid 
-                            items={[...customModels, ...userModels, ...studioModels]} 
-                            selectedId={selectedModelId} 
+                          <AssetGrid
+                            items={[...customModels, ...userModels, ...studioModels]}
+                            selectedId={selectedModelId}
                             onSelect={(id) => setSelectedModelId(selectedModelId === id ? null : id)}
                             onUpload={() => modelUploadRef.current?.click()}
                             onZoom={(url) => setFullscreenImage(url)}
+                            uploadIcon="plus"
                             uploadLabel={t.common.upload}
                           />
                         </div>

@@ -18,6 +18,7 @@ import { ensureImageUrl } from "@/lib/supabase/storage"
 import { Asset, ModelStyle, ModelGender } from "@/types"
 import Image from "next/image"
 import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
+import { AssetGrid } from "@/components/shared/AssetGrid"
 import { ResultDetailDialog } from "@/components/shared/ResultDetailDialog"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { useImageDownload } from "@/hooks/useImageDownload"
@@ -1057,62 +1058,6 @@ function CameraPageContent() {
   const handleDownload = (url: string, generationId?: string, imageIndex?: number) =>
     downloadImage(url, { generationId, imageIndex })
   
-  // Asset grid component with upload card
-  const AssetGrid = ({ 
-    items, 
-    selectedId, 
-    onSelect,
-    onUpload,
-    uploadLabel = t.common.upload
-  }: { 
-    items: Asset[]
-    selectedId: string | null
-    onSelect: (id: string) => void
-    onUpload?: () => void
-    uploadLabel?: string
-  }) => (
-    <div className="grid grid-cols-3 gap-3 p-1 pb-20">
-      {/* Upload card as first item */}
-      {onUpload && (
-        <button
-          onClick={onUpload}
-          className="aspect-square rounded-lg overflow-hidden relative border-2 border-dashed border-zinc-300 hover:border-blue-500 transition-all flex flex-col items-center justify-center bg-zinc-100 hover:bg-zinc-50"
-        >
-          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mb-2">
-            <Upload className="w-5 h-5 text-blue-600" />
-          </div>
-          <span className="text-xs text-zinc-600 font-medium">{uploadLabel}</span>
-        </button>
-      )}
-      {items.map(asset => (
-        <button
-          key={asset.id}
-          onClick={() => onSelect(asset.id)}
-          className={`aspect-square rounded-lg overflow-hidden relative border-2 transition-all group ${
-            selectedId === asset.id 
-              ? "border-blue-600 ring-2 ring-blue-200" 
-              : "border-transparent hover:border-zinc-200"
-          }`}
-        >
-          <Image src={asset.imageUrl} alt={asset.name || ""} fill className="object-cover" />
-          {selectedId === asset.id && (
-            <div className="absolute inset-0 bg-blue-600/20 flex items-center justify-center">
-              <Check className="w-6 h-6 text-white drop-shadow-md" />
-            </div>
-          )}
-          {asset.isPinned && (
-            <span className="absolute top-1 right-1 w-5 h-5 bg-amber-500 text-white rounded-full flex items-center justify-center shadow-sm z-10">
-              <Pin className="w-2.5 h-2.5" />
-            </span>
-          )}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-4">
-            <p className="text-[10px] text-white truncate text-center">{asset.name}</p>
-          </div>
-        </button>
-      ))}
-    </div>
-  )
-  
   // 登录状态检查中或未登录时显示加载
   if (authLoading || !user) {
     return (
@@ -1890,13 +1835,16 @@ function CameraPageContent() {
                               {userModels.length > 0 && <span className="ml-1 text-zinc-400">({userModels.length})</span>}
                             </button>
                           </div>
-                          <AssetGrid 
-                            items={allModels} 
-                            selectedId={selectedModel} 
+                          <AssetGrid
+                            items={allModels}
+                            selectedId={selectedModel}
                             onSelect={(id) => {
                               setSelectedModel(selectedModel === id ? null : id)
                             }}
                             onUpload={() => modelUploadRef.current?.click()}
+                            gridCols={3}
+                            aspectRatio="1/1"
+                            selectionStyle="overlay"
                             uploadLabel={t.camera.uploadModel}
                           />
                         </div>
@@ -1927,11 +1875,14 @@ function CameraPageContent() {
                               {userBackgrounds.length > 0 && <span className="ml-1 text-zinc-400">({userBackgrounds.length})</span>}
                             </button>
                           </div>
-                          <AssetGrid 
-                            items={allBackgrounds} 
-                            selectedId={selectedBg} 
+                          <AssetGrid
+                            items={allBackgrounds}
+                            selectedId={selectedBg}
                             onSelect={(id) => setSelectedBg(selectedBg === id ? null : id)}
                             onUpload={() => bgUploadRef.current?.click()}
+                            gridCols={3}
+                            aspectRatio="1/1"
+                            selectionStyle="overlay"
                             uploadLabel={t.camera.uploadBackground}
                           />
                         </div>
