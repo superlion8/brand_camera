@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Loader2, Check, ChevronDown, Sparkles, AlertCircle, Wand2, Home, X, Image as ImageIcon } from 'lucide-react'
 import { useTranslation } from '@/stores/languageStore'
 import { useQuota } from '@/hooks/useQuota'
+import { useQuotaReservation } from '@/hooks/useQuotaReservation'
 import { useGenerationTaskStore } from '@/stores/generationTaskStore'
 
 // V2 分析结果类型
@@ -332,7 +333,8 @@ function ProductCard({
 function ModifyMaterialContent() {
   const router = useRouter()
   const { t, language } = useTranslation()
-  const { checkQuota, refreshQuota } = useQuota()
+  const { checkQuota } = useQuota()
+  const { reserveQuota, refundQuota, partialRefund } = useQuotaReservation()
   const { addTask, updateTaskStatus, initImageSlots, updateImageSlot } = useGenerationTaskStore()
   
   const [phase, setPhase] = useState<'select' | 'loading' | 'analyzing' | 'editing' | 'generating' | 'result'>('select')
@@ -579,22 +581,8 @@ function ModifyMaterialContent() {
     setGeneratingProgress(0)
     setResultImages([])
     
-    // 在数据库中创建 pending 记录
-    try {
-      await fetch('/api/quota/reserve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          taskId,
-          imageCount: 2,
-          taskType: 'modify_material',
-        }),
-      })
-      console.log('[ModifyMaterial] Reserved quota for task', taskId)
-      refreshQuota()
-    } catch (e) {
-      console.warn('[ModifyMaterial] Failed to reserve quota:', e)
-    }
+    // 预扣配额（使用统一 hook）
+    await reserveQuota({ taskId, imageCount: 2, taskType: 'modify_material' })
     
     const results: string[] = []
     
@@ -636,38 +624,17 @@ function ModifyMaterialContent() {
       }
     }
 
-    // 处理配额退款
+    // 处理配额退款（使用统一 hook）
     const successCount = results.length
-    const failedCount = 2 - successCount
 
-    if (failedCount > 0 && successCount > 0) {
-      // 部分失败，退还失败数量
-      console.log('[ModifyMaterial] Refunding', failedCount, 'failed images')
-      try {
-        await fetch('/api/quota/reserve', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            taskId,
-            actualImageCount: successCount,
-            refundCount: failedCount,
-          }),
-        })
-      } catch (e) {
-        console.warn('[ModifyMaterial] Failed to refund:', e)
-      }
+    if (successCount > 0 && successCount < 2) {
+      // 部分失败，退还差额
+      await partialRefund(taskId, successCount)
     }
     
     if (results.length === 0) {
       // 全部失败，全额退还
-      console.log('[ModifyMaterial] All failed, refunding all 2 images')
-      try {
-        await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
-        refreshQuota()
-      } catch (e) {
-        console.warn('[ModifyMaterial] Failed to refund on total failure:', e)
-      }
-
+      await refundQuota(taskId)
       setError(t.modifyMaterial?.generateFailed || '生成失败，请重试')
       updateTaskStatus(taskId, 'failed')
       setPhase('editing')

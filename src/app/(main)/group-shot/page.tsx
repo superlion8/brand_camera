@@ -11,6 +11,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { fileToBase64, compressBase64Image, ensureBase64 } from "@/lib/utils"
 import Image from "next/image"
 import { useQuota } from "@/hooks/useQuota"
+import { useQuotaReservation } from "@/hooks/useQuotaReservation"
 import { BottomNav } from "@/components/shared/BottomNav"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
@@ -42,7 +43,8 @@ function GroupShootPageContent() {
   const searchParams = useSearchParams()
   const { user } = useAuth()
   const t = useLanguageStore(state => state.t)
-  const { checkQuota, quota, refreshQuota } = useQuota()
+  const { checkQuota, quota } = useQuota()
+  const { reserveQuota, refundQuota, partialRefund } = useQuotaReservation()
   const { addTask, updateTaskStatus, updateImageSlot, initImageSlots, tasks } = useGenerationTaskStore()
   const { generations } = useAssetStore()
   const { debugMode } = useSettingsStore()
@@ -166,30 +168,15 @@ function GroupShootPageContent() {
     // 更新 URL（便于刷新后恢复状态）
     router.replace('/group-shot?mode=processing')
     
-    // 先预扣 credits（必须等待成功）
-    try {
-      const reserveRes = await fetch('/api/quota/reserve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          taskId,
-          imageCount: numImages,
-          taskType: 'group_shoot',
-        }),
-      })
-      
-      if (!reserveRes.ok) {
-        const errorData = await reserveRes.json().catch(() => ({}))
-        console.error('[GroupShoot] Failed to reserve quota:', errorData)
-        setMode('main')
-        router.replace('/group-shot')
-        return
-      }
-      
-      console.log('[GroupShoot] Reserved', numImages, 'credits for task', taskId)
-      refreshQuota()
-    } catch (e) {
-      console.error('[GroupShoot] Failed to reserve quota:', e)
+    // 预扣配额（使用统一 hook）
+    const reserveResult = await reserveQuota({
+      taskId,
+      imageCount: numImages,
+      taskType: 'group_shoot',
+    })
+    
+    if (!reserveResult.success) {
+      console.error('[GroupShoot] Failed to reserve quota:', reserveResult.error)
       setMode('main')
       router.replace('/group-shot')
       return
@@ -262,35 +249,16 @@ function GroupShootPageContent() {
         }
       }
 
-      // 统计成功数量并处理退款
+      // 统计成功数量并处理退款（使用统一 hook）
       const currentTask = tasks.find(t => t.id === taskId)
       const successCount = currentTask?.imageSlots?.filter(s => s.status === 'completed').length || 0
-      const failedCount = numImages - successCount
 
-      if (failedCount > 0 && successCount > 0) {
-        // 部分失败，退还失败数量
-        console.log('[GroupShoot] Refunding', failedCount, 'failed images')
-        try {
-          await fetch('/api/quota/reserve', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              taskId,
-              actualImageCount: successCount,
-              refundCount: failedCount,
-            }),
-          })
-        } catch (e) {
-          console.warn('[GroupShoot] Failed to refund:', e)
-        }
+      if (successCount > 0 && successCount < numImages) {
+        // 部分失败，退还差额
+        await partialRefund(taskId, successCount)
       } else if (successCount === 0) {
         // 全部失败，全额退还
-        console.log('[GroupShoot] All failed, refunding all', numImages, 'images')
-        try {
-          await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
-        } catch (e) {
-          console.warn('[GroupShoot] Failed to refund on total failure:', e)
-        }
+        await refundQuota(taskId)
       }
 
       updateTaskStatus(taskId, 'completed')
@@ -310,14 +278,8 @@ function GroupShootPageContent() {
       }
       updateTaskStatus(taskId, 'failed')
 
-      // 异常情况，全额退还配额
-      console.log('[GroupShoot] Error occurred, refunding reserved quota')
-      try {
-        await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
-        refreshQuota()
-      } catch (e) {
-        console.warn('[GroupShoot] Failed to refund on error:', e)
-      }
+      // 异常情况，全额退还配额（使用统一 hook）
+      await refundQuota(taskId)
 
       // 清理 sessionStorage
       sessionStorage.removeItem('groupTaskId')

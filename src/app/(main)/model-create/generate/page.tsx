@@ -13,6 +13,7 @@ import { useAssetStore } from "@/stores/assetStore"
 import { generateId, compressBase64Image } from "@/lib/utils"
 import { useTranslation } from "@/stores/languageStore"
 import { useQuota } from "@/hooks/useQuota"
+import { useQuotaReservation } from "@/hooks/useQuotaReservation"
 
 type GenerationStatus = 'idle' | 'generating-prompts' | 'generating-images' | 'completed' | 'error'
 
@@ -45,7 +46,7 @@ export default function ModelCreateGenerate() {
   
   const { addGeneration, addUserAsset } = useAssetStore()
   const { t } = useTranslation()
-  const { refreshQuota } = useQuota()
+  const { reserveQuota, refundQuota, partialRefund, confirmQuota } = useQuotaReservation()
   
   // 检测是否是 iOS
   const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)
@@ -76,20 +77,8 @@ export default function ModelCreateGenerate() {
     const taskId = generateId()
     const imageCount = 4 // 生成 4 张图
     
-    // 预扣配额
-    try {
-      await fetch('/api/quota/reserve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          taskId,
-          imageCount,
-          taskType: 'create_model',
-        }),
-      })
-    } catch (e) {
-      console.warn('[ModelCreate] Failed to reserve quota:', e)
-    }
+    // 预扣配额（使用统一 hook）
+    await reserveQuota({ taskId, imageCount, taskType: 'create_model' })
     
     try {
       // Step 1: Generate prompts based on selected models
@@ -191,25 +180,12 @@ export default function ModelCreateGenerate() {
       setGeneratedImages(results)
       setStatus('completed')
       
-      // 根据实际生成数量调整配额
-      if (results.length < imageCount) {
-        const refundCount = imageCount - results.length
-        console.log('[ModelCreate] Refunding', refundCount, 'failed images')
-        try {
-          await fetch('/api/quota/reserve', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              taskId,
-              actualImageCount: results.length,
-            }),
-          })
-        } catch (e) {
-          console.warn('[ModelCreate] Failed to refund quota:', e)
-        }
+      // 部分退款（使用统一 hook）
+      if (results.length > 0 && results.length < imageCount) {
+        await partialRefund(taskId, results.length)
+      } else {
+        await confirmQuota()
       }
-      
-      refreshQuota()
       
       // 自动保存所有图片到成片（成片-模特-定制模特）
       saveAllToGallery(results, taskId)
@@ -219,14 +195,8 @@ export default function ModelCreateGenerate() {
       setErrorMessage(err.message || '生成失败，请重试')
       setStatus('error')
       
-      // 生成失败，全额退还配额
-      console.log('[ModelCreate] Generation failed, refunding quota')
-      try {
-        await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
-        refreshQuota()
-      } catch (e) {
-        console.warn('[ModelCreate] Failed to refund quota:', e)
-      }
+      // 生成失败，全额退还配额（使用统一 hook）
+      await refundQuota(taskId)
     }
   }
   

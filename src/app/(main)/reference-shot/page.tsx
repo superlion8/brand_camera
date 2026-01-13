@@ -12,6 +12,7 @@ import { useTranslation } from "@/stores/languageStore"
 import { usePresetStore } from "@/stores/presetStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { useQuota } from "@/hooks/useQuota"
+import { useQuotaReservation } from "@/hooks/useQuotaReservation"
 import { useSettingsStore } from "@/stores/settingsStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
@@ -38,7 +39,8 @@ const ALL_MODELS_STORAGE_URL = 'https://cvdogeigbpussfamctsu.supabase.co/storage
 export default function ReferenceShotPage() {
   const router = useRouter()
   const { t } = useTranslation()
-  const { checkQuota, refreshQuota } = useQuota()
+  const { checkQuota } = useQuota()
+  const { reserveQuota, refundQuota, partialRefund, confirmQuota } = useQuotaReservation()
   const presetStore = usePresetStore()
   const { userModels } = useAssetStore()
   const { debugMode } = useSettingsStore()
@@ -130,20 +132,8 @@ export default function ReferenceShotPage() {
     const taskId = addTask('reference_shot', productImage!, {}, imageCount)
     initImageSlots(taskId, imageCount)
     
-    // 预扣配额
-    try {
-      await fetch('/api/quota/reserve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          taskId,
-          imageCount,
-          taskType: 'reference_shot',
-        }),
-      })
-    } catch (e) {
-      console.warn('[ReferenceShot] Failed to reserve quota:', e)
-    }
+    // 预扣配额（使用统一 hook）
+    await reserveQuota({ taskId, imageCount, taskType: 'reference_shot' })
     
     try {
       // Compress images before sending
@@ -285,22 +275,9 @@ export default function ReferenceShotPage() {
       
       console.log('[ReferenceShot] Generated images:', allImages.length, '(simple:', simpleResult.images?.length || 0, ', extended:', extendedResult.images?.length || 0, ')')
       
-      // 根据实际生成数量调整配额
-      if (allImages.length < imageCount) {
-        const refundCount = imageCount - allImages.length
-        console.log('[ReferenceShot] Refunding', refundCount, 'failed images')
-        try {
-          await fetch('/api/quota/reserve', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              taskId,
-              actualImageCount: allImages.length,
-            }),
-          })
-        } catch (e) {
-          console.warn('[ReferenceShot] Failed to refund quota:', e)
-        }
+      // 部分退款（使用统一 hook）
+      if (allImages.length > 0 && allImages.length < imageCount) {
+        await partialRefund(taskId, allImages.length)
       }
       
       // 保存到成片库
@@ -339,7 +316,7 @@ export default function ReferenceShotPage() {
       
       setGeneratedImages(allImages)
       setStep('result')
-      refreshQuota()
+      confirmQuota()
       
     } catch (err: any) {
       console.error('[ReferenceShot] Error:', err)
@@ -349,14 +326,8 @@ export default function ReferenceShotPage() {
       // 更新任务状态为失败
       updateTaskStatus(taskId, 'failed', undefined, err.message || '生成失败')
       
-      // 生成失败，全额退还配额
-      console.log('[ReferenceShot] Generation failed, refunding quota')
-      try {
-        await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
-        refreshQuota()
-      } catch (e) {
-        console.warn('[ReferenceShot] Failed to refund quota:', e)
-      }
+      // 生成失败，全额退还配额（使用统一 hook）
+      await refundQuota(taskId)
     }
   }
   

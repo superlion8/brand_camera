@@ -17,6 +17,7 @@ import Image from "next/image"
 import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { usePresetStore } from "@/stores/presetStore"
 import { useQuota } from "@/hooks/useQuota"
+import { useQuotaReservation } from "@/hooks/useQuotaReservation"
 import { BottomNav } from "@/components/shared/BottomNav"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
@@ -208,6 +209,7 @@ function ProStudioPageContent() {
   const { user, isLoading: authLoading } = useAuth()
   const t = useLanguageStore(state => state.t)
   const { checkQuota, quota } = useQuota()
+  const { reserveQuota, refundQuota, partialRefund, confirmQuota } = useQuotaReservation()
   const { addTask, updateTaskStatus, updateImageSlot, initImageSlots, tasks } = useGenerationTaskStore()
   const { userProducts, userModels, userBackgrounds, addUserAsset } = useAssetStore()
   const { debugMode } = useSettingsStore()
@@ -585,27 +587,15 @@ function ProStudioPageContent() {
       updateImageSlot(taskId, i, { status: 'generating' })
     }
 
-    // 预扣配额（必须等待成功）
-    try {
-      const reserveRes = await fetch('/api/quota/reserve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          taskId,
-          imageCount: PRO_STUDIO_NUM_IMAGES,
-          taskType: 'pro_studio',
-        }),
-      })
-      
-      if (!reserveRes.ok) {
-        console.error('[ProStudio] Failed to reserve quota')
-        setMode('camera')
-        router.replace('/pro-studio')
-        return
-      }
-      console.log('[ProStudio] Reserved', PRO_STUDIO_NUM_IMAGES, 'credits for task', taskId)
-    } catch (e) {
-      console.error('[ProStudio] Failed to reserve quota:', e)
+    // 预扣配额（使用统一 hook）
+    const reserveResult = await reserveQuota({
+      taskId,
+      imageCount: PRO_STUDIO_NUM_IMAGES,
+      taskType: 'pro_studio',
+    })
+    
+    if (!reserveResult.success) {
+      console.error('[ProStudio] Failed to reserve quota:', reserveResult.error)
       setMode('camera')
       router.replace('/pro-studio')
       return
@@ -762,35 +752,19 @@ function ProStudioPageContent() {
         }
       }
 
-      // 统计成功数量并处理退款
+      // 统计成功数量并处理退款（使用统一 hook）
       const currentTask = tasks.find(t => t.id === taskId)
       const successCount = currentTask?.imageSlots?.filter(s => s.status === 'completed').length || 0
-      const failedCount = PRO_STUDIO_NUM_IMAGES - successCount
 
-      if (failedCount > 0 && successCount > 0) {
-        // 部分失败，退还失败数量
-        console.log('[ProStudio] Refunding', failedCount, 'failed images')
-        try {
-          await fetch('/api/quota/reserve', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              taskId,
-              actualImageCount: successCount,
-              refundCount: failedCount,
-            }),
-          })
-        } catch (e) {
-          console.warn('[ProStudio] Failed to refund:', e)
-        }
+      if (successCount > 0 && successCount < PRO_STUDIO_NUM_IMAGES) {
+        // 部分失败，退还差额
+        await partialRefund(taskId, successCount)
       } else if (successCount === 0) {
         // 全部失败，全额退还
-        console.log('[ProStudio] All failed, refunding all', PRO_STUDIO_NUM_IMAGES, 'images')
-        try {
-          await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
-        } catch (e) {
-          console.warn('[ProStudio] Failed to refund on total failure:', e)
-        }
+        await refundQuota(taskId)
+      } else {
+        // 全部成功，刷新配额显示
+        await confirmQuota()
       }
       
       // 清理 sessionStorage
@@ -805,13 +779,8 @@ function ProStudioPageContent() {
         })
       }
 
-      // 异常情况，全额退还配额
-      console.log('[ProStudio] Error occurred, refunding reserved quota')
-      try {
-        await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
-      } catch (e) {
-        console.warn('[ProStudio] Failed to refund on error:', e)
-      }
+      // 异常情况，全额退还配额（使用统一 hook）
+      await refundQuota(taskId)
       
       // 清理 sessionStorage
       sessionStorage.removeItem('proStudioTaskId')

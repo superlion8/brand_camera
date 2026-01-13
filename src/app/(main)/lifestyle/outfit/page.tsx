@@ -15,6 +15,7 @@ import { ProductCategory } from "@/types/outfit"
 import { usePresetStore } from "@/stores/presetStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { useQuota } from "@/hooks/useQuota"
+import { useQuotaReservation } from "@/hooks/useQuotaReservation"
 import { useGenerationTaskStore, base64ToBlobUrl } from "@/stores/generationTaskStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { Asset } from "@/types"
@@ -56,7 +57,8 @@ function LifestyleOutfitContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const t = useLanguageStore(state => state.t)
-  const { checkQuota, refreshQuota, quota } = useQuota()
+  const { checkQuota, quota } = useQuota()
+  const { reserveQuota, confirmQuota } = useQuotaReservation()
   const { addTask, initImageSlots, updateImageSlot, updateTaskStatus, tasks } = useGenerationTaskStore()
   const { userModels, userProducts, addUserAsset, addGeneration } = useAssetStore()
   const presetStore = usePresetStore()
@@ -240,21 +242,8 @@ function LifestyleOutfitContent() {
     setMode('processing')
     setIsGenerating(true)
     
-    // Reserve quota
-    try {
-      await fetch('/api/quota/reserve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          taskId,
-          imageCount: numImages,
-          taskType: 'lifestyle',
-        }),
-      })
-      refreshQuota()
-    } catch (e) {
-      console.warn('[Quota] Failed to reserve:', e)
-    }
+    // 预扣配额（使用统一 hook）
+    await reserveQuota({ taskId, imageCount: numImages, taskType: 'lifestyle' })
     
     // Get selected model/scene URLs
     const selectedModel = selectedModelId ? allModels.find(m => m.id === selectedModelId) : null
@@ -380,7 +369,7 @@ function LifestyleOutfitContent() {
                     })
                   }
                 }
-                refreshQuota()
+                confirmQuota()
                 break
             }
           } catch (e) {

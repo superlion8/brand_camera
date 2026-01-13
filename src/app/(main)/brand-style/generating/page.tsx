@@ -17,6 +17,7 @@ import { useIsDesktop } from '@/hooks/useIsMobile'
 import { ScreenLoadingGuard } from '@/components/ui/ScreenLoadingGuard'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 import { useTranslation } from '@/stores/languageStore'
+import { useQuotaReservation } from '@/hooks/useQuotaReservation'
 
 interface GenerationTask {
   id: string
@@ -30,6 +31,7 @@ export default function GeneratingPage() {
   const router = useRouter()
   const { isDesktop, isLoading: screenLoading } = useIsDesktop(1024)
   const { t } = useTranslation()
+  const { reserveQuota, confirmQuota } = useQuotaReservation()
 
   const [tasks, setTasks] = useState<GenerationTask[]>([])
   const [analysisData, setAnalysisData] = useState<any>(null)
@@ -76,42 +78,33 @@ export default function GeneratingPage() {
     if (!analysisData || tasks.length === 0 || isStarted) return
     setIsStarted(true)
 
-    // Reserve quota first: 1 credit per image, 10 credits for video
+    // Reserve quota first: 1 credit per image, 10 credits for video (使用统一 hook)
     const reserveAndGenerate = async () => {
       const imageCount = tasks.filter(t => t.type === 'image').length
       const videoCount = tasks.filter(t => t.type === 'video').length
       const totalCredits = imageCount * 1 + videoCount * 10
 
-      try {
-        const reserveRes = await fetch('/api/quota/reserve', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            taskId: `brand-style-${Date.now()}`,
-            imageCount: totalCredits,
-            taskType: 'brand_style'
-          })
-        })
+      const reserveResult = await reserveQuota({
+        taskId: `brand-style-${Date.now()}`,
+        imageCount: totalCredits,
+        taskType: 'brand_style'
+      })
 
-        if (!reserveRes.ok) {
-          const error = await reserveRes.json()
-          console.error('[Brand Style] Quota reserve failed:', error)
-          // Mark all tasks as error
-          setTasks(prev => prev.map(t => ({ ...t, status: 'error', error: error.error || 'Insufficient quota' })))
-          return
-        }
-
-        // Start all generations in parallel
-        tasks.forEach(task => {
-          if (task.type === 'image') {
-            generateImage(task.id)
-          } else if (task.type === 'video') {
-            generateVideo(task.id)
-          }
-        })
-      } catch (error) {
-        console.error('[Brand Style] Error reserving quota:', error)
+      if (!reserveResult.success) {
+        console.error('[Brand Style] Quota reserve failed:', reserveResult.error)
+        // Mark all tasks as error
+        setTasks(prev => prev.map(t => ({ ...t, status: 'error', error: reserveResult.error || 'Insufficient quota' })))
+        return
       }
+
+      // Start all generations in parallel
+      tasks.forEach(task => {
+        if (task.type === 'image') {
+          generateImage(task.id)
+        } else if (task.type === 'video') {
+          generateVideo(task.id)
+        }
+      })
     }
 
     reserveAndGenerate()
@@ -262,6 +255,10 @@ export default function GeneratingPage() {
       }
 
       console.log('[Generate] All done, navigating...', finalResults)
+      
+      // 刷新配额显示（使用统一 hook）
+      confirmQuota()
+      
       sessionStorage.setItem('brandStyleResults', JSON.stringify(finalResults))
       router.push('/brand-style/results')
     }

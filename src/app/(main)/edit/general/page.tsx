@@ -12,6 +12,7 @@ import { GalleryPickerPanel } from "@/components/shared/GalleryPickerPanel"
 import Webcam from "react-webcam"
 import { motion, AnimatePresence } from "framer-motion"
 import { useQuota } from "@/hooks/useQuota"
+import { useQuotaReservation } from "@/hooks/useQuotaReservation"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
@@ -87,7 +88,8 @@ export default function GeneralEditPage() {
   const { addTask, updateTaskStatus } = useGenerationTaskStore()
   
   // Quota management
-  const { quota, checkQuota, refreshQuota } = useQuota()
+  const { quota, checkQuota } = useQuota()
+  const { reserveQuota, refundQuota, confirmQuota } = useQuotaReservation()
   
   // Camera handlers
   const handleCapture = useCallback(() => {
@@ -209,22 +211,8 @@ export default function GeneralEditPage() {
     setIsGenerating(true)
     setResultImages([]) // Clear previous results
     
-    // IMMEDIATELY reserve quota - deduct before generation starts
-    try {
-      await fetch('/api/quota/reserve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          taskId,
-          imageCount: currentNumImages,
-          taskType: 'edit',
-        }),
-      })
-      console.log('[Quota] Reserved', currentNumImages, 'images for task', taskId)
-      refreshQuota()
-    } catch (e) {
-      console.warn('[Quota] Failed to reserve quota:', e)
-    }
+    // 预扣配额（使用统一 hook）
+    await reserveQuota({ taskId, imageCount: currentNumImages, taskType: 'edit' })
     
     // Run generation in background
     runEditGeneration(taskId, currentInputImages, currentCustomPrompt, currentNumImages, currentAspectRatio, currentResolution)
@@ -322,9 +310,9 @@ export default function GeneralEditPage() {
             resolution: res,
           },
         }, true) // Skip cloud sync since backend saves
-        
-        await refreshQuota()
-        
+
+        await confirmQuota()
+
         if (isGeneratingRef.current) {
           setResultImages(successfulImages)
           setResultImage(successfulImages[0])
@@ -338,27 +326,16 @@ export default function GeneralEditPage() {
           // Note: Backend should handle partial refunds based on actual success
         }
       } else {
-        // All failed - full refund
-        console.log('[Quota] All edits failed, refunding')
-        try {
-          await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
-          await refreshQuota()
-        } catch (e) {
-          console.warn('[Quota] Failed to refund:', e)
-        }
+        // 全部失败，全额退款（使用统一 hook）
+        await refundQuota(taskId)
         throw new Error(t.edit?.editFailed || "Edit failed")
       }
     } catch (error: any) {
       console.error("Edit error:", error)
       updateTaskStatus(taskId, 'failed', undefined, error.message || 'Edit failed')
       
-      console.log('[Quota] Error occurred, refunding reserved quota')
-      try {
-        await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
-        await refreshQuota()
-      } catch (e) {
-        console.warn('[Quota] Failed to refund on error:', e)
-      }
+      // 异常退款（使用统一 hook）
+      await refundQuota(taskId)
       
       if (isGeneratingRef.current) {
         if (error.name === 'AbortError') {
@@ -411,17 +388,8 @@ export default function GeneralEditPage() {
     setCurrentTaskId(taskId)
     updateTaskStatus(taskId, 'generating')
     
-    // Reserve quota for 1 image
-    try {
-      await fetch('/api/quota/reserve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ taskId, imageCount: 1, taskType: 'edit' }),
-      })
-      refreshQuota()
-    } catch (e) {
-      console.warn('[Quota] Failed to reserve:', e)
-    }
+    // 预扣配额（使用统一 hook）
+    await reserveQuota({ taskId, imageCount: 1, taskType: 'edit' })
     
     // Run single image generation
     try {
@@ -457,17 +425,16 @@ export default function GeneralEditPage() {
           return newImages
         })
         updateTaskStatus(taskId, 'completed', [data.image])
-        await refreshQuota()
+        await confirmQuota()
       } else {
-        // Refund on failure
-        await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
-        await refreshQuota()
+        // 失败退款（使用统一 hook）
+        await refundQuota(taskId)
         alert(t.edit?.editFailed || 'Regeneration failed')
       }
     } catch (error: any) {
       console.error('Regenerate error:', error)
-      await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
-      await refreshQuota()
+      // 异常退款（使用统一 hook）
+      await refundQuota(taskId)
       alert(error.message || t.edit?.editFailed || 'Regeneration failed')
     } finally {
       setRegeneratingIndex(null)

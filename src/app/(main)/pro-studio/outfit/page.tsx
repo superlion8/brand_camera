@@ -17,6 +17,7 @@ import { ProductCategory } from "@/types/outfit"
 import { usePresetStore } from "@/stores/presetStore"
 import { useAssetStore } from "@/stores/assetStore"
 import { useQuota } from "@/hooks/useQuota"
+import { useQuotaReservation } from "@/hooks/useQuotaReservation"
 import { useGenerationTaskStore, base64ToBlobUrl } from "@/stores/generationTaskStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { Asset } from "@/types"
@@ -205,7 +206,8 @@ function OutfitPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const t = useLanguageStore(state => state.t)
-  const { checkQuota, refreshQuota } = useQuota()
+  const { checkQuota } = useQuota()
+  const { reserveQuota, refundQuota } = useQuotaReservation()
   const { addTask, initImageSlots, updateImageSlot } = useGenerationTaskStore()
   const { userModels, userBackgrounds, userProducts, addUserAsset } = useAssetStore()
   const presetStore = usePresetStore()
@@ -812,27 +814,15 @@ function OutfitPageContent() {
       router.push('/pro-studio?mode=processing')
     }
     
-    // 预扣配额（必须等待成功）
-    try {
-      const reserveRes = await fetch('/api/quota/reserve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          taskId,
-          imageCount: numImages,
-          taskType,
-        }),
-      })
-      
-      if (!reserveRes.ok) {
-        console.error('[Outfit] Failed to reserve quota')
-        router.replace('/pro-studio/outfit')
-        return
-      }
-      console.log('[Outfit] Reserved', numImages, 'credits for task', taskId)
-      refreshQuota()
-    } catch (e) {
-      console.error('[Outfit] Failed to reserve quota:', e)
+    // 预扣配额（使用统一 hook）
+    const reserveResult = await reserveQuota({
+      taskId,
+      imageCount: numImages,
+      taskType,
+    })
+    
+    if (!reserveResult.success) {
+      console.error('[Outfit] Failed to reserve quota:', reserveResult.error)
       router.replace('/pro-studio/outfit')
       return
     }
@@ -988,13 +978,8 @@ function OutfitPageContent() {
           // 检查是否全部失败，退还额度
           const allFailed = allResults.every(r => r.status === 'rejected')
           if (allFailed) {
-            console.log('[Outfit] All camera tasks failed, refunding quota')
-            try {
-              await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
-              refreshQuota()
-            } catch (e) {
-              console.warn('[Outfit] Failed to refund quota:', e)
-            }
+            // 全部失败，全额退款（使用统一 hook）
+            await refundQuota(taskId)
           }
         } else {
           // 模特棚拍模式：使用 /api/generate-pro-studio，返回 SSE 流
@@ -1032,13 +1017,8 @@ function OutfitPageContent() {
                   error: `HTTP ${response.status}` 
                 })
               }
-              // 退还额度
-              try {
-                await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
-                refreshQuota()
-              } catch (e) {
-                console.warn('[Outfit] Failed to refund quota:', e)
-              }
+              // 退还额度（使用统一 hook）
+              await refundQuota(taskId)
               return
             }
             
@@ -1136,15 +1116,9 @@ function OutfitPageContent() {
               }
             }
             
-            // 检查是否全部失败，退还额度
+            // 检查是否全部失败，退还额度（使用统一 hook）
             if (successCount === 0) {
-              console.log('[Outfit] All pro-studio tasks failed, refunding quota')
-              try {
-                await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
-                refreshQuota()
-              } catch (e) {
-                console.warn('[Outfit] Failed to refund quota:', e)
-              }
+              await refundQuota(taskId)
             } else if (!firstDbId) {
               // 有成功的图片但没有收到 dbId（后端保存都失败），使用 taskId 作为 fallback
               setCurrentGenerationId(taskId)
@@ -1160,25 +1134,14 @@ function OutfitPageContent() {
                 error: e.message || '网络错误' 
               })
             }
-            // 退还额度
-            try {
-              await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
-              refreshQuota()
-            } catch (refundError) {
-              console.warn('[Outfit] Failed to refund quota:', refundError)
-            }
+            // 退还额度（使用统一 hook）
+            await refundQuota(taskId)
           }
         }
       } catch (error) {
         console.error('Generation failed:', error)
-        // 发生异常，退还额度
-        console.log('[Outfit] Generation error, refunding quota')
-        try {
-          await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
-          refreshQuota()
-        } catch (e) {
-          console.warn('[Outfit] Failed to refund quota:', e)
-        }
+        // 发生异常，退还额度（使用统一 hook）
+        await refundQuota(taskId)
       }
     }
     

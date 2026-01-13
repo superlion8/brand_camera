@@ -15,6 +15,7 @@ import Image from "next/image"
 import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { Asset } from "@/types"
 import { useQuota } from "@/hooks/useQuota"
+import { useQuotaReservation } from "@/hooks/useQuotaReservation"
 import { BottomNav } from "@/components/shared/BottomNav"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
@@ -35,7 +36,8 @@ function LifestylePageContent() {
   const searchParams = useSearchParams()
   const { user, isLoading: authLoading } = useAuth()
   const t = useLanguageStore(state => state.t)
-  const { checkQuota, refreshQuota, quota } = useQuota()
+  const { checkQuota, quota } = useQuota()
+  const { reserveQuota, confirmQuota } = useQuotaReservation()
   const { addTask, updateTaskStatus, updateImageSlot, initImageSlots, tasks } = useGenerationTaskStore()
   const { userProducts, addUserAsset, addGeneration } = useAssetStore()
   
@@ -317,21 +319,8 @@ function LifestylePageContent() {
     triggerFlyToGallery()
     setMode("processing")
     
-    // Reserve quota
-    try {
-      await fetch('/api/quota/reserve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          taskId,
-          imageCount: LIFESTYLE_NUM_IMAGES,
-          taskType: 'lifestyle',
-        }),
-      })
-      refreshQuota()
-    } catch (e) {
-      console.warn('[Quota] Failed to reserve:', e)
-    }
+    // 预扣配额（使用统一 hook）
+    await reserveQuota({ taskId, imageCount: LIFESTYLE_NUM_IMAGES, taskType: 'lifestyle' })
     
     // 压缩图片以减少请求体大小
     console.log("[Lifestyle] Compressing product image...")
@@ -471,7 +460,7 @@ function LifestylePageContent() {
                     })
                   }
                 }
-                refreshQuota()
+                confirmQuota()
                 break
             }
           } catch (e) {

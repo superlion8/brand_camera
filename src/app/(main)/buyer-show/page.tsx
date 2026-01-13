@@ -21,6 +21,7 @@ import Image from "next/image"
 import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { usePresetStore } from "@/stores/presetStore"
 import { useQuota } from "@/hooks/useQuota"
+import { useQuotaReservation } from "@/hooks/useQuotaReservation"
 import { BottomNav } from "@/components/shared/BottomNav"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
@@ -264,7 +265,8 @@ function CameraPageContent() {
   }, [loadPresets])
   
   // Quota management
-  const { quota, checkQuota, refreshQuota } = useQuota()
+  const { quota, checkQuota } = useQuota()
+  const { reserveQuota, refundQuota, partialRefund, confirmQuota } = useQuotaReservation()
   
   // Helper to sort by pinned status
   const sortByPinned = (assets: Asset[]) => 
@@ -478,29 +480,15 @@ function CameraPageContent() {
     // 更新 URL（便于刷新后恢复状态）
     router.replace('/camera?mode=processing')
     
-    // Reserve quota in background (don't block generation)
-    // 预扣配额（必须等待成功）
-    try {
-      const reserveRes = await fetch('/api/quota/reserve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          taskId,
-          imageCount: CAMERA_NUM_IMAGES,
-          taskType: 'model_studio',
-        }),
-      })
-      
-      if (!reserveRes.ok) {
-        console.error('[BuyerShow] Failed to reserve quota')
-        setMode('camera')
-        router.replace('/buyer-show')
-        return
-      }
-      console.log('[BuyerShow] Reserved', CAMERA_NUM_IMAGES, 'credits for task', taskId)
-      refreshQuota()
-    } catch (e) {
-      console.error('[BuyerShow] Failed to reserve quota:', e)
+    // 预扣配额（使用统一 hook）
+    const reserveResult = await reserveQuota({
+      taskId,
+      imageCount: CAMERA_NUM_IMAGES,
+      taskType: 'model_studio',
+    })
+    
+    if (!reserveResult.success) {
+      console.error('[BuyerShow] Failed to reserve quota:', reserveResult.error)
       setMode('camera')
       router.replace('/buyer-show')
       return
@@ -890,23 +878,9 @@ function CameraPageContent() {
       console.log(`Generation complete: ${successCount}/${NUM_IMAGES} images in ~${maxDuration}ms`)
       console.log('Final images array:', allImages.map((img, i) => img ? `✓[${i}]` : `✗[${i}]`).join(' '))
       
-      // Calculate refund for failed images
-      const failedCount = NUM_IMAGES - successCount
-      if (failedCount > 0) {
-        console.log(`[Quota] Refunding ${failedCount} failed images`)
-        try {
-          await fetch('/api/quota/reserve', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              taskId,
-              actualImageCount: successCount,
-              refundCount: failedCount,
-            }),
-          })
-        } catch (e) {
-          console.warn('[Quota] Failed to refund:', e)
-        }
+      // 部分退款（使用统一 hook）
+      if (successCount > 0 && successCount < NUM_IMAGES) {
+        await partialRefund(taskId, successCount)
       }
       
       if (data.success && data.images.length > 0) {
@@ -968,10 +942,10 @@ function CameraPageContent() {
             perImageBackgrounds: savedPerImageBgs,
           },
         }, allSavedToDb) // 后端已写入数据库时，跳过前端的云端同步
-        
-        // Refresh quota after successful generation
-        await refreshQuota()
-        
+
+        // 刷新配额显示（使用统一 hook）
+        await confirmQuota()
+
         // If still on processing mode for this task, show results
         // Use modeRef.current to get the latest mode value (avoid stale closure)
         if (modeRef.current === "processing") {
@@ -995,13 +969,8 @@ function CameraPageContent() {
         // 清理 sessionStorage（任务完成）
         sessionStorage.removeItem('cameraTaskId')
       } else {
-        // All tasks failed - refund all reserved quota
-        console.log('[Quota] All tasks failed, refunding all', NUM_IMAGES, 'images')
-        try {
-          await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
-        } catch (e) {
-          console.warn('[Quota] Failed to refund on total failure:', e)
-        }
+        // 全部失败，全额退款（使用统一 hook）
+        await refundQuota(taskId)
         
         // Log more details
         const failedCount = results.filter(r => !r.success).length
@@ -1012,14 +981,8 @@ function CameraPageContent() {
       console.error("Generation error:", error)
       updateTaskStatus(taskId, 'failed', undefined, error.message || t.camera.generationFailed)
       
-      // Refund quota on error
-      console.log('[Quota] Error occurred, refunding reserved quota')
-      try {
-        await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
-        await refreshQuota()
-      } catch (e) {
-        console.warn('[Quota] Failed to refund on error:', e)
-      }
+      // 异常退款（使用统一 hook）
+      await refundQuota(taskId)
       
       // Only alert if still on processing screen
       // Use modeRef.current to get the latest mode value

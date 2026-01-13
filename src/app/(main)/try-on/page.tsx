@@ -11,6 +11,7 @@ import {
 } from "lucide-react"
 import { fileToBase64, compressBase64Image } from "@/lib/utils"
 import { useQuota } from "@/hooks/useQuota"
+import { useQuotaReservation } from "@/hooks/useQuotaReservation"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
@@ -78,7 +79,8 @@ export default function TryOnPage() {
   const clothingFileInputRef = useRef<HTMLInputElement>(null)
   
   // Quota management
-  const { quota, checkQuota, refreshQuota } = useQuota()
+  const { quota, checkQuota } = useQuota()
+  const { reserveQuota, refundQuota, confirmQuota } = useQuotaReservation()
   
   // Check for image passed from gallery page
   useEffect(() => {
@@ -202,21 +204,8 @@ export default function TryOnPage() {
     setMode('processing')
     setResultImages([])
     
-    // Reserve quota
-    try {
-      await fetch('/api/quota/reserve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          taskId,
-          imageCount: 2,
-          taskType: 'try_on',
-        }),
-      })
-      refreshQuota()
-    } catch (e) {
-      console.warn('[Quota] Failed to reserve:', e)
-    }
+    // Reserve quota（使用统一 hook）
+    await reserveQuota({ taskId, imageCount: 2, taskType: 'try_on' })
     
     // Run generation in background
     runBackgroundGeneration(taskId, personImageUrl)
@@ -298,7 +287,7 @@ export default function TryOnPage() {
                   setResultImages(data.images.filter((url: string) => !!url))
                   setMode('results')
                 }
-                refreshQuota()
+                confirmQuota()
               } else if (eventType === 'error') {
                 throw new Error(data.message)
               }
@@ -310,12 +299,8 @@ export default function TryOnPage() {
       console.error('[TryOn] Generation error:', error)
       updateTaskStatus(taskId, 'failed')
       
-      try {
-        await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
-        refreshQuota()
-      } catch (e) {
-        console.warn('[Quota] Failed to refund:', e)
-      }
+      // 退款（使用统一 hook）
+      await refundQuota(taskId)
       
       if (modeRef.current === 'processing') {
         alert(error.message || 'Generation failed')

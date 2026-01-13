@@ -19,6 +19,7 @@ import Image from "next/image"
 import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { usePresetStore } from "@/stores/presetStore"
 import { useQuota } from "@/hooks/useQuota"
+import { useQuotaReservation } from "@/hooks/useQuotaReservation"
 import { BottomNav } from "@/components/shared/BottomNav"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
@@ -248,7 +249,8 @@ function SocialPageContent() {
   }, [loadPresets])
   
   // Quota management
-  const { quota, checkQuota, refreshQuota } = useQuota()
+  const { quota, checkQuota } = useQuota()
+  const { reserveQuota, refundQuota, partialRefund, confirmQuota } = useQuotaReservation()
   
   // Helper to sort by pinned status
   const sortByPinned = (assets: Asset[]) => 
@@ -403,28 +405,15 @@ function SocialPageContent() {
     // Trigger fly animation
     triggerFlyToGallery()
     
-    // 预扣配额（必须等待成功）
-    try {
-      const reserveRes = await fetch('/api/quota/reserve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          taskId,
-          imageCount: SOCIAL_NUM_IMAGES,
-          taskType: 'social',
-        }),
-      })
-      
-      if (!reserveRes.ok) {
-        console.error('[Social] Failed to reserve quota')
-        setMode('camera')
-        router.replace('/social')
-        return
-      }
-      console.log('[Social] Reserved', SOCIAL_NUM_IMAGES, 'credits for task', taskId)
-      refreshQuota()
-    } catch (e) {
-      console.error('[Social] Failed to reserve quota:', e)
+    // 预扣配额（使用统一 hook）
+    const reserveResult = await reserveQuota({
+      taskId,
+      imageCount: SOCIAL_NUM_IMAGES,
+      taskType: 'social',
+    })
+    
+    if (!reserveResult.success) {
+      console.error('[Social] Failed to reserve quota:', reserveResult.error)
       setMode('camera')
       router.replace('/social')
       return
@@ -583,23 +572,9 @@ function SocialPageContent() {
         }
       }
       
-      // Calculate refund for failed images
-      const failedCount = SOCIAL_NUM_IMAGES - successCount
-      if (failedCount > 0) {
-        console.log(`[Social] Refunding ${failedCount} failed images`)
-        try {
-          await fetch('/api/quota/reserve', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              taskId,
-              actualImageCount: successCount,
-              refundCount: failedCount,
-            }),
-          })
-        } catch (e) {
-          console.warn('[Social] Failed to refund:', e)
-        }
+      // 部分退款（使用统一 hook）
+      if (successCount > 0 && successCount < SOCIAL_NUM_IMAGES) {
+        await partialRefund(taskId, successCount)
       }
       
       if (successCount > 0) {
@@ -630,9 +605,9 @@ function SocialPageContent() {
             bgIsUserSelected,
           },
         }, true)
-        
-        await refreshQuota()
-        
+
+        await confirmQuota()
+
         if (modeRef.current === "processing") {
           setGeneratedImages(allImages.filter(Boolean) as string[])
           setGeneratedModelTypes(savedModelTypes)
@@ -650,28 +625,16 @@ function SocialPageContent() {
         
         sessionStorage.removeItem('socialTaskId')
       } else {
-        // All tasks failed - refund all reserved quota
-        console.log('[Social] All tasks failed, refunding all', SOCIAL_NUM_IMAGES, 'images')
-        try {
-          await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
-        } catch (e) {
-          console.warn('[Social] Failed to refund on total failure:', e)
-        }
-        
-        throw new Error(t.camera?.generationFailed || '生成失败')
+        // 全部失败，全额退款（使用统一 hook）
+        await refundQuota(taskId)
+        throw new Error(t.camera?.generationFailed || 'Generation failed')
       }
     } catch (error: any) {
       console.error("Generation error:", error)
       updateTaskStatus(taskId, 'failed', undefined, error.message || t.camera?.generationFailed)
       
-      // Refund quota on error
-      console.log('[Social] Error occurred, refunding reserved quota')
-      try {
-        await fetch(`/api/quota/reserve?taskId=${taskId}`, { method: 'DELETE' })
-        await refreshQuota()
-      } catch (e) {
-        console.warn('[Social] Failed to refund on error:', e)
-      }
+      // 异常退款（使用统一 hook）
+      await refundQuota(taskId)
       
       if (modeRef.current === "processing") {
         const errorMsg = getErrorMessage(error.message, t) || t.errors?.generateFailed
