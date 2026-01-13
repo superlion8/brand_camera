@@ -2122,7 +2122,7 @@ function CameraPageContent() {
                   </button>
                 </div>
                 
-                <BottomNav forceShow />
+                {!isDesktop && <BottomNav forceShow />}
               </>
             )}
           </motion.div>
@@ -2654,8 +2654,8 @@ function CameraPageContent() {
               )
             })()}
             
-            {/* Bottom Navigation */}
-            <BottomNav forceShow />
+            {/* Bottom Navigation - Mobile only */}
+            {!isDesktop && <BottomNav forceShow />}
           </motion.div>
         )}
       </AnimatePresence>

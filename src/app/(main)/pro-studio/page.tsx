@@ -1831,7 +1831,7 @@ function ProStudioPageContent() {
                   </button>
                 </div>
                 
-                <BottomNav forceShow />
+                {!isDesktop && <BottomNav forceShow />}
               </>
             )}
           </motion.div>
@@ -2180,7 +2180,7 @@ function ProStudioPageContent() {
               )
             })()}
             
-            <BottomNav forceShow />
+            {!isDesktop && <BottomNav forceShow />}
           </motion.div>
         )}
       </AnimatePresence>

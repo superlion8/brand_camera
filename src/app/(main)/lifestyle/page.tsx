@@ -1243,7 +1243,7 @@ function LifestylePageContent() {
                   </button>
                 </div>
                 
-                <BottomNav forceShow />
+                {!isDesktop && <BottomNav forceShow />}
               </>
             )}
           </motion.div>

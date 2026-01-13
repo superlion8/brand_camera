@@ -819,7 +819,7 @@ function GroupShootPageContent() {
                   })}
                 </div>
                 
-                <BottomNav forceShow />
+                {!isDesktop && <BottomNav forceShow />}
               </>
             )}
           </motion.div>

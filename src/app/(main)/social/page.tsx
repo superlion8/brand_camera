@@ -1946,7 +1946,7 @@ function SocialPageContent() {
                   </button>
                 </div>
                 
-                <BottomNav forceShow />
+                {!isDesktop && <BottomNav forceShow />}
               </>
             )}
           </motion.div>
@@ -2408,7 +2408,8 @@ function SocialPageContent() {
               )
             })()}
             
-            <BottomNav forceShow />
+            {/* Bottom Navigation - Mobile only */}
+            {!isDesktop && <BottomNav forceShow />}
           </motion.div>
         )}
       </AnimatePresence>
