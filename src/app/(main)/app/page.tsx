@@ -579,13 +579,12 @@ export default function HomePage() {
                 whileHover={{ scale: 1.02 }}
                 className="relative overflow-hidden rounded-2xl cursor-pointer aspect-[16/9]"
               >
-                {/* Background image - 使用 lifestyle 展示图 */}
+                {/* Background image */}
                 <Image
-                  src={`${FEATURES_URL}/lifestyle.jpg`}
+                  src="/brand_clone.png"
                   alt="Clone Brand Style"
                   fill
                   className="object-cover"
-                  unoptimized
                 />
                 {/* Bottom gradient for text readability */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />

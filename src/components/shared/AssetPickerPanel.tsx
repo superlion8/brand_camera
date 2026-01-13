@@ -8,8 +8,6 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useIsDesktop } from "@/hooks/useIsMobile"
 import { useAssetStore } from "@/stores/assetStore"
 import { useTranslation } from "@/stores/languageStore"
-import { PRESET_PRODUCTS } from "@/data/presets"
-
 interface AssetPickerPanelProps {
   open: boolean
   onClose: () => void
@@ -59,7 +57,6 @@ export function AssetPickerPanel({
   const { t } = useTranslation()
   const { isDesktop } = useIsDesktop()
   const { userProducts } = useAssetStore()
-  const [sourceTab, setSourceTab] = useState<'preset' | 'user'>('preset')
   const [zoomImage, setZoomImage] = useState<string | null>(null)
   
   const theme = themeClasses[themeColor]
@@ -110,36 +107,6 @@ export function AssetPickerPanel({
               </button>
             </div>
             
-            {/* Source Tabs */}
-            <div className={`${isDesktop ? 'px-6 py-3' : 'px-4 py-2'} border-b border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shrink-0`}>
-              <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1">
-                <button
-                  onClick={() => setSourceTab("preset")}
-                  className={`flex-1 ${isDesktop ? 'py-2.5 text-sm' : 'py-2 text-xs'} font-medium rounded-md transition-colors ${
-                    sourceTab === "preset"
-                      ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
-                      : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
-                  }`}
-                >
-                  {t.camera?.officialExamples || 'Official Examples'}
-                  <span className="ml-1 text-zinc-400 dark:text-zinc-500">({PRESET_PRODUCTS.length})</span>
-                </button>
-                <button
-                  onClick={() => setSourceTab("user")}
-                  className={`flex-1 ${isDesktop ? 'py-2.5 text-sm' : 'py-2 text-xs'} font-medium rounded-md transition-colors ${
-                    sourceTab === "user"
-                      ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
-                      : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
-                  }`}
-                >
-                  {t.camera?.myProducts || 'My Products'}
-                  {userProducts.length > 0 && (
-                    <span className="ml-1 text-zinc-400 dark:text-zinc-500">({userProducts.length})</span>
-                  )}
-                </button>
-              </div>
-            </div>
-            
             {/* Content */}
             <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4 relative">
               {/* Loading overlay */}
@@ -149,55 +116,7 @@ export function AssetPickerPanel({
                 </div>
               )}
               
-              {sourceTab === 'preset' ? (
-                <div className={`grid gap-3 ${isDesktop ? 'grid-cols-5' : 'grid-cols-3'} pb-4`}>
-                  {/* Upload from Album Entry */}
-                  {showUploadEntry && onUploadClick && (
-                    <button
-                      onClick={handleUploadClick}
-                      disabled={isLoading}
-                      className={`aspect-square rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-600 ${theme.uploadHover} flex flex-col items-center justify-center gap-2 transition-colors bg-zinc-50 dark:bg-zinc-800 disabled:opacity-50`}
-                    >
-                      <Plus className="w-8 h-8 text-zinc-400 dark:text-zinc-500" />
-                      <span className="text-xs text-zinc-500 dark:text-zinc-400 text-center px-2">
-                        {t.proStudio?.fromAlbum || 'From Album'}
-                      </span>
-                    </button>
-                  )}
-                  
-                  {PRESET_PRODUCTS.map(product => (
-                    <div 
-                      key={product.id}
-                      className={`relative group ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}
-                    >
-                      <button
-                        disabled={isLoading}
-                        onClick={() => handleSelect(product.imageUrl)}
-                        className={`w-full aspect-square rounded-xl overflow-hidden relative border-2 border-transparent ${theme.accentHover} transition-all bg-white dark:bg-zinc-800`}
-                        style={{ touchAction: 'manipulation' }}
-                      >
-                        <Image src={product.imageUrl} alt={product.name || ''} fill className="object-cover pointer-events-none" />
-                        <span className={`absolute top-1.5 left-1.5 ${theme.accent} text-white ${isDesktop ? 'text-[10px] px-1.5 py-0.5' : 'text-[8px] px-1 py-0.5'} rounded font-medium pointer-events-none`}>
-                          {t.common?.official || 'Official'}
-                        </span>
-                        <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent ${isDesktop ? 'p-2 pt-6' : 'p-1.5 pt-4'} pointer-events-none`}>
-                          <p className={`${isDesktop ? 'text-xs' : 'text-[10px]'} text-white truncate text-center`}>{product.name}</p>
-                        </div>
-                      </button>
-                      {/* Zoom Button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setZoomImage(product.imageUrl)
-                        }}
-                        className="absolute bottom-1.5 right-1.5 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10"
-                      >
-                        <ZoomIn className="w-3 h-3 text-white" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              ) : userProducts.length > 0 ? (
+              {userProducts.length > 0 || (showUploadEntry && onUploadClick) ? (
                 <div className={`grid gap-3 ${isDesktop ? 'grid-cols-5' : 'grid-cols-3'} pb-4`}>
                   {/* Upload from Album Entry */}
                   {showUploadEntry && onUploadClick && (
