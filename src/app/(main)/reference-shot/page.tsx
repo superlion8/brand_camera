@@ -398,8 +398,8 @@ export default function ReferenceShotPage() {
                 </p>
 
                 {referenceImage ? (
-                  <div className={`relative w-full rounded-xl overflow-hidden bg-zinc-100 ${isDesktop ? 'aspect-square max-h-[280px]' : 'aspect-[3/4]'}`}>
-                    <Image src={referenceImage} alt="Reference" fill className="object-cover" />
+                  <div className="relative w-full rounded-xl overflow-hidden bg-zinc-100">
+                    <img src={referenceImage} alt="Reference" className="w-full h-auto max-h-[300px] object-contain" />
                     <button
                       onClick={() => setReferenceImage(null)}
                       className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center"
@@ -426,7 +426,8 @@ export default function ReferenceShotPage() {
                       className={`w-full rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 bg-zinc-50 hover:bg-blue-50 transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${isDesktop ? 'aspect-square max-h-[200px]' : 'aspect-[4/3]'}`}
                     >
                       <Plus className="w-6 h-6 text-zinc-400" />
-                      <span className="text-xs text-zinc-500">{t.common?.upload || '上传'}</span>
+                      <span className="text-xs text-zinc-500">{t.common?.upload || 'Upload'}</span>
+                      <span className="text-[10px] text-zinc-400">{t.common?.clickToUploadOrDrag || 'Click or drag & drop'}</span>
                     </div>
                     {/* Quick Actions */}
                     <div className="grid grid-cols-2 gap-1.5">
@@ -459,8 +460,8 @@ export default function ReferenceShotPage() {
                 </p>
 
                 {productImage ? (
-                  <div className={`relative w-full rounded-xl overflow-hidden bg-zinc-100 ${isDesktop ? 'aspect-square max-h-[280px]' : 'aspect-[3/4]'}`}>
-                    <Image src={productImage} alt="Product" fill className="object-cover" />
+                  <div className="relative w-full rounded-xl overflow-hidden bg-zinc-100">
+                    <img src={productImage} alt="Product" className="w-full h-auto max-h-[300px] object-contain" />
                     <button
                       onClick={() => setProductImage(null)}
                       className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center"
@@ -487,7 +488,8 @@ export default function ReferenceShotPage() {
                       className={`w-full rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 bg-zinc-50 hover:bg-blue-50 transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${isDesktop ? 'aspect-square max-h-[200px]' : 'aspect-[4/3]'}`}
                     >
                       <Plus className="w-6 h-6 text-zinc-400" />
-                      <span className="text-xs text-zinc-500">{t.common?.upload || '上传'}</span>
+                      <span className="text-xs text-zinc-500">{t.common?.upload || 'Upload'}</span>
+                      <span className="text-[10px] text-zinc-400">{t.common?.clickToUploadOrDrag || 'Click or drag & drop'}</span>
                     </div>
                     {/* Quick Actions */}
                     <div className="grid grid-cols-2 gap-1.5">
