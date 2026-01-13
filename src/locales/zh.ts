@@ -67,6 +67,7 @@ export const zh = {
     error: "错误",
     reselect: "重新选择",
     generationFailed: "生成失败",
+    phoneLogin: "手机号登录",
   },
   
   // Navigation
@@ -1174,6 +1175,14 @@ export const zh = {
     fromAlbum: "从相册选择",
     takePhoto: "拍照",
     uploadDesc: "选择图片开始虚拟试穿",
+  },
+
+  // Admin
+  admin: {
+    dashboard: "Admin 看板",
+    manageQuotas: "管理用户额度",
+    applications: "额度申请",
+    resourceManagement: "资源管理",
   },
 }
 

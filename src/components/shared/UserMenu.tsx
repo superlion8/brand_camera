@@ -124,7 +124,7 @@ export function UserMenu() {
     : user.user_metadata?.full_name || user.email?.split("@")[0] || t.common?.user || "User"
   
   // 副标题：手机用户显示"手机号登录"，其他显示邮箱
-  const subtitle = isPhoneUser ? (phone || t.auth?.phoneLogin || 'Phone Login') : user.email
+  const subtitle = isPhoneUser ? (phone || t.common?.phoneLogin || 'Phone Login') : user.email
 
   const currentLang = LANGUAGES.find(l => l.code === language) || LANGUAGES[0]
 

@@ -69,6 +69,7 @@ export const en: Translations = {
     error: "Error",
     reselect: "Reselect",
     generationFailed: "Generation failed",
+    phoneLogin: "Phone Login",
   },
   
   // Navigation
@@ -1176,5 +1177,13 @@ export const en: Translations = {
     fromAlbum: "From Album",
     takePhoto: "Take Photo",
     uploadDesc: "Select images to start virtual try-on",
+  },
+
+  // Admin
+  admin: {
+    dashboard: "Admin Dashboard",
+    manageQuotas: "Manage Quotas",
+    applications: "Applications",
+    resourceManagement: "Resources",
   },
 }

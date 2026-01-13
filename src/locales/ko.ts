@@ -69,6 +69,7 @@ export const ko: Translations = {
     error: "오류",
     reselect: "다시 선택",
     generationFailed: "생성 실패",
+    phoneLogin: "전화번호 로그인",
   },
   
   // Navigation
@@ -1175,5 +1176,13 @@ export const ko: Translations = {
     fromAlbum: "앨범에서 선택",
     takePhoto: "사진 촬영",
     uploadDesc: "가상 피팅을 시작할 이미지 선택",
+  },
+
+  // Admin
+  admin: {
+    dashboard: "관리자 대시보드",
+    manageQuotas: "할당량 관리",
+    applications: "신청서",
+    resourceManagement: "리소스 관리",
   },
 }
