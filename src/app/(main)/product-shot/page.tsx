@@ -188,7 +188,7 @@ function StudioPageContent() {
     const urlMode = searchParams.get('mode')
     if (urlMode === 'processing' || urlMode === 'results') {
       setMode(urlMode as StudioMode)
-      const savedTaskId = sessionStorage.getItem('studioTaskId')
+      const savedTaskId = sessionStorage.getItem('productShotTaskId')
       if (savedTaskId) {
         setCurrentTaskId(savedTaskId)
         
@@ -210,18 +210,18 @@ function StudioPageContent() {
                 } else {
                   console.log('[Studio] No images found in database, returning to main')
                   setMode('main')
-                  sessionStorage.removeItem('studioTaskId')
+                  sessionStorage.removeItem('productShotTaskId')
                 }
               } else {
                 console.log('[Studio] Task not found in database, returning to main')
                 setMode('main')
-                sessionStorage.removeItem('studioTaskId')
+                sessionStorage.removeItem('productShotTaskId')
               }
             })
             .catch(err => {
               console.error('[Studio] Failed to recover images:', err)
               setMode('main')
-              sessionStorage.removeItem('studioTaskId')
+              sessionStorage.removeItem('productShotTaskId')
             })
         }
       }
@@ -346,8 +346,8 @@ function StudioPageContent() {
     updateTaskStatus(taskId, 'generating')
     
     // 保存 taskId 到 sessionStorage（刷新后可恢复）
-    sessionStorage.setItem('studioTaskId', taskId)
-    router.replace('/studio?mode=processing')
+    sessionStorage.setItem('productShotTaskId', taskId)
+    router.replace('/product-shot?mode=processing')
     
     setMode('processing')
     setGeneratedImages([])
@@ -498,7 +498,7 @@ function StudioPageContent() {
           setGeneratedImages(finalImages)
           setGeneratedModelTypes(finalModelTypes)
           setMode('results')
-          router.replace('/studio?mode=results')
+          router.replace('/product-shot?mode=results')
         }
       } else {
         // 全部失败，全额退款（使用统一 hook）

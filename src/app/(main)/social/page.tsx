@@ -400,7 +400,7 @@ function SocialPageContent() {
     setMode("processing")
     
     sessionStorage.setItem('socialTaskId', taskId)
-    router.replace('/camera/social?mode=processing')
+    router.replace('/social?mode=processing')
     
     // Trigger fly animation
     triggerFlyToGallery()
@@ -546,8 +546,8 @@ function SocialPageContent() {
                   if (modeRef.current === 'processing' && successCount === 1) {
                     console.log('[Social] First image ready, switching to results mode')
                     setMode('results')
-                    if (window.location.pathname === '/camera/social') {
-                      router.replace('/camera/social?mode=results')
+                    if (window.location.pathname === '/social') {
+                      router.replace('/social?mode=results')
                     }
                   }
                 } else if (data.type === 'image_error') {
@@ -618,8 +618,8 @@ function SocialPageContent() {
           }
           setMode("results")
           // 检查是否仍在social页面，避免用户离开后强制跳转
-          if (window.location.pathname === '/camera/social') {
-            router.replace('/camera/social?mode=results')
+          if (window.location.pathname === '/social') {
+            router.replace('/social?mode=results')
           }
         }
         
