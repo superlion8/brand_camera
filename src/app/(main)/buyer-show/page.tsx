@@ -482,9 +482,9 @@ function CameraPageContent() {
     
     // 预扣配额（使用统一 hook）
     const reserveResult = await reserveQuota({
-      taskId,
-      imageCount: CAMERA_NUM_IMAGES,
-      taskType: 'model_studio',
+          taskId,
+          imageCount: CAMERA_NUM_IMAGES,
+          taskType: 'model_studio',
     })
     
     if (!reserveResult.success) {
@@ -942,10 +942,10 @@ function CameraPageContent() {
             perImageBackgrounds: savedPerImageBgs,
           },
         }, allSavedToDb) // 后端已写入数据库时，跳过前端的云端同步
-
+        
         // 刷新配额显示（使用统一 hook）
         await confirmQuota()
-
+        
         // If still on processing mode for this task, show results
         // Use modeRef.current to get the latest mode value (avoid stale closure)
         if (modeRef.current === "processing") {
@@ -1988,8 +1988,8 @@ function CameraPageContent() {
               onClose={() => setShowProductPanel(false)}
               onSelect={(imageUrl) => {
                 setCapturedImage(imageUrl)
-                setProductFromPhone(false)
-                setMode("review")
+                                  setProductFromPhone(false)
+                                  setMode("review")
               }}
               onUploadClick={() => fileInputRef.current?.click()}
               themeColor="blue"
@@ -2002,7 +2002,7 @@ function CameraPageContent() {
               onClose={() => setShowProduct2Panel(false)}
               onSelect={(imageUrl) => {
                 setCapturedImage2(imageUrl)
-                setProduct2FromPhone(false)
+                                setProduct2FromPhone(false)
               }}
               onUploadClick={() => fileInputRef2.current?.click()}
               themeColor="blue"
@@ -2563,7 +2563,7 @@ function CameraPageContent() {
                         className="w-full h-12 mt-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2 transition-colors"
                       >
                         <Wand2 className="w-4 h-4" />
-                        去修图
+                        {t.gallery?.goEdit || 'Edit'}
                       </button>
                     </div>
                   </div>

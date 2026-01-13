@@ -173,14 +173,14 @@ export default function TryOnPage() {
   
   // Handle gallery selection
   const handleGallerySelect = (imageUrl: string) => {
-    if (galleryTarget === 'person') {
-      setPersonImage(imageUrl)
-    } else {
-      if (clothingImages.length < MAX_CLOTHING_IMAGES) {
-        setClothingImages(prev => [...prev, imageUrl])
+      if (galleryTarget === 'person') {
+        setPersonImage(imageUrl)
+      } else {
+        if (clothingImages.length < MAX_CLOTHING_IMAGES) {
+          setClothingImages(prev => [...prev, imageUrl])
+        }
       }
-    }
-    setShowGalleryPanel(false)
+      setShowGalleryPanel(false)
   }
   
   // Remove clothing image
@@ -552,115 +552,115 @@ export default function TryOnPage() {
             ) : (
               /* ========== Mobile Layout ========== */
               <>
-                {/* Person Image Upload Area */}
+            {/* Person Image Upload Area */}
                 <div className="bg-zinc-100 flex items-center justify-center relative p-4 min-h-[200px]">
-                  {!personImage ? (
+              {!personImage ? (
                     <div className="w-full space-y-2 max-w-sm">
-                      <button
-                        onClick={() => {
-                          setCameraTarget('person')
-                          setMode('camera')
-                        }}
-                        className="w-full h-14 rounded-xl bg-pink-500 hover:bg-pink-600 text-white flex items-center justify-center gap-3 transition-colors shadow-lg shadow-pink-200"
-                      >
-                        <Camera className="w-5 h-5" />
+                    <button
+                      onClick={() => {
+                        setCameraTarget('person')
+                        setMode('camera')
+                      }}
+                      className="w-full h-14 rounded-xl bg-pink-500 hover:bg-pink-600 text-white flex items-center justify-center gap-3 transition-colors shadow-lg shadow-pink-200"
+                    >
+                      <Camera className="w-5 h-5" />
                         <span className="font-medium">{t.tryOn?.takePhoto || 'Take Photo'}</span>
-                      </button>
-                      
+                    </button>
+                  
                       <div className="grid grid-cols-2 gap-2">
-                        <button
-                          onClick={() => personFileInputRef.current?.click()}
+                    <button
+                      onClick={() => personFileInputRef.current?.click()}
                           className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-pink-400 flex items-center justify-center gap-2 transition-colors"
-                        >
-                          <Upload className="w-4 h-4 text-zinc-500" />
+                    >
+                      <Upload className="w-4 h-4 text-zinc-500" />
                           <span className="text-sm text-zinc-700">{t.tryOn?.fromAlbum || 'Album'}</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            setGalleryTarget('person')
-                            setShowGalleryPanel(true)
-                          }}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setGalleryTarget('person')
+                        setShowGalleryPanel(true)
+                      }}
                           className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-pink-400 flex items-center justify-center gap-2 transition-colors"
-                        >
-                          <FolderHeart className="w-4 h-4 text-zinc-500" />
+                    >
+                      <FolderHeart className="w-4 h-4 text-zinc-500" />
                           <span className="text-sm text-zinc-700">{t.tryOn?.fromGallery || 'Photos'}</span>
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="relative w-full max-w-xs">
-                      <Image 
-                        src={personImage.startsWith('data:') ? personImage : 
-                          personImage.startsWith('http') ? personImage : `data:image/jpeg;base64,${personImage}`}
-                        alt="Person"
-                        width={300}
-                        height={400}
-                        className="w-full rounded-xl shadow-lg object-contain bg-white"
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative w-full max-w-xs">
+                  <Image 
+                    src={personImage.startsWith('data:') ? personImage : 
+                      personImage.startsWith('http') ? personImage : `data:image/jpeg;base64,${personImage}`}
+                    alt="Person"
+                    width={300}
+                    height={400}
+                    className="w-full rounded-xl shadow-lg object-contain bg-white"
+                  />
+                  <button
+                    onClick={() => setPersonImage(null)}
+                    className="absolute bottom-2 right-2 px-3 py-1.5 bg-white/90 hover:bg-white text-zinc-700 text-sm font-medium rounded-lg shadow transition-colors"
+                  >
+                        {t.common?.change || 'Change'}
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            {/* Settings Panel */}
+            <div className="p-4 bg-white rounded-t-2xl -mt-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] relative z-10 space-y-5">
+              {/* Clothing Images */}
+              <div>
+                    <h3 className="text-sm font-semibold text-zinc-700 mb-2">{t.tryOn?.clothingImages || 'Clothing Images'}</h3>
+                <p className="text-xs text-zinc-400 mb-3">
+                      {t.tryOn?.clothingImagesDesc || 'Upload clothing to try on (up to 5)'}
+                </p>
+                
+                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                  {clothingImages.map((img, index) => (
+                    <div key={index} className="relative w-20 h-20 rounded-xl overflow-hidden bg-zinc-100 shrink-0 border-2 border-zinc-200">
+                      <Image
+                        src={img.startsWith('data:') ? img : 
+                          img.startsWith('http') ? img : `data:image/jpeg;base64,${img}`}
+                        alt={`Clothing ${index + 1}`}
+                        fill
+                        className="object-cover"
                       />
                       <button
-                        onClick={() => setPersonImage(null)}
-                        className="absolute bottom-2 right-2 px-3 py-1.5 bg-white/90 hover:bg-white text-zinc-700 text-sm font-medium rounded-lg shadow transition-colors"
+                        onClick={() => removeClothingImage(index)}
+                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center"
                       >
-                        {t.common?.change || 'Change'}
+                        <X className="w-3 h-3" />
                       </button>
                     </div>
+                  ))}
+                  
+                  {clothingImages.length < MAX_CLOTHING_IMAGES && (
+                    <button
+                      onClick={() => setShowClothingPanel(true)}
+                      className="w-20 h-20 rounded-xl border-2 border-dashed border-zinc-300 hover:border-pink-400 hover:bg-pink-50/50 transition-colors flex flex-col items-center justify-center gap-1 shrink-0"
+                    >
+                      <Plus className="w-5 h-5 text-zinc-400" />
+                          <span className="text-[10px] text-zinc-400">{t.tryOn?.addClothing || 'Add'}</span>
+                    </button>
                   )}
                 </div>
-                
-                {/* Settings Panel */}
-                <div className="p-4 bg-white rounded-t-2xl -mt-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] relative z-10 space-y-5">
-                  {/* Clothing Images */}
-                  <div>
-                    <h3 className="text-sm font-semibold text-zinc-700 mb-2">{t.tryOn?.clothingImages || 'Clothing Images'}</h3>
-                    <p className="text-xs text-zinc-400 mb-3">
-                      {t.tryOn?.clothingImagesDesc || 'Upload clothing to try on (up to 5)'}
-                    </p>
-                    
-                    <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                      {clothingImages.map((img, index) => (
-                        <div key={index} className="relative w-20 h-20 rounded-xl overflow-hidden bg-zinc-100 shrink-0 border-2 border-zinc-200">
-                          <Image
-                            src={img.startsWith('data:') ? img : 
-                              img.startsWith('http') ? img : `data:image/jpeg;base64,${img}`}
-                            alt={`Clothing ${index + 1}`}
-                            fill
-                            className="object-cover"
-                          />
-                          <button
-                            onClick={() => removeClothingImage(index)}
-                            className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
-                      
-                      {clothingImages.length < MAX_CLOTHING_IMAGES && (
-                        <button
-                          onClick={() => setShowClothingPanel(true)}
-                          className="w-20 h-20 rounded-xl border-2 border-dashed border-zinc-300 hover:border-pink-400 hover:bg-pink-50/50 transition-colors flex flex-col items-center justify-center gap-1 shrink-0"
-                        >
-                          <Plus className="w-5 h-5 text-zinc-400" />
-                          <span className="text-[10px] text-zinc-400">{t.tryOn?.addClothing || 'Add'}</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Prompt Input */}
-                  <div>
-                    <h3 className="text-sm font-semibold text-zinc-700 mb-2">
+              </div>
+              
+              {/* Prompt Input */}
+              <div>
+                <h3 className="text-sm font-semibold text-zinc-700 mb-2">
                       {t.common?.style || 'Style'}
                       <span className="text-xs text-zinc-400 font-normal ml-2">({t.common?.custom || 'Optional'})</span>
-                    </h3>
-                    <textarea
-                      value={prompt}
-                      onChange={(e) => setPrompt(e.target.value)}
+                </h3>
+                <textarea
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
                       placeholder={t.tryOn?.promptPlaceholder || 'Describe the try-on effect you want (optional)'}
-                      className="w-full h-20 px-4 py-3 rounded-xl border border-zinc-200 bg-zinc-50 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-400 transition-colors"
-                    />
-                  </div>
-                </div>
+                  className="w-full h-20 px-4 py-3 rounded-xl border border-zinc-200 bg-zinc-50 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-400 transition-colors"
+                />
+              </div>
+            </div>
               </>
             )}
           </motion.div>
@@ -668,24 +668,24 @@ export default function TryOnPage() {
         
         {/* Generate Button for main mode - Mobile only (PC button is in the layout) */}
         {mode === 'main' && !isDesktop && (
-          <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-white via-white to-transparent max-w-md mx-auto z-40">
-            <button
-              onClick={(e) => {
-                triggerFlyToGallery(e)
-                handleGenerate()
-              }}
-              disabled={!canGenerate}
-              className={`w-full h-14 rounded-full text-base font-semibold gap-2 flex items-center justify-center transition-all ${
-                !canGenerate
-                  ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
-                  : "bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white shadow-lg shadow-pink-200"
-              }`}
-            >
-              <Sparkles className="w-5 h-5" />
+            <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-white via-white to-transparent max-w-md mx-auto z-40">
+              <button
+                onClick={(e) => {
+                  triggerFlyToGallery(e)
+                  handleGenerate()
+                }}
+                disabled={!canGenerate}
+                className={`w-full h-14 rounded-full text-base font-semibold gap-2 flex items-center justify-center transition-all ${
+                  !canGenerate
+                    ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white shadow-lg shadow-pink-200"
+                }`}
+              >
+                <Sparkles className="w-5 h-5" />
               <span>{t.tryOn?.generate || 'Start Try-On'}</span>
-              <CreditCostBadge cost={CREDIT_COST} className="ml-2" />
-            </button>
-          </div>
+                <CreditCostBadge cost={CREDIT_COST} className="ml-2" />
+              </button>
+            </div>
         )}
         
         {/* Camera Mode */}

@@ -816,9 +816,9 @@ function OutfitPageContent() {
     
     // 预扣配额（使用统一 hook）
     const reserveResult = await reserveQuota({
-      taskId,
-      imageCount: numImages,
-      taskType,
+          taskId,
+          imageCount: numImages,
+          taskType,
     })
     
     if (!reserveResult.success) {
@@ -1353,7 +1353,7 @@ function OutfitPageContent() {
           open={showAssetPicker}
           onClose={() => setShowAssetPicker(false)}
           onSelect={(imageUrl) => {
-            if (uploadTargetSlot) {
+                          if (uploadTargetSlot) {
               handleAddProduct(imageUrl, uploadTargetSlot)
             }
           }}
@@ -1577,15 +1577,15 @@ function OutfitPageContent() {
           setUploadTargetSlot(null)
         }}
         onSelect={(imageUrl) => {
-          if (uploadTargetSlot) {
-            setSlots(prev => prev.map(slot => 
-              slot.id === uploadTargetSlot
+                              if (uploadTargetSlot) {
+                                setSlots(prev => prev.map(slot => 
+                                  slot.id === uploadTargetSlot
                 ? { ...slot, product: { imageUrl } }
-                : slot
-            ))
-          }
-          setUploadTargetSlot(null)
-        }}
+                                    : slot
+                                ))
+                              }
+                              setUploadTargetSlot(null)
+                            }}
         onUploadClick={() => fileInputRef.current?.click()}
         themeColor="amber"
         title={`${t.outfit?.selectProduct || '选择商品'}${uploadTargetSlot ? ` - ${labelMap[uploadTargetSlot]}` : ''}`}

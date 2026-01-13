@@ -208,6 +208,7 @@ function ProStudioPageContent() {
   const searchParams = useSearchParams()
   const { user, isLoading: authLoading } = useAuth()
   const t = useLanguageStore(state => state.t)
+  const language = useLanguageStore(state => state.language)
   const { checkQuota, quota } = useQuota()
   const { reserveQuota, refundQuota, partialRefund, confirmQuota } = useQuotaReservation()
   const { addTask, updateTaskStatus, updateImageSlot, initImageSlots, tasks } = useGenerationTaskStore()
@@ -589,9 +590,9 @@ function ProStudioPageContent() {
 
     // 预扣配额（使用统一 hook）
     const reserveResult = await reserveQuota({
-      taskId,
-      imageCount: PRO_STUDIO_NUM_IMAGES,
-      taskType: 'pro_studio',
+          taskId,
+          imageCount: PRO_STUDIO_NUM_IMAGES,
+          taskType: 'pro_studio',
     })
     
     if (!reserveResult.success) {
@@ -789,10 +790,10 @@ function ProStudioPageContent() {
     updateTaskStatus(taskId, 'completed')
   }
 
-  // 获取图片标签
+  // 获取图片标签（根据当前语言）
   const getImageLabel = (index: number) => {
     const label = IMAGE_LABELS[index] || IMAGE_LABELS[0]
-    return label.zh
+    return language === 'en' ? label.en : label.zh
   }
 
   const getImageColor = (index: number) => {
@@ -1711,8 +1712,8 @@ function ProStudioPageContent() {
               onClose={() => setShowProductPanel(false)}
               onSelect={(imageUrl) => {
                 setCapturedImage(imageUrl)
-                setProductFromPhone(false)
-                setMode("review")
+                                  setProductFromPhone(false)
+                                  setMode("review")
               }}
               onUploadClick={() => fileInputRef.current?.click()}
               themeColor="amber"
@@ -2032,7 +2033,7 @@ function ProStudioPageContent() {
                             className="flex-1 h-12 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2 transition-colors"
                           >
                             <Wand2 className="w-4 h-4" />
-                            去修图
+                            {t.gallery?.goEdit || 'Edit'}
                           </button>
                           <button 
                             type="button"
@@ -2046,7 +2047,7 @@ function ProStudioPageContent() {
                             className="flex-1 h-12 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-medium flex items-center justify-center gap-2 transition-colors"
                           >
                             <Grid3X3 className="w-4 h-4" />
-                            拍组图
+                            {t.gallery?.goGroupShoot || 'Group Shot'}
                           </button>
                         </div>
                         
@@ -2208,7 +2209,7 @@ function ProStudioPageContent() {
         onClose={() => setShowProduct2Panel(false)}
         onSelect={(imageUrl) => {
           setCapturedImage2(imageUrl)
-          setProduct2FromPhone(false)
+                          setProduct2FromPhone(false)
         }}
         onUploadClick={() => fileInputRef2.current?.click()}
         themeColor="amber"
