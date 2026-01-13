@@ -38,32 +38,64 @@ task_type: 'brand_style'
 if (item.task_type === 'brand_style') { ... }
 ```
 
-### 4. 🎨 UI 一致性
+### 4. 🎨 UI 一致性 & PC 端适配（重要！）
+
+**⚠️ 每个页面的每个模式（mode）都必须检查 PC 端适配！**
+
 - [ ] 使用 `useIsDesktop` hook + `ScreenLoadingGuard` 组件**防止页面闪烁**
-- [ ] PC Web 和 Mobile Web **双端适配**
-- [ ] 底部导航 `BottomNav` **仅在移动端显示**
+- [ ] 底部导航 `BottomNav` **仅在移动端显示**：`{!isDesktop && <BottomNav />}`
 - [ ] 相机功能 **仅在移动端可用**
 
-```tsx
-// 标准页面结构
-import { useIsDesktop } from '@/hooks/useIsMobile'
-import { ScreenLoadingGuard } from '@/components/ui/ScreenLoadingGuard'
+**🔴 PC 端适配检查清单（每个 mode 都要检查！）：**
 
-export default function MyPage() {
-  const { isDesktop, isMobile, isLoading } = useIsDesktop()
-  
-  if (isLoading) {
-    return <ScreenLoadingGuard><div /></ScreenLoadingGuard>
-  }
-  
-  return (
-    <div>
-      {/* 页面内容 */}
-      {!isDesktop && <BottomNav />}
+| 模式 | PC 端必须检查项 |
+|------|----------------|
+| camera/main | Header 居中标题、无相机按钮、上传区域合理尺寸 |
+| review | 三栏布局、无底部导航 |
+| processing | 骨架图居中、max-w 限制 |
+| **results** | **4列网格、居中按钮、无底部导航** |
+
+```tsx
+// ✅ 正确：results 模式必须有 isDesktop 判断
+{mode === "results" && (
+  <div>
+    {/* Header */}
+    {isDesktop ? (
+      <div className="max-w-5xl mx-auto px-8 py-4">...</div>
+    ) : (
+      <div className="h-14 px-4">...</div>
+    )}
+    
+    {/* Content */}
+    <div className={isDesktop ? 'max-w-4xl mx-auto' : ''}>
+      <div className={`grid gap-4 ${isDesktop ? 'grid-cols-4' : 'grid-cols-2'}`}>
+        {/* images */}
+      </div>
     </div>
-  )
-}
+    
+    {/* Button */}
+    {isDesktop ? (
+      <div className="mt-8 flex justify-center">
+        <button className="px-8 h-12">...</button>
+      </div>
+    ) : (
+      <div className="p-4 pb-20">
+        <button className="w-full h-12">...</button>
+      </div>
+    )}
+  </div>
+)}
+
+// ❌ 错误：results 模式没有 isDesktop 判断
+{mode === "results" && (
+  <div className="p-4">  {/* 移动端样式直接用于 PC */}
+    <div className="grid grid-cols-2">...</div>
+    <button className="w-full">...</button>
+  </div>
+)}
 ```
+
+**参考实现：**`pro-studio/page.tsx` 的 results 模式是标准实现
 
 ### 5. 🌍 国际化（重要！禁止硬编码文本）
 
