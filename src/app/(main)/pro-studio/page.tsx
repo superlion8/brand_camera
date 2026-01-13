@@ -927,22 +927,36 @@ function ProStudioPageContent() {
                       </button>
                       {/* Model list */}
                       {allModels.slice(0, 5).map(model => (
-                        <button
+                        <div
                           key={model.id}
-                          onClick={() => setSelectedModelId(selectedModelId === model.id ? null : model.id)}
-                          className={`aspect-[3/4] rounded-lg overflow-hidden relative border-2 transition-all ${
-                            selectedModelId === model.id 
-                              ? 'border-amber-500 ring-2 ring-amber-500/30' 
+                          className={`aspect-[3/4] rounded-lg overflow-hidden relative border-2 transition-all group ${
+                            selectedModelId === model.id
+                              ? 'border-amber-500 ring-2 ring-amber-500/30'
                               : 'border-transparent hover:border-amber-300'
                           }`}
                         >
-                          <Image src={model.imageUrl} alt={model.name || ''} fill className="object-cover" />
+                          <button
+                            onClick={() => setSelectedModelId(selectedModelId === model.id ? null : model.id)}
+                            className="absolute inset-0"
+                          >
+                            <Image src={model.imageUrl} alt={model.name || ''} fill className="object-cover" />
+                          </button>
                           {selectedModelId === model.id && (
                             <div className="absolute top-1 right-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center">
                               <Check className="w-2.5 h-2.5 text-white" />
                             </div>
                           )}
-                        </button>
+                          {/* Zoom button - show on hover */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setFullscreenImage(model.imageUrl)
+                            }}
+                            className="absolute bottom-1 right-1 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+                          >
+                            <ZoomIn className="w-3 h-3 text-white" />
+                          </button>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -984,22 +998,36 @@ function ProStudioPageContent() {
                       </button>
                       {/* Background list */}
                       {allBgs.slice(0, 5).map(bg => (
-                        <button
+                        <div
                           key={bg.id}
-                          onClick={() => setSelectedBgId(selectedBgId === bg.id ? null : bg.id)}
-                          className={`aspect-[3/4] rounded-lg overflow-hidden relative border-2 transition-all ${
+                          className={`aspect-[3/4] rounded-lg overflow-hidden relative border-2 transition-all group ${
                             selectedBgId === bg.id 
                               ? 'border-amber-500 ring-2 ring-amber-500/30' 
                               : 'border-transparent hover:border-amber-300'
                           }`}
                         >
-                          <Image src={bg.imageUrl} alt={bg.name || ''} fill className="object-cover" />
+                          <button
+                            onClick={() => setSelectedBgId(selectedBgId === bg.id ? null : bg.id)}
+                            className="absolute inset-0"
+                          >
+                            <Image src={bg.imageUrl} alt={bg.name || ''} fill className="object-cover" />
+                          </button>
                           {selectedBgId === bg.id && (
                             <div className="absolute top-1 right-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center">
                               <Check className="w-2.5 h-2.5 text-white" />
                             </div>
                           )}
-                        </button>
+                          {/* Zoom button - show on hover */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setFullscreenImage(bg.imageUrl)
+                            }}
+                            className="absolute bottom-1 right-1 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+                          >
+                            <ZoomIn className="w-3 h-3 text-white" />
+                          </button>
+                        </div>
                       ))}
                     </div>
                   </div>

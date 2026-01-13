@@ -994,22 +994,35 @@ function SocialPageContent() {
                               <span className="text-[10px] text-zinc-400">{t.proStudio?.upload || '上传'}</span>
                             </button>
                             {allModels.slice(0, 5).map(model => (
-                              <button
+                              <div
                                 key={model.id}
-                                onClick={() => setSelectedModel(selectedModel === model.id ? null : model.id)}
-                                className={`aspect-[3/4] rounded-lg overflow-hidden relative border-2 transition-all ${
-                                  selectedModel === model.id 
-                                    ? 'border-pink-500 ring-2 ring-pink-500/30' 
+                                className={`aspect-[3/4] rounded-lg overflow-hidden relative border-2 transition-all group ${
+                                  selectedModel === model.id
+                                    ? 'border-pink-500 ring-2 ring-pink-500/30'
                                     : 'border-transparent hover:border-pink-300'
                                 }`}
                               >
-                                <Image src={model.imageUrl} alt={model.name || ''} fill className="object-cover" />
+                                <button
+                                  onClick={() => setSelectedModel(selectedModel === model.id ? null : model.id)}
+                                  className="absolute inset-0"
+                                >
+                                  <Image src={model.imageUrl} alt={model.name || ''} fill className="object-cover" />
+                                </button>
                                 {selectedModel === model.id && (
                                   <div className="absolute top-1 right-1 w-4 h-4 bg-pink-500 rounded-full flex items-center justify-center">
                                     <Check className="w-2.5 h-2.5 text-white" />
                                   </div>
                                 )}
-                              </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setFullscreenImage(model.imageUrl)
+                                  }}
+                                  className="absolute bottom-1 right-1 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+                                >
+                                  <ZoomIn className="w-3 h-3 text-white" />
+                                </button>
+                              </div>
                             ))}
                           </div>
                         </div>
@@ -1049,22 +1062,35 @@ function SocialPageContent() {
                               <span className="text-[10px] text-zinc-400">{t.proStudio?.upload || '上传'}</span>
                             </button>
                             {allBackgrounds.slice(0, 5).map(bg => (
-                              <button
+                              <div
                                 key={bg.id}
-                                onClick={() => setSelectedBg(selectedBg === bg.id ? null : bg.id)}
-                                className={`aspect-[3/4] rounded-lg overflow-hidden relative border-2 transition-all ${
-                                  selectedBg === bg.id 
-                                    ? 'border-pink-500 ring-2 ring-pink-500/30' 
+                                className={`aspect-[3/4] rounded-lg overflow-hidden relative border-2 transition-all group ${
+                                  selectedBg === bg.id
+                                    ? 'border-pink-500 ring-2 ring-pink-500/30'
                                     : 'border-transparent hover:border-pink-300'
                                 }`}
                               >
-                                <Image src={bg.imageUrl} alt={bg.name || ''} fill className="object-cover" />
+                                <button
+                                  onClick={() => setSelectedBg(selectedBg === bg.id ? null : bg.id)}
+                                  className="absolute inset-0"
+                                >
+                                  <Image src={bg.imageUrl} alt={bg.name || ''} fill className="object-cover" />
+                                </button>
                                 {selectedBg === bg.id && (
                                   <div className="absolute top-1 right-1 w-4 h-4 bg-pink-500 rounded-full flex items-center justify-center">
                                     <Check className="w-2.5 h-2.5 text-white" />
                                   </div>
                                 )}
-                              </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setFullscreenImage(bg.imageUrl)
+                                  }}
+                                  className="absolute bottom-1 right-1 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+                                >
+                                  <ZoomIn className="w-3 h-3 text-white" />
+                                </button>
+                              </div>
                             ))}
                           </div>
                         </div>
