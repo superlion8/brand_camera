@@ -841,21 +841,24 @@ function StudioPageContent() {
                       {/* Light Direction */}
                       <div>
                         <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.studio.lightDirection}</h3>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-3 gap-2 max-w-[200px]">
                           {[
-                            ['top-left', '↖'], ['top', '↑'], ['top-right', '↗'],
-                            ['left', '←'], ['front', '●'], ['right', '→'],
+                            ['top-left', '↘'], ['top', '↓'], ['top-right', '↙'],
+                            ['left', '→'], ['front', '●'], ['right', '←'],
+                            ['bottom-left', '↗'], ['bottom', '↑'], ['bottom-right', '↖'],
                           ].map(([dir, icon]) => (
                     <button
                               key={dir}
                               onClick={() => setLightDirection(dir)}
                               className={`aspect-square rounded-xl border-2 flex items-center justify-center text-lg transition-all ${
-                                lightDirection === dir
-                                  ? 'border-amber-500 bg-amber-500 text-white'
-                                  : 'border-zinc-200 bg-white hover:border-zinc-300 text-zinc-400'
+                                dir === 'front'
+                                  ? 'bg-zinc-800 text-white border-zinc-800'
+                                  : lightDirection === dir
+                                    ? 'border-amber-500 bg-amber-500 text-white'
+                                    : 'border-zinc-200 bg-white hover:border-zinc-300 text-zinc-400'
                               }`}
                             >
-                              {icon}
+                              {dir === 'front' ? '📦' : icon}
                     </button>
                           ))}
                   </div>
@@ -864,7 +867,21 @@ function StudioPageContent() {
                       {/* Background Color */}
                       <div>
                         <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.studio.bgColor}</h3>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 mb-3">
+                          {/* White - default */}
+                          <button
+                            onClick={() => {
+                              setBgColor('#FFFFFF')
+                              setHue(0)
+                              setSaturation(0)
+                              setBrightness(1)
+                            }}
+                            className={`w-10 h-10 rounded-full border-2 transition-all ${
+                              bgColor === '#FFFFFF' ? 'border-amber-500 ring-2 ring-amber-500/20' : 'border-zinc-300 hover:border-zinc-400'
+                            }`}
+                            style={{ background: '#FFFFFF' }}
+                            title={t.common?.white || 'White'}
+                          />
                           {PRESET_BG_COLORS.map(color => (
                   <button
                               key={color.id}
@@ -876,12 +893,50 @@ function StudioPageContent() {
                                 setBrightness(v)
                     }}
                               className={`w-10 h-10 rounded-full border-2 transition-all ${
-                                bgColor === color.colors[0] ? 'border-zinc-900 ring-2 ring-zinc-900/20' : 'border-zinc-200 hover:border-zinc-400'
+                                bgColor === color.colors[0] ? 'border-amber-500 ring-2 ring-amber-500/20' : 'border-zinc-200 hover:border-zinc-400'
                               }`}
                               style={{ background: `linear-gradient(135deg, ${color.colors[0]}, ${color.colors[1]})` }}
                               title={color.label}
                             />
                           ))}
+                        </div>
+                        {/* Color Picker */}
+                        <div className="bg-zinc-100 rounded-xl p-3 space-y-3">
+                          <div
+                            ref={colorPickerRef}
+                            onClick={handleSBPick}
+                            onMouseMove={(e) => e.buttons === 1 && handleSBPick(e)}
+                            onTouchMove={handleSBPick}
+                            className="relative h-24 rounded-lg cursor-crosshair overflow-hidden"
+                            style={{
+                              background: `
+                                linear-gradient(to bottom, transparent, black),
+                                linear-gradient(to right, white, hsl(${hue * 360}, 100%, 50%))
+                              `
+                            }}
+                          >
+                            <div
+                              className="absolute w-4 h-4 rounded-full border-2 border-white shadow-lg pointer-events-none"
+                              style={{
+                                left: `calc(${saturation * 100}% - 8px)`,
+                                top: `calc(${(1 - brightness) * 100}% - 8px)`,
+                                backgroundColor: bgColor,
+                              }}
+                            />
+                          </div>
+                          
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.01"
+                            value={hue}
+                            onChange={handleHueChange}
+                            className="w-full h-3 rounded-full appearance-none cursor-pointer"
+                            style={{
+                              background: 'linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)',
+                            }}
+                          />
                         </div>
                       </div>
                       
