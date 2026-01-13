@@ -53,12 +53,6 @@ const themeClasses = {
   },
 }
 
-const typeColors: Record<string, string> = {
-  studio: 'bg-amber-500',
-  edit: 'bg-purple-500',
-  model: 'bg-blue-500',
-  default: 'bg-blue-500',
-}
 
 export function GalleryPickerPanel({
   open,
@@ -179,14 +173,6 @@ export function GalleryPickerPanel({
     onClose()
   }
 
-  const getTypeLabel = (type?: string) => {
-    switch (type) {
-      case 'studio': return t.studio?.title || 'Studio'
-      case 'edit': return t.nav?.edit || 'Edit'
-      default: return t.common?.model || 'Model'
-    }
-  }
-
   const loading = isLoading || externalLoading
 
   return (
@@ -274,9 +260,6 @@ export function GalleryPickerPanel({
                           fill 
                           className="object-cover" 
                         />
-                        <span className={`absolute top-1.5 left-1.5 ${typeColors[item.generation?.type || 'default']} text-white text-[10px] px-1.5 py-0.5 rounded font-medium`}>
-                          {getTypeLabel(item.generation?.type)}
-                        </span>
                       </button>
                     ))}
                   </div>
