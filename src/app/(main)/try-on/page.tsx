@@ -779,7 +779,7 @@ export default function TryOnPage() {
         
         {/* Generate Button for main mode - Mobile only (PC button is in the layout) */}
         {mode === 'main' && !isDesktop && (
-            <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-white via-white to-transparent max-w-md mx-auto z-40">
+            <div className="fixed bottom-0 left-0 right-0 p-4 pb-6 bg-gradient-to-t from-white via-white to-transparent max-w-md mx-auto z-40">
               <button
                 onClick={(e) => {
                   triggerFlyToGallery(e)
