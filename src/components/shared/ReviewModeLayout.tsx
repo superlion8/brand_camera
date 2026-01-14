@@ -94,8 +94,8 @@ export function ReviewModeLayout({
   generateButtonText,
   t,
   leftColumnExtra,
-  displayModelCount = 5,
-  displayBgCount = 5,
+  displayModelCount = 8,
+  displayBgCount = 8,
 }: ReviewModeLayoutProps) {
   const selectedModel = selectedModelId ? models.find(m => m.id === selectedModelId) : null
   const selectedBg = selectedBgId ? backgrounds.find(b => b.id === selectedBgId) : null
