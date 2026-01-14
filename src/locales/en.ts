@@ -1212,4 +1212,18 @@ export const en: Translations = {
     applications: "Applications",
     resourceManagement: "Resources",
   },
+
+  // Pricing
+  pricing: {
+    subscribeNow: "Subscribe Now",
+    buyNow: "Buy Now",
+    needMoreCredits: "Need More Credits?",
+    purchaseCredits: "Purchase additional credits that never expire.",
+    bestValue: "Best Value",
+    credits: "credits",
+    perMonth: "/mo",
+    yearly: "Yearly",
+    monthly: "Monthly",
+    savePercent: "Save {percent}%",
+  },
 }

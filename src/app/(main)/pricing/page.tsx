@@ -213,7 +213,7 @@ export default function PricingPage() {
                   {isLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin mx-auto" />
                   ) : (
-                    'Subscribe Now'
+                    t.pricing?.subscribeNow || 'Subscribe Now'
                   )}
                 </button>
               </motion.div>
@@ -224,10 +224,10 @@ export default function PricingPage() {
         {/* Top Up Section */}
         <div className="mb-12">
           <h2 className="text-2xl font-bold text-zinc-900 text-center mb-2">
-            Need More Credits?
+            {t.pricing?.needMoreCredits || 'Need More Credits?'}
           </h2>
           <p className="text-zinc-600 text-center mb-8">
-            Purchase additional credits that never expire.
+            {t.pricing?.purchaseCredits || 'Purchase additional credits that never expire.'}
           </p>
           
           <div className="grid md:grid-cols-3 gap-4 max-w-3xl mx-auto">
@@ -247,7 +247,7 @@ export default function PricingPage() {
                   {option.popular && (
                     <div className="absolute -top-2.5 right-4">
                       <span className="bg-amber-400 text-amber-900 text-xs font-semibold px-2 py-0.5 rounded-full">
-                        Best Value
+                        {t.pricing?.bestValue || 'Best Value'}
                       </span>
                     </div>
                   )}
@@ -256,7 +256,7 @@ export default function PricingPage() {
                     <div className="text-3xl font-bold text-zinc-900 mb-1">
                       {option.credits}
                     </div>
-                    <div className="text-sm text-zinc-500 mb-4">credits</div>
+                    <div className="text-sm text-zinc-500 mb-4">{t.pricing?.credits || 'credits'}</div>
                     <div className="text-2xl font-bold text-zinc-900 mb-4">
                       ${option.price}
                     </div>
@@ -268,7 +268,7 @@ export default function PricingPage() {
                       {isLoading ? (
                         <Loader2 className="w-4 h-4 animate-spin mx-auto" />
                       ) : (
-                        'Buy Now'
+                        t.pricing?.buyNow || 'Buy Now'
                       )}
                     </button>
                   </div>

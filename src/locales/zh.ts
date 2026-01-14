@@ -1210,6 +1210,20 @@ export const zh = {
     applications: "额度申请",
     resourceManagement: "资源管理",
   },
+
+  // Pricing
+  pricing: {
+    subscribeNow: "立即订阅",
+    buyNow: "立即购买",
+    needMoreCredits: "需要更多额度？",
+    purchaseCredits: "购买永不过期的额外额度。",
+    bestValue: "超值",
+    credits: "额度",
+    perMonth: "/月",
+    yearly: "年付",
+    monthly: "月付",
+    savePercent: "省 {percent}%",
+  },
 }
 
 export type Translations = typeof zh

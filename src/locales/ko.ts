@@ -1211,4 +1211,18 @@ export const ko: Translations = {
     applications: "신청서",
     resourceManagement: "리소스 관리",
   },
+
+  // Pricing
+  pricing: {
+    subscribeNow: "지금 구독",
+    buyNow: "지금 구매",
+    needMoreCredits: "더 많은 크레딧이 필요하신가요?",
+    purchaseCredits: "만료되지 않는 추가 크레딧을 구매하세요.",
+    bestValue: "최고 가치",
+    credits: "크레딧",
+    perMonth: "/월",
+    yearly: "연간",
+    monthly: "월간",
+    savePercent: "{percent}% 절약",
+  },
 }

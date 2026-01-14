@@ -1349,15 +1349,15 @@ function ProStudioPageContent() {
                     ) : (
                                 <div className="flex flex-col items-center">
                                   <div className="w-14 h-14 rounded-lg bg-zinc-100 flex items-center justify-center">
-                          <span className="text-xs text-zinc-400">Random</span>
+                          <span className="text-xs text-zinc-400">{t.common?.auto || 'Random'}</span>
                                   </div>
-                        <p className="text-[10px] text-zinc-500 mt-1">Model</p>
+                        <p className="text-[10px] text-zinc-500 mt-1">{t.common?.model || 'Model'}</p>
                                 </div>
                               )}
                     {selectedBg ? (
                                 <div className="flex flex-col items-center">
                         <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group" onClick={() => setFullscreenImage(selectedBg.imageUrl)}>
-                          <img src={selectedBg.imageUrl} alt="Background" className="w-full h-full object-cover" />
+                          <img src={selectedBg.imageUrl} alt={t.common?.background || 'Background'} className="w-full h-full object-cover" />
                                     <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                       <ZoomIn className="w-4 h-4 text-white" />
                                     </div>
@@ -1367,9 +1367,9 @@ function ProStudioPageContent() {
                     ) : (
                                 <div className="flex flex-col items-center">
                                   <div className="w-14 h-14 rounded-lg bg-zinc-100 flex items-center justify-center">
-                          <span className="text-xs text-zinc-400">Random</span>
+                          <span className="text-xs text-zinc-400">{t.common?.auto || 'Random'}</span>
                                   </div>
-                        <p className="text-[10px] text-zinc-500 mt-1">Background</p>
+                        <p className="text-[10px] text-zinc-500 mt-1">{t.common?.background || 'Background'}</p>
                                 </div>
                               )}
                             </div>

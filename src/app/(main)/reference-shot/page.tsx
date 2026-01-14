@@ -819,7 +819,7 @@ export default function ReferenceShotPage() {
               }}
               inputImages={productImages.length > 0 ? productImages.map((url, i) => ({
                 url,
-                label: `Product ${i + 1}`,
+                label: `${t.common?.product || 'Product'} ${i + 1}`,
               })) : []}
               onInputImageClick={(url) => setZoomImage(url)}
               quickActions={selectedResultIndex !== null ? [
