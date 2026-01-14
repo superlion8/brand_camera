@@ -1115,6 +1115,7 @@ function ProStudioPageContent() {
                     >
                       <Wand2 className="w-5 h-5" />
                       Shoot It
+                      <CreditCostBadge cost={4} className="ml-1" />
                     </motion.button>
                   </div>
                 </div>

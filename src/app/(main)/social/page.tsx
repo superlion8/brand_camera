@@ -39,6 +39,7 @@ import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
 import { ReviewModeLayout } from "@/components/shared/ReviewModeLayout"
 import { MobilePageHeader } from "@/components/shared/MobilePageHeader"
 import { CameraBottomBar } from "@/components/shared/CameraBottomBar"
+import { ProductPreviewArea } from "@/components/shared/ProductPreviewArea"
 
 // Helper to map API error codes to translated messages
 const getErrorMessage = (error: string, t: any): string => {
@@ -971,17 +972,22 @@ function SocialPageContent() {
                   t={t}
                 />
               ) : (
-                /* Mobile Review Mode */
-                <div className="absolute inset-0">
-                  <img 
-                    src={capturedImage || ""} 
-                    alt="商品" 
-                    className="w-full h-full object-cover"
-                  />
-                  <span className="absolute top-2 left-2 px-2 py-1 bg-black/50 text-white text-xs rounded backdrop-blur-md">
-                    商品图
-                  </span>
-                </div>
+                /* Mobile Review Mode - Use shared ProductPreviewArea */
+                <ProductPreviewArea
+                  mainImage={capturedImage}
+                  additionalImages={mode === "review" ? additionalProducts : []}
+                  maxAdditionalImages={MAX_ADDITIONAL_PRODUCTS}
+                  onAddProduct={mode === "review" ? () => setShowProduct2Panel(true) : undefined}
+                  onRemoveProduct={mode === "review" ? (index) => {
+                    setAdditionalProducts(prev => prev.filter((_, i) => i !== index))
+                    setAdditionalFromPhone(prev => prev.filter((_, i) => i !== index))
+                  } : undefined}
+                  addLabel={t.proStudio?.add || '添加'}
+                  badges={mode === "review" ? [
+                    ...(activeModel ? [{ label: t.common?.model || '模特', value: activeModel.name ?? '' }] : []),
+                    ...(activeBg ? [{ label: t.common?.background || '背景', value: activeBg.name ?? '' }] : []),
+                  ] : []}
+                />
               )}
               
               {/* Selection Badges Overlay */}
@@ -1060,11 +1066,15 @@ function SocialPageContent() {
                         triggerFlyToGallery(e)
                         handleShootIt()
                       }}
-                      className="w-full max-w-xs lg:px-8 h-14 rounded-full text-lg font-semibold gap-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:from-pink-600 hover:to-purple-600 shadow-[0_0_20px_rgba(236,72,153,0.3)] flex items-center justify-center transition-colors"
+                      className={`w-full max-w-xs h-14 rounded-full text-lg font-semibold gap-2 flex items-center justify-center transition-colors ${
+                        isDesktop
+                          ? 'bg-pink-600 text-white hover:bg-pink-700 shadow-lg'
+                          : 'bg-white text-black hover:bg-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.3)]'
+                      }`}
                     >
                       <Wand2 className="w-5 h-5" />
-                      {t.social?.generate || '生成种草图'}
-                      <CreditCostBadge cost={4} className="ml-2" />
+                      Shoot It
+                      <CreditCostBadge cost={4} className="ml-1" />
                     </motion.button>
                   </div>
                 </div>

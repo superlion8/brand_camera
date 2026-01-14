@@ -78,12 +78,12 @@ function LifestylePageContent() {
   // State
   const [mode, setMode] = useState<PageMode>("camera")
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
-  const [capturedImage2, setCapturedImage2] = useState<string | null>(null)
+  const [additionalImages, setAdditionalImages] = useState<string[]>([])
   const [hasCamera, setHasCamera] = useState(true)
   const [cameraReady, setCameraReady] = useState(false)
   const [permissionChecked, setPermissionChecked] = useState(false)
   const [productFromPhone, setProductFromPhone] = useState(false)
-  const [product2FromPhone, setProduct2FromPhone] = useState(false)
+  const [additionalFromPhone, setAdditionalFromPhone] = useState<boolean[]>([])
   const [showProductPanel, setShowProductPanel] = useState(false)
   const [showProduct2Panel, setShowProduct2Panel] = useState(false)
   const [lifestyleStatus, setLifestyleStatus] = useState<string>('')
@@ -252,18 +252,18 @@ function LifestylePageContent() {
 
   const handleFileUpload2 = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
+    if (file && additionalImages.length < 3) {
       const base64 = await fileToBase64(file)
-      setCapturedImage2(base64)
-      setProduct2FromPhone(true)
+      setAdditionalImages(prev => [...prev, base64])
+      setAdditionalFromPhone(prev => [...prev, true])
     }
   }
 
   const handleRetake = () => {
     setCapturedImage(null)
-    setCapturedImage2(null)
+    setAdditionalImages([])
     setProductFromPhone(false)
-    setProduct2FromPhone(false)
+    setAdditionalFromPhone([])
     setSelectedModelId(null)
     setSelectedSceneId(null)
     setGeneratedImages([])
@@ -366,8 +366,8 @@ function LifestylePageContent() {
       setLifestyleStatus(t.common?.loading || '正在连接服务器...')
       
       // Build product images array if there are additional products
-      const productImagesArray = capturedImage2 
-        ? [productImage, capturedImage2]
+      const productImagesArray = additionalImages.length > 0
+        ? [productImage, ...additionalImages]
         : undefined
       
       const response = await fetch('/api/generate-lifestyle', {
@@ -686,11 +686,19 @@ function LifestylePageContent() {
                   mainProductImage={capturedImage}
                   onMainProductChange={handleRetake}
                   onMainProductZoom={(url) => setFullscreenImage(url)}
-                  additionalProducts={capturedImage2 ? [capturedImage2] : []}
+                  additionalProducts={additionalImages}
                   maxAdditionalProducts={3}
                   onAddProduct={() => setShowProduct2Panel(true)}
-                  onRemoveProduct={() => setCapturedImage2(null)}
-                  onDropProduct={(base64) => setCapturedImage2(base64)}
+                  onRemoveProduct={(index) => {
+                    setAdditionalImages(prev => prev.filter((_, i) => i !== index))
+                    setAdditionalFromPhone(prev => prev.filter((_, i) => i !== index))
+                  }}
+                  onDropProduct={(base64) => {
+                    if (additionalImages.length < 3) {
+                      setAdditionalImages(prev => [...prev, base64])
+                      setAdditionalFromPhone(prev => [...prev, false])
+                    }
+                  }}
                   models={allModels}
                   selectedModelId={selectedModelId}
                   onSelectModel={setSelectedModelId}
@@ -748,7 +756,21 @@ function LifestylePageContent() {
                 /* PC Desktop shows upload interface - handled above in isDesktop check */
                 null
               ) : (
-                <img src={capturedImage || ""} alt="Captured" className="w-full h-full object-cover" />
+                <ProductPreviewArea
+                  mainImage={capturedImage}
+                  additionalImages={mode === "review" ? additionalImages : []}
+                  maxAdditionalImages={3}
+                  onAddProduct={mode === "review" ? () => setShowProduct2Panel(true) : undefined}
+                  onRemoveProduct={mode === "review" ? (index) => {
+                    setAdditionalImages(prev => prev.filter((_, i) => i !== index))
+                    setAdditionalFromPhone(prev => prev.filter((_, i) => i !== index))
+                  } : undefined}
+                  addLabel={t.proStudio?.add || '添加'}
+                  badges={mode === "review" ? [
+                    ...(selectedModel?.name ? [{ label: t.lifestyle?.streetModel || '模特', value: selectedModel.name }] : []),
+                    ...(selectedScene?.name ? [{ label: t.lifestyle?.streetScene || '场景', value: selectedScene.name }] : []),
+                  ] : []}
+                />
               )}
             </div>
 
@@ -776,41 +798,24 @@ function LifestylePageContent() {
                     </button>
                   </div>
                   
-                  {/* Generate and Outfit buttons */}
-                  <div className="w-full flex gap-3 max-w-sm mx-auto lg:w-auto lg:order-2">
-                    {/* Outfit Mode Button */}
+                  {/* Shoot It button */}
+                  <div className="w-full flex justify-center lg:w-auto lg:order-2">
                     <motion.button
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => {
-                        // Save product image to sessionStorage and go to outfit page
-                        if (capturedImage) {
-                          sessionStorage.setItem('lifestyleProduct1Image', capturedImage)
-                          router.push('/lifestyle/outfit')
-                        }
+                      onClick={(e) => {
+                        triggerFlyToGallery(e)
+                        handleLifestyleGenerate()
                       }}
-                      className={`h-14 px-6 rounded-full font-bold text-sm flex items-center justify-center gap-2 border transition-colors ${
+                      className={`w-full max-w-xs h-14 rounded-full text-lg font-semibold gap-2 flex items-center justify-center transition-colors ${
                         isDesktop
-                          ? 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border-zinc-300'
-                          : 'bg-white/10 text-white border-white/20 hover:bg-white/20'
+                          ? 'bg-purple-600 text-white hover:bg-purple-700 shadow-lg'
+                          : 'bg-white text-black hover:bg-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.3)]'
                       }`}
                     >
-                      <Plus className="w-5 h-5" />
-                      {t.lifestyle?.outfitMode || '搭配'}
-                    </motion.button>
-                    
-                    {/* Generate button */}
-                    <motion.button
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={handleLifestyleGenerate}
-                      className="flex-1 lg:flex-none lg:px-8 h-14 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold text-lg flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(168,85,247,0.4)]"
-                    >
                       <Wand2 className="w-5 h-5" />
-                      {t.lifestyle?.startGenerate || '开始生成'}
-                      <CreditCostBadge cost={4} className="ml-2" />
+                      Shoot It
+                      <CreditCostBadge cost={4} className="ml-1" />
                     </motion.button>
                   </div>
                 </div>
@@ -1001,17 +1006,20 @@ function LifestylePageContent() {
         allowUpload={false}
       />
       
-      {/* 第二件商品选择面板 */}
+      {/* 额外商品选择面板 */}
       <AssetPickerPanel
         open={showProduct2Panel}
         onClose={() => setShowProduct2Panel(false)}
         onSelect={(imageUrl) => {
-          setCapturedImage2(imageUrl)
-                          setProduct2FromPhone(false)
+          if (additionalImages.length < 3) {
+            setAdditionalImages(prev => [...prev, imageUrl])
+            setAdditionalFromPhone(prev => [...prev, false])
+          }
+          setShowProduct2Panel(false)
         }}
         onUploadClick={() => fileInputRef2.current?.click()}
         themeColor="purple"
-        title={t.proStudio?.styleOutfit || '搭配商品'}
+        title={t.proStudio?.add || '添加商品'}
       />
     </div>
   )

@@ -1302,62 +1302,22 @@ function CameraPageContent() {
                   t={t}
                 />
               ) : (
-                /* Mobile Review Mode */
-                <div className="absolute inset-0 flex flex-col">
-                  {/* Main product image - takes most space */}
-                  <div className="relative flex-1">
-                    <img 
-                      src={capturedImage || ""} 
-                      alt={t.camera.product1} 
-                      className="w-full h-full object-cover"
-                    />
-                    <span className="absolute top-2 left-2 px-2 py-1 bg-black/50 text-white text-xs rounded backdrop-blur-md">
-                      {t.camera.product1}
-                    </span>
-                  </div>
-                  
-                  {/* Additional products strip at bottom */}
-                  {additionalProducts.length > 0 && (
-                    <div className="h-20 flex border-t-2 border-white/30">
-                      {additionalProducts.map((img, idx) => (
-                        <div key={idx} className="relative flex-1 border-r border-white/20 last:border-r-0">
-                          <img src={img} alt={`${t.camera.product2} ${idx + 1}`} className="w-full h-full object-cover" />
-                          <span className="absolute top-1 left-1 px-1.5 py-0.5 bg-black/50 text-white text-[10px] rounded">
-                            +{idx + 1}
-                      </span>
-                      <button
-                            onClick={() => {
-                              setAdditionalProducts(prev => prev.filter((_, i) => i !== idx))
-                              setAdditionalFromPhone(prev => prev.filter((_, i) => i !== idx))
-                            }}
-                            className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center"
-                          >
-                            <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {/* Add more button - only show if less than max */}
-                  {mode === "review" && additionalProducts.length < MAX_ADDITIONAL_PRODUCTS && (
-                    <button
-                      onClick={async () => {
-                        // 上传图片到 Storage，避免 sessionStorage 存大量 base64
-                        const imageUrl = user?.id 
-                          ? await ensureImageUrl(capturedImage!, user.id, 'product')
-                          : capturedImage!
-                        sessionStorage.setItem('product1Image', imageUrl)
-                        sessionStorage.removeItem('product2Image')
-                        router.push('/pro-studio/outfit?mode=camera')
-                      }}
-                      className="absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2.5 rounded-full bg-black/60 backdrop-blur-md text-white hover:bg-black/70 transition-colors border border-white/20"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span className="text-sm font-medium">{t.outfit?.title || '搭配商品'}</span>
-                    </button>
-                  )}
-                </div>
+                /* Mobile Review Mode - Use shared ProductPreviewArea */
+                <ProductPreviewArea
+                  mainImage={capturedImage}
+                  additionalImages={mode === "review" ? additionalProducts : []}
+                  maxAdditionalImages={MAX_ADDITIONAL_PRODUCTS}
+                  onAddProduct={mode === "review" ? () => setShowProduct2Panel(true) : undefined}
+                  onRemoveProduct={mode === "review" ? (index) => {
+                    setAdditionalProducts(prev => prev.filter((_, i) => i !== index))
+                    setAdditionalFromPhone(prev => prev.filter((_, i) => i !== index))
+                  } : undefined}
+                  addLabel={t.proStudio?.add || '添加'}
+                  badges={mode === "review" ? [
+                    ...(selectedModelGender ? [{ label: t.common?.gender || '性别', value: MODEL_GENDERS.find(g => g.id === selectedModelGender)?.label ?? '' }] : []),
+                    ...(activeBg ? [{ label: t.common?.background || '背景', value: activeBg.name ?? '' }] : []),
+                  ] : []}
+                />
               )}
               
               {/* Selection Badges Overlay */}
