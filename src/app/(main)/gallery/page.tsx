@@ -1182,7 +1182,8 @@ export default function GalleryPage() {
         )}
         
         {/* 加载提示 + 骨架屏 - 只在没有任何内容时显示 */}
-        {isLoading && displayedHistory.length === 0 && activeTasks.length === 0 && completedTasksToShow.length === 0 && (
+        {/* 注意：activeTasks/completedTasksToShow 只在 "all" tab 显示，其他 tab 不需要检查它们 */}
+        {isLoading && displayedHistory.length === 0 && (activeTab !== 'all' || (activeTasks.length === 0 && completedTasksToShow.length === 0)) && (
           <>
             <div className="flex items-center justify-center gap-2 py-3 mb-3 bg-blue-50 border border-blue-100 rounded-xl">
               <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
@@ -1197,7 +1198,7 @@ export default function GalleryPage() {
         )}
         
         {/* 空状态 - 加载完成后没有数据时显示 */}
-        {!isLoading && displayedHistory.length === 0 && activeTasks.length === 0 && completedTasksToShow.length === 0 && (
+        {!isLoading && displayedHistory.length === 0 && (activeTab !== 'all' || (activeTasks.length === 0 && completedTasksToShow.length === 0)) && (
           <div className="flex flex-col items-center justify-center h-64 text-zinc-400">
             {isRefreshing ? (
               <>
