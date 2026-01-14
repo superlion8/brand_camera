@@ -751,8 +751,8 @@ function ProStudioPageContent() {
         // 全部失败，全额退还
         await refundQuota(taskId)
       } else {
-        // 全部成功，刷新配额显示
-        await confirmQuota()
+        // 全部成功，更新数据库 status 并刷新配额显示
+        await confirmQuota(taskId, successCount)
       }
       
       // 清理 sessionStorage

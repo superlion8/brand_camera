@@ -126,11 +126,30 @@ export function useQuotaReservation() {
   }, [refreshQuota])
 
   /**
-   * 确认配额（生成成功，不需要退款）
-   * - 只刷新 UI 显示最新配额
+   * 确认配额（生成全部成功）
+   * - 如果传入 taskId 和 actualSuccessCount，调用 PUT 更新数据库 status 为 completed
+   * - 否则只刷新 UI（向后兼容）
+   * - 自动刷新 UI
    */
-  const confirmQuota = useCallback(async (): Promise<void> => {
-    await refreshQuota()
+  const confirmQuota = useCallback(async (
+    taskId?: string,
+    actualSuccessCount?: number
+  ): Promise<void> => {
+    // 如果有参数，更新数据库 status
+    if (taskId && actualSuccessCount !== undefined) {
+      try {
+        await fetch('/api/quota/reserve', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ taskId, actualImageCount: actualSuccessCount }),
+        })
+        console.log('[QuotaReservation] Confirmed quota for task', taskId, 'count:', actualSuccessCount)
+      } catch (e) {
+        console.warn('[QuotaReservation] Confirm failed:', e)
+      }
+    }
+    // 刷新 UI
+    refreshQuota()
   }, [refreshQuota])
 
   return {
