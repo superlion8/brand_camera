@@ -463,7 +463,7 @@ export default function TryOnPage() {
                           className="flex-1 h-10 rounded-lg bg-zinc-50 border border-zinc-200 hover:border-pink-400 hover:bg-pink-50 flex items-center justify-center gap-2 transition-all"
                         >
                           <Upload className="w-4 h-4 text-zinc-500" />
-                          <span className="text-sm font-medium text-zinc-600">{t.tryOn?.fromAlbum || 'From Album'}</span>
+                          <span className="text-sm font-medium text-zinc-600">{t.common?.fromGallery || 'Photos'}</span>
                         </button>
                         <button
                           onClick={() => {
@@ -473,7 +473,7 @@ export default function TryOnPage() {
                           className="flex-1 h-10 rounded-lg bg-zinc-50 border border-zinc-200 hover:border-pink-400 hover:bg-pink-50 flex items-center justify-center gap-2 transition-all"
                         >
                           <FolderHeart className="w-4 h-4 text-zinc-500" />
-                          <span className="text-sm font-medium text-zinc-600">{t.tryOn?.fromGallery || 'From Photos'}</span>
+                          <span className="text-sm font-medium text-zinc-600">{t.common?.fromGallery || 'From Gallery'}</span>
                         </button>
                       </div>
                     </div>
@@ -547,14 +547,14 @@ export default function TryOnPage() {
                           className="flex-1 h-10 rounded-lg bg-zinc-50 border border-zinc-200 hover:border-pink-400 hover:bg-pink-50 flex items-center justify-center gap-2 transition-all"
                         >
                           <Upload className="w-4 h-4 text-zinc-500" />
-                          <span className="text-sm font-medium text-zinc-600">{t.tryOn?.fromAlbum || 'From Album'}</span>
+                          <span className="text-sm font-medium text-zinc-600">{t.common?.fromGallery || 'Photos'}</span>
                         </button>
                         <button
                           onClick={() => setShowAssetPanel(true)}
                           className="flex-1 h-10 rounded-lg bg-zinc-50 border border-zinc-200 hover:border-pink-400 hover:bg-pink-50 flex items-center justify-center gap-2 transition-all"
                         >
                           <FolderHeart className="w-4 h-4 text-zinc-500" />
-                          <span className="text-sm font-medium text-zinc-600">{t.common?.fromAssets || 'From Assets'}</span>
+                          <span className="text-sm font-medium text-zinc-600">{t.common?.fromAssets || 'Assets'}</span>
                         </button>
                       </div>
                     </div>
@@ -618,7 +618,7 @@ export default function TryOnPage() {
                           className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-pink-400 flex items-center justify-center gap-2 transition-colors"
                     >
                       <Upload className="w-4 h-4 text-zinc-500" />
-                          <span className="text-sm text-zinc-700">{t.tryOn?.fromAlbum || 'Album'}</span>
+                          <span className="text-sm text-zinc-700">{t.common?.fromGallery || 'Photos'}</span>
                     </button>
                     <button
                       onClick={() => {
@@ -628,7 +628,7 @@ export default function TryOnPage() {
                           className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-pink-400 flex items-center justify-center gap-2 transition-colors"
                     >
                       <FolderHeart className="w-4 h-4 text-zinc-500" />
-                          <span className="text-sm text-zinc-700">{t.tryOn?.fromGallery || 'Photos'}</span>
+                          <span className="text-sm text-zinc-700">{t.nav?.gallery || 'Gallery'}</span>
                     </button>
                   </div>
                 </div>
@@ -787,7 +787,7 @@ export default function TryOnPage() {
                       className="px-6 py-3 bg-pink-500 text-white rounded-xl font-medium hover:bg-pink-600 transition-colors flex items-center gap-2 mx-auto"
                     >
                       <Upload className="w-5 h-5" />
-                      {t.tryOn?.fromAlbum || '从相册选择'}
+                      {t.common?.fromGallery || 'Photos'}
                     </button>
                   </div>
                 </div>
@@ -814,7 +814,7 @@ export default function TryOnPage() {
                       }}
                       className="mt-4 px-4 py-2 bg-pink-500 text-white rounded-lg text-sm"
                     >
-                      {t.tryOn?.fromAlbum || '从相册选择'}
+                      {t.common?.fromGallery || 'Photos'}
                     </button>
                   </div>
                 </div>
@@ -1012,13 +1012,13 @@ export default function TryOnPage() {
                 </button>
                 
                 <div className="grid grid-cols-2 gap-3">
-                  {/* Album - multiple */}
+                  {/* Photos - multiple */}
                   <button
                     onClick={() => clothingFileInputRef.current?.click()}
                     className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-pink-400 flex items-center justify-center gap-2 transition-colors"
                   >
                     <Upload className="w-4 h-4 text-zinc-500" />
-                    <span className="text-sm text-zinc-700">{t.tryOn?.fromAlbum || '相册'}</span>
+                    <span className="text-sm text-zinc-700">{t.common?.fromGallery || 'Photos'}</span>
                   </button>
                   
                   {/* Assets */}
@@ -1030,7 +1030,7 @@ export default function TryOnPage() {
                     className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-pink-400 flex items-center justify-center gap-2 transition-colors"
                   >
                     <FolderHeart className="w-4 h-4 text-zinc-500" />
-                    <span className="text-sm text-zinc-700">{t.common?.fromAssets || '素材库'}</span>
+                    <span className="text-sm text-zinc-700">{t.common?.fromAssets || 'Assets'}</span>
                   </button>
                 </div>
                 
