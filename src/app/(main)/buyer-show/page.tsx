@@ -1219,7 +1219,7 @@ function CameraPageContent() {
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
                             <div className="absolute bottom-0 left-0 right-0 p-4">
-                              <h3 className="text-lg font-bold text-white">{t.camera?.buyerShowMode || 'Buyer Show Mode'}</h3>
+                              <h3 className="text-lg font-bold text-white">{t.camera?.buyerShowMode || '买家秀模式'}</h3>
                               <p className="text-sm text-white/80 mt-1">{t.home?.modelStudioSubtitle || '真实生活场景'}</p>
                             </div>
                           </div>
@@ -1229,15 +1229,15 @@ function CameraPageContent() {
                             <div className="flex flex-wrap gap-2">
                               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-medium rounded-full">
                                 <Check className="w-3 h-3" />
-                                {t.camera?.realScene || 'Real Scene'}
+                                {t.camera?.realScene || '真实场景'}
                               </span>
                               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 text-xs font-medium rounded-full">
                                 <Check className="w-3 h-3" />
-                                {t.camera?.diverseStyles || 'Diverse Styles'}
+                                {t.camera?.diverseStyles || '多样风格'}
                               </span>
                               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 text-xs font-medium rounded-full">
                                 <Check className="w-3 h-3" />
-                                {t.proStudio?.highQualityOutput || 'High Quality Output'}
+                                {t.proStudio?.highQualityOutput || '高质量输出'}
                               </span>
                             </div>
                           </div>
@@ -1290,14 +1290,14 @@ function CameraPageContent() {
                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
                   <div className="text-center text-zinc-400">
                     <Camera className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                    <p className="text-sm">{t.camera?.cameraUnavailable || 'Camera unavailable'}</p>
+                    <p className="text-sm">{t.camera?.cameraUnavailable || '相机不可用'}</p>
                     <p className="text-xs mt-1">{t.camera.productPlaceholder}</p>
                   </div>
                 </div>
               ) : mode === "review" && isDesktop ? (
                 /* Desktop Review Mode - Using shared ReviewModeLayout */
                 <ReviewModeLayout
-                  title={t.camera?.title || 'Buyer Show'}
+                  title={t.camera?.title || '买家秀'}
                   onBack={handleRetake}
                   mainProductImage={capturedImage}
                   onMainProductChange={handleRetake}
@@ -1530,12 +1530,12 @@ function CameraPageContent() {
               status: slot.status as 'generating' | 'completed' | 'failed'
             }))}
             themeColor="blue"
-            title={t.camera?.generating || 'Creating buyer show photos'}
+            title={t.camera?.generating || '正在生成买家秀图片'}
             mobileStatusLines={[
               t.camera?.analyzeProduct || 'Analyzing product',
-              ...(activeModel ? [`${t.camera?.generateModel || 'Using model'} ${activeModel.name} ...`] : []),
+              ...(activeModel ? [`${t.camera?.generateModel || '使用模特'} ${activeModel.name} ...`] : []),
               ...(selectedModelStyle && selectedModelStyle !== 'auto' && !activeModel ? [t.camera?.matchingStyle || 'Matching style...'] : []),
-              ...(activeBg ? [t.camera?.renderScene || 'Rendering scene'] : []),
+              ...(activeBg ? [t.camera?.renderScene || '渲染场景'] : []),
             ]}
             onShootMore={handleNewPhotoDuringProcessing}
             onReturnHome={handleReturnDuringProcessing}
@@ -1545,7 +1545,7 @@ function CameraPageContent() {
 
         {mode === "results" && (
           <ResultsView
-            title={t.camera?.thisResults || 'Results'}
+            title={t.camera?.thisResults || '生成结果'}
             onBack={handleRetake}
             images={[0, 1, 2, 3].map((i) => {
                     const currentTask = tasks.find(t => t.id === currentTaskId)
@@ -1559,7 +1559,7 @@ function CameraPageContent() {
               }
             })}
             getBadge={(i) => ({
-              text: i < 2 ? (t.gallery?.simpleMode || 'Simple') : (t.gallery?.extendedMode || 'Extended'),
+              text: i < 2 ? (t.gallery?.simpleMode || '极简模式') : (t.gallery?.extendedMode || '扩展模式'),
               className: i < 2 ? 'bg-green-500' : 'bg-blue-500',
             })}
             themeColor="blue"
@@ -1645,8 +1645,8 @@ function CameraPageContent() {
                 }),
               ] : []}
               inputImages={[
-                ...(capturedImage ? [{ url: capturedImage, label: `${t.common?.product || 'Product'} 1` }] : []),
-                ...additionalProducts.map((img, idx) => ({ url: img, label: `${t.common?.product || 'Product'} ${idx + 2}` })),
+                ...(capturedImage ? [{ url: capturedImage, label: `${t.common?.product || '商品'} 1` }] : []),
+                ...additionalProducts.map((img, idx) => ({ url: img, label: `${t.common?.product || '商品'} ${idx + 2}` })),
               ]}
               onInputImageClick={(url) => setFullscreenImage(url)}
             >

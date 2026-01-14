@@ -1233,9 +1233,9 @@ function SocialPageContent() {
                 return selectedSlot?.imageUrl || generatedImages[selectedResultIndex] || ''
               })()}
               badges={selectedResultIndex !== null ? [
-                { text: t.social?.title || 'Social', className: 'bg-gradient-to-r from-pink-500 to-purple-500 text-white' },
+                { text: t.social?.title || '社媒种草', className: 'bg-gradient-to-r from-pink-500 to-purple-500 text-white' },
                 {
-                  text: `${t.social?.group || 'Group'} ${GROUP_LABELS[Math.floor(selectedResultIndex / SOCIAL_IMAGES_PER_GROUP)]}-${(selectedResultIndex % SOCIAL_IMAGES_PER_GROUP) + 1}`,
+                  text: `${t.social?.group || '组'} ${GROUP_LABELS[Math.floor(selectedResultIndex / SOCIAL_IMAGES_PER_GROUP)]}-${(selectedResultIndex % SOCIAL_IMAGES_PER_GROUP) + 1}`,
                   className: Math.floor(selectedResultIndex / SOCIAL_IMAGES_PER_GROUP) === 0 ? 'bg-pink-500 text-white' : 'bg-purple-500 text-white'
                 }
               ] : []}
@@ -1293,8 +1293,8 @@ function SocialPageContent() {
                 }),
               ] : []}
               inputImages={[
-                ...(capturedImage ? [{ url: capturedImage, label: `${t.common?.product || 'Product'} 1` }] : []),
-                ...additionalProducts.map((img, idx) => ({ url: img, label: `${t.common?.product || 'Product'} ${idx + 2}` })),
+                ...(capturedImage ? [{ url: capturedImage, label: `${t.common?.product || '商品'} 1` }] : []),
+                ...additionalProducts.map((img, idx) => ({ url: img, label: `${t.common?.product || '商品'} ${idx + 2}` })),
               ]}
               onInputImageClick={(url) => setFullscreenImage(url)}
             >

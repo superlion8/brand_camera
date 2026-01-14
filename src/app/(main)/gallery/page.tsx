@@ -500,7 +500,7 @@ export default function GalleryPage() {
     // Brand Style types (Clone Brand Style)
     if (isBrandStyleType(gen)) {
       return { 
-        label: t.gallery.brand || 'Brand', 
+        label: t.gallery.brand || '品牌', 
         color: 'bg-gradient-to-r from-violet-500 to-purple-600',
       }
     }
@@ -880,7 +880,7 @@ export default function GalleryPage() {
     { id: "product", label: t.gallery.product, icon: <Lightbulb className="w-3.5 h-3.5" /> },
     { id: "group", label: t.gallery.groupShoot || '组图', icon: <Grid3X3 className="w-3.5 h-3.5" /> },
     { id: "reference", label: t.gallery.referenceShot || '参考图', icon: <Palette className="w-3.5 h-3.5" /> },
-    { id: "brand", label: t.gallery.brand || 'Brand', icon: <Sparkles className="w-3.5 h-3.5" /> },
+    { id: "brand", label: t.gallery.brand || '品牌', icon: <Sparkles className="w-3.5 h-3.5" /> },
     { id: "favorites", label: t.gallery.favorites, icon: <Heart className="w-3.5 h-3.5" /> },
   ]
   
@@ -1341,7 +1341,7 @@ export default function GalleryPage() {
                   <div className="flex-1 overflow-y-auto px-6 py-5">
                     {/* Quick Actions - Icon Grid */}
                     <div className="mb-6">
-                      <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">{t.gallery?.quickActions || 'Quick Actions'}</h3>
+                      <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">{t.gallery?.quickActions || '快捷操作'}</h3>
                       <div className="grid grid-cols-4 gap-3">
                         <button 
                           disabled={!!navigatingTo}
@@ -1356,7 +1356,7 @@ export default function GalleryPage() {
                           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-purple-500 flex items-center justify-center shadow-lg shadow-pink-200/50 group-hover:scale-110 transition-transform">
                             {navigatingTo === 'try-on' ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <Sparkles className="w-5 h-5 text-white" />}
                           </div>
-                          <span className="text-xs font-medium text-zinc-700">{t.gallery.goTryOn || 'Try On'}</span>
+                          <span className="text-xs font-medium text-zinc-700">{t.gallery.goTryOn || '去换装'}</span>
                         </button>
                         
                         <button 
@@ -1371,7 +1371,7 @@ export default function GalleryPage() {
                           <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center shadow-lg shadow-blue-200/50 group-hover:scale-110 transition-transform">
                             {navigatingTo === 'edit' ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <Wand2 className="w-5 h-5 text-white" />}
                           </div>
-                          <span className="text-xs font-medium text-zinc-700">{t.gallery.goEdit || 'Edit'}</span>
+                          <span className="text-xs font-medium text-zinc-700">{t.gallery.goEdit || '去修图'}</span>
                         </button>
                         
                         <button 
@@ -1387,7 +1387,7 @@ export default function GalleryPage() {
                           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-cyan-200/50 group-hover:scale-110 transition-transform">
                             {navigatingTo === 'group' ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <Grid3X3 className="w-5 h-5 text-white" />}
                           </div>
-                          <span className="text-xs font-medium text-zinc-700">{t.gallery.goGroupShoot || 'Group'}</span>
+                          <span className="text-xs font-medium text-zinc-700">{t.gallery.goGroupShoot || '拍组图'}</span>
                         </button>
                         
                         <button 
@@ -1410,7 +1410,7 @@ export default function GalleryPage() {
                           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-200/50 group-hover:scale-110 transition-transform">
                             {navigatingTo === 'material' ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <Palette className="w-5 h-5 text-white" />}
                           </div>
-                          <span className="text-xs font-medium text-zinc-700">{t.gallery.modifyMaterial || 'Material'}</span>
+                          <span className="text-xs font-medium text-zinc-700">{t.gallery.modifyMaterial || '改材质版型'}</span>
                         </button>
                       </div>
                       
@@ -1420,7 +1420,7 @@ export default function GalleryPage() {
                         className="w-full mt-3 h-11 rounded-xl border border-zinc-200 hover:bg-zinc-50 text-zinc-600 font-medium flex items-center justify-center gap-2 transition-colors"
                       >
                         <FolderPlus className="w-4 h-4" />
-                        {t.gallery.saveAsAsset || 'Save as Asset'}
+                        {t.gallery.saveAsAsset || '保存为素材'}
                       </button>
                     </div>
                   
@@ -1960,7 +1960,7 @@ export default function GalleryPage() {
                         </div>
                         <div className="text-left">
                           <p className="font-medium text-zinc-900">{t.gallery.saveAsProduct}</p>
-                          <p className="text-xs text-zinc-500">{t.gallery?.canUseWhenShooting || 'Can be selected when shooting'}</p>
+                          <p className="text-xs text-zinc-500">{t.gallery?.canUseWhenShooting || '拍摄时可选择使用'}</p>
                         </div>
                       </button>
                       <button

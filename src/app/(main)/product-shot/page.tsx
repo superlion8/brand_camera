@@ -1392,7 +1392,7 @@ function StudioPageContent() {
               status: generatedImages[i] ? 'completed' as const : 'generating' as const,
             }))}
             getBadge={(i) => ({
-              text: generatedModelTypes[i] === 'flash' ? `${t.studio?.badge || 'Studio'} 2.5` : (t.studio?.badge || 'Studio'),
+              text: generatedModelTypes[i] === 'flash' ? `${t.studio?.badge || '影棚'} 2.5` : (t.studio?.badge || '影棚'),
               className: 'bg-amber-500',
             })}
             themeColor="amber"
@@ -1438,7 +1438,7 @@ function StudioPageContent() {
                   }
                 }),
               ] : []}
-              inputImages={productImage ? [{ url: productImage, label: t.common?.product || 'Product' }] : []}
+              inputImages={productImage ? [{ url: productImage, label: t.common?.product || '商品' }] : []}
               onInputImageClick={(url) => setFullscreenImage(url)}
             >
               {/* Debug content */}

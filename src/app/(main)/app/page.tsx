@@ -328,7 +328,7 @@ export default function HomePage() {
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-bold text-zinc-900 leading-tight">BrandCam</span>
-            <span className="text-[10px] text-zinc-400 leading-tight">{t.common?.appTagline || 'AI Photo Studio'}</span>
+            <span className="text-[10px] text-zinc-400 leading-tight">{t.common?.appTagline || 'AI 商拍助手'}</span>
           </div>
         </div>
         

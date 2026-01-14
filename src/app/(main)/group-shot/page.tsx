@@ -502,7 +502,7 @@ function GroupShootPageContent() {
                               <div className="flex items-center gap-2">
                                 <Users className={`w-4 h-4 ${styleMode === 'lifestyle' ? 'text-blue-600' : 'text-zinc-400'}`} />
                                 <span className={`font-medium text-sm ${styleMode === 'lifestyle' ? 'text-blue-900' : 'text-zinc-700'}`}>
-                                  {t.groupShootPage?.lifestyleMode || 'Lifestyle'}
+                                  {t.groupShootPage?.lifestyleMode || '生活风格'}
                                 </span>
                               </div>
                               <p className="text-xs text-zinc-500 mt-1">{t.groupShootPage?.lifestyleDesc || 'ins风格生活照'}</p>
@@ -530,7 +530,7 @@ function GroupShootPageContent() {
                               <div className="flex items-center gap-2">
                                 <Sparkles className={`w-4 h-4 ${styleMode === 'studio' ? 'text-amber-600' : 'text-zinc-400'}`} />
                                 <span className={`font-medium text-sm ${styleMode === 'studio' ? 'text-amber-900' : 'text-zinc-700'}`}>
-                                  {t.groupShootPage?.studioMode || 'Studio'}
+                                  {t.groupShootPage?.studioMode || '棚拍风格'}
                                 </span>
                               </div>
                               <p className="text-xs text-zinc-500 mt-1">{t.groupShootPage?.studioDesc || '专业影棚pose'}</p>
@@ -823,14 +823,14 @@ function GroupShootPageContent() {
               }}
               inputImages={selectedImage ? [{
                 url: selectedImage,
-                label: t.groupShootPage?.imageSelected?.split(' ')?.[0] || 'Source',
+                label: t.studio?.original || '原图',
               }] : []}
               onInputImageClick={(url) => setFullscreenImage(url)}
               quickActions={[
                 {
                   id: 'edit',
                   icon: <Wand2 className="w-5 h-5" />,
-                  label: t.gallery?.goEdit || 'Edit',
+                  label: t.gallery?.goEdit || '去修图',
                   onClick: () => {
                     if (selectedResultIndex === null) return
                     const task = tasks.find(t => t.id === currentTaskId)

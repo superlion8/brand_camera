@@ -101,7 +101,7 @@ function BackgroundGrid({
             className="aspect-square rounded-xl overflow-hidden relative border-2 border-dashed border-zinc-300 hover:border-blue-400 transition-all flex flex-col items-center justify-center bg-zinc-50 hover:bg-blue-50"
           >
             <Plus className="w-8 h-8 text-zinc-400" />
-            <span className="text-xs text-zinc-500 mt-1">{uploadLabel || 'Upload'}</span>
+            <span className="text-xs text-zinc-500 mt-1">{uploadLabel || '上传'}</span>
           </button>
         )}
         {backgrounds.map(item => (
@@ -1328,7 +1328,7 @@ function ProStudioPageContent() {
                   }
                 }),
               ] : []}
-              inputImages={capturedImage ? [{ url: capturedImage, label: t.common?.product || 'Product' }] : []}
+              inputImages={capturedImage ? [{ url: capturedImage, label: t.common?.product || '商品' }] : []}
               onInputImageClick={(url) => setFullscreenImage(url)}
             >
               {/* Debug content */}
