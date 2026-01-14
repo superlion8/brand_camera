@@ -723,7 +723,7 @@ function SocialPageContent() {
   }
 
   return (
-    <div className={`h-full relative flex flex-col ${isDesktop ? 'bg-zinc-50' : 'bg-black'}`}>
+    <div className={`${isDesktop ? 'h-full relative' : 'fixed inset-0 z-30'} flex flex-col ${isDesktop ? 'bg-zinc-50' : 'bg-black'}`}>
       <input 
         type="file" 
         ref={fileInputRef} 
@@ -1097,240 +1097,18 @@ function SocialPageContent() {
             
             {/* Model and Scene Pickers are rendered at the page level */}
             
-            {/* Product Panel - PC: centered modal */}
-            <AnimatePresence>
-              {showProductPanel && isDesktop && (
-                <>
-                  <motion.div 
-                    initial={{ opacity: 0 }} 
-                    animate={{ opacity: 1 }} 
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-black/40 z-40"
-                    onClick={() => setShowProductPanel(false)}
-                  />
-                  <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-                    <motion.div 
-                      initial={{ opacity: 0, scale: 0.95 }} 
-                      animate={{ opacity: 1, scale: 1 }} 
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      className="w-[90vw] max-w-3xl bg-white rounded-2xl max-h-[80vh] flex flex-col overflow-hidden shadow-xl pointer-events-auto"
-                    >
-                      <div className="h-14 border-b flex items-center justify-between px-6 shrink-0">
-                        <span className="font-semibold text-lg">{t.camera?.selectProduct || '选择商品'}</span>
-                        <button 
-                          onClick={() => setShowProductPanel(false)} 
-                          className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center"
-                        >
-                          <X className="w-5 h-5 text-zinc-500" />
-                        </button>
-                      </div>
-                      
-                      <div className="px-6 py-3 border-b bg-white shrink-0">
-                        <div className="flex gap-2 flex-wrap">
-                            {PRODUCT_SUB_TABS.map(cat => {
-                              const count = cat === "all" 
-                                ? userProducts.length 
-                                : userProducts.filter(p => p.category === cat).length
-                              return (
-                                <button
-                                  key={cat}
-                                  onClick={() => setProductSubTab(cat)}
-                                  className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
-                                    productSubTab === cat
-                                      ? "bg-pink-500 text-white"
-                                      : "bg-zinc-200 text-zinc-600 hover:bg-zinc-300"
-                                  }`}
-                                >
-                                  {getProductCategoryLabel(cat, t)}
-                                  <span className="ml-1 opacity-70">({count})</span>
-                                </button>
-                              )
-                            })}
-                          </div>
-                      </div>
-                      
-                      <div className="flex-1 overflow-y-auto p-6">
-                        {(() => {
-                          const filteredProducts = productSubTab === "all" 
-                            ? userProducts 
-                            : userProducts.filter(p => p.category === productSubTab)
-                          
-                          return (
-                            <div className="grid grid-cols-5 gap-4">
-                              {/* Upload from Album - First cell */}
-                              <button
-                                onClick={() => {
-                                  setShowProductPanel(false)
-                                  fileInputRef.current?.click()
-                                }}
-                                className="aspect-square rounded-xl border-2 border-dashed border-zinc-300 hover:border-pink-500 flex flex-col items-center justify-center gap-2 transition-colors bg-zinc-50 hover:bg-pink-50"
-                              >
-                                <Plus className="w-8 h-8 text-zinc-400" />
-                                <span className="text-xs text-zinc-500 text-center px-2">{t.proStudio?.fromAlbum || 'From Album'}</span>
-                              </button>
-                              {filteredProducts.map(product => (
-                                <div 
-                                  key={product.id} 
-                                  className="relative group cursor-pointer"
-                                  onClick={() => {
-                                    setCapturedImage(product.imageUrl)
-                                    setMode("review")
-                                    setShowProductPanel(false)
-                                  }}
-                                >
-                                  <div className="aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-pink-500 transition-all">
-                                    <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover" />
-                                  </div>
-                                  <p className="text-xs text-zinc-600 mt-2 truncate text-center">{product.name}</p>
-                                </div>
-                              ))}
-                            </div>
-                          )
-                        })()}
-                      </div>
-                    </motion.div>
-                  </div>
-                </>
-              )}
-            </AnimatePresence>
-            
-            {/* Product Panel - Mobile: slide-up */}
-            <AnimatePresence>
-              {showProductPanel && !isDesktop && (
-                <>
-                  <motion.div 
-                    initial={{ opacity: 0 }} 
-                    animate={{ opacity: 1 }} 
-                    exit={{ opacity: 0 }}
-                    className="absolute inset-0 bg-black/60 z-40 backdrop-blur-sm"
-                    onClick={() => setShowProductPanel(false)}
-                  />
-                  <motion.div 
-                    initial={{ y: "100%" }} 
-                    animate={{ y: 0 }} 
-                    exit={{ y: "100%" }}
-                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className="absolute bottom-0 left-0 right-0 h-[80%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
-                  >
-                    <div className="h-12 border-b flex items-center justify-between px-4 shrink-0">
-                      <span className="font-semibold">{t.camera?.selectProduct || '选择商品'}</span>
-                      <button 
-                        onClick={() => setShowProductPanel(false)} 
-                        className="h-8 w-8 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                    
-                    {/* Category Tabs */}
-                    <div className="px-4 py-2 border-b bg-white dark:bg-zinc-900 shrink-0">
-                      <div className="flex gap-2 flex-wrap">
-                          {PRODUCT_SUB_TABS.map(cat => {
-                            const count = cat === "all" 
-                              ? userProducts.length 
-                              : userProducts.filter(p => p.category === cat).length
-                            return (
-                              <button
-                                key={cat}
-                                onClick={() => setProductSubTab(cat)}
-                                className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors ${
-                                  productSubTab === cat
-                                    ? "bg-pink-600 text-white"
-                                    : "bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-300 dark:hover:bg-zinc-600"
-                                }`}
-                              >
-                                {getProductCategoryLabel(cat, t)}
-                                <span className="ml-1 opacity-70">({count})</span>
-                              </button>
-                            )
-                          })}
-                        </div>
-                    </div>
-                    
-                    <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4">
-                      {(() => {
-                        const filteredProducts = productSubTab === "all" 
-                          ? userProducts 
-                          : userProducts.filter(p => p.category === productSubTab)
-                        
-                        return filteredProducts.length > 0 ? (
-                          <div className="grid grid-cols-3 gap-3 pb-20">
-                            {filteredProducts.map(product => (
-                              <div 
-                                key={product.id} 
-                                className="relative group cursor-pointer"
-                                style={{ touchAction: 'manipulation' }}
-                                onClick={() => {
-                                  setCapturedImage(product.imageUrl)
-                                  setMode("review")
-                                  setShowProductPanel(false)
-                                }}
-                              >
-                                <div className="aspect-square rounded-lg overflow-hidden relative border-2 border-transparent hover:border-pink-500 active:border-pink-600 transition-all w-full">
-                                  <Image src={product.imageUrl} alt={product.name || ""} fill className="object-cover pointer-events-none" />
-                                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 pt-4 pointer-events-none">
-                                    <p className="text-[10px] text-white truncate text-center">{product.name}</p>
-                                  </div>
-                                </div>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    setZoomProductImage(product.imageUrl)
-                                  }}
-                                  className="absolute bottom-1 right-1 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10"
-                                >
-                                  <ZoomIn className="w-3 h-3 text-white" />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="flex flex-col items-center justify-center h-full text-zinc-400">
-                            <FolderHeart className="w-12 h-12 mb-3 opacity-30" />
-                            <p className="text-sm">{t.camera?.noMyProducts || '暂无商品'}</p>
-                            <p className="text-xs mt-1">{t.camera?.uploadInAssets || '请在资产库上传'}</p>
-                            <button 
-                              onClick={() => {
-                                setShowProductPanel(false)
-                                router.push("/brand-assets")
-                              }}
-                              className="mt-4 px-4 py-2 bg-pink-600 text-white text-sm rounded-lg hover:bg-pink-700 transition-colors"
-                            >
-                              {t.camera?.goUpload || '去上传'}
-                            </button>
-                          </div>
-                        )
-                      })()}
-                    </div>
-                  </motion.div>
-                  
-                  {/* 商品放大预览 */}
-                  <AnimatePresence>
-                    {zoomProductImage && (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center"
-                        onClick={() => setZoomProductImage(null)}
-                      >
-                        <button
-                          onClick={() => setZoomProductImage(null)}
-                          className="absolute top-4 right-4 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center"
-                        >
-                          <X className="w-6 h-6 text-white" />
-                        </button>
-                        <img 
-                          src={zoomProductImage} 
-                          alt="商品预览" 
-                          className="max-w-[90%] max-h-[80%] object-contain rounded-lg"
-                        />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </>
-              )}
-            </AnimatePresence>
+            {/* 主商品选择面板 - 使用统一的 AssetPickerPanel */}
+            <AssetPickerPanel
+              open={showProductPanel}
+              onClose={() => setShowProductPanel(false)}
+              onSelect={(imageUrl) => {
+                setCapturedImage(imageUrl)
+                setMode("review")
+              }}
+              onUploadClick={() => fileInputRef.current?.click()}
+              themeColor="purple"
+              title={t.camera?.selectProduct || '选择商品'}
+            />
           </motion.div>
         )}
 
@@ -1507,6 +1285,107 @@ function SocialPageContent() {
                       })()}
             </PhotoDetailDialog>
           </ResultsView>
+        )}
+      </AnimatePresence>
+
+      {/* Custom Panel - Mobile only */}
+      <AnimatePresence>
+        {showCustomPanel && !isDesktop && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 z-40"
+              onClick={() => setShowCustomPanel(false)}
+            />
+            <motion.div 
+              initial={{ y: "100%" }} 
+              animate={{ y: 0 }} 
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed bottom-0 left-0 right-0 h-[80%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
+            >
+              <div className="h-14 border-b flex items-center justify-between px-4 shrink-0">
+                <span className="font-semibold text-lg">{t.proStudio?.customConfig || '自定义配置'}</span>
+                <button 
+                  onClick={() => setShowCustomPanel(false)} 
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-pink-500 hover:bg-pink-600 text-white font-medium text-sm transition-colors"
+                >
+                  {t.proStudio?.nextStep || '下一步'}
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="p-2 flex gap-2 border-b overflow-x-auto shrink-0">
+                {[
+                  { id: "model", label: t.proStudio?.proModel || "模特" },
+                  { id: "bg", label: t.proStudio?.studioBg || "背景" }
+                ].map(tab => (
+                  <button 
+                    key={tab.id}
+                    onClick={() => setActiveCustomTab(tab.id)}
+                    className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${
+                      activeCustomTab === tab.id 
+                        ? "bg-pink-500 text-white" 
+                        : "bg-zinc-100 text-zinc-600"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4">
+                {activeCustomTab === "model" && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-zinc-600">{t.proStudio?.selectModel || '选择模特（不选则随机）'}</span>
+                      {selectedModel && (
+                        <button 
+                          onClick={() => setSelectedModel(null)}
+                          className="text-xs text-pink-500"
+                        >
+                          {t.proStudio?.clearSelection || '清除选择'}
+                        </button>
+                      )}
+                    </div>
+                    <AssetGrid 
+                      items={allModels} 
+                      selectedId={selectedModel} 
+                      onSelect={(id) => setSelectedModel(selectedModel === id ? null : id)}
+                      onUpload={() => modelUploadRef.current?.click()}
+                      onZoom={(url) => setFullscreenImage(url)}
+                      uploadIcon="plus"
+                      uploadLabel={t.common.upload}
+                    />
+                  </div>
+                )}
+                {activeCustomTab === "bg" && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-zinc-600">{t.proStudio?.selectBg || '选择背景（不选则随机）'}</span>
+                      {selectedBg && (
+                        <button 
+                          onClick={() => setSelectedBg(null)}
+                          className="text-xs text-pink-500"
+                        >
+                          {t.proStudio?.clearSelection || '清除选择'}
+                        </button>
+                      )}
+                    </div>
+                    <AssetGrid 
+                      items={allBackgrounds} 
+                      selectedId={selectedBg} 
+                      onSelect={(id) => setSelectedBg(selectedBg === id ? null : id)}
+                      onUpload={() => bgUploadRef.current?.click()}
+                      onZoom={(url) => setFullscreenImage(url)}
+                      uploadIcon="plus"
+                      uploadLabel={t.common.upload}
+                    />
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
       
