@@ -26,6 +26,7 @@ import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
 import { TASK_CREDIT_COSTS, TaskTypes } from "@/lib/taskTypes"
 import { GalleryPickerPanel } from "@/components/shared/GalleryPickerPanel"
+import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { PhotoDetailDialog, createQuickActions } from "@/components/shared/PhotoDetailDialog"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 
@@ -78,6 +79,9 @@ export default function TryOnPage() {
   // Gallery panel states
   const [showGalleryPanel, setShowGalleryPanel] = useState(false)
   const [galleryTarget, setGalleryTarget] = useState<'person' | 'clothing'>('person')
+  
+  // Asset panel states (for selecting from user's product assets)
+  const [showAssetPanel, setShowAssetPanel] = useState(false)
   
   // Clothing upload panel
   const [showClothingPanel, setShowClothingPanel] = useState(false)
@@ -540,18 +544,15 @@ export default function TryOnPage() {
                           <span className="text-sm font-medium text-zinc-600">{t.tryOn?.fromAlbum || 'From Album'}</span>
                         </button>
                         <button
-                          onClick={() => {
-                            setGalleryTarget('clothing')
-                            setShowGalleryPanel(true)
-                          }}
+                          onClick={() => setShowAssetPanel(true)}
                           className="flex-1 h-10 rounded-lg bg-zinc-50 border border-zinc-200 hover:border-pink-400 hover:bg-pink-50 flex items-center justify-center gap-2 transition-all"
                         >
                           <FolderHeart className="w-4 h-4 text-zinc-500" />
-                          <span className="text-sm font-medium text-zinc-600">{t.tryOn?.fromGallery || 'From Photos'}</span>
+                          <span className="text-sm font-medium text-zinc-600">{t.common?.fromAssets || 'From Assets'}</span>
                         </button>
                       </div>
                     </div>
-                    
+
                     {/* Style Prompt Section */}
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-zinc-100">
                       <h3 className="text-base font-semibold text-zinc-800 mb-1">
@@ -1014,17 +1015,16 @@ export default function TryOnPage() {
                     <span className="text-sm text-zinc-700">{t.tryOn?.fromAlbum || '相册'}</span>
                   </button>
                   
-                  {/* Gallery */}
+                  {/* Assets */}
                   <button
                     onClick={() => {
                       setShowClothingPanel(false)
-                      setGalleryTarget('clothing')
-                      setShowGalleryPanel(true)
+                      setShowAssetPanel(true)
                     }}
                     className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-pink-400 flex items-center justify-center gap-2 transition-colors"
                   >
                     <FolderHeart className="w-4 h-4 text-zinc-500" />
-                    <span className="text-sm text-zinc-700">{t.tryOn?.fromGallery || '成片'}</span>
+                    <span className="text-sm text-zinc-700">{t.common?.fromAssets || '素材库'}</span>
                   </button>
                 </div>
                 
@@ -1046,7 +1046,21 @@ export default function TryOnPage() {
         title={galleryTarget === 'person' ? (t.tryOn?.personImage || 'Select Person Photo') : (t.tryOn?.clothingImages || 'Select Clothing')}
         themeColor="purple"
       />
-      
+
+      {/* Asset Picker Panel - For selecting from user's product assets */}
+      <AssetPickerPanel
+        open={showAssetPanel}
+        onClose={() => setShowAssetPanel(false)}
+        onSelect={(imageUrl) => {
+          if (clothingImages.length < MAX_CLOTHING_IMAGES) {
+            setClothingImages(prev => [...prev, imageUrl])
+          }
+          setShowAssetPanel(false)
+        }}
+        title={t.common?.fromAssets || 'Select from Assets'}
+        themeColor="purple"
+      />
+
     </div>
   )
 }
