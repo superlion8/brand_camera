@@ -155,13 +155,14 @@ export function AssetPickerPanel({
           
           {/* Panel */}
           <motion.div
+            key={`asset-picker-${isDesktop ? 'desktop' : 'mobile'}`}
             initial={isDesktop ? { opacity: 0, scale: 0.95 } : { y: "100%" }}
             animate={isDesktop ? { opacity: 1, scale: 1 } : { y: 0 }}
             exit={isDesktop ? { opacity: 0, scale: 0.95 } : { y: "100%" }}
             transition={{ type: "tween", duration: 0.2, ease: "easeOut" }}
             className={isDesktop 
               ? "fixed inset-0 m-auto w-[700px] h-fit max-h-[80vh] bg-white dark:bg-zinc-900 rounded-2xl z-50 flex flex-col overflow-hidden shadow-2xl"
-              : "fixed bottom-0 left-0 right-0 h-[80%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
+              : "fixed bottom-0 left-0 right-0 h-[80vh] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
             }
           >
             {/* Header */}

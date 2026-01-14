@@ -395,7 +395,7 @@ function ProStudioPageContent() {
           setPermissionChecked(true)
           return
         }
-
+        
         if (navigator.permissions && navigator.permissions.query) {
           const result = await navigator.permissions.query({ name: 'camera' as PermissionName })
           if (result.state === 'granted') {
@@ -433,7 +433,7 @@ function ProStudioPageContent() {
     
     // Wait for screen loading to determine if desktop
     if (!screenLoading) {
-      checkCameraPermission()
+    checkCameraPermission()
     }
   }, [isDesktop, screenLoading])
 
@@ -552,9 +552,9 @@ function ProStudioPageContent() {
 
     // 预扣配额（使用统一 hook）
     const reserveResult = await reserveQuota({
-          taskId,
-          imageCount: PRO_STUDIO_NUM_IMAGES,
-          taskType: 'pro_studio',
+        taskId,
+        imageCount: PRO_STUDIO_NUM_IMAGES,
+        taskType: 'pro_studio',
     })
     
     if (!reserveResult.success) {
@@ -903,8 +903,8 @@ function ProStudioPageContent() {
               }}
               creditCost={4}
               onGenerate={() => {
-                handleShootIt()
-              }}
+                      handleShootIt()
+                    }}
               t={t}
             />
           </motion.div>
@@ -1019,7 +1019,7 @@ function ProStudioPageContent() {
                           </div>
                         </div>
                       </div>
-                    </div>
+                            </div>
                   </div>
                 </div>
               ) : mode === "camera" && hasCamera && permissionChecked && !isDesktop ? (
@@ -1240,7 +1240,7 @@ function ProStudioPageContent() {
               onSelect={(imageUrl) => {
                 setCapturedImage(imageUrl)
                                   setProductFromPhone(false)
-                                  setMode("review")
+                                setMode("review")
               }}
               onUploadClick={() => fileInputRef.current?.click()}
               themeColor="amber"
