@@ -21,6 +21,7 @@ import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { ModelPickerPanel } from "@/components/shared/ModelPickerPanel"
 import { ScenePickerPanel } from "@/components/shared/ScenePickerPanel"
 import { AssetGrid } from "@/components/shared/AssetGrid"
+import { CustomPickerPanel } from "@/components/shared/CustomPickerPanel"
 import { PhotoDetailDialog, createQuickActions } from "@/components/shared/PhotoDetailDialog"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { useImageDownload } from "@/hooks/useImageDownload"
@@ -1705,107 +1706,38 @@ function CameraPageContent() {
           </ResultsView>
         )}
       </AnimatePresence>
-
-      {/* Custom Panel - Mobile only */}
-      <AnimatePresence>
-        {showCustomPanel && !isDesktop && (
-          <>
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 z-40"
-              onClick={() => setShowCustomPanel(false)}
-            />
-            <motion.div 
-              initial={{ y: "100%" }} 
-              animate={{ y: 0 }} 
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed bottom-0 left-0 right-0 h-[80%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
-            >
-              <div className="h-14 border-b flex items-center justify-between px-4 shrink-0">
-                <span className="font-semibold text-lg">{t.proStudio?.customConfig || '自定义配置'}</span>
-                <button 
-                  onClick={() => setShowCustomPanel(false)} 
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors"
-                >
-                  {t.proStudio?.nextStep || '下一步'}
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="p-2 flex gap-2 border-b overflow-x-auto shrink-0">
-                {[
-                  { id: "model", label: t.proStudio?.proModel || "模特" },
-                  { id: "bg", label: t.proStudio?.studioBg || "背景" }
-                ].map(tab => (
-                  <button 
-                    key={tab.id}
-                    onClick={() => setActiveCustomTab(tab.id)}
-                    className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${
-                      activeCustomTab === tab.id 
-                        ? "bg-blue-600 text-white" 
-                        : "bg-zinc-100 text-zinc-600"
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-              <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4">
-                {activeCustomTab === "model" && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-zinc-600">{t.proStudio?.selectModel || '选择模特（不选则随机）'}</span>
-                      {selectedModel && (
-                        <button 
-                          onClick={() => setSelectedModel(null)}
-                          className="text-xs text-blue-600"
-                        >
-                          {t.proStudio?.clearSelection || '清除选择'}
-                        </button>
-                      )}
-                    </div>
-                    <AssetGrid 
-                      items={allModels} 
-                      selectedId={selectedModel} 
-                      onSelect={(id) => setSelectedModel(selectedModel === id ? null : id)}
-                      onUpload={() => modelUploadRef.current?.click()}
-                      onZoom={(url) => setFullscreenImage(url)}
-                      uploadIcon="plus"
-                      uploadLabel={t.common.upload}
-                    />
-                  </div>
-                )}
-                {activeCustomTab === "bg" && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-zinc-600">{t.proStudio?.selectBg || '选择背景（不选则随机）'}</span>
-                      {selectedBg && (
-                        <button 
-                          onClick={() => setSelectedBg(null)}
-                          className="text-xs text-blue-600"
-                        >
-                          {t.proStudio?.clearSelection || '清除选择'}
-                        </button>
-                      )}
-                    </div>
-                    <AssetGrid 
-                      items={allBackgrounds} 
-                      selectedId={selectedBg} 
-                      onSelect={(id) => setSelectedBg(selectedBg === id ? null : id)}
-                      onUpload={() => bgUploadRef.current?.click()}
-                      onZoom={(url) => setFullscreenImage(url)}
-                      uploadIcon="plus"
-                      uploadLabel={t.common.upload}
-                    />
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      
+      {/* Custom Panel - Mobile only, using shared component */}
+      {!isDesktop && (
+        <CustomPickerPanel
+          open={showCustomPanel}
+          onClose={() => setShowCustomPanel(false)}
+          themeColor="blue"
+          tabs={[
+            { id: "model", label: t.proStudio?.proModel || "模特" },
+            { id: "bg", label: t.proStudio?.studioBg || "背景" }
+          ]}
+          activeTab={activeCustomTab}
+          onTabChange={(id) => setActiveCustomTab(id)}
+          modelItems={allModels}
+          selectedModelId={selectedModel}
+          onSelectModel={setSelectedModel}
+          onModelUpload={() => modelUploadRef.current?.click()}
+          bgItems={allBackgrounds}
+          selectedBgId={selectedBg}
+          onSelectBg={setSelectedBg}
+          onBgUpload={() => bgUploadRef.current?.click()}
+          onZoom={(url) => setFullscreenImage(url)}
+          t={{
+            customConfig: t.proStudio?.customConfig,
+            nextStep: t.proStudio?.nextStep,
+            selectModel: t.proStudio?.selectModel,
+            selectBg: t.proStudio?.selectBg,
+            clearSelection: t.proStudio?.clearSelection,
+            upload: t.common.upload,
+          }}
+        />
+      )}
       
       {/* Fullscreen Image Viewer - Using shared component */}
       <FullscreenImageViewer

@@ -18,6 +18,7 @@ import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { ModelPickerPanel } from "@/components/shared/ModelPickerPanel"
 import { ScenePickerPanel } from "@/components/shared/ScenePickerPanel"
 import { AssetGrid } from "@/components/shared/AssetGrid"
+import { CustomPickerPanel } from "@/components/shared/CustomPickerPanel"
 import { PhotoDetailDialog, createQuickActions } from "@/components/shared/PhotoDetailDialog"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { useImageDownload } from "@/hooks/useImageDownload"
@@ -1134,105 +1135,56 @@ function ProStudioPageContent() {
               )}
             </div>
 
-            {/* Custom Panel */}
-            <AnimatePresence>
-              {showCustomPanel && (
-                <>
-                  <motion.div 
-                    initial={{ opacity: 0 }} 
-                    animate={{ opacity: 1 }} 
-                    exit={{ opacity: 0 }}
-                    className="absolute inset-0 bg-black/60 z-40 backdrop-blur-sm"
-                    onClick={() => setShowCustomPanel(false)}
-                  />
-                  <motion.div 
-                    initial={{ y: "100%" }} 
-                    animate={{ y: 0 }} 
-                    exit={{ y: "100%" }}
-                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className="absolute bottom-0 left-0 right-0 h-[80%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
-                  >
-                    <div className="h-14 border-b flex items-center justify-between px-4 shrink-0">
-                      <span className="font-semibold text-lg">{t.proStudio?.customConfig || '自定义配置'}</span>
+            {/* Custom Panel - Using shared component */}
+            <CustomPickerPanel
+              open={showCustomPanel}
+              onClose={() => setShowCustomPanel(false)}
+              themeColor="amber"
+              tabs={[
+                { id: "model", label: t.proStudio?.proModel || "专业模特" },
+                { id: "bg", label: t.proStudio?.studioBg || "棚拍背景" }
+              ]}
+              activeTab={activeCustomTab}
+              onTabChange={(id) => setActiveCustomTab(id as any)}
+              modelItems={[...customModels, ...userModels, ...studioModels]}
+              selectedModelId={selectedModelId}
+              onSelectModel={setSelectedModelId}
+              onModelUpload={() => modelUploadRef.current?.click()}
+              selectedBgId={selectedBgId}
+              onSelectBg={setSelectedBgId}
+              renderBgContent={() => (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-zinc-600">{t.proStudio?.selectBg || '选择背景（不选则随机）'}</span>
+                    {selectedBgId && (
                       <button 
-                        onClick={() => setShowCustomPanel(false)} 
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors"
+                        onClick={() => setSelectedBgId(null)}
+                        className="text-xs text-amber-500"
                       >
-                        {t.proStudio?.nextStep || '下一步'}
-                        <ArrowRight className="w-4 h-4" />
+                        {t.proStudio?.clearSelection || '清除选择'}
                       </button>
-                    </div>
-                    <div className="p-2 flex gap-2 border-b overflow-x-auto shrink-0">
-                      {[
-                        { id: "model", label: t.proStudio?.proModel || "专业模特" },
-                        { id: "bg", label: t.proStudio?.studioBg || "棚拍背景" }
-                      ].map(tab => (
-                        <button 
-                          key={tab.id}
-                          onClick={() => setActiveCustomTab(tab.id as any)}
-                          className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${
-                            activeCustomTab === tab.id 
-                              ? "bg-black text-white" 
-                              : "bg-zinc-100 text-zinc-600"
-                          }`}
-                        >
-                          {tab.label}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4">
-                      {activeCustomTab === "model" && (
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-zinc-600">{t.proStudio?.selectModel || '选择模特（不选则随机）'}</span>
-                            {selectedModelId && (
-                              <button 
-                                onClick={() => setSelectedModelId(null)}
-                                className="text-xs text-blue-600"
-                              >
-                                {t.proStudio?.clearSelection || '清除选择'}
-                              </button>
-                            )}
-                          </div>
-                          <AssetGrid 
-                            items={[...customModels, ...userModels, ...studioModels]} 
-                            selectedId={selectedModelId} 
-                            onSelect={(id) => setSelectedModelId(selectedModelId === id ? null : id)}
-                            onUpload={() => modelUploadRef.current?.click()}
-                            onZoom={(url) => setFullscreenImage(url)}
-                            uploadIcon="plus"
-                            uploadLabel={t.common.upload}
-                          />
-                        </div>
-                      )}
-                      {activeCustomTab === "bg" && (
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-zinc-600">{t.proStudio?.selectBg || '选择背景（不选则随机）'}</span>
-                            {selectedBgId && (
-                              <button 
-                                onClick={() => setSelectedBgId(null)}
-                                className="text-xs text-blue-600"
-                              >
-                                {t.proStudio?.clearSelection || '清除选择'}
-                              </button>
-                            )}
-                          </div>
-                          <BackgroundGrid 
-                            selectedId={selectedBgId} 
-                            onSelect={(id) => setSelectedBgId(selectedBgId === id ? null : id)}
-                            onUpload={() => bgUploadRef.current?.click()}
-                            onZoom={(url) => setFullscreenImage(url)}
-                            uploadLabel={t.common.upload}
-                            backgrounds={studioBackgrounds}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                </>
+                    )}
+                  </div>
+                  <BackgroundGrid 
+                    selectedId={selectedBgId} 
+                    onSelect={(id) => setSelectedBgId(selectedBgId === id ? null : id)}
+                    onUpload={() => bgUploadRef.current?.click()}
+                    onZoom={(url) => setFullscreenImage(url)}
+                    uploadLabel={t.common.upload}
+                    backgrounds={studioBackgrounds}
+                  />
+                </div>
               )}
-            </AnimatePresence>
+              onZoom={(url) => setFullscreenImage(url)}
+              t={{
+                customConfig: t.proStudio?.customConfig,
+                nextStep: t.proStudio?.nextStep,
+                selectModel: t.proStudio?.selectModel,
+                selectBg: t.proStudio?.selectBg,
+                clearSelection: t.proStudio?.clearSelection,
+                upload: t.common.upload,
+              }}
+            />
 
             {/* 商品选择面板 */}
             <AssetPickerPanel
