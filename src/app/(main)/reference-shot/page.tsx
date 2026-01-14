@@ -24,7 +24,11 @@ import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
 import { ModelPickerPanel } from "@/components/shared/ModelPickerPanel"
 import { GalleryPickerPanel } from "@/components/shared/GalleryPickerPanel"
 import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
+import { ProcessingView } from "@/components/shared/ProcessingView"
+import { ResultsView } from "@/components/shared/ResultsView"
 import { TASK_CREDIT_COSTS, TaskTypes } from "@/lib/taskTypes"
+import { useFavorite } from "@/hooks/useFavorite"
+import { navigateToEdit } from "@/lib/navigation"
 
 const CREDIT_COST = TASK_CREDIT_COSTS[TaskTypes.REFERENCE_SHOT]
 
@@ -343,7 +347,13 @@ export default function ReferenceShotPage() {
   const { downloadImage } = useImageDownload({ filenamePrefix: 'reference-shot' })
   const handleDownload = (imageUrl: string, index: number) =>
     downloadImage(imageUrl, { filename: `reference-shot-${index + 1}.png` })
-  
+
+  // Current generation ID for favorites
+  const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
+
+  // Favorite - using shared hook
+  const { toggleFavorite, isFavorited } = useFavorite(currentGenerationId)
+
   // Reset and start over
   const handleReset = () => {
     setStep('upload')
@@ -602,208 +612,47 @@ export default function ReferenceShotPage() {
         )}
         
         {step === 'generating' && (
-          <motion.div
-            key="generating"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className={`flex-1 flex flex-col ${isDesktop ? 'bg-zinc-50' : ''}`}
-          >
-            {isDesktop ? (
-              /* PC Web: Skeleton grid layout */
-              <>
-                <div className="bg-white border-b border-zinc-200">
-                  <div className="max-w-4xl mx-auto px-8 py-4">
-                    <div className="flex items-center justify-between">
-                      <button onClick={handleReset} className="flex items-center gap-2 text-zinc-600 hover:text-zinc-900 font-medium">
-                        <ArrowLeft className="w-5 h-5" />
-                        <span>{t.referenceShot?.newGeneration || 'New Generation'}</span>
-                      </button>
-                      <span className="font-bold text-zinc-900">{t.referenceShot?.generating || 'Creating reference shot'}</span>
-                      <div className="w-20" />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto py-8">
-                  <div className="max-w-4xl mx-auto px-8">
-                    <div className="grid grid-cols-2 gap-4">
-                      {[0, 1].map((i) => (
-                        <div key={i} className="aspect-[3/4] rounded-xl bg-zinc-200 overflow-hidden relative">
-                          <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-100 animate-pulse">
-                            <Loader2 className="w-6 h-6 text-blue-500 animate-spin mb-2" />
-                            <span className="text-xs text-zinc-400">{loadingMessage || t.common?.generating || 'Generating...'}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    <div className="flex justify-center gap-3 mt-8">
-                      <button onClick={handleReset} className="px-6 h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center gap-2 transition-colors">
-                        <Camera className="w-4 h-4" />
-                        {t.referenceShot?.newGeneration || 'New Generation'}
-                      </button>
-                      <button onClick={() => router.push('/')} className="px-6 h-11 rounded-xl bg-white hover:bg-zinc-100 text-zinc-700 font-medium flex items-center gap-2 transition-colors border border-zinc-200">
-                        <Home className="w-4 h-4" />
-                        {t.camera?.returnHome || 'Return Home'}
-                      </button>
-                      <button onClick={() => router.push('/gallery')} className="px-6 h-11 rounded-xl bg-white hover:bg-zinc-100 text-zinc-700 font-medium flex items-center gap-2 transition-colors border border-zinc-200">
-                        <FolderHeart className="w-4 h-4" />
-                        {t.lifestyle?.goToPhotos || 'Go to Photos'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </>
-            ) : (
-              /* Mobile: Original spinner layout */
-              <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 px-8">
-                <div className="relative mb-2">
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-tr from-blue-500/30 to-purple-500/30 blur-2xl rounded-full"
-                    animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                  />
-                  <motion.div
-                    className="w-24 h-24 rounded-full border-4 border-transparent border-t-blue-500 border-r-purple-500"
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                  />
-                  <motion.div
-                    className="absolute inset-2 rounded-full border-4 border-transparent border-b-pink-500 border-l-blue-400"
-                    animate={{ rotate: -360 }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Wand2 className="w-8 h-8 text-blue-600" />
-                  </div>
-                </div>
-                
-                <div className="text-center">
-                  <h3 className="text-xl font-bold text-zinc-800 mb-2">{t.referenceShot?.generating || 'Creating reference shot'}</h3>
-                  <p className="text-sm text-zinc-500">{loadingMessage}</p>
-                </div>
-                
-                <div className="flex gap-2 mt-4">
-                  {[1, 2].map((i) => (
-                    <motion.div
-                      key={i}
-                      className="w-2 h-2 rounded-full bg-blue-500"
-                      animate={{ scale: [1, 1.5, 1], opacity: [0.3, 1, 0.3] }}
-                      transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
-                    />
-                  ))}
-                </div>
-                
-                <div className="flex flex-col gap-3 w-full max-w-xs mt-8">
-                  <p className="text-xs text-zinc-400 text-center mb-2">{t.camera?.continueInBackground || 'Generation continues in background'}</p>
-                  <button onClick={handleReset} className="w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors bg-zinc-100 text-zinc-700 hover:bg-zinc-200">
-                    <Camera className="w-5 h-5" />
-                    {t.referenceShot?.newGeneration || 'New Generation'}
-                  </button>
-                  <button onClick={() => router.push('/')} className="w-full h-12 rounded-full font-medium flex items-center justify-center gap-2 transition-colors bg-zinc-100 text-zinc-700 hover:bg-zinc-200">
-                    <Home className="w-5 h-5" />
-                    {t.camera?.returnHome || 'Return Home'}
-                  </button>
-                </div>
-              </div>
-            )}
-          </motion.div>
+          <ProcessingView
+            numImages={2}
+            generatedImages={generatedImages.map(img => img.url)}
+            themeColor="blue"
+            title={t.referenceShot?.generating || 'Creating reference shot'}
+            mobileStatusLines={[loadingMessage]}
+            aspectRatio="3/4"
+            gridCols={2}
+            onShootMore={handleReset}
+            onReturnHome={() => router.push('/')}
+            onGoToGallery={() => router.push('/gallery')}
+            onDownload={handleDownload}
+            shootMoreText={t.referenceShot?.newGeneration || 'Generate Again'}
+            returnHomeText={t.camera?.returnHome || 'Return Home'}
+          />
         )}
         
         {step === 'result' && (
-          <div className={`space-y-6 ${isDesktop ? 'max-w-4xl mx-auto' : ''}`}>
-            <div className="text-center">
-              <h2 className="text-lg font-bold text-zinc-800">
-                {t.referenceShot?.resultTitle || '生成完成'}
-              </h2>
-              <p className="text-sm text-zinc-500 mt-1">
-                {t.referenceShot?.resultDesc || '点击图片可放大查看'}
-              </p>
-            </div>
-            
-            {/* Generated Images */}
-            <div className={`${isDesktop ? 'grid grid-cols-2 gap-6' : 'flex flex-col gap-4'}`}>
-              {generatedImages.map((img, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden bg-zinc-100 shadow-lg group"
-                >
-                  <Image
-                    src={img.url}
-                    alt={`Generated ${index + 1}`}
-                    fill
-                    className="object-cover cursor-pointer z-10"
-                    onClick={() => setZoomImage(img.url)}
-                  />
-                  
-                  {/* Actions */}
-                  <div className={`absolute top-3 right-3 flex gap-2 z-20 ${
-                    isDesktop ? 'opacity-0 group-hover:opacity-100 transition-opacity' : ''
-                  }`}>
-                    <button
-                      className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
-                    >
-                      <Heart className="w-5 h-5 text-zinc-700" />
-                    </button>
-                    <button
-                      onClick={() => handleDownload(img.url, index)}
-                      className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
-                    >
-                      {isIOS ? (
-                        <Share2 className="w-5 h-5 text-zinc-700" />
-                      ) : (
-                        <Download className="w-5 h-5 text-zinc-700" />
-                      )}
-                    </button>
-                  </div>
-                  
-                  {/* Number badge */}
-                  <div className="absolute top-3 left-3 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center text-sm font-bold z-20">
-                    #{index + 1}
-                  </div>
-                  
-                  {/* Mode badge - only visible for debug users */}
-                  {debugMode && (
-                    <div className={`absolute bottom-3 left-3 px-2 py-1 rounded-full text-xs font-semibold z-20 ${
-                      img.mode === 'simple' 
-                        ? 'bg-green-500/80 text-white' 
-                        : 'bg-purple-500/80 text-white'
-                    }`}>
-                      {img.mode === 'simple' ? 'Simple' : 'Extended'}
-                    </div>
-                  )}
-                </motion.div>
-              ))}
-            </div>
-            
-            {/* Actions */}
-            <div className={`flex gap-3 ${isDesktop ? 'justify-center' : ''}`}>
-              <button
-                onClick={handleReset}
-                className={`h-12 rounded-full font-semibold transition-colors ${
-                  isDesktop 
-                    ? 'px-8 bg-white text-zinc-700 hover:bg-zinc-100 border border-zinc-200'
-                    : 'flex-1 bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
-                }`}
-              >
-                {t.referenceShot?.newGeneration || '重新生成'}
-              </button>
-              <button
-                onClick={() => router.push('/gallery')}
-                className={`h-12 rounded-full font-semibold transition-colors ${
-                  isDesktop
-                    ? 'px-8 bg-blue-600 text-white hover:bg-blue-700'
-                    : 'flex-1 bg-black text-white hover:bg-zinc-800'
-                }`}
-              >
-                {t.referenceShot?.viewGallery || '查看成片'}
-              </button>
-            </div>
-          </div>
+          <ResultsView
+            title={t.referenceShot?.resultTitle || 'Generation Complete'}
+            onBack={handleReset}
+            images={generatedImages.map(img => ({
+              url: img.url,
+              status: 'completed' as const,
+            }))}
+            getBadge={(i) => ({
+              text: debugMode && generatedImages[i]?.mode === 'simple' ? 'Simple' : (debugMode && generatedImages[i]?.mode === 'extended' ? 'Extended' : `Reference`),
+              className: debugMode && generatedImages[i]?.mode === 'simple' ? 'bg-green-500' : (debugMode && generatedImages[i]?.mode === 'extended' ? 'bg-purple-500' : 'bg-blue-500'),
+            })}
+            themeColor="blue"
+            aspectRatio="3/4"
+            gridCols={{ mobile: 1, desktop: 2 }}
+            onFavorite={(i) => toggleFavorite(i)}
+            isFavorited={(i) => isFavorited(i)}
+            onDownload={(url, i) => handleDownload(url, i)}
+            onShootNext={handleReset}
+            onGoEdit={(imageUrl) => navigateToEdit(router, imageUrl)}
+            onRegenerate={handleReset}
+            onImageClick={(i) => setZoomImage(generatedImages[i]?.url || null)}
+            showBottomNav={!isDesktop}
+          />
         )}
       </div>
       
