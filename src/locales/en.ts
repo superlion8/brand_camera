@@ -468,11 +468,14 @@ export const en: Translations = {
     noProducts: "No product assets",
     clickUpload: "Click to upload",
     noAssets: "No assets",
+    // Market
+    modelMarket: "Model Market",
+    sceneMarket: "Scene Market",
     // Sub-categories
-    normalModels: "Regular Models",
-    studioModels: "Pro Models",
-    normalScenes: "Regular Scenes",
-    studioScenes: "Studio Scenes",
+    normalModels: "Lifestyle",
+    studioModels: "Studio",
+    normalScenes: "Lifestyle",
+    studioScenes: "Studio",
     // Product categories
     productTop: "Tops",
     productPants: "Pants",

@@ -467,11 +467,14 @@ export const ko: Translations = {
     noProducts: "상품 자산 없음",
     clickUpload: "클릭하여 업로드",
     noAssets: "자산 없음",
+    // 마켓
+    modelMarket: "모델 마켓",
+    sceneMarket: "장면 마켓",
     // 하위 카테고리
-    normalModels: "일반 모델",
-    studioModels: "프로 모델",
-    normalScenes: "일반 장면",
-    studioScenes: "스튜디오 장면",
+    normalModels: "라이프스타일",
+    studioModels: "스튜디오",
+    normalScenes: "라이프스타일",
+    studioScenes: "스튜디오",
     // 상품 카테고리
     productTop: "상의",
     productPants: "바지",

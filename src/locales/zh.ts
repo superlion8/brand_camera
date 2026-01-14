@@ -466,10 +466,13 @@ export const zh = {
     noProducts: "暂无商品资产",
     clickUpload: "点击上传",
     noAssets: "暂无资产",
+    // 市场
+    modelMarket: "模特市场",
+    sceneMarket: "场景市场",
     // 二级分类
-    normalModels: "普通模特",
-    studioModels: "高级模特",
-    normalScenes: "普通场景",
+    normalModels: "生活风",
+    studioModels: "棚拍风",
+    normalScenes: "生活场景",
     studioScenes: "棚拍场景",
     // 商品分类
     productTop: "上衣",
