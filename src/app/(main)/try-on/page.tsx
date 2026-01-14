@@ -459,21 +459,21 @@ export default function TryOnPage() {
                       {/* Upload buttons */}
                       <div className="flex gap-2 mt-4">
                         <button
-                          onClick={() => personFileInputRef.current?.click()}
-                          className="flex-1 h-10 rounded-lg bg-zinc-50 border border-zinc-200 hover:border-pink-400 hover:bg-pink-50 flex items-center justify-center gap-2 transition-all"
-                        >
-                          <Upload className="w-4 h-4 text-zinc-500" />
-                          <span className="text-sm font-medium text-zinc-600">{t.common?.fromGallery || 'Photos'}</span>
-                        </button>
-                        <button
                           onClick={() => {
                             setGalleryTarget('person')
                             setShowGalleryPanel(true)
                           }}
                           className="flex-1 h-10 rounded-lg bg-zinc-50 border border-zinc-200 hover:border-pink-400 hover:bg-pink-50 flex items-center justify-center gap-2 transition-all"
                         >
+                          <Upload className="w-4 h-4 text-zinc-500" />
+                          <span className="text-sm font-medium text-zinc-600">{t.studio?.fromGallery || 'Photos'}</span>
+                        </button>
+                        <button
+                          onClick={() => personFileInputRef.current?.click()}
+                          className="flex-1 h-10 rounded-lg bg-zinc-50 border border-zinc-200 hover:border-pink-400 hover:bg-pink-50 flex items-center justify-center gap-2 transition-all"
+                        >
                           <FolderHeart className="w-4 h-4 text-zinc-500" />
-                          <span className="text-sm font-medium text-zinc-600">{t.common?.fromGallery || 'From Gallery'}</span>
+                          <span className="text-sm font-medium text-zinc-600">{t.camera?.album || 'Album'}</span>
                         </button>
                       </div>
                     </div>
@@ -543,11 +543,14 @@ export default function TryOnPage() {
                       {/* Upload buttons for clothing */}
                       <div className="flex gap-2 mt-4">
                         <button
-                          onClick={() => clothingFileInputRef.current?.click()}
+                          onClick={() => {
+                            setGalleryTarget('clothing')
+                            setShowGalleryPanel(true)
+                          }}
                           className="flex-1 h-10 rounded-lg bg-zinc-50 border border-zinc-200 hover:border-pink-400 hover:bg-pink-50 flex items-center justify-center gap-2 transition-all"
                         >
                           <Upload className="w-4 h-4 text-zinc-500" />
-                          <span className="text-sm font-medium text-zinc-600">{t.common?.fromGallery || 'Photos'}</span>
+                          <span className="text-sm font-medium text-zinc-600">{t.studio?.fromGallery || 'Photos'}</span>
                         </button>
                         <button
                           onClick={() => setShowAssetPanel(true)}
@@ -614,21 +617,21 @@ export default function TryOnPage() {
                   
                       <div className="grid grid-cols-2 gap-2">
                     <button
-                      onClick={() => personFileInputRef.current?.click()}
-                          className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-pink-400 flex items-center justify-center gap-2 transition-colors"
-                    >
-                      <Upload className="w-4 h-4 text-zinc-500" />
-                          <span className="text-sm text-zinc-700">{t.common?.fromGallery || 'Photos'}</span>
-                    </button>
-                    <button
                       onClick={() => {
                         setGalleryTarget('person')
                         setShowGalleryPanel(true)
                       }}
                           className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-pink-400 flex items-center justify-center gap-2 transition-colors"
                     >
+                      <Upload className="w-4 h-4 text-zinc-500" />
+                          <span className="text-sm text-zinc-700">{t.studio?.fromGallery || 'Photos'}</span>
+                    </button>
+                    <button
+                      onClick={() => personFileInputRef.current?.click()}
+                          className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-pink-400 flex items-center justify-center gap-2 transition-colors"
+                    >
                       <FolderHeart className="w-4 h-4 text-zinc-500" />
-                          <span className="text-sm text-zinc-700">{t.nav?.gallery || 'Gallery'}</span>
+                          <span className="text-sm text-zinc-700">{t.camera?.album || 'Album'}</span>
                     </button>
                   </div>
                 </div>
@@ -787,7 +790,7 @@ export default function TryOnPage() {
                       className="px-6 py-3 bg-pink-500 text-white rounded-xl font-medium hover:bg-pink-600 transition-colors flex items-center gap-2 mx-auto"
                     >
                       <Upload className="w-5 h-5" />
-                      {t.common?.fromGallery || 'Photos'}
+                      {t.camera?.album || 'From Album'}
                     </button>
                   </div>
                 </div>
@@ -814,7 +817,7 @@ export default function TryOnPage() {
                       }}
                       className="mt-4 px-4 py-2 bg-pink-500 text-white rounded-lg text-sm"
                     >
-                      {t.common?.fromGallery || 'Photos'}
+                      {t.camera?.album || 'From Album'}
                     </button>
                   </div>
                 </div>
@@ -1019,13 +1022,17 @@ export default function TryOnPage() {
                 </button>
                 
                 <div className="grid grid-cols-2 gap-3">
-                  {/* Photos - multiple */}
+                  {/* Photos - from gallery */}
                   <button
-                    onClick={() => clothingFileInputRef.current?.click()}
+                    onClick={() => {
+                      setShowClothingPanel(false)
+                      setGalleryTarget('clothing')
+                      setShowGalleryPanel(true)
+                    }}
                     className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-pink-400 flex items-center justify-center gap-2 transition-colors"
                   >
                     <Upload className="w-4 h-4 text-zinc-500" />
-                    <span className="text-sm text-zinc-700">{t.common?.fromGallery || 'Photos'}</span>
+                    <span className="text-sm text-zinc-700">{t.studio?.fromGallery || 'Photos'}</span>
                   </button>
                   
                   {/* Assets */}
