@@ -2,7 +2,7 @@
 
 import { X, ZoomIn, ZoomOut, Download } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useIsDesktop } from "@/hooks/useIsMobile"
 
 interface FullscreenImageViewerProps {
@@ -32,6 +32,20 @@ export function FullscreenImageViewer({
       setScale(2)
     }
   }
+
+  // ESC 键关闭
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      onClose()
+    }
+  }, [onClose])
+
+  useEffect(() => {
+    if (open) {
+      document.addEventListener('keydown', handleKeyDown)
+      return () => document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [open, handleKeyDown])
 
   if (!open) return null
 
@@ -90,9 +104,13 @@ export function FullscreenImageViewer({
             </div>
           </div>
 
-          {/* Image */}
+          {/* Image - 点击黑色区域关闭 */}
           <div 
             className="flex-1 overflow-hidden flex items-center justify-center p-4"
+            onClick={(e) => {
+              // 点击图片外的黑色区域时关闭
+              if (e.target === e.currentTarget) onClose()
+            }}
             onDoubleClick={handleDoubleClick}
           >
             <img
