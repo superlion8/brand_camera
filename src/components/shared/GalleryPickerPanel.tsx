@@ -233,7 +233,7 @@ export function GalleryPickerPanel({
             </div>
             
             {/* Content */}
-            <div className="flex-1 overflow-y-auto bg-zinc-50 p-4">
+            <div className="flex-1 overflow-y-auto bg-zinc-50 p-4 pb-20">
               {/* Loading skeleton */}
               {loading ? (
                 <div className={`grid gap-3 ${isDesktop ? 'grid-cols-5' : 'grid-cols-3'}`}>

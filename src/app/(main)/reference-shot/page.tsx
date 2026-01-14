@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
-  ArrowLeft, Check, Plus, Upload, Wand2, Loader2, X, Camera, ZoomIn, Image as ImageIcon, Download, Share2, Home, FolderHeart, Heart
+  ArrowLeft, Check, Plus, Upload, Wand2, Loader2, X, Camera, ZoomIn, Image as ImageIcon, Download, Share2, Home, FolderHeart, Heart, Smartphone
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
@@ -76,6 +76,7 @@ export default function ReferenceShotPage() {
   const [showRefAssetPicker, setShowRefAssetPicker] = useState(false)
   const [showProductGalleryPicker, setShowProductGalleryPicker] = useState(false)
   const [showProductAssetPicker, setShowProductAssetPicker] = useState(false)
+  const [showProductSourcePanel, setShowProductSourcePanel] = useState(false) // 商品图来源选择面板
   const [isLoading, setIsLoading] = useState(false)
   const [loadingMessage, setLoadingMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -593,7 +594,7 @@ export default function ReferenceShotPage() {
                   {/* Add More Button */}
                   {productImages.length < MAX_PRODUCT_IMAGES && (
                     <div
-                    onClick={() => productImageInputRef.current?.click()}
+                      onClick={() => setShowProductSourcePanel(true)}
                       onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-blue-400', 'bg-blue-50') }}
                       onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50') }}
                       onDrop={async (e) => {
@@ -613,25 +614,30 @@ export default function ReferenceShotPage() {
                   )}
                 </div>
                 
-                {/* Quick Actions - Only show when no images */}
-                {productImages.length === 0 && (
-                  <div className="grid grid-cols-2 gap-1.5 mt-2">
-                    <button
-                      onClick={() => setShowProductGalleryPicker(true)}
-                      className="h-8 rounded-lg border border-zinc-200 bg-white hover:border-blue-300 hover:bg-blue-50 flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      <ImageIcon className="w-3.5 h-3.5 text-zinc-500" />
-                      <span className="text-[10px] text-zinc-600">{t.common?.fromGallery || 'Photos'}</span>
+                {/* Quick Actions - Always show for easy access */}
+                <div className="grid grid-cols-3 gap-1.5 mt-2">
+                  <button
+                    onClick={() => productImageInputRef.current?.click()}
+                    className="h-8 rounded-lg border border-zinc-200 bg-white hover:border-blue-300 hover:bg-blue-50 flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-zinc-500" />
+                    <span className="text-[10px] text-zinc-600">{t.camera?.album || '相册'}</span>
                   </button>
-                    <button
-                      onClick={() => setShowProductAssetPicker(true)}
-                      className="h-8 rounded-lg border border-zinc-200 bg-white hover:border-blue-300 hover:bg-blue-50 flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      <FolderHeart className="w-3.5 h-3.5 text-zinc-500" />
-                      <span className="text-[10px] text-zinc-600">{t.common?.fromAssets || 'Assets'}</span>
-                    </button>
-                  </div>
-                )}
+                  <button
+                    onClick={() => setShowProductGalleryPicker(true)}
+                    className="h-8 rounded-lg border border-zinc-200 bg-white hover:border-blue-300 hover:bg-blue-50 flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <ImageIcon className="w-3.5 h-3.5 text-zinc-500" />
+                    <span className="text-[10px] text-zinc-600">{t.common?.fromGallery || '成片'}</span>
+                  </button>
+                  <button
+                    onClick={() => setShowProductAssetPicker(true)}
+                    className="h-8 rounded-lg border border-zinc-200 bg-white hover:border-blue-300 hover:bg-blue-50 flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <FolderHeart className="w-3.5 h-3.5 text-zinc-500" />
+                    <span className="text-[10px] text-zinc-600">{t.common?.fromAssets || '资产'}</span>
+                  </button>
+                </div>
               </div>
             </div>
             
@@ -992,6 +998,61 @@ export default function ReferenceShotPage() {
         themeColor="blue"
         title={t.referenceShot?.selectProduct || 'Select Product'}
       />
+
+      {/* Product Source Panel - Mobile slide up panel */}
+      {showProductSourcePanel && (
+        <>
+          <div 
+            className="fixed inset-0 bg-black/50 z-40"
+            onClick={() => setShowProductSourcePanel(false)}
+          />
+          <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-zinc-900 rounded-t-2xl z-50 p-4 pb-8 animate-in slide-in-from-bottom duration-200">
+            <div className="flex items-center justify-between mb-4">
+              <span className="font-semibold text-zinc-900 dark:text-white">
+                {t.camera?.selectProduct || '选择商品图'}
+              </span>
+              <button
+                onClick={() => setShowProductSourcePanel(false)}
+                className="w-8 h-8 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center"
+              >
+                <X className="w-4 h-4 text-zinc-500" />
+              </button>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <button
+                onClick={() => {
+                  setShowProductSourcePanel(false)
+                  productImageInputRef.current?.click()
+                }}
+                className="flex flex-col items-center gap-2 p-4 rounded-xl border border-zinc-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+              >
+                <Smartphone className="w-6 h-6 text-blue-500" />
+                <span className="text-sm text-zinc-700">{t.camera?.album || '相册'}</span>
+              </button>
+              <button
+                onClick={() => {
+                  setShowProductSourcePanel(false)
+                  setShowProductGalleryPicker(true)
+                }}
+                className="flex flex-col items-center gap-2 p-4 rounded-xl border border-zinc-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+              >
+                <ImageIcon className="w-6 h-6 text-blue-500" />
+                <span className="text-sm text-zinc-700">{t.common?.fromGallery || '成片'}</span>
+              </button>
+              <button
+                onClick={() => {
+                  setShowProductSourcePanel(false)
+                  setShowProductAssetPicker(true)
+                }}
+                className="flex flex-col items-center gap-2 p-4 rounded-xl border border-zinc-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+              >
+                <FolderHeart className="w-6 h-6 text-blue-500" />
+                <span className="text-sm text-zinc-700">{t.common?.fromAssets || '资产库'}</span>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
       
     </div>
   )

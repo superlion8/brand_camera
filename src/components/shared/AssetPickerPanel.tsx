@@ -198,7 +198,7 @@ export function AssetPickerPanel({
         </div>
         
         {/* Content */}
-        <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4 relative">
+        <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4 pb-20 relative">
           {/* Loading overlay */}
           {isLoading && (
             <div className="absolute inset-0 bg-white/80 dark:bg-zinc-900/80 flex items-center justify-center z-10 rounded-lg">
