@@ -181,7 +181,7 @@ function StudioPageContent() {
   const [brightness, setBrightness] = useState(1)
   
   const { addGeneration, userProducts, generations, addUserAsset } = useAssetStore()
-  const { addTask, updateTaskStatus, tasks } = useGenerationTaskStore()
+  const { addTask, updateTaskStatus, updateImageSlot, tasks } = useGenerationTaskStore()
   const { debugMode } = useSettingsStore()
   const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null)
   const { toggleFavorite, isFavorited } = useFavorite(currentGenerationId)
@@ -418,61 +418,97 @@ function StudioPageContent() {
         })
       }
       
-      const requests = [
-        createDelayedRequest(0, 0),
-        createDelayedRequest(1, staggerDelay),
-      ]
-      
-      const responses = await Promise.allSettled(requests)
-      
+      // Track results
       const images: (string | null)[] = [null, null]
       const modelTypes: (('pro' | 'flash') | null)[] = [null, null]
       let usedPrompt: string = ''
-      let allSavedToDb = true // 检查是否所有成功的图片都已被后端保存
-      let firstDbId: string | null = null // 第一个成功的数据库 UUID
+      let allSavedToDb = true
+      let firstDbId: string | null = null
+      let firstImageSwitched = false
+      let completedCount = 0
+      const expectedCount = 2
       
-      for (let i = 0; i < responses.length; i++) {
-        const response = responses[i]
-        if (response.status === 'fulfilled') {
-          const httpResponse = response.value
-          try {
-            // Check HTTP status first
-            if (!httpResponse.ok) {
-              const errorData = await httpResponse.json().catch(() => ({ error: `HTTP ${httpResponse.status}` }))
-              const errorMsg = getErrorMessage(errorData.error || 'Unknown error', t)
-              console.log(`Studio ${i + 1}: ✗ HTTP ${httpResponse.status} (${errorMsg})`)
-              continue
+      // Process each request independently (don't wait for all)
+      const processRequest = async (index: number, delayMs: number) => {
+        await new Promise(resolve => setTimeout(resolve, delayMs))
+        console.log(`Starting Studio ${index + 1}...`)
+        
+        try {
+          const response = await fetch("/api/generate-studio", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: 'include',
+            body: JSON.stringify({ ...basePayload, index }),
+          })
+          
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }))
+            const errorMsg = getErrorMessage(errorData.error || 'Unknown error', t)
+            console.log(`Studio ${index + 1}: ✗ HTTP ${response.status} (${errorMsg})`)
+            updateImageSlot(taskId, index, { status: 'failed', error: errorMsg })
+            return null
+          }
+          
+          const result = await response.json()
+          if (result.success && result.image) {
+            images[result.index] = result.image
+            modelTypes[result.index] = result.modelType
+            if (result.prompt && !usedPrompt) usedPrompt = result.prompt
+            if (!result.savedToDb) allSavedToDb = false
+            if (result.dbId && !firstDbId) firstDbId = result.dbId
+            
+            console.log(`Studio ${result.index + 1}: ✓ (${result.modelType}, ${result.duration}ms)`)
+            
+            // Update image slot
+            updateImageSlot(taskId, result.index, {
+              status: 'completed',
+              imageUrl: result.image,
+              modelType: result.modelType,
+            })
+            
+            // Update UI immediately
+            setGeneratedImages(prev => {
+              const newImages = [...prev]
+              newImages[result.index] = result.image
+              return newImages
+            })
+            setGeneratedModelTypes(prev => {
+              const newTypes = [...prev]
+              newTypes[result.index] = result.modelType
+              return newTypes
+            })
+            
+            // Switch to results on first image (like buyer-show)
+            if (!firstImageSwitched && modeRef.current === 'processing') {
+              firstImageSwitched = true
+              console.log('[ProductShot] First image ready, switching to results mode')
+              setCurrentGenerationId(result.dbId || taskId)
+              setMode('results')
+              router.replace('/product-shot?mode=results')
             }
             
-            const result = await httpResponse.json()
-            if (result.success && result.image) {
-              images[result.index] = result.image
-              modelTypes[result.index] = result.modelType
-              if (result.prompt && !usedPrompt) {
-                usedPrompt = result.prompt
-              }
-              if (!result.savedToDb) {
-                allSavedToDb = false
-              }
-              // 第一张成功的图片，设置 currentGenerationId 为数据库 UUID
-              if (result.dbId && !firstDbId) {
-                firstDbId = result.dbId
-              }
-              console.log(`Studio ${result.index + 1}: ✓ (${result.modelType}, ${result.duration}ms, savedToDb: ${result.savedToDb}, dbId: ${result.dbId})`)
-            } else {
-              console.log(`Studio ${i + 1}: ✗ (${result.error || 'No image'})`)
-            }
-          } catch (e: any) {
-            console.log(`Studio ${i + 1}: ✗ (parse error: ${e.message})`)
+            return result
+          } else {
+            console.log(`Studio ${index + 1}: ✗ (${result.error || 'No image'})`)
+            updateImageSlot(taskId, index, { status: 'failed', error: result.error })
+            return null
           }
-        } else {
-          console.log(`Studio ${i + 1}: ✗ (promise rejected: ${response.reason})`)
+        } catch (e: any) {
+          console.log(`Studio ${index + 1}: ✗ (error: ${e.message})`)
+          updateImageSlot(taskId, index, { status: 'failed', error: e.message })
+          return null
         }
       }
       
+      // Start both requests (don't await together)
+      const request1 = processRequest(0, 0)
+      const request2 = processRequest(1, staggerDelay)
+      
+      // Wait for both to complete for final processing
+      await Promise.all([request1, request2])
+      
       const finalImages = images.filter((img): img is string => img !== null)
       const finalModelTypes = modelTypes.filter((t): t is 'pro' | 'flash' => t !== null)
-      const expectedCount = 2
       const failedCount = expectedCount - finalImages.length
       
       // 部分退款（使用统一 hook）
@@ -481,14 +517,7 @@ function StudioPageContent() {
       }
       
       if (finalImages.length > 0) {
-        // Update task with results
         updateTaskStatus(taskId, 'completed', finalImages)
-        
-        // 使用数据库 UUID 作为 currentGenerationId（用于收藏功能）
-        // 如果没有 dbId（后端保存失败），则使用临时 taskId
-        const generationId = firstDbId || taskId
-        setCurrentGenerationId(generationId)
-        console.log(`[Studio] Set currentGenerationId to: ${generationId} (dbId: ${firstDbId})`)
         
         await addGeneration({
           id: taskId,
@@ -498,18 +527,9 @@ function StudioPageContent() {
           prompt: usedPrompt || undefined,
           createdAt: new Date().toISOString(),
           params: { photoType: photoTypeVal, lightType: lightTypeVal, lightDirection: lightDirectionVal, lightColor: bgColorVal, aspectRatio: aspectRatioVal },
-        }, allSavedToDb) // 后端已写入数据库时，跳过前端的云端同步
+        }, allSavedToDb)
         
-        // 刷新配额显示（使用统一 hook）
         await confirmQuota()
-        
-        // Only update UI if still on processing mode
-        if (modeRef.current === 'processing') {
-          setGeneratedImages(finalImages)
-          setGeneratedModelTypes(finalModelTypes)
-          setMode('results')
-          router.replace('/product-shot?mode=results')
-        }
       } else {
         // 全部失败，全额退款（使用统一 hook）
         await refundQuota(taskId)

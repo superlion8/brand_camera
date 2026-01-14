@@ -274,14 +274,20 @@ export default function TryOnPage() {
               if (eventType === 'image') {
                 images[data.index] = data.url
                 setResultImages([...images])
-                
+
                 updateImageSlot(taskId, data.index, {
                   status: 'completed',
                   imageUrl: data.url,
                   modelType: 'pro',
                 })
-                
+
                 triggerFlyToGallery(data.url)
+                
+                // Switch to results on first image (like buyer-show)
+                if (modeRef.current === 'processing') {
+                  console.log('[TryOn] First image ready, switching to results mode')
+                  setMode('results')
+                }
               } else if (eventType === 'complete') {
                 updateTaskStatus(taskId, 'completed')
                 
