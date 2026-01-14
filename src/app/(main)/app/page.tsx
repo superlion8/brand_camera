@@ -323,8 +323,8 @@ export default function HomePage() {
       <div className="lg:hidden flex items-center justify-between px-4 py-2.5 bg-white/95 backdrop-blur-md sticky top-0 z-30 border-b border-zinc-100/50">
         {/* Left: Logo + App Name */}
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-            <Image src="/logo.png" alt="BrandCam" width={20} height={20} className="rounded" />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden">
+            <Image src="/logo.png" alt="BrandCam" width={40} height={40} className="object-contain" />
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-bold text-zinc-900 leading-tight">BrandCam</span>
