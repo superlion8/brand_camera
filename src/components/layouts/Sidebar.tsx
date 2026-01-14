@@ -123,8 +123,8 @@ export function Sidebar({ className }: { className?: string }) {
     )}>
       {/* Logo */}
       <div className="h-16 flex items-center gap-3 px-5 border-b border-zinc-100">
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden">
-          <Image src="/logo.png" alt="Brand Camera" width={36} height={36} className="object-contain" />
+        <div className="w-11 h-11 rounded-xl flex items-center justify-center overflow-hidden">
+          <Image src="/logo.png" alt="Brand Camera" width={44} height={44} className="object-contain" />
         </div>
         <div>
           <span className="text-base font-bold text-zinc-900 tracking-tight">
