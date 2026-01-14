@@ -356,6 +356,7 @@ function LifestylePageContent() {
     userSceneUrl?: string | null
   ) => {
     let firstDbId: string | null = null
+    let firstImageReceived = false
     
     try {
       setLifestyleStatus(t.common?.loading || '正在连接服务器...')
@@ -446,6 +447,14 @@ function LifestylePageContent() {
                   newModes[event.index] = 'simple'
                   return newModes
                 })
+                
+                // Switch to results mode on first image (like buyer-show)
+                if (!firstImageReceived && mode === 'processing') {
+                  firstImageReceived = true
+                  console.log('[Lifestyle] First image ready, switching to results mode')
+                  setMode('results')
+                  router.replace('/lifestyle?mode=results')
+                }
                 break
               case 'image_error':
                 updateImageSlot(taskId, event.index, {
@@ -462,9 +471,11 @@ function LifestylePageContent() {
                 updateTaskStatus(taskId, 'completed')
                 if (!firstDbId) setCurrentGenerationId(taskId)
                 
-                // Switch to results mode when all images are done
-                setMode('results')
-                router.replace('/lifestyle?mode=results')
+                // Ensure we're in results mode (in case first image didn't trigger it)
+                if (mode === 'processing') {
+                  setMode('results')
+                  router.replace('/lifestyle?mode=results')
+                }
                 
                 const completedTask = tasks.find(t => t.id === taskId)
                 if (completedTask?.imageSlots) {
