@@ -754,6 +754,8 @@ export const ko: Translations = {
     customModel: "커스텀 모델",
     customBg: "커스텀 배경",
     atLeastOneProduct: "최소 1개의 상품을 추가해 주세요",
+    itemsCount: "추가됨",
+    maxReached: "최대 도달",
   },
 
   // Outfit select
@@ -1177,7 +1179,7 @@ export const ko: Translations = {
     personImageDesc: "피팅 기본이 될 인물 사진을 업로드하세요",
     personImageHint: "JPG, PNG 최대 10MB",
     clothingImages: "의류 이미지",
-    clothingImagesDesc: "피팅할 의류를 업로드하세요 (최대 5개)",
+    clothingImagesDesc: "피팅할 의류를 업로드하세요 (최대 4개)",
     promptDesc: "원하는 피팅 효과를 설명하세요",
     promptPlaceholder: "예: 자연광, 캐주얼 스트릿 스타일...",
     generate: "피팅 시작",

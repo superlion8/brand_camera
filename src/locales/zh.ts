@@ -753,6 +753,8 @@ export const zh = {
     customModel: "自定义模特",
     customBg: "自定义背景",
     atLeastOneProduct: "请至少添加一个商品",
+    itemsCount: "已添加",
+    maxReached: "已达上限",
   },
 
   // Outfit select (选择拍摄风格)
@@ -1176,7 +1178,7 @@ export const zh = {
     personImageDesc: "上传一张人物照片作为换装基础",
     personImageHint: "支持 JPG、PNG，最大 10MB",
     clothingImages: "服装图片",
-    clothingImagesDesc: "上传想要搭配的衣服（最多5件）",
+    clothingImagesDesc: "上传想要搭配的衣服（最多4件）",
     promptDesc: "描述你想要的换装效果",
     promptPlaceholder: "例如：自然光线、休闲街头风格...",
     generate: "开始换装",

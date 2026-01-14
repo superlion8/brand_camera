@@ -99,11 +99,12 @@ function SocialPageContent() {
   const [mode, setMode] = useState<SocialMode>("camera")
   const modeRef = useRef<SocialMode>("camera")
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
-  const [capturedImage2, setCapturedImage2] = useState<string | null>(null)
+  const [additionalProducts, setAdditionalProducts] = useState<string[]>([]) // Up to 3 additional products
+  const MAX_ADDITIONAL_PRODUCTS = 3
   const [hasCamera, setHasCamera] = useState(true)
   const [cameraReady, setCameraReady] = useState(false)
   const [permissionChecked, setPermissionChecked] = useState(false)
-  const [product2FromPhone, setProduct2FromPhone] = useState(false)
+  const [additionalFromPhone, setAdditionalFromPhone] = useState<boolean[]>([])
   const [showProduct2Panel, setShowProduct2Panel] = useState(false)
   const [generatedImages, setGeneratedImages] = useState<string[]>([])
   const [generatedModelTypes, setGeneratedModelTypes] = useState<('pro' | 'flash')[]>([])
@@ -377,6 +378,8 @@ function SocialPageContent() {
   
   const handleRetake = () => {
     setCapturedImage(null)
+    setAdditionalProducts([])
+    setAdditionalFromPhone([])
     setGeneratedImages([])
     setGeneratedModelTypes([])
     setMode("camera")
@@ -439,6 +442,7 @@ function SocialPageContent() {
     runBackgroundGeneration(
       taskId,
       capturedImage,
+      additionalProducts,
       currentModel,
       currentBg,
       modelIsUserSelected,
@@ -450,6 +454,7 @@ function SocialPageContent() {
   const runBackgroundGeneration = async (
     taskId: string,
     inputImage: string,
+    additionalImages: string[],
     model: Asset | undefined,
     background: Asset | undefined,
     modelIsUserSelected: boolean,
@@ -459,11 +464,16 @@ function SocialPageContent() {
       console.log("[Social] Starting generation...")
       console.log("User selected model:", model?.name || 'none (will use random)')
       console.log("User selected background:", background?.name || 'none (will use random)')
+      console.log(`[Social] Additional products: ${additionalImages.length}`)
       
       // 压缩图片以减少请求体大小（Vercel 限制 4.5MB）
-      console.log("[Social] Compressing product image...")
+      console.log("[Social] Compressing product images...")
       const compressedImage = await compressBase64Image(inputImage, 1280)
-      console.log(`[Social] Compressed: ${(inputImage.length / 1024).toFixed(0)}KB -> ${(compressedImage.length / 1024).toFixed(0)}KB`)
+      const compressedAdditional = await Promise.all(
+        additionalImages.map(img => compressBase64Image(img, 1280))
+      )
+      console.log(`[Social] Compressed main: ${(inputImage.length / 1024).toFixed(0)}KB -> ${(compressedImage.length / 1024).toFixed(0)}KB`)
+      console.log(`[Social] Compressed ${compressedAdditional.length} additional products`)
       
       const userModelUrl = model?.imageUrl || null
       const userBgUrl = background?.imageUrl || null
@@ -483,6 +493,7 @@ function SocialPageContent() {
         credentials: 'include',
         body: JSON.stringify({
           productImage: compressedImage,
+          additionalProducts: compressedAdditional, // Array of up to 3 additional products
           modelImage: userModelUrl || 'random',
           taskId,
         }),
@@ -723,11 +734,13 @@ function SocialPageContent() {
         accept="image/*" 
         onChange={async (e) => {
           const file = e.target.files?.[0]
-          if (file) {
+          if (file && additionalProducts.length < MAX_ADDITIONAL_PRODUCTS) {
             const base64 = await fileToBase64(file)
-            setCapturedImage2(base64)
-            setProduct2FromPhone(true)
+            setAdditionalProducts(prev => [...prev, base64])
+            setAdditionalFromPhone(prev => [...prev, true])
+            setShowProduct2Panel(false)
           }
+          e.target.value = '' // Reset so same file can be selected again
         }}
       />
       <input 
@@ -936,21 +949,26 @@ function SocialPageContent() {
                         <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-4">
                           <div className="flex items-center justify-between mb-3">
                             <span className="text-sm font-medium text-zinc-900">{t.proStudio?.additionalProducts || 'Additional Products (Optional)'}</span>
-                            <span className="text-xs text-zinc-400">{(t.proStudio?.maxItems || 'Max {count} items').replace('{count}', '4')}</span>
+                            <span className="text-xs text-zinc-400">{additionalProducts.length + 1}/4</span>
                           </div>
                           <div className="grid grid-cols-4 gap-2">
-                            {capturedImage2 ? (
-                              <div className="aspect-square rounded-lg overflow-hidden relative group border border-zinc-200">
-                                <img src={capturedImage2} alt="商品2" className="w-full h-full object-cover" />
+                            {/* Display existing additional products */}
+                            {additionalProducts.map((img, idx) => (
+                              <div key={idx} className="aspect-square rounded-lg overflow-hidden relative group border border-zinc-200">
+                                <img src={img} alt={`商品${idx + 2}`} className="w-full h-full object-cover" />
                                 <button
-                                  onClick={() => setCapturedImage2(null)}
+                                  onClick={() => {
+                                    setAdditionalProducts(prev => prev.filter((_, i) => i !== idx))
+                                    setAdditionalFromPhone(prev => prev.filter((_, i) => i !== idx))
+                                  }}
                                   className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                                 >
                                   <X className="w-3 h-3 text-white" />
                                 </button>
                               </div>
-                            ) : null}
-                            {!capturedImage2 && (
+                            ))}
+                            {/* Add button - show if less than 3 additional items */}
+                            {additionalProducts.length < MAX_ADDITIONAL_PRODUCTS && (
                               <div
                                 onClick={() => setShowProduct2Panel(true)}
                                 onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-pink-400', 'bg-pink-50') }}
@@ -959,9 +977,10 @@ function SocialPageContent() {
                                   e.preventDefault()
                                   e.currentTarget.classList.remove('border-pink-400', 'bg-pink-50')
                                   const file = e.dataTransfer.files?.[0]
-                                  if (file && file.type.startsWith('image/')) {
+                                  if (file && file.type.startsWith('image/') && additionalProducts.length < MAX_ADDITIONAL_PRODUCTS) {
                                     const base64 = await fileToBase64(file)
-                                    setCapturedImage2(base64)
+                                    setAdditionalProducts(prev => [...prev, base64])
+                                    setAdditionalFromPhone(prev => [...prev, true])
                                   }
                                 }}
                                 className="aspect-square rounded-lg border-2 border-dashed border-zinc-300 hover:border-pink-400 flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer"
@@ -971,8 +990,8 @@ function SocialPageContent() {
                               </div>
                             )}
                           </div>
-                          <p className="text-xs text-zinc-400 mt-3">
-                            {t.proStudio?.addMoreTip || '💡 Add more products for outfit combination effect'}
+                          <p className="text-xs text-amber-600 mt-3">
+                            {t.proStudio?.maxItemsWarning || '⚠️ Max 4 products total. Too many items may affect quality.'}
                           </p>
                         </div>
                         
@@ -1670,7 +1689,7 @@ function SocialPageContent() {
               ] : []}
               inputImages={[
                 ...(capturedImage ? [{ url: capturedImage, label: `${t.common?.product || 'Product'} 1` }] : []),
-                ...(capturedImage2 ? [{ url: capturedImage2, label: `${t.common?.product || 'Product'} 2` }] : []),
+                ...additionalProducts.map((img, idx) => ({ url: img, label: `${t.common?.product || 'Product'} ${idx + 2}` })),
               ]}
               onInputImageClick={(url) => setFullscreenImage(url)}
             >
@@ -1723,13 +1742,16 @@ function SocialPageContent() {
         imageUrl={fullscreenImage || ''}
       />
       
-      {/* 第二件商品选择面板 */}
+      {/* 额外商品选择面板 */}
       <AssetPickerPanel
         open={showProduct2Panel}
         onClose={() => setShowProduct2Panel(false)}
         onSelect={(imageUrl) => {
-          setCapturedImage2(imageUrl)
-          setProduct2FromPhone(false)
+          if (additionalProducts.length < MAX_ADDITIONAL_PRODUCTS) {
+            setAdditionalProducts(prev => [...prev, imageUrl])
+            setAdditionalFromPhone(prev => [...prev, false])
+          }
+          setShowProduct2Panel(false)
         }}
         onUploadClick={() => fileInputRef2.current?.click()}
         themeColor="purple"

@@ -35,7 +35,7 @@ const CREDIT_COST = TASK_CREDIT_COSTS[TaskTypes.TRY_ON]
 import Webcam from "react-webcam"
 // 动态导入 zoom-pan-pinch 组件，减少初始加载时间
 
-const MAX_CLOTHING_IMAGES = 5
+const MAX_CLOTHING_IMAGES = 4 // Maximum 4 items for quality
 
 type TryOnMode = 'main' | 'camera' | 'processing' | 'results'
 
@@ -526,6 +526,9 @@ export default function TryOnPage() {
                           </div>
                         )}
                       </div>
+                      <p className="text-xs text-amber-600 mt-2">
+                        {t.proStudio?.maxItemsWarning || '⚠️ Max 4 products. Too many may affect quality.'}
+                      </p>
                       
                       {/* Upload buttons for clothing */}
                       <div className="flex gap-2 mt-4">
@@ -692,6 +695,9 @@ export default function TryOnPage() {
                     </div>
                   )}
                 </div>
+                <p className="text-xs text-amber-600 mt-2">
+                  {t.proStudio?.maxItemsWarning || '⚠️ Max 4 products. Too many may affect quality.'}
+                </p>
               </div>
               
               {/* Prompt Input */}

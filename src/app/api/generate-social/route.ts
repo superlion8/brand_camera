@@ -253,6 +253,7 @@ async function generateOutfitInstruct(
 async function generateFinalImage(
   client: ReturnType<typeof getGenAIClient>,
   productData: string,
+  additionalProducts: string[],
   modelData: string,
   sceneData: string,
   outfitInstruct: string,
@@ -263,21 +264,30 @@ async function generateFinalImage(
     const promptTemplate = promptType === 1 ? FINAL_PROMPT_1 : FINAL_PROMPT_2
     const prompt = promptTemplate.replace('{outfit_instruct}', outfitInstruct)
     
-    console.log(`[${label}] Generating image with prompt type ${promptType}...`)
+    console.log(`[${label}] Generating image with prompt type ${promptType}, additional products: ${additionalProducts.length}`)
+    
+    // Build parts with main product + additional products
+    const parts: any[] = [
+      { text: prompt },
+      { text: '\n\n[商品图]:' },
+      { inlineData: { mimeType: 'image/jpeg', data: productData } },
+    ]
+    // Add additional products
+    additionalProducts.forEach((prodData, idx) => {
+      parts.push({ text: `\n\n[商品图${idx + 2}]:` })
+      parts.push({ inlineData: { mimeType: 'image/jpeg', data: prodData } })
+    })
+    // Add model and scene
+    parts.push({ text: '\n\n[模特图]:' })
+    parts.push({ inlineData: { mimeType: 'image/jpeg', data: modelData } })
+    parts.push({ text: '\n\n[背景图]:' })
+    parts.push({ inlineData: { mimeType: 'image/jpeg', data: sceneData } })
     
     const response = await client.models.generateContent({
       model: IMAGE_MODEL,
       contents: [{
         role: 'user',
-        parts: [
-          { text: prompt },
-          { text: '\n\n[商品图]:' },
-          { inlineData: { mimeType: 'image/jpeg', data: productData } },
-          { text: '\n\n[模特图]:' },
-          { inlineData: { mimeType: 'image/jpeg', data: modelData } },
-          { text: '\n\n[背景图]:' },
-          { inlineData: { mimeType: 'image/jpeg', data: sceneData } },
-        ],
+        parts,
       }],
       config: {
         responseModalities: ['IMAGE'],
@@ -309,6 +319,7 @@ interface GroupResult {
 async function processGroup(
   client: ReturnType<typeof getGenAIClient>,
   productData: string,
+  additionalProducts: string[],
   userModelData: string | null,
   userModelUrl: string | undefined,
   groupIndex: number,
@@ -391,6 +402,7 @@ async function processGroup(
       const imageResult = await generateFinalImage(
         client,
         productData,
+        additionalProducts,
         modelData!,
         sceneData,
         outfitInstruct,
@@ -464,8 +476,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { 
+    const {
       productImage,
+      additionalProducts, // Array of up to 3 additional products
       modelImage,
       taskId,
     } = body
@@ -476,6 +489,18 @@ export async function POST(request: NextRequest) {
         headers: { 'Content-Type': 'application/json' },
       })
     }
+    
+    // Process additional products (up to 3)
+    const validAdditionalProducts: string[] = []
+    if (additionalProducts && Array.isArray(additionalProducts)) {
+      for (const img of additionalProducts.slice(0, 3)) {
+        if (img) {
+          const base64 = await imageToBase64(img)
+          if (base64) validAdditionalProducts.push(base64)
+        }
+      }
+    }
+    console.log(`[Social API] Additional products: ${validAdditionalProducts.length}`)
 
     const client = getGenAIClient()
     
@@ -512,8 +537,8 @@ export async function POST(request: NextRequest) {
 
           // 两组并行执行
           const groupResults = await Promise.all([
-            processGroup(client, productData, userModelData, userModelUrl, 0, taskId, userId, sendEvent),
-            processGroup(client, productData, userModelData, userModelUrl, 1, taskId, userId, sendEvent),
+            processGroup(client, productData, validAdditionalProducts, userModelData, userModelUrl, 0, taskId, userId, sendEvent),
+            processGroup(client, productData, validAdditionalProducts, userModelData, userModelUrl, 1, taskId, userId, sendEvent),
           ])
 
           // 统计成功数

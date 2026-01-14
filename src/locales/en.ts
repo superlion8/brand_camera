@@ -755,6 +755,8 @@ export const en: Translations = {
     customModel: "Custom Model",
     customBg: "Custom Background",
     atLeastOneProduct: "Please add at least one product",
+    itemsCount: "Items",
+    maxReached: "Max reached",
   },
 
   // Outfit select
@@ -1178,7 +1180,7 @@ export const en: Translations = {
     personImageDesc: "Upload a person photo as the try-on base",
     personImageHint: "JPG, PNG up to 10MB",
     clothingImages: "Clothing Images",
-    clothingImagesDesc: "Upload clothing items to try on (up to 5)",
+    clothingImagesDesc: "Upload clothing items to try on (up to 4)",
     promptDesc: "Describe the try-on effect you want",
     promptPlaceholder: "e.g., Natural lighting, casual street style...",
     generate: "Start Try-On",

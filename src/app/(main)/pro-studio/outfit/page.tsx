@@ -144,7 +144,11 @@ function OutfitPageContent() {
   const shootMode = searchParams.get('mode') === 'camera' ? 'camera' : 'pro_studio'
   const isCameraMode = shootMode === 'camera'
   
+  const MAX_OUTFIT_ITEMS = 4 // Maximum products for quality
   const [slots, setSlots] = useState<OutfitSlot[]>(() => getInitialSlots(null))
+  
+  // Count filled slots
+  const filledSlotsCount = slots.filter(s => s.product).length
   
   // Update slots labels when language changes
   useEffect(() => {
@@ -345,6 +349,16 @@ function OutfitPageContent() {
     const file = e.target.files?.[0]
     if (!file || !uploadTargetSlot) return
     
+    // Check limit before adding
+    const targetSlot = slots.find(s => s.id === uploadTargetSlot)
+    const isReplacement = !!targetSlot?.product
+    if (!isReplacement && filledSlotsCount >= MAX_OUTFIT_ITEMS) {
+      console.log('[Outfit] Max items reached, cannot add more')
+      setUploadTargetSlot(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+    
     try {
       const base64 = await fileToBase64(file)
       // 直接放到目标槽位
@@ -365,6 +379,12 @@ function OutfitPageContent() {
   
   // 点击空槽位显示选项面板
   const handleSlotClick = (slotId: ProductCategory) => {
+    // Check if can add more (slot is empty and we're at limit)
+    const targetSlot = slots.find(s => s.id === slotId)
+    if (!targetSlot?.product && filledSlotsCount >= MAX_OUTFIT_ITEMS) {
+      console.log('[Outfit] Max items reached, cannot open add panel')
+      return
+    }
     setUploadTargetSlot(slotId)
     setShowSlotOptions(true)
   }
@@ -385,6 +405,16 @@ function OutfitPageContent() {
   const handleCameraCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !uploadTargetSlot) return
+    
+    // Check limit before adding
+    const targetSlot = slots.find(s => s.id === uploadTargetSlot)
+    const isReplacement = !!targetSlot?.product
+    if (!isReplacement && filledSlotsCount >= MAX_OUTFIT_ITEMS) {
+      console.log('[Outfit] Max items reached, cannot add more')
+      setUploadTargetSlot(null)
+      if (cameraInputRef.current) cameraInputRef.current.value = ''
+      return
+    }
     
     try {
       const base64 = await fileToBase64(file)
@@ -1089,13 +1119,21 @@ function OutfitPageContent() {
   const allModels = [...customModels, ...studioModels, ...userModels]
   const allBgs = [...customBgs, ...studioBackgrounds, ...userBackgrounds]
   
-  // Add product to a slot
+  // Add product to a slot (with limit check)
   const handleAddProduct = (imageUrl: string, slotId: ProductCategory) => {
-    setSlots(prev => prev.map(slot => 
+    // Check if slot is already filled (replacement) or if we're under the limit
+    const targetSlot = slots.find(s => s.id === slotId)
+    const isReplacement = !!targetSlot?.product
+    if (!isReplacement && filledSlotsCount >= MAX_OUTFIT_ITEMS) {
+      console.log('[Outfit] Max items reached, cannot add more')
+      return false
+    }
+    setSlots(prev => prev.map(slot =>
       slot.id === slotId
         ? { ...slot, product: { imageUrl } }
         : slot
     ))
+    return true
   }
   
   // Remove product from a slot
@@ -1158,8 +1196,16 @@ function OutfitPageContent() {
                   </div>
                   
                   <div className="mt-6 pt-4 border-t border-zinc-100">
-                    <p className="text-xs text-zinc-400 text-center">
-                      💡 至少添加1件商品即可生成
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs text-zinc-500">
+                        {t?.outfit?.itemsCount || 'Items'}: {filledSlotsCount}/{MAX_OUTFIT_ITEMS}
+                      </span>
+                      {filledSlotsCount >= MAX_OUTFIT_ITEMS && (
+                        <span className="text-xs text-amber-600 font-medium">{t?.outfit?.maxReached || 'Max reached'}</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-amber-600 text-center">
+                      {t.proStudio?.maxItemsWarning || '⚠️ Max 4 products. Too many may affect quality.'}
                     </p>
                   </div>
                 </div>
@@ -1529,15 +1575,11 @@ function OutfitPageContent() {
           setUploadTargetSlot(null)
         }}
         onSelect={(imageUrl) => {
-                              if (uploadTargetSlot) {
-                                setSlots(prev => prev.map(slot => 
-                                  slot.id === uploadTargetSlot
-                ? { ...slot, product: { imageUrl } }
-                                    : slot
-                                ))
-                              }
-                              setUploadTargetSlot(null)
-                            }}
+          if (uploadTargetSlot) {
+            handleAddProduct(imageUrl, uploadTargetSlot)
+          }
+          setUploadTargetSlot(null)
+        }}
         onUploadClick={() => fileInputRef.current?.click()}
         themeColor="amber"
         title={`${t.outfit?.selectProduct || '选择商品'}${uploadTargetSlot ? ` - ${labelMap[uploadTargetSlot]}` : ''}`}
