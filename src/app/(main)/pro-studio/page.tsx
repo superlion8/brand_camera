@@ -38,6 +38,7 @@ import { useSettingsStore } from "@/stores/settingsStore"
 import { useIsDesktop } from "@/hooks/useIsMobile"
 import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
+import { ReviewModeLayout } from "@/components/shared/ReviewModeLayout"
 
 type PageMode = "camera" | "review" | "processing" | "results"
 
@@ -791,296 +792,64 @@ function ProStudioPageContent() {
       />
 
       <AnimatePresence mode="wait">
-        {/* Desktop Review Mode - Two Column Layout */}
+        {/* Desktop Review Mode - Using shared ReviewModeLayout */}
         {mode === "review" && isDesktop && (
           <motion.div 
             key="desktop-review"
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
             exit={{ opacity: 0 }}
-            className="flex-1 overflow-y-auto"
+            className="flex-1"
           >
-            {/* PC Header */}
-            <div className="bg-white border-b border-zinc-200">
-              <div className="max-w-7xl mx-auto px-8 py-5">
-                <div className="flex items-center gap-3">
-                  <button 
-                    onClick={handleRetake}
-                    className="w-9 h-9 rounded-lg hover:bg-zinc-100 flex items-center justify-center transition-colors"
-                  >
-                    <ArrowLeft className="w-5 h-5 text-zinc-600" />
-                  </button>
-                  <h1 className="text-lg font-semibold text-zinc-900">{t.proStudio?.proStudioMode || '专业棚拍'}</h1>
-                </div>
-              </div>
-            </div>
-            
-            {/* Three-column content - better use of screen width */}
-            <div className="max-w-7xl mx-auto px-8 py-8">
-              <div className="flex gap-6">
-                {/* Left: Image Preview & Generate Button */}
-                <div className="w-[320px] shrink-0 space-y-4">
-                  {/* Main Product */}
-                  <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 overflow-hidden">
-                    <div className="p-3 border-b border-zinc-100 flex items-center justify-between">
-                      <span className="text-sm font-medium text-zinc-900">{t.proStudio?.mainProduct || 'Main Product'}</span>
-                      <button
-                        onClick={handleRetake}
-                        className="text-xs text-zinc-500 hover:text-zinc-700"
-                      >
-                        {t.proStudio?.change || 'Change'}
-                      </button>
-                    </div>
-                    <div className="aspect-square relative bg-zinc-50">
-                      <img 
-                        src={capturedImage || ""} 
-                        alt="商品预览" 
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Additional Products */}
-                  <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-zinc-900">{t.proStudio?.additionalProducts || 'Additional Products (Optional)'}</span>
-                      <span className="text-xs text-zinc-400">{(t.proStudio?.maxItems || 'Max {count} items').replace('{count}', '4')}</span>
-                    </div>
-                    <div className="grid grid-cols-4 gap-2">
-                      {/* Existing second product */}
-                      {capturedImage2 ? (
-                        <div className="aspect-square rounded-lg overflow-hidden relative group border border-zinc-200">
-                          <img src={capturedImage2} alt="商品2" className="w-full h-full object-cover" />
-                          <button
-                            onClick={() => setCapturedImage2(null)}
-                            className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="w-3 h-3 text-white" />
-                          </button>
-                        </div>
-                      ) : null}
-                      {/* Add more button - show if less than 4 additional items */}
-                      {!capturedImage2 && (
-                        <div
-                          onClick={() => setShowProduct2Panel(true)}
-                          onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-amber-400', 'bg-amber-50') }}
-                          onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-amber-400', 'bg-amber-50') }}
-                          onDrop={async (e) => {
-                            e.preventDefault()
-                            e.currentTarget.classList.remove('border-amber-400', 'bg-amber-50')
-                            const file = e.dataTransfer.files?.[0]
-                            if (file && file.type.startsWith('image/')) {
-                              const base64 = await fileToBase64(file)
-                              setCapturedImage2(base64)
-                            }
-                          }}
-                          className="aspect-square rounded-lg border-2 border-dashed border-zinc-300 hover:border-amber-400 flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer"
-                        >
-                          <Plus className="w-5 h-5 text-zinc-400" />
-                          <span className="text-[10px] text-zinc-400">{t.proStudio?.add || 'Add'}</span>
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-xs text-zinc-400 mt-3">
-                      {t.proStudio?.addMoreTip || '💡 Add more products for outfit combination effect'}
-                    </p>
-                  </div>
-                  
-                  {/* Generate Button */}
-                  <button
-                    onClick={async (e) => {
-                      triggerFlyToGallery(e)
-                      handleShootIt()
-                    }}
-                    className="w-full h-14 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-lg font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg shadow-amber-200/50"
-                  >
-                    <Sparkles className="w-5 h-5" />
-                    {t.proStudio?.startGenerate || '开始生成'}
-                    <CreditCostBadge cost={4} className="ml-2" />
-                  </button>
-                </div>
-                
-                {/* Middle: Model Selection */}
-                <div className="flex-1 min-w-0">
-                  <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-5 h-full">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-semibold text-zinc-900">{t.proStudio?.selectModel || '选择模特'}</h3>
-                      <div className="flex items-center gap-2">
-                        {selectedModel && (
-                          <button 
-                            onClick={() => setSelectedModelId(null)}
-                            className="text-xs text-zinc-500 hover:text-zinc-700"
-                          >
-                            {t.proStudio?.clearSelection || '清除'}
-                          </button>
-                        )}
-                        {allModels.length > 5 && (
-                          <button 
-                            onClick={() => setShowModelPicker(true)}
-                            className="text-xs text-amber-600 hover:text-amber-700 font-medium"
-                          >
-                            {t.proStudio?.viewMore || 'View More'} ({allModels.length})
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    <p className="text-xs text-zinc-500 mb-3">{t.proStudio?.randomMatch || 'Random if not selected'}</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {/* Upload button */}
-                      <div
-                        onClick={() => modelUploadRef.current?.click()}
-                        onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-amber-400', 'bg-amber-50') }}
-                        onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-amber-400', 'bg-amber-50') }}
-                        onDrop={async (e) => {
-                          e.preventDefault()
-                          e.currentTarget.classList.remove('border-amber-400', 'bg-amber-50')
-                          const file = e.dataTransfer.files?.[0]
-                          if (file && file.type.startsWith('image/')) {
-                            const base64 = await fileToBase64(file)
-                            const newModel: Asset = {
-                              id: `custom-model-${Date.now()}`,
-                              type: 'model',
-                              name: '自定义模特',
-                              imageUrl: base64,
-                            }
-                            setCustomModels(prev => [newModel, ...prev])
-                            setSelectedModelId(newModel.id)
-                          }
-                        }}
-                        className="aspect-[3/4] rounded-lg border-2 border-dashed border-zinc-300 hover:border-amber-400 flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer"
-                      >
-                        <Plus className="w-4 h-4 text-zinc-400" />
-                        <span className="text-[10px] text-zinc-400">{t.proStudio?.upload || 'Upload'}</span>
-                      </div>
-                      {/* Model list */}
-                      {allModels.slice(0, 5).map(model => (
-                        <div
-                          key={model.id}
-                          className={`aspect-[3/4] rounded-lg overflow-hidden relative border-2 transition-all group ${
-                            selectedModelId === model.id
-                              ? 'border-amber-500 ring-2 ring-amber-500/30'
-                              : 'border-transparent hover:border-amber-300'
-                          }`}
-                        >
-                          <button
-                            onClick={() => setSelectedModelId(selectedModelId === model.id ? null : model.id)}
-                            className="absolute inset-0"
-                          >
-                            <Image src={model.imageUrl} alt={model.name || ''} fill className="object-cover" />
-                          </button>
-                          {selectedModelId === model.id && (
-                            <div className="absolute top-1 right-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center">
-                              <Check className="w-2.5 h-2.5 text-white" />
-                            </div>
-                          )}
-                          {/* Zoom button - show on hover */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setFullscreenImage(model.imageUrl)
-                            }}
-                            className="absolute bottom-1 right-1 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
-                          >
-                            <ZoomIn className="w-3 h-3 text-white" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Right: Background Selection */}
-                <div className="flex-1 min-w-0">
-                  <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-5 h-full">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-semibold text-zinc-900">{t.proStudio?.selectBg || '选择背景'}</h3>
-                      <div className="flex items-center gap-2">
-                        {selectedBg && (
-                          <button 
-                            onClick={() => setSelectedBgId(null)}
-                            className="text-xs text-zinc-500 hover:text-zinc-700"
-                          >
-                            {t.proStudio?.clearSelection || '清除'}
-                          </button>
-                        )}
-                        {allBgs.length > 5 && (
-                          <button
-                            onClick={() => setShowScenePicker(true)}
-                            className="text-xs text-amber-600 hover:text-amber-700 font-medium"
-                          >
-                            {t.proStudio?.viewMore || 'View More'} ({allBgs.length})
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    <p className="text-xs text-zinc-500 mb-3">{t.proStudio?.randomMatch || 'Random if not selected'}</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {/* Upload button */}
-                      <div
-                        onClick={() => bgUploadRef.current?.click()}
-                        onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-amber-400', 'bg-amber-50') }}
-                        onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-amber-400', 'bg-amber-50') }}
-                        onDrop={async (e) => {
-                          e.preventDefault()
-                          e.currentTarget.classList.remove('border-amber-400', 'bg-amber-50')
-                          const file = e.dataTransfer.files?.[0]
-                          if (file && file.type.startsWith('image/')) {
-                            const base64 = await fileToBase64(file)
-                            const newBg: Asset = {
-                              id: `custom-bg-${Date.now()}`,
-                              type: 'background',
-                              name: '自定义背景',
-                              imageUrl: base64,
-                            }
-                            setCustomBgs(prev => [newBg, ...prev])
-                            setSelectedBgId(newBg.id)
-                          }
-                        }}
-                        className="aspect-[3/4] rounded-lg border-2 border-dashed border-zinc-300 hover:border-amber-400 flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer"
-                      >
-                        <Plus className="w-4 h-4 text-zinc-400" />
-                        <span className="text-[10px] text-zinc-400">{t.proStudio?.upload || 'Upload'}</span>
-                      </div>
-                      {/* Background list */}
-                      {allBgs.slice(0, 5).map(bg => (
-                        <div
-                          key={bg.id}
-                          className={`aspect-[3/4] rounded-lg overflow-hidden relative border-2 transition-all group ${
-                            selectedBgId === bg.id 
-                              ? 'border-amber-500 ring-2 ring-amber-500/30' 
-                              : 'border-transparent hover:border-amber-300'
-                          }`}
-                        >
-                          <button
-                            onClick={() => setSelectedBgId(selectedBgId === bg.id ? null : bg.id)}
-                            className="absolute inset-0"
-                          >
-                            <Image src={bg.imageUrl} alt={bg.name || ''} fill className="object-cover" />
-                          </button>
-                          {selectedBgId === bg.id && (
-                            <div className="absolute top-1 right-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center">
-                              <Check className="w-2.5 h-2.5 text-white" />
-                            </div>
-                          )}
-                          {/* Zoom button - show on hover */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setFullscreenImage(bg.imageUrl)
-                            }}
-                            className="absolute bottom-1 right-1 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
-                          >
-                            <ZoomIn className="w-3 h-3 text-white" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Model and Scene Pickers are rendered at the page level */}
+            <ReviewModeLayout
+              title={t.proStudio?.proStudioMode || 'Pro Studio Mode'}
+              onBack={handleRetake}
+              mainProductImage={capturedImage}
+              onMainProductChange={handleRetake}
+              onMainProductZoom={(url) => setFullscreenImage(url)}
+              additionalProducts={capturedImage2 ? [capturedImage2] : []}
+              maxAdditionalProducts={3}
+              onAddProduct={() => setShowProduct2Panel(true)}
+              onRemoveProduct={() => setCapturedImage2(null)}
+              onDropProduct={(base64) => setCapturedImage2(base64)}
+              models={allModels}
+              selectedModelId={selectedModelId}
+              onSelectModel={setSelectedModelId}
+              onModelUpload={() => modelUploadRef.current?.click()}
+              onModelZoom={(url) => setFullscreenImage(url)}
+              onViewMoreModels={() => setShowModelPicker(true)}
+              onModelDrop={(base64) => {
+                const newModel: Asset = {
+                  id: `custom-model-${Date.now()}`,
+                  type: 'model',
+                  name: '自定义模特',
+                  imageUrl: base64,
+                }
+                setCustomModels(prev => [newModel, ...prev])
+                setSelectedModelId(newModel.id)
+              }}
+              backgrounds={allBgs}
+              selectedBgId={selectedBgId}
+              onSelectBg={setSelectedBgId}
+              onBgUpload={() => bgUploadRef.current?.click()}
+              onBgZoom={(url) => setFullscreenImage(url)}
+              onViewMoreBgs={() => setShowScenePicker(true)}
+              onBgDrop={(base64) => {
+                const newBg: Asset = {
+                  id: `custom-bg-${Date.now()}`,
+                  type: 'background',
+                  name: '自定义背景',
+                  imageUrl: base64,
+                }
+                setCustomBgs(prev => [newBg, ...prev])
+                setSelectedBgId(newBg.id)
+              }}
+              creditCost={4}
+              onGenerate={() => {
+                handleShootIt()
+              }}
+              t={t}
+            />
           </motion.div>
         )}
 

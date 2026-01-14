@@ -38,6 +38,7 @@ import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { useIsDesktop } from "@/hooks/useIsMobile"
 import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
+import { ReviewModeLayout } from "@/components/shared/ReviewModeLayout"
 
 // Helper to map API error codes to translated messages
 const getErrorMessage = (error: string, t: any): string => {
@@ -1243,226 +1244,64 @@ function CameraPageContent() {
                   </div>
                 </div>
               ) : mode === "review" && isDesktop ? (
-                /* Desktop Review Mode - Three Column Layout */
-                <div className="absolute inset-0 overflow-y-auto bg-zinc-50">
-                  {/* PC Header */}
-                  <div className="bg-white border-b border-zinc-200">
-                    <div className="max-w-7xl mx-auto px-8 py-4">
-                      <div className="flex items-center gap-3">
-                        <button 
-                          onClick={handleRetake}
-                          className="w-9 h-9 rounded-lg hover:bg-zinc-100 flex items-center justify-center transition-colors"
-                        >
-                          <ArrowLeft className="w-5 h-5 text-zinc-600" />
-                        </button>
-                        <h1 className="text-lg font-semibold text-zinc-900">{t.camera?.title || '买家秀'}</h1>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Three-column content */}
-                  <div className="max-w-7xl mx-auto px-8 py-6">
-                    <div className="flex gap-6">
-                      {/* Left: Product Image & Generate Button */}
-                      <div className="w-[320px] shrink-0 space-y-4">
-                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 overflow-hidden">
-                          <div className="p-3 border-b border-zinc-100 flex items-center justify-between">
-                            <span className="text-sm font-medium text-zinc-900">{t.camera?.product1 || '商品图'}</span>
-                            <button onClick={handleRetake} className="text-xs text-zinc-500 hover:text-zinc-700">
-                              {t.common?.change || '更换'}
-                            </button>
-                          </div>
-                          <div className="aspect-square relative bg-zinc-50">
-                            <img src={capturedImage || ""} alt="商品" className="w-full h-full object-contain" />
-                          </div>
-                        </div>
-                        
-                        {/* Additional Products */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-4">
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="text-sm font-medium text-zinc-900">{t.proStudio?.additionalProducts || 'Additional Products (Optional)'}</span>
-                            <span className="text-xs text-zinc-400">{additionalProducts.length + 1}/4</span>
-                          </div>
-                          <div className="grid grid-cols-4 gap-2">
-                            {/* Display existing additional products */}
-                            {additionalProducts.map((img, idx) => (
-                              <div key={idx} className="aspect-square rounded-lg overflow-hidden relative group border border-zinc-200">
-                                <img src={img} alt={`商品${idx + 2}`} className="w-full h-full object-cover" />
-                                <button
-                                  onClick={() => {
-                                    setAdditionalProducts(prev => prev.filter((_, i) => i !== idx))
-                                    setAdditionalFromPhone(prev => prev.filter((_, i) => i !== idx))
-                                  }}
-                                  className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                  <X className="w-3 h-3 text-white" />
-                                </button>
-                              </div>
-                            ))}
-                            {/* Add button - show if less than 3 additional items */}
-                            {additionalProducts.length < MAX_ADDITIONAL_PRODUCTS && (
-                              <button
-                                onClick={() => setShowProduct2Panel(true)}
-                                className="aspect-square rounded-lg border-2 border-dashed border-zinc-300 hover:border-blue-400 flex flex-col items-center justify-center gap-1 transition-colors"
-                              >
-                                <Plus className="w-5 h-5 text-zinc-400" />
-                                <span className="text-[10px] text-zinc-400">{t.proStudio?.add || 'Add'}</span>
-                              </button>
-                            )}
-                          </div>
-                          <p className="text-xs text-zinc-400 mt-3">
-                            {t.proStudio?.maxItemsWarning || 'Max 4 products. Too many may affect quality.'}
-                          </p>
-                        </div>
-                        
-                        {/* Generate Button */}
-                        <button
-                          onClick={async (e) => {
-                            triggerFlyToGallery(e)
-                            handleShootIt()
-                          }}
-                          className="w-full h-14 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-lg font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg shadow-blue-200/50"
-                        >
-                          <Wand2 className="w-5 h-5" />
-                          {t.proStudio?.startGenerate || '开始生成'}
-                          <CreditCostBadge cost={4} className="ml-2" />
-                        </button>
-                      </div>
-                      
-                      {/* Middle: Model Selection */}
-                      <div className="flex-1 min-w-0">
-                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-5 h-full">
-                          <div className="flex items-center justify-between mb-3">
-                            <h3 className="font-semibold text-zinc-900">{t.camera?.selectModel || '选择模特'}</h3>
-                            <div className="flex items-center gap-2">
-                              {selectedModel && (
-                                <button onClick={() => setSelectedModel(null)} className="text-xs text-zinc-500 hover:text-zinc-700">
-                                  {t.proStudio?.clearSelection || '清除'}
-                                </button>
-                              )}
-                              {allModels.length > 5 && (
-                                <button 
-                                  onClick={() => setShowModelPicker(true)}
-                                  className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-                                >
-                                  {t.common?.viewMore || '查看更多'} ({allModels.length})
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                          <p className="text-xs text-zinc-500 mb-3">{t.common?.randomMatchHint || '不选则随机匹配'}</p>
-                          <div className="grid grid-cols-3 gap-2">
-                            <button
-                              onClick={() => modelUploadRef.current?.click()}
-                              className="aspect-[3/4] rounded-lg border-2 border-dashed border-zinc-300 hover:border-blue-400 flex flex-col items-center justify-center gap-1 transition-colors"
-                            >
-                              <Plus className="w-4 h-4 text-zinc-400" />
-                              <span className="text-[10px] text-zinc-400">{t.proStudio?.upload || 'Upload'}</span>
-                            </button>
-                            {allModels.slice(0, 5).map(model => (
-                              <div
-                                key={model.id}
-                                className={`aspect-[3/4] rounded-lg overflow-hidden relative border-2 transition-all group ${
-                                  selectedModel === model.id 
-                                    ? 'border-blue-500 ring-2 ring-blue-500/30' 
-                                    : 'border-transparent hover:border-blue-300'
-                                }`}
-                              >
-                                <button
-                                  onClick={() => setSelectedModel(selectedModel === model.id ? null : model.id)}
-                                  className="absolute inset-0"
-                              >
-                                <Image src={model.imageUrl} alt={model.name || ''} fill className="object-cover" />
-                                </button>
-                                {selectedModel === model.id && (
-                                  <div className="absolute top-1 right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                                    <Check className="w-2.5 h-2.5 text-white" />
-                                  </div>
-                                )}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    setFullscreenImage(model.imageUrl)
-                                  }}
-                                  className="absolute bottom-1 right-1 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
-                                >
-                                  <ZoomIn className="w-3 h-3 text-white" />
-                              </button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Right: Background Selection */}
-                      <div className="flex-1 min-w-0">
-                        <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-5 h-full">
-                          <div className="flex items-center justify-between mb-3">
-                            <h3 className="font-semibold text-zinc-900">{t.camera?.selectBg || '选择背景'}</h3>
-                            <div className="flex items-center gap-2">
-                              {selectedBg && (
-                                <button onClick={() => setSelectedBg(null)} className="text-xs text-zinc-500 hover:text-zinc-700">
-                                  {t.proStudio?.clearSelection || '清除'}
-                                </button>
-                              )}
-                              {allBackgrounds.length > 5 && (
-                                <button 
-                                  onClick={() => setShowScenePicker(true)}
-                                  className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-                                >
-                                  {t.common?.viewMore || '查看更多'} ({allBackgrounds.length})
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                          <p className="text-xs text-zinc-500 mb-3">{t.common?.randomMatchHint || '不选则随机匹配'}</p>
-                          <div className="grid grid-cols-3 gap-2">
-                            <button
-                              onClick={() => bgUploadRef.current?.click()}
-                              className="aspect-[3/4] rounded-lg border-2 border-dashed border-zinc-300 hover:border-blue-400 flex flex-col items-center justify-center gap-1 transition-colors"
-                            >
-                              <Plus className="w-4 h-4 text-zinc-400" />
-                              <span className="text-[10px] text-zinc-400">{t.proStudio?.upload || 'Upload'}</span>
-                            </button>
-                            {allBackgrounds.slice(0, 5).map(bg => (
-                              <div
-                                key={bg.id}
-                                className={`aspect-[3/4] rounded-lg overflow-hidden relative border-2 transition-all group ${
-                                  selectedBg === bg.id 
-                                    ? 'border-blue-500 ring-2 ring-blue-500/30' 
-                                    : 'border-transparent hover:border-blue-300'
-                                }`}
-                              >
-                                <button
-                                  onClick={() => setSelectedBg(selectedBg === bg.id ? null : bg.id)}
-                                  className="absolute inset-0"
-                              >
-                                <Image src={bg.imageUrl} alt={bg.name || ''} fill className="object-cover" />
-                                </button>
-                                {selectedBg === bg.id && (
-                                  <div className="absolute top-1 right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                                    <Check className="w-2.5 h-2.5 text-white" />
-                                  </div>
-                                )}
-                              <button 
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    setFullscreenImage(bg.imageUrl)
-                                  }}
-                                  className="absolute bottom-1 right-1 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
-                                >
-                                  <ZoomIn className="w-3 h-3 text-white" />
-                              </button>
-                            </div>
-                                  ))}
-                                </div>
-                              </div>
-                                </div>
-                                        </div>
-                                </div>
-                  
-                  {/* Model and Scene Pickers are rendered at the page level */}
-                </div>
+                /* Desktop Review Mode - Using shared ReviewModeLayout */
+                <ReviewModeLayout
+                  title={t.camera?.title || 'Buyer Show'}
+                  onBack={handleRetake}
+                  mainProductImage={capturedImage}
+                  onMainProductChange={handleRetake}
+                  onMainProductZoom={(url) => setFullscreenImage(url)}
+                  additionalProducts={additionalProducts}
+                  maxAdditionalProducts={MAX_ADDITIONAL_PRODUCTS}
+                  onAddProduct={() => setShowProduct2Panel(true)}
+                  onRemoveProduct={(idx) => {
+                    setAdditionalProducts(prev => prev.filter((_, i) => i !== idx))
+                    setAdditionalFromPhone(prev => prev.filter((_, i) => i !== idx))
+                  }}
+                  onDropProduct={(base64) => {
+                    if (additionalProducts.length < MAX_ADDITIONAL_PRODUCTS) {
+                      setAdditionalProducts(prev => [...prev, base64])
+                      setAdditionalFromPhone(prev => [...prev, true])
+                    }
+                  }}
+                  models={allModels}
+                  selectedModelId={selectedModel}
+                  onSelectModel={setSelectedModel}
+                  onModelUpload={() => modelUploadRef.current?.click()}
+                  onModelZoom={(url) => setFullscreenImage(url)}
+                  onViewMoreModels={() => setShowModelPicker(true)}
+                  onModelDrop={async (base64) => {
+                    const newAsset = {
+                      id: generateId(),
+                      type: 'model' as const,
+                      name: `${t.common.model} ${new Date().toLocaleDateString()}`,
+                      imageUrl: base64,
+                    }
+                    await addUserAsset(newAsset)
+                    setSelectedModel(newAsset.id)
+                  }}
+                  backgrounds={allBackgrounds}
+                  selectedBgId={selectedBg}
+                  onSelectBg={setSelectedBg}
+                  onBgUpload={() => bgUploadRef.current?.click()}
+                  onBgZoom={(url) => setFullscreenImage(url)}
+                  onViewMoreBgs={() => setShowScenePicker(true)}
+                  onBgDrop={async (base64) => {
+                    const newAsset = {
+                      id: generateId(),
+                      type: 'background' as const,
+                      name: `${t.common.background} ${new Date().toLocaleDateString()}`,
+                      imageUrl: base64,
+                    }
+                    await addUserAsset(newAsset)
+                    setSelectedBg(newAsset.id)
+                  }}
+                  creditCost={4}
+                  onGenerate={() => {
+                    handleShootIt()
+                  }}
+                  t={t}
+                />
               ) : (
                 /* Mobile Review Mode */
                 <div className="absolute inset-0 flex flex-col">
