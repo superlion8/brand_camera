@@ -36,6 +36,10 @@ import { useIsDesktop } from "@/hooks/useIsMobile"
 import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
 import { ReviewModeLayout } from "@/components/shared/ReviewModeLayout"
+import { MobilePageHeader } from "@/components/shared/MobilePageHeader"
+import { CameraBottomBar } from "@/components/shared/CameraBottomBar"
+import { CameraOverlay } from "@/components/shared/CameraOverlay"
+import { ProductPreviewArea } from "@/components/shared/ProductPreviewArea"
 
 type PageMode = "camera" | "review" | "processing" | "results"
 
@@ -206,14 +210,14 @@ function LifestylePageContent() {
         }
       } catch (e) {
         console.log('Permission API not supported, trying direct stream access')
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true })
-          stream.getTracks().forEach(track => track.stop())
-          setCameraReady(true)
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+        stream.getTracks().forEach(track => track.stop())
+        setCameraReady(true)
           localStorage.setItem('cameraPermissionGranted', 'true')
         } catch (streamError) {
           console.log('Camera access denied or unavailable')
-          setHasCamera(false)
+        setHasCamera(false)
         }
       }
       setPermissionChecked(true)
@@ -221,7 +225,7 @@ function LifestylePageContent() {
     
     // Wait for screen loading to determine if desktop
     if (!screenLoading) {
-      checkCameraPermission()
+    checkCameraPermission()
     }
   }, [isDesktop, screenLoading])
 
@@ -567,21 +571,14 @@ function LifestylePageContent() {
             className="flex-1 relative overflow-hidden flex flex-col"
           >
             {/* Header - Mobile only */}
-            {!isDesktop && (
-              <div className="absolute top-4 left-4 right-4 z-20 flex justify-between items-center">
-                <button
-                  onClick={mode === "review" ? handleRetake : () => router.push("/")}
-                  className="w-10 h-10 rounded-full bg-black/20 text-white backdrop-blur-md flex items-center justify-center"
-                >
-                  {mode === "review" ? <X className="w-6 h-6" /> : <Home className="w-5 h-5" />}
-                </button>
-                <div className="px-3 py-1.5 rounded-full bg-black/20 backdrop-blur-md border border-white/10 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-purple-400" />
-                  <span className="text-white text-xs font-medium">{t.lifestyle?.title || 'LifeStyle 街拍'}</span>
-                </div>
-                <div className="w-10" />
-              </div>
-            )}
+            <MobilePageHeader
+              show={!isDesktop}
+              backAction={mode === "review" ? "close" : "home"}
+              onBack={mode === "review" ? handleRetake : undefined}
+              title={t.lifestyle?.title || 'LifeStyle 街拍'}
+              titleIcon={<Sparkles className="w-4 h-4" />}
+              titleIconColor="text-purple-400"
+            />
             
             {/* Selection Badges */}
             {mode === "review" && (selectedModel || selectedScene) && (
@@ -675,10 +672,10 @@ function LifestylePageContent() {
                               <p className="text-sm font-medium text-zinc-700">{t.lifestyle?.uploadProduct || '上传商品图片'}</p>
                               <p className="text-xs text-zinc-400 mt-1">{t.common?.clickToUploadOrDrag || '点击上传或拖拽图片'}</p>
                             </div>
-                          </button>
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
                   </div>
                 </div>
               ) : mode === "review" && isDesktop ? (
@@ -821,38 +818,14 @@ function LifestylePageContent() {
                 /* Desktop: Hide bottom controls in camera mode */
                 <div className="hidden" />
               ) : (
-                <div className="flex items-center justify-center gap-8 pb-4">
-                  {/* Album - Left of shutter */}
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors"
-                  >
-                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-                      <ImageIcon className="w-6 h-6" />
-                    </div>
-                    <span className="text-[10px]">{t.lifestyle?.album || '相册'}</span>
-                  </button>
-
-                  {/* Shutter - Mobile only */}
-                  <button 
-                    onClick={handleCapture}
-                    disabled={!hasCamera}
-                    className="w-20 h-20 rounded-full border-4 border-white/30 flex items-center justify-center relative group active:scale-95 transition-transform disabled:opacity-50"
-                  >
-                    <div className="w-[72px] h-[72px] bg-white rounded-full group-active:bg-gray-200 transition-colors border-2 border-black" />
-                  </button>
-
-                  {/* Asset Library - Right of shutter */}
-                  <button 
-                    onClick={() => setShowProductPanel(true)}
-                    className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors"
-                  >
-                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-                      <FolderHeart className="w-6 h-6" />
-                    </div>
-                    <span className="text-[10px]">{t.lifestyle?.assetLibrary || '资源库'}</span>
-                  </button>
-                </div>
+                <CameraBottomBar
+                  onAlbumClick={() => fileInputRef.current?.click()}
+                  onShutterClick={handleCapture}
+                  onAssetClick={() => setShowProductPanel(true)}
+                  shutterDisabled={!hasCamera}
+                  albumLabel={t.lifestyle?.album || '相册'}
+                  assetLabel={t.lifestyle?.assetLibrary || '资源库'}
+                />
               )}
             </div>
             )}
@@ -883,10 +856,10 @@ function LifestylePageContent() {
             title={t.lifestyle?.results || 'LifeStyle Results'}
             onBack={handleRetake}
             images={Array.from({ length: LIFESTYLE_NUM_IMAGES }).map((_, i) => {
-              const url = generatedImages[i]
-              const currentTask = tasks.find(t => t.id === currentTaskId)
-              const slot = currentTask?.imageSlots?.[i]
-              const status = slot?.status || (url ? 'completed' : 'generating')
+                  const url = generatedImages[i]
+                  const currentTask = tasks.find(t => t.id === currentTaskId)
+                  const slot = currentTask?.imageSlots?.[i]
+                  const status = slot?.status || (url ? 'completed' : 'generating')
               return {
                 url,
                 status: status as 'completed' | 'pending' | 'generating' | 'failed',
@@ -980,7 +953,7 @@ function LifestylePageContent() {
           </ResultsView>
         )}
       </AnimatePresence>
-      
+
       {/* Fullscreen Image - Using shared component */}
       <FullscreenImageViewer
         open={!!fullscreenImage}
@@ -994,8 +967,8 @@ function LifestylePageContent() {
         onClose={() => setShowProductPanel(false)}
         onSelect={(imageUrl) => {
           setCapturedImage(imageUrl)
-                            setProductFromPhone(false)
-                            setMode("review")
+                          setProductFromPhone(false)
+                          setMode("review")
         }}
         onUploadClick={() => fileInputRef.current?.click()}
         themeColor="purple"

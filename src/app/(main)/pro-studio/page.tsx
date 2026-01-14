@@ -39,6 +39,10 @@ import { useIsDesktop } from "@/hooks/useIsMobile"
 import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
 import { ReviewModeLayout } from "@/components/shared/ReviewModeLayout"
+import { MobilePageHeader } from "@/components/shared/MobilePageHeader"
+import { CameraBottomBar } from "@/components/shared/CameraBottomBar"
+import { CameraOverlay } from "@/components/shared/CameraOverlay"
+import { ProductPreviewArea } from "@/components/shared/ProductPreviewArea"
 
 type PageMode = "camera" | "review" | "processing" | "results"
 
@@ -872,19 +876,13 @@ function ProStudioPageContent() {
             exit={{ opacity: 0 }}
             className="flex-1 relative overflow-hidden flex flex-col"
           >
-            {/* Top Return Button - Hide home button on desktop, show retake in review mode */}
-            <div className={`absolute top-4 left-4 z-20 ${mode === "camera" && isDesktop ? 'hidden' : ''}`}>
-              <button
-                onClick={mode === "review" ? handleRetake : () => router.push("/")}
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                  isDesktop
-                    ? 'bg-zinc-200 text-zinc-700 hover:bg-zinc-300'
-                    : 'bg-black/20 text-white hover:bg-black/40 backdrop-blur-md'
-                }`}
-              >
-                {mode === "review" ? <X className="w-6 h-6" /> : <Home className="w-5 h-5" />}
-              </button>
-            </div>
+            {/* Top Return Button - Hide on desktop camera mode */}
+            <MobilePageHeader
+              show={!(mode === "camera" && isDesktop)}
+              backAction={mode === "review" ? "close" : "home"}
+              onBack={mode === "review" ? handleRetake : undefined}
+              variant={isDesktop ? "light" : "dark"}
+            />
 
             {/* Viewfinder / Captured Image */}
             <div className="flex-1 relative">
@@ -1010,99 +1008,28 @@ function ProStudioPageContent() {
                   </div>
                 </div>
               ) : (
-                <div className="absolute inset-0">
-                  {/* 第一张商品图片 - 全屏显示 */}
-                  <img 
-                    src={capturedImage || ""} 
-                    alt="商品" 
-                    className="w-full h-full object-cover"
-                  />
-                  
-                  {/* 右下角额外商品区域 */}
-                  {mode === "review" && (
-                    <div className="absolute bottom-4 right-4 flex items-end gap-2">
-                      {/* 已添加的额外商品缩略图 */}
-                      {additionalImages.map((img, index) => (
-                        <div 
-                          key={index} 
-                          className="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-white shadow-lg group"
-                        >
-                          <img 
-                            src={img} 
-                            alt={`商品${index + 2}`} 
-                            className="w-full h-full object-cover"
-                          />
-                          {/* 删除按钮 */}
-                          <button
-                            onClick={() => {
-                              setAdditionalImages(prev => prev.filter((_, i) => i !== index))
-                              setAdditionalFromPhone(prev => prev.filter((_, i) => i !== index))
-                            }}
-                            className="absolute top-0.5 right-0.5 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center"
-                          >
-                            <X className="w-3 h-3 text-white" />
-                          </button>
-                          {/* 序号标签 */}
-                          <div className="absolute bottom-0.5 left-0.5 px-1.5 py-0.5 bg-black/60 rounded text-[10px] text-white font-medium">
-                            +{index + 1}
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {/* 添加更多按钮 - 未达到最大数量时显示 */}
-                      {additionalImages.length < 3 && (
-                        <button
-                          onClick={() => setShowProduct2Panel(true)}
-                          className="w-16 h-16 rounded-xl bg-black/60 backdrop-blur-md border-2 border-dashed border-white/40 flex flex-col items-center justify-center hover:bg-black/70 transition-colors"
-                        >
-                          <Plus className="w-5 h-5 text-white" />
-                          <span className="text-[10px] text-white/80 mt-0.5">{t.proStudio?.add || 'Add'}</span>
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Selection Badges */}
-              {mode === "review" && (
-                <div className="absolute top-16 left-0 right-0 flex justify-center gap-2 z-10 px-4 flex-wrap pointer-events-none">
-                  {selectedModel && (
-                    <span className="px-2 py-1 bg-black/50 text-white text-xs rounded-full backdrop-blur-md">
-                      模特: {selectedModel.name}
-                    </span>
-                  )}
-                  {selectedBg && (
-                    <span className="px-2 py-1 bg-black/50 text-white text-xs rounded-full backdrop-blur-md">
-                      背景: {selectedBg.name}
-                    </span>
-                  )}
-                </div>
+                <ProductPreviewArea
+                  mainImage={capturedImage}
+                  additionalImages={mode === "review" ? additionalImages : []}
+                  maxAdditionalImages={3}
+                  onAddProduct={mode === "review" ? () => setShowProduct2Panel(true) : undefined}
+                  onRemoveProduct={mode === "review" ? (index) => {
+                    setAdditionalImages(prev => prev.filter((_, i) => i !== index))
+                    setAdditionalFromPhone(prev => prev.filter((_, i) => i !== index))
+                  } : undefined}
+                  addLabel={t.proStudio?.add || 'Add'}
+                  badges={mode === "review" ? [
+                    ...(selectedModel?.name ? [{ label: '模特', value: selectedModel.name }] : []),
+                    ...(selectedBg?.name ? [{ label: '背景', value: selectedBg.name }] : []),
+                  ] : []}
+                />
               )}
 
               {/* Camera Overlays - Mobile only */}
-              {mode === "camera" && !isDesktop && (
-                <>
-                  <div className="absolute inset-0 pointer-events-none opacity-30">
-                    <div className="w-full h-full grid grid-cols-3 grid-rows-3">
-                      {[...Array(9)].map((_, i) => (
-                        <div key={i} className="border border-white/20" />
-                      ))}
-                    </div>
-                  </div>
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="w-64 h-64 border border-white/50 rounded-lg relative">
-                      <div className="absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 border-white" />
-                      <div className="absolute -top-1 -right-1 w-4 h-4 border-t-4 border-r-4 border-white" />
-                      <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-4 border-l-4 border-white" />
-                      <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-4 border-r-4 border-white" />
-                    </div>
-                  </div>
-                  <div className="absolute top-8 left-0 right-0 text-center text-white/80 text-sm font-medium px-4 drop-shadow-md">
-                    {t.proStudio?.shootProduct || '拍摄商品进行专业棚拍'}
-                  </div>
-                </>
-              )}
+              <CameraOverlay
+                show={mode === "camera" && !isDesktop}
+                hint={t.proStudio?.shootProduct || '拍摄商品进行专业棚拍'}
+              />
             </div>
 
             {/* Bottom Controls */}
@@ -1152,38 +1079,14 @@ function ProStudioPageContent() {
                 /* Desktop: Hide bottom controls in camera mode - buttons are in the upload area */
                 <div className="hidden" />
               ) : (
-                <div className="flex items-center justify-center gap-8 pb-4">
-                  {/* Album */}
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors"
-                  >
-                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-                      <ImageIcon className="w-6 h-6" />
-                    </div>
-                    <span className="text-[10px]">{t.proStudio?.album || '相册'}</span>
-                  </button>
-
-                  {/* Shutter - Mobile only */}
-                  <button 
-                    onClick={handleCapture}
-                    disabled={!hasCamera}
-                    className="w-20 h-20 rounded-full border-4 border-white/30 flex items-center justify-center relative group active:scale-95 transition-transform disabled:opacity-50"
-                  >
-                    <div className="w-[72px] h-[72px] bg-white rounded-full group-active:bg-gray-200 transition-colors border-2 border-black" />
-                  </button>
-
-                  {/* Asset Library */}
-                  <button 
-                    onClick={() => setShowProductPanel(true)}
-                    className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors"
-                  >
-                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-                      <FolderHeart className="w-6 h-6" />
-                    </div>
-                    <span className="text-[10px]">{t.proStudio?.assetLibrary || '资源库'}</span>
-                  </button>
-                </div>
+                <CameraBottomBar
+                  onAlbumClick={() => fileInputRef.current?.click()}
+                  onShutterClick={handleCapture}
+                  onAssetClick={() => setShowProductPanel(true)}
+                  shutterDisabled={!hasCamera}
+                  albumLabel={t.proStudio?.album || '相册'}
+                  assetLabel={t.proStudio?.assetLibrary || '资源库'}
+                />
               )}
             </div>
 

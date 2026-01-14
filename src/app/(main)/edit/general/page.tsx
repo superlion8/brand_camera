@@ -249,31 +249,31 @@ export default function GeneralEditPage() {
       const generatedImages: string[] = []
       const generateSingle = async (index: number): Promise<string | null> => {
         try {
-          const response = await fetchWithTimeout("/api/edit", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
+      const response = await fetchWithTimeout("/api/edit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
               inputImages: compressedImages,
-              customPrompt: prompt,
+          customPrompt: prompt,
               taskId: count === 1 ? taskId : `${taskId}-${index}`,
               aspectRatio: ratio,
               resolution: res,
-            }),
+        }),
           }, 180000)
-          
-          const responseText = await response.text()
-          let data: any
-          try {
-            data = JSON.parse(responseText)
-          } catch (parseError) {
+      
+      const responseText = await response.text()
+      let data: any
+      try {
+        data = JSON.parse(responseText)
+      } catch (parseError) {
             console.error(`[Edit ${index}] Non-JSON response:`, responseText.substring(0, 200))
-            if (response.status === 413 || responseText.includes('Request Entity Too Large')) {
+        if (response.status === 413 || responseText.includes('Request Entity Too Large')) {
               throw new Error('Image too large')
-            }
+        }
             throw new Error(`Server error: ${response.status}`)
-          }
-          
-          if (data.success && data.image) {
+      }
+      
+      if (data.success && data.image) {
             console.log(`[Edit ${index}] Success`)
             return data.image
           }
@@ -311,9 +311,9 @@ export default function GeneralEditPage() {
             resolution: res,
           },
         }, true) // Skip cloud sync since backend saves
-
+        
         await confirmQuota()
-
+        
         if (isGeneratingRef.current) {
           setResultImages(successfulImages)
           setResultImage(successfulImages[0])
@@ -479,20 +479,20 @@ export default function GeneralEditPage() {
     <div className="h-full flex flex-col bg-zinc-50">
       {/* Header - Mobile only */}
       {!isDesktop && (
-        <div className="h-14 border-b bg-white flex items-center px-4 shrink-0">
-          <button
-            onClick={() => router.push("/edit")}
-            className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 text-zinc-600" />
-          </button>
-          <div className="flex items-center gap-2 ml-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-              <Wand2 className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-semibold text-zinc-900">{t.edit?.generalEdit || 'General Edit'}</span>
+      <div className="h-14 border-b bg-white flex items-center px-4 shrink-0">
+        <button
+          onClick={() => router.push("/edit")}
+          className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5 text-zinc-600" />
+        </button>
+        <div className="flex items-center gap-2 ml-2">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+            <Wand2 className="w-4 h-4 text-white" />
           </div>
+            <span className="font-semibold text-zinc-900">{t.edit?.generalEdit || 'General Edit'}</span>
         </div>
+      </div>
       )}
       
       {/* PC Web: Two-column layout - Input on left, Output on right */}
@@ -912,62 +912,62 @@ export default function GeneralEditPage() {
         </div>
       ) : (
         /* Mobile: Original layout */
-        <div className="flex-1 overflow-y-auto pb-24">
-          {/* Image Area */}
-          <div className="bg-zinc-100 min-h-[280px] flex items-center justify-center relative p-4">
-            {inputImages.length === 0 ? (
-              <div className="w-full max-w-sm space-y-2">
-                {/* Camera */}
+      <div className="flex-1 overflow-y-auto pb-24">
+        {/* Image Area */}
+        <div className="bg-zinc-100 min-h-[280px] flex items-center justify-center relative p-4">
+          {inputImages.length === 0 ? (
+            <div className="w-full max-w-sm space-y-2">
+              {/* Camera */}
+              <button
+                onClick={() => {
+                  setActiveImageSlot(0)
+                  setShowCamera(true)
+                }}
+                className="w-full h-16 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white flex items-center justify-center gap-3 transition-colors shadow-lg shadow-purple-200"
+              >
+                <Camera className="w-5 h-5" />
+                  <span className="font-medium">{t.edit?.takePhoto || 'Take Photo'}</span>
+              </button>
+              
+              <div className="grid grid-cols-3 gap-2">
+                {/* Album */}
                 <button
                   onClick={() => {
                     setActiveImageSlot(0)
-                    setShowCamera(true)
+                    fileInputRef.current?.click()
                   }}
-                  className="w-full h-16 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white flex items-center justify-center gap-3 transition-colors shadow-lg shadow-purple-200"
+                  className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-1.5 transition-colors"
                 >
-                  <Camera className="w-5 h-5" />
-                  <span className="font-medium">{t.edit?.takePhoto || 'Take Photo'}</span>
+                  <Upload className="w-4 h-4 text-zinc-500" />
+                    <span className="text-xs text-zinc-700">{t.camera?.album || 'Album'}</span>
                 </button>
                 
-                <div className="grid grid-cols-3 gap-2">
-                  {/* Album */}
-                  <button
-                    onClick={() => {
-                      setActiveImageSlot(0)
-                      fileInputRef.current?.click()
-                    }}
-                    className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-1.5 transition-colors"
-                  >
-                    <Upload className="w-4 h-4 text-zinc-500" />
-                    <span className="text-xs text-zinc-700">{t.camera?.album || 'Album'}</span>
-                  </button>
-                  
-                  {/* Asset library */}
-                  <button
-                    onClick={() => {
-                      setActiveImageSlot(0)
-                      setShowProductPanel(true)
-                    }}
-                    className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-1.5 transition-colors"
-                  >
-                    <FolderHeart className="w-4 h-4 text-zinc-500" />
+                {/* Asset library */}
+                <button
+                  onClick={() => {
+                    setActiveImageSlot(0)
+                    setShowProductPanel(true)
+                  }}
+                  className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-1.5 transition-colors"
+                >
+                  <FolderHeart className="w-4 h-4 text-zinc-500" />
                     <span className="text-xs text-zinc-700">{t.edit?.selectFromAssets || 'Assets'}</span>
-                  </button>
-                  
-                  {/* Gallery */}
-                  <button
-                    onClick={() => {
-                      setActiveImageSlot(0)
-                      setShowGalleryPanel(true)
-                    }}
-                    className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-1.5 transition-colors"
-                  >
-                    <Images className="w-4 h-4 text-zinc-500" />
+                </button>
+                
+                {/* Gallery */}
+                <button
+                  onClick={() => {
+                    setActiveImageSlot(0)
+                    setShowGalleryPanel(true)
+                  }}
+                  className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-1.5 transition-colors"
+                >
+                  <Images className="w-4 h-4 text-zinc-500" />
                     <span className="text-xs text-zinc-700">{t.edit?.selectFromGallery || 'Photos'}</span>
-                  </button>
-                </div>
+                </button>
               </div>
-            ) : resultImage ? (
+            </div>
+          ) : resultImage ? (
             // Show result image when generation is complete
             <div className="relative w-full max-w-xs group">
               {/* 点击放大 */}

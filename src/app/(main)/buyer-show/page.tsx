@@ -39,6 +39,10 @@ import { useIsDesktop } from "@/hooks/useIsMobile"
 import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
 import { ReviewModeLayout } from "@/components/shared/ReviewModeLayout"
+import { MobilePageHeader } from "@/components/shared/MobilePageHeader"
+import { CameraBottomBar } from "@/components/shared/CameraBottomBar"
+import { CameraOverlay } from "@/components/shared/CameraOverlay"
+import { ProductPreviewArea } from "@/components/shared/ProductPreviewArea"
 
 // Helper to map API error codes to translated messages
 const getErrorMessage = (error: string, t: any): string => {
@@ -508,9 +512,9 @@ function CameraPageContent() {
     
     // 预扣配额（使用统一 hook）
     const reserveResult = await reserveQuota({
-          taskId,
-          imageCount: CAMERA_NUM_IMAGES,
-          taskType: 'model_studio',
+        taskId,
+        imageCount: CAMERA_NUM_IMAGES,
+        taskType: 'model_studio',
     })
     
     if (!reserveResult.success) {
@@ -1120,16 +1124,11 @@ function CameraPageContent() {
             className="flex-1 relative overflow-hidden flex flex-col"
           >
             {/* Top Return Button - Mobile only */}
-            {!isDesktop && (
-              <div className="absolute top-4 left-4 z-20">
-                <button
-                  onClick={mode === "review" ? handleRetake : handleReturn}
-                  className="w-10 h-10 rounded-full bg-black/20 text-white hover:bg-black/40 backdrop-blur-md flex items-center justify-center transition-colors"
-                >
-                  {mode === "review" ? <X className="w-6 h-6" /> : <Home className="w-5 h-5" />}
-                </button>
-              </div>
-            )}
+            <MobilePageHeader
+              show={!isDesktop}
+              backAction={mode === "review" ? "close" : "home"}
+              onBack={mode === "review" ? handleRetake : handleReturn}
+            />
 
             {/* Viewfinder / Captured Image */}
             <div className={`flex-1 relative ${isDesktop && mode === "camera" ? 'bg-zinc-50' : ''}`}>
@@ -1207,10 +1206,10 @@ function CameraPageContent() {
                               <p className="text-sm font-medium text-zinc-700">{t.camera?.uploadProduct || '上传商品图片'}</p>
                               <p className="text-xs text-zinc-400 mt-1">{t.common?.clickToUploadOrDrag || '点击上传或拖拽图片'}</p>
                             </div>
-                          </button>
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
                   </div>
                 </div>
               ) : mode === "camera" && hasCamera && permissionChecked && !isDesktop ? (
@@ -1463,41 +1462,17 @@ function CameraPageContent() {
                 /* Desktop: Hide bottom controls in camera mode */
                 <div className="hidden" />
               ) : (
-                <div className="flex items-center justify-center gap-8 pb-4">
-                  {/* Album - Left of shutter */}
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors"
-                  >
-                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-                      <ImageIcon className="w-6 h-6" />
-                    </div>
-                    <span className="text-[10px]">{t.camera.album}</span>
-                  </button>
-
-                  {/* Shutter - Mobile only */}
-                  <button 
-                    onClick={handleCapture}
-                    disabled={!hasCamera}
-                    className="w-20 h-20 rounded-full border-4 border-white/30 flex items-center justify-center relative group active:scale-95 transition-transform disabled:opacity-50"
-                  >
-                    <div className="w-[72px] h-[72px] bg-white rounded-full group-active:bg-gray-200 transition-colors border-2 border-black" />
-                  </button>
-
-                  {/* Asset Library - Right of shutter */}
-                  <button 
-                    onClick={() => setShowProductPanel(true)}
-                    className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors"
-                  >
-                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-                      <FolderHeart className="w-6 h-6" />
-                    </div>
-                    <span className="text-[10px]">{t.camera.assetLibrary}</span>
-                  </button>
-                </div>
+                <CameraBottomBar
+                  onAlbumClick={() => fileInputRef.current?.click()}
+                  onShutterClick={handleCapture}
+                  onAssetClick={() => setShowProductPanel(true)}
+                  shutterDisabled={!hasCamera}
+                  albumLabel={t.camera.album}
+                  assetLabel={t.camera.assetLibrary}
+                />
               )}
-            </div>
-            )}
+                        </div>
+                      )}
             
             {/* Model and Scene Pickers are rendered at the page level */}
 
@@ -1525,7 +1500,7 @@ function CameraPageContent() {
                   setAdditionalProducts(prev => [...prev, imageUrl])
                   setAdditionalFromPhone(prev => [...prev, false])
                 }
-                              setShowProduct2Panel(false)
+                          setShowProduct2Panel(false)
               }}
               onUploadClick={() => fileInputRef2.current?.click()}
               themeColor="blue"

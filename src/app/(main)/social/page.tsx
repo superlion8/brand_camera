@@ -37,6 +37,8 @@ import { useIsDesktop } from "@/hooks/useIsMobile"
 import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
 import { ReviewModeLayout } from "@/components/shared/ReviewModeLayout"
+import { MobilePageHeader } from "@/components/shared/MobilePageHeader"
+import { CameraBottomBar } from "@/components/shared/CameraBottomBar"
 
 // Helper to map API error codes to translated messages
 const getErrorMessage = (error: string, t: any): string => {
@@ -769,16 +771,11 @@ function SocialPageContent() {
             className="flex-1 relative overflow-hidden flex flex-col"
           >
             {/* Top Return Button - Mobile only */}
-            {!isDesktop && (
-              <div className="absolute top-4 left-4 z-20">
-                <button
-                  onClick={mode === "review" ? handleRetake : handleReturn}
-                  className="w-10 h-10 rounded-full bg-black/20 text-white hover:bg-black/40 backdrop-blur-md flex items-center justify-center transition-colors"
-                >
-                  {mode === "review" ? <X className="w-6 h-6" /> : <Home className="w-5 h-5" />}
-                </button>
-              </div>
-            )}
+            <MobilePageHeader
+              show={!isDesktop}
+              backAction={mode === "review" ? "close" : "home"}
+              onBack={mode === "review" ? handleRetake : handleReturn}
+            />
             
             {/* Social Mode Badge */}
             <div className="absolute top-4 right-4 z-20">
