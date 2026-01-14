@@ -218,14 +218,14 @@ function ProStudioPageContent() {
   // State
   const [mode, setMode] = useState<PageMode>("camera")
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
-  const [capturedImage2, setCapturedImage2] = useState<string | null>(null) // 第二张商品图片
+  const [additionalImages, setAdditionalImages] = useState<string[]>([]) // 额外商品图片（最多3张）
   const [hasCamera, setHasCamera] = useState(true)
   const [cameraReady, setCameraReady] = useState(false)
   const [permissionChecked, setPermissionChecked] = useState(false)
   
   // Track if product images came from phone upload (not asset library)
   const [productFromPhone, setProductFromPhone] = useState(false)
-  const [product2FromPhone, setProduct2FromPhone] = useState(false)
+  const [additionalFromPhone, setAdditionalFromPhone] = useState<boolean[]>([]) // 额外商品来源追踪
   
   // Selection state
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null)
@@ -427,24 +427,24 @@ function ProStudioPageContent() {
         setCapturedImage(base64)
         setProductFromPhone(true) // Mark as uploaded from phone
         setMode("review")
-      } else {
-        // 第二张商品图片
-        setCapturedImage2(base64)
-        setProduct2FromPhone(true) // Mark as uploaded from phone
-        // 不立即分析，等用户点击"下一步"时再分析
+      } else if (additionalImages.length < 3) {
+        // 额外商品图片
+        setAdditionalImages(prev => [...prev, base64])
+        setAdditionalFromPhone(prev => [...prev, true]) // Mark as uploaded from phone
       }
     }
   }
   
-  // 上传第二张商品图片
+  // 上传额外商品图片
   const handleFileUpload2 = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
+    if (file && additionalImages.length < 3) {
       const base64 = await fileToBase64(file)
-      setCapturedImage2(base64)
-      setProduct2FromPhone(true) // Mark as uploaded from phone
-      // 不立即分析，等用户点击"下一步"时再分析
+      setAdditionalImages(prev => [...prev, base64])
+      setAdditionalFromPhone(prev => [...prev, true]) // Mark as uploaded from phone
+      setShowProduct2Panel(false) // 关闭面板
     }
+    e.target.value = '' // 重置 input 以便重复选择同一文件
   }
   
   // 分析商品类型（用于搭配页面）
@@ -469,9 +469,9 @@ function ProStudioPageContent() {
   // 重拍
   const handleRetake = () => {
     setCapturedImage(null)
-    setCapturedImage2(null)
+    setAdditionalImages([])
     setProductFromPhone(false)
-    setProduct2FromPhone(false)
+    setAdditionalFromPhone([])
     setSelectedModelId(null)
     setSelectedBgId(null)
     setGeneratedImages([])
@@ -536,18 +536,20 @@ function ProStudioPageContent() {
       // 压缩图片以减少请求体大小（Vercel 限制 4.5MB）
       console.log("[ProStudio] Compressing product images...")
       const compressedImage = await compressBase64Image(capturedImage, 1280)
-      // Compress additional product if exists
-      const compressedImage2 = capturedImage2 ? await compressBase64Image(capturedImage2, 1280) : null
+      // Compress additional products if exist
+      const compressedAdditional = await Promise.all(
+        additionalImages.map(img => compressBase64Image(img, 1280))
+      )
       console.log(`[ProStudio] Compressed main: ${(capturedImage.length / 1024).toFixed(0)}KB -> ${(compressedImage.length / 1024).toFixed(0)}KB`)
-      if (compressedImage2) {
-        console.log(`[ProStudio] Compressed additional product`)
+      if (compressedAdditional.length > 0) {
+        console.log(`[ProStudio] Compressed ${compressedAdditional.length} additional products`)
       }
 
       // Build productImages array
       const productImages = [{ imageUrl: compressedImage }]
-      if (compressedImage2) {
-        productImages.push({ imageUrl: compressedImage2 })
-      }
+      compressedAdditional.forEach(img => {
+        productImages.push({ imageUrl: img })
+      })
       
       // 使用 SSE 调用新 API
       // 注意：不使用 AbortController，用户离开页面后后端继续生成
@@ -807,11 +809,19 @@ function ProStudioPageContent() {
               mainProductImage={capturedImage}
               onMainProductChange={handleRetake}
               onMainProductZoom={(url) => setFullscreenImage(url)}
-              additionalProducts={capturedImage2 ? [capturedImage2] : []}
+              additionalProducts={additionalImages}
               maxAdditionalProducts={3}
               onAddProduct={() => setShowProduct2Panel(true)}
-              onRemoveProduct={() => setCapturedImage2(null)}
-              onDropProduct={(base64) => setCapturedImage2(base64)}
+              onRemoveProduct={(index) => {
+                setAdditionalImages(prev => prev.filter((_, i) => i !== index))
+                setAdditionalFromPhone(prev => prev.filter((_, i) => i !== index))
+              }}
+              onDropProduct={(base64) => {
+                if (additionalImages.length < 3) {
+                  setAdditionalImages(prev => [...prev, base64])
+                  setAdditionalFromPhone(prev => [...prev, false])
+                }
+              }}
               models={allModels}
               selectedModelId={selectedModelId}
               onSelectModel={setSelectedModelId}
@@ -1008,29 +1018,48 @@ function ProStudioPageContent() {
                     className="w-full h-full object-cover"
                   />
                   
-                  {/* 如果有第二张商品，右下角显示缩略图 */}
-                  {capturedImage2 && (
-                    <div className="absolute bottom-4 right-4 w-20 h-20 rounded-xl overflow-hidden border-2 border-white shadow-lg">
-                      <img 
-                        src={capturedImage2} 
-                        alt="商品2" 
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                        <span className="text-white text-xs font-medium">+1</span>
-                      </div>
+                  {/* 右下角额外商品区域 */}
+                  {mode === "review" && (
+                    <div className="absolute bottom-4 right-4 flex items-end gap-2">
+                      {/* 已添加的额外商品缩略图 */}
+                      {additionalImages.map((img, index) => (
+                        <div 
+                          key={index} 
+                          className="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-white shadow-lg group"
+                        >
+                          <img 
+                            src={img} 
+                            alt={`商品${index + 2}`} 
+                            className="w-full h-full object-cover"
+                          />
+                          {/* 删除按钮 */}
+                          <button
+                            onClick={() => {
+                              setAdditionalImages(prev => prev.filter((_, i) => i !== index))
+                              setAdditionalFromPhone(prev => prev.filter((_, i) => i !== index))
+                            }}
+                            className="absolute top-0.5 right-0.5 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center"
+                          >
+                            <X className="w-3 h-3 text-white" />
+                          </button>
+                          {/* 序号标签 */}
+                          <div className="absolute bottom-0.5 left-0.5 px-1.5 py-0.5 bg-black/60 rounded text-[10px] text-white font-medium">
+                            +{index + 1}
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {/* 添加更多按钮 - 未达到最大数量时显示 */}
+                      {additionalImages.length < 3 && (
+                        <button
+                          onClick={() => setShowProduct2Panel(true)}
+                          className="w-16 h-16 rounded-xl bg-black/60 backdrop-blur-md border-2 border-dashed border-white/40 flex flex-col items-center justify-center hover:bg-black/70 transition-colors"
+                        >
+                          <Plus className="w-5 h-5 text-white" />
+                          <span className="text-[10px] text-white/80 mt-0.5">{t.proStudio?.add || 'Add'}</span>
+                        </button>
+                      )}
                     </div>
-                  )}
-                  
-                  {/* 右下角添加商品按钮 - 只在review模式且没有第二张商品时显示 */}
-                  {mode === "review" && !capturedImage2 && (
-                    <button
-                      onClick={() => setShowProduct2Panel(true)}
-                      className="absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2.5 rounded-full bg-black/60 backdrop-blur-md text-white hover:bg-black/70 transition-colors border border-white/20"
-                    >
-                          <Plus className="w-4 h-4" />
-                      <span className="text-sm font-medium">{t.proStudio?.add || 'Add'}</span>
-                    </button>
                   )}
                 </div>
               )}
@@ -1459,17 +1488,20 @@ function ProStudioPageContent() {
         imageUrl={fullscreenImage || ''}
       />
       
-      {/* 第二件商品选择面板 */}
+      {/* 额外商品选择面板 */}
       <AssetPickerPanel
         open={showProduct2Panel}
         onClose={() => setShowProduct2Panel(false)}
         onSelect={(imageUrl) => {
-          setCapturedImage2(imageUrl)
-                          setProduct2FromPhone(false)
+          if (additionalImages.length < 3) {
+            setAdditionalImages(prev => [...prev, imageUrl])
+            setAdditionalFromPhone(prev => [...prev, false])
+          }
+          setShowProduct2Panel(false)
         }}
         onUploadClick={() => fileInputRef2.current?.click()}
         themeColor="amber"
-        title={t.proStudio?.styleOutfit || '搭配商品'}
+        title={t.proStudio?.styleOutfit || '添加商品'}
       />
       
       {/* Model Picker */}
