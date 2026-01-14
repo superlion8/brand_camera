@@ -1085,7 +1085,7 @@ function CameraPageContent() {
   }
 
   return (
-    <div className={`${isDesktop ? 'h-full relative' : 'fixed inset-0 z-30'} flex flex-col ${isDesktop ? 'bg-zinc-50' : 'bg-black'}`}>
+    <div className={`h-full relative flex flex-col ${isDesktop ? 'bg-zinc-50' : 'bg-black'}`}>
       <input 
         type="file" 
         ref={fileInputRef} 

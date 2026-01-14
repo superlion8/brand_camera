@@ -35,8 +35,9 @@ export function BottomNav({ forceHide, forceShow }: BottomNavProps = {}) {
   if (forceHide) {
     return null
   }
-  // 在相机、专业棚拍、LifeStyle 页面默认隐藏底部导航栏
-  if ((pathname.startsWith("/camera") || pathname.startsWith("/pro-studio") || pathname.startsWith("/lifestyle")) && !forceShow) {
+  // 在相机类页面默认隐藏底部导航栏（所有 Model Shot 子功能）
+  const cameraPages = ["/camera", "/pro-studio", "/lifestyle", "/buyer-show", "/social", "/product-shot", "/try-on"]
+  if (cameraPages.some(page => pathname.startsWith(page)) && !forceShow) {
     return null
   }
   
