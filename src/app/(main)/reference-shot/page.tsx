@@ -53,7 +53,7 @@ export default function ReferenceShotPage() {
   const presetStore = usePresetStore()
   const { userModels } = useAssetStore()
   const { debugMode } = useSettingsStore()
-  const { addTask, initImageSlots, updateImageSlot, updateTaskStatus, removeTask } = useGenerationTaskStore()
+  const { addTask, initImageSlots, updateImageSlot, updateTaskStatus, removeTask, tasks } = useGenerationTaskStore()
   
   // Device detection
   const { isDesktop, isMobile, isLoading: screenLoading } = useIsDesktop(1024)
@@ -147,7 +147,8 @@ export default function ReferenceShotPage() {
     // 创建任务到 generationTaskStore（Photos tab 会显示 loading）
     const taskId = addTask('reference_shot', productImages[0], {}, imageCount)
     initImageSlots(taskId, imageCount)
-    
+    setCurrentGenerationId(taskId) // 设置当前任务 ID 以便 recovery effect 使用
+
     // 预扣配额（使用统一 hook）
     await reserveQuota({ taskId, imageCount, taskType: 'reference_shot' })
     
@@ -397,6 +398,60 @@ export default function ReferenceShotPage() {
 
   // Favorite - using shared hook
   const { toggleFavorite, isFavorited } = useFavorite(currentGenerationId)
+
+  // Recovery effect: 当任务已完成但界面还在 generating 时，自动切换到 result
+  useEffect(() => {
+    if (step !== 'generating' || !currentGenerationId) return
+
+    const currentTask = tasks.find(t => t.id === currentGenerationId)
+    
+    // 如果任务在 store 中不存在
+    if (!currentTask) {
+      if (generatedImages.length > 0) {
+        console.log('[ReferenceShot] Task not found but has images, switching to result')
+        setStep('result')
+      } else {
+        console.log('[ReferenceShot] Task not found and no images, returning to upload')
+        setStep('upload')
+      }
+      return
+    }
+
+    // 如果任务状态已经是 completed 或 failed，直接切换
+    if (currentTask.status === 'completed' || currentTask.status === 'failed') {
+      console.log(`[ReferenceShot] Task status is ${currentTask.status}, switching to result`)
+      if (currentTask.imageSlots) {
+        const images = currentTask.imageSlots
+          .filter(s => s.imageUrl)
+          .map(s => ({ url: s.imageUrl!, mode: (s.genMode || 'simple') as 'simple' | 'extended' }))
+        if (images.length > 0) {
+          setGeneratedImages(images)
+        }
+      }
+      setStep('result')
+      return
+    }
+
+    if (!currentTask.imageSlots) return
+
+    // 检查是否有任何一张图片完成
+    const hasAnyCompleted = currentTask.imageSlots.some(s => s.status === 'completed')
+    // 检查是否所有图片都已处理完毕
+    const allProcessed = currentTask.imageSlots.every(s => s.status === 'completed' || s.status === 'failed')
+
+    if (hasAnyCompleted) {
+      console.log('[ReferenceShot] Task has completed images, switching to result')
+      const images = currentTask.imageSlots
+        .filter(s => s.imageUrl)
+        .map(s => ({ url: s.imageUrl!, mode: (s.genMode || 'simple') as 'simple' | 'extended' }))
+      setGeneratedImages(images)
+      setStep('result')
+    } else if (allProcessed) {
+      console.log('[ReferenceShot] All images failed, switching to result')
+      setGeneratedImages([])
+      setStep('result')
+    }
+  }, [step, currentGenerationId, tasks, generatedImages.length])
   
   // Reset and start over
   const handleReset = () => {
@@ -698,7 +753,7 @@ export default function ReferenceShotPage() {
             onReturnHome={() => router.push('/')}
             onGoToGallery={() => router.push('/gallery')}
             onDownload={handleDownload}
-            shootMoreText={t.referenceShot?.newGeneration || 'Generate Again'}
+            shootMoreText={t.camera?.shootNextSet || '拍摄下一组'}
             returnHomeText={t.camera?.returnHome || 'Return Home'}
           />
         )}
