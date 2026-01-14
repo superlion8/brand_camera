@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, memo } from "react"
+import { useState, useCallback, useRef, memo } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { X, Loader2, FolderHeart, Plus, ZoomIn } from "lucide-react"
@@ -10,6 +10,9 @@ import { useAssetStore } from "@/stores/assetStore"
 import { useTranslation } from "@/stores/languageStore"
 import { fileToBase64 } from "@/lib/utils"
 import { Asset } from "@/types"
+
+// Threshold in pixels to distinguish tap from scroll
+const TAP_THRESHOLD = 10
 
 interface AssetPickerPanelProps {
   open: boolean
@@ -63,20 +66,47 @@ const ProductItem = memo(function ProductItem({
   isDesktop: boolean
   isLoading: boolean
 }) {
+  // Track touch start position to distinguish tap from scroll
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null)
+  
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     // Prevent zoom button from triggering select
     if ((e.target as HTMLElement).closest('[data-zoom-btn]')) return
-    // Use pointerdown for faster response on mobile
-    e.preventDefault()
-    onSelect(product.imageUrl)
+    // Record start position
+    touchStartRef.current = { x: e.clientX, y: e.clientY }
+  }, [])
+  
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    // Prevent zoom button from triggering select
+    if ((e.target as HTMLElement).closest('[data-zoom-btn]')) return
+    
+    // Check if this is a tap (not a scroll)
+    if (touchStartRef.current) {
+      const dx = Math.abs(e.clientX - touchStartRef.current.x)
+      const dy = Math.abs(e.clientY - touchStartRef.current.y)
+      
+      // Only trigger if movement is within threshold (it's a tap, not a scroll)
+      if (dx < TAP_THRESHOLD && dy < TAP_THRESHOLD) {
+        onSelect(product.imageUrl)
+      }
+    }
+    touchStartRef.current = null
   }, [onSelect, product.imageUrl])
+  
+  const handlePointerCancel = useCallback(() => {
+    // Reset if touch is cancelled (e.g., scrolling takes over)
+    touchStartRef.current = null
+  }, [])
 
   return (
     <div className={`relative group ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
       <div
         onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+        onPointerLeave={handlePointerCancel}
         className={`w-full aspect-square rounded-xl overflow-hidden relative border-2 border-transparent ${themeHover} transition-colors bg-white dark:bg-zinc-800 cursor-pointer active:scale-95`}
-        style={{ touchAction: 'manipulation' }}
+        style={{ touchAction: 'pan-y' }}
       >
         <Image 
           src={product.imageUrl} 
@@ -93,12 +123,11 @@ const ProductItem = memo(function ProductItem({
       {/* Zoom Button */}
       <button
         data-zoom-btn
-        onPointerDown={(e) => {
+        onClick={(e) => {
           e.stopPropagation()
           onZoom(product.imageUrl)
         }}
         className="absolute bottom-1.5 right-1.5 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10"
-        style={{ touchAction: 'manipulation' }}
       >
         <ZoomIn className="w-3 h-3 text-white" />
       </button>
