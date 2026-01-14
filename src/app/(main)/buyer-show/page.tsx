@@ -267,6 +267,57 @@ function CameraPageContent() {
       }
     }
   }, [searchParams, tasks.length])
+
+  // Recovery effect: 当任务已完成但界面还在 processing 时，自动切换到 results
+  useEffect(() => {
+    if (mode !== 'processing' || !currentTaskId) return
+
+    const currentTask = tasks.find(t => t.id === currentTaskId)
+    
+    // 如果任务在 store 中不存在
+    if (!currentTask) {
+      if (generatedImages.length > 0 && generatedImages.some(img => img)) {
+        console.log('[BuyerShow] Task not found but has images, switching to results mode')
+        setMode('results')
+        router.replace('/buyer-show?mode=results')
+      } else {
+        console.log('[BuyerShow] Task not found and no images, returning to camera mode')
+        setMode('camera')
+        router.replace('/buyer-show')
+      }
+      return
+    }
+
+    // 如果任务状态已经是 completed 或 failed，直接切换
+    if (currentTask.status === 'completed' || currentTask.status === 'failed') {
+      console.log(`[BuyerShow] Task status is ${currentTask.status}, switching to results mode`)
+      const images = currentTask.imageSlots?.map(s => s.imageUrl || '') || currentTask.outputImageUrls || []
+      setGeneratedImages(images)
+      setMode('results')
+      router.replace('/buyer-show?mode=results')
+      return
+    }
+
+    if (!currentTask.imageSlots) return
+
+    // 检查是否有任何一张图片完成
+    const hasAnyCompleted = currentTask.imageSlots.some(s => s.status === 'completed')
+    // 检查是否所有图片都已处理完毕
+    const allProcessed = currentTask.imageSlots.every(s => s.status === 'completed' || s.status === 'failed')
+
+    if (hasAnyCompleted) {
+      console.log('[BuyerShow] Task has completed images, switching to results mode')
+      const images = currentTask.imageSlots.map(s => s.imageUrl || '')
+      setGeneratedImages(images)
+      setMode('results')
+      router.replace('/buyer-show?mode=results')
+    } else if (allProcessed) {
+      console.log('[BuyerShow] All images failed, switching to results mode')
+      setGeneratedImages([])
+      setMode('results')
+      router.replace('/buyer-show?mode=results')
+    }
+  }, [mode, currentTaskId, tasks, generatedImages, router])
   
   // Preset Store - 动态从云端加载
   const { 
