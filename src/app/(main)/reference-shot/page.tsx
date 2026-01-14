@@ -26,7 +26,7 @@ import { GalleryPickerPanel } from "@/components/shared/GalleryPickerPanel"
 import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { ProcessingView } from "@/components/shared/ProcessingView"
 import { ResultsView } from "@/components/shared/ResultsView"
-import { PhotoDetailDialog } from "@/components/shared/PhotoDetailDialog"
+import { PhotoDetailDialog, createQuickActions } from "@/components/shared/PhotoDetailDialog"
 import { TASK_CREDIT_COSTS, TaskTypes } from "@/lib/taskTypes"
 import { useFavorite } from "@/hooks/useFavorite"
 import { navigateToEdit } from "@/lib/navigation"
@@ -822,21 +822,38 @@ export default function ReferenceShotPage() {
                 label: `Product ${i + 1}`,
               })) : []}
               onInputImageClick={(url) => setZoomImage(url)}
-              quickActions={[
-                {
-                  id: 'edit',
-                  icon: <Wand2 className="w-5 h-5" />,
-                  label: t.gallery?.goEdit || 'Edit',
-                  onClick: () => {
-                    if (selectedResultIndex !== null && generatedImages[selectedResultIndex]?.url) {
-                      navigateToEdit(router, generatedImages[selectedResultIndex].url)
-                    }
-                  },
-                  bgColor: 'from-blue-50 to-indigo-50',
-                  iconBgColor: 'from-blue-500 to-indigo-500',
-                  borderColor: 'border-blue-100',
-                },
-              ]}
+              quickActions={selectedResultIndex !== null ? [
+                createQuickActions.tryOn(() => {
+                  const selectedImageUrl = generatedImages[selectedResultIndex]?.url
+                  if (selectedImageUrl) {
+                    sessionStorage.setItem('tryOnImage', selectedImageUrl)
+                    router.push('/try-on')
+                  }
+                }),
+                createQuickActions.edit(() => {
+                  const selectedImageUrl = generatedImages[selectedResultIndex]?.url
+                  if (selectedImageUrl) {
+                    setSelectedResultIndex(null)
+                    navigateToEdit(router, selectedImageUrl)
+                  }
+                }),
+                createQuickActions.groupShoot(() => {
+                  const selectedImageUrl = generatedImages[selectedResultIndex]?.url
+                  if (selectedImageUrl) {
+                    sessionStorage.setItem('groupShootImage', selectedImageUrl)
+                    setSelectedResultIndex(null)
+                    router.push('/group-shot')
+                  }
+                }),
+                createQuickActions.material(() => {
+                  const selectedImageUrl = generatedImages[selectedResultIndex]?.url
+                  if (selectedImageUrl) {
+                    sessionStorage.setItem('modifyMaterial_outputImage', selectedImageUrl)
+                    sessionStorage.setItem('modifyMaterial_inputImages', JSON.stringify(productImages.filter(Boolean)))
+                    router.push('/gallery/modify-material')
+                  }
+                }),
+              ] : []}
             />
           </ResultsView>
         )}
