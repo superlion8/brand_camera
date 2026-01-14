@@ -360,11 +360,17 @@ function LifestylePageContent() {
     try {
       setLifestyleStatus(t.common?.loading || '正在连接服务器...')
       
+      // Build product images array if there are additional products
+      const productImagesArray = capturedImage2 
+        ? [productImage, capturedImage2]
+        : undefined
+
       const response = await fetch('/api/generate-lifestyle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           productImage,
+          productImages: productImagesArray,  // Pass array if multiple products
           taskId,
           modelImage: userModelUrl || 'auto',
           sceneImage: userSceneUrl || 'auto',

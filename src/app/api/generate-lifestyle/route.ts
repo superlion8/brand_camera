@@ -303,17 +303,21 @@ async function generateLifestyleImage(
     const parts: any[] = [{ text: LIFESTYLE_FINAL_PROMPT }]
     
     if (outfitProductImages && outfitProductImages.length > 1) {
-      // Outfit mode: include all product images with labels
+      // Multi-product mode: include all product images with labels
       const slotLabels: Record<string, string> = {
         'top': '上衣',
         'pants': '裤子/裙子',
         'inner': '内衬',
         'hat': '帽子',
-        'shoes': '鞋子'
+        'shoes': '鞋子',
+        'product1': '商品1',
+        'product2': '商品2',
+        'product3': '商品3',
+        'product4': '商品4',
       }
-      
-      parts.push({ text: '\n\n【搭配模式 - 多件商品】\n请让模特同时穿上以下所有商品:' })
-      
+
+      parts.push({ text: '\n\n【搭配模式 - 多件商品】\n请让模特同时穿上/展示以下所有商品:' })
+
       for (const item of outfitProductImages) {
         parts.push({ text: `\n\n[${slotLabels[item.slot] || item.slot}]:` })
         parts.push({ inlineData: { mimeType: 'image/jpeg', data: item.data } })
@@ -388,10 +392,13 @@ export async function POST(request: NextRequest) {
       
       try {
         const body = await request.json()
-        const { productImage, modelImage, sceneImage, taskId, outfitItems } = body
+        const { productImage, modelImage, sceneImage, taskId, outfitItems, productImages } = body
         
-        // Support both single product (productImage) and multiple products (outfitItems)
-        // outfitItems format: { inner?: string, top?: string, pants?: string, hat?: string, shoes?: string }
+        // Support multiple input formats:
+        // 1. productImage - single product
+        // 2. productImages - array of product images (simple multi-product mode)
+        // 3. outfitItems - { inner?, top?, pants?, hat?, shoes? } (categorized outfit mode)
+        const hasProductImages = Array.isArray(productImages) && productImages.length > 0
         const isOutfitMode = !!outfitItems && Object.keys(outfitItems).length > 0
         
         // modelImage and sceneImage can be:
@@ -430,12 +437,34 @@ export async function POST(request: NextRequest) {
         // Convert product image(s) to base64
         send({ type: 'status', message: 'Processing product image...' })
         
-        // For outfit mode, collect all product images
+        // For multi-product mode, collect all product images
         let allProductImageData: { slot: string; data: string }[] = []
         let primaryProductImageData: string | null = null
         
-        if (isOutfitMode) {
-          // Process all outfit items
+        if (hasProductImages) {
+          // Simple array mode: productImages = [url1, url2, ...]
+          for (let i = 0; i < productImages.length; i++) {
+            const imageUrl = productImages[i]
+            if (imageUrl) {
+              const base64 = await ensureBase64Data(imageUrl)
+              if (base64) {
+                allProductImageData.push({ slot: `product${i + 1}`, data: base64 })
+                if (!primaryProductImageData) {
+                  primaryProductImageData = base64
+                }
+              }
+            }
+          }
+          
+          if (allProductImageData.length === 0) {
+            send({ type: 'error', error: 'Failed to process clothing images' })
+            controller.close()
+            return
+          }
+          
+          console.log(`[Lifestyle] Multi-product mode: ${allProductImageData.length} items`)
+        } else if (isOutfitMode) {
+          // Categorized outfit mode: outfitItems = { top?, pants?, ... }
           const slotOrder = ['top', 'pants', 'inner', 'hat', 'shoes']
           for (const slot of slotOrder) {
             const imageUrl = outfitItems[slot]
