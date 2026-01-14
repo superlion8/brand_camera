@@ -77,6 +77,8 @@ export async function POST(request: NextRequest) {
       signup_credits: newBalances.signup_credits,
       admin_give_credits: newBalances.admin_give_credits,
       purchased_credits: newBalances.purchased_credits,
+      // 累加已用 credits
+      used_credits: (quotaData.used_credits || 0) + imageCount,
     }
     
     // 只有当今天的每日奖励有效时才更新 daily_credits
@@ -112,12 +114,13 @@ export async function POST(request: NextRequest) {
       // 如果创建失败，回滚额度
       console.error('[Quota Reserve] Error creating generation, rolling back:', error)
       
-      // 回滚：把扣掉的 credits 加回去
+      // 回滚：把扣掉的 credits 加回去，同时减少 used_credits
       const rollbackData: any = {
         subscription_credits: quotaData.subscription_credits,
         signup_credits: quotaData.signup_credits,
         admin_give_credits: quotaData.admin_give_credits,
         purchased_credits: quotaData.purchased_credits,
+        used_credits: quotaData.used_credits || 0,  // 恢复原值
       }
       if (isToday(quotaData.daily_credits_date)) {
         rollbackData.daily_credits = quotaData.daily_credits
@@ -207,7 +210,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to release quota' }, { status: 500 })
     }
     
-    // 3. 退还额度
+    // 3. 退还额度并减少 used_credits
     if (refundCount > 0) {
       const { data: quotaData } = await supabase
         .from('user_quotas')
@@ -226,10 +229,12 @@ export async function DELETE(request: NextRequest) {
             admin_give_credits: newBalances.admin_give_credits,
             purchased_credits: newBalances.purchased_credits,
             // daily_credits 不退还（因为可能已经过期）
+            // 减少 used_credits（退款意味着没有实际使用）
+            used_credits: Math.max(0, (quotaData.used_credits || 0) - refundCount),
           })
           .eq('user_id', user.id)
         
-        console.log('[Quota Release] Refunded', refundCount, 'credits to admin_give_credits')
+        console.log('[Quota Release] Refunded', refundCount, 'credits, reduced used_credits')
       }
     }
     
@@ -314,10 +319,12 @@ export async function PUT(request: NextRequest) {
             signup_credits: newBalances.signup_credits,
             admin_give_credits: newBalances.admin_give_credits,
             purchased_credits: newBalances.purchased_credits,
+            // 部分退款时减少 used_credits
+            used_credits: Math.max(0, (quotaData.used_credits || 0) - refundCount),
           })
           .eq('user_id', user.id)
         
-        console.log('[Quota Update] Refunded', refundCount, 'credits (original:', originalCount, ', actual:', actualImageCount, ')')
+        console.log('[Quota Update] Refunded', refundCount, 'credits (original:', originalCount, ', actual:', actualImageCount, '), reduced used_credits')
       }
     }
     
