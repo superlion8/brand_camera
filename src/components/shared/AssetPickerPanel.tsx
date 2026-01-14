@@ -4,7 +4,6 @@ import { useState, useCallback, useRef, memo } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { X, Loader2, FolderHeart, Plus, ZoomIn } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
 import { useIsDesktop } from "@/hooks/useIsMobile"
 import { useAssetStore } from "@/stores/assetStore"
 import { useTranslation } from "@/stores/languageStore"
@@ -169,148 +168,131 @@ export function AssetPickerPanel({
     setZoomImage(url)
   }, [])
 
+  if (!open) return null
+  
   return (
-    <AnimatePresence>
-      {open && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
+    <>
+      {/* Backdrop - no blur for better mobile performance */}
+      <div
+        className="fixed inset-0 bg-black/50 z-40"
+        onClick={onClose}
+      />
+      
+      {/* Panel - simplified animation for mobile */}
+      <div
+        className={isDesktop 
+          ? "fixed inset-0 m-auto w-[700px] h-fit max-h-[80vh] bg-white dark:bg-zinc-900 rounded-2xl z-50 flex flex-col overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150"
+          : "fixed bottom-0 left-0 right-0 h-[80vh] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-200"
+        }
+        style={{ willChange: 'transform' }}
+      >
+        {/* Header */}
+        <div className={`${isDesktop ? 'h-14 px-6' : 'h-12 px-4'} border-b border-zinc-200 dark:border-zinc-700 flex items-center justify-between shrink-0`}>
+          <span className={`font-semibold ${isDesktop ? 'text-lg' : ''} text-zinc-900 dark:text-white`}>{displayTitle}</span>
+          <button
             onClick={onClose}
-          />
-          
-          {/* Panel */}
-          <motion.div
-            key={`asset-picker-${isDesktop ? 'desktop' : 'mobile'}`}
-            initial={isDesktop ? { opacity: 0, scale: 0.95 } : { y: "100%" }}
-            animate={isDesktop ? { opacity: 1, scale: 1 } : { y: 0 }}
-            exit={isDesktop ? { opacity: 0, scale: 0.95 } : { y: "100%" }}
-            transition={{ type: "tween", duration: 0.2, ease: "easeOut" }}
-            className={isDesktop 
-              ? "fixed inset-0 m-auto w-[700px] h-fit max-h-[80vh] bg-white dark:bg-zinc-900 rounded-2xl z-50 flex flex-col overflow-hidden shadow-2xl"
-              : "fixed bottom-0 left-0 right-0 h-[80vh] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
-            }
+            className="w-8 h-8 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center"
           >
-            {/* Header */}
-            <div className={`${isDesktop ? 'h-14 px-6' : 'h-12 px-4'} border-b border-zinc-200 dark:border-zinc-700 flex items-center justify-between shrink-0`}>
-              <span className={`font-semibold ${isDesktop ? 'text-lg' : ''} text-zinc-900 dark:text-white`}>{displayTitle}</span>
-              <button
-                onClick={onClose}
-                className="w-8 h-8 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center"
-              >
-                <X className={`${isDesktop ? 'w-5 h-5' : 'w-4 h-4'} text-zinc-500 dark:text-zinc-400`} />
-              </button>
+            <X className={`${isDesktop ? 'w-5 h-5' : 'w-4 h-4'} text-zinc-500 dark:text-zinc-400`} />
+          </button>
+        </div>
+        
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4 relative">
+          {/* Loading overlay */}
+          {isLoading && (
+            <div className="absolute inset-0 bg-white/80 dark:bg-zinc-900/80 flex items-center justify-center z-10 rounded-lg">
+              <Loader2 className={`w-8 h-8 ${theme.spinner} animate-spin`} />
             </div>
-            
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4 relative">
-              {/* Loading overlay */}
-              {isLoading && (
-                <div className="absolute inset-0 bg-white/80 dark:bg-zinc-900/80 flex items-center justify-center z-10 rounded-lg">
-                  <Loader2 className={`w-8 h-8 ${theme.spinner} animate-spin`} />
+          )}
+          
+          {userProducts.length > 0 || (showUploadEntry && onUploadClick) ? (
+            <div className={`grid gap-3 ${isDesktop ? 'grid-cols-5' : 'grid-cols-3'} pb-4`}>
+              {/* Upload from Album Entry */}
+              {showUploadEntry && onUploadClick && (
+                <div
+                  onClick={handleUploadClick}
+                  onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-' + themeColor + '-400', 'bg-' + themeColor + '-50') }}
+                  onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-' + themeColor + '-400', 'bg-' + themeColor + '-50') }}
+                  onDrop={async (e) => {
+                    e.preventDefault()
+                    e.currentTarget.classList.remove('border-' + themeColor + '-400', 'bg-' + themeColor + '-50')
+                    const file = e.dataTransfer.files?.[0]
+                    if (file && file.type.startsWith('image/')) {
+                      const base64 = await fileToBase64(file)
+                      if (onDropUpload) {
+                        onDropUpload(base64)
+                      } else {
+                        onSelect(base64)
+                      }
+                      onClose()
+                    }
+                  }}
+                  className={`aspect-square rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-600 ${theme.uploadHover} flex flex-col items-center justify-center gap-2 transition-colors bg-zinc-50 dark:bg-zinc-800 cursor-pointer ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}
+                >
+                  <Plus className="w-8 h-8 text-zinc-400 dark:text-zinc-500" />
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400 text-center px-2">
+                    {t.proStudio?.fromAlbum || 'From Album'}
+                  </span>
                 </div>
               )}
               
-              {userProducts.length > 0 || (showUploadEntry && onUploadClick) ? (
-                <div className={`grid gap-3 ${isDesktop ? 'grid-cols-5' : 'grid-cols-3'} pb-4`}>
-                  {/* Upload from Album Entry */}
-                  {showUploadEntry && onUploadClick && (
-                    <div
-                      onClick={handleUploadClick}
-                      onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-' + themeColor + '-400', 'bg-' + themeColor + '-50') }}
-                      onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-' + themeColor + '-400', 'bg-' + themeColor + '-50') }}
-                      onDrop={async (e) => {
-                        e.preventDefault()
-                        e.currentTarget.classList.remove('border-' + themeColor + '-400', 'bg-' + themeColor + '-50')
-                        const file = e.dataTransfer.files?.[0]
-                        if (file && file.type.startsWith('image/')) {
-                          const base64 = await fileToBase64(file)
-                          if (onDropUpload) {
-                            onDropUpload(base64)
-                          } else {
-                            onSelect(base64)
-                          }
-                          onClose()
-                        }
-                      }}
-                      className={`aspect-square rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-600 ${theme.uploadHover} flex flex-col items-center justify-center gap-2 transition-colors bg-zinc-50 dark:bg-zinc-800 cursor-pointer ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}
-                    >
-                      <Plus className="w-8 h-8 text-zinc-400 dark:text-zinc-500" />
-                      <span className="text-xs text-zinc-500 dark:text-zinc-400 text-center px-2">
-                        {t.proStudio?.fromAlbum || 'From Album'}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {userProducts.map(product => (
-                    <ProductItem
-                      key={product.id}
-                      product={product}
-                      onSelect={handleSelect}
-                      onZoom={handleZoom}
-                      themeHover={theme.accentHover}
-                      isDesktop={isDesktop ?? false}
-                      isLoading={isLoading}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-zinc-400 dark:text-zinc-500 py-12">
-                  <FolderHeart className="w-12 h-12 mb-3 opacity-30" />
-                  <p className="text-sm">{t.camera?.noMyProducts || 'No products yet'}</p>
-                  <p className="text-xs mt-1">{t.camera?.uploadInAssets || 'Upload in Assets'}</p>
-                  <button
-                    onClick={() => {
-                      onClose()
-                      router.push("/brand-assets")
-                    }}
-                    className={`mt-4 px-4 py-2 ${theme.button} text-white text-sm rounded-lg`}
-                  >
-                    {t.camera?.goUpload || 'Go Upload'}
-                  </button>
-                </div>
-              )}
+              {userProducts.map(product => (
+                <ProductItem
+                  key={product.id}
+                  product={product}
+                  onSelect={handleSelect}
+                  onZoom={handleZoom}
+                  themeHover={theme.accentHover}
+                  isDesktop={isDesktop ?? false}
+                  isLoading={isLoading}
+                />
+              ))}
             </div>
-          </motion.div>
-          
-          {/* Zoom Modal */}
-          <AnimatePresence>
-            {zoomImage && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center"
-                onClick={() => setZoomImage(null)}
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-zinc-400 dark:text-zinc-500 py-12">
+              <FolderHeart className="w-12 h-12 mb-3 opacity-30" />
+              <p className="text-sm">{t.camera?.noMyProducts || 'No products yet'}</p>
+              <p className="text-xs mt-1">{t.camera?.uploadInAssets || 'Upload in Assets'}</p>
+              <button
+                onClick={() => {
+                  onClose()
+                  router.push("/brand-assets")
+                }}
+                className={`mt-4 px-4 py-2 ${theme.button} text-white text-sm rounded-lg`}
               >
-                <button
-                  onClick={() => setZoomImage(null)}
-                  className="absolute top-4 right-4 w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors z-10"
-                >
-                  <X className="w-6 h-6 text-white" />
-                </button>
-                <motion.div
-                  initial={{ scale: 0.9 }}
-                  animate={{ scale: 1 }}
-                  exit={{ scale: 0.9 }}
-                  className="relative w-full max-w-lg aspect-square mx-4"
-                  onClick={e => e.stopPropagation()}
-                >
-                  <Image
-                    src={zoomImage}
-                    alt="Preview"
-                    fill
-                    className="object-contain"
-                  />
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </>
+                {t.camera?.goUpload || 'Go Upload'}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Zoom Modal */}
+      {zoomImage && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center animate-in fade-in duration-150"
+          onClick={() => setZoomImage(null)}
+        >
+          <button
+            onClick={() => setZoomImage(null)}
+            className="absolute top-4 right-4 w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors z-10"
+          >
+            <X className="w-6 h-6 text-white" />
+          </button>
+          <div
+            className="relative w-full max-w-lg aspect-square mx-4 animate-in zoom-in-90 duration-150"
+            onClick={e => e.stopPropagation()}
+          >
+            <Image
+              src={zoomImage}
+              alt="Preview"
+              fill
+              className="object-contain"
+            />
+          </div>
+        </div>
       )}
-    </AnimatePresence>
+    </>
   )
 }
