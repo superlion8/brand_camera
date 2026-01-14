@@ -1128,7 +1128,7 @@ function OutfitPageContent() {
       console.log('[Outfit] Max items reached, cannot add more')
       return false
     }
-    setSlots(prev => prev.map(slot =>
+    setSlots(prev => prev.map(slot => 
       slot.id === slotId
         ? { ...slot, product: { imageUrl } }
         : slot
@@ -1571,9 +1571,9 @@ function OutfitPageContent() {
       <AssetPickerPanel
         open={showAssetPicker}
         onClose={() => {
-          setShowAssetPicker(false)
-          setUploadTargetSlot(null)
-        }}
+                              setShowAssetPicker(false)
+                              setUploadTargetSlot(null)
+                            }}
         onSelect={(imageUrl) => {
           if (uploadTargetSlot) {
             handleAddProduct(imageUrl, uploadTargetSlot)
@@ -1682,9 +1682,9 @@ function OutfitPageContent() {
                         </button>
                       )}
                     </div>
-                    <AssetGrid
-                      items={[...customModels, ...studioModels, ...userModels]}
-                      selectedId={selectedModelId}
+                    <AssetGrid 
+                      items={[...customModels, ...studioModels, ...userModels]} 
+                      selectedId={selectedModelId} 
                       onSelect={(id) => setSelectedModelId(selectedModelId === id ? null : id)}
                       onUpload={() => modelUploadRef.current?.click()}
                       onZoom={(url) => setFullscreenImage(url)}

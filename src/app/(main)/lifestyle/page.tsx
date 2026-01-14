@@ -309,7 +309,7 @@ function LifestylePageContent() {
     // Clear previous results first (for Regenerate to show skeleton)
     setGeneratedImages([])
     setGeneratedModelTypes([])
-
+    
     const hasQuota = await checkQuota(LIFESTYLE_NUM_IMAGES)
     if (!hasQuota) return
     
@@ -365,7 +365,7 @@ function LifestylePageContent() {
       const productImagesArray = capturedImage2 
         ? [productImage, capturedImage2]
         : undefined
-
+      
       const response = await fetch('/api/generate-lifestyle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -473,8 +473,8 @@ function LifestylePageContent() {
                 
                 // Ensure we're in results mode (in case first image didn't trigger it)
                 if (mode === 'processing') {
-                  setMode('results')
-                  router.replace('/lifestyle?mode=results')
+                setMode('results')
+                router.replace('/lifestyle?mode=results')
                 }
                 
                 const completedTask = tasks.find(t => t.id === taskId)
@@ -904,11 +904,16 @@ function LifestylePageContent() {
             onShootNext={handleRetake}
             onGoEdit={(url) => navigateToEdit(router, url)}
             onRegenerate={handleLifestyleGenerate}
-            onImageClick={(i) => setSelectedResultIndex(i)}
+            onImageClick={(i) => {
+              // Only open detail dialog if image exists
+              if (generatedImages[i]) {
+                setSelectedResultIndex(i)
+              }
+            }}
           >
             {/* Photo Detail Dialog */}
             <PhotoDetailDialog
-              open={selectedResultIndex !== null && !!generatedImages[selectedResultIndex!]}
+              open={selectedResultIndex !== null && !!generatedImages[selectedResultIndex ?? -1]}
               onClose={() => setSelectedResultIndex(null)}
               imageUrl={selectedResultIndex !== null ? generatedImages[selectedResultIndex] || '' : ''}
               badges={[{ text: t.lifestyle?.badge || 'Lifestyle', className: 'bg-purple-500 text-white' }]}
@@ -971,8 +976,8 @@ function LifestylePageContent() {
         onClose={() => setShowProductPanel(false)}
         onSelect={(imageUrl) => {
           setCapturedImage(imageUrl)
-          setProductFromPhone(false)
-          setMode("review")
+                            setProductFromPhone(false)
+                            setMode("review")
         }}
         onUploadClick={() => fileInputRef.current?.click()}
         themeColor="purple"
@@ -1011,7 +1016,7 @@ function LifestylePageContent() {
         onClose={() => setShowProduct2Panel(false)}
         onSelect={(imageUrl) => {
           setCapturedImage2(imageUrl)
-          setProduct2FromPhone(false)
+                          setProduct2FromPhone(false)
         }}
         onUploadClick={() => fileInputRef2.current?.click()}
         themeColor="purple"

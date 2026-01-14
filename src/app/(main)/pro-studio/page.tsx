@@ -548,7 +548,7 @@ function ProStudioPageContent() {
       if (compressedImage2) {
         productImages.push({ imageUrl: compressedImage2 })
       }
-
+      
       // 使用 SSE 调用新 API
       // 注意：不使用 AbortController，用户离开页面后后端继续生成
       const response = await fetch('/api/generate-pro-studio', {
@@ -1028,7 +1028,7 @@ function ProStudioPageContent() {
                       onClick={() => setShowProduct2Panel(true)}
                       className="absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2.5 rounded-full bg-black/60 backdrop-blur-md text-white hover:bg-black/70 transition-colors border border-white/20"
                     >
-                      <Plus className="w-4 h-4" />
+                          <Plus className="w-4 h-4" />
                       <span className="text-sm font-medium">{t.proStudio?.add || 'Add'}</span>
                     </button>
                   )}
@@ -1105,8 +1105,8 @@ function ProStudioPageContent() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       onClick={(e) => {
-                        triggerFlyToGallery(e)
-                        handleShootIt()
+                          triggerFlyToGallery(e)
+                          handleShootIt()
                       }}
                       className={`w-full max-w-xs h-14 rounded-full text-lg font-semibold gap-2 flex items-center justify-center transition-colors ${
                         isDesktop
@@ -1218,9 +1218,9 @@ function ProStudioPageContent() {
                               </button>
                             )}
                           </div>
-                          <AssetGrid
-                            items={[...customModels, ...userModels, ...studioModels]}
-                            selectedId={selectedModelId}
+                          <AssetGrid 
+                            items={[...customModels, ...userModels, ...studioModels]} 
+                            selectedId={selectedModelId} 
                             onSelect={(id) => setSelectedModelId(selectedModelId === id ? null : id)}
                             onUpload={() => modelUploadRef.current?.click()}
                             onZoom={(url) => setFullscreenImage(url)}
@@ -1303,10 +1303,10 @@ function ProStudioPageContent() {
             title={t.camera.results}
             onBack={handleRetake}
             images={[0, 1, 2, 3].map((i) => {
-              const currentTask = tasks.find(t => t.id === currentTaskId)
-              const slot = currentTask?.imageSlots?.[i]
-              const url = slot?.imageUrl || generatedImages[i]
-              const status = slot?.status || (url ? 'completed' : 'failed')
+                  const currentTask = tasks.find(t => t.id === currentTaskId)
+                  const slot = currentTask?.imageSlots?.[i]
+                  const url = slot?.imageUrl || generatedImages[i]
+                  const status = slot?.status || (url ? 'completed' : 'failed')
               return {
                 url,
                 status: status as 'completed' | 'pending' | 'generating' | 'failed',
@@ -1348,9 +1348,9 @@ function ProStudioPageContent() {
               isFavorited={selectedResultIndex !== null && isFavorited(selectedResultIndex)}
               onDownload={() => {
                 if (selectedResultIndex === null) return
-                const currentTask = tasks.find(t => t.id === currentTaskId)
-                const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
-                const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
+              const currentTask = tasks.find(t => t.id === currentTaskId)
+              const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+              const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
                 if (selectedImageUrl) handleDownload(selectedImageUrl)
               }}
               onFullscreen={() => {
@@ -1365,7 +1365,7 @@ function ProStudioPageContent() {
                   const currentTask = tasks.find(t => t.id === currentTaskId)
                   const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
                   const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
-                  if (selectedImageUrl) {
+                              if (selectedImageUrl) {
                     sessionStorage.setItem('tryOnImage', selectedImageUrl)
                     router.push('/try-on')
                   }
@@ -1375,7 +1375,7 @@ function ProStudioPageContent() {
                   const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
                   const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
                   if (selectedImageUrl) {
-                    setSelectedResultIndex(null)
+                                setSelectedResultIndex(null)
                     navigateToEdit(router, selectedImageUrl)
                   }
                 }),
@@ -1383,11 +1383,11 @@ function ProStudioPageContent() {
                   const currentTask = tasks.find(t => t.id === currentTaskId)
                   const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
                   const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
-                  if (selectedImageUrl) {
-                    sessionStorage.setItem('groupShootImage', selectedImageUrl)
-                    setSelectedResultIndex(null)
-                    router.push("/group-shot")
-                  }
+                              if (selectedImageUrl) {
+                                sessionStorage.setItem('groupShootImage', selectedImageUrl)
+                                setSelectedResultIndex(null)
+                                router.push("/group-shot")
+                              }
                 }),
                 createQuickActions.material(() => {
                   const currentTask = tasks.find(t => t.id === currentTaskId)
@@ -1405,48 +1405,48 @@ function ProStudioPageContent() {
             >
               {/* Debug content */}
               {debugMode && selectedResultIndex !== null && (
-                <div className="mt-4 pt-4 border-t border-zinc-100">
+                          <div className="mt-4 pt-4 border-t border-zinc-100">
                   <h3 className="text-sm font-semibold text-zinc-700 mb-3">Debug Parameters</h3>
-                  <div className="grid grid-cols-3 gap-2">
+                            <div className="grid grid-cols-3 gap-2">
                     {selectedModel ? (
-                      <div className="flex flex-col items-center">
+                                <div className="flex flex-col items-center">
                         <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group" onClick={() => setFullscreenImage(selectedModel.imageUrl)}>
                           <img src={selectedModel.imageUrl} alt="Model" className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <ZoomIn className="w-4 h-4 text-white" />
-                          </div>
-                        </div>
-                        <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{selectedModel.name}</p>
-                      </div>
+                                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                      <ZoomIn className="w-4 h-4 text-white" />
+                                    </div>
+                                  </div>
+                                  <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{selectedModel.name}</p>
+                                </div>
                     ) : (
-                      <div className="flex flex-col items-center">
-                        <div className="w-14 h-14 rounded-lg bg-zinc-100 flex items-center justify-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="w-14 h-14 rounded-lg bg-zinc-100 flex items-center justify-center">
                           <span className="text-xs text-zinc-400">Random</span>
-                        </div>
+                                  </div>
                         <p className="text-[10px] text-zinc-500 mt-1">Model</p>
-                      </div>
-                    )}
+                                </div>
+                              )}
                     {selectedBg ? (
-                      <div className="flex flex-col items-center">
+                                <div className="flex flex-col items-center">
                         <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer relative group" onClick={() => setFullscreenImage(selectedBg.imageUrl)}>
                           <img src={selectedBg.imageUrl} alt="Background" className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <ZoomIn className="w-4 h-4 text-white" />
-                          </div>
-                        </div>
-                        <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{selectedBg.name}</p>
-                      </div>
+                                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                      <ZoomIn className="w-4 h-4 text-white" />
+                                    </div>
+                                  </div>
+                                  <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[56px]">{selectedBg.name}</p>
+                                </div>
                     ) : (
-                      <div className="flex flex-col items-center">
-                        <div className="w-14 h-14 rounded-lg bg-zinc-100 flex items-center justify-center">
+                                <div className="flex flex-col items-center">
+                                  <div className="w-14 h-14 rounded-lg bg-zinc-100 flex items-center justify-center">
                           <span className="text-xs text-zinc-400">Random</span>
-                        </div>
+                                  </div>
                         <p className="text-[10px] text-zinc-500 mt-1">Background</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
             </PhotoDetailDialog>
           </ResultsView>
         )}

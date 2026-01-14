@@ -392,7 +392,7 @@ function SocialPageContent() {
     // Clear previous results first (for Regenerate to show skeleton)
     setGeneratedImages([])
     setGeneratedModelTypes([])
-
+    
     // Check quota before starting generation
     const hasQuota = await checkQuota(SOCIAL_NUM_IMAGES)
     if (!hasQuota) {
@@ -427,9 +427,9 @@ function SocialPageContent() {
     
     // 预扣配额（使用统一 hook）
     const reserveResult = await reserveQuota({
-      taskId,
-      imageCount: SOCIAL_NUM_IMAGES,
-      taskType: 'social',
+          taskId,
+          imageCount: SOCIAL_NUM_IMAGES,
+          taskType: 'social',
     })
     
     if (!reserveResult.success) {
@@ -633,9 +633,9 @@ function SocialPageContent() {
             bgIsUserSelected,
           },
         }, true)
-
+        
         await confirmQuota()
-
+        
         if (modeRef.current === "processing") {
           setGeneratedImages(allImages.filter(Boolean) as string[])
           setGeneratedModelTypes(savedModelTypes)
@@ -954,9 +954,9 @@ function SocialPageContent() {
                   onBgUpload={() => bgUploadRef.current?.click()}
                   onBgZoom={(url) => setFullscreenImage(url)}
                   onViewMoreBgs={() => {
-                    setActiveCustomTab("bg")
-                    setShowCustomPanel(true)
-                  }}
+                                    setActiveCustomTab("bg")
+                                    setShowCustomPanel(true)
+                                  }}
                   onBgDrop={async (base64) => {
                     const newAsset = {
                       id: generateId(),
@@ -1143,26 +1143,26 @@ function SocialPageContent() {
                       
                       <div className="px-6 py-3 border-b bg-white shrink-0">
                         <div className="flex gap-2 flex-wrap">
-                          {PRODUCT_SUB_TABS.map(cat => {
-                            const count = cat === "all" 
-                              ? userProducts.length 
-                              : userProducts.filter(p => p.category === cat).length
-                            return (
-                              <button
-                                key={cat}
-                                onClick={() => setProductSubTab(cat)}
-                                className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
-                                  productSubTab === cat
-                                    ? "bg-pink-500 text-white"
-                                    : "bg-zinc-200 text-zinc-600 hover:bg-zinc-300"
-                                }`}
-                              >
-                                {getProductCategoryLabel(cat, t)}
-                                <span className="ml-1 opacity-70">({count})</span>
-                              </button>
-                            )
-                          })}
-                        </div>
+                            {PRODUCT_SUB_TABS.map(cat => {
+                              const count = cat === "all" 
+                                ? userProducts.length 
+                                : userProducts.filter(p => p.category === cat).length
+                              return (
+                                <button
+                                  key={cat}
+                                  onClick={() => setProductSubTab(cat)}
+                                  className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
+                                    productSubTab === cat
+                                      ? "bg-pink-500 text-white"
+                                      : "bg-zinc-200 text-zinc-600 hover:bg-zinc-300"
+                                  }`}
+                                >
+                                  {getProductCategoryLabel(cat, t)}
+                                  <span className="ml-1 opacity-70">({count})</span>
+                                </button>
+                              )
+                            })}
+                          </div>
                       </div>
                       
                       <div className="flex-1 overflow-y-auto p-6">
@@ -1241,26 +1241,26 @@ function SocialPageContent() {
                     {/* Category Tabs */}
                     <div className="px-4 py-2 border-b bg-white dark:bg-zinc-900 shrink-0">
                       <div className="flex gap-2 flex-wrap">
-                        {PRODUCT_SUB_TABS.map(cat => {
-                          const count = cat === "all" 
-                            ? userProducts.length 
-                            : userProducts.filter(p => p.category === cat).length
-                          return (
-                            <button
-                              key={cat}
-                              onClick={() => setProductSubTab(cat)}
-                              className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors ${
-                                productSubTab === cat
-                                  ? "bg-pink-600 text-white"
-                                  : "bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-300 dark:hover:bg-zinc-600"
-                              }`}
-                            >
-                              {getProductCategoryLabel(cat, t)}
-                              <span className="ml-1 opacity-70">({count})</span>
-                            </button>
-                          )
-                        })}
-                      </div>
+                          {PRODUCT_SUB_TABS.map(cat => {
+                            const count = cat === "all" 
+                              ? userProducts.length 
+                              : userProducts.filter(p => p.category === cat).length
+                            return (
+                              <button
+                                key={cat}
+                                onClick={() => setProductSubTab(cat)}
+                                className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors ${
+                                  productSubTab === cat
+                                    ? "bg-pink-600 text-white"
+                                    : "bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-300 dark:hover:bg-zinc-600"
+                                }`}
+                              >
+                                {getProductCategoryLabel(cat, t)}
+                                <span className="ml-1 opacity-70">({count})</span>
+                              </button>
+                            )
+                          })}
+                        </div>
                     </div>
                     
                     <div className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 p-4">
@@ -1377,10 +1377,10 @@ function SocialPageContent() {
             title={t.social?.result || 'Social Results'}
             onBack={handleRetake}
             images={Array.from({ length: SOCIAL_NUM_GROUPS * SOCIAL_IMAGES_PER_GROUP }).map((_, globalIndex) => {
-              const currentTask = tasks.find(t => t.id === currentTaskId)
-              const slot = currentTask?.imageSlots?.[globalIndex]
-              const url = slot?.imageUrl || generatedImages[globalIndex]
-              const status = slot?.status || (url ? 'completed' : 'failed')
+                      const currentTask = tasks.find(t => t.id === currentTaskId)
+                      const slot = currentTask?.imageSlots?.[globalIndex]
+                      const url = slot?.imageUrl || generatedImages[globalIndex]
+                      const status = slot?.status || (url ? 'completed' : 'failed')
               return {
                 url,
                 status: status as 'completed' | 'pending' | 'generating' | 'failed',
@@ -1429,9 +1429,9 @@ function SocialPageContent() {
               isFavorited={selectedResultIndex !== null && isFavorited(selectedResultIndex)}
               onDownload={() => {
                 if (selectedResultIndex === null) return
-                const currentTask = tasks.find(t => t.id === currentTaskId)
-                const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
-                const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
+              const currentTask = tasks.find(t => t.id === currentTaskId)
+              const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+              const selectedImageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
                 if (selectedImageUrl) handleDownload(selectedImageUrl, currentGenerationId || undefined, selectedResultIndex)
               }}
               onFullscreen={() => {
@@ -1487,40 +1487,40 @@ function SocialPageContent() {
               {/* Debug content */}
               {debugMode && selectedResultIndex !== null && (() => {
                 const generation = currentGenerationId ? generations.find(g => g.id === currentGenerationId) : null
-                const savedParams = generation?.params
-
-                return (
-                  <div className="mt-4 pt-4 border-t border-zinc-100">
-                    <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.camera?.debugParams || 'Debug'}</h3>
-                    <div className="grid grid-cols-3 gap-2">
-                      {(() => {
-                        const modelUrl = savedParams?.modelImage || activeModel?.imageUrl
-                        if (!modelUrl) return null
+                        const savedParams = generation?.params
+                        
                         return (
-                          <div className="flex flex-col items-center">
+                        <div className="mt-4 pt-4 border-t border-zinc-100">
+                    <h3 className="text-sm font-semibold text-zinc-700 mb-3">{t.camera?.debugParams || 'Debug'}</h3>
+                            <div className="grid grid-cols-3 gap-2">
+                              {(() => {
+                                const modelUrl = savedParams?.modelImage || activeModel?.imageUrl
+                                if (!modelUrl) return null
+                                return (
+                                  <div className="flex flex-col items-center">
                             <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer" onClick={() => setFullscreenImage(modelUrl)}>
                               <Image src={modelUrl} alt="Model" width={56} height={56} className="w-full h-full object-cover" />
-                            </div>
+                                      </div>
                             <p className="text-[10px] text-zinc-500 mt-1">{t.common?.model || 'Model'}</p>
-                          </div>
-                        )
-                      })()}
-                      {(() => {
-                        const bgUrl = savedParams?.backgroundImage || activeBg?.imageUrl
-                        if (!bgUrl) return null
-                        return (
-                          <div className="flex flex-col items-center">
+                                  </div>
+                                )
+                              })()}
+                              {(() => {
+                                const bgUrl = savedParams?.backgroundImage || activeBg?.imageUrl
+                                if (!bgUrl) return null
+                                return (
+                                  <div className="flex flex-col items-center">
                             <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer" onClick={() => setFullscreenImage(bgUrl)}>
                               <Image src={bgUrl} alt="Background" width={56} height={56} className="w-full h-full object-cover" />
-                            </div>
+                                      </div>
                             <p className="text-[10px] text-zinc-500 mt-1">{t.common?.background || 'Background'}</p>
+                                  </div>
+                                )
+                              })()}
                           </div>
+                        </div>
                         )
                       })()}
-                    </div>
-                  </div>
-                )
-              })()}
             </PhotoDetailDialog>
           </ResultsView>
         )}

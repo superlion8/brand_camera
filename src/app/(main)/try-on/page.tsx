@@ -206,7 +206,7 @@ export default function TryOnPage() {
 
     // Clear previous results first (for Regenerate to show skeleton)
     setResultImages([])
-
+    
     const hasQuota = await checkQuota(CREDIT_COST)
     if (!hasQuota) return
     
@@ -274,13 +274,13 @@ export default function TryOnPage() {
               if (eventType === 'image') {
                 images[data.index] = data.url
                 setResultImages([...images])
-
+                
                 updateImageSlot(taskId, data.index, {
                   status: 'completed',
                   imageUrl: data.url,
                   modelType: 'pro',
                 })
-
+                
                 triggerFlyToGallery(data.url)
                 
                 // Switch to results on first image (like buyer-show)
@@ -1066,7 +1066,7 @@ export default function TryOnPage() {
         title={t.common?.fromAssets || 'Select from Assets'}
         themeColor="purple"
       />
-
+      
     </div>
   )
 }

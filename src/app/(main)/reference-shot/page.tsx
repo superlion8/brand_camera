@@ -250,14 +250,14 @@ export default function ReferenceShotPage() {
       const runSimple = async () => {
         try {
           const res = await fetch('/api/reference-shot/generate-simple', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              productImage: compressedProductImage,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productImage: compressedProductImage,
               productImages: compressedProductImages,
-              modelImage: finalModelImage,
-              referenceImage: compressedRefImage,
-            }),
+          modelImage: finalModelImage,
+          referenceImage: compressedRefImage,
+        }),
           })
           const result = await safeJsonParse(res, 'generate-simple')
           if (result.success && result.images) {
@@ -275,47 +275,47 @@ export default function ReferenceShotPage() {
       // Extended mode: caption + remove person + generate
       const runExtended = async () => {
         try {
-          // Caption the reference image
-          const captionRes = await fetch('/api/reference-shot/caption', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ referenceImage: compressedRefImage }),
-          })
-          const captionData = await safeJsonParse(captionRes, 'caption')
-          if (!captionData.success) {
-            console.warn('[ReferenceShot] Caption failed:', captionData.error)
+        // Caption the reference image
+        const captionRes = await fetch('/api/reference-shot/caption', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ referenceImage: compressedRefImage }),
+        })
+        const captionData = await safeJsonParse(captionRes, 'caption')
+        if (!captionData.success) {
+          console.warn('[ReferenceShot] Caption failed:', captionData.error)
             extendedCompleted = true
             return
-          }
-          const captionPrompt = captionData.captionPrompt
-          
-          // Remove person from reference image
-          const removePersonRes = await fetch('/api/reference-shot/remove-person', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ referenceImage: compressedRefImage }),
-          })
-          const removePersonData = await safeJsonParse(removePersonRes, 'remove-person')
-          if (!removePersonData.success) {
-            console.warn('[ReferenceShot] Remove person failed:', removePersonData.error)
+        }
+        const captionPrompt = captionData.captionPrompt
+        
+        // Remove person from reference image
+        const removePersonRes = await fetch('/api/reference-shot/remove-person', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ referenceImage: compressedRefImage }),
+        })
+        const removePersonData = await safeJsonParse(removePersonRes, 'remove-person')
+        if (!removePersonData.success) {
+          console.warn('[ReferenceShot] Remove person failed:', removePersonData.error)
             extendedCompleted = true
             return
-          }
-          const backgroundImage = removePersonData.backgroundImage
-          
-          // Generate final images
-          const generateRes = await fetch('/api/reference-shot/generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              productImage: compressedProductImage,
+        }
+        const backgroundImage = removePersonData.backgroundImage
+        
+        // Generate final images
+        const generateRes = await fetch('/api/reference-shot/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            productImage: compressedProductImage,
               productImages: compressedProductImages,
-              modelImage: finalModelImage,
-              backgroundImage,
-              captionPrompt,
-              referenceImageUrl: referenceImage,
-            }),
-          })
+            modelImage: finalModelImage,
+            backgroundImage,
+            captionPrompt,
+            referenceImageUrl: referenceImage,
+          }),
+        })
           const result = await safeJsonParse(generateRes, 'generate')
           if (result.success && result.images) {
             result.images.forEach((url: string) => {
@@ -397,7 +397,7 @@ export default function ReferenceShotPage() {
 
   // Favorite - using shared hook
   const { toggleFavorite, isFavorited } = useFavorite(currentGenerationId)
-
+  
   // Reset and start over
   const handleReset = () => {
     setStep('upload')
@@ -422,20 +422,20 @@ export default function ReferenceShotPage() {
     <div className={`min-h-screen ${step === 'upload' ? 'bg-zinc-50' : 'bg-zinc-50 flex flex-col'}`}>
       {/* Header - only show on upload step */}
       {step === 'upload' && (
-        <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-lg border-b border-zinc-100">
-          <div className="flex items-center justify-between p-3">
-            <button
-              onClick={() => router.back()}
-              className="w-9 h-9 rounded-full bg-zinc-100 flex items-center justify-center hover:bg-zinc-200 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4 text-zinc-700" />
-            </button>
-            <span className="text-zinc-900 font-medium text-sm">
-              {t.referenceShot?.title || 'Reference Shot'}
-            </span>
-            <div className="w-9" />
-          </div>
+      <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-lg border-b border-zinc-100">
+        <div className="flex items-center justify-between p-3">
+          <button
+            onClick={() => router.back()}
+            className="w-9 h-9 rounded-full bg-zinc-100 flex items-center justify-center hover:bg-zinc-200 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 text-zinc-700" />
+          </button>
+          <span className="text-zinc-900 font-medium text-sm">
+            {t.referenceShot?.title || 'Reference Shot'}
+          </span>
+          <div className="w-9" />
         </div>
+      </div>
       )}
       
       {/* Content */}
@@ -452,7 +452,7 @@ export default function ReferenceShotPage() {
                 <p className={`text-zinc-500 mb-2 line-clamp-2 ${isDesktop ? 'text-xs' : 'text-[10px]'}`}>
                   {t.referenceShot?.referenceImageDesc || '上传参考图，AI学习风格'}
                 </p>
-
+                
                 {referenceImage ? (
                   <div className="relative w-full rounded-xl overflow-hidden bg-zinc-100">
                     <img src={referenceImage} alt="Reference" className="w-full h-auto max-h-[300px] object-contain" />
@@ -467,7 +467,7 @@ export default function ReferenceShotPage() {
                   <div className="space-y-2">
                     {/* Drag & Drop Area */}
                     <div
-                      onClick={() => refImageInputRef.current?.click()}
+                    onClick={() => refImageInputRef.current?.click()}
                       onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-blue-400', 'bg-blue-50') }}
                       onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50') }}
                       onDrop={async (e) => {
@@ -493,7 +493,7 @@ export default function ReferenceShotPage() {
                       >
                         <ImageIcon className="w-3.5 h-3.5 text-zinc-500" />
                         <span className="text-[10px] text-zinc-600">{t.common?.fromGallery || 'Photos'}</span>
-                      </button>
+                  </button>
                       <button
                         onClick={() => setShowRefAssetPicker(true)}
                         className="h-8 rounded-lg border border-zinc-200 bg-white hover:border-blue-300 hover:bg-blue-50 flex items-center justify-center gap-1.5 transition-colors"
@@ -521,16 +521,16 @@ export default function ReferenceShotPage() {
                   {productImages.map((img, idx) => (
                     <div key={idx} className="relative aspect-square rounded-xl overflow-hidden bg-zinc-100 group">
                       <img src={img} alt={`Product ${idx + 1}`} className="w-full h-full object-cover" />
-                      <button
+                    <button
                         onClick={() => setProductImages(prev => prev.filter((_, i) => i !== idx))}
                         className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="w-3 h-3 text-white" />
-                      </button>
+                    >
+                      <X className="w-3 h-3 text-white" />
+                    </button>
                       {idx === 0 && (
                         <div className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 bg-blue-500 rounded text-[10px] text-white font-medium">
                           #1
-                        </div>
+                  </div>
                       )}
                     </div>
                   ))}
@@ -538,7 +538,7 @@ export default function ReferenceShotPage() {
                   {/* Add More Button */}
                   {productImages.length < MAX_PRODUCT_IMAGES && (
                     <div
-                      onClick={() => productImageInputRef.current?.click()}
+                    onClick={() => productImageInputRef.current?.click()}
                       onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-blue-400', 'bg-blue-50') }}
                       onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50') }}
                       onDrop={async (e) => {
@@ -567,7 +567,7 @@ export default function ReferenceShotPage() {
                     >
                       <ImageIcon className="w-3.5 h-3.5 text-zinc-500" />
                       <span className="text-[10px] text-zinc-600">{t.common?.fromGallery || 'Photos'}</span>
-                    </button>
+                  </button>
                     <button
                       onClick={() => setShowProductAssetPicker(true)}
                       className="h-8 rounded-lg border border-zinc-200 bg-white hover:border-blue-300 hover:bg-blue-50 flex items-center justify-center gap-1.5 transition-colors"
@@ -612,9 +612,9 @@ export default function ReferenceShotPage() {
                 
                 {/* Custom Model Button */}
                 <div className={`flex-1 p-4 rounded-xl border-2 transition-all relative ${
-                  !isAutoModel && modelImage
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-zinc-200 bg-white hover:border-blue-300'
+                    !isAutoModel && modelImage
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-zinc-200 bg-white hover:border-blue-300'
                 }`}>
                   {modelImage && !isAutoModel ? (
                     <div className="relative w-full aspect-[3/4] rounded-lg overflow-hidden group">
@@ -649,7 +649,7 @@ export default function ReferenceShotPage() {
                       <span className="text-sm font-medium text-zinc-600">
                         {t.referenceShot?.selectModel || '选择模特'}
                       </span>
-                    </button>
+                </button>
                   )}
                 </div>
               </div>

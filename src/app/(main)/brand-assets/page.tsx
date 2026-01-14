@@ -449,7 +449,7 @@ export default function BrandAssetsPage() {
       </div>
     )
   }
-
+  
   // ====== Mobile Layout (Original) ======
   return (
     <div className="h-full flex flex-col bg-zinc-50">
@@ -672,7 +672,7 @@ function AssetCardDesktop({
             </button>
           )}
         </div>
-      </div>
+            </div>
     </div>
   )
 }
