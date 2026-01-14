@@ -202,14 +202,22 @@ export async function GET(request: NextRequest) {
         .order('created_at', { ascending: false })
         .limit(10)
 
-      pendingTasks = (pendingGens || []).map(gen => ({
-        id: gen.task_id || gen.id,
-        dbId: gen.id,
-        type: gen.task_type,
-        status: 'pending',
-        totalImages: gen.total_images_count || 4,
-        createdAt: gen.created_at,
-      }))
+      // 过滤掉已经有输出图片的任务（这些任务实际上已完成，只是 status 未更新）
+      pendingTasks = (pendingGens || [])
+        .filter(gen => {
+          // 如果已有输出图片，说明任务实际已完成，不显示 pending 卡片
+          const outputUrls = gen.output_image_urls || []
+          const hasAnyOutput = outputUrls.some((url: string | null) => url != null)
+          return !hasAnyOutput
+        })
+        .map(gen => ({
+          id: gen.task_id || gen.id,
+          dbId: gen.id,
+          type: gen.task_type,
+          status: 'pending',
+          totalImages: gen.total_images_count || 4,
+          createdAt: gen.created_at,
+        }))
     }
 
     return NextResponse.json({

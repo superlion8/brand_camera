@@ -288,10 +288,37 @@ function ProStudioPageContent() {
     if (mode !== 'processing' || !currentTaskId) return
     
     const currentTask = tasks.find(t => t.id === currentTaskId)
-    if (!currentTask?.imageSlots) return
+    
+    // 如果任务不存在，可能是页面刷新后 tasks 被清空
+    // 检查是否已有生成的图片
+    if (!currentTask) {
+      if (generatedImages.some(img => img)) {
+        // 已有生成结果，直接显示
+        console.log('[ProStudio] Task not found but has images, switching to results mode')
+        setMode('results')
+      } else {
+        // 没有任务也没有图片，返回相机模式
+        console.log('[ProStudio] Task not found and no images, returning to camera mode')
+        setMode('camera')
+      }
+      return
+    }
+    
+    // 如果任务状态已经是 completed 或 failed，直接切换
+    if (currentTask.status === 'completed' || currentTask.status === 'failed') {
+      console.log(`[ProStudio] Task status is ${currentTask.status}, switching to results mode`)
+      const images = currentTask.imageSlots?.map(s => s.imageUrl || '') || currentTask.outputImageUrls || []
+      setGeneratedImages(images)
+      setMode('results')
+      return
+    }
+    
+    if (!currentTask.imageSlots) return
     
     // 检查是否有任何一张图片完成
     const hasAnyCompleted = currentTask.imageSlots.some(s => s.status === 'completed')
+    // 检查是否所有图片都已处理完毕（completed 或 failed）
+    const allProcessed = currentTask.imageSlots.every(s => s.status === 'completed' || s.status === 'failed')
     
     if (hasAnyCompleted) {
       console.log('[ProStudio] Task has completed images, switching to results mode')
@@ -300,6 +327,11 @@ function ProStudioPageContent() {
       const modes = currentTask.imageSlots.map((s, i) => s.genMode || (i < 2 ? 'simple' : 'extended'))
       setGeneratedImages(images)
       setGeneratedModes(modes as ('simple' | 'extended')[])
+      setMode('results')
+    } else if (allProcessed) {
+      // 所有图片都失败了，也切换到 results 模式显示错误
+      console.log('[ProStudio] All images failed, switching to results mode')
+      setGeneratedImages([])
       setMode('results')
     }
   }, [mode, currentTaskId, tasks])
@@ -688,6 +720,17 @@ function ProStudioPageContent() {
                   
                 case 'complete':
                   console.log('[ProStudio] Complete:', data.totalSuccess, 'images')
+                  // 确保所有未完成的 slots 被标记为 failed
+                  const finalTask = tasks.find(t => t.id === taskId)
+                  if (finalTask?.imageSlots) {
+                    finalTask.imageSlots.forEach((slot, idx) => {
+                      if (slot.status === 'pending' || slot.status === 'generating') {
+                        updateImageSlot(taskId, idx, { status: 'failed', error: 'Generation timeout' })
+                      }
+                    })
+                  }
+                  // 更新任务整体状态为 completed（触发 useEffect 切换模式）
+                  updateTaskStatus(taskId, data.totalSuccess > 0 ? 'completed' : 'failed')
                   break
               }
             } catch (e) {
