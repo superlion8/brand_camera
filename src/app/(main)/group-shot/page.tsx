@@ -124,6 +124,57 @@ function GroupShootPageContent() {
     }
   }, [searchParams, tasks.length])
 
+  // Recovery effect: 当任务已完成但界面还在 processing 时，自动切换到 results
+  useEffect(() => {
+    if (mode !== 'processing' || !currentTaskId) return
+
+    const currentTask = tasks.find(t => t.id === currentTaskId)
+    
+    // 如果任务在 store 中不存在
+    if (!currentTask) {
+      if (generatedImages.length > 0 && generatedImages.some(img => img)) {
+        console.log('[GroupShot] Task not found but has images, switching to results mode')
+        setMode('results')
+        router.replace('/group-shot?mode=results')
+      } else {
+        console.log('[GroupShot] Task not found and no images, returning to main mode')
+        setMode('main')
+        router.replace('/group-shot')
+      }
+      return
+    }
+
+    // 如果任务状态已经是 completed 或 failed，直接切换
+    if (currentTask.status === 'completed' || currentTask.status === 'failed') {
+      console.log(`[GroupShot] Task status is ${currentTask.status}, switching to results mode`)
+      const images = currentTask.imageSlots?.map(s => s.imageUrl || '') || currentTask.outputImageUrls || []
+      setGeneratedImages(images)
+      setMode('results')
+      router.replace('/group-shot?mode=results')
+      return
+    }
+
+    if (!currentTask.imageSlots) return
+
+    // 检查是否有任何一张图片完成
+    const hasAnyCompleted = currentTask.imageSlots.some(s => s.status === 'completed')
+    // 检查是否所有图片都已处理完毕
+    const allProcessed = currentTask.imageSlots.every(s => s.status === 'completed' || s.status === 'failed')
+
+    if (hasAnyCompleted) {
+      console.log('[GroupShot] Task has completed images, switching to results mode')
+      const images = currentTask.imageSlots.map(s => s.imageUrl || '')
+      setGeneratedImages(images)
+      setMode('results')
+      router.replace('/group-shot?mode=results')
+    } else if (allProcessed) {
+      console.log('[GroupShot] All images failed, switching to results mode')
+      setGeneratedImages([])
+      setMode('results')
+      router.replace('/group-shot?mode=results')
+    }
+  }, [mode, currentTaskId, tasks, generatedImages, router])
+
   // 文件上传
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
