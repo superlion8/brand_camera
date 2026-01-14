@@ -40,16 +40,33 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 })
     }
     
-    // 获取最近活动时间
+    // 获取每个用户的生成记录统计（用于计算已用 credits）
     const userIds = (quotasData || []).map(q => q.user_id)
+    
+    // 统计每个用户的 generations 数量作为已用 credits
+    // 注意：这是简化计算，实际上图片 1 credit，视频 10 credits
+    const { data: usageStats } = await adminClient
+      .from('generations')
+      .select('user_id, output_image_urls')
+      .in('user_id', userIds.length > 0 ? userIds : ['none'])
+    
+    // 构建已用统计 map（按生成的图片数计算）
+    const usedCountMap = new Map<string, number>()
+    const lastActivityMap = new Map<string, string>()
+    
+    for (const gen of usageStats || []) {
+      // 统计图片数量
+      const imageCount = gen.output_image_urls?.length || 1
+      usedCountMap.set(gen.user_id, (usedCountMap.get(gen.user_id) || 0) + imageCount)
+    }
+    
+    // 获取最近活动时间
     const { data: lastActivities } = await adminClient
       .from('generations')
       .select('user_id, created_at')
       .in('user_id', userIds.length > 0 ? userIds : ['none'])
       .order('created_at', { ascending: false })
     
-    // 构建最近活动时间 map
-    const lastActivityMap = new Map<string, string>()
     for (const gen of lastActivities || []) {
       if (!lastActivityMap.has(gen.user_id)) {
         lastActivityMap.set(gen.user_id, gen.created_at)
@@ -84,8 +101,8 @@ export async function GET(request: NextRequest) {
           dailyExpired: credits.dailyExpired,
         },
         // 向后兼容
-        totalQuota: credits.available,
-        usedCount: 0,
+        totalQuota: credits.available + (usedCountMap.get(q.user_id) || 0),
+        usedCount: usedCountMap.get(q.user_id) || 0,
         remainingQuota: credits.available,
         updatedAt: lastActivityMap.get(q.user_id) || q.updated_at,
       }
