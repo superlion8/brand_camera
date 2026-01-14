@@ -26,6 +26,7 @@ import { GalleryPickerPanel } from "@/components/shared/GalleryPickerPanel"
 import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { ProcessingView } from "@/components/shared/ProcessingView"
 import { ResultsView } from "@/components/shared/ResultsView"
+import { PhotoDetailDialog } from "@/components/shared/PhotoDetailDialog"
 import { TASK_CREDIT_COSTS, TaskTypes } from "@/lib/taskTypes"
 import { useFavorite } from "@/hooks/useFavorite"
 import { navigateToEdit } from "@/lib/navigation"
@@ -79,6 +80,7 @@ export default function ReferenceShotPage() {
   const [loadingMessage, setLoadingMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [zoomImage, setZoomImage] = useState<string | null>(null)
+  const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null)
   
   // Result states - now with mode info
   const [generatedImages, setGeneratedImages] = useState<GeneratedImageInfo[]>([])
@@ -687,9 +689,60 @@ export default function ReferenceShotPage() {
             onShootNext={handleReset}
             onGoEdit={(imageUrl) => navigateToEdit(router, imageUrl)}
             onRegenerate={handleReset}
-            onImageClick={(i) => setZoomImage(generatedImages[i]?.url || null)}
+            onImageClick={(i) => setSelectedResultIndex(i)}
             showBottomNav={!isDesktop}
-          />
+          >
+            {/* Photo Detail Dialog */}
+            <PhotoDetailDialog
+              open={selectedResultIndex !== null && !!generatedImages[selectedResultIndex!]?.url}
+              onClose={() => setSelectedResultIndex(null)}
+              imageUrl={selectedResultIndex !== null ? generatedImages[selectedResultIndex]?.url || '' : ''}
+              badges={[{ 
+                text: debugMode && selectedResultIndex !== null && generatedImages[selectedResultIndex]?.mode === 'simple' 
+                  ? 'Simple' 
+                  : (debugMode && selectedResultIndex !== null && generatedImages[selectedResultIndex]?.mode === 'extended' 
+                    ? 'Extended' 
+                    : 'Reference'),
+                className: debugMode && selectedResultIndex !== null && generatedImages[selectedResultIndex]?.mode === 'simple'
+                  ? 'bg-green-500 text-white'
+                  : (debugMode && selectedResultIndex !== null && generatedImages[selectedResultIndex]?.mode === 'extended'
+                    ? 'bg-purple-500 text-white'
+                    : 'bg-blue-500 text-white'),
+              }]}
+              onFavorite={() => selectedResultIndex !== null && toggleFavorite(selectedResultIndex)}
+              isFavorited={selectedResultIndex !== null && isFavorited(selectedResultIndex)}
+              onDownload={() => {
+                if (selectedResultIndex !== null && generatedImages[selectedResultIndex]?.url) {
+                  handleDownload(generatedImages[selectedResultIndex].url, selectedResultIndex)
+                }
+              }}
+              onFullscreen={() => {
+                if (selectedResultIndex !== null && generatedImages[selectedResultIndex]?.url) {
+                  setZoomImage(generatedImages[selectedResultIndex].url)
+                }
+              }}
+              inputImages={productImages.length > 0 ? productImages.map((url, i) => ({
+                url,
+                label: `Product ${i + 1}`,
+              })) : []}
+              onInputImageClick={(url) => setZoomImage(url)}
+              quickActions={[
+                {
+                  id: 'edit',
+                  icon: <Wand2 className="w-5 h-5" />,
+                  label: t.gallery?.goEdit || 'Edit',
+                  onClick: () => {
+                    if (selectedResultIndex !== null && generatedImages[selectedResultIndex]?.url) {
+                      navigateToEdit(router, generatedImages[selectedResultIndex].url)
+                    }
+                  },
+                  bgColor: 'from-blue-50 to-indigo-50',
+                  iconBgColor: 'from-blue-500 to-indigo-500',
+                  borderColor: 'border-blue-100',
+                },
+              ]}
+            />
+          </ResultsView>
         )}
       </div>
       
