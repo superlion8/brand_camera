@@ -1387,9 +1387,9 @@ function StudioPageContent() {
           <ResultsView
             title={t.studio.results}
             onBack={handleReset}
-            images={generatedImages.map((url, i) => ({
-              url,
-              status: 'completed' as const,
+            images={Array.from({ length: 2 }).map((_, i) => ({
+              url: generatedImages[i],
+              status: generatedImages[i] ? 'completed' as const : 'generating' as const,
             }))}
             getBadge={(i) => ({
               text: generatedModelTypes[i] === 'flash' ? `${t.studio?.badge || 'Studio'} 2.5` : (t.studio?.badge || 'Studio'),
@@ -1397,6 +1397,7 @@ function StudioPageContent() {
             })}
             themeColor="amber"
             aspectRatio="1/1"
+            gridCols={{ mobile: 2, desktop: 2 }}
             onFavorite={toggleFavorite}
             isFavorited={isFavorited}
             onDownload={(url, i) => handleDownload(url, currentGenerationId || undefined, i)}

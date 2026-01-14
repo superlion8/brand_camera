@@ -768,9 +768,9 @@ export default function ReferenceShotPage() {
           <ResultsView
             title={t.referenceShot?.resultTitle || 'Generation Complete'}
             onBack={handleReset}
-            images={generatedImages.map(img => ({
-              url: img.url,
-              status: 'completed' as const,
+            images={Array.from({ length: 2 }).map((_, i) => ({
+              url: generatedImages[i]?.url,
+              status: generatedImages[i]?.url ? 'completed' as const : 'generating' as const,
             }))}
             getBadge={(i) => ({
               text: debugMode && generatedImages[i]?.mode === 'simple' ? 'Simple' : (debugMode && generatedImages[i]?.mode === 'extended' ? 'Extended' : `Reference`),
@@ -778,7 +778,7 @@ export default function ReferenceShotPage() {
             })}
             themeColor="blue"
             aspectRatio="3/4"
-            gridCols={{ mobile: 1, desktop: 2 }}
+            gridCols={{ mobile: 2, desktop: 2 }}
             onFavorite={(i) => toggleFavorite(i)}
             isFavorited={(i) => isFavorited(i)}
             onDownload={(url, i) => handleDownload(url, i)}
