@@ -386,25 +386,27 @@ export default function ReferenceShotPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      {/* Header */}
-      <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-lg border-b border-zinc-100">
-        <div className="flex items-center justify-between p-3">
-          <button
-            onClick={() => router.back()}
-            className="w-9 h-9 rounded-full bg-zinc-100 flex items-center justify-center hover:bg-zinc-200 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4 text-zinc-700" />
-          </button>
-          <span className="text-zinc-900 font-medium text-sm">
-            {t.referenceShot?.title || 'Reference Shot'}
-          </span>
-          <div className="w-9" />
+    <div className={`min-h-screen ${step === 'upload' ? 'bg-zinc-50' : 'bg-zinc-50 flex flex-col'}`}>
+      {/* Header - only show on upload step */}
+      {step === 'upload' && (
+        <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-lg border-b border-zinc-100">
+          <div className="flex items-center justify-between p-3">
+            <button
+              onClick={() => router.back()}
+              className="w-9 h-9 rounded-full bg-zinc-100 flex items-center justify-center hover:bg-zinc-200 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4 text-zinc-700" />
+            </button>
+            <span className="text-zinc-900 font-medium text-sm">
+              {t.referenceShot?.title || 'Reference Shot'}
+            </span>
+            <div className="w-9" />
+          </div>
         </div>
-      </div>
+      )}
       
       {/* Content */}
-      <div className={`p-4 pb-32 ${isDesktop ? 'max-w-4xl mx-auto py-8' : ''}`}>
+      <div className={step === 'upload' ? `p-4 pb-32 ${isDesktop ? 'max-w-4xl mx-auto py-8' : ''}` : 'flex-1 flex flex-col'}>
         {step === 'upload' && (
           <div className={`space-y-4 ${isDesktop ? 'bg-white rounded-2xl shadow-sm border border-zinc-100 p-6' : ''}`}>
             {/* Reference Image + Product Image - Side by Side */}
