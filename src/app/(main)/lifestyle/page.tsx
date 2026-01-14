@@ -904,51 +904,69 @@ function LifestylePageContent() {
             onShootNext={handleRetake}
             onGoEdit={(url) => navigateToEdit(router, url)}
             onRegenerate={handleLifestyleGenerate}
-            onImageClick={(i) => {
-              // Only open detail dialog if image exists
-              if (generatedImages[i]) {
-                setSelectedResultIndex(i)
-              }
-            }}
+            onImageClick={(i) => setSelectedResultIndex(i)}
           >
             {/* Photo Detail Dialog */}
             <PhotoDetailDialog
-              open={selectedResultIndex !== null && !!generatedImages[selectedResultIndex ?? -1]}
+              open={selectedResultIndex !== null && !!(() => {
+                const currentTask = tasks.find(t => t.id === currentTaskId)
+                const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex!]
+                return selectedSlot?.imageUrl || generatedImages[selectedResultIndex!]
+              })()}
               onClose={() => setSelectedResultIndex(null)}
-              imageUrl={selectedResultIndex !== null ? generatedImages[selectedResultIndex] || '' : ''}
+              imageUrl={(() => {
+                if (selectedResultIndex === null) return ''
+                const currentTask = tasks.find(t => t.id === currentTaskId)
+                const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+                return selectedSlot?.imageUrl || generatedImages[selectedResultIndex] || ''
+              })()}
               badges={[{ text: t.lifestyle?.badge || 'Lifestyle', className: 'bg-purple-500 text-white' }]}
               onFavorite={() => selectedResultIndex !== null && toggleFavorite(selectedResultIndex)}
               isFavorited={selectedResultIndex !== null && isFavorited(selectedResultIndex)}
               onDownload={() => {
                 if (selectedResultIndex === null) return
-                handleDownload(generatedImages[selectedResultIndex])
+                const currentTask = tasks.find(t => t.id === currentTaskId)
+                const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+                const imageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
+                if (imageUrl) handleDownload(imageUrl)
               }}
               onFullscreen={() => {
                 if (selectedResultIndex === null) return
-                setFullscreenImage(generatedImages[selectedResultIndex])
+                const currentTask = tasks.find(t => t.id === currentTaskId)
+                const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+                const imageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
+                if (imageUrl) setFullscreenImage(imageUrl)
               }}
               quickActions={selectedResultIndex !== null ? [
                 createQuickActions.tryOn(() => {
-                  const imageUrl = generatedImages[selectedResultIndex]
+                  const currentTask = tasks.find(t => t.id === currentTaskId)
+                  const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+                  const imageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
                   if (imageUrl) {
                     sessionStorage.setItem('tryOnImage', imageUrl)
                     router.push('/try-on')
                   }
                 }),
                 createQuickActions.edit(() => {
-                  const imageUrl = generatedImages[selectedResultIndex]
+                  const currentTask = tasks.find(t => t.id === currentTaskId)
+                  const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+                  const imageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
                   setSelectedResultIndex(null)
                   if (imageUrl) navigateToEdit(router, imageUrl)
                 }),
                 createQuickActions.groupShoot(() => {
-                  const imageUrl = generatedImages[selectedResultIndex]
+                  const currentTask = tasks.find(t => t.id === currentTaskId)
+                  const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+                  const imageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
                   if (imageUrl) {
                     sessionStorage.setItem('groupShootImage', imageUrl)
                     router.push('/group-shot')
                   }
                 }),
                 createQuickActions.material(() => {
-                  const imageUrl = generatedImages[selectedResultIndex]
+                  const currentTask = tasks.find(t => t.id === currentTaskId)
+                  const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
+                  const imageUrl = selectedSlot?.imageUrl || generatedImages[selectedResultIndex]
                   if (imageUrl) {
                     sessionStorage.setItem('modifyMaterial_outputImage', imageUrl)
                     sessionStorage.setItem('modifyMaterial_inputImages', JSON.stringify([capturedImage].filter(Boolean)))
