@@ -902,7 +902,6 @@ export default function TryOnPage() {
             onReturnHome={() => router.push('/')}
             shootMoreText={t.tryOn?.newGeneration || 'New Generation'}
             returnHomeText={t.studio?.returnHome || 'Return Home'}
-            showBottomNav={false}
           />
         )}
         
