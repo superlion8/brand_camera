@@ -20,22 +20,30 @@ async function ensureBase64Data(image: string): Promise<string> {
 }
 
 // Simple mode prompt - directly use ref_img as reference
-const SIMPLE_MODE_PROMPT = `You are an expert fashion photographer. Create a photorealistic image combining the following elements:
+// Dynamic prompt based on number of products
+const getSimpleModePrompt = (productCount: number) => {
+  const productMapping = productCount > 1 
+    ? `- Apparel Details: The model is wearing ALL the products from the product images (${productCount} items). Each product must be visible and identifiable. Ensure the fabric texture, logo, color, and fit are identical to each product image.`
+    : `- Apparel Detail: The model is wearing the product from the product image. Ensure the fabric texture, logo, color, and fit are identical to the product image.`
+
+  return `You are an expert fashion photographer. Create a photorealistic image combining the following elements:
 
 [Input Mapping]
 - Reference Structure: Use the reference image as the scene and lighting reference.
 - Subject ID: Use the person in the model image as the model. Keep their exact facial features, skin tone, and body proportions.
-- Apparel Detail: The model is wearing the product from the product image. Ensure the fabric texture, logo, color, and fit are identical to the product image.
+${productMapping}
 
 [Execution Guidelines]
 - The lighting on the model must perfectly match the reference image.
 - The vibe/pose/expression should follow the person shown in reference image, but slightly change to match the vibe of the model.
 - Blending must be seamless; shadows must fall naturally on the ground/environment.
 - Composition: Instagram-friendly vertical crop.
-- Focus: Sharp focus on the model and product, with natural depth of field matching the scene.
+- Focus: Sharp focus on the model and ALL products, with natural depth of field matching the scene.
+${productCount > 1 ? '- All products must be clearly visible and properly worn/styled together.\n- Maintain the exact appearance of each product from its respective image.' : ''}
 
 [Negative Prompt]
-bad anatomy, distorted fingers, floating limbs, mismatched lighting, cartoonish, low resolution, blurry face, changed product color, distorted logos.`
+bad anatomy, distorted fingers, floating limbs, mismatched lighting, cartoonish, low resolution, blurry face, changed product color, distorted logos${productCount > 1 ? ', missing products, products incorrectly styled' : ''}.`
+}
 
 export async function POST(request: NextRequest) {
   // Check authentication
@@ -49,11 +57,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { 
       productImage, 
+      productImages, // Array of product images (up to 4)
       modelImage, 
       referenceImage,
     } = body
     
-    if (!productImage || !modelImage || !referenceImage) {
+    // Support both single productImage and productImages array
+    const allProductImages = productImages?.length > 0 ? productImages : (productImage ? [productImage] : [])
+    
+    if (allProductImages.length === 0 || !modelImage || !referenceImage) {
       return NextResponse.json({ 
         success: false, 
         error: '缺少必要参数' 
@@ -63,19 +75,24 @@ export async function POST(request: NextRequest) {
     const client = getGenAIClient()
     
     // Prepare image data
-    console.log('[ReferenceShot-Simple] Processing images...')
+    console.log(`[ReferenceShot-Simple] Processing ${allProductImages.length} product images...`)
     
-    const productData = await ensureBase64Data(productImage)
+    // Process all product images
+    const productDataArray = await Promise.all(
+      allProductImages.map((img: string) => ensureBase64Data(img))
+    )
     const modelData = await ensureBase64Data(modelImage)
     const referenceData = await ensureBase64Data(referenceImage)
     
     // Validate base64 data lengths
-    console.log('[ReferenceShot-Simple] Product data length:', productData?.length || 0)
+    console.log('[ReferenceShot-Simple] Product images count:', productDataArray.length)
     console.log('[ReferenceShot-Simple] Model data length:', modelData?.length || 0)
     console.log('[ReferenceShot-Simple] Reference data length:', referenceData?.length || 0)
     
-    if (!productData || productData.length < 100) {
-      return NextResponse.json({ success: false, error: '商品图片数据无效' }, { status: 400 })
+    for (let i = 0; i < productDataArray.length; i++) {
+      if (!productDataArray[i] || productDataArray[i].length < 100) {
+        return NextResponse.json({ success: false, error: `商品图片 ${i + 1} 数据无效` }, { status: 400 })
+      }
     }
     if (!modelData || modelData.length < 100) {
       return NextResponse.json({ success: false, error: '模特图片数据无效' }, { status: 400 })
@@ -89,36 +106,45 @@ export async function POST(request: NextRequest) {
     const results: string[] = []
     
       try {
-      console.log('[ReferenceShot-Simple] Generating image...')
+      console.log(`[ReferenceShot-Simple] Generating image with ${productDataArray.length} products...`)
+        
+        // Build parts array with all product images
+        const parts: any[] = [
+          { text: getSimpleModePrompt(productDataArray.length) },
+          { text: '\n\n[Reference Image]:' },
+          {
+            inlineData: {
+              mimeType: 'image/jpeg',
+              data: referenceData,
+            },
+          },
+        ]
+        
+        // Add all product images
+        productDataArray.forEach((productData, idx) => {
+          parts.push({ text: `\n\n[Product Image ${idx + 1}]:` })
+          parts.push({
+            inlineData: {
+              mimeType: 'image/jpeg',
+              data: productData,
+            },
+          })
+        })
+        
+        // Add model image
+        parts.push({ text: '\n\n[Model Image]:' })
+        parts.push({
+          inlineData: {
+            mimeType: 'image/jpeg',
+            data: modelData,
+          },
+        })
         
         const response = await client.models.generateContent({
           model: 'gemini-3-pro-image-preview',
           contents: [{
             role: 'user',
-            parts: [
-              { text: SIMPLE_MODE_PROMPT },
-              { text: '\n\n[Reference Image]:' },
-              {
-                inlineData: {
-                  mimeType: 'image/jpeg',
-                  data: referenceData,
-                },
-              },
-              { text: '\n\n[Product Image]:' },
-              {
-                inlineData: {
-                  mimeType: 'image/jpeg',
-                  data: productData,
-                },
-              },
-              { text: '\n\n[Model Image]:' },
-              {
-                inlineData: {
-                  mimeType: 'image/jpeg',
-                  data: modelData,
-                },
-              },
-            ],
+            parts,
           }],
           config: {
             responseModalities: ['IMAGE'],

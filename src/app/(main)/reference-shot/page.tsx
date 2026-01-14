@@ -62,8 +62,10 @@ export default function ReferenceShotPage() {
   
   // Image states
   const [referenceImage, setReferenceImage] = useState<string | null>(null)
-  const [productImage, setProductImage] = useState<string | null>(null)
+  const [productImages, setProductImages] = useState<string[]>([]) // Support up to 4 products
   const [modelImage, setModelImage] = useState<string | null>(null)
+  
+  const MAX_PRODUCT_IMAGES = 4
   const [isAutoModel, setIsAutoModel] = useState(true) // Default to auto mode
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null)
   
@@ -124,7 +126,7 @@ export default function ReferenceShotPage() {
   }
   
   // Check if ready to generate
-  const canGenerate = referenceImage && productImage && (isAutoModel || modelImage)
+  const canGenerate = referenceImage && productImages.length > 0 && (isAutoModel || modelImage)
   
   // Start generation
   const handleGenerate = async () => {
@@ -141,7 +143,7 @@ export default function ReferenceShotPage() {
     const imageCount = 2
     
     // 创建任务到 generationTaskStore（Photos tab 会显示 loading）
-    const taskId = addTask('reference_shot', productImage!, {}, imageCount)
+    const taskId = addTask('reference_shot', productImages[0], {}, imageCount)
     initImageSlots(taskId, imageCount)
     
     // 预扣配额（使用统一 hook）
@@ -151,7 +153,11 @@ export default function ReferenceShotPage() {
       // Compress images before sending
       setLoadingMessage(t.referenceShot?.compressing || '压缩图片中...')
       const compressedRefImage = await compressBase64Image(referenceImage!, 1024)
-      const compressedProductImage = await compressBase64Image(productImage!, 1024)
+      // Compress all product images
+      const compressedProductImages = await Promise.all(
+        productImages.map(img => compressBase64Image(img, 1024))
+      )
+      const compressedProductImage = compressedProductImages[0] // Primary product for model selection
       
       let finalModelImage = modelImage
       
@@ -215,6 +221,7 @@ export default function ReferenceShotPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           productImage: compressedProductImage,
+          productImages: compressedProductImages, // All product images
           modelImage: finalModelImage,
           referenceImage: compressedRefImage,
         }),
@@ -254,6 +261,7 @@ export default function ReferenceShotPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             productImage: compressedProductImage,
+            productImages: compressedProductImages, // All product images
             modelImage: finalModelImage,
             backgroundImage,
             captionPrompt,
@@ -300,7 +308,8 @@ export default function ReferenceShotPage() {
           body: JSON.stringify({
             taskId,
             imageUrls: allImages.map(img => img.url),
-            productImageUrl: productImage,    // 商品图
+            productImageUrl: productImages[0],    // 主商品图
+            productImageUrls: productImages,       // 所有商品图
             referenceImageUrl: referenceImage, // 参考图
             inputParams: {
               hasSimple: simpleResult.images?.length > 0,
@@ -358,7 +367,7 @@ export default function ReferenceShotPage() {
   const handleReset = () => {
     setStep('upload')
     setReferenceImage(null)
-    setProductImage(null)
+    setProductImages([])
     setModelImage(null)
     setIsAutoModel(true)
     setSelectedModelId(null)
@@ -460,28 +469,37 @@ export default function ReferenceShotPage() {
                 )}
               </div>
               
-              {/* Product Image */}
+              {/* Product Images - Support up to 4 */}
               <div>
                 <h3 className={`font-semibold text-zinc-800 mb-1 ${isDesktop ? 'text-sm' : 'text-xs'}`}>
-                  {t.referenceShot?.productImage || '商品图'}
+                  {t.referenceShot?.productImage || '商品图'} ({productImages.length}/{MAX_PRODUCT_IMAGES})
                 </h3>
                 <p className={`text-zinc-500 mb-2 line-clamp-2 ${isDesktop ? 'text-xs' : 'text-[10px]'}`}>
-                  {t.referenceShot?.productImageDesc || '上传商品图'}
+                  {t.referenceShot?.productImageDesc || '上传商品图'}{productImages.length >= 2 && ` (多图可能影响质量)`}
                 </p>
 
-                {productImage ? (
-                  <div className="relative w-full rounded-xl overflow-hidden bg-zinc-100">
-                    <img src={productImage} alt="Product" className="w-full h-auto max-h-[300px] object-contain" />
-                    <button
-                      onClick={() => setProductImage(null)}
-                      className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center"
-                    >
-                      <X className="w-3 h-3 text-white" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {/* Drag & Drop Area */}
+                {/* Product Image Grid */}
+                <div className={`grid gap-2 ${isDesktop ? 'grid-cols-2' : 'grid-cols-2'}`}>
+                  {/* Existing Images */}
+                  {productImages.map((img, idx) => (
+                    <div key={idx} className="relative aspect-square rounded-xl overflow-hidden bg-zinc-100 group">
+                      <img src={img} alt={`Product ${idx + 1}`} className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => setProductImages(prev => prev.filter((_, i) => i !== idx))}
+                        className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-3 h-3 text-white" />
+                      </button>
+                      {idx === 0 && (
+                        <div className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 bg-blue-500 rounded text-[10px] text-white font-medium">
+                          #1
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  
+                  {/* Add More Button */}
+                  {productImages.length < MAX_PRODUCT_IMAGES && (
                     <div
                       onClick={() => productImageInputRef.current?.click()}
                       onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-blue-400', 'bg-blue-50') }}
@@ -490,34 +508,36 @@ export default function ReferenceShotPage() {
                         e.preventDefault()
                         e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50')
                         const file = e.dataTransfer.files?.[0]
-                        if (file && file.type.startsWith('image/')) {
+                        if (file && file.type.startsWith('image/') && productImages.length < MAX_PRODUCT_IMAGES) {
                           const base64 = await fileToBase64(file)
-                          setProductImage(base64)
+                          setProductImages(prev => [...prev, base64])
                         }
                       }}
-                      className={`w-full rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 bg-zinc-50 hover:bg-blue-50 transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${isDesktop ? 'aspect-square max-h-[200px]' : 'aspect-[4/3]'}`}
+                      className="aspect-square rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 bg-zinc-50 hover:bg-blue-50 transition-all flex flex-col items-center justify-center gap-1 cursor-pointer"
                     >
                       <Plus className="w-6 h-6 text-zinc-400" />
-                      <span className="text-xs text-zinc-500">{t.common?.upload || 'Upload'}</span>
-                      <span className="text-[10px] text-zinc-400">{t.common?.clickToUploadOrDrag || 'Click or drag & drop'}</span>
+                      <span className="text-[10px] text-zinc-500">+</span>
                     </div>
-                    {/* Quick Actions */}
-                    <div className="grid grid-cols-2 gap-1.5">
-                      <button
-                        onClick={() => setShowProductGalleryPicker(true)}
-                        className="h-8 rounded-lg border border-zinc-200 bg-white hover:border-blue-300 hover:bg-blue-50 flex items-center justify-center gap-1.5 transition-colors"
-                      >
-                        <ImageIcon className="w-3.5 h-3.5 text-zinc-500" />
-                        <span className="text-[10px] text-zinc-600">{t.common?.fromGallery || 'Photos'}</span>
-                      </button>
-                      <button
-                        onClick={() => setShowProductAssetPicker(true)}
-                        className="h-8 rounded-lg border border-zinc-200 bg-white hover:border-blue-300 hover:bg-blue-50 flex items-center justify-center gap-1.5 transition-colors"
-                      >
-                        <FolderHeart className="w-3.5 h-3.5 text-zinc-500" />
-                        <span className="text-[10px] text-zinc-600">{t.common?.fromAssets || 'Assets'}</span>
-                      </button>
-                    </div>
+                  )}
+                </div>
+                
+                {/* Quick Actions - Only show when no images */}
+                {productImages.length === 0 && (
+                  <div className="grid grid-cols-2 gap-1.5 mt-2">
+                    <button
+                      onClick={() => setShowProductGalleryPicker(true)}
+                      className="h-8 rounded-lg border border-zinc-200 bg-white hover:border-blue-300 hover:bg-blue-50 flex items-center justify-center gap-1.5 transition-colors"
+                    >
+                      <ImageIcon className="w-3.5 h-3.5 text-zinc-500" />
+                      <span className="text-[10px] text-zinc-600">{t.common?.fromGallery || 'Photos'}</span>
+                    </button>
+                    <button
+                      onClick={() => setShowProductAssetPicker(true)}
+                      className="h-8 rounded-lg border border-zinc-200 bg-white hover:border-blue-300 hover:bg-blue-50 flex items-center justify-center gap-1.5 transition-colors"
+                    >
+                      <FolderHeart className="w-3.5 h-3.5 text-zinc-500" />
+                      <span className="text-[10px] text-zinc-600">{t.common?.fromAssets || 'Assets'}</span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -554,30 +574,47 @@ export default function ReferenceShotPage() {
                 </button>
                 
                 {/* Custom Model Button */}
-                <button
-                  onClick={() => setShowModelPicker(true)}
-                  className={`flex-1 p-4 rounded-xl border-2 transition-all ${
-                    !isAutoModel && modelImage
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-zinc-200 bg-white hover:border-blue-300'
-                  }`}
-                >
+                <div className={`flex-1 p-4 rounded-xl border-2 transition-all relative ${
+                  !isAutoModel && modelImage
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-zinc-200 bg-white hover:border-blue-300'
+                }`}>
                   {modelImage && !isAutoModel ? (
-                    <div className="relative w-full aspect-[3/4] rounded-lg overflow-hidden">
+                    <div className="relative w-full aspect-[3/4] rounded-lg overflow-hidden group">
                       <Image src={modelImage} alt="Model" fill className="object-cover" />
                       <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                         <Check className="w-6 h-6 text-white" />
                       </div>
+                      {/* Clear button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setModelImage(null)
+                          setSelectedModelId(null)
+                          setIsAutoModel(true)
+                        }}
+                        className="absolute top-2 right-2 w-7 h-7 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                      >
+                        <X className="w-4 h-4 text-white" />
+                      </button>
+                      {/* Click to change */}
+                      <button
+                        onClick={() => setShowModelPicker(true)}
+                        className="absolute inset-0 z-0"
+                      />
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center gap-2">
+                    <button
+                      onClick={() => setShowModelPicker(true)}
+                      className="w-full flex items-center justify-center gap-2 py-4"
+                    >
                       <ImageIcon className="w-5 h-5 text-zinc-400" />
                       <span className="text-sm font-medium text-zinc-600">
                         {t.referenceShot?.selectModel || '选择模特'}
                       </span>
-                    </div>
+                    </button>
                   )}
-                </button>
+                </div>
               </div>
             </div>
             
@@ -732,7 +769,11 @@ export default function ReferenceShotPage() {
         ref={productImageInputRef}
         className="hidden"
         accept="image/*"
-        onChange={(e) => handleFileUpload(e, setProductImage)}
+        onChange={(e) => handleFileUpload(e, (img) => {
+          if (productImages.length < MAX_PRODUCT_IMAGES) {
+            setProductImages(prev => [...prev, img])
+          }
+        })}
       />
       <input
         type="file"
@@ -782,7 +823,9 @@ export default function ReferenceShotPage() {
         open={showProductGalleryPicker}
         onClose={() => setShowProductGalleryPicker(false)}
         onSelect={(imageUrl) => {
-          setProductImage(imageUrl)
+          if (productImages.length < MAX_PRODUCT_IMAGES) {
+            setProductImages(prev => [...prev, imageUrl])
+          }
           setShowProductGalleryPicker(false)
         }}
         themeColor="blue"
@@ -794,7 +837,9 @@ export default function ReferenceShotPage() {
         open={showProductAssetPicker}
         onClose={() => setShowProductAssetPicker(false)}
         onSelect={(imageUrl) => {
-          setProductImage(imageUrl)
+          if (productImages.length < MAX_PRODUCT_IMAGES) {
+            setProductImages(prev => [...prev, imageUrl])
+          }
           setShowProductAssetPicker(false)
         }}
         onUploadClick={() => {
