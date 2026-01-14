@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback, memo } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { X, Loader2, FolderHeart, Plus, ZoomIn } from "lucide-react"
@@ -9,6 +9,7 @@ import { useIsDesktop } from "@/hooks/useIsMobile"
 import { useAssetStore } from "@/stores/assetStore"
 import { useTranslation } from "@/stores/languageStore"
 import { fileToBase64 } from "@/lib/utils"
+import { Asset } from "@/types"
 
 interface AssetPickerPanelProps {
   open: boolean
@@ -46,6 +47,65 @@ const themeClasses = {
   },
 }
 
+// Memoized product item for better performance
+const ProductItem = memo(function ProductItem({ 
+  product, 
+  onSelect, 
+  onZoom, 
+  themeHover, 
+  isDesktop,
+  isLoading 
+}: { 
+  product: Asset
+  onSelect: (url: string) => void
+  onZoom: (url: string) => void
+  themeHover: string
+  isDesktop: boolean
+  isLoading: boolean
+}) {
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    // Prevent zoom button from triggering select
+    if ((e.target as HTMLElement).closest('[data-zoom-btn]')) return
+    // Use pointerdown for faster response on mobile
+    e.preventDefault()
+    onSelect(product.imageUrl)
+  }, [onSelect, product.imageUrl])
+
+  return (
+    <div className={`relative group ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
+      <div
+        onPointerDown={handlePointerDown}
+        className={`w-full aspect-square rounded-xl overflow-hidden relative border-2 border-transparent ${themeHover} transition-colors bg-white dark:bg-zinc-800 cursor-pointer active:scale-95`}
+        style={{ touchAction: 'manipulation' }}
+      >
+        <Image 
+          src={product.imageUrl} 
+          alt={product.name || ''} 
+          fill 
+          className="object-cover pointer-events-none" 
+          loading="lazy"
+          sizes="(max-width: 768px) 33vw, 20vw"
+        />
+        <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent ${isDesktop ? 'p-2 pt-6' : 'p-1.5 pt-4'} pointer-events-none`}>
+          <p className={`${isDesktop ? 'text-xs' : 'text-[10px]'} text-white truncate text-center`}>{product.name}</p>
+        </div>
+      </div>
+      {/* Zoom Button */}
+      <button
+        data-zoom-btn
+        onPointerDown={(e) => {
+          e.stopPropagation()
+          onZoom(product.imageUrl)
+        }}
+        className="absolute bottom-1.5 right-1.5 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10"
+        style={{ touchAction: 'manipulation' }}
+      >
+        <ZoomIn className="w-3 h-3 text-white" />
+      </button>
+    </div>
+  )
+})
+
 export function AssetPickerPanel({
   open,
   onClose,
@@ -66,15 +126,19 @@ export function AssetPickerPanel({
   const theme = themeClasses[themeColor]
   const displayTitle = title || t.camera?.selectProduct || 'Select Product'
 
-  const handleSelect = (imageUrl: string) => {
+  const handleSelect = useCallback((imageUrl: string) => {
     onSelect(imageUrl)
     onClose()
-  }
+  }, [onSelect, onClose])
 
-  const handleUploadClick = () => {
+  const handleUploadClick = useCallback(() => {
     onClose()
     onUploadClick?.()
-  }
+  }, [onClose, onUploadClick])
+  
+  const handleZoom = useCallback((url: string) => {
+    setZoomImage(url)
+  }, [])
 
   return (
     <AnimatePresence>
@@ -94,7 +158,7 @@ export function AssetPickerPanel({
             initial={isDesktop ? { opacity: 0, scale: 0.95 } : { y: "100%" }}
             animate={isDesktop ? { opacity: 1, scale: 1 } : { y: 0 }}
             exit={isDesktop ? { opacity: 0, scale: 0.95 } : { y: "100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            transition={{ type: "tween", duration: 0.2, ease: "easeOut" }}
             className={isDesktop 
               ? "fixed inset-0 m-auto w-[700px] h-fit max-h-[80vh] bg-white dark:bg-zinc-900 rounded-2xl z-50 flex flex-col overflow-hidden shadow-2xl"
               : "fixed bottom-0 left-0 right-0 h-[80%] bg-white dark:bg-zinc-900 rounded-t-2xl z-50 flex flex-col overflow-hidden"
@@ -152,32 +216,15 @@ export function AssetPickerPanel({
                   )}
                   
                   {userProducts.map(product => (
-                    <div 
+                    <ProductItem
                       key={product.id}
-                      className={`relative group ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}
-                    >
-                      <button
-                        disabled={isLoading}
-                        onClick={() => handleSelect(product.imageUrl)}
-                        className={`w-full aspect-square rounded-xl overflow-hidden relative border-2 border-transparent ${theme.accentHover} transition-all bg-white dark:bg-zinc-800`}
-                        style={{ touchAction: 'manipulation' }}
-                      >
-                        <Image src={product.imageUrl} alt={product.name || ''} fill className="object-cover pointer-events-none" />
-                        <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent ${isDesktop ? 'p-2 pt-6' : 'p-1.5 pt-4'} pointer-events-none`}>
-                          <p className={`${isDesktop ? 'text-xs' : 'text-[10px]'} text-white truncate text-center`}>{product.name}</p>
-                        </div>
-                      </button>
-                      {/* Zoom Button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setZoomImage(product.imageUrl)
-                        }}
-                        className="absolute bottom-1.5 right-1.5 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10"
-                      >
-                        <ZoomIn className="w-3 h-3 text-white" />
-                      </button>
-                    </div>
+                      product={product}
+                      onSelect={handleSelect}
+                      onZoom={handleZoom}
+                      themeHover={theme.accentHover}
+                      isDesktop={isDesktop ?? false}
+                      isLoading={isLoading}
+                    />
                   ))}
                 </div>
               ) : (
