@@ -1204,8 +1204,8 @@ function OutfitPageContent() {
                         <span className="text-xs text-amber-600 font-medium">{t?.outfit?.maxReached || 'Max reached'}</span>
                       )}
                     </div>
-                    <p className="text-xs text-amber-600 text-center">
-                      {t.proStudio?.maxItemsWarning || '⚠️ Max 4 products. Too many may affect quality.'}
+                    <p className="text-xs text-zinc-400 text-center">
+                      {t.proStudio?.maxItemsWarning || 'Max 4 products. Too many may affect quality.'}
                     </p>
                   </div>
                 </div>

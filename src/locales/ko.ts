@@ -652,7 +652,7 @@ export const ko: Translations = {
     change: "변경",
     additionalProducts: "추가 상품 (선택)",
     maxItems: "최대 {count}개",
-    maxItemsWarning: "⚠️ 최대 4개 상품. 너무 많으면 품질에 영향을 줄 수 있습니다.",
+    maxItemsWarning: "최대 4개 상품. 너무 많으면 품질에 영향을 줄 수 있습니다.",
     add: "추가",
     addMoreTip: "💡 더 많은 상품을 추가하면 코디 조합 효과를 얻을 수 있습니다",
     smartModelMatch: "스마트 모델 매칭",

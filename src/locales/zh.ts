@@ -651,7 +651,7 @@ export const zh = {
     change: "更换",
     additionalProducts: "搭配商品（可选）",
     maxItems: "最多{count}件",
-    maxItemsWarning: "⚠️ 最多4件商品，过多可能影响生成质量",
+    maxItemsWarning: "最多4件商品，过多可能影响生成质量",
     add: "添加",
     addMoreTip: "💡 添加更多商品可生成穿搭组合效果",
     smartModelMatch: "智能模特匹配",

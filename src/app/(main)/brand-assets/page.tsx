@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
-import { Plus, Trash2, Users, Image as ImageIcon, Package, Upload, Home, Pin, X, ZoomIn, RefreshCw, Loader2 } from "lucide-react"
+import { Plus, Trash2, Users, Image as ImageIcon, Package, Upload, Home, Pin, ZoomIn, RefreshCw, FolderOpen, Sparkles } from "lucide-react"
 import { useAssetStore } from "@/stores/assetStore"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { Asset, AssetType } from "@/types"
@@ -25,12 +25,12 @@ const PRODUCT_CATEGORIES: ProductSubTab[] = ["all", "top", "pants", "inner", "sh
 // 商品分类翻译映射
 const getProductCategoryLabel = (cat: ProductSubTab, t: any): string => {
   switch (cat) {
-    case "all": return t.common?.all || "全部"
-    case "top": return t.assets?.productTop || "上衣"
-    case "pants": return t.assets?.productPants || "裤子"
-    case "inner": return t.assets?.productInner || "内衬"
-    case "shoes": return t.assets?.productShoes || "鞋子"
-    case "hat": return t.assets?.productHat || "帽子"
+    case "all": return t.common?.all || "All"
+    case "top": return t.assets?.productTop || "Tops"
+    case "pants": return t.assets?.productPants || "Pants"
+    case "inner": return t.assets?.productInner || "Inner"
+    case "shoes": return t.assets?.productShoes || "Shoes"
+    case "hat": return t.assets?.productHat || "Hats"
     default: return cat
   }
 }
@@ -93,33 +93,15 @@ export default function BrandAssetsPage() {
   
   // 每次进入页面强制刷新预设（无缓存）
   useEffect(() => {
-    // 防止 React StrictMode 双重执行
-    if (hasLoadedRef.current) {
-      console.log('[BrandAssets] Already loaded, skipping duplicate call')
-      return
-    }
+    if (hasLoadedRef.current) return
     hasLoadedRef.current = true
-    
-    console.log('[BrandAssets] Page mounted - forcing fresh preset load')
     loadPresets(true)
-    
-    // 组件卸载时重置，以便下次进入页面时重新加载
-    return () => {
-      hasLoadedRef.current = false
-    }
+    return () => { hasLoadedRef.current = false }
   }, [loadPresets])
   
   // 动态预设数据
-  const modelPresets = {
-    normal: visibleModels,
-    studio: studioModels,
-  }
-  
-  const backgroundPresets = {
-    normal: visibleBackgrounds,
-    studio: studioBackgrounds,
-  }
-  
+  const modelPresets = { normal: visibleModels, studio: studioModels }
+  const backgroundPresets = { normal: visibleBackgrounds, studio: studioBackgrounds }
   const systemPresets: Record<AssetType, Asset[]> = {
     model: [...visibleModels, ...studioModels],
     background: [...visibleBackgrounds, ...studioBackgrounds],
@@ -134,7 +116,6 @@ export default function BrandAssetsPage() {
       case "model": return userModels
       case "background": return userBackgrounds
       case "product": 
-        // 商品支持二级分类筛选
         if (productSubTab === "all") return userProducts
         return userProducts.filter(p => p.category === productSubTab)
       case "vibe": return userVibes
@@ -147,11 +128,9 @@ export default function BrandAssetsPage() {
     fileInputRef.current?.click()
   }
   
-  // Generate incremental asset name: product1, model1, scene1...
   const generateAssetName = (type: AssetType, existingAssets: Asset[]): string => {
     const prefix = type === 'background' ? 'scene' : type
     const pattern = new RegExp(`^${prefix}(\\d+)$`, 'i')
-    
     let maxNumber = 0
     existingAssets.forEach(asset => {
       const match = asset.name?.match(pattern)
@@ -160,7 +139,6 @@ export default function BrandAssetsPage() {
         if (num > maxNumber) maxNumber = num
       }
     })
-    
     return `${prefix}${maxNumber + 1}`
   }
   
@@ -168,13 +146,11 @@ export default function BrandAssetsPage() {
     const files = e.target.files
     if (!files || files.length === 0) return
     
-    // Get existing assets for the upload type to calculate next number
     const existingAssets = uploadType === 'product' ? userProducts 
       : uploadType === 'model' ? userModels 
       : uploadType === 'background' ? userBackgrounds 
       : userVibes
     
-    // Process all files and add them using addUserAsset (which syncs to cloud)
     let currentAssets = [...existingAssets]
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
@@ -185,51 +161,34 @@ export default function BrandAssetsPage() {
         type: uploadType,
         name: assetName,
         imageUrl: base64,
-        // 如果上传的是商品且选择了具体分类，则设置 category
         ...(uploadType === 'product' && productSubTab !== 'all' && { category: productSubTab }),
       }
-      
-      // Use addUserAsset which handles both local state and cloud sync
       await addUserAsset(newAsset)
-      // Track the new asset for incremental naming when uploading multiple files
       currentAssets = [...currentAssets, newAsset]
     }
-    
-    // Switch to user tab after upload
     setActiveSource("user")
-    
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ""
-    }
+    if (fileInputRef.current) fileInputRef.current.value = ""
   }
   
   const handleDelete = async (type: AssetType, id: string) => {
-    // Use deleteUserAsset which handles both local state and cloud sync
     await deleteUserAsset(type, id)
   }
   
   const userAssets = getUserAssets(activeType)
   
-  // 获取预设资产，模特和环境使用二级分类
   const getPresetAssets = () => {
-    if (activeType === 'model') {
-      return modelPresets[modelSubTab] || []
-    }
-    if (activeType === 'background') {
-      return backgroundPresets[backgroundSubTab] || []
-    }
+    if (activeType === 'model') return modelPresets[modelSubTab] || []
+    if (activeType === 'background') return backgroundPresets[backgroundSubTab] || []
     return systemPresets[activeType] || []
   }
   const presetAssets = getPresetAssets()
   
-  // Sort user assets: pinned first
   const sortedUserAssets = [...userAssets].sort((a, b) => {
     if (a.isPinned && !b.isPinned) return -1
     if (!a.isPinned && b.isPinned) return 1
     return 0
   })
   
-  // Sort preset assets: pinned first
   const sortedPresetAssets = [...presetAssets].sort((a, b) => {
     const aIsPinned = pinnedPresetIds.has(a.id)
     const bIsPinned = pinnedPresetIds.has(b.id)
@@ -240,62 +199,275 @@ export default function BrandAssetsPage() {
   
   const displayAssets = activeSource === "user" ? sortedUserAssets : sortedPresetAssets
   
-  // 调试：打印当前显示的资产
-  useEffect(() => {
-    console.log('[BrandAssets] Display state:', {
-      activeType,
-      activeSource,
-      modelSubTab,
-      backgroundSubTab,
-      productSubTab,
-      presetAssetsCount: presetAssets.length,
-      displayAssetsCount: displayAssets.length,
-      firstAsset: displayAssets[0]?.name,
-      firstAssetUrl: displayAssets[0]?.imageUrl?.substring(0, 80),
-    })
-  }, [activeType, activeSource, modelSubTab, backgroundSubTab, productSubTab, presetAssets.length, displayAssets])
-  
-  if (!_hasHydrated) {
+  if (!_hasHydrated || screenLoading) {
+    return <ScreenLoadingGuard><div className="h-screen bg-zinc-50" /></ScreenLoadingGuard>
+  }
+
+  // ====== PC Desktop Layout ======
+  if (isDesktop) {
     return (
-      <div className="h-screen w-full bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-zinc-500">{t.common.loading}</p>
-        </div>
+      <div className="h-full flex bg-zinc-50">
+        <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleFileUpload} className="hidden" />
+        
+        {/* Left Sidebar */}
+        <aside className="w-64 bg-white border-r border-zinc-200 flex flex-col shrink-0">
+          {/* Logo */}
+          <div className="h-16 px-5 flex items-center gap-3 border-b border-zinc-100">
+            <button onClick={() => router.push("/")} className="w-9 h-9 rounded-lg hover:bg-zinc-100 flex items-center justify-center transition-colors">
+              <Home className="w-5 h-5 text-zinc-500" />
+            </button>
+            <div className="flex items-center gap-2">
+              <Image src="/logo.png" alt="Brand Camera" width={28} height={28} className="rounded" />
+              <span className="font-semibold text-zinc-900">{t.assets.title}</span>
+            </div>
+          </div>
+          
+          {/* Type Navigation */}
+          <div className="p-4 border-b border-zinc-100">
+            <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-3">Categories</p>
+            <div className="space-y-1">
+              {typeTabs.map((tab) => {
+                const Icon = tab.icon
+                const userCount = getUserAssets(tab.value).length
+                const isActive = activeType === tab.value
+                return (
+                  <button
+                    key={tab.value}
+                    onClick={() => setActiveType(tab.value)}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
+                      isActive
+                        ? "bg-zinc-900 text-white shadow-sm"
+                        : "text-zinc-600 hover:bg-zinc-100"
+                    }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span className="font-medium">{tab.label}</span>
+                    {userCount > 0 && (
+                      <span className={`ml-auto text-xs px-2 py-0.5 rounded-full ${
+                        isActive ? "bg-white/20" : "bg-zinc-200 text-zinc-500"
+                      }`}>
+                        {userCount}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+          
+          {/* Source Tabs */}
+          <div className="p-4 border-b border-zinc-100">
+            <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-3">Source</p>
+            <div className="space-y-1">
+              <button
+                onClick={() => setActiveSource("user")}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                  activeSource === "user" ? "bg-blue-50 text-blue-700" : "text-zinc-600 hover:bg-zinc-100"
+                }`}
+              >
+                <FolderOpen className="w-5 h-5" />
+                <span className="font-medium">{t.common.my}{t.nav.assets}</span>
+                <span className="ml-auto text-xs text-zinc-400">{userAssets.length}</span>
+              </button>
+              <button
+                onClick={() => setActiveSource("preset")}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                  activeSource === "preset" ? "bg-purple-50 text-purple-700" : "text-zinc-600 hover:bg-zinc-100"
+                }`}
+              >
+                <Sparkles className="w-5 h-5" />
+                <span className="font-medium">{t.common.official}</span>
+                <span className="ml-auto text-xs text-zinc-400">{presetAssets.length}</span>
+              </button>
+            </div>
+          </div>
+          
+          {/* Sub-filters */}
+          <div className="p-4 flex-1 overflow-y-auto">
+            {/* Model sub-tabs */}
+            {activeSource === "preset" && activeType === "model" && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">Type</p>
+                <button
+                  onClick={() => setModelSubTab("normal")}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                    modelSubTab === "normal" ? "bg-blue-100 text-blue-700 font-medium" : "text-zinc-600 hover:bg-zinc-100"
+                  }`}
+                >
+                  {t.assets.normalModels || 'Regular Models'} ({modelPresets.normal.length})
+                </button>
+                <button
+                  onClick={() => setModelSubTab("studio")}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                    modelSubTab === "studio" ? "bg-amber-100 text-amber-700 font-medium" : "text-zinc-600 hover:bg-zinc-100"
+                  }`}
+                >
+                  {t.assets.studioModels || 'Studio Models'} ({modelPresets.studio.length})
+                </button>
+              </div>
+            )}
+            
+            {/* Background sub-tabs */}
+            {activeSource === "preset" && activeType === "background" && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">Type</p>
+                <button
+                  onClick={() => setBackgroundSubTab("normal")}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                    backgroundSubTab === "normal" ? "bg-blue-100 text-blue-700 font-medium" : "text-zinc-600 hover:bg-zinc-100"
+                  }`}
+                >
+                  {t.assets.normalScenes || 'Regular Scenes'} ({backgroundPresets.normal.length})
+                </button>
+                <button
+                  onClick={() => setBackgroundSubTab("studio")}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                    backgroundSubTab === "studio" ? "bg-amber-100 text-amber-700 font-medium" : "text-zinc-600 hover:bg-zinc-100"
+                  }`}
+                >
+                  {t.assets.studioScenes || 'Studio Scenes'} ({backgroundPresets.studio.length})
+                </button>
+              </div>
+            )}
+            
+            {/* Product categories */}
+            {activeSource === "user" && activeType === "product" && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">Category</p>
+                {PRODUCT_CATEGORIES.map(cat => {
+                  const count = cat === "all" ? userProducts.length : userProducts.filter(p => p.category === cat).length
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => setProductSubTab(cat)}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                        productSubTab === cat ? "bg-blue-100 text-blue-700 font-medium" : "text-zinc-600 hover:bg-zinc-100"
+                      }`}
+                    >
+                      {getProductCategoryLabel(cat, t)} ({count})
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+          
+          {/* Sync indicator */}
+          {isSyncing && (
+            <div className="p-4 border-t border-zinc-100">
+              <div className="flex items-center gap-2 text-blue-600 text-sm">
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                <span>{t.user.syncing}</span>
+              </div>
+            </div>
+          )}
+        </aside>
+        
+        {/* Main Content */}
+        <main className="flex-1 flex flex-col min-w-0">
+          {/* Top Bar */}
+          <div className="h-16 px-8 flex items-center justify-between border-b border-zinc-200 bg-white shrink-0">
+            <div>
+              <h1 className="text-xl font-semibold text-zinc-900">
+                {typeTabs.find(t => t.value === activeType)?.label}
+              </h1>
+              <p className="text-sm text-zinc-500">
+                {activeSource === "user" ? `${displayAssets.length} items in your library` : `${displayAssets.length} official presets`}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => { hasLoadedRef.current = false; loadPresets(true) }}
+                disabled={presetsLoading}
+                className="w-10 h-10 rounded-xl border border-zinc-200 hover:bg-zinc-100 flex items-center justify-center transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`w-5 h-5 text-zinc-600 ${presetsLoading ? 'animate-spin' : ''}`} />
+              </button>
+              <button
+                onClick={() => handleUploadClick(activeType)}
+                className="flex items-center gap-2 px-5 py-2.5 bg-zinc-900 text-white font-medium rounded-xl hover:bg-zinc-800 transition-colors shadow-sm"
+              >
+                <Plus className="w-5 h-5" />
+                Upload
+              </button>
+            </div>
+          </div>
+          
+          {/* Grid Content */}
+          <div className="flex-1 overflow-y-auto p-8">
+            {displayAssets.length > 0 ? (
+              <motion.div 
+                key={`grid-${activeType}-${activeSource}-${modelSubTab}-${backgroundSubTab}-${productSubTab}`}
+                className="grid grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2 }}
+              >
+                {displayAssets.map((asset, index) => (
+                  <motion.div
+                    key={asset.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.2, delay: Math.min(index * 0.02, 0.2) }}
+                  >
+                    <AssetCardDesktop
+                      asset={asset}
+                      isPreset={activeSource === "preset"}
+                      isPinned={activeSource === "preset" ? isPresetPinned(asset.id) : asset.isPinned}
+                      onDelete={activeSource === "user" ? () => handleDelete(activeType, asset.id) : undefined}
+                      onPin={activeSource === "user" ? () => togglePin(activeType, asset.id) : () => togglePresetPin(asset.id)}
+                      onZoom={() => setZoomImage(asset.imageUrl)}
+                    />
+                  </motion.div>
+                ))}
+              </motion.div>
+            ) : isInitialLoading && activeSource === "user" ? (
+              <div className="grid grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5">
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                  <div key={i} className="aspect-[3/4] bg-zinc-100 rounded-2xl animate-pulse" />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-32 text-zinc-400">
+                <div className="w-20 h-20 bg-zinc-100 rounded-2xl flex items-center justify-center mb-6">
+                  {activeSource === "user" ? <Upload className="w-10 h-10 text-zinc-300" /> : <Package className="w-10 h-10 text-zinc-300" />}
+                </div>
+                <p className="text-lg text-zinc-600 mb-2">
+                  {activeSource === "user" 
+                    ? (activeType === "model" ? t.assets.noModels : activeType === "background" ? t.assets.noScenes : t.assets.noProducts)
+                    : "No presets available"
+                  }
+                </p>
+                {activeSource === "user" && (
+                  <button onClick={() => handleUploadClick(activeType)} className="text-blue-600 hover:text-blue-700 font-medium">
+                    {t.assets.clickUpload}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </main>
+        
+        <FullscreenImageViewer open={!!zoomImage} onClose={() => setZoomImage(null)} imageUrl={zoomImage || ''} />
       </div>
     )
   }
-  
-  // 防止 hydration 闪烁
-  if (screenLoading) {
-    return <ScreenLoadingGuard><div /></ScreenLoadingGuard>
-  }
-  
+
+  // ====== Mobile Layout (Original) ======
   return (
     <div className="h-full flex flex-col bg-zinc-50">
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        onChange={handleFileUpload}
-        className="hidden"
-      />
+      <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleFileUpload} className="hidden" />
       
       {/* Header */}
       <div className="border-b bg-white shrink-0">
-        <div className={`h-14 flex items-center justify-between ${isDesktop ? 'max-w-6xl mx-auto px-8' : 'px-4'}`}>
+        <div className="h-14 flex items-center justify-between px-4">
           <div className="flex items-center">
-            <button
-              onClick={() => router.push("/")}
-              className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center transition-colors"
-            >
+            <button onClick={() => router.push("/")} className="w-10 h-10 -ml-2 rounded-full hover:bg-zinc-100 flex items-center justify-center transition-colors">
               <Home className="w-5 h-5 text-zinc-600" />
             </button>
             <div className="flex items-center gap-2 ml-2">
               <Image src="/logo.png" alt="Brand Camera" width={28} height={28} className="rounded" />
               <span className="font-semibold text-lg text-zinc-900">{t.assets.title}</span>
-              {/* Syncing indicator - only show when actively syncing */}
               {isSyncing && (
                 <span className="flex items-center gap-1 px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-600 text-xs font-medium rounded-full">
                   <RefreshCw className="w-3 h-3 animate-spin" />
@@ -305,23 +477,10 @@ export default function BrandAssetsPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {/* 手动刷新预设按钮 */}
-            <button
-              onClick={() => {
-                console.log('[BrandAssets] Manual refresh triggered')
-                hasLoadedRef.current = false
-                loadPresets(true)
-              }}
-              disabled={presetsLoading}
-              className="w-9 h-9 rounded-lg border border-zinc-200 hover:bg-zinc-100 flex items-center justify-center transition-colors disabled:opacity-50"
-              title="Refresh"
-            >
+            <button onClick={() => { hasLoadedRef.current = false; loadPresets(true) }} disabled={presetsLoading} className="w-9 h-9 rounded-lg border border-zinc-200 hover:bg-zinc-100 flex items-center justify-center transition-colors disabled:opacity-50">
               <RefreshCw className={`w-4 h-4 text-zinc-600 ${presetsLoading ? 'animate-spin' : ''}`} />
             </button>
-            <button
-              onClick={() => handleUploadClick(activeType)}
-              className="flex items-center gap-1 px-3 py-1.5 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors"
-            >
+            <button onClick={() => handleUploadClick(activeType)} className="flex items-center gap-1 px-3 py-1.5 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors">
               <Plus className="w-4 h-4" />
               {t.assets.upload}
             </button>
@@ -329,7 +488,7 @@ export default function BrandAssetsPage() {
         </div>
         
         {/* Type Tabs */}
-        <div className={`pb-3 flex gap-2 overflow-x-auto hide-scrollbar ${isDesktop ? 'max-w-6xl mx-auto px-8' : 'px-4'}`}>
+        <div className="pb-3 flex gap-2 overflow-x-auto hide-scrollbar px-4">
           {typeTabs.map((tab) => {
             const Icon = tab.icon
             const userCount = getUserAssets(tab.value).length
@@ -338,19 +497,13 @@ export default function BrandAssetsPage() {
                 key={tab.value}
                 onClick={() => setActiveType(tab.value)}
                 className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full transition-colors whitespace-nowrap ${
-                  activeType === tab.value
-                    ? "bg-zinc-900 text-white"
-                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                  activeType === tab.value ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
                 }`}
               >
                 <Icon className="w-4 h-4" />
                 {tab.label}
                 {userCount > 0 && (
-                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                    activeType === tab.value 
-                      ? "bg-white/20 text-white" 
-                      : "bg-zinc-200 text-zinc-500"
-                  }`}>
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${activeType === tab.value ? "bg-white/20 text-white" : "bg-zinc-200 text-zinc-500"}`}>
                     {userCount}
                   </span>
                 )}
@@ -360,112 +513,59 @@ export default function BrandAssetsPage() {
         </div>
       </div>
       
-      {/* Source Tabs: 我的资产 | 官方预设 */}
+      {/* Source Tabs */}
       <div className="bg-white border-b px-4 py-2">
         <div className="flex bg-zinc-100 rounded-lg p-1">
           <button
             onClick={() => setActiveSource("user")}
-            className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeSource === "user"
-                ? "bg-white text-zinc-900 shadow-sm"
-                : "text-zinc-500 hover:text-zinc-700"
-            }`}
+            className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${activeSource === "user" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}
           >
             {t.common.my}{t.nav.assets}
-            {userAssets.length > 0 && (
-              <span className="ml-1.5 text-xs text-zinc-400">({userAssets.length})</span>
-            )}
+            {userAssets.length > 0 && <span className="ml-1.5 text-xs text-zinc-400">({userAssets.length})</span>}
           </button>
           <button
             onClick={() => setActiveSource("preset")}
-            className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeSource === "preset"
-                ? "bg-white text-zinc-900 shadow-sm"
-                : "text-zinc-500 hover:text-zinc-700"
-            }`}
+            className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${activeSource === "preset" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}
           >
             {t.common.official}{t.common.preset}
-            {presetAssets.length > 0 && (
-              <span className="ml-1.5 text-xs text-zinc-400">({presetAssets.length})</span>
-            )}
+            {presetAssets.length > 0 && <span className="ml-1.5 text-xs text-zinc-400">({presetAssets.length})</span>}
           </button>
         </div>
         
-        {/* 二级分类 - 模特 */}
+        {/* Sub-filters */}
         {activeSource === "preset" && activeType === "model" && (
           <div className="flex gap-2 mt-2">
-            <button
-              onClick={() => setModelSubTab("normal")}
-              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-                modelSubTab === "normal"
-                  ? "bg-blue-600 text-white"
-                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-              }`}
-            >
-              {t.assets.normalModels || '普通模特'}
-              <span className="ml-1 opacity-70">({modelPresets.normal.length})</span>
+            <button onClick={() => setModelSubTab("normal")} className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${modelSubTab === "normal" ? "bg-blue-600 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"}`}>
+              {t.assets.normalModels || 'Regular'} ({modelPresets.normal.length})
             </button>
-            <button
-              onClick={() => setModelSubTab("studio")}
-              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-                modelSubTab === "studio"
-                  ? "bg-amber-500 text-white"
-                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-              }`}
-            >
-              {t.assets.studioModels || '高级模特'}
-              <span className="ml-1 opacity-70">({modelPresets.studio.length})</span>
+            <button onClick={() => setModelSubTab("studio")} className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${modelSubTab === "studio" ? "bg-amber-500 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"}`}>
+              {t.assets.studioModels || 'Studio'} ({modelPresets.studio.length})
             </button>
           </div>
         )}
         
-        {/* 二级分类 - 环境 */}
         {activeSource === "preset" && activeType === "background" && (
           <div className="flex gap-2 mt-2">
-            <button
-              onClick={() => setBackgroundSubTab("normal")}
-              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-                backgroundSubTab === "normal"
-                  ? "bg-blue-600 text-white"
-                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-              }`}
-            >
-              {t.assets.normalScenes || 'Regular Scenes'}
-              <span className="ml-1 opacity-70">({backgroundPresets.normal.length})</span>
+            <button onClick={() => setBackgroundSubTab("normal")} className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${backgroundSubTab === "normal" ? "bg-blue-600 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"}`}>
+              {t.assets.normalScenes || 'Regular'} ({backgroundPresets.normal.length})
             </button>
-            <button
-              onClick={() => setBackgroundSubTab("studio")}
-              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-                backgroundSubTab === "studio"
-                  ? "bg-amber-500 text-white"
-                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-              }`}
-            >
-              {t.assets.studioScenes || 'Studio Scenes'}
-              <span className="ml-1 opacity-70">({backgroundPresets.studio.length})</span>
+            <button onClick={() => setBackgroundSubTab("studio")} className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${backgroundSubTab === "studio" ? "bg-amber-500 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"}`}>
+              {t.assets.studioScenes || 'Studio'} ({backgroundPresets.studio.length})
             </button>
           </div>
         )}
         
-        {/* 二级分类 - 商品（仅我的资产） */}
         {activeSource === "user" && activeType === "product" && (
           <div className="flex gap-2 mt-2 flex-wrap">
             {PRODUCT_CATEGORIES.map(cat => {
-              const count = cat === "all" 
-                ? userProducts.length 
-                : userProducts.filter(p => p.category === cat).length
+              const count = cat === "all" ? userProducts.length : userProducts.filter(p => p.category === cat).length
               return (
                 <button
                   key={cat}
                   onClick={() => setProductSubTab(cat)}
-                  className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-                    productSubTab === cat
-                      ? "bg-blue-600 text-white"
-                      : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-                  }`}
+                  className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${productSubTab === cat ? "bg-blue-600 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"}`}
                 >
-                  {getProductCategoryLabel(cat, t)}
-                  <span className="ml-1 opacity-70">({count})</span>
+                  {getProductCategoryLabel(cat, t)} ({count})
                 </button>
               )
             })}
@@ -474,97 +574,115 @@ export default function BrandAssetsPage() {
       </div>
       
       {/* Content */}
-      <div className={`flex-1 overflow-y-auto pb-24 ${isDesktop ? 'px-8 py-6' : 'p-4'}`}>
-        <div className={isDesktop ? 'max-w-6xl mx-auto' : ''}>
-        {/* 初始加载时显示同步中提示 */}
-        {isInitialLoading && activeSource === "user" && (
-          <div className="flex items-center justify-center gap-2 py-3 mb-4 bg-blue-50 border border-blue-100 rounded-lg">
-            <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
-            <span className="text-sm text-blue-600">{t.user.syncing}</span>
-          </div>
-        )}
-        
+      <div className="flex-1 overflow-y-auto pb-24 p-4">
         {displayAssets.length > 0 ? (
-          <motion.div 
-            key={`grid-${activeType}-${activeSource}-${modelSubTab}-${backgroundSubTab}-${productSubTab}`}
-            className={`grid gap-3 ${isDesktop ? 'grid-cols-5' : 'grid-cols-2'}`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-          >
+          <motion.div key={`grid-${activeType}-${activeSource}`} className="grid grid-cols-2 gap-3" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
             {displayAssets.map((asset, index) => (
-              <motion.div
-                key={asset.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.3) }}
-              >
+              <motion.div key={asset.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.3) }}>
                 <AssetCard
                   asset={asset}
                   isPreset={activeSource === "preset"}
                   isPinned={activeSource === "preset" ? isPresetPinned(asset.id) : asset.isPinned}
                   onDelete={activeSource === "user" ? () => handleDelete(activeType, asset.id) : undefined}
-                  onPin={activeSource === "user" 
-                    ? () => togglePin(activeType, asset.id) 
-                    : () => togglePresetPin(asset.id)
-                  }
+                  onPin={activeSource === "user" ? () => togglePin(activeType, asset.id) : () => togglePresetPin(asset.id)}
                   onZoom={() => setZoomImage(asset.imageUrl)}
                 />
               </motion.div>
             ))}
           </motion.div>
-        ) : isInitialLoading && activeSource === "user" ? (
-          // 初始加载中显示骨架屏
-          <div className={`grid gap-3 ${isDesktop ? 'grid-cols-5' : 'grid-cols-2'}`}>
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="aspect-square bg-zinc-100 rounded-xl animate-pulse" />
-            ))}
-          </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-20 text-zinc-400">
             <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mb-4">
-              {activeSource === "user" ? (
-                <Upload className="w-8 h-8 text-zinc-300" />
-              ) : (
-                <Package className="w-8 h-8 text-zinc-300" />
-              )}
+              {activeSource === "user" ? <Upload className="w-8 h-8 text-zinc-300" /> : <Package className="w-8 h-8 text-zinc-300" />}
             </div>
             <p className="text-zinc-600 mb-2 text-center">
-              {activeSource === "user" 
-                ? (activeType === "model" ? t.assets.noModels : activeType === "background" ? t.assets.noScenes : t.assets.noProducts)
-                : t.common.preset
-              }
+              {activeSource === "user" ? (activeType === "model" ? t.assets.noModels : activeType === "background" ? t.assets.noScenes : t.assets.noProducts) : t.common.preset}
             </p>
             {activeSource === "user" && (
-              <button
-                onClick={() => handleUploadClick(activeType)}
-                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-              >
+              <button onClick={() => handleUploadClick(activeType)} className="text-blue-600 hover:text-blue-700 text-sm font-medium">
                 {t.assets.clickUpload}
               </button>
             )}
           </div>
         )}
-        </div>
       </div>
       
-      {/* Fullscreen Zoom Viewer - Using shared component */}
-      <FullscreenImageViewer
-        open={!!zoomImage}
-        onClose={() => setZoomImage(null)}
-        imageUrl={zoomImage || ''}
-      />
+      <FullscreenImageViewer open={!!zoomImage} onClose={() => setZoomImage(null)} imageUrl={zoomImage || ''} />
     </div>
   )
 }
 
+// ====== Desktop Asset Card ======
+function AssetCardDesktop({ 
+  asset, onDelete, onPin, onZoom, isPreset = false, isPinned = false
+}: { 
+  asset: Asset
+  onDelete?: () => void
+  onPin?: () => void
+  onZoom?: () => void
+  isPreset?: boolean
+  isPinned?: boolean
+}) {
+  return (
+    <div className="group relative bg-white rounded-2xl overflow-hidden shadow-sm border border-zinc-100 hover:shadow-lg hover:border-zinc-200 transition-all duration-200">
+      <div className="aspect-[3/4] bg-zinc-100 relative cursor-pointer overflow-hidden" onClick={onZoom}>
+        <Image src={asset.imageUrl} alt={asset.name || "Asset"} fill className="object-cover group-hover:scale-105 transition-transform duration-300" unoptimized />
+        
+        {/* Badges */}
+        <div className="absolute top-3 left-3 flex gap-2">
+          {isPreset && (
+            <span className="bg-zinc-900/80 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-full font-medium">
+              Official
+            </span>
+          )}
+          {isPinned && (
+            <span className="w-7 h-7 bg-amber-500 text-white rounded-full flex items-center justify-center shadow-sm">
+              <Pin className="w-3.5 h-3.5" />
+            </span>
+          )}
+        </div>
+        
+        {/* Hover Overlay */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 flex items-center justify-center">
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <div className="w-12 h-12 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-lg">
+              <ZoomIn className="w-6 h-6 text-zinc-700" />
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Footer */}
+      <div className="p-4 flex items-center justify-between">
+        <h4 className="text-sm font-medium text-zinc-900 truncate flex-1 mr-2">{asset.name}</h4>
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {onPin && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onPin() }}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+                isPinned ? "bg-amber-50 text-amber-600 hover:bg-amber-100" : "hover:bg-zinc-100 text-zinc-400 hover:text-amber-600"
+              }`}
+            >
+              <Pin className="w-4 h-4" />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete() }}
+              className="w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-zinc-400 hover:text-red-600 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ====== Mobile Asset Card (Original) ======
 function AssetCard({ 
-  asset, 
-  onDelete,
-  onPin,
-  onZoom,
-  isPreset = false,
-  isPinned = false
+  asset, onDelete, onPin, onZoom, isPreset = false, isPinned = false
 }: { 
   asset: Asset
   onDelete?: () => void
@@ -577,20 +695,11 @@ function AssetCard({
   
   return (
     <div className="group relative bg-white rounded-xl overflow-hidden shadow-sm border border-zinc-100">
-      <div 
-        className="aspect-square bg-zinc-100 relative cursor-pointer"
-        onClick={onZoom}
-      >
-        <Image
-          src={asset.imageUrl}
-          alt={asset.name || "Asset"}
-          fill
-          className="object-cover"
-          unoptimized
-        />
+      <div className="aspect-square bg-zinc-100 relative cursor-pointer" onClick={onZoom}>
+        <Image src={asset.imageUrl} alt={asset.name || "Asset"} fill className="object-cover" unoptimized />
         {isPreset && (
           <span className="absolute top-2 left-2 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded font-medium">
-            {useLanguageStore.getState().t.common.official}
+            {t.common.official}
           </span>
         )}
         {isPinned && (
@@ -598,7 +707,6 @@ function AssetCard({
             <Pin className="w-3 h-3" />
           </span>
         )}
-        {/* Zoom hint on hover */}
         <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
           <ZoomIn className="w-8 h-8 text-white" />
         </div>
@@ -607,30 +715,20 @@ function AssetCard({
         <div className="truncate flex-1 mr-2">
           <h4 className="text-sm font-medium text-zinc-900 truncate">{asset.name}</h4>
         </div>
-        
         <div className="flex items-center gap-1">
           {onPin && (
             <button
-              onClick={(e) => {
-                e.stopPropagation()
-                onPin()
-              }}
+              onClick={(e) => { e.stopPropagation(); onPin() }}
               className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
-                isPinned 
-                  ? "bg-amber-50 text-amber-600 hover:bg-amber-100" 
-                  : "hover:bg-zinc-100 text-zinc-400 hover:text-amber-600"
+                isPinned ? "bg-amber-50 text-amber-600 hover:bg-amber-100" : "hover:bg-zinc-100 text-zinc-400 hover:text-amber-600"
               }`}
-              title={isPinned ? (t.assets?.unpin || "Unpin") : (t.assets?.pin || "Pin")}
             >
               <Pin className="w-4 h-4" />
             </button>
           )}
           {onDelete && (
             <button
-              onClick={(e) => {
-                e.stopPropagation()
-                onDelete()
-              }}
+              onClick={(e) => { e.stopPropagation(); onDelete() }}
               className="w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-zinc-400 hover:text-red-600 transition-colors"
             >
               <Trash2 className="w-4 h-4" />

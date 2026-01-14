@@ -1310,8 +1310,8 @@ function CameraPageContent() {
                               </button>
                             )}
                           </div>
-                          <p className="text-xs text-amber-600 mt-3">
-                            {t.proStudio?.maxItemsWarning || '⚠️ Max 4 products total. Too many items may affect quality.'}
+                          <p className="text-xs text-zinc-400 mt-3">
+                            {t.proStudio?.maxItemsWarning || 'Max 4 products. Too many may affect quality.'}
                           </p>
                         </div>
                         

@@ -487,24 +487,6 @@ function ProStudioPageContent() {
     setGeneratedImages([])
     setGeneratedModes([])
 
-    // 如果有第二张商品，跳转到搭配页面
-    if (capturedImage2) {
-      // 上传图片到 Storage，避免 sessionStorage 存大量 base64
-      if (user?.id) {
-        const [url1, url2] = await Promise.all([
-          ensureImageUrl(capturedImage, user.id, 'product'),
-          ensureImageUrl(capturedImage2, user.id, 'product')
-        ])
-        sessionStorage.setItem('product1Image', url1)
-        sessionStorage.setItem('product2Image', url2)
-      } else {
-        sessionStorage.setItem('product1Image', capturedImage)
-        sessionStorage.setItem('product2Image', capturedImage2)
-      }
-      router.push('/pro-studio/outfit')
-      return
-    }
-
     const hasQuota = await checkQuota(PRO_STUDIO_NUM_IMAGES)
     if (!hasQuota) return
 
@@ -551,10 +533,21 @@ function ProStudioPageContent() {
 
     try {
       // 压缩图片以减少请求体大小（Vercel 限制 4.5MB）
-      console.log("[ProStudio] Compressing product image...")
+      console.log("[ProStudio] Compressing product images...")
       const compressedImage = await compressBase64Image(capturedImage, 1280)
-      console.log(`[ProStudio] Compressed: ${(capturedImage.length / 1024).toFixed(0)}KB -> ${(compressedImage.length / 1024).toFixed(0)}KB`)
-      
+      // Compress additional product if exists
+      const compressedImage2 = capturedImage2 ? await compressBase64Image(capturedImage2, 1280) : null
+      console.log(`[ProStudio] Compressed main: ${(capturedImage.length / 1024).toFixed(0)}KB -> ${(compressedImage.length / 1024).toFixed(0)}KB`)
+      if (compressedImage2) {
+        console.log(`[ProStudio] Compressed additional product`)
+      }
+
+      // Build productImages array
+      const productImages = [{ imageUrl: compressedImage }]
+      if (compressedImage2) {
+        productImages.push({ imageUrl: compressedImage2 })
+      }
+
       // 使用 SSE 调用新 API
       // 注意：不使用 AbortController，用户离开页面后后端继续生成
       const response = await fetch('/api/generate-pro-studio', {
@@ -562,6 +555,7 @@ function ProStudioPageContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           productImage: compressedImage,
+          productImages: productImages.length > 1 ? productImages : undefined, // Only send if multiple products
           modelImage: userSelectedModelUrl || 'random',
           backgroundImage: userSelectedBgUrl || 'random',
           taskId,
@@ -1259,65 +1253,14 @@ function ProStudioPageContent() {
                     </div>
                   )}
                   
-                  {/* 右下角搭配商品按钮 - 只在review模式且没有第二张商品时显示 */}
+                  {/* 右下角添加商品按钮 - 只在review模式且没有第二张商品时显示 */}
                   {mode === "review" && !capturedImage2 && (
                     <button
-                      disabled={isAnalyzingProduct}
-                      onClick={async () => {
-                        if (!capturedImage) return
-                        
-                        setIsAnalyzingProduct(true)
-                        
-                        try {
-                          // 并行执行：分析商品 + 上传图片到 Storage
-                          const [analysisResult, uploadedUrl] = await Promise.all([
-                            // 分析商品类型
-                            fetch('/api/analyze-product', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ image: capturedImage })
-                            }).then(res => res.json()).catch(() => ({ success: false })),
-                            // 上传图片到 Storage（避免 sessionStorage 存大量 base64）
-                            user?.id 
-                              ? ensureImageUrl(capturedImage, user.id, 'product')
-                              : Promise.resolve(capturedImage) // 未登录则保留 base64
-                          ])
-                          
-                          // 保存图片 URL 到 sessionStorage
-                          sessionStorage.setItem('product1Image', uploadedUrl)
-                          sessionStorage.removeItem('product2Image')
-                          sessionStorage.removeItem('product2Type')
-                          
-                          if (analysisResult.success && analysisResult.data?.type) {
-                            sessionStorage.setItem('product1Type', analysisResult.data.type)
-                            console.log('[ProStudio] Product analyzed:', analysisResult.data.type)
-                          } else {
-                            sessionStorage.removeItem('product1Type')
-                            console.warn('[ProStudio] Product analysis failed, proceeding without type')
-                          }
-                        } catch (error) {
-                          console.error('[ProStudio] Failed to analyze/upload product:', error)
-                          // 出错也跳转，使用原图
-                          sessionStorage.setItem('product1Image', capturedImage)
-                          sessionStorage.removeItem('product1Type')
-                        }
-                        
-                        // 分析完成后立即跳转，不更新状态（页面已离开，更新状态无意义且会延迟跳转）
-                        router.push('/pro-studio/outfit')
-                      }}
-                      className="absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2.5 rounded-full bg-black/60 backdrop-blur-md text-white hover:bg-black/70 transition-colors border border-white/20 disabled:opacity-50"
+                      onClick={() => setShowProduct2Panel(true)}
+                      className="absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2.5 rounded-full bg-black/60 backdrop-blur-md text-white hover:bg-black/70 transition-colors border border-white/20"
                     >
-                      {isAnalyzingProduct ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span className="text-sm font-medium">{t.outfit?.analyzing || '分析中...'}</span>
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="w-4 h-4" />
-                          <span className="text-sm font-medium">{t.proStudio?.styleOutfit || '搭配商品'}</span>
-                        </>
-                      )}
+                      <Plus className="w-4 h-4" />
+                      <span className="text-sm font-medium">{t.proStudio?.add || 'Add'}</span>
                     </button>
                   )}
                 </div>
@@ -1392,29 +1335,9 @@ function ProStudioPageContent() {
                     <motion.button
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      onClick={async (e) => {
-                        if (capturedImage2) {
-                          // 有第二张商品，上传图片到 Storage 后跳转
-                          if (user?.id) {
-                            const [url1, url2] = await Promise.all([
-                              ensureImageUrl(capturedImage!, user.id, 'product'),
-                              ensureImageUrl(capturedImage2, user.id, 'product')
-                            ])
-                            sessionStorage.setItem('product1Image', url1)
-                            sessionStorage.setItem('product2Image', url2)
-                          } else {
-                            sessionStorage.setItem('product1Image', capturedImage!)
-                            sessionStorage.setItem('product2Image', capturedImage2)
-                          }
-                          // 清除旧的分析结果
-                          sessionStorage.removeItem('product1Analysis')
-                          sessionStorage.removeItem('product2Analysis')
-                          // 跳转到搭配页面
-                          router.push('/pro-studio/outfit')
-                        } else {
-                          triggerFlyToGallery(e)
-                          handleShootIt()
-                        }
+                      onClick={(e) => {
+                        triggerFlyToGallery(e)
+                        handleShootIt()
                       }}
                       className={`w-full max-w-xs h-14 rounded-full text-lg font-semibold gap-2 flex items-center justify-center transition-colors ${
                         isDesktop
@@ -1423,7 +1346,7 @@ function ProStudioPageContent() {
                       }`}
                     >
                       <Wand2 className="w-5 h-5" />
-                      {capturedImage2 ? '去搭配' : 'Shoot It'}
+                      Shoot It
                     </motion.button>
                   </div>
                 </div>

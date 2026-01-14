@@ -653,7 +653,7 @@ export const en: Translations = {
     change: "Change",
     additionalProducts: "Additional Products (Optional)",
     maxItems: "Max {count} items",
-    maxItemsWarning: "⚠️ Max 4 products. Too many may affect quality.",
+    maxItemsWarning: "Max 4 products. Too many may affect quality.",
     add: "Add",
     addMoreTip: "💡 Add more products for outfit combination effect",
     smartModelMatch: "Smart Model Matching",

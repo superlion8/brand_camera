@@ -526,8 +526,8 @@ export default function TryOnPage() {
                           </div>
                         )}
                       </div>
-                      <p className="text-xs text-amber-600 mt-2">
-                        {t.proStudio?.maxItemsWarning || '⚠️ Max 4 products. Too many may affect quality.'}
+                      <p className="text-xs text-zinc-400 mt-2">
+                        {t.proStudio?.maxItemsWarning || 'Max 4 products. Too many may affect quality.'}
                       </p>
                       
                       {/* Upload buttons for clothing */}
@@ -695,8 +695,8 @@ export default function TryOnPage() {
                     </div>
                   )}
                 </div>
-                <p className="text-xs text-amber-600 mt-2">
-                  {t.proStudio?.maxItemsWarning || '⚠️ Max 4 products. Too many may affect quality.'}
+                <p className="text-xs text-zinc-400 mt-2">
+                  {t.proStudio?.maxItemsWarning || 'Max 4 products. Too many may affect quality.'}
                 </p>
               </div>
               
