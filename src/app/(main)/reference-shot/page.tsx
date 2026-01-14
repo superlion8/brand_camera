@@ -217,85 +217,130 @@ export default function ReferenceShotPage() {
         return res.json()
       }
       
-      // Simple mode: directly use ref_img as reference (2 images)
-      const simplePromise = fetch('/api/reference-shot/generate-simple', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          productImage: compressedProductImage,
-          productImages: compressedProductImages, // All product images
-          modelImage: finalModelImage,
-          referenceImage: compressedRefImage,
-        }),
-      }).then(res => safeJsonParse(res, 'generate-simple'))
-      
-      // Extended mode: caption + remove person + generate (2 images)
-      const extendedPromise = (async () => {
-        // Caption the reference image
-        const captionRes = await fetch('/api/reference-shot/caption', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ referenceImage: compressedRefImage }),
-        })
-        const captionData = await safeJsonParse(captionRes, 'caption')
-        if (!captionData.success) {
-          console.warn('[ReferenceShot] Caption failed:', captionData.error)
-          return { success: false, error: captionData.error || '分析参考图失败' }
-        }
-        const captionPrompt = captionData.captionPrompt
-        
-        // Remove person from reference image
-        const removePersonRes = await fetch('/api/reference-shot/remove-person', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ referenceImage: compressedRefImage }),
-        })
-        const removePersonData = await safeJsonParse(removePersonRes, 'remove-person')
-        if (!removePersonData.success) {
-          console.warn('[ReferenceShot] Remove person failed:', removePersonData.error)
-          return { success: false, error: removePersonData.error || '提取背景失败' }
-        }
-        const backgroundImage = removePersonData.backgroundImage
-        
-        // Generate final images
-        const generateRes = await fetch('/api/reference-shot/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            productImage: compressedProductImage,
-            productImages: compressedProductImages, // All product images
-            modelImage: finalModelImage,
-            backgroundImage,
-            captionPrompt,
-            referenceImageUrl: referenceImage,
-          }),
-        })
-        return safeJsonParse(generateRes, 'generate')
-      })()
-      
-      // Wait for both to complete
-      const [simpleResult, extendedResult] = await Promise.all([simplePromise, extendedPromise])
-      
-      // Collect all images with mode info
+      // Track results
       const allImages: GeneratedImageInfo[] = []
+      let firstImageSwitched = false
+      let simpleCompleted = false
+      let extendedCompleted = false
       
-      if (simpleResult.success && simpleResult.images) {
-        simpleResult.images.forEach((url: string) => {
-          allImages.push({ url, mode: 'simple' })
+      // Helper to add image and switch to results on first
+      const addImageResult = (url: string, mode: 'simple' | 'extended', index: number) => {
+        allImages.push({ url, mode })
+        
+        // Update image slot
+        updateImageSlot(taskId, index, {
+          status: 'completed',
+          imageUrl: url,
+          genMode: mode,
         })
+        
+        // Update UI immediately
+        setGeneratedImages(prev => [...prev, { url, mode }])
+        
+        // Switch to results on first image
+        if (!firstImageSwitched && step === 'generating') {
+          firstImageSwitched = true
+          console.log('[ReferenceShot] First image ready, switching to results')
+          setCurrentGenerationId(taskId)
+          setStep('result')
+        }
       }
       
-      if (extendedResult.success && extendedResult.images) {
-        extendedResult.images.forEach((url: string) => {
-          allImages.push({ url, mode: 'extended' })
-        })
+      // Simple mode: directly use ref_img as reference
+      const runSimple = async () => {
+        try {
+          const res = await fetch('/api/reference-shot/generate-simple', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              productImage: compressedProductImage,
+              productImages: compressedProductImages,
+              modelImage: finalModelImage,
+              referenceImage: compressedRefImage,
+            }),
+          })
+          const result = await safeJsonParse(res, 'generate-simple')
+          if (result.success && result.images) {
+            result.images.forEach((url: string, i: number) => {
+              addImageResult(url, 'simple', allImages.length)
+            })
+          }
+          simpleCompleted = true
+        } catch (e) {
+          console.warn('[ReferenceShot] Simple mode failed:', e)
+          simpleCompleted = true
+        }
       }
+      
+      // Extended mode: caption + remove person + generate
+      const runExtended = async () => {
+        try {
+          // Caption the reference image
+          const captionRes = await fetch('/api/reference-shot/caption', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ referenceImage: compressedRefImage }),
+          })
+          const captionData = await safeJsonParse(captionRes, 'caption')
+          if (!captionData.success) {
+            console.warn('[ReferenceShot] Caption failed:', captionData.error)
+            extendedCompleted = true
+            return
+          }
+          const captionPrompt = captionData.captionPrompt
+          
+          // Remove person from reference image
+          const removePersonRes = await fetch('/api/reference-shot/remove-person', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ referenceImage: compressedRefImage }),
+          })
+          const removePersonData = await safeJsonParse(removePersonRes, 'remove-person')
+          if (!removePersonData.success) {
+            console.warn('[ReferenceShot] Remove person failed:', removePersonData.error)
+            extendedCompleted = true
+            return
+          }
+          const backgroundImage = removePersonData.backgroundImage
+          
+          // Generate final images
+          const generateRes = await fetch('/api/reference-shot/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              productImage: compressedProductImage,
+              productImages: compressedProductImages,
+              modelImage: finalModelImage,
+              backgroundImage,
+              captionPrompt,
+              referenceImageUrl: referenceImage,
+            }),
+          })
+          const result = await safeJsonParse(generateRes, 'generate')
+          if (result.success && result.images) {
+            result.images.forEach((url: string) => {
+              addImageResult(url, 'extended', allImages.length)
+            })
+          }
+          extendedCompleted = true
+        } catch (e) {
+          console.warn('[ReferenceShot] Extended mode failed:', e)
+          extendedCompleted = true
+        }
+      }
+      
+      // Run both modes in parallel (don't await together)
+      const simpleTask = runSimple()
+      const extendedTask = runExtended()
+      
+      // Wait for both to finish for final processing
+      await Promise.all([simpleTask, extendedTask])
       
       if (allImages.length === 0) {
         throw new Error('生成图片失败')
       }
       
-      console.log('[ReferenceShot] Generated images:', allImages.length, '(simple:', simpleResult.images?.length || 0, ', extended:', extendedResult.images?.length || 0, ')')
+      console.log('[ReferenceShot] Generated images:', allImages.length)
       
       // 部分退款（使用统一 hook）
       if (allImages.length > 0 && allImages.length < imageCount) {
@@ -310,12 +355,12 @@ export default function ReferenceShotPage() {
           body: JSON.stringify({
             taskId,
             imageUrls: allImages.map(img => img.url),
-            productImageUrl: productImages[0],    // 主商品图
-            productImageUrls: productImages,       // 所有商品图
-            referenceImageUrl: referenceImage, // 参考图
+            productImageUrl: productImages[0],
+            productImageUrls: productImages,
+            referenceImageUrl: referenceImage,
             inputParams: {
-              hasSimple: simpleResult.images?.length > 0,
-              hasExtended: extendedResult.images?.length > 0,
+              hasSimple: allImages.some(img => img.mode === 'simple'),
+              hasExtended: allImages.some(img => img.mode === 'extended'),
               isAutoModel,
             },
           }),
@@ -325,20 +370,8 @@ export default function ReferenceShotPage() {
         console.warn('[ReferenceShot] Failed to save to gallery:', e)
       }
       
-      // 更新每个 imageSlot 的状态
-      allImages.forEach((img, index) => {
-        updateImageSlot(taskId, index, {
-          status: 'completed',
-          imageUrl: img.url,
-          genMode: img.mode === 'simple' ? 'simple' : 'extended',
-        })
-      })
-      
       // 更新整体任务状态
       updateTaskStatus(taskId, 'completed', allImages.map(img => img.url))
-      
-      setGeneratedImages(allImages)
-      setStep('result')
       confirmQuota()
       
     } catch (err: any) {
