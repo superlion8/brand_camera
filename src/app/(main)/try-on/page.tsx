@@ -44,7 +44,7 @@ export default function TryOnPage() {
   const router = useRouter()
   const { user } = useAuth()
   const t = useLanguageStore(state => state.t)
-  const { addTask, updateTaskStatus, updateImageSlot, initImageSlots } = useGenerationTaskStore()
+  const { addTask, updateTaskStatus, updateImageSlot, initImageSlots, tasks } = useGenerationTaskStore()
   const { addGeneration, generations } = useAssetStore()
   
   // Device detection
@@ -861,10 +861,17 @@ export default function TryOnPage() {
           <ResultsView
             title={t.tryOn?.resultTitle || 'Try-On Complete'}
             onBack={() => setMode('main')}
-            images={resultImages.filter((url): url is string => !!url).map((url) => ({
-              url,
-              status: 'completed' as const,
-            }))}
+            images={[0, 1].map((i) => {
+              const currentTask = tasks.find(t => t.id === currentTaskId)
+              const slot = currentTask?.imageSlots?.[i]
+              const url = slot?.imageUrl || resultImages[i]
+              const status = slot?.status || (url ? 'completed' : 'generating')
+              return {
+                url,
+                status: status as 'completed' | 'pending' | 'generating' | 'failed',
+                error: slot?.error,
+              }
+            })}
             getBadge={() => ({
               text: t.tryOn?.badge || 'Try-On',
               className: 'bg-pink-500',
