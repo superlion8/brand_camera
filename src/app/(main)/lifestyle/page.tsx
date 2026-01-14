@@ -690,7 +690,7 @@ function LifestylePageContent() {
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
                             <div className="absolute bottom-0 left-0 right-0 p-4">
-                              <h3 className="text-lg font-bold text-white">{t.lifestyle?.lifestyleMode || 'LifeStyle 街拍模式'}</h3>
+                              <h3 className="text-lg font-bold text-white">{t.lifestyle?.lifestyleMode || 'LifeStyle Street Mode'}</h3>
                               <p className="text-sm text-white/80 mt-1">{t.home?.lifestyleModeSubtitle || 'AI 智能匹配模特与街景'}</p>
                             </div>
                           </div>
@@ -700,15 +700,15 @@ function LifestylePageContent() {
                             <div className="flex flex-wrap gap-2">
                               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 text-purple-700 text-xs font-medium rounded-full">
                                 <Check className="w-3 h-3" />
-                                {t.lifestyle?.smartSceneMatch || '智能场景匹配'}
+                                {t.lifestyle?.smartSceneMatch || 'Smart Scene Matching'}
                               </span>
                               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-pink-50 text-pink-700 text-xs font-medium rounded-full">
                                 <Check className="w-3 h-3" />
-                                {t.lifestyle?.fashionModelStyle || '时尚模特风格'}
+                                {t.lifestyle?.fashionModelStyle || 'Fashion Model Style'}
                               </span>
                               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-medium rounded-full">
                                 <Check className="w-3 h-3" />
-                                {t.lifestyle?.multiStyleOptions || '多种风格可选'}
+                                {t.lifestyle?.multiStyleOptions || 'Multiple Style Options'}
                               </span>
                             </div>
                           </div>
@@ -738,7 +738,7 @@ function LifestylePageContent() {
               ) : mode === "review" && isDesktop ? (
                 /* Desktop Review Mode - Using shared ReviewModeLayout */
                 <ReviewModeLayout
-                  title={t.lifestyle?.title || 'LifeStyle 街拍'}
+                  title={t.lifestyle?.title || 'LifeStyle Mode'}
                   onBack={handleRetake}
                   mainProductImage={capturedImage}
                   onMainProductChange={handleRetake}
@@ -903,19 +903,19 @@ function LifestylePageContent() {
               status: slot.status as 'generating' | 'completed' | 'failed'
             }))}
             themeColor="purple"
-            title={t.lifestyle?.creating || '正在创作街拍大片'}
+            title={t.lifestyle?.creating || 'Creating street style photos'}
             mobileStatusLines={[lifestyleStatus]}
             onShootMore={handleRetake}
             onReturnHome={() => router.push("/")}
             onDownload={(url) => handleDownload(url)}
-            shootMoreText={t.lifestyle?.shootMore || '拍摄新一组'}
-            returnHomeText={t.lifestyle?.returnHome || '返回首页'}
+            shootMoreText={t.lifestyle?.shootMore || 'Shoot More'}
+            returnHomeText={t.lifestyle?.returnHome || 'Return Home'}
           />
         )}
 
         {mode === "results" && (
           <ResultsView
-            title={t.lifestyle?.results || 'LifeStyle 成片'}
+            title={t.lifestyle?.results || 'LifeStyle Results'}
             onBack={handleRetake}
             images={Array.from({ length: LIFESTYLE_NUM_IMAGES }).map((_, i) => {
                   const url = generatedImages[i]
@@ -929,7 +929,7 @@ function LifestylePageContent() {
               }
             })}
             getBadge={() => ({
-              text: t.lifestyle?.badge || '街拍',
+              text: t.lifestyle?.badge || 'Lifestyle',
               className: 'bg-purple-500',
             })}
             themeColor="purple"
@@ -955,7 +955,7 @@ function LifestylePageContent() {
                 const selectedSlot = currentTask?.imageSlots?.[selectedResultIndex]
                 return selectedSlot?.imageUrl || generatedImages[selectedResultIndex] || ''
               })()}
-              badges={[{ text: t.lifestyle?.badge || '街拍', className: 'bg-purple-500 text-white' }]}
+              badges={[{ text: t.lifestyle?.badge || 'Lifestyle', className: 'bg-purple-500 text-white' }]}
               onFavorite={() => selectedResultIndex !== null && toggleFavorite(selectedResultIndex)}
               isFavorited={selectedResultIndex !== null && isFavorited(selectedResultIndex)}
               onDownload={() => {
@@ -1009,7 +1009,7 @@ function LifestylePageContent() {
                   }
                 }),
               ] : []}
-              inputImages={capturedImage ? [{ url: capturedImage, label: t.common?.product || '商品' }] : []}
+              inputImages={capturedImage ? [{ url: capturedImage, label: t.common?.product || 'Product' }] : []}
               onInputImageClick={(url) => setFullscreenImage(url)}
             />
           </ResultsView>

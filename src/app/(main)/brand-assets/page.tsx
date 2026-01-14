@@ -236,7 +236,7 @@ export default function BrandAssetsPage() {
                   className="flex items-center gap-2 px-5 py-2.5 bg-zinc-900 text-white font-medium rounded-xl hover:bg-zinc-800 transition-colors shadow-sm"
                 >
                   <Plus className="w-5 h-5" />
-                  {t.common?.upload || '上传'}
+                  {t.common?.upload || 'Upload'}
                 </button>
               </div>
             </div>
@@ -284,7 +284,7 @@ export default function BrandAssetsPage() {
                 >
                   <FolderOpen className="w-4 h-4" />
                   <span className="font-medium">
-                    {t.common?.my || '我的'} {activeType === "model" ? t.assets?.models : t.assets?.scenes}
+                    {t.common?.my || 'My'} {activeType === "model" ? t.assets?.models : t.assets?.scenes}
                   </span>
                   <span className="text-xs bg-zinc-100 px-2 py-0.5 rounded-full">
                     {activeType === "model" ? userModels.length : userBackgrounds.length}
@@ -300,7 +300,7 @@ export default function BrandAssetsPage() {
                 >
                   <Sparkles className="w-4 h-4" />
                   <span className="font-medium">
-                    {activeType === "model" ? (t.assets?.modelMarket || '模特市场') : (t.assets?.sceneMarket || '场景市场')}
+                    {activeType === "model" ? (t.assets?.modelMarket || 'Model Market') : (t.assets?.sceneMarket || 'Scene Market')}
                   </span>
                   <span className="text-xs bg-zinc-100 px-2 py-0.5 rounded-full">
                     {activeType === "model" ? systemPresets.model.length : systemPresets.background.length}
@@ -347,7 +347,7 @@ export default function BrandAssetsPage() {
                       : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
                   }`}
                 >
-                  {t.assets?.normalModels || '生活风'} ({modelPresets.normal.length})
+                  {t.assets?.normalModels || 'Lifestyle'} ({modelPresets.normal.length})
                 </button>
                 <button
                   onClick={() => setModelSubTab("studio")}
@@ -357,7 +357,7 @@ export default function BrandAssetsPage() {
                       : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
                   }`}
                 >
-                  {t.assets?.studioModels || '棚拍风'} ({modelPresets.studio.length})
+                  {t.assets?.studioModels || 'Studio'} ({modelPresets.studio.length})
                 </button>
               </div>
             </div>
@@ -374,7 +374,7 @@ export default function BrandAssetsPage() {
                       : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
                   }`}
                 >
-                  {t.assets?.normalScenes || '生活场景'} ({backgroundPresets.normal.length})
+                  {t.assets?.normalScenes || 'Lifestyle'} ({backgroundPresets.normal.length})
                 </button>
                 <button
                   onClick={() => setBackgroundSubTab("studio")}
@@ -384,7 +384,7 @@ export default function BrandAssetsPage() {
                       : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
                   }`}
                 >
-                  {t.assets?.studioScenes || '棚拍场景'} ({backgroundPresets.studio.length})
+                  {t.assets?.studioScenes || 'Studio'} ({backgroundPresets.studio.length})
                 </button>
               </div>
             </div>
@@ -533,10 +533,10 @@ export default function BrandAssetsPage() {
         {activeSource === "preset" && activeType === "model" && (
           <div className="flex gap-2 mt-2">
             <button onClick={() => setModelSubTab("normal")} className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${modelSubTab === "normal" ? "bg-blue-600 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"}`}>
-              {t.assets.normalModels || '生活风'} ({modelPresets.normal.length})
+              {t.assets.normalModels || 'Regular'} ({modelPresets.normal.length})
             </button>
             <button onClick={() => setModelSubTab("studio")} className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${modelSubTab === "studio" ? "bg-amber-500 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"}`}>
-              {t.assets.studioModels || '棚拍风'} ({modelPresets.studio.length})
+              {t.assets.studioModels || 'Studio'} ({modelPresets.studio.length})
             </button>
           </div>
         )}
@@ -544,10 +544,10 @@ export default function BrandAssetsPage() {
         {activeSource === "preset" && activeType === "background" && (
           <div className="flex gap-2 mt-2">
             <button onClick={() => setBackgroundSubTab("normal")} className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${backgroundSubTab === "normal" ? "bg-blue-600 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"}`}>
-              {t.assets.normalScenes || '生活场景'} ({backgroundPresets.normal.length})
+              {t.assets.normalScenes || 'Regular'} ({backgroundPresets.normal.length})
             </button>
             <button onClick={() => setBackgroundSubTab("studio")} className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${backgroundSubTab === "studio" ? "bg-amber-500 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"}`}>
-              {t.assets.studioScenes || '棚拍场景'} ({backgroundPresets.studio.length})
+              {t.assets.studioScenes || 'Studio'} ({backgroundPresets.studio.length})
             </button>
           </div>
         )}

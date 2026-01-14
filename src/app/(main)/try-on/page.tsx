@@ -922,7 +922,7 @@ export default function TryOnPage() {
               }
             })}
             getBadge={() => ({
-              text: t.tryOn?.badge || '换装',
+              text: t.tryOn?.badge || 'Try-On',
               className: 'bg-pink-500',
             })}
             themeColor="pink"
@@ -954,7 +954,7 @@ export default function TryOnPage() {
               open={selectedResultIndex !== null && !!resultImages[selectedResultIndex!]}
               onClose={() => setSelectedResultIndex(null)}
               imageUrl={selectedResultIndex !== null ? resultImages[selectedResultIndex] || '' : ''}
-              badges={[{ text: t.tryOn?.badge || '换装', className: 'bg-pink-500 text-white' }]}
+              badges={[{ text: t.tryOn?.badge || 'Try-On', className: 'bg-pink-500 text-white' }]}
               onFavorite={() => selectedResultIndex !== null && toggleFavorite(selectedResultIndex)}
               isFavorited={selectedResultIndex !== null && isFavorited(selectedResultIndex)}
               onDownload={async () => {

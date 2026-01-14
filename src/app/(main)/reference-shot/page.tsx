@@ -538,7 +538,7 @@ export default function ReferenceShotPage() {
                       className={`w-full rounded-xl border-2 border-dashed border-zinc-300 hover:border-blue-400 bg-zinc-50 hover:bg-blue-50 transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${isDesktop ? 'aspect-square max-h-[200px]' : 'aspect-[4/3]'}`}
                     >
                       <Plus className="w-6 h-6 text-zinc-400" />
-                      <span className="text-xs text-zinc-500">{t.common?.upload || '上传'}</span>
+                      <span className="text-xs text-zinc-500">{t.common?.upload || 'Upload'}</span>
                       <span className="text-[10px] text-zinc-400">{t.common?.clickToUploadOrDrag || 'Click or drag & drop'}</span>
                     </div>
                     {/* Quick Actions */}
@@ -795,10 +795,10 @@ export default function ReferenceShotPage() {
               imageUrl={selectedResultIndex !== null ? generatedImages[selectedResultIndex]?.url || '' : ''}
               badges={[{ 
                 text: debugMode && selectedResultIndex !== null && generatedImages[selectedResultIndex]?.mode === 'simple' 
-                  ? (t.gallery?.simpleMode || '极简模式')
+                  ? 'Simple' 
                   : (debugMode && selectedResultIndex !== null && generatedImages[selectedResultIndex]?.mode === 'extended' 
-                    ? (t.gallery?.extendedMode || '扩展模式')
-                    : (t.gallery?.referenceShot || '参考图')),
+                    ? 'Extended' 
+                    : 'Reference'),
                 className: debugMode && selectedResultIndex !== null && generatedImages[selectedResultIndex]?.mode === 'simple'
                   ? 'bg-green-500 text-white'
                   : (debugMode && selectedResultIndex !== null && generatedImages[selectedResultIndex]?.mode === 'extended'
@@ -819,7 +819,7 @@ export default function ReferenceShotPage() {
               }}
               inputImages={productImages.length > 0 ? productImages.map((url, i) => ({
                 url,
-                label: `${t.common?.product || '商品'} ${i + 1}`,
+                label: `Product ${i + 1}`,
               })) : []}
               onInputImageClick={(url) => setZoomImage(url)}
               quickActions={selectedResultIndex !== null ? [
