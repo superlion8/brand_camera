@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getGenAIClient, extractImage, safetySettings } from '@/lib/genai'
-import { appendImageToGeneration, uploadImageToStorage } from '@/lib/supabase/generationService'
+import { appendImageToGeneration, uploadImageToStorage, finalizeTaskStatus } from '@/lib/supabase/generationService'
 import { requireAuth } from '@/lib/auth'
 
 export const maxDuration = 300 // 5 minutes
@@ -223,6 +223,11 @@ export async function POST(request: NextRequest) {
       if (results.length === 0) {
         await sendEvent('error', { message: 'Failed to generate any images' })
       } else {
+        // 后端统一更新任务状态（不依赖前端）
+        if (generationId) {
+          await finalizeTaskStatus(generationId, userId, results.length)
+        }
+        
         await sendEvent('complete', { 
           images: results,
           count: results.length

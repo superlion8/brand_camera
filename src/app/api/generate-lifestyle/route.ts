@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getGenAIClient, extractImage, extractText, safetySettings } from '@/lib/genai'
 import { createClient } from '@/lib/supabase/server'
-import { appendImageToGeneration, uploadImageToStorage } from '@/lib/supabase/generationService'
+import { appendImageToGeneration, uploadImageToStorage, finalizeTaskStatus } from '@/lib/supabase/generationService'
 import { imageToBase64, getPresetByName } from '@/lib/presets/serverPresets'
 import { LIFESTYLE_VLM_PROMPT, buildLifestyleMatchPrompt, LIFESTYLE_FINAL_PROMPT } from '@/prompts/lifestyle'
 import type { ProductTag, LifestyleSceneTag, ModelAnalysis, LifestyleMatchResult } from '@/types'
@@ -709,9 +709,13 @@ export async function POST(request: NextRequest) {
         })
         
         // Wait for all generations to complete
-        await Promise.all(generatePromises)
+        const results = await Promise.all(generatePromises)
+        const successCount = results.filter(r => r && r.success).length
         
-        send({ type: 'complete' })
+        // 后端统一更新任务状态（不依赖前端）
+        await finalizeTaskStatus(taskId, userId, successCount)
+        
+        send({ type: 'complete', totalSuccess: successCount })
         controller.close()
         
       } catch (error: any) {

@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getGenAIClient, extractImage, extractText, safetySettings } from '@/lib/genai'
-import { appendImageToGeneration, uploadImageToStorage } from '@/lib/supabase/generationService'
+import { appendImageToGeneration, uploadImageToStorage, finalizeTaskStatus } from '@/lib/supabase/generationService'
 import { imageToBase64 } from '@/lib/presets/serverPresets'
 import { requireAuth } from '@/lib/auth'
 import { createClient } from '@supabase/supabase-js'
@@ -548,6 +548,9 @@ export async function POST(request: NextRequest) {
               if (img.url) successCount++
             }
           }
+
+          // 后端统一更新任务状态（不依赖前端）
+          await finalizeTaskStatus(taskId, userId, successCount)
 
           sendEvent({ 
             type: 'complete', 

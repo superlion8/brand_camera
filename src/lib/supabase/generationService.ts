@@ -89,6 +89,36 @@ export async function uploadImageToStorage(
   return null
 }
 
+/**
+ * 后端统一更新任务状态
+ * 在所有图片处理完毕后调用，确保 status 正确（不依赖前端）
+ * 
+ * @param taskId - 任务 ID
+ * @param userId - 用户 ID
+ * @param successCount - 成功生成的图片数量
+ */
+export async function finalizeTaskStatus(
+  taskId: string,
+  userId: string,
+  successCount: number
+): Promise<void> {
+  try {
+    const supabase = await createClient()
+    const finalStatus = successCount > 0 ? 'completed' : 'failed'
+    
+    await supabase
+      .from('generations')
+      .update({ status: finalStatus })
+      .eq('user_id', userId)
+      .eq('task_id', taskId)
+    
+    console.log(`[GenService] Updated task ${taskId} status to ${finalStatus} (${successCount} success)`)
+  } catch (err) {
+    // status 更新失败不影响主流程，前端还会再更新一次
+    console.warn(`[GenService] Failed to update task ${taskId} status:`, err)
+  }
+}
+
 // 追加单张图片到 generation 记录
 // 用于 generate-single API，每生成一张图就追加到数据库
 // 返回 { success, dbId } 以便前端存储数据库 UUID
