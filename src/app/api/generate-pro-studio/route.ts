@@ -808,6 +808,26 @@ export async function POST(request: NextRequest) {
 
           await Promise.allSettled(generatePromises)
 
+          // 后端统一更新任务状态（不依赖前端，避免前端断开时 status 不更新）
+          // 注意：这里只更新 status，不涉及 quota 退款（quota 由前端处理）
+          try {
+            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+            const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+            if (supabaseUrl && supabaseKey) {
+              const supabase = createClient(supabaseUrl, supabaseKey)
+              const finalStatus = successCount > 0 ? 'completed' : 'failed'
+              await supabase
+                .from('generations')
+                .update({ status: finalStatus })
+                .eq('user_id', userId)
+                .eq('task_id', taskId)
+              console.log(`[ProStudio] Updated task ${taskId} status to ${finalStatus} (${successCount}/4 success)`)
+            }
+          } catch (statusErr) {
+            // status 更新失败不影响主流程，前端还会再更新一次
+            console.warn('[ProStudio] Failed to update status:', statusErr)
+          }
+
           sendEvent({ 
             type: 'complete', 
             totalSuccess: successCount,
