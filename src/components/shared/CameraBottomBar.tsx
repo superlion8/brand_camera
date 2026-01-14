@@ -3,6 +3,8 @@
 import { ImageIcon, FolderHeart, Camera } from "lucide-react"
 import { ReactNode } from "react"
 
+export type ShutterVariant = "default" | "gradient-pink" | "gradient-purple" | "gradient-amber"
+
 interface CameraBottomBarProps {
   /** 相册按钮点击 */
   onAlbumClick: () => void
@@ -12,6 +14,8 @@ interface CameraBottomBarProps {
   onAssetClick: () => void
   /** 快门是否禁用 */
   shutterDisabled?: boolean
+  /** 快门样式变体 */
+  shutterVariant?: ShutterVariant
   /** 相册标签 */
   albumLabel?: string
   /** 资源库标签 */
@@ -26,6 +30,29 @@ interface CameraBottomBarProps {
   show?: boolean
 }
 
+const shutterStyles: Record<ShutterVariant, { border: string; inner: string; innerActive: string }> = {
+  default: {
+    border: "border-white/30",
+    inner: "bg-white",
+    innerActive: "group-active:bg-gray-200",
+  },
+  "gradient-pink": {
+    border: "border-pink-400/50",
+    inner: "bg-gradient-to-r from-pink-400 to-purple-400",
+    innerActive: "group-active:from-pink-500 group-active:to-purple-500",
+  },
+  "gradient-purple": {
+    border: "border-purple-400/50",
+    inner: "bg-gradient-to-r from-purple-400 to-pink-400",
+    innerActive: "group-active:from-purple-500 group-active:to-pink-500",
+  },
+  "gradient-amber": {
+    border: "border-amber-400/50",
+    inner: "bg-gradient-to-r from-amber-400 to-orange-400",
+    innerActive: "group-active:from-amber-500 group-active:to-orange-500",
+  },
+}
+
 /**
  * 移动端相机模式底部控制栏
  * 
@@ -36,6 +63,7 @@ export function CameraBottomBar({
   onShutterClick,
   onAssetClick,
   shutterDisabled = false,
+  shutterVariant = "default",
   albumLabel = "相册",
   assetLabel = "资源库",
   leftIcon,
@@ -44,6 +72,8 @@ export function CameraBottomBar({
   show = true,
 }: CameraBottomBarProps) {
   if (!show) return null
+
+  const shutter = shutterStyles[shutterVariant]
 
   return (
     <div className={`flex items-center justify-center gap-8 pb-4 ${className}`}>
@@ -62,9 +92,9 @@ export function CameraBottomBar({
       <button 
         onClick={onShutterClick}
         disabled={shutterDisabled}
-        className="w-20 h-20 rounded-full border-4 border-white/30 flex items-center justify-center relative group active:scale-95 transition-transform disabled:opacity-50"
+        className={`w-20 h-20 rounded-full border-4 ${shutter.border} flex items-center justify-center relative group active:scale-95 transition-transform disabled:opacity-50`}
       >
-        <div className="w-[72px] h-[72px] bg-white rounded-full group-active:bg-gray-200 transition-colors border-2 border-black" />
+        <div className={`w-[72px] h-[72px] ${shutter.inner} rounded-full ${shutter.innerActive} transition-colors border-2 border-black`} />
       </button>
 
       {/* Right: Asset Library */}

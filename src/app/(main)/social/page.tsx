@@ -1072,38 +1072,15 @@ function SocialPageContent() {
                 /* Desktop: Hide bottom controls in camera mode */
                 <div className="hidden" />
               ) : (
-                <div className="flex items-center justify-center gap-8 pb-4">
-                  {/* Album - Left of shutter */}
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors"
-                  >
-                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-                      <ImageIcon className="w-6 h-6" />
-                    </div>
-                    <span className="text-[10px]">{t.camera?.album || '相册'}</span>
-                  </button>
-
-                  {/* Shutter - Mobile only */}
-                  <button 
-                    onClick={handleCapture}
-                    disabled={!hasCamera}
-                    className="w-20 h-20 rounded-full border-4 border-pink-400/50 flex items-center justify-center relative group active:scale-95 transition-transform disabled:opacity-50"
-                  >
-                    <div className="w-[72px] h-[72px] bg-gradient-to-r from-pink-400 to-purple-400 rounded-full group-active:from-pink-500 group-active:to-purple-500 transition-colors border-2 border-black" />
-                  </button>
-
-                  {/* Asset Library - Right of shutter */}
-                  <button 
-                    onClick={() => setShowProductPanel(true)}
-                    className="flex flex-col items-center gap-1 text-white/80 hover:text-white transition-colors"
-                  >
-                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-                      <FolderHeart className="w-6 h-6" />
-                    </div>
-                    <span className="text-[10px]">{t.camera?.assetLibrary || '素材库'}</span>
-                  </button>
-                </div>
+                <CameraBottomBar
+                  onAlbumClick={() => fileInputRef.current?.click()}
+                  onShutterClick={handleCapture}
+                  onAssetClick={() => setShowProductPanel(true)}
+                  shutterDisabled={!hasCamera}
+                  shutterVariant="gradient-pink"
+                  albumLabel={t.camera?.album || '相册'}
+                  assetLabel={t.camera?.assetLibrary || '素材库'}
+                />
               )}
             </div>
             )}

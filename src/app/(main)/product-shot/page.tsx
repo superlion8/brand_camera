@@ -32,6 +32,8 @@ import { useIsDesktop } from "@/hooks/useIsMobile"
 import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
 import { TASK_CREDIT_COSTS, TaskTypes } from "@/lib/taskTypes"
+import { MobilePageHeader } from "@/components/shared/MobilePageHeader"
+import { CameraOverlay } from "@/components/shared/CameraOverlay"
 
 const CREDIT_COST = TASK_CREDIT_COSTS[TaskTypes.PRODUCT_SHOT]
 
@@ -1227,14 +1229,11 @@ function StudioPageContent() {
             className="flex-1 flex flex-col bg-black relative"
           >
             {/* Back button - hidden on desktop */}
-            {!isDesktop && (
-            <button
-              onClick={() => setMode('main')}
-              className="absolute top-4 left-4 z-20 w-10 h-10 rounded-full bg-black/30 text-white backdrop-blur-md flex items-center justify-center"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            )}
+            <MobilePageHeader
+              show={!isDesktop}
+              backAction="back"
+              onBack={() => setMode('main')}
+            />
             
             {/* Camera view / Upload interface */}
             <div className={`flex-1 relative ${isDesktop ? 'bg-zinc-50' : ''}`}>
@@ -1294,34 +1293,12 @@ function StudioPageContent() {
                 </div>
               )}
               
-              {/* Grid overlay - hidden on desktop */}
-              {!isDesktop && (
-              <div className="absolute inset-0 pointer-events-none opacity-30">
-                <div className="w-full h-full grid grid-cols-3 grid-rows-3">
-                  {[...Array(9)].map((_, i) => (
-                    <div key={i} className="border border-white/20" />
-                  ))}
-                </div>
-              </div>
-              )}
-              
-              {/* Focus frame - hidden on desktop */}
-              {!isDesktop && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-64 h-64 border border-white/50 rounded-lg relative">
-                  <div className="absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 border-amber-400" />
-                  <div className="absolute -top-1 -right-1 w-4 h-4 border-t-4 border-r-4 border-amber-400" />
-                  <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-4 border-l-4 border-amber-400" />
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-4 border-r-4 border-amber-400" />
-                </div>
-              </div>
-              )}
-              
-              {!isDesktop && (
-              <div className="absolute top-16 left-0 right-0 text-center text-white/80 text-sm font-medium">
-                {t.camera.shootYourProduct}
-              </div>
-              )}
+              {/* Camera Overlay - hidden on desktop */}
+              <CameraOverlay
+                show={!isDesktop}
+                frameColor="amber"
+                hint={t.camera.shootYourProduct}
+              />
             </div>
             
             {/* Capture button - positioned above BottomNav, hidden on desktop in camera mode */}

@@ -29,6 +29,8 @@ import { GalleryPickerPanel } from "@/components/shared/GalleryPickerPanel"
 import { AssetPickerPanel } from "@/components/shared/AssetPickerPanel"
 import { PhotoDetailDialog, createQuickActions } from "@/components/shared/PhotoDetailDialog"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
+import { MobilePageHeader } from "@/components/shared/MobilePageHeader"
+import { CameraOverlay } from "@/components/shared/CameraOverlay"
 
 const CREDIT_COST = TASK_CREDIT_COSTS[TaskTypes.TRY_ON]
 
@@ -761,14 +763,11 @@ export default function TryOnPage() {
             className="flex-1 flex flex-col bg-black relative"
           >
             {/* Back button - hidden on desktop */}
-            {!isDesktop && (
-              <button
-                onClick={() => setMode('main')}
-                className="absolute top-4 left-4 z-20 w-10 h-10 rounded-full bg-black/30 text-white backdrop-blur-md flex items-center justify-center"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-            )}
+            <MobilePageHeader
+              show={!isDesktop}
+              backAction="back"
+              onBack={() => setMode('main')}
+            />
             
             <div className={`flex-1 relative ${isDesktop ? 'bg-zinc-50' : ''}`}>
               {isDesktop ? (
@@ -823,11 +822,13 @@ export default function TryOnPage() {
                 </div>
               )}
               
-              {!isDesktop && (
-                <div className="absolute top-16 left-0 right-0 text-center text-white/80 text-sm font-medium">
-                  {cameraTarget === 'person' ? (t.tryOn?.personImage || '拍摄人物照片') : (t.tryOn?.clothingImages || '拍摄服装')}
-                </div>
-              )}
+              {/* Camera Overlay - hidden on desktop */}
+              <CameraOverlay
+                show={!isDesktop}
+                showGrid={false}
+                showFocusFrame={false}
+                hint={cameraTarget === 'person' ? (t.tryOn?.personImage || '拍摄人物照片') : (t.tryOn?.clothingImages || '拍摄服装')}
+              />
             </div>
             
             <div className={`py-8 pb-24 flex justify-center ${isDesktop ? 'bg-white border-t border-zinc-200' : 'bg-black'}`}>

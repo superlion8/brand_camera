@@ -1,5 +1,7 @@
 "use client"
 
+export type FrameColor = "white" | "amber" | "purple" | "pink"
+
 interface CameraOverlayProps {
   /** 提示文字 */
   hint?: string
@@ -9,10 +11,19 @@ interface CameraOverlayProps {
   showFocusFrame?: boolean
   /** 对焦框大小 */
   focusFrameSize?: "sm" | "md" | "lg"
+  /** 对焦框角落颜色 */
+  frameColor?: FrameColor
   /** 额外的 className */
   className?: string
   /** 是否显示，默认 true */
   show?: boolean
+}
+
+const frameColorClasses: Record<FrameColor, string> = {
+  white: "border-white",
+  amber: "border-amber-400",
+  purple: "border-purple-400",
+  pink: "border-pink-400",
 }
 
 /**
@@ -25,6 +36,7 @@ export function CameraOverlay({
   showGrid = true,
   showFocusFrame = true,
   focusFrameSize = "lg",
+  frameColor = "white",
   className = "",
   show = true,
 }: CameraOverlayProps) {
@@ -35,6 +47,8 @@ export function CameraOverlay({
     md: "w-56 h-56",
     lg: "w-64 h-64",
   }[focusFrameSize]
+
+  const cornerColor = frameColorClasses[frameColor]
 
   return (
     <>
@@ -53,10 +67,10 @@ export function CameraOverlay({
       {showFocusFrame && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className={`${frameSizeClass} border border-white/50 rounded-lg relative`}>
-            <div className="absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 border-white" />
-            <div className="absolute -top-1 -right-1 w-4 h-4 border-t-4 border-r-4 border-white" />
-            <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-4 border-l-4 border-white" />
-            <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-4 border-r-4 border-white" />
+            <div className={`absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 ${cornerColor}`} />
+            <div className={`absolute -top-1 -right-1 w-4 h-4 border-t-4 border-r-4 ${cornerColor}`} />
+            <div className={`absolute -bottom-1 -left-1 w-4 h-4 border-b-4 border-l-4 ${cornerColor}`} />
+            <div className={`absolute -bottom-1 -right-1 w-4 h-4 border-b-4 border-r-4 ${cornerColor}`} />
           </div>
         </div>
       )}
