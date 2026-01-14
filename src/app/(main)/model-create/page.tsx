@@ -10,7 +10,7 @@ import {
 } from "lucide-react"
 import { useModelCreateStore } from "@/stores/modelCreateStore"
 import { useAssetStore } from "@/stores/assetStore"
-import { createClient } from "@/lib/supabase/client"
+import { useAuth } from "@/components/providers/AuthProvider"
 import { useTranslation } from "@/stores/languageStore"
 import { generateId } from "@/lib/utils"
 import { useIsDesktop } from "@/hooks/useIsMobile"
@@ -96,10 +96,10 @@ const ETHNICITY_LABELS: Record<string, Record<string, string>> = {
 
 export default function ModelCreatePage() {
   const router = useRouter()
+  const { user } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [showAssetPicker, setShowAssetPicker] = useState(false)
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<number>(0)
   
@@ -220,23 +220,6 @@ export default function ModelCreatePage() {
       reader.readAsDataURL(file)
     })
   }
-  
-  // 检查登录状态
-  useEffect(() => {
-    const checkAuth = async () => {
-      const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session) {
-        router.push('/login?redirect=/model-create')
-        return
-      }
-      
-      setIsCheckingAuth(false)
-    }
-    
-    checkAuth()
-  }, [router])
   
   // 加载选择器选项（模式2）
   const loadSelectorOptions = async () => {
@@ -614,18 +597,6 @@ export default function ModelCreatePage() {
   // 防止 hydration 闪烁
   if (screenLoading) {
     return <ScreenLoadingGuard><div /></ScreenLoadingGuard>
-  }
-
-  // 加载中
-  if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-violet-50 via-white to-white">
-        <div className="text-center">
-          <Sparkles className="w-8 h-8 text-violet-600 animate-pulse mx-auto mb-2" />
-          <p className="text-sm text-zinc-500">{t.modelCreate?.loading || t.common?.loading || '加载中...'}</p>
-        </div>
-      </div>
-    )
   }
   
   // 生成中页面
