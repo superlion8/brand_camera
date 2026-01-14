@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { 
   ArrowLeft, Loader2, Image as ImageIcon, 
   X, Home, Check, ZoomIn,
-  Camera, Sparkles, Users, FolderHeart, Heart, Download
+  Camera, Sparkles, Users, FolderHeart, Heart, Download, Wand2
 } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { fileToBase64, compressBase64Image, ensureBase64 } from "@/lib/utils"
@@ -16,6 +16,7 @@ import { BottomNav } from "@/components/shared/BottomNav"
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { ProcessingView } from "@/components/shared/ProcessingView"
 import { ResultsView } from "@/components/shared/ResultsView"
+import { PhotoDetailDialog, createQuickActions } from "@/components/shared/PhotoDetailDialog"
 import { GalleryPickerPanel } from "@/components/shared/GalleryPickerPanel"
 import { UploadZone } from "@/components/shared/UploadZone"
 import { useFavorite } from "@/hooks/useFavorite"
@@ -784,13 +785,69 @@ function GroupShootPageContent() {
             onShootNext={handleReselect}
             onGoEdit={(url) => navigateToEdit(router, url)}
             onRegenerate={handleStartGeneration}
-            onImageClick={(i) => {
-              const task = tasks.find(t => t.id === currentTaskId)
-              const slot = task?.imageSlots?.[i]
-              const url = slot?.imageUrl || generatedImages[i]
-              if (url) setFullscreenImage(url)
-            }}
-          />
+            onImageClick={(i) => setSelectedResultIndex(i)}
+          >
+            {/* Photo Detail Dialog */}
+            <PhotoDetailDialog
+              open={selectedResultIndex !== null && !!(() => {
+                const task = tasks.find(t => t.id === currentTaskId)
+                const slot = task?.imageSlots?.[selectedResultIndex!]
+                return slot?.imageUrl || generatedImages[selectedResultIndex!]
+              })()}
+              onClose={() => setSelectedResultIndex(null)}
+              imageUrl={(() => {
+                if (selectedResultIndex === null) return ''
+                const task = tasks.find(t => t.id === currentTaskId)
+                const slot = task?.imageSlots?.[selectedResultIndex]
+                return slot?.imageUrl || generatedImages[selectedResultIndex] || ''
+              })()}
+              badges={selectedResultIndex !== null ? [{
+                text: `${t.groupShootPage?.pose || 'Pose'} ${selectedResultIndex + 1}`,
+                className: styleMode === 'lifestyle' ? 'bg-blue-500 text-white' : 'bg-amber-500 text-white',
+              }] : []}
+              onFavorite={() => selectedResultIndex !== null && toggleFavorite(selectedResultIndex)}
+              isFavorited={selectedResultIndex !== null && isFavorited(selectedResultIndex)}
+              onDownload={() => {
+                if (selectedResultIndex === null) return
+                const task = tasks.find(t => t.id === currentTaskId)
+                const slot = task?.imageSlots?.[selectedResultIndex]
+                const imageUrl = slot?.imageUrl || generatedImages[selectedResultIndex]
+                if (imageUrl) handleDownload(imageUrl)
+              }}
+              onFullscreen={() => {
+                if (selectedResultIndex === null) return
+                const task = tasks.find(t => t.id === currentTaskId)
+                const slot = task?.imageSlots?.[selectedResultIndex]
+                const imageUrl = slot?.imageUrl || generatedImages[selectedResultIndex]
+                if (imageUrl) setFullscreenImage(imageUrl)
+              }}
+              inputImages={selectedImage ? [{
+                url: selectedImage,
+                label: t.groupShootPage?.imageSelected?.split(' ')?.[0] || 'Source',
+              }] : []}
+              onInputImageClick={(url) => setFullscreenImage(url)}
+              quickActions={[
+                {
+                  id: 'edit',
+                  icon: <Wand2 className="w-5 h-5" />,
+                  label: t.gallery?.goEdit || 'Edit',
+                  onClick: () => {
+                    if (selectedResultIndex === null) return
+                    const task = tasks.find(t => t.id === currentTaskId)
+                    const slot = task?.imageSlots?.[selectedResultIndex]
+                    const imageUrl = slot?.imageUrl || generatedImages[selectedResultIndex]
+                    if (imageUrl) {
+                      setSelectedResultIndex(null)
+                      navigateToEdit(router, imageUrl)
+                    }
+                  },
+                  bgColor: styleMode === 'lifestyle' ? 'from-blue-50 to-indigo-50' : 'from-amber-50 to-orange-50',
+                  iconBgColor: styleMode === 'lifestyle' ? 'from-blue-500 to-indigo-500' : 'from-amber-500 to-orange-500',
+                  borderColor: styleMode === 'lifestyle' ? 'border-blue-100' : 'border-amber-100',
+                },
+              ]}
+            />
+          </ResultsView>
         )}
       </AnimatePresence>
 
