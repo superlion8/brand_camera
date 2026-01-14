@@ -1320,7 +1320,7 @@ function StudioPageContent() {
         {/* Processing Mode */}
         {mode === 'processing' && (
           <ProcessingView
-            numImages={4}
+            numImages={2}
             generatedImages={generatedImages}
             themeColor="amber"
             title={t.studio?.generating || 'Creating product photos'}
