@@ -708,7 +708,7 @@ function GroupShootPageContent() {
         {/* Results Mode */}
         {mode === "results" && (
           <ResultsView
-            title={styleMode === 'lifestyle' ? (t.groupShootPage?.lifestyleMode || 'Lifestyle') : (t.groupShootPage?.studioMode || 'Studio')}
+            title={t.groupShootPage?.title || 'Group Shot'}
             onBack={handleReselect}
             images={Array.from({ length: numImages }).map((_, i) => {
                   const task = tasks.find(t => t.id === currentTaskId)
