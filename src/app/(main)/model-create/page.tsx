@@ -16,6 +16,11 @@ import { generateId } from "@/lib/utils"
 import { useIsDesktop } from "@/hooks/useIsMobile"
 import { useImageDownload } from "@/hooks/useImageDownload"
 import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
+import { useQuotaReservation } from "@/hooks/useQuotaReservation"
+import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
+import { TASK_CREDIT_COSTS, TaskTypes } from "@/lib/taskTypes"
+
+const CREDIT_COST = TASK_CREDIT_COSTS[TaskTypes.CREATE_MODEL]
 
 // 创建模式类型
 type CreateMode = 'reference' | 'selector' | null
@@ -130,6 +135,7 @@ export default function ModelCreatePage() {
   const { reset } = useModelCreateStore()
   const { userModels, addGeneration } = useAssetStore()
   const { t, language } = useTranslation()
+  const { reserveQuota, refundQuota, confirmQuota } = useQuotaReservation()
   
   // 模特资产（用于选择参考图）
   const modelAssets = userModels
@@ -363,6 +369,21 @@ export default function ModelCreatePage() {
     setErrorMessage('')
     setGenerationProgress(t.modelCreate?.analyzingReference || '正在分析参考模特...')
     
+    const taskId = generateId()
+    
+    // 预扣配额
+    const reserved = await reserveQuota({ 
+      taskId, 
+      imageCount: CREDIT_COST, 
+      taskType: TaskTypes.CREATE_MODEL 
+    })
+    
+    if (!reserved) {
+      setErrorMessage(t.quota?.exceeded || '配额不足')
+      setPageState('reference-input')
+      return
+    }
+    
     try {
       const response = await fetch('/api/model-create/generate-model', {
         method: 'POST',
@@ -370,6 +391,7 @@ export default function ModelCreatePage() {
         body: JSON.stringify({
           referenceImage,
           userPrompt,
+          language, // 传递语言参数
         }),
       })
       
@@ -393,6 +415,7 @@ export default function ModelCreatePage() {
         }
         setErrorMessage(errorMsg)
         setPageState('reference-input')
+        await refundQuota(taskId) // 失败退款
         return
       }
       
@@ -402,6 +425,7 @@ export default function ModelCreatePage() {
         setGeneratedImages(data.imageUrls || [data.imageUrl])
         setAnalysisSummary(data.analysisSummary || '')
         setPageState('result')
+        await confirmQuota() // 确认扣款
         
         // 更新本地状态
         if (data.dbId) {
@@ -416,11 +440,13 @@ export default function ModelCreatePage() {
       } else {
         setErrorMessage(data.error || t.modelCreate?.generateFailed || '生成失败')
         setPageState('reference-input')
+        await refundQuota(taskId) // 失败退款
       }
     } catch (err: any) {
       console.error('Generate error:', err)
       setErrorMessage(err.message || t.modelCreate?.generateFailed || '生成失败')
       setPageState('reference-input')
+      await refundQuota(taskId) // 失败退款
     }
   }
   
@@ -464,6 +490,21 @@ export default function ModelCreatePage() {
     setErrorMessage('')
     setGenerationProgress(t.modelCreate?.matchingModels || '正在匹配模特...')
     
+    const taskId = generateId()
+    
+    // 预扣配额
+    const reserved = await reserveQuota({ 
+      taskId, 
+      imageCount: CREDIT_COST, 
+      taskType: TaskTypes.CREATE_MODEL 
+    })
+    
+    if (!reserved) {
+      setErrorMessage(t.quota?.exceeded || '配额不足')
+      setPageState('selector-input')
+      return
+    }
+    
     try {
       // Step 1: 匹配模特
       const matchResponse = await fetch('/api/model-create/match-models', {
@@ -482,6 +523,7 @@ export default function ModelCreatePage() {
       if (!matchResult.ok || !matchResult.data?.success) {
         setErrorMessage(matchResult.error || matchResult.data?.error || t.modelCreate?.noMatchingModels || '没有找到符合条件的模特')
         setPageState('selector-input')
+        await refundQuota(taskId)
         return
       }
       
@@ -495,6 +537,7 @@ export default function ModelCreatePage() {
         body: JSON.stringify({
           referenceImage: matchData.selectedModel.imageUrl,
           userPrompt,
+          language, // 传递语言参数
         }),
       })
       
@@ -503,6 +546,7 @@ export default function ModelCreatePage() {
       if (!generateResult.ok || !generateResult.data?.success) {
         setErrorMessage(generateResult.error || generateResult.data?.error || t.modelCreate?.generateFailed || '生成失败')
         setPageState('selector-input')
+        await refundQuota(taskId)
         return
       }
       
@@ -510,6 +554,7 @@ export default function ModelCreatePage() {
       setGeneratedImages(generateData.imageUrls || [generateData.imageUrl])
       setAnalysisSummary(generateData.analysisSummary || '')
       setPageState('result')
+      await confirmQuota() // 确认扣款
       
       // 更新本地状态
       if (generateData.dbId) {
@@ -525,6 +570,7 @@ export default function ModelCreatePage() {
       console.error('Generate error:', err)
       setErrorMessage(err.message || t.modelCreate?.generateFailed || '生成失败')
       setPageState('selector-input')
+      await refundQuota(taskId)
     }
   }
   
@@ -957,6 +1003,7 @@ export default function ModelCreatePage() {
         >
             <Sparkles className="w-5 h-5" />
             <span>{t.modelCreate?.generateModel || '生成模特'}</span>
+            <CreditCostBadge cost={CREDIT_COST} />
         </button>
       </div>
       
@@ -1192,6 +1239,7 @@ export default function ModelCreatePage() {
             >
               <Sparkles className="w-5 h-5" />
               <span>{t.modelCreate?.generateModel || '生成模特'}</span>
+              <CreditCostBadge cost={CREDIT_COST} />
             </button>
           </div>
         )}

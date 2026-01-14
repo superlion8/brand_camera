@@ -46,7 +46,10 @@ export const TASK_CREDIT_COSTS: Record<string, number> = {
   
   // Single image
   [TaskTypes.EDIT]: 1,
-  
+
+  // Create Model - 2 images
+  [TaskTypes.CREATE_MODEL]: 2,
+
   // Special: Brand Style (4 images + 1 video = 4 + 10 = 14)
   [TaskTypes.BRAND_STYLE]: 14,
 }

@@ -9,8 +9,10 @@ export const maxDuration = 180 // 3 minutes
 
 const IMAGE_COUNT = 2 // 生成 2 张图片
 
-// 反推 Prompt
-const ANALYZE_REFERENCE_PROMPT = `你是一位顶尖时尚杂志的选角导演。请忽略输入图片中的排版、拼接、穿搭或背景元素，只聚焦于画面中的模特本人的特征。
+// 反推 Prompt - 根据语言输出
+const getAnalyzePrompt = (language: string) => {
+  const summaryLang = language === 'en' ? 'English' : language === 'ko' ? 'Korean' : 'Chinese'
+  return `你是一位顶尖时尚杂志的选角导演。请忽略输入图片中的排版、拼接、穿搭或背景元素，只聚焦于画面中的模特本人的特征。
 
 请提取以下维度的视觉特征，并整合成一段连贯的英文描述（Subject Description）：
 1. Look & Face: 具体的面部轮廓、五官特征、发型发色。
@@ -19,13 +21,14 @@ const ANALYZE_REFERENCE_PROMPT = `你是一位顶尖时尚杂志的选角导演�
   
 输出约束（必须严格遵守）：
 1. 禁止描述构图： 你的输出文本中绝对不要包含 "view", "angle", "split", "collage", "camera" 等关于画面构图的词汇，只描述"人"。
-2. 英文输出： 为了更好的生图效果，请直接输出英文描述。
+2. 英文输出： subject_description 请直接输出英文描述。
   
 输出格式 JSON：
 {
-  "analysis_summary": "中文简报（用于人类阅读）",
+  "analysis_summary": "${summaryLang} brief summary for human reading (用于展示给用户的模特特征简报)",
   "subject_description": "English description of the model's physical appearance and vibe only."
 }`
+}
 
 // 生成模特图片的 Prompt
 const GENERATE_MODEL_PROMPT = `[Role: World-Class E-commerce Photographer & Retoucher]
@@ -100,6 +103,7 @@ export async function POST(request: NextRequest) {
       referenceImage,      // 参考模特图（模式1）或选中的模特图（模式2）
       userPrompt,          // 用户额外输入
       subjectDescription,  // 已有的 subject_description（可选，跳过反推）
+      language = 'zh',     // 用户语言设置
     } = body
     
     if (!referenceImage) {
@@ -121,7 +125,7 @@ export async function POST(request: NextRequest) {
         contents: [{
           role: 'user',
           parts: [
-            { text: ANALYZE_REFERENCE_PROMPT },
+            { text: getAnalyzePrompt(language) },
             { text: '\n\n[参考模特图]:' },
             {
               inlineData: {
