@@ -773,7 +773,11 @@ export default function ReferenceShotPage() {
               status: generatedImages[i]?.url ? 'completed' as const : 'generating' as const,
             }))}
             getBadge={(i) => ({
-              text: debugMode && generatedImages[i]?.mode === 'simple' ? 'Simple' : (debugMode && generatedImages[i]?.mode === 'extended' ? 'Extended' : `Reference`),
+              text: debugMode && generatedImages[i]?.mode === 'simple' 
+                ? (t.gallery?.simpleMode || 'Simple') 
+                : (debugMode && generatedImages[i]?.mode === 'extended' 
+                  ? (t.gallery?.extendedMode || 'Extended') 
+                  : (t.gallery?.referenceShot || 'Reference')),
               className: debugMode && generatedImages[i]?.mode === 'simple' ? 'bg-green-500' : (debugMode && generatedImages[i]?.mode === 'extended' ? 'bg-purple-500' : 'bg-blue-500'),
             })}
             themeColor="blue"
@@ -795,10 +799,10 @@ export default function ReferenceShotPage() {
               imageUrl={selectedResultIndex !== null ? generatedImages[selectedResultIndex]?.url || '' : ''}
               badges={[{ 
                 text: debugMode && selectedResultIndex !== null && generatedImages[selectedResultIndex]?.mode === 'simple' 
-                  ? 'Simple' 
+                  ? (t.gallery?.simpleMode || 'Simple')
                   : (debugMode && selectedResultIndex !== null && generatedImages[selectedResultIndex]?.mode === 'extended' 
-                    ? 'Extended' 
-                    : 'Reference'),
+                    ? (t.gallery?.extendedMode || 'Extended')
+                    : (t.gallery?.referenceShot || 'Reference')),
                 className: debugMode && selectedResultIndex !== null && generatedImages[selectedResultIndex]?.mode === 'simple'
                   ? 'bg-green-500 text-white'
                   : (debugMode && selectedResultIndex !== null && generatedImages[selectedResultIndex]?.mode === 'extended'
