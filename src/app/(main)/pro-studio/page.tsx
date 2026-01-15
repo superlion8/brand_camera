@@ -454,6 +454,17 @@ function ProStudioPageContent() {
     }
   }
 
+  // 触发上传前检查登录
+  const triggerFileUpload = () => {
+    if (!requireLogin()) return
+    fileInputRef.current?.click()
+  }
+
+  const triggerFileUpload2 = () => {
+    if (!requireLogin()) return
+    fileInputRef2.current?.click()
+  }
+
   // 上传图片
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -1127,7 +1138,7 @@ function ProStudioPageContent() {
                 <div className="hidden" />
               ) : (
                 <CameraBottomBar
-                  onAlbumClick={() => fileInputRef.current?.click()}
+                  onAlbumClick={triggerFileUpload}
                   onShutterClick={handleCapture}
                   onAssetClick={() => setShowProductPanel(true)}
                   shutterDisabled={!hasCamera}
@@ -1197,7 +1208,7 @@ function ProStudioPageContent() {
                                   setProductFromPhone(false)
                                 setMode("review")
               }}
-              onUploadClick={() => fileInputRef.current?.click()}
+              onUploadClick={triggerFileUpload}
               themeColor="amber"
               title={t.proStudio?.selectProduct || '选择商品'}
             />
@@ -1400,7 +1411,7 @@ function ProStudioPageContent() {
           }
           setShowProduct2Panel(false)
         }}
-        onUploadClick={() => fileInputRef2.current?.click()}
+        onUploadClick={triggerFileUpload2}
         themeColor="amber"
         title={t.proStudio?.styleOutfit || '添加商品'}
       />

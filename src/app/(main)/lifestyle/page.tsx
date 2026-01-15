@@ -296,6 +296,17 @@ function LifestylePageContent() {
     }
   }
 
+  // 触发上传前检查登录
+  const triggerFileUpload = () => {
+    if (!requireLogin()) return
+    fileInputRef.current?.click()
+  }
+
+  const triggerFileUpload2 = () => {
+    if (!requireLogin()) return
+    fileInputRef2.current?.click()
+  }
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -884,7 +895,7 @@ function LifestylePageContent() {
                 <div className="hidden" />
               ) : (
                 <CameraBottomBar
-                  onAlbumClick={() => fileInputRef.current?.click()}
+                  onAlbumClick={triggerFileUpload}
                   onShutterClick={handleCapture}
                   onAssetClick={() => setShowProductPanel(true)}
                   shutterDisabled={!hasCamera}
@@ -1067,7 +1078,7 @@ function LifestylePageContent() {
                           setProductFromPhone(false)
                           setMode("review")
         }}
-        onUploadClick={() => fileInputRef.current?.click()}
+        onUploadClick={triggerFileUpload}
         themeColor="purple"
         title={t.lifestyle?.selectProduct || '选择商品'}
       />
@@ -1109,7 +1120,7 @@ function LifestylePageContent() {
           }
           setShowProduct2Panel(false)
         }}
-        onUploadClick={() => fileInputRef2.current?.click()}
+        onUploadClick={triggerFileUpload2}
         themeColor="purple"
         title={t.proStudio?.add || '添加商品'}
       />

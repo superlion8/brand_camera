@@ -378,6 +378,17 @@ function SocialPageContent() {
     }
   }, [])
   
+  // 触发上传前检查登录
+  const triggerFileUpload = () => {
+    if (!requireLogin()) return
+    fileInputRef.current?.click()
+  }
+
+  const triggerFileUpload2 = () => {
+    if (!requireLogin()) return
+    fileInputRef2.current?.click()
+  }
+
   const handleUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -386,7 +397,7 @@ function SocialPageContent() {
       setMode("review")
     }
   }, [])
-  
+
   // Upload model image directly in selector
   const handleModelUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -1137,7 +1148,7 @@ function SocialPageContent() {
                 <div className="hidden" />
               ) : (
                 <CameraBottomBar
-                  onAlbumClick={() => fileInputRef.current?.click()}
+                  onAlbumClick={triggerFileUpload}
                   onShutterClick={handleCapture}
                   onAssetClick={() => setShowProductPanel(true)}
                   shutterDisabled={!hasCamera}
@@ -1159,7 +1170,7 @@ function SocialPageContent() {
                 setCapturedImage(imageUrl)
                                   setMode("review")
               }}
-              onUploadClick={() => fileInputRef.current?.click()}
+              onUploadClick={triggerFileUpload}
               themeColor="purple"
               title={t.camera?.selectProduct || '选择商品'}
             />
@@ -1392,7 +1403,7 @@ function SocialPageContent() {
           }
           setShowProduct2Panel(false)
         }}
-        onUploadClick={() => fileInputRef2.current?.click()}
+        onUploadClick={triggerFileUpload2}
         themeColor="purple"
         title={t.proStudio?.styleOutfit || '搭配商品'}
       />

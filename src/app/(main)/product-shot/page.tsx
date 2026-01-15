@@ -329,6 +329,12 @@ function StudioPageContent() {
     setBgColor(hex)
   }, [])
   
+  // 触发上传前检查登录
+  const triggerFileUpload = () => {
+    if (!requireLogin()) return
+    fileInputRef.current?.click()
+  }
+
   const handleUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -666,7 +672,7 @@ function StudioPageContent() {
           {isDesktop ? (
             <div className="space-y-4">
               <div
-                onClick={() => fileInputRef.current?.click()}
+                onClick={triggerFileUpload}
                 onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-amber-400', 'bg-amber-50') }}
                 onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-amber-400', 'bg-amber-50') }}
                 onDrop={async (e) => {
@@ -710,7 +716,7 @@ function StudioPageContent() {
           ) : (
             <div className="grid grid-cols-3 gap-2">
               <button
-                onClick={() => fileInputRef.current?.click()}
+                onClick={triggerFileUpload}
                 className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-amber-400 flex items-center justify-center gap-2 transition-colors"
               >
                 <Upload className="w-4 h-4 text-zinc-500" />
@@ -1305,7 +1311,7 @@ function StudioPageContent() {
                     <p className="text-zinc-500 mb-6">{t.studio?.uploadProductDesc || '选择商品图片开始棚拍'}</p>
                     <div className="flex gap-3 justify-center">
                       <button
-                        onClick={() => fileInputRef.current?.click()}
+                        onClick={triggerFileUpload}
                         className="px-6 py-3 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 transition-colors flex items-center gap-2"
                       >
                         <Upload className="w-5 h-5" />
@@ -1340,7 +1346,7 @@ function StudioPageContent() {
                     <button
                       onClick={() => {
                         setMode('main')
-                        setTimeout(() => fileInputRef.current?.click(), 100)
+                        setTimeout(triggerFileUpload, 100)
                       }}
                       className="mt-4 px-4 py-2 bg-amber-500 text-white rounded-lg text-sm"
                     >
@@ -1481,7 +1487,7 @@ function StudioPageContent() {
         open={showProductPanel}
         onClose={() => setShowProductPanel(false)}
         onSelect={handleSelectFromAsset}
-        onUploadClick={() => fileInputRef.current?.click()}
+        onUploadClick={triggerFileUpload}
         themeColor="amber"
       />
       
