@@ -389,6 +389,12 @@ function SocialPageContent() {
     fileInputRef2.current?.click()
   }
 
+  // 打开面板前检查登录
+  const openProductPanel = () => {
+    if (!requireLogin()) return
+    setShowProductPanel(true)
+  }
+
   const handleUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -916,12 +922,13 @@ function SocialPageContent() {
                       <div className="w-[380px] shrink-0">
                         <div className="bg-white rounded-2xl p-6 shadow-sm border border-zinc-100">
                           <div
-                            onClick={() => setShowProductPanel(true)}
+                            onClick={openProductPanel}
                             onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-pink-400', 'bg-pink-50') }}
                             onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-pink-400', 'bg-pink-50') }}
                             onDrop={async (e) => {
                               e.preventDefault()
                               e.currentTarget.classList.remove('border-pink-400', 'bg-pink-50')
+                              if (!requireLogin()) return
                               const file = e.dataTransfer.files?.[0]
                               if (file && file.type.startsWith('image/')) {
                                 const base64 = await fileToBase64(file)
@@ -1150,7 +1157,7 @@ function SocialPageContent() {
                 <CameraBottomBar
                   onAlbumClick={triggerFileUpload}
                   onShutterClick={handleCapture}
-                  onAssetClick={() => setShowProductPanel(true)}
+                  onAssetClick={openProductPanel}
                   shutterDisabled={!hasCamera}
                   shutterVariant="gradient-pink"
                   albumLabel={t.camera?.album || '相册'}

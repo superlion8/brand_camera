@@ -335,6 +335,17 @@ function StudioPageContent() {
     fileInputRef.current?.click()
   }
 
+  // 打开面板前检查登录
+  const openGalleryPanel = () => {
+    if (!requireLogin()) return
+    setShowGalleryPanel(true)
+  }
+
+  const openProductPanel = () => {
+    if (!requireLogin()) return
+    setShowProductPanel(true)
+  }
+
   const handleUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -698,14 +709,14 @@ function StudioPageContent() {
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <button
-                  onClick={() => setShowGalleryPanel(true)}
+                  onClick={openGalleryPanel}
                   className="h-12 rounded-xl border border-zinc-200 bg-white hover:border-amber-400 hover:bg-amber-50/50 flex items-center justify-center gap-2 transition-colors"
                 >
                   <ImageIcon className="w-4 h-4 text-zinc-500" />
                   <span className="text-sm text-zinc-600">{t.studio.fromGallery}</span>
                 </button>
                 <button
-                  onClick={() => setShowProductPanel(true)}
+                  onClick={openProductPanel}
                   className="h-12 rounded-xl border border-zinc-200 bg-white hover:border-amber-400 hover:bg-amber-50/50 flex items-center justify-center gap-2 transition-colors"
                 >
                   <FolderHeart className="w-4 h-4 text-zinc-500" />
@@ -723,14 +734,14 @@ function StudioPageContent() {
                 <span className="text-sm text-zinc-700">{t.camera.album}</span>
               </button>
               <button
-                onClick={() => setShowGalleryPanel(true)}
+                onClick={openGalleryPanel}
                 className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-amber-400 flex items-center justify-center gap-2 transition-colors"
               >
                 <Home className="w-4 h-4 text-zinc-500" />
                 <span className="text-sm text-zinc-700">{t.studio.fromGallery}</span>
               </button>
               <button
-                onClick={() => setShowProductPanel(true)}
+                onClick={openProductPanel}
                 className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-amber-400 flex items-center justify-center gap-2 transition-colors"
               >
                 <FolderHeart className="w-4 h-4 text-zinc-500" />
@@ -1318,7 +1329,7 @@ function StudioPageContent() {
                         {t.studio?.fromAlbum || '从相册选择'}
                       </button>
                       <button
-                        onClick={() => setShowProductPanel(true)}
+                        onClick={openProductPanel}
                         className="px-6 py-3 bg-zinc-200 text-zinc-700 rounded-xl font-medium hover:bg-zinc-300 transition-colors flex items-center gap-2"
                       >
                         <FolderHeart className="w-5 h-5" />

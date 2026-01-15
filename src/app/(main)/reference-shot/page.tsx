@@ -107,6 +107,27 @@ export default function ReferenceShotPage() {
     productImageInputRef.current?.click()
   }
 
+  // 打开面板前检查登录
+  const openRefGalleryPicker = () => {
+    if (!requireLogin()) return
+    setShowRefGalleryPicker(true)
+  }
+
+  const openRefAssetPicker = () => {
+    if (!requireLogin()) return
+    setShowRefAssetPicker(true)
+  }
+
+  const openProductGalleryPicker = () => {
+    if (!requireLogin()) return
+    setShowProductGalleryPicker(true)
+  }
+
+  const openProductAssetPicker = () => {
+    if (!requireLogin()) return
+    setShowProductAssetPicker(true)
+  }
+
   // Load presets
   useEffect(() => {
     presetStore.loadPresets()
@@ -560,14 +581,14 @@ export default function ReferenceShotPage() {
                     {/* Quick Actions */}
                     <div className="grid grid-cols-2 gap-1.5">
                       <button
-                        onClick={() => setShowRefGalleryPicker(true)}
+                        onClick={openRefGalleryPicker}
                         className="h-8 rounded-lg border border-zinc-200 bg-white hover:border-blue-300 hover:bg-blue-50 flex items-center justify-center gap-1.5 transition-colors"
                       >
                         <ImageIcon className="w-3.5 h-3.5 text-zinc-500" />
                         <span className="text-[10px] text-zinc-600">{t.common?.fromGallery || 'Photos'}</span>
                   </button>
                       <button
-                        onClick={() => setShowRefAssetPicker(true)}
+                        onClick={openRefAssetPicker}
                         className="h-8 rounded-lg border border-zinc-200 bg-white hover:border-blue-300 hover:bg-blue-50 flex items-center justify-center gap-1.5 transition-colors"
                       >
                         <FolderHeart className="w-3.5 h-3.5 text-zinc-500" />
@@ -640,14 +661,14 @@ export default function ReferenceShotPage() {
                     <span className="text-[10px] text-zinc-600">{t.camera?.album || '相册'}</span>
                   </button>
                   <button
-                    onClick={() => setShowProductGalleryPicker(true)}
+                    onClick={openProductGalleryPicker}
                     className="h-8 rounded-lg border border-zinc-200 bg-white hover:border-blue-300 hover:bg-blue-50 flex items-center justify-center gap-1.5 transition-colors"
                   >
                     <ImageIcon className="w-3.5 h-3.5 text-zinc-500" />
                     <span className="text-[10px] text-zinc-600">{t.common?.fromGallery || '成片'}</span>
                   </button>
                   <button
-                    onClick={() => setShowProductAssetPicker(true)}
+                    onClick={openProductAssetPicker}
                     className="h-8 rounded-lg border border-zinc-200 bg-white hover:border-blue-300 hover:bg-blue-50 flex items-center justify-center gap-1.5 transition-colors"
                   >
                     <FolderHeart className="w-3.5 h-3.5 text-zinc-500" />
@@ -1069,7 +1090,7 @@ export default function ReferenceShotPage() {
               <button
                 onClick={() => {
                   setShowProductSourcePanel(false)
-                  setShowProductGalleryPicker(true)
+                  openProductGalleryPicker()
                 }}
                 className="flex flex-col items-center gap-2 p-4 rounded-xl border border-zinc-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
               >
@@ -1079,7 +1100,7 @@ export default function ReferenceShotPage() {
               <button
                 onClick={() => {
                   setShowProductSourcePanel(false)
-                  setShowProductAssetPicker(true)
+                  openProductAssetPicker()
                 }}
                 className="flex flex-col items-center gap-2 p-4 rounded-xl border border-zinc-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
               >

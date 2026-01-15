@@ -70,6 +70,12 @@ function GroupShootPageContent() {
     if (!requireLogin()) return
     fileInputRef.current?.click()
   }
+
+  // 打开 Gallery 前检查登录
+  const openGalleryPicker = () => {
+    if (!requireLogin()) return
+    setShowGalleryPicker(true)
+  }
   
   // Device detection
   const { isDesktop, isMobile, isLoading: screenLoading } = useIsDesktop(1024)
@@ -459,8 +465,8 @@ function GroupShootPageContent() {
                         
                         {!selectedImage ? (
                           <UploadZone
-                            onBase64={setSelectedImage}
-                            onFromGallery={() => setShowGalleryPicker(true)}
+                            onBase64={(base64) => { if (requireLogin()) setSelectedImage(base64) }}
+                            onFromGallery={openGalleryPicker}
                             size="auto"
                             aspectRatio="4/3"
                             themeColor="blue"
@@ -607,7 +613,7 @@ function GroupShootPageContent() {
                     
                     {/* 从成片选择卡片 - 紧凑版 */}
                     <button
-                      onClick={() => setShowGalleryPicker(true)}
+                      onClick={openGalleryPicker}
                       className="w-full p-3 rounded-xl bg-gradient-to-r from-sky-400 to-cyan-500 hover:from-sky-500 hover:to-cyan-600 transition-all shadow-md shadow-cyan-200 active:scale-[0.98]"
                     >
                       <div className="flex items-center gap-3">

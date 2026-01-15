@@ -108,6 +108,23 @@ export default function TryOnPage() {
     clothingFileInputRef.current?.click()
   }
 
+  // 打开面板前检查登录
+  const openGalleryPanel = (target: 'person' | 'clothing') => {
+    if (!requireLogin()) return
+    setGalleryTarget(target)
+    setShowGalleryPanel(true)
+  }
+
+  const openAssetPanel = () => {
+    if (!requireLogin()) return
+    setShowAssetPanel(true)
+  }
+
+  const openClothingPanel = () => {
+    if (!requireLogin()) return
+    setShowClothingPanel(true)
+  }
+
   // Quota management
   const { quota, checkQuota } = useQuota()
   const { reserveQuota, refundQuota, confirmQuota } = useQuotaReservation()
@@ -523,10 +540,7 @@ export default function TryOnPage() {
                       {/* Upload buttons */}
                       <div className="flex gap-2 mt-4">
                         <button
-                          onClick={() => {
-                            setGalleryTarget('person')
-                            setShowGalleryPanel(true)
-                          }}
+                          onClick={() => openGalleryPanel('person')}
                           className="flex-1 h-10 rounded-lg bg-zinc-50 border border-zinc-200 hover:border-pink-400 hover:bg-pink-50 flex items-center justify-center gap-2 transition-all"
                         >
                           <Upload className="w-4 h-4 text-zinc-500" />
@@ -607,17 +621,14 @@ export default function TryOnPage() {
                       {/* Upload buttons for clothing */}
                       <div className="flex gap-2 mt-4">
                         <button
-                          onClick={() => {
-                            setGalleryTarget('clothing')
-                            setShowGalleryPanel(true)
-                          }}
+                          onClick={() => openGalleryPanel('clothing')}
                           className="flex-1 h-10 rounded-lg bg-zinc-50 border border-zinc-200 hover:border-pink-400 hover:bg-pink-50 flex items-center justify-center gap-2 transition-all"
                         >
                           <Upload className="w-4 h-4 text-zinc-500" />
                           <span className="text-sm font-medium text-zinc-600">{t.studio?.fromGallery || 'Photos'}</span>
                         </button>
                         <button
-                          onClick={() => setShowAssetPanel(true)}
+                          onClick={openAssetPanel}
                           className="flex-1 h-10 rounded-lg bg-zinc-50 border border-zinc-200 hover:border-pink-400 hover:bg-pink-50 flex items-center justify-center gap-2 transition-all"
                         >
                           <FolderHeart className="w-4 h-4 text-zinc-500" />
@@ -681,10 +692,7 @@ export default function TryOnPage() {
                   
                       <div className="grid grid-cols-2 gap-2">
                     <button
-                      onClick={() => {
-                        setGalleryTarget('person')
-                        setShowGalleryPanel(true)
-                      }}
+                      onClick={() => openGalleryPanel('person')}
                           className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-pink-400 flex items-center justify-center gap-2 transition-colors"
                     >
                       <Upload className="w-4 h-4 text-zinc-500" />
@@ -749,12 +757,13 @@ export default function TryOnPage() {
                   
                   {clothingImages.length < MAX_CLOTHING_IMAGES && (
                     <div
-                      onClick={() => setShowClothingPanel(true)}
+                      onClick={openClothingPanel}
                       onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-pink-400', 'bg-pink-50') }}
                       onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-pink-400', 'bg-pink-50') }}
                       onDrop={async (e) => {
                         e.preventDefault()
                         e.currentTarget.classList.remove('border-pink-400', 'bg-pink-50')
+                        if (!requireLogin()) return
                         const file = e.dataTransfer.files?.[0]
                         if (file && file.type.startsWith('image/')) {
                           const base64 = await fileToBase64(file)
@@ -1088,8 +1097,7 @@ export default function TryOnPage() {
                   <button
                     onClick={() => {
                       setShowClothingPanel(false)
-                      setGalleryTarget('clothing')
-                      setShowGalleryPanel(true)
+                      openGalleryPanel('clothing')
                     }}
                     className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-pink-400 flex items-center justify-center gap-2 transition-colors"
                   >
@@ -1101,7 +1109,7 @@ export default function TryOnPage() {
                   <button
                     onClick={() => {
                       setShowClothingPanel(false)
-                      setShowAssetPanel(true)
+                      openAssetPanel()
                     }}
                     className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-pink-400 flex items-center justify-center gap-2 transition-colors"
                   >

@@ -307,6 +307,12 @@ function LifestylePageContent() {
     fileInputRef2.current?.click()
   }
 
+  // 打开面板前检查登录
+  const openProductPanel = () => {
+    if (!requireLogin()) return
+    setShowProductPanel(true)
+  }
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -733,7 +739,7 @@ function LifestylePageContent() {
                       <div className="w-[380px] shrink-0">
                         <div className="bg-white rounded-2xl p-6 shadow-sm border border-zinc-100">
                           <button
-                            onClick={() => setShowProductPanel(true)}
+                            onClick={openProductPanel}
                             className="w-full aspect-[3/4] max-h-[400px] rounded-2xl border-2 border-dashed border-zinc-300 hover:border-purple-400 hover:bg-purple-50/50 flex flex-col items-center justify-center gap-3 transition-all"
                           >
                             <div className="w-16 h-16 bg-zinc-100 rounded-2xl flex items-center justify-center">
@@ -897,7 +903,7 @@ function LifestylePageContent() {
                 <CameraBottomBar
                   onAlbumClick={triggerFileUpload}
                   onShutterClick={handleCapture}
-                  onAssetClick={() => setShowProductPanel(true)}
+                  onAssetClick={openProductPanel}
                   shutterDisabled={!hasCamera}
                   albumLabel={t.lifestyle?.album || '相册'}
                   assetLabel={t.lifestyle?.assetLibrary || '资源库'}

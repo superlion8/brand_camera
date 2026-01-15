@@ -465,6 +465,12 @@ function ProStudioPageContent() {
     fileInputRef2.current?.click()
   }
 
+  // 打开面板前检查登录
+  const openProductPanel = () => {
+    if (!requireLogin()) return
+    setShowProductPanel(true)
+  }
+
   // 上传图片
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -1007,12 +1013,13 @@ function ProStudioPageContent() {
                       <div className="w-[380px] shrink-0">
                         <div className="bg-white rounded-2xl p-6 shadow-sm border border-zinc-100">
                           <div
-                            onClick={() => setShowProductPanel(true)}
+                            onClick={openProductPanel}
                             onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-amber-400', 'bg-amber-50') }}
                             onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-amber-400', 'bg-amber-50') }}
                             onDrop={async (e) => {
                               e.preventDefault()
                               e.currentTarget.classList.remove('border-amber-400', 'bg-amber-50')
+                              if (!requireLogin()) return
                               const file = e.dataTransfer.files?.[0]
                               if (file && file.type.startsWith('image/')) {
                                 const base64 = await fileToBase64(file)
