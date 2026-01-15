@@ -128,6 +128,11 @@ export default function ReferenceShotPage() {
     setShowProductAssetPicker(true)
   }
 
+  const openModelPicker = () => {
+    if (!requireLogin()) return
+    setShowModelPicker(true)
+  }
+
   // Load presets
   useEffect(() => {
     presetStore.loadPresets()
@@ -734,13 +739,13 @@ export default function ReferenceShotPage() {
                       </button>
                       {/* Click to change */}
                       <button
-                        onClick={() => setShowModelPicker(true)}
+                        onClick={openModelPicker}
                         className="absolute inset-0 z-0"
                       />
                     </div>
                   ) : (
                     <button
-                      onClick={() => setShowModelPicker(true)}
+                      onClick={openModelPicker}
                       className="w-full flex items-center justify-center gap-2 py-4"
                     >
                       <ImageIcon className="w-5 h-5 text-zinc-400" />

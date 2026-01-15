@@ -21,6 +21,8 @@ import { useIsDesktop } from "@/hooks/useIsMobile"
 import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
 import { CreditCostBadge } from "@/components/shared/CreditCostBadge"
 import { TASK_CREDIT_COSTS, TaskTypes } from "@/lib/taskTypes"
+import { useLoginGuard } from "@/hooks/useLoginGuard"
+import { LoginModal } from "@/components/shared/LoginModal"
 
 const BASE_CREDIT_COST = TASK_CREDIT_COSTS[TaskTypes.EDIT]
 
@@ -36,6 +38,7 @@ export default function GeneralEditPage() {
   const router = useRouter()
   const { user } = useAuth()
   const t = useLanguageStore(state => state.t)
+  const { requireLogin, showLoginModal, setShowLoginModal } = useLoginGuard()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const webcamRef = useRef<Webcam>(null)
   
@@ -92,6 +95,26 @@ export default function GeneralEditPage() {
   const { quota, checkQuota } = useQuota()
   const { reserveQuota, refundQuota, confirmQuota } = useQuotaReservation()
   
+  // 触发上传前检查登录
+  const triggerFileUpload = (slot?: number) => {
+    if (!requireLogin()) return
+    if (slot !== undefined) setActiveImageSlot(slot)
+    fileInputRef.current?.click()
+  }
+
+  // 打开面板前检查登录
+  const openProductPanel = (slot?: number) => {
+    if (!requireLogin()) return
+    if (slot !== undefined) setActiveImageSlot(slot)
+    setShowProductPanel(true)
+  }
+
+  const openGalleryPanel = (slot?: number) => {
+    if (!requireLogin()) return
+    if (slot !== undefined) setActiveImageSlot(slot)
+    setShowGalleryPanel(true)
+  }
+
   // Camera handlers
   const handleCapture = useCallback(() => {
     if (webcamRef.current) {
@@ -521,14 +544,12 @@ export default function GeneralEditPage() {
                   {inputImages.length === 0 ? (
                     <div className="space-y-3">
                       <div
-                        onClick={() => {
-                          setActiveImageSlot(0)
-                          fileInputRef.current?.click()
-                        }}
+                        onClick={() => triggerFileUpload(0)}
                         onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-purple-400', 'bg-purple-50') }}
                         onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-purple-400', 'bg-purple-50') }}
                         onDrop={async (e) => {
                           e.preventDefault()
+                          if (!requireLogin()) return
                           e.currentTarget.classList.remove('border-purple-400', 'bg-purple-50')
                           const file = e.dataTransfer.files?.[0]
                           if (file && file.type.startsWith('image/')) {
@@ -545,10 +566,7 @@ export default function GeneralEditPage() {
                       
                       <div className="grid grid-cols-2 gap-2">
                         <button
-                          onClick={() => {
-                            setActiveImageSlot(0)
-                            setShowProductPanel(true)
-                          }}
+                          onClick={() => openProductPanel(0)}
                           className="h-10 rounded-lg border border-zinc-200 bg-white hover:border-purple-300 hover:bg-purple-50 flex items-center justify-center gap-2 transition-colors"
                         >
                           <FolderHeart className="w-4 h-4 text-purple-500" />
@@ -556,10 +574,7 @@ export default function GeneralEditPage() {
                         </button>
                         
                         <button
-                          onClick={() => {
-                            setActiveImageSlot(0)
-                            setShowGalleryPanel(true)
-                          }}
+                          onClick={() => openGalleryPanel(0)}
                           className="h-10 rounded-lg border border-zinc-200 bg-white hover:border-purple-300 hover:bg-purple-50 flex items-center justify-center gap-2 transition-colors"
                         >
                           <Images className="w-4 h-4 text-purple-500" />
@@ -608,14 +623,12 @@ export default function GeneralEditPage() {
                         
                         {inputImages.filter(Boolean).length < MAX_IMAGES && (
                           <div
-                            onClick={() => {
-                              setActiveImageSlot(inputImages.length)
-                              fileInputRef.current?.click()
-                            }}
+                            onClick={() => triggerFileUpload(inputImages.length)}
                             onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-purple-400', 'bg-purple-50') }}
                             onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-purple-400', 'bg-purple-50') }}
                             onDrop={async (e) => {
                               e.preventDefault()
+                              if (!requireLogin()) return
                               e.currentTarget.classList.remove('border-purple-400', 'bg-purple-50')
                               const file = e.dataTransfer.files?.[0]
                               if (file && file.type.startsWith('image/')) {
@@ -942,10 +955,7 @@ export default function GeneralEditPage() {
               <div className="grid grid-cols-3 gap-2">
                 {/* Album */}
                 <button
-                  onClick={() => {
-                    setActiveImageSlot(0)
-                    fileInputRef.current?.click()
-                  }}
+                  onClick={() => triggerFileUpload(0)}
                   className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <Upload className="w-4 h-4 text-zinc-500" />
@@ -954,10 +964,7 @@ export default function GeneralEditPage() {
                 
                 {/* Asset library */}
                 <button
-                  onClick={() => {
-                    setActiveImageSlot(0)
-                    setShowProductPanel(true)
-                  }}
+                  onClick={() => openProductPanel(0)}
                   className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <FolderHeart className="w-4 h-4 text-zinc-500" />
@@ -966,10 +973,7 @@ export default function GeneralEditPage() {
                 
                 {/* Gallery */}
                 <button
-                  onClick={() => {
-                    setActiveImageSlot(0)
-                    setShowGalleryPanel(true)
-                  }}
+                  onClick={() => openGalleryPanel(0)}
                   className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-zinc-300 flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <Images className="w-4 h-4 text-zinc-500" />
@@ -1133,10 +1137,7 @@ export default function GeneralEditPage() {
                     <div className="w-full h-full border-2 border-dashed border-zinc-300 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-purple-400 hover:bg-purple-50/50 transition-colors">
                       <div className="flex gap-1.5">
                         <button
-                          onClick={() => {
-                            setActiveImageSlot(inputImages.length)
-                            fileInputRef.current?.click()
-                          }}
+                          onClick={() => triggerFileUpload(inputImages.length)}
                           className="w-8 h-8 bg-zinc-100 hover:bg-zinc-200 rounded-full flex items-center justify-center transition-colors"
                           title={t.edit?.fromAlbum || "Upload from Album"}
                         >
@@ -1153,10 +1154,7 @@ export default function GeneralEditPage() {
                           <Camera className="w-4 h-4 text-zinc-500" />
                         </button>
                         <button
-                          onClick={() => {
-                            setActiveImageSlot(inputImages.length)
-                            setShowProductPanel(true)
-                          }}
+                          onClick={() => openProductPanel(inputImages.length)}
                           className="w-8 h-8 bg-zinc-100 hover:bg-zinc-200 rounded-full flex items-center justify-center transition-colors"
                           title={t.edit?.fromAssets || "From Assets"}
                         >
@@ -1394,7 +1392,7 @@ export default function GeneralEditPage() {
                     <button
                       onClick={() => {
                         setShowCamera(false)
-                        setTimeout(() => fileInputRef.current?.click(), 100)
+                        setTimeout(() => triggerFileUpload(), 100)
                       }}
                       className="px-6 py-3 bg-purple-500 text-white rounded-xl font-medium hover:bg-purple-600 transition-colors flex items-center gap-2 mx-auto"
                     >
@@ -1422,7 +1420,7 @@ export default function GeneralEditPage() {
                     <button
                       onClick={() => {
                         setShowCamera(false)
-                        setTimeout(() => fileInputRef.current?.click(), 100)
+                        setTimeout(() => triggerFileUpload(), 100)
                       }}
                       className="mt-4 px-4 py-2 bg-purple-500 text-white rounded-lg text-sm"
                     >
@@ -1475,7 +1473,7 @@ export default function GeneralEditPage() {
         open={showProductPanel}
         onClose={() => setShowProductPanel(false)}
         onSelect={handleSelectImage}
-        onUploadClick={() => fileInputRef.current?.click()}
+        onUploadClick={() => triggerFileUpload()}
         themeColor="purple"
       />
       
@@ -1521,6 +1519,9 @@ export default function GeneralEditPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Login Modal */}
+      <LoginModal open={showLoginModal} onClose={() => setShowLoginModal(false)} />
     </div>
   )
 }
