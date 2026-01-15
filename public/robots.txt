@@ -1,0 +1,52 @@
+# Brand Camera - robots.txt
+# https://brandcamera.ai
+
+User-agent: *
+Allow: /
+Allow: /login
+Allow: /pricing
+
+# Disallow private/auth pages
+Disallow: /app
+Disallow: /app/
+Disallow: /gallery
+Disallow: /gallery/
+Disallow: /camera
+Disallow: /camera/
+Disallow: /studio
+Disallow: /studio/
+Disallow: /product-shot
+Disallow: /product-shot/
+Disallow: /pro-studio
+Disallow: /pro-studio/
+Disallow: /lifestyle
+Disallow: /lifestyle/
+Disallow: /brand-style
+Disallow: /brand-style/
+Disallow: /edit
+Disallow: /edit/
+Disallow: /buyer-show
+Disallow: /buyer-show/
+Disallow: /model-create
+Disallow: /model-create/
+Disallow: /try-on
+Disallow: /try-on/
+Disallow: /reference-shot
+Disallow: /reference-shot/
+Disallow: /group-shot
+Disallow: /group-shot/
+Disallow: /social
+Disallow: /social/
+Disallow: /brand-assets
+Disallow: /brand-assets/
+Disallow: /payment
+Disallow: /payment/
+
+# Disallow admin and API routes
+Disallow: /admin
+Disallow: /admin/
+Disallow: /api/
+Disallow: /_next/
+
+# Sitemap location
+Sitemap: https://brandcamera.ai/sitemap.xml

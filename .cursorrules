@@ -158,12 +158,68 @@ await fetch('/api/xxx', {
 const prompt = `请用${language === 'en' ? '英文' : language === 'ko' ? '韩文' : '中文'}输出...`
 ```
 
-### 6. 🧭 导航
+### 6. 🔍 SEO（新增公开页面时必须维护）
+
+**⚠️ 新增公开页面（不需要登录的页面）时，必须同步更新 SEO 配置！**
+
+- [ ] `src/app/sitemap.ts` - **PUBLIC_PAGES 数组**（添加新的公开页面）
+- [ ] `public/robots.txt` - **Allow 规则**（如果是新的公开路径）
+- [ ] 页面 `layout.tsx` 或 `page.tsx` - **添加 metadata**
+
+**代码示例：**
+```typescript
+// src/app/sitemap.ts - 添加新的公开页面
+const PUBLIC_PAGES = [
+  { path: '', changeFrequency: 'weekly', priority: 1.0 },
+  { path: '/login', changeFrequency: 'monthly', priority: 0.8 },
+  { path: '/pricing', changeFrequency: 'weekly', priority: 0.9 },
+  // 📌 新增公开页面在此添加：
+  { path: '/about', changeFrequency: 'monthly', priority: 0.7 },
+]
+
+// 新页面的 layout.tsx - 添加 metadata
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'About | Brand Camera',
+  description: '页面描述...',
+}
+```
+
+**🚨 自动检测工具：**
+```bash
+# 开发时检测（只警告）
+npm run check-seo
+
+# CI 模式（发现错误阻止构建）
+npm run check-seo:ci
+
+# 同时检测 i18n 和 SEO
+npm run check-all
+npm run check-all:ci
+```
+
+**检测内容：**
+- ✅ sitemap.ts 是否存在且包含公开页面
+- ✅ robots.txt 是否存在且配置正确
+- ✅ 公开页面是否有 metadata
+- ✅ JSON-LD 结构化数据是否配置
+- ✅ OG Image 是否存在
+
+**SEO 相关文件：**
+| 文件 | 用途 | 何时更新 |
+|------|------|----------|
+| `src/app/sitemap.ts` | 站点地图 | 新增公开页面 |
+| `public/robots.txt` | 爬虫规则 | 新增公开/私有路径 |
+| `src/app/opengraph-image.tsx` | OG 图片 | 品牌视觉变更 |
+| `src/components/seo/JsonLd.tsx` | 结构化数据 | 很少更新 |
+
+### 7. 🧭 导航
 - [ ] `src/components/layouts/Sidebar.tsx` - PC 端侧边栏 navItems
 - [ ] `src/app/(main)/app/page.tsx` - **首页入口卡片**（新功能需要添加入口）
 - [ ] 路由：功能页面放在 `src/app/(main)/` 下
 
-### 7. 🔐 认证
+### 8. 🔐 认证
 - [ ] 页面需要登录检查（layout 已处理）
 - [ ] API 路由使用 `requireAuth()` 中间件
 
@@ -178,13 +234,13 @@ export async function POST(request: NextRequest) {
 }
 ```
 
-### 8. 📝 数据存储
+### 9. 📝 数据存储
 - [ ] 生成结果保存到 `generations` 表
 - [ ] 使用 `task_type` 字段区分功能类型
 - [ ] 图片上传到 Supabase Storage `generations` bucket
 - [ ] 视频需要确认 bucket 已开启 `video/mp4` MIME 类型支持
 
-### 9. 🤖 AI Prompts
+### 10. 🤖 AI Prompts
 - [ ] `src/prompts/index.ts` - 通用 prompts
 - [ ] `src/prompts/lifestyle.ts` - lifestyle 专用 prompts
 - [ ] 新功能可能需要添加专用 prompt 文件

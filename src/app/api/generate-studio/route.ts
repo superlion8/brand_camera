@@ -237,7 +237,7 @@ export async function POST(request: NextRequest) {
     
     console.log(`[${label}] Generated in ${duration}ms, uploading to storage...`)
     
-    // 上传图片到 Storage
+    // 上传输出图片到 Storage
     const base64Image = `data:image/png;base64,${result.image}`
     let uploadedUrl = base64Image
     let saveResult: { success: boolean; dbId?: string } | undefined
@@ -247,6 +247,17 @@ export async function POST(request: NextRequest) {
       if (uploaded) {
         uploadedUrl = uploaded
         console.log(`[${label}] Uploaded to storage`)
+        
+        // 上传输入图片到 Storage（只在 index 0 时上传，避免重复）
+        let inputImageStorageUrl: string | undefined
+        if (index === 0 && productImageData) {
+          const inputBase64 = `data:image/jpeg;base64,${productImageData}`
+          const uploadedInput = await uploadImageToStorage(inputBase64, userId, 'studio_input')
+          if (uploadedInput) {
+            inputImageStorageUrl = uploadedInput
+            console.log(`[${label}] Input image uploaded to storage`)
+          }
+        }
         
         // 写入数据库，获取 dbId
         saveResult = await appendImageToGeneration({
@@ -258,6 +269,7 @@ export async function POST(request: NextRequest) {
           genMode: 'extended', // Studio 总是 extended 模式
           prompt: prompt,
           taskType: 'product_studio',
+          inputImageUrl: inputImageStorageUrl, // 保存输入图片 URL
           inputParams: inputParams || { photoType, lightType, lightDirection, lightColor, aspectRatio },
         })
         

@@ -10,6 +10,10 @@
     "check-i18n": "bash scripts/check-i18n.sh",
     "check-i18n:strict": "ts-node --project tsconfig.scripts.json scripts/check-i18n-strict.ts",
     "check-i18n:ci": "ts-node --project tsconfig.scripts.json scripts/check-i18n-strict.ts --ci",
+    "check-seo": "ts-node --project tsconfig.scripts.json scripts/check-seo.ts",
+    "check-seo:ci": "ts-node --project tsconfig.scripts.json scripts/check-seo.ts --ci",
+    "check-all": "npm run check-i18n:strict && npm run check-seo",
+    "check-all:ci": "npm run check-i18n:ci && npm run check-seo:ci",
     "upload-presets": "ts-node --project tsconfig.scripts.json scripts/upload-presets.ts"
   },
   "dependencies": {

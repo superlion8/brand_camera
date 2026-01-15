@@ -1,0 +1,8 @@
+export { LandingClient } from './LandingClient'
+export { LandingHeader } from './LandingHeader'
+export { HeroSection } from './HeroSection'
+export { FeaturesSection } from './FeaturesSection'
+export { ShowcaseSection } from './ShowcaseSection'
+export { PricingSection } from './PricingSection'
+export { CTASection } from './CTASection'
+export { Footer } from './Footer'

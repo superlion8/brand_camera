@@ -5,25 +5,41 @@ import { AuthProvider } from '@/components/providers/AuthProvider'
 import { Analytics } from '@vercel/analytics/next'
 
 export const metadata: Metadata = {
-  title: 'Brand Camera - AI-Powered Product Photography',
+  metadataBase: new URL('https://brandcamera.ai'),
+  title: {
+    default: 'Brand Camera - AI-Powered Product Photography',
+    template: '%s | Brand Camera',
+  },
   description: 'Transform your product photos with AI. Create stunning model photos, lifestyle shots, and professional product images in seconds. No photographers, no studios, no waiting.',
   keywords: ['AI photography', 'product photography', 'e-commerce', 'model photos', 'brand style', 'AI image generation'],
   manifest: '/manifest.json',
+  authors: [{ name: 'Brand Camera' }],
+  creator: 'Brand Camera',
+  publisher: 'Brand Camera',
   openGraph: {
     title: 'Brand Camera - AI-Powered Product Photography',
     description: 'Transform your product photos with AI. Create stunning model photos, lifestyle shots, and professional product images in seconds.',
     type: 'website',
     siteName: 'Brand Camera',
+    locale: 'en_US',
+    url: 'https://brandcamera.ai',
+    // OG image is dynamically generated via opengraph-image.tsx
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Brand Camera - AI-Powered Product Photography',
     description: 'Transform your product photos with AI. Create stunning images in seconds.',
+    // Twitter image uses the same dynamically generated OG image
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'Brand Camera',
+  },
+  verification: {
+    // Add verification tokens when available
+    // google: 'google-site-verification-token',
+    // bing: 'bing-verification-token',
   },
 }
 
