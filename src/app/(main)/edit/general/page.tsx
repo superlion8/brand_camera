@@ -967,35 +967,107 @@ export default function GeneralEditPage() {
                 </button>
               </div>
             </div>
-          ) : resultImage ? (
-            // Show result image when generation is complete
-            <div className="relative w-full max-w-xs group">
-              {/* 点击放大 */}
-              <button
-                onClick={() => setZoomImage(resultImage)}
-                className="w-full"
-              >
-              <Image 
-                src={resultImage} 
-                alt="Result"
-                width={400}
-                height={500}
-                  className="w-full rounded-xl shadow-lg cursor-pointer hover:opacity-95 transition-opacity"
-              />
-              </button>
-              <span className="absolute top-2 left-2 px-2 py-1 bg-green-500 text-white text-xs rounded font-medium">{t.edit.generationResult}</span>
-              {/* 点击提示 */}
-              <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/10 transition-colors rounded-xl pointer-events-none">
-                <span className="text-white text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 px-3 py-1.5 rounded-full">
-                  {t.common?.clickToEnlarge || 'Click to enlarge'}
-                </span>
+          ) : resultImages.length > 0 ? (
+            // Show result images grid when generation is complete
+            <div className="w-full max-w-md">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-zinc-700">{t.edit?.generationResult || 'Results'}</span>
+                <button
+                  onClick={handleReset}
+                  className="text-xs text-purple-600 hover:text-purple-700 font-medium"
+                >
+                  {t.edit?.editNew || 'Edit New'}
+                </button>
               </div>
-              <button
-                onClick={handleReset}
-                className="absolute bottom-2 right-2 px-3 py-1.5 bg-white/90 hover:bg-white text-zinc-700 text-sm font-medium rounded-lg shadow transition-colors z-10"
-              >
-                {t.edit?.reselect || 'Reselect'}
-              </button>
+              <div className={`grid gap-3 ${resultImages.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                {resultImages.map((img, index) => (
+                  <div key={index} className="relative group">
+                    {regeneratingIndex === index ? (
+                      <div className="aspect-square rounded-xl bg-zinc-200 animate-pulse flex items-center justify-center">
+                        <Loader2 className="w-6 h-6 text-purple-400 animate-spin" />
+                      </div>
+                    ) : (
+                      <>
+                        <Image
+                          src={img}
+                          alt={`Result ${index + 1}`}
+                          width={300}
+                          height={300}
+                          className="w-full aspect-square object-cover rounded-t-xl cursor-pointer"
+                          onClick={() => setZoomImage(img)}
+                        />
+                        <span className="absolute top-2 left-2 px-1.5 py-0.5 bg-green-500 text-white text-[10px] rounded font-medium">
+                          {index + 1}
+                        </span>
+                      </>
+                    )}
+                    {/* Action buttons */}
+                    <div className="flex border-t border-zinc-100 bg-white rounded-b-xl shadow-sm">
+                      <button
+                        onClick={() => handleRegenerate(index)}
+                        disabled={regeneratingIndex !== null}
+                        className="flex-1 py-2 text-xs font-medium text-zinc-600 hover:text-purple-600 hover:bg-purple-50 transition-colors flex items-center justify-center gap-1 border-r border-zinc-100 disabled:opacity-50"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${regeneratingIndex === index ? 'animate-spin' : ''}`} />
+                        <span>{t.edit?.regenerate || 'Regenerate'}</span>
+                      </button>
+                      <button
+                        onClick={() => handleEditResult(img)}
+                        disabled={regeneratingIndex !== null}
+                        className="flex-1 py-2 text-xs font-medium text-zinc-600 hover:text-purple-600 hover:bg-purple-50 transition-colors flex items-center justify-center gap-1 disabled:opacity-50"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        <span>{t.edit?.editThis || 'Edit'}</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : resultImage ? (
+            // Single result image (legacy fallback)
+            <div className="w-full max-w-sm">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-zinc-700">{t.edit?.generationResult || 'Result'}</span>
+                <button
+                  onClick={handleReset}
+                  className="text-xs text-purple-600 hover:text-purple-700 font-medium"
+                >
+                  {t.edit?.editNew || 'Edit New'}
+                </button>
+              </div>
+              <div className="relative group">
+                <Image 
+                  src={resultImage} 
+                  alt="Result"
+                  width={300}
+                  height={300}
+                  className="w-full aspect-square object-cover rounded-t-xl cursor-pointer"
+                  onClick={() => setZoomImage(resultImage)}
+                />
+                <span className="absolute top-2 left-2 px-1.5 py-0.5 bg-green-500 text-white text-[10px] rounded font-medium">
+                  {t.edit?.generationResult || 'Result'}
+                </span>
+                {/* Action buttons */}
+                <div className="flex border-t border-zinc-100 bg-white rounded-b-xl shadow-sm">
+                  <button
+                    onClick={() => handleRegenerate(0)}
+                    disabled={regeneratingIndex !== null}
+                    className="flex-1 py-2 text-xs font-medium text-zinc-600 hover:text-purple-600 hover:bg-purple-50 transition-colors flex items-center justify-center gap-1 border-r border-zinc-100 disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${regeneratingIndex === 0 ? 'animate-spin' : ''}`} />
+                    <span>{t.edit?.regenerate || 'Regenerate'}</span>
+                  </button>
+                  <button
+                    onClick={() => handleEditResult(resultImage)}
+                    disabled={regeneratingIndex !== null}
+                    className="flex-1 py-2 text-xs font-medium text-zinc-600 hover:text-purple-600 hover:bg-purple-50 transition-colors flex items-center justify-center gap-1 disabled:opacity-50"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                    <span>{t.edit?.editThis || 'Edit'}</span>
+                  </button>
+                </div>
+              </div>
             </div>
           ) : (
             // Show multi-image grid with numbered labels
@@ -1108,15 +1180,76 @@ export default function GeneralEditPage() {
               placeholder={t.edit.editPlaceholder}
               value={customPrompt}
               onChange={(e) => setCustomPrompt(e.target.value)}
-              className="w-full min-h-[120px] px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-300 text-sm leading-relaxed"
+              className="w-full min-h-[100px] px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-300 text-sm leading-relaxed"
             />
             <p className="text-xs text-zinc-400">
               💡 {t.edit.editPlaceholder}
             </p>
+            
+            {/* Generation Options - Mobile */}
+            <div className="flex flex-wrap items-center gap-2 pt-2">
+              {/* Number of Images */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-zinc-500">{t.edit?.numberOfImages || 'Count'}:</span>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4].map(num => (
+                    <button
+                      key={num}
+                      onClick={() => setNumImages(num)}
+                      className={`w-7 h-7 rounded-lg text-xs font-medium transition-colors ${
+                        numImages === num
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-zinc-100 text-zinc-600'
+                      }`}
+                    >
+                      {num}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="w-px h-5 bg-zinc-200" />
+              
+              {/* Aspect Ratio */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-zinc-500">{t.edit?.aspectRatio || 'Ratio'}:</span>
+                <select
+                  value={aspectRatio}
+                  onChange={(e) => setAspectRatio(e.target.value as typeof aspectRatio)}
+                  className="h-7 px-1.5 rounded-lg text-xs font-medium bg-zinc-100 text-zinc-700 border-0"
+                >
+                  {(['1:1', '2:3', '3:2', '3:4', '4:3', '9:16', '16:9'] as const).map(ratio => (
+                    <option key={ratio} value={ratio}>{ratio}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="w-px h-5 bg-zinc-200" />
+              
+              {/* Resolution */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-zinc-500">{t.edit?.resolution || 'Quality'}:</span>
+                <div className="flex gap-1">
+                  {(['1K', '2K', '4K'] as const).map(res => (
+                    <button
+                      key={res}
+                      onClick={() => setResolution(res)}
+                      className={`px-2 h-7 rounded-lg text-xs font-medium transition-colors ${
+                        resolution === res
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-zinc-100 text-zinc-600'
+                      }`}
+                    >
+                      {res}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
           
           {/* Generate Button */}
-          <div className="pt-6 pb-24">
+          <div className="pt-4 pb-24">
             <button
               onClick={(e) => {
                 triggerFlyToGallery(e)
@@ -1138,7 +1271,7 @@ export default function GeneralEditPage() {
                 <>
                   <Wand2 className="w-5 h-5" />
                   <span>{t.edit.startGenerate}</span>
-                  <CreditCostBadge cost={BASE_CREDIT_COST} className="ml-2" />
+                  <CreditCostBadge cost={totalCreditCost} className="ml-2" />
                 </>
               )}
             </button>
