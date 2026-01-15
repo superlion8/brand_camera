@@ -2,16 +2,19 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { LandingHeader } from './LandingHeader'
 import { HeroSection } from './HeroSection'
-import { FeaturesSection } from './FeaturesSection'
-import { HowItWorksSection } from './HowItWorksSection'
-import { ShowcaseSection } from './ShowcaseSection'
-import { TestimonialsSection } from './TestimonialsSection'
-import { PricingSection } from './PricingSection'
-import { CTASection } from './CTASection'
-import { Footer } from './Footer'
+
+// Lazy load below-fold sections to reduce TBT
+const FeaturesSection = dynamic(() => import('./FeaturesSection').then(mod => ({ default: mod.FeaturesSection })), { ssr: true })
+const HowItWorksSection = dynamic(() => import('./HowItWorksSection').then(mod => ({ default: mod.HowItWorksSection })), { ssr: true })
+const ShowcaseSection = dynamic(() => import('./ShowcaseSection').then(mod => ({ default: mod.ShowcaseSection })), { ssr: true })
+const TestimonialsSection = dynamic(() => import('./TestimonialsSection').then(mod => ({ default: mod.TestimonialsSection })), { ssr: true })
+const PricingSection = dynamic(() => import('./PricingSection').then(mod => ({ default: mod.PricingSection })), { ssr: true })
+const CTASection = dynamic(() => import('./CTASection').then(mod => ({ default: mod.CTASection })), { ssr: true })
+const Footer = dynamic(() => import('./Footer').then(mod => ({ default: mod.Footer })), { ssr: true })
 
 export function LandingClient() {
   const router = useRouter()
