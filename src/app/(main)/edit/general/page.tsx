@@ -472,6 +472,13 @@ export default function GeneralEditPage() {
     setActiveImageSlot(0)
   }
   
+  // Back to edit mode - keep input images, prompt and options, clear results
+  const handleBackToEdit = () => {
+    setResultImages([])
+    setResultImage(null)
+    // Keep inputImages, customPrompt, numImages, aspectRatio, resolution
+  }
+  
   // 防止 hydration 闪烁
   if (screenLoading) {
     return <ScreenLoadingGuard><div /></ScreenLoadingGuard>
@@ -1172,115 +1179,145 @@ export default function GeneralEditPage() {
           )}
         </div>
         
-        {/* Prompt Input - Main control */}
-        <div className="p-4 bg-white rounded-t-2xl -mt-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] relative z-10">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Wand2 className="w-5 h-5 text-purple-600" />
-              <label className="text-base font-semibold text-zinc-900">{t.edit.describeEdit}</label>
+        {/* Bottom Controls - Different based on whether we have results */}
+        {(resultImages.length > 0 || resultImage) ? (
+          /* Results Mode: Show back to edit button */
+          <div className="p-4 bg-white rounded-t-2xl -mt-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] relative z-10">
+            {/* Show current prompt as read-only info */}
+            <div className="mb-4 p-3 bg-zinc-50 rounded-xl border border-zinc-100">
+              <p className="text-xs text-zinc-500 mb-1">{t.edit?.currentPrompt || 'Current Prompt'}:</p>
+              <p className="text-sm text-zinc-700 line-clamp-2">{customPrompt}</p>
             </div>
-            <textarea
-              placeholder={t.edit.editPlaceholder}
-              value={customPrompt}
-              onChange={(e) => setCustomPrompt(e.target.value)}
-              className="w-full min-h-[100px] px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-300 text-sm leading-relaxed"
-            />
-            <p className="text-xs text-zinc-400">
-              💡 {t.edit.editPlaceholder}
-            </p>
             
-            {/* Generation Options - Mobile */}
-            <div className="flex flex-wrap items-center gap-2 pt-2">
-              {/* Number of Images */}
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-zinc-500">{t.edit?.numberOfImages || 'Count'}:</span>
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4].map(num => (
-                    <button
-                      key={num}
-                      onClick={() => setNumImages(num)}
-                      className={`w-7 h-7 rounded-lg text-xs font-medium transition-colors ${
-                        numImages === num
-                          ? 'bg-purple-600 text-white'
-                          : 'bg-zinc-100 text-zinc-600'
-                      }`}
-                    >
-                      {num}
-                    </button>
-                  ))}
+            {/* Action Buttons */}
+            <div className="space-y-3 pb-24">
+              <button
+                onClick={handleBackToEdit}
+                className="w-full h-14 rounded-full text-base font-semibold gap-2 flex items-center justify-center bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white shadow-lg shadow-purple-200 transition-all"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span>{t.edit?.backToEdit || 'Back to Edit'}</span>
+              </button>
+              <button
+                onClick={handleReset}
+                className="w-full h-12 rounded-full text-sm font-medium text-zinc-600 bg-zinc-100 hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2"
+              >
+                <Wand2 className="w-4 h-4" />
+                <span>{t.edit?.editNew || 'Edit New Image'}</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Edit Mode: Show prompt input and generate button */
+          <div className="p-4 bg-white rounded-t-2xl -mt-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] relative z-10">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Wand2 className="w-5 h-5 text-purple-600" />
+                <label className="text-base font-semibold text-zinc-900">{t.edit.describeEdit}</label>
+              </div>
+              <textarea
+                placeholder={t.edit.editPlaceholder}
+                value={customPrompt}
+                onChange={(e) => setCustomPrompt(e.target.value)}
+                className="w-full min-h-[100px] px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-300 text-sm leading-relaxed"
+              />
+              <p className="text-xs text-zinc-400">
+                💡 {t.edit.editPlaceholder}
+              </p>
+              
+              {/* Generation Options - Mobile */}
+              <div className="flex flex-wrap items-center gap-2 pt-2">
+                {/* Number of Images */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-zinc-500">{t.edit?.numberOfImages || 'Count'}:</span>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4].map(num => (
+                      <button
+                        key={num}
+                        onClick={() => setNumImages(num)}
+                        className={`w-7 h-7 rounded-lg text-xs font-medium transition-colors ${
+                          numImages === num
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-zinc-100 text-zinc-600'
+                        }`}
+                      >
+                        {num}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              
-              <div className="w-px h-5 bg-zinc-200" />
-              
-              {/* Aspect Ratio */}
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-zinc-500">{t.edit?.aspectRatio || 'Ratio'}:</span>
-                <select
-                  value={aspectRatio}
-                  onChange={(e) => setAspectRatio(e.target.value as typeof aspectRatio)}
-                  className="h-7 px-1.5 rounded-lg text-xs font-medium bg-zinc-100 text-zinc-700 border-0"
-                >
-                  <option value="original">{t.edit?.originalRatio || 'Original'}</option>
-                  {(['1:1', '2:3', '3:2', '3:4', '4:3', '9:16', '16:9'] as const).map(ratio => (
-                    <option key={ratio} value={ratio}>{ratio}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div className="w-px h-5 bg-zinc-200" />
-              
-              {/* Resolution */}
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-zinc-500">{t.edit?.resolution || 'Quality'}:</span>
-                <div className="flex gap-1">
-                  {(['1K', '2K', '4K'] as const).map(res => (
-                    <button
-                      key={res}
-                      onClick={() => setResolution(res)}
-                      className={`px-2 h-7 rounded-lg text-xs font-medium transition-colors ${
-                        resolution === res
-                          ? 'bg-purple-600 text-white'
-                          : 'bg-zinc-100 text-zinc-600'
-                      }`}
-                    >
-                      {res}
-                    </button>
-                  ))}
+                
+                <div className="w-px h-5 bg-zinc-200" />
+                
+                {/* Aspect Ratio */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-zinc-500">{t.edit?.aspectRatio || 'Ratio'}:</span>
+                  <select
+                    value={aspectRatio}
+                    onChange={(e) => setAspectRatio(e.target.value as typeof aspectRatio)}
+                    className="h-7 px-1.5 rounded-lg text-xs font-medium bg-zinc-100 text-zinc-700 border-0"
+                  >
+                    <option value="original">{t.edit?.originalRatio || 'Original'}</option>
+                    {(['1:1', '2:3', '3:2', '3:4', '4:3', '9:16', '16:9'] as const).map(ratio => (
+                      <option key={ratio} value={ratio}>{ratio}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="w-px h-5 bg-zinc-200" />
+                
+                {/* Resolution */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-zinc-500">{t.edit?.resolution || 'Quality'}:</span>
+                  <div className="flex gap-1">
+                    {(['1K', '2K', '4K'] as const).map(res => (
+                      <button
+                        key={res}
+                        onClick={() => setResolution(res)}
+                        className={`px-2 h-7 rounded-lg text-xs font-medium transition-colors ${
+                          resolution === res
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-zinc-100 text-zinc-600'
+                        }`}
+                      >
+                        {res}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
+            
+            {/* Generate Button */}
+            <div className="pt-4 pb-24">
+              <button
+                onClick={(e) => {
+                  triggerFlyToGallery(e)
+                  handleGenerate()
+                }}
+                disabled={inputImages.filter(Boolean).length === 0 || !customPrompt.trim() || isGenerating}
+                className={`w-full h-14 rounded-full text-base font-semibold gap-2 flex items-center justify-center transition-all ${
+                  inputImages.filter(Boolean).length === 0 || !customPrompt.trim() || isGenerating
+                    ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white shadow-lg shadow-purple-200"
+                }`}
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>{t.common.generating}</span>
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="w-5 h-5" />
+                    <span>{t.edit.startGenerate}</span>
+                    <CreditCostBadge cost={totalCreditCost} className="ml-2" />
+                  </>
+                )}
+              </button>
+            </div>
           </div>
-          
-          {/* Generate Button */}
-          <div className="pt-4 pb-24">
-            <button
-              onClick={(e) => {
-                triggerFlyToGallery(e)
-                handleGenerate()
-              }}
-              disabled={inputImages.filter(Boolean).length === 0 || !customPrompt.trim() || isGenerating}
-              className={`w-full h-14 rounded-full text-base font-semibold gap-2 flex items-center justify-center transition-all ${
-                inputImages.filter(Boolean).length === 0 || !customPrompt.trim() || isGenerating
-                  ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
-                  : "bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white shadow-lg shadow-purple-200"
-              }`}
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>{t.common.generating}</span>
-                </>
-              ) : (
-                <>
-                  <Wand2 className="w-5 h-5" />
-                  <span>{t.edit.startGenerate}</span>
-                  <CreditCostBadge cost={totalCreditCost} className="ml-2" />
-                </>
-              )}
-            </button>
-          </div>
-        </div>
+        )}
       </div>
       )}
       
