@@ -3,7 +3,6 @@
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
-import { MousePointerClick } from 'lucide-react'
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 30 },
@@ -21,15 +20,11 @@ const staggerContainer = {
 // Supabase Storage base URL
 const STORAGE_URL = 'https://cvdogeigbpussfamctsu.supabase.co/storage/v1/object/public/presets/homepage'
 
+// Only cases with existing images
 const cases = [
   { before: `${STORAGE_URL}/pro-studio-before.jpg?v=2`, after: `${STORAGE_URL}/pro-studio-after.png?v=2`, label: 'Pro Studio', desc: 'AI Model Photography' },
   { before: `${STORAGE_URL}/lifestyle-before.png`, after: `${STORAGE_URL}/lifestyle-after.jpg`, label: 'Lifestyle', desc: 'Scene Generation' },
   { before: `${STORAGE_URL}/model-before.jpg`, after: `${STORAGE_URL}/model-after.png`, label: 'Buyer Show', desc: 'Customer Photos' },
-  { before: `${STORAGE_URL}/product-studio-before.jpg`, after: `${STORAGE_URL}/product-studio-after.jpg`, label: 'Product Studio', desc: 'Clean Background' },
-  { before: `${STORAGE_URL}/tryon-before.jpg`, after: `${STORAGE_URL}/tryon-after.jpg`, label: 'Virtual Try-On', desc: 'AI Fitting Room' },
-  { before: `${STORAGE_URL}/group-shot-before.jpg`, after: `${STORAGE_URL}/group-shot-after.jpg`, label: 'Group Shot', desc: 'Multi-Model Scene' },
-  { before: `${STORAGE_URL}/reference-shot-before.jpg`, after: `${STORAGE_URL}/reference-shot-after.jpg`, label: 'Reference Shot', desc: 'Style Matching' },
-  { before: `${STORAGE_URL}/social-before.jpg`, after: `${STORAGE_URL}/social-after.jpg`, label: 'Social Media', desc: 'Content Creation' },
 ]
 
 function FlipCard({ 
@@ -46,30 +41,29 @@ function FlipCard({
   isDemo?: boolean
 }) {
   const [isFlipped, setIsFlipped] = useState(false)
-  const [hasInteracted, setHasInteracted] = useState(false)
+  const [hasSeenDemo, setHasSeenDemo] = useState(false)
 
-  // Demo animation for first card
+  // Demo animation for first card - flip once automatically
   useEffect(() => {
-    if (isDemo && !hasInteracted) {
+    if (isDemo && !hasSeenDemo) {
       const timer = setTimeout(() => {
         setIsFlipped(true)
-        setTimeout(() => setIsFlipped(false), 1500)
+        setTimeout(() => {
+          setIsFlipped(false)
+          setHasSeenDemo(true)
+        }, 1500)
       }, 2000)
       return () => clearTimeout(timer)
     }
-  }, [isDemo, hasInteracted])
-
-  const handleClick = () => {
-    setIsFlipped(!isFlipped)
-    setHasInteracted(true)
-  }
+  }, [isDemo, hasSeenDemo])
 
   return (
     <motion.div 
       variants={fadeInUp}
       className="relative aspect-[4/5] cursor-pointer group"
       style={{ perspective: '1000px' }}
-      onClick={handleClick}
+      onMouseEnter={() => setIsFlipped(true)}
+      onMouseLeave={() => setIsFlipped(false)}
     >
       {/* Card container with 3D flip */}
       <div 
@@ -81,7 +75,7 @@ function FlipCard({
       >
         {/* Front - Before */}
         <div 
-          className="absolute inset-0 rounded-2xl overflow-hidden shadow-lg shadow-zinc-200/50"
+          className="absolute inset-0 rounded-2xl overflow-hidden shadow-lg shadow-zinc-200/50 bg-zinc-100"
           style={{ backfaceVisibility: 'hidden' }}
         >
           <Image
@@ -100,22 +94,19 @@ function FlipCard({
           <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-zinc-700 shadow-sm">
             Before
           </div>
-          {/* Click hint - only show on first card before interaction */}
-          {isDemo && !hasInteracted && (
+          {/* Hover hint - pulsing ring */}
+          {isDemo && !hasSeenDemo && (
             <motion.div 
-              className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 bg-orange-500 rounded-full text-xs font-medium text-white shadow-sm"
-              animate={{ scale: [1, 1.1, 1] }}
+              className="absolute inset-0 rounded-2xl ring-2 ring-orange-400"
+              animate={{ opacity: [0.5, 1, 0.5] }}
               transition={{ duration: 1.5, repeat: Infinity }}
-            >
-              <MousePointerClick className="w-3 h-3" />
-              <span>Tap</span>
-            </motion.div>
+            />
           )}
         </div>
 
         {/* Back - After */}
         <div 
-          className="absolute inset-0 rounded-2xl overflow-hidden shadow-lg shadow-orange-200/50"
+          className="absolute inset-0 rounded-2xl overflow-hidden shadow-lg shadow-orange-200/50 bg-zinc-100"
           style={{ 
             backfaceVisibility: 'hidden',
             transform: 'rotateY(180deg)'
@@ -139,9 +130,6 @@ function FlipCard({
           </div>
         </div>
       </div>
-
-      {/* Subtle hover effect hint */}
-      <div className="absolute inset-0 rounded-2xl ring-2 ring-orange-400/0 group-hover:ring-orange-400/50 transition-all duration-300 pointer-events-none" />
     </motion.div>
   )
 }
@@ -149,7 +137,7 @@ function FlipCard({
 export function ShowcaseSection() {
   return (
     <section id="showcase" className="py-24 px-6 bg-gradient-to-b from-white via-orange-50/30 to-white">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -164,7 +152,7 @@ export function ShowcaseSection() {
             See the Difference
           </motion.h2>
           <motion.p variants={fadeInUp} className="mt-4 text-zinc-500 max-w-xl mx-auto">
-            Tap each card to flip and reveal the AI transformation.
+            Hover over each card to reveal the AI transformation.
           </motion.p>
         </motion.div>
         
@@ -173,7 +161,7 @@ export function ShowcaseSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
           variants={staggerContainer}
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6"
+          className="grid md:grid-cols-3 gap-6"
         >
           {cases.map((item, index) => (
             <FlipCard key={index} {...item} isDemo={index === 0} />
