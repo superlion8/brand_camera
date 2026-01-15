@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 
+const DAILY_REWARD_AMOUNT = 5 // 每日奖励额度
+
 // Credits 详情
 interface CreditsInfo {
   available: number
@@ -262,6 +264,7 @@ export const useQuotaStore = create<QuotaState>()(
             set({ quota: newQuota })
             
             if (data.credited) {
+              // 成功领取
               const reward: DailyRewardResult = {
                 credited: true,
                 creditsAdded: data.creditsAdded,
@@ -279,6 +282,16 @@ export const useQuotaStore = create<QuotaState>()(
               clearDailyRewardCheckCache()
               
               return reward
+            } else {
+              // 今天已经领取过了 - 也要更新状态！
+              const newStatus: DailyRewardStatus = {
+                canClaim: false,
+                alreadyClaimed: true,
+                rewardAmount: DAILY_REWARD_AMOUNT,
+              }
+              set({ dailyRewardStatus: newStatus })
+              setDailyRewardCheckCache(newStatus)
+              return null
             }
           }
         } catch (error) {
