@@ -62,6 +62,13 @@ export function WebApplicationJsonLd({
       priceCurrency: 'USD',
       description: 'Free tier available with credits',
     },
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: '4.9',
+      ratingCount: '1200',
+      bestRating: '5',
+      worstRating: '1',
+    },
     featureList: [
       'AI Model Photos',
       'Lifestyle Shots',
