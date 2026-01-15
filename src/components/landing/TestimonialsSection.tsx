@@ -62,26 +62,20 @@ function TestimonialCard({
   testimonial: typeof testimonials[0]
   index: number 
 }) {
-  const isFeature = index === 0
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      transition={{ duration: 0.6, delay: index * 0.1 }}
-      className={`
-        relative group
-        ${isFeature ? 'md:col-span-2 md:row-span-2' : ''}
-      `}
+      transition={{ duration: 0.6, delay: index * 0.08 }}
+      className="relative group"
     >
-      <div className={`
-        relative h-full p-6 md:p-8 rounded-3xl overflow-hidden
+      <div className="
+        relative h-full p-6 rounded-2xl overflow-hidden
         bg-white border border-zinc-100
-        hover:border-zinc-200 hover:shadow-2xl hover:shadow-zinc-200/50
+        hover:border-zinc-200 hover:shadow-xl hover:shadow-zinc-200/50
         transition-all duration-500 ease-out
-        ${isFeature ? 'md:p-10' : ''}
-      `}>
+      ">
         {/* Gradient accent bar */}
         <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${testimonial.gradient}`} />
         
@@ -102,10 +96,7 @@ function TestimonialCard({
         </div>
 
         {/* Quote text */}
-        <p className={`
-          text-zinc-700 leading-relaxed mb-6
-          ${isFeature ? 'text-lg md:text-xl' : 'text-sm md:text-base'}
-        `}>
+        <p className="text-zinc-700 leading-relaxed mb-6 text-sm">
           "{testimonial.text}"
         </p>
 
@@ -176,8 +167,8 @@ export function TestimonialsSection() {
           </p>
         </motion.div>
 
-        {/* Testimonials Grid - Bento Style */}
-        <div className="grid md:grid-cols-3 gap-4 md:gap-6">
+        {/* Testimonials Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {testimonials.map((testimonial, index) => (
             <TestimonialCard key={index} testimonial={testimonial} index={index} />
           ))}
