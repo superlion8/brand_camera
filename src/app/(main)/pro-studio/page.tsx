@@ -32,6 +32,8 @@ import { useQuotaReservation } from "@/hooks/useQuotaReservation"
 import { BottomNav } from "@/components/shared/BottomNav"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
+import { useLoginGuard } from "@/hooks/useLoginGuard"
+import { LoginModal } from "@/components/shared/LoginModal"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
 import { useAssetStore } from "@/stores/assetStore"
@@ -149,6 +151,7 @@ function ProStudioPageContent() {
   const { user, isLoading: authLoading } = useAuth()
   const t = useLanguageStore(state => state.t)
   const language = useLanguageStore(state => state.language)
+  const { requireLogin, showLoginModal, handleLoginSuccess, handleCloseModal } = useLoginGuard()
   const { checkQuota, quota } = useQuota()
   const { reserveQuota, refundQuota, partialRefund, confirmQuota } = useQuotaReservation()
   const { addTask, updateTaskStatus, updateImageSlot, initImageSlots, tasks } = useGenerationTaskStore()
@@ -520,6 +523,9 @@ function ProStudioPageContent() {
   // 开始生成
   const handleShootIt = async () => {
     if (!capturedImage) return
+
+    // Check login first
+    if (!requireLogin()) return
 
     // Clear previous results first (for Regenerate to show skeleton)
     setGeneratedImages([])
@@ -1427,6 +1433,13 @@ function ProStudioPageContent() {
         sceneType="studio"
         themeColor="amber"
         allowUpload={false}
+      />
+
+      {/* Login Modal for unauthenticated users */}
+      <LoginModal
+        open={showLoginModal}
+        onClose={handleCloseModal}
+        onSuccess={handleLoginSuccess}
       />
     </div>
   )

@@ -540,6 +540,7 @@ export const zh = {
   login: {
     title: "品牌相机",
     subtitle: "品牌的AI影棚",
+    loginToContinue: "登录后继续",
     selectMethod: "选择登录方式",
     emailOtp: "邮箱验证码登录",
     emailPassword: "邮箱密码登录",

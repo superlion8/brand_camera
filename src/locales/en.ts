@@ -542,6 +542,7 @@ export const en: Translations = {
   login: {
     title: "Brand Camera",
     subtitle: "AI Studio for Brands",
+    loginToContinue: "Login to Continue",
     selectMethod: "Select login method",
     emailOtp: "Email Code Login",
     emailPassword: "Email Password Login",

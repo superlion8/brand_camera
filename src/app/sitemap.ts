@@ -23,6 +23,13 @@ const PUBLIC_PAGES: Array<{
   { path: '/login', changeFrequency: 'monthly', priority: 0.8 },
   // 定价页
   { path: '/pricing', changeFrequency: 'weekly', priority: 0.9 },
+  // 功能页面 - 公开可预览，操作时登录
+  { path: '/product-shot', changeFrequency: 'weekly', priority: 0.85 },
+  { path: '/pro-studio', changeFrequency: 'weekly', priority: 0.85 },
+  { path: '/lifestyle', changeFrequency: 'weekly', priority: 0.85 },
+  { path: '/camera', changeFrequency: 'weekly', priority: 0.8 },
+  { path: '/edit', changeFrequency: 'weekly', priority: 0.8 },
+  { path: '/try-on', changeFrequency: 'weekly', priority: 0.8 },
   // 
   // 📌 新增公开页面请在此添加：
   // { path: '/about', changeFrequency: 'monthly', priority: 0.7 },

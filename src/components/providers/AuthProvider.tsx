@@ -27,8 +27,9 @@ const AuthContext = createContext<AuthContextType>({
   promptLogin: () => {},
 })
 
-// Protected routes that require authentication
-const PROTECTED_ROUTES = ['/camera', '/edit', '/gallery', '/brand-assets', '/studio']
+// Protected routes that ALWAYS require authentication (contain user private data)
+// Other feature pages are now publicly accessible, with login required only for actions
+const PROTECTED_ROUTES = ['/gallery', '/brand-assets', '/admin']
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)

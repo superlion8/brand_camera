@@ -27,6 +27,8 @@ import { useQuota } from "@/hooks/useQuota"
 import { useQuotaReservation } from "@/hooks/useQuotaReservation"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
+import { useLoginGuard } from "@/hooks/useLoginGuard"
+import { LoginModal } from "@/components/shared/LoginModal"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { useIsDesktop } from "@/hooks/useIsMobile"
 import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
@@ -128,6 +130,7 @@ function StudioPageContent() {
   const searchParams = useSearchParams()
   const { user } = useAuth()
   const t = useLanguageStore(state => state.t)
+  const { requireLogin, showLoginModal, handleLoginSuccess, handleCloseModal } = useLoginGuard()
   
   // Build light types with translations
   const LIGHT_TYPES = LIGHT_TYPE_IDS.map(id => ({
@@ -378,6 +381,9 @@ function StudioPageContent() {
   
   const handleGenerate = async () => {
     if (!productImage) return
+
+    // Check login first
+    if (!requireLogin()) return
 
     // Clear previous results first (for Regenerate to show skeleton)
     setGeneratedImages([])
@@ -1488,6 +1494,13 @@ function StudioPageContent() {
           setProductFromPhone(false)
         }}
         themeColor="amber"
+      />
+
+      {/* Login Modal for unauthenticated users */}
+      <LoginModal
+        open={showLoginModal}
+        onClose={handleCloseModal}
+        onSuccess={handleLoginSuccess}
       />
       
     </div>

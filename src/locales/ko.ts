@@ -541,6 +541,7 @@ export const ko: Translations = {
   login: {
     title: "브랜드 카메라",
     subtitle: "브랜드를 위한 AI 스튜디오",
+    loginToContinue: "계속하려면 로그인하세요",
     selectMethod: "로그인 방법 선택",
     emailOtp: "이메일 코드 로그인",
     emailPassword: "이메일 비밀번호 로그인",

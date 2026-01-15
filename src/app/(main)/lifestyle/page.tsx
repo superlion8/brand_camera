@@ -29,6 +29,8 @@ import { useQuota } from "@/hooks/useQuota"
 import { useQuotaReservation } from "@/hooks/useQuotaReservation"
 import { BottomNav } from "@/components/shared/BottomNav"
 import { useAuth } from "@/components/providers/AuthProvider"
+import { useLoginGuard } from "@/hooks/useLoginGuard"
+import { LoginModal } from "@/components/shared/LoginModal"
 import { useLanguageStore } from "@/stores/languageStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
@@ -52,6 +54,7 @@ function LifestylePageContent() {
   const searchParams = useSearchParams()
   const { user, isLoading: authLoading } = useAuth()
   const t = useLanguageStore(state => state.t)
+  const { requireLogin, showLoginModal, handleLoginSuccess, handleCloseModal } = useLoginGuard()
   const { checkQuota, quota } = useQuota()
   const { reserveQuota, confirmQuota } = useQuotaReservation()
   const { addTask, updateTaskStatus, updateImageSlot, initImageSlots, tasks } = useGenerationTaskStore()
@@ -367,10 +370,13 @@ function LifestylePageContent() {
   const handleLifestyleGenerate = async () => {
     if (!capturedImage) return
 
+    // Check login first
+    if (!requireLogin()) return
+
     // Clear previous results first (for Regenerate to show skeleton)
     setGeneratedImages([])
     setGeneratedModelTypes([])
-    
+
     const hasQuota = await checkQuota(LIFESTYLE_NUM_IMAGES)
     if (!hasQuota) return
     
@@ -1109,6 +1115,13 @@ function LifestylePageContent() {
         onUploadClick={() => fileInputRef2.current?.click()}
         themeColor="purple"
         title={t.proStudio?.add || '添加商品'}
+      />
+
+      {/* Login Modal for unauthenticated users */}
+      <LoginModal
+        open={showLoginModal}
+        onClose={handleCloseModal}
+        onSuccess={handleLoginSuccess}
       />
     </div>
   )
