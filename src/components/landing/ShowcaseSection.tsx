@@ -20,11 +20,18 @@ const staggerContainer = {
 // Supabase Storage base URL
 const STORAGE_URL = 'https://cvdogeigbpussfamctsu.supabase.co/storage/v1/object/public/presets/homepage'
 
-// Only cases with existing images
+// All 8 features with correct image paths from /app page
 const cases = [
+  // Section 1: Model Shot
   { before: `${STORAGE_URL}/pro-studio-before.jpg?v=2`, after: `${STORAGE_URL}/pro-studio-after.png?v=2`, label: 'Pro Studio', desc: 'AI Model Photography' },
   { before: `${STORAGE_URL}/lifestyle-before.png`, after: `${STORAGE_URL}/lifestyle-after.jpg`, label: 'Lifestyle', desc: 'Scene Generation' },
   { before: `${STORAGE_URL}/model-before.jpg`, after: `${STORAGE_URL}/model-after.png`, label: 'Buyer Show', desc: 'Customer Photos' },
+  { before: `${STORAGE_URL}/social-before.jpg`, after: `${STORAGE_URL}/social-after.jpg`, label: 'Social Media', desc: 'Content Creation' },
+  // Section 2: Custom Shot
+  { before: `${STORAGE_URL}/group-shoot-before.png`, after: `${STORAGE_URL}/group-shoot-after.png`, label: 'Group Shot', desc: 'Multi-Angle Photos' },
+  { before: `${STORAGE_URL}/reference-shot-before.png`, after: `${STORAGE_URL}/reference-shot-after.png`, label: 'Reference Shot', desc: 'Style Matching' },
+  { before: `${STORAGE_URL}/product-before.jpg`, after: `${STORAGE_URL}/product-after.jpg`, label: 'Product Studio', desc: 'Clean Background' },
+  { before: `${STORAGE_URL}/try-on-before.png`, after: `${STORAGE_URL}/try-on-after.png`, label: 'Virtual Try-On', desc: 'AI Fitting Room' },
 ]
 
 function FlipCard({ 
@@ -137,7 +144,7 @@ function FlipCard({
 export function ShowcaseSection() {
   return (
     <section id="showcase" className="py-24 px-6 bg-gradient-to-b from-white via-orange-50/30 to-white">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -161,7 +168,7 @@ export function ShowcaseSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
           variants={staggerContainer}
-          className="grid md:grid-cols-3 gap-6"
+          className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6"
         >
           {cases.map((item, index) => (
             <FlipCard key={index} {...item} isDemo={index === 0} />
