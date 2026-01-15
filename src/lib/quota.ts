@@ -22,6 +22,7 @@ export interface UserQuotaRecord {
   subscription_credits: number
   signup_credits: number
   admin_give_credits: number
+  admin_give_total: number           // 管理员赠送总额度
   purchased_credits: number
   stripe_customer_id?: string
   created_at?: string
@@ -34,7 +35,8 @@ export interface CreditsInfo {
   daily: number              // 今日奖励余额（如果不是今天的则为 0）
   subscription: number       // 订阅余额
   signup: number             // 注册赠送余额
-  adminGive: number          // 管理员赠送余额
+  adminGive: number          // 管理员赠送剩余额度
+  adminGiveTotal: number     // 管理员赠送总额度
   purchased: number          // 购买余额
   dailyExpired: boolean      // 每日奖励是否已过期
 }
@@ -65,6 +67,7 @@ export function calculateCreditsInfo(quota: UserQuotaRecord | null): CreditsInfo
       subscription: 0,
       signup: DEFAULT_SIGNUP_CREDITS,
       adminGive: 0,
+      adminGiveTotal: 0,
       purchased: 0,
       dailyExpired: true,
     }
@@ -79,6 +82,7 @@ export function calculateCreditsInfo(quota: UserQuotaRecord | null): CreditsInfo
   const subscriptionCredits = quota.subscription_credits || 0
   const signupCredits = quota.signup_credits ?? DEFAULT_SIGNUP_CREDITS
   const adminGiveCredits = quota.admin_give_credits || 0
+  const adminGiveTotal = quota.admin_give_total || 0
   const purchasedCredits = quota.purchased_credits || 0
 
   const available = dailyCredits + subscriptionCredits + signupCredits + adminGiveCredits + purchasedCredits
@@ -89,6 +93,7 @@ export function calculateCreditsInfo(quota: UserQuotaRecord | null): CreditsInfo
     subscription: subscriptionCredits,
     signup: signupCredits,
     adminGive: adminGiveCredits,
+    adminGiveTotal: adminGiveTotal,
     purchased: purchasedCredits,
     dailyExpired,
   }
@@ -209,6 +214,7 @@ export function createDefaultQuota(userId: string, userEmail?: string): Omit<Use
     subscription_credits: 0,
     signup_credits: DEFAULT_SIGNUP_CREDITS,
     admin_give_credits: 0,
+    admin_give_total: 0,
     purchased_credits: 0,
   }
 }

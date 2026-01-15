@@ -80,6 +80,7 @@ export async function GET(request: NextRequest) {
           subscription: credits.subscription,
           signup: credits.signup,
           adminGive: credits.adminGive,
+          adminGiveTotal: credits.adminGiveTotal,
           purchased: credits.purchased,
           dailyExpired: credits.dailyExpired,
         },
@@ -126,6 +127,7 @@ export async function PUT(request: NextRequest) {
       // 新字段
       signupCredits,
       adminGiveCredits,
+      adminGiveTotal,      // 管理员赠送总额度
       purchasedCredits,
       subscriptionCredits,
       // 向后兼容
@@ -147,9 +149,32 @@ export async function PUT(request: NextRequest) {
     if (signupCredits !== undefined) {
       updateData.signup_credits = signupCredits
     }
-    if (adminGiveCredits !== undefined) {
+    
+    // 处理 adminGiveTotal：调整总赠送额度时，同时更新剩余额度
+    if (adminGiveTotal !== undefined) {
+      // 获取当前数据
+      const { data: existing } = await adminClient
+        .from('user_quotas')
+        .select('admin_give_credits, admin_give_total')
+        .eq('user_id', userId)
+        .single()
+      
+      const currentRemaining = existing?.admin_give_credits ?? 0
+      const currentTotal = existing?.admin_give_total ?? 0
+      
+      // 计算已使用的赠送额度
+      const usedGive = Math.max(0, currentTotal - currentRemaining)
+      
+      // 新的剩余 = 新的总额 - 已使用
+      const newRemaining = Math.max(0, adminGiveTotal - usedGive)
+      
+      updateData.admin_give_total = adminGiveTotal
+      updateData.admin_give_credits = newRemaining
+    } else if (adminGiveCredits !== undefined) {
+      // 直接设置剩余额度（旧逻辑）
       updateData.admin_give_credits = adminGiveCredits
     }
+    
     if (purchasedCredits !== undefined) {
       updateData.purchased_credits = purchasedCredits
     }
@@ -159,11 +184,11 @@ export async function PUT(request: NextRequest) {
     
     // 向后兼容：如果只传了 totalQuota，转换为 admin_give_credits
     // 这样 admin 通过旧接口加的 credits 会记录到 admin_give_credits
-    if (totalQuota !== undefined && signupCredits === undefined && adminGiveCredits === undefined && purchasedCredits === undefined) {
+    if (totalQuota !== undefined && signupCredits === undefined && adminGiveCredits === undefined && adminGiveTotal === undefined && purchasedCredits === undefined) {
       // 获取当前数据
       const { data: existing } = await adminClient
         .from('user_quotas')
-        .select('signup_credits, admin_give_credits, purchased_credits, subscription_credits')
+        .select('signup_credits, admin_give_credits, admin_give_total, purchased_credits, subscription_credits')
         .eq('user_id', userId)
         .single()
       
@@ -177,6 +202,8 @@ export async function PUT(request: NextRequest) {
       const toAdd = Math.max(0, totalQuota - currentTotal)
       if (toAdd > 0) {
         updateData.admin_give_credits = currentAdminGive + toAdd
+        // 同时更新 admin_give_total
+        updateData.admin_give_total = (existing?.admin_give_total ?? 0) + toAdd
       }
     }
     

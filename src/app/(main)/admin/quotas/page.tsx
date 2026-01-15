@@ -11,6 +11,7 @@ interface CreditsDetail {
   subscription: number
   signup: number
   adminGive: number
+  adminGiveTotal: number
   purchased: number
   dailyExpired?: boolean
 }
@@ -66,8 +67,8 @@ export default function AdminQuotasPage() {
 
   const handleEditStart = (quota: UserQuota) => {
     setEditingId(quota.userId)
-    // 编辑的是 adminGive 而不是 totalQuota
-    setEditValue(quota.credits?.adminGive || 0)
+    // 编辑的是 adminGiveTotal（总赠送额度）
+    setEditValue(quota.credits?.adminGiveTotal || 0)
   }
 
   const handleEditCancel = () => {
@@ -78,11 +79,11 @@ export default function AdminQuotasPage() {
   const handleEditSave = async (userId: string) => {
     setIsSaving(true)
     try {
-      // 直接设置 adminGiveCredits
+      // 设置总赠送额度 adminGiveTotal
       const response = await fetch('/api/admin/quotas', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, adminGiveCredits: editValue }),
+        body: JSON.stringify({ userId, adminGiveTotal: editValue }),
       })
       
       if (!response.ok) {
@@ -105,15 +106,15 @@ export default function AdminQuotasPage() {
     }
   }
 
-  // 调整赠送额度 (adminGiveCredits)
-  const handleQuickAdjust = async (userId: string, currentAdminGive: number, delta: number) => {
-    const newAdminGive = Math.max(0, currentAdminGive + delta)
+  // 调整赠送总额度 (adminGiveTotal)
+  const handleQuickAdjust = async (userId: string, currentAdminGiveTotal: number, delta: number) => {
+    const newAdminGiveTotal = Math.max(0, currentAdminGiveTotal + delta)
     setIsSaving(true)
     try {
       const response = await fetch('/api/admin/quotas', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, adminGiveCredits: newAdminGive }),
+        body: JSON.stringify({ userId, adminGiveTotal: newAdminGiveTotal }),
       })
       
       if (!response.ok) {
@@ -252,7 +253,7 @@ export default function AdminQuotasPage() {
                           <p className="text-[10px] text-pink-600/70">签到</p>
                         </div>
                         <div className="text-center p-2 bg-purple-50 rounded-lg">
-                          <p className="text-lg font-bold text-purple-600">{credits.adminGive}</p>
+                          <p className="text-lg font-bold text-purple-600">{credits.adminGiveTotal || 0}</p>
                           <p className="text-[10px] text-purple-600/70">赠送</p>
                         </div>
                         <div className="text-center p-2 bg-amber-50 rounded-lg">
@@ -309,8 +310,8 @@ export default function AdminQuotasPage() {
                         ) : (
                           <>
                             <button
-                              onClick={() => handleQuickAdjust(quota.userId, credits?.adminGive || 0, -10)}
-                              disabled={isSaving || (credits?.adminGive || 0) < 10}
+                              onClick={() => handleQuickAdjust(quota.userId, credits?.adminGiveTotal || 0, -10)}
+                              disabled={isSaving || (credits?.adminGiveTotal || 0) < 10}
                               className="w-8 h-8 bg-zinc-100 text-zinc-600 rounded-lg flex items-center justify-center hover:bg-zinc-200 disabled:opacity-50"
                             >
                               <Minus className="w-4 h-4" />
@@ -319,10 +320,10 @@ export default function AdminQuotasPage() {
                               onClick={() => handleEditStart(quota)}
                               className="min-w-[50px] h-8 px-3 bg-purple-50 text-purple-600 rounded-lg font-medium text-sm hover:bg-purple-100"
                             >
-                              {credits?.adminGive || 0}
+                              {credits?.adminGiveTotal || 0}
                             </button>
                             <button
-                              onClick={() => handleQuickAdjust(quota.userId, credits?.adminGive || 0, 10)}
+                              onClick={() => handleQuickAdjust(quota.userId, credits?.adminGiveTotal || 0, 10)}
                               disabled={isSaving}
                               className="w-8 h-8 bg-zinc-100 text-zinc-600 rounded-lg flex items-center justify-center hover:bg-zinc-200 disabled:opacity-50"
                             >
