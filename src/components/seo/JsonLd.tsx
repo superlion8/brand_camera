@@ -122,13 +122,104 @@ export function SoftwareApplicationJsonLd({
   )
 }
 
-// Combined component for landing page
+// Combined component for landing page - all structured data in one
 export function LandingPageJsonLd() {
   return (
     <>
       <OrganizationJsonLd />
-      <WebApplicationJsonLd />
+      <SoftwareApplicationJsonLd />
+      <HowToJsonLd />
     </>
+  )
+}
+
+// HowTo structured data - shows step-by-step in search results
+export function HowToJsonLd() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name: 'How to Create AI Product Photos with BrandCam',
+    description: 'Learn how to transform your product photos into professional marketing images using AI in just 3 simple steps.',
+    totalTime: 'PT2M',
+    estimatedCost: {
+      '@type': 'MonetaryAmount',
+      currency: 'USD',
+      value: '0',
+    },
+    step: [
+      {
+        '@type': 'HowToStep',
+        position: 1,
+        name: 'Upload Your Product Photo',
+        text: 'Take a photo of your product or upload an existing image. Any angle works - our AI handles the rest.',
+        image: 'https://brandcam.agency/logo.png',
+      },
+      {
+        '@type': 'HowToStep',
+        position: 2,
+        name: 'Choose Your Style',
+        text: 'Select from AI model photos, lifestyle scenes, product studio backgrounds, or let our AI recommend the best option.',
+        image: 'https://brandcam.agency/logo.png',
+      },
+      {
+        '@type': 'HowToStep',
+        position: 3,
+        name: 'Download & Use',
+        text: 'Get your professional photos instantly. Use them on your website, social media, or marketplace listings.',
+        image: 'https://brandcam.agency/logo.png',
+      },
+    ],
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+  )
+}
+
+// Product structured data for specific feature pages
+export function ProductJsonLd({ 
+  name, 
+  description, 
+  url 
+}: { 
+  name: string
+  description: string
+  url: string 
+}) {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name,
+    description,
+    url,
+    brand: {
+      '@type': 'Brand',
+      name: 'BrandCam',
+    },
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD',
+      availability: 'https://schema.org/InStock',
+      priceValidUntil: '2026-12-31',
+    },
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: '4.9',
+      reviewCount: '500',
+      bestRating: '5',
+      worstRating: '1',
+    },
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
   )
 }
 
