@@ -91,6 +91,7 @@ function FlipCard({
             fill
             className="object-cover"
             unoptimized
+            loading="lazy"
           />
           {/* Gradient overlay */}
           <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
@@ -125,6 +126,7 @@ function FlipCard({
             fill
             className="object-cover"
             unoptimized
+            loading="lazy"
           />
           {/* Gradient overlay */}
           <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
