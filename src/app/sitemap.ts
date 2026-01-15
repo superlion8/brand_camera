@@ -30,6 +30,10 @@ const PUBLIC_PAGES: Array<{
   { path: '/camera', changeFrequency: 'weekly', priority: 0.8 },
   { path: '/edit', changeFrequency: 'weekly', priority: 0.8 },
   { path: '/try-on', changeFrequency: 'weekly', priority: 0.8 },
+  { path: '/group-shot', changeFrequency: 'weekly', priority: 0.8 },
+  { path: '/reference-shot', changeFrequency: 'weekly', priority: 0.8 },
+  { path: '/social', changeFrequency: 'weekly', priority: 0.8 },
+  { path: '/buyer-show', changeFrequency: 'weekly', priority: 0.8 },
   // 
   // 📌 新增公开页面请在此添加：
   // { path: '/about', changeFrequency: 'monthly', priority: 0.7 },
