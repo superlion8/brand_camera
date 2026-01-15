@@ -3,6 +3,8 @@ const BUILD_ID = `build-${Date.now()}`
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // SEO: 统一 URL 格式，不带尾部斜杠
+  trailingSlash: false,
   // Generate unique build ID to bust cache on each deploy
   generateBuildId: async () => {
     return BUILD_ID
