@@ -297,6 +297,7 @@ export const ko: Translations = {
     generationOptions: "생성 옵션",
     numberOfImages: "이미지 수",
     aspectRatio: "화면 비율",
+    originalRatio: "원본 비율",
     resolution: "해상도",
     standardRes: "표준",
     hdRes: "HD",

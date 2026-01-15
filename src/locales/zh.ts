@@ -296,6 +296,7 @@ export const zh = {
     generationOptions: "生成选项",
     numberOfImages: "生成数量",
     aspectRatio: "宽高比",
+    originalRatio: "跟随原图",
     resolution: "分辨率",
     standardRes: "标准",
     hdRes: "高清",

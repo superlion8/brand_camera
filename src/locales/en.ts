@@ -298,6 +298,7 @@ export const en: Translations = {
     generationOptions: "Generation Options",
     numberOfImages: "Number of Images",
     aspectRatio: "Aspect Ratio",
+    originalRatio: "Original",
     resolution: "Resolution",
     standardRes: "Standard",
     hdRes: "HD",

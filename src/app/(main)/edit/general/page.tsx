@@ -63,7 +63,7 @@ export default function GeneralEditPage() {
   
   // Generation options
   const [numImages, setNumImages] = useState(1)
-  const [aspectRatio, setAspectRatio] = useState<'1:1' | '2:3' | '3:2' | '3:4' | '4:3' | '4:5' | '5:4' | '9:16' | '16:9' | '21:9'>('1:1')
+  const [aspectRatio, setAspectRatio] = useState<'original' | '1:1' | '2:3' | '3:2' | '3:4' | '4:3' | '4:5' | '5:4' | '9:16' | '16:9' | '21:9'>('original')
   const [resolution, setResolution] = useState<'1K' | '2K' | '4K'>('1K')
   
   // Result images for PC layout
@@ -225,7 +225,7 @@ export default function GeneralEditPage() {
     inputImgs: string[],
     prompt: string,
     count: number = 1,
-    ratio: string = '1:1',
+    ratio: string = 'original',
     res: string = '1K'
   ) => {
     try {
@@ -256,7 +256,8 @@ export default function GeneralEditPage() {
               inputImages: compressedImages,
           customPrompt: prompt,
               taskId: count === 1 ? taskId : `${taskId}-${index}`,
-              aspectRatio: ratio,
+              // 'original' means follow input image aspect ratio (don't send aspectRatio to API)
+              ...(ratio !== 'original' && { aspectRatio: ratio }),
               resolution: res,
         }),
           }, 180000)
@@ -411,7 +412,8 @@ export default function GeneralEditPage() {
           inputImages: compressedImages,
           customPrompt,
           taskId,
-          aspectRatio,
+          // 'original' means follow input image aspect ratio (don't send aspectRatio to API)
+          ...(aspectRatio !== 'original' && { aspectRatio }),
           resolution,
         }),
       }, 180000)
@@ -678,6 +680,7 @@ export default function GeneralEditPage() {
                         onChange={(e) => setAspectRatio(e.target.value as typeof aspectRatio)}
                         className="h-8 px-2 rounded-lg text-xs font-medium bg-zinc-100 text-zinc-700 border-0 focus:ring-2 focus:ring-purple-500"
                       >
+                        <option value="original">{t.edit?.originalRatio || 'Original'}</option>
                         {(['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9'] as const).map(ratio => (
                           <option key={ratio} value={ratio}>{ratio}</option>
                         ))}
@@ -1218,6 +1221,7 @@ export default function GeneralEditPage() {
                   onChange={(e) => setAspectRatio(e.target.value as typeof aspectRatio)}
                   className="h-7 px-1.5 rounded-lg text-xs font-medium bg-zinc-100 text-zinc-700 border-0"
                 >
+                  <option value="original">{t.edit?.originalRatio || 'Original'}</option>
                   {(['1:1', '2:3', '3:2', '3:4', '4:3', '9:16', '16:9'] as const).map(ratio => (
                     <option key={ratio} value={ratio}>{ratio}</option>
                   ))}
