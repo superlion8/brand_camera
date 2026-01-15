@@ -574,7 +574,8 @@ function LifestylePageContent() {
   const { downloadImage } = useImageDownload({ filenamePrefix: 'lifestyle' })
   const handleDownload = (url: string) => downloadImage(url)
 
-  if (authLoading || !user) {
+  // 登录状态检查中显示加载（未登录时 useEffect 会重定向）
+  if (authLoading) {
     return (
       <div className="h-full w-full bg-black flex items-center justify-center">
         <Loader2 className="w-12 h-12 text-white animate-spin" />

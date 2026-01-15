@@ -42,8 +42,9 @@ export default function BrandStylePage() {
     }
   }, [user, authLoading, router])
 
-  // 显示加载状态（等待 auth 和 isMobile 都确定后再渲染，避免闪烁）
-  if (authLoading || !user || screenLoading) {
+  // 显示加载状态（等待 auth 和 isMobile 确定后再渲染，避免闪烁）
+  // 未登录时 useEffect 会重定向到登录页
+  if (authLoading || screenLoading) {
     return (
       <div className="h-full flex items-center justify-center bg-zinc-50">
         <div className="flex flex-col items-center gap-3">
