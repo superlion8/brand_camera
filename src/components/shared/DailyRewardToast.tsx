@@ -6,12 +6,36 @@ import { Gift, X, Loader2, Sparkles, Check } from 'lucide-react'
 import { useQuota } from '@/hooks/useQuota'
 import { useTranslation } from '@/stores/languageStore'
 
+const DISMISS_CACHE_KEY = 'brand_camera_daily_reward_dismissed'
+
+// 检查今天是否已关闭过弹窗
+function isDismissedToday(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    const stored = localStorage.getItem(DISMISS_CACHE_KEY)
+    if (stored) {
+      const today = new Date().toISOString().split('T')[0]
+      return stored === today
+    }
+  } catch {}
+  return false
+}
+
+// 记录今天已关闭弹窗
+function setDismissedToday() {
+  if (typeof window === 'undefined') return
+  try {
+    const today = new Date().toISOString().split('T')[0]
+    localStorage.setItem(DISMISS_CACHE_KEY, today)
+  } catch {}
+}
+
 export function DailyRewardToast() {
   const { dailyReward, dailyRewardStatus, isClaimingReward, claimDailyReward, clearDailyReward } = useQuota()
   const { t } = useTranslation()
   const [showClaimPrompt, setShowClaimPrompt] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
-  const [dismissed, setDismissed] = useState(false)
+  const [dismissed, setDismissed] = useState(() => isDismissedToday())
 
   // Show claim prompt when reward is available
   useEffect(() => {
@@ -45,6 +69,7 @@ export function DailyRewardToast() {
   const handleDismiss = () => {
     setShowClaimPrompt(false)
     setDismissed(true)
+    setDismissedToday() // 持久化到 localStorage
   }
 
   const handleCloseSuccess = () => {
