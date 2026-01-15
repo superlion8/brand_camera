@@ -253,7 +253,7 @@ export default function AdminQuotasPage() {
                           <p className="text-[10px] text-pink-600/70">签到</p>
                         </div>
                         <div className="text-center p-2 bg-purple-50 rounded-lg">
-                          <p className="text-lg font-bold text-purple-600">{credits.adminGiveTotal || 0}</p>
+                          <p className="text-lg font-bold text-purple-600">{credits.adminGive || 0}</p>
                           <p className="text-[10px] text-purple-600/70">赠送</p>
                         </div>
                         <div className="text-center p-2 bg-amber-50 rounded-lg">
