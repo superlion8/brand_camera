@@ -270,7 +270,7 @@ export const zh = {
     processing: "AI 正在处理...",
     processingDesc: "根据您的描述修改图片",
     editNew: "编辑新图片",
-    backToEdit: "返回继续编辑",
+    backToEdit: "返回修改编辑",
     currentPrompt: "当前指令",
     generalEdit: "通用修图",
     generalEditDesc: "AI智能修图 · 描述即可实现",
