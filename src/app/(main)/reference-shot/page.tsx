@@ -30,6 +30,8 @@ import { PhotoDetailDialog, createQuickActions } from "@/components/shared/Photo
 import { TASK_CREDIT_COSTS, TaskTypes } from "@/lib/taskTypes"
 import { useFavorite } from "@/hooks/useFavorite"
 import { navigateToEdit } from "@/lib/navigation"
+import { useLoginGuard } from "@/hooks/useLoginGuard"
+import { LoginModal } from "@/components/shared/LoginModal"
 
 const CREDIT_COST = TASK_CREDIT_COSTS[TaskTypes.REFERENCE_SHOT]
 
@@ -90,7 +92,21 @@ export default function ReferenceShotPage() {
   const refImageInputRef = useRef<HTMLInputElement>(null)
   const productImageInputRef = useRef<HTMLInputElement>(null)
   const modelImageInputRef = useRef<HTMLInputElement>(null)
-  
+
+  // Login guard
+  const { requireLogin, showLoginModal, setShowLoginModal } = useLoginGuard()
+
+  // 触发上传前检查登录
+  const triggerRefImageUpload = () => {
+    if (!requireLogin()) return
+    refImageInputRef.current?.click()
+  }
+
+  const triggerProductImageUpload = () => {
+    if (!requireLogin()) return
+    productImageInputRef.current?.click()
+  }
+
   // Load presets
   useEffect(() => {
     presetStore.loadPresets()
@@ -523,7 +539,7 @@ export default function ReferenceShotPage() {
                   <div className="space-y-2">
                     {/* Drag & Drop Area */}
                     <div
-                    onClick={() => refImageInputRef.current?.click()}
+                    onClick={triggerRefImageUpload}
                       onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-blue-400', 'bg-blue-50') }}
                       onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50') }}
                       onDrop={async (e) => {
@@ -617,7 +633,7 @@ export default function ReferenceShotPage() {
                 {/* Quick Actions - Always show for easy access */}
                 <div className="grid grid-cols-3 gap-1.5 mt-2">
                   <button
-                    onClick={() => productImageInputRef.current?.click()}
+                    onClick={triggerProductImageUpload}
                     className="h-8 rounded-lg border border-zinc-200 bg-white hover:border-blue-300 hover:bg-blue-50 flex items-center justify-center gap-1.5 transition-colors"
                   >
                     <Upload className="w-3.5 h-3.5 text-zinc-500" />
@@ -982,7 +998,7 @@ export default function ReferenceShotPage() {
         }}
         onUploadClick={() => {
           setShowRefAssetPicker(false)
-          refImageInputRef.current?.click()
+          triggerRefImageUpload()
         }}
         themeColor="blue"
         title={t.referenceShot?.selectReference || 'Select Reference'}
@@ -1014,7 +1030,7 @@ export default function ReferenceShotPage() {
         }}
         onUploadClick={() => {
           setShowProductAssetPicker(false)
-          productImageInputRef.current?.click()
+          triggerProductImageUpload()
         }}
         themeColor="blue"
         title={t.referenceShot?.selectProduct || 'Select Product'}
@@ -1043,7 +1059,7 @@ export default function ReferenceShotPage() {
               <button
                 onClick={() => {
                   setShowProductSourcePanel(false)
-                  productImageInputRef.current?.click()
+                  triggerProductImageUpload()
                 }}
                 className="flex flex-col items-center gap-2 p-4 rounded-xl border border-zinc-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
               >
@@ -1074,6 +1090,9 @@ export default function ReferenceShotPage() {
           </div>
         </>
       )}
+
+      {/* Login Modal */}
+      <LoginModal open={showLoginModal} onClose={() => setShowLoginModal(false)} />
       
     </div>
   )

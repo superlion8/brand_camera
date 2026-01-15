@@ -23,6 +23,8 @@ import { useFavorite } from "@/hooks/useFavorite"
 import { navigateToEdit } from "@/lib/navigation"
 import { useImageDownload } from "@/hooks/useImageDownload"
 import { useAuth } from "@/components/providers/AuthProvider"
+import { useLoginGuard } from "@/hooks/useLoginGuard"
+import { LoginModal } from "@/components/shared/LoginModal"
 import { useLanguageStore } from "@/stores/languageStore"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { useGenerationTaskStore } from "@/stores/generationTaskStore"
@@ -59,6 +61,15 @@ function GroupShootPageContent() {
   const { debugMode } = useSettingsStore()
   
   const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // Login guard
+  const { requireLogin, showLoginModal, setShowLoginModal } = useLoginGuard()
+  
+  // 触发上传前检查登录
+  const triggerFileUpload = () => {
+    if (!requireLogin()) return
+    fileInputRef.current?.click()
+  }
   
   // Device detection
   const { isDesktop, isMobile, isLoading: screenLoading } = useIsDesktop(1024)
@@ -573,7 +584,7 @@ function GroupShootPageContent() {
                     
                     {/* 上传图片卡片 - 紧凑版 */}
                     <button
-                      onClick={() => fileInputRef.current?.click()}
+                      onClick={triggerFileUpload}
                       className="w-full p-3 rounded-xl bg-gradient-to-r from-blue-400 to-blue-500 hover:from-blue-500 hover:to-blue-600 transition-all shadow-md shadow-blue-200 active:scale-[0.98]"
                     >
                       <div className="flex items-center gap-3">
@@ -873,6 +884,8 @@ function GroupShootPageContent() {
         imageUrl={fullscreenImage || ''}
       />
 
+      {/* Login Modal */}
+      <LoginModal open={showLoginModal} onClose={() => setShowLoginModal(false)} />
     </div>
   )
 }

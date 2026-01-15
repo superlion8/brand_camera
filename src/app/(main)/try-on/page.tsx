@@ -31,6 +31,8 @@ import { PhotoDetailDialog, createQuickActions } from "@/components/shared/Photo
 import { FullscreenImageViewer } from "@/components/shared/FullscreenImageViewer"
 import { MobilePageHeader } from "@/components/shared/MobilePageHeader"
 import { CameraOverlay } from "@/components/shared/CameraOverlay"
+import { useLoginGuard } from "@/hooks/useLoginGuard"
+import { LoginModal } from "@/components/shared/LoginModal"
 
 const CREDIT_COST = TASK_CREDIT_COSTS[TaskTypes.TRY_ON]
 
@@ -91,7 +93,21 @@ export default function TryOnPage() {
   // File input refs
   const personFileInputRef = useRef<HTMLInputElement>(null)
   const clothingFileInputRef = useRef<HTMLInputElement>(null)
-  
+
+  // Login guard
+  const { requireLogin, showLoginModal, setShowLoginModal } = useLoginGuard()
+
+  // 触发上传前检查登录
+  const triggerPersonFileUpload = () => {
+    if (!requireLogin()) return
+    personFileInputRef.current?.click()
+  }
+
+  const triggerClothingFileUpload = () => {
+    if (!requireLogin()) return
+    clothingFileInputRef.current?.click()
+  }
+
   // Quota management
   const { quota, checkQuota } = useQuota()
   const { reserveQuota, refundQuota, confirmQuota } = useQuotaReservation()
@@ -465,7 +481,7 @@ export default function TryOnPage() {
                       {!personImage ? (
                         <div 
                           className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50/50 flex flex-col items-center justify-center hover:border-pink-300 hover:bg-pink-50/30 transition-all group cursor-pointer"
-                          onClick={() => personFileInputRef.current?.click()}
+                          onClick={triggerPersonFileUpload}
                           onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-pink-400', 'bg-pink-50') }}
                           onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-pink-400', 'bg-pink-50') }}
                           onDrop={async (e) => {
@@ -517,7 +533,7 @@ export default function TryOnPage() {
                           <span className="text-sm font-medium text-zinc-600">{t.studio?.fromGallery || 'Photos'}</span>
                         </button>
                         <button
-                          onClick={() => personFileInputRef.current?.click()}
+                          onClick={triggerPersonFileUpload}
                           className="flex-1 h-10 rounded-lg bg-zinc-50 border border-zinc-200 hover:border-pink-400 hover:bg-pink-50 flex items-center justify-center gap-2 transition-all"
                         >
                           <FolderHeart className="w-4 h-4 text-zinc-500" />
@@ -564,7 +580,7 @@ export default function TryOnPage() {
                         
                         {clothingImages.length < MAX_CLOTHING_IMAGES && (
                           <div
-                            onClick={() => clothingFileInputRef.current?.click()}
+                            onClick={triggerClothingFileUpload}
                             onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-pink-400', 'bg-pink-50') }}
                             onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-pink-400', 'bg-pink-50') }}
                             onDrop={async (e) => {
@@ -675,7 +691,7 @@ export default function TryOnPage() {
                           <span className="text-sm text-zinc-700">{t.studio?.fromGallery || 'Photos'}</span>
                     </button>
                     <button
-                      onClick={() => personFileInputRef.current?.click()}
+                      onClick={triggerPersonFileUpload}
                           className="h-14 rounded-xl border-2 border-zinc-200 bg-white hover:border-pink-400 flex items-center justify-center gap-2 transition-colors"
                     >
                       <FolderHeart className="w-4 h-4 text-zinc-500" />
@@ -830,7 +846,7 @@ export default function TryOnPage() {
                     <button
                       onClick={() => {
                         setMode('main')
-                        setTimeout(() => personFileInputRef.current?.click(), 100)
+                        setTimeout(triggerPersonFileUpload, 100)
                       }}
                       className="px-6 py-3 bg-pink-500 text-white rounded-xl font-medium hover:bg-pink-600 transition-colors flex items-center gap-2 mx-auto"
                     >
@@ -858,7 +874,7 @@ export default function TryOnPage() {
                     <button
                       onClick={() => {
                         setMode('main')
-                        setTimeout(() => personFileInputRef.current?.click(), 100)
+                        setTimeout(triggerPersonFileUpload, 100)
                       }}
                       className="mt-4 px-4 py-2 bg-pink-500 text-white rounded-lg text-sm"
                     >
@@ -1126,6 +1142,9 @@ export default function TryOnPage() {
         title={t.common?.fromAssets || 'Select from Assets'}
         themeColor="purple"
       />
+
+      {/* Login Modal */}
+      <LoginModal open={showLoginModal} onClose={() => setShowLoginModal(false)} />
       
     </div>
   )
