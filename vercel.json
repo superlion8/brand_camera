@@ -1,4 +1,12 @@
 {
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.brandcam.agency" }],
+      "destination": "https://brandcam.agency/:path*",
+      "permanent": true
+    }
+  ],
   "functions": {
     "src/app/api/brand-style/generate-batch/route.ts": {
       "maxDuration": 600
