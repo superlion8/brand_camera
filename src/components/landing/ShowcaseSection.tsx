@@ -2,6 +2,8 @@
 
 import Image from 'next/image'
 import { motion } from 'framer-motion'
+import { useState, useEffect } from 'react'
+import { MousePointerClick } from 'lucide-react'
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 30 },
@@ -12,7 +14,7 @@ const staggerContainer = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.12, delayChildren: 0.15 }
+    transition: { staggerChildren: 0.1, delayChildren: 0.15 }
   }
 }
 
@@ -20,41 +22,126 @@ const staggerContainer = {
 const STORAGE_URL = 'https://cvdogeigbpussfamctsu.supabase.co/storage/v1/object/public/presets/homepage'
 
 const cases = [
-  { before: `${STORAGE_URL}/pro-studio-before.jpg?v=2`, after: `${STORAGE_URL}/pro-studio-after.png?v=2`, label: 'Pro Studio' },
-  { before: `${STORAGE_URL}/lifestyle-before.png`, after: `${STORAGE_URL}/lifestyle-after.jpg`, label: 'LifeStyle' },
-  { before: `${STORAGE_URL}/model-before.jpg`, after: `${STORAGE_URL}/model-after.png`, label: 'Buyer Show' },
+  { before: `${STORAGE_URL}/pro-studio-before.jpg?v=2`, after: `${STORAGE_URL}/pro-studio-after.png?v=2`, label: 'Pro Studio', desc: 'AI Model Photography' },
+  { before: `${STORAGE_URL}/lifestyle-before.png`, after: `${STORAGE_URL}/lifestyle-after.jpg`, label: 'Lifestyle', desc: 'Scene Generation' },
+  { before: `${STORAGE_URL}/model-before.jpg`, after: `${STORAGE_URL}/model-after.png`, label: 'Buyer Show', desc: 'Customer Photos' },
+  { before: `${STORAGE_URL}/product-studio-before.jpg`, after: `${STORAGE_URL}/product-studio-after.jpg`, label: 'Product Studio', desc: 'Clean Background' },
+  { before: `${STORAGE_URL}/tryon-before.jpg`, after: `${STORAGE_URL}/tryon-after.jpg`, label: 'Virtual Try-On', desc: 'AI Fitting Room' },
+  { before: `${STORAGE_URL}/group-shot-before.jpg`, after: `${STORAGE_URL}/group-shot-after.jpg`, label: 'Group Shot', desc: 'Multi-Model Scene' },
+  { before: `${STORAGE_URL}/reference-shot-before.jpg`, after: `${STORAGE_URL}/reference-shot-after.jpg`, label: 'Reference Shot', desc: 'Style Matching' },
+  { before: `${STORAGE_URL}/social-before.jpg`, after: `${STORAGE_URL}/social-after.jpg`, label: 'Social Media', desc: 'Content Creation' },
 ]
 
-function ComparisonCard({ before, after, label }: { before: string; after: string; label: string }) {
+function FlipCard({ 
+  before, 
+  after, 
+  label, 
+  desc,
+  isDemo 
+}: { 
+  before: string
+  after: string
+  label: string
+  desc: string
+  isDemo?: boolean
+}) {
+  const [isFlipped, setIsFlipped] = useState(false)
+  const [hasInteracted, setHasInteracted] = useState(false)
+
+  // Demo animation for first card
+  useEffect(() => {
+    if (isDemo && !hasInteracted) {
+      const timer = setTimeout(() => {
+        setIsFlipped(true)
+        setTimeout(() => setIsFlipped(false), 1500)
+      }, 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [isDemo, hasInteracted])
+
+  const handleClick = () => {
+    setIsFlipped(!isFlipped)
+    setHasInteracted(true)
+  }
+
   return (
     <motion.div 
       variants={fadeInUp}
-      className="group relative aspect-[4/5] rounded-2xl overflow-hidden bg-zinc-100 shadow-lg shadow-zinc-200/50"
+      className="relative aspect-[4/5] cursor-pointer group"
+      style={{ perspective: '1000px' }}
+      onClick={handleClick}
     >
-      {/* Before image */}
-      <Image
-        src={before}
-        alt={`${label} - Before`}
-        fill
-        className="object-cover transition-opacity duration-700 group-hover:opacity-0"
-        unoptimized
-      />
-      {/* After image */}
-      <Image
-        src={after}
-        alt={`${label} - After`}
-        fill
-        className="object-cover opacity-0 transition-opacity duration-700 group-hover:opacity-100"
-        unoptimized
-      />
-      {/* Gradient overlay */}
-      <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
-        <p className="text-xs font-medium text-white/70">Hover to reveal</p>
-        <h3 className="text-base font-semibold text-white">{label}</h3>
+      {/* Card container with 3D flip */}
+      <div 
+        className="relative w-full h-full transition-transform duration-700 ease-out"
+        style={{ 
+          transformStyle: 'preserve-3d',
+          transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
+        }}
+      >
+        {/* Front - Before */}
+        <div 
+          className="absolute inset-0 rounded-2xl overflow-hidden shadow-lg shadow-zinc-200/50"
+          style={{ backfaceVisibility: 'hidden' }}
+        >
+          <Image
+            src={before}
+            alt={`${label} - Before`}
+            fill
+            className="object-cover"
+            unoptimized
+          />
+          {/* Gradient overlay */}
+          <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
+            <p className="text-xs font-medium text-white/70">{desc}</p>
+            <h3 className="text-base font-semibold text-white">{label}</h3>
+          </div>
+          {/* Before badge */}
+          <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-zinc-700 shadow-sm">
+            Before
+          </div>
+          {/* Click hint - only show on first card before interaction */}
+          {isDemo && !hasInteracted && (
+            <motion.div 
+              className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 bg-orange-500 rounded-full text-xs font-medium text-white shadow-sm"
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            >
+              <MousePointerClick className="w-3 h-3" />
+              <span>Tap</span>
+            </motion.div>
+          )}
+        </div>
+
+        {/* Back - After */}
+        <div 
+          className="absolute inset-0 rounded-2xl overflow-hidden shadow-lg shadow-orange-200/50"
+          style={{ 
+            backfaceVisibility: 'hidden',
+            transform: 'rotateY(180deg)'
+          }}
+        >
+          <Image
+            src={after}
+            alt={`${label} - After`}
+            fill
+            className="object-cover"
+            unoptimized
+          />
+          {/* Gradient overlay */}
+          <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
+            <p className="text-xs font-medium text-white/70">{desc}</p>
+            <h3 className="text-base font-semibold text-white">{label}</h3>
+          </div>
+          {/* After badge */}
+          <div className="absolute top-3 left-3 px-2.5 py-1 bg-orange-500 rounded-full text-xs font-medium text-white shadow-sm">
+            After ✨
+          </div>
+        </div>
       </div>
-      {/* Corner indicators */}
-      <div className="absolute top-3 left-3 px-2 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-zinc-700 shadow-sm">Before</div>
-      <div className="absolute top-3 right-3 px-2 py-1 bg-orange-500 rounded-full text-xs font-medium text-white opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">After</div>
+
+      {/* Subtle hover effect hint */}
+      <div className="absolute inset-0 rounded-2xl ring-2 ring-orange-400/0 group-hover:ring-orange-400/50 transition-all duration-300 pointer-events-none" />
     </motion.div>
   )
 }
@@ -77,7 +164,7 @@ export function ShowcaseSection() {
             See the Difference
           </motion.h2>
           <motion.p variants={fadeInUp} className="mt-4 text-zinc-500 max-w-xl mx-auto">
-            Hover over each image to see the AI transformation.
+            Tap each card to flip and reveal the AI transformation.
           </motion.p>
         </motion.div>
         
@@ -86,10 +173,10 @@ export function ShowcaseSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
           variants={staggerContainer}
-          className="grid md:grid-cols-3 gap-6"
+          className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6"
         >
           {cases.map((item, index) => (
-            <ComparisonCard key={index} {...item} />
+            <FlipCard key={index} {...item} isDemo={index === 0} />
           ))}
         </motion.div>
       </div>
