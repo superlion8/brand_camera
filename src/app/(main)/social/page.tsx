@@ -1144,8 +1144,8 @@ function SocialPageContent() {
                   assetLabel={t.camera?.assetLibrary || '素材库'}
                 />
               )}
-                    </div>
-            )}
+                        </div>
+                      )}
             
             {/* Model and Scene Pickers are rendered at the page level */}
             
@@ -1155,7 +1155,7 @@ function SocialPageContent() {
               onClose={() => setShowProductPanel(false)}
               onSelect={(imageUrl) => {
                 setCapturedImage(imageUrl)
-                setMode("review")
+                                  setMode("review")
               }}
               onUploadClick={() => fileInputRef.current?.click()}
               themeColor="purple"
@@ -1314,9 +1314,9 @@ function SocialPageContent() {
                                   <div className="flex flex-col items-center">
                             <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer" onClick={() => setFullscreenImage(modelUrl)}>
                               <Image src={modelUrl} alt="Model" width={56} height={56} className="w-full h-full object-cover" />
-                    </div>
+                                      </div>
                             <p className="text-[10px] text-zinc-500 mt-1">{t.common?.model || 'Model'}</p>
-                </div>
+                                  </div>
                                 )
                               })()}
                               {(() => {
@@ -1326,7 +1326,7 @@ function SocialPageContent() {
                                   <div className="flex flex-col items-center">
                             <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-100 cursor-pointer" onClick={() => setFullscreenImage(bgUrl)}>
                               <Image src={bgUrl} alt="Background" width={56} height={56} className="w-full h-full object-cover" />
-            </div>
+                                      </div>
                             <p className="text-[10px] text-zinc-500 mt-1">{t.common?.background || 'Background'}</p>
                                   </div>
                                 )
@@ -1420,8 +1420,8 @@ function SocialPageContent() {
         themeColor="pink"
         allowUpload={false}
       />
-                                  </div>
-                                )
+    </div>
+  )
 }
 
 // Default export with Suspense wrapper

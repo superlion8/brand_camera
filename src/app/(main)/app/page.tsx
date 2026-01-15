@@ -45,6 +45,7 @@ function BeforeAfterCard({
   badge?: string
   href: string
 }) {
+  const { t } = useTranslation()
   return (
     <Link href={href}>
       <motion.div
@@ -55,7 +56,7 @@ function BeforeAfterCard({
         <div className="absolute inset-0">
           <Image src={beforeImage} alt="Before" fill className="object-cover" />
           <div className="absolute top-2 left-2 w-[52px] text-center py-0.5 bg-black/40 backdrop-blur-sm rounded text-[9px] font-bold text-white/80 z-10">
-            Original
+            {t.studio?.original || 'Original'}
           </div>
         </div>
 
@@ -75,7 +76,7 @@ function BeforeAfterCard({
             <Image src={afterImage} alt="After" fill className="object-cover" />
           </div>
           <div className="absolute top-2 left-2 w-[52px] text-center py-0.5 bg-purple-600/80 backdrop-blur-sm rounded text-[9px] font-bold text-white z-10">
-            Result
+            {t.studio?.results || 'Result'}
           </div>
         </motion.div>
 
@@ -114,6 +115,7 @@ function FadeBeforeAfterCard({
   href: string
   beforePosition?: "center" | "top" | "bottom"
 }) {
+  const { t } = useTranslation()
   return (
     <Link href={href}>
       <motion.div
@@ -152,7 +154,7 @@ function FadeBeforeAfterCard({
             repeatDelay: 2,
           }}
         >
-          Original
+          {t.studio?.original || 'Original'}
         </motion.div>
         <motion.div
           className="absolute top-2 left-2 w-[52px] text-center py-0.5 bg-purple-600/80 backdrop-blur-sm rounded text-[9px] font-bold text-white z-10"
@@ -165,7 +167,7 @@ function FadeBeforeAfterCard({
             repeatDelay: 2,
           }}
         >
-          Result
+          {t.studio?.results || 'Result'}
         </motion.div>
 
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent pointer-events-none" />
