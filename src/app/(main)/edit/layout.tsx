@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import { FeaturePageBreadcrumb } from '@/components/seo/JsonLd'
 
 export const metadata: Metadata = {
   title: 'AI Photo Editor - Smart Image Enhancement | Edit Photos with AI',
@@ -20,5 +21,10 @@ export default function EditLayout({
 }: {
   children: React.ReactNode
 }) {
-  return children
+  return (
+    <>
+      <FeaturePageBreadcrumb featureName="AI Photo Editor" featureUrl="/edit" />
+      {children}
+    </>
+  )
 }

@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import { FeaturePageBreadcrumb } from '@/components/seo/JsonLd'
 
 export const metadata: Metadata = {
   title: 'Virtual Try-On - AI Fashion Preview | See Clothes on Models',
@@ -20,5 +21,10 @@ export default function TryOnLayout({
 }: {
   children: React.ReactNode
 }) {
-  return children
+  return (
+    <>
+      <FeaturePageBreadcrumb featureName="Virtual Try-On" featureUrl="/try-on" />
+      {children}
+    </>
+  )
 }

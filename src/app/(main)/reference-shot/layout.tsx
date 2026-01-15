@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import { FeaturePageBreadcrumb } from '@/components/seo/JsonLd'
 
 export const metadata: Metadata = {
   title: 'Reference Shot - AI Style Matching | Recreate Photo Styles',
@@ -20,5 +21,10 @@ export default function ReferenceShotLayout({
 }: {
   children: React.ReactNode
 }) {
-  return children
+  return (
+    <>
+      <FeaturePageBreadcrumb featureName="Reference Shot" featureUrl="/reference-shot" />
+      {children}
+    </>
+  )
 }

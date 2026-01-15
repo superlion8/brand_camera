@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import { FeaturePageBreadcrumb } from '@/components/seo/JsonLd'
 
 export const metadata: Metadata = {
   title: 'AI Camera - Smart Product Capture | Shoot and Transform',
@@ -20,5 +21,10 @@ export default function CameraLayout({
 }: {
   children: React.ReactNode
 }) {
-  return children
+  return (
+    <>
+      <FeaturePageBreadcrumb featureName="AI Camera" featureUrl="/camera" />
+      {children}
+    </>
+  )
 }

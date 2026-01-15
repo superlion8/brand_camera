@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import { FeaturePageBreadcrumb } from '@/components/seo/JsonLd'
 
 export const metadata: Metadata = {
   title: 'Lifestyle Shot - AI Scene Generator | Product in Real Environments',
@@ -20,5 +21,10 @@ export default function LifestyleLayout({
 }: {
   children: React.ReactNode
 }) {
-  return children
+  return (
+    <>
+      <FeaturePageBreadcrumb featureName="Lifestyle Shot" featureUrl="/lifestyle" />
+      {children}
+    </>
+  )
 }

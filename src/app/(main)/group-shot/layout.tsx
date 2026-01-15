@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import { FeaturePageBreadcrumb } from '@/components/seo/JsonLd'
 
 export const metadata: Metadata = {
   title: 'Group Shot - AI Multi-Model Photography | Create Group Photos',
@@ -20,5 +21,10 @@ export default function GroupShotLayout({
 }: {
   children: React.ReactNode
 }) {
-  return children
+  return (
+    <>
+      <FeaturePageBreadcrumb featureName="Group Shot" featureUrl="/group-shot" />
+      {children}
+    </>
+  )
 }

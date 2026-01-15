@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import { FeaturePageBreadcrumb } from '@/components/seo/JsonLd'
 
 export const metadata: Metadata = {
   title: 'Social Media Photos - AI Content Generator | Instagram & TikTok Ready',
@@ -20,5 +21,10 @@ export default function SocialLayout({
 }: {
   children: React.ReactNode
 }) {
-  return children
+  return (
+    <>
+      <FeaturePageBreadcrumb featureName="Social Media" featureUrl="/social" />
+      {children}
+    </>
+  )
 }

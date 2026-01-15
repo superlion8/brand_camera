@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import { FeaturePageBreadcrumb } from '@/components/seo/JsonLd'
 
 export const metadata: Metadata = {
   title: 'Product Studio - AI Product Photography | E-commerce Ready Images',
@@ -20,5 +21,10 @@ export default function ProductShotLayout({
 }: {
   children: React.ReactNode
 }) {
-  return children
+  return (
+    <>
+      <FeaturePageBreadcrumb featureName="Product Studio" featureUrl="/product-shot" />
+      {children}
+    </>
+  )
 }

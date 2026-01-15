@@ -230,6 +230,50 @@ export function ProductJsonLd({
   )
 }
 
+// Breadcrumb structured data - shows page path in search results
+export function BreadcrumbJsonLd({ 
+  items 
+}: { 
+  items: Array<{ name: string; url: string }> 
+}) {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: items.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: item.name,
+      item: item.url,
+    })),
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+  )
+}
+
+// Pre-configured breadcrumbs for feature pages
+export function FeaturePageBreadcrumb({ 
+  featureName, 
+  featureUrl 
+}: { 
+  featureName: string
+  featureUrl: string 
+}) {
+  return (
+    <BreadcrumbJsonLd
+      items={[
+        { name: 'Home', url: 'https://brandcam.agency' },
+        { name: 'Features', url: 'https://brandcam.agency/app' },
+        { name: featureName, url: `https://brandcam.agency${featureUrl}` },
+      ]}
+    />
+  )
+}
+
 // FAQ Page structured data - enables rich snippets in Google
 export function FAQPageJsonLd() {
   const faqs = [

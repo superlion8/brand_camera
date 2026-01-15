@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import { FeaturePageBreadcrumb } from '@/components/seo/JsonLd'
 
 export const metadata: Metadata = {
   title: 'Buyer Show - AI Customer Photos | Generate Authentic Reviews',
@@ -20,5 +21,10 @@ export default function BuyerShowLayout({
 }: {
   children: React.ReactNode
 }) {
-  return children
+  return (
+    <>
+      <FeaturePageBreadcrumb featureName="Buyer Show" featureUrl="/buyer-show" />
+      {children}
+    </>
+  )
 }
