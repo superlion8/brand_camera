@@ -66,6 +66,12 @@ export default function RootLayout({
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        {/* DNS Prefetch for external resources */}
+        <link rel="dns-prefetch" href="https://cvdogeigbpussfamctsu.supabase.co" />
+        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+        {/* Preconnect for critical resources */}
+        <link rel="preconnect" href="https://cvdogeigbpussfamctsu.supabase.co" crossOrigin="anonymous" />
       </head>
       <body className="min-h-screen bg-primary">
         <AuthProvider>

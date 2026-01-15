@@ -14,6 +14,7 @@ export function LandingHeader() {
             width={32}
             height={32}
             className="rounded-xl md:w-9 md:h-9"
+            priority
           />
           <span className="text-base md:text-xl font-bold tracking-tight text-zinc-900 whitespace-nowrap">BrandCam</span>
         </Link>
