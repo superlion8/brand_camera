@@ -67,7 +67,7 @@ export function HeroSection() {
           className="mt-10 flex items-center justify-center"
         >
           <Link
-            href="/login"
+            href="/app"
             className="group px-8 py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-full flex items-center gap-2 shadow-xl shadow-orange-500/25 hover:shadow-2xl hover:shadow-orange-500/30 hover:-translate-y-0.5 transition-all"
           >
             Start Creating Free

@@ -29,7 +29,7 @@ export function CTASection() {
               Join thousands of brands creating stunning product photos with AI.
             </p>
             <Link
-              href="/login"
+              href="/app"
               className="inline-flex items-center gap-2 mt-8 px-8 py-4 bg-white text-zinc-900 font-semibold rounded-full hover:bg-zinc-100 transition-colors shadow-xl"
             >
               Get Started Free

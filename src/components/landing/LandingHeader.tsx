@@ -32,7 +32,7 @@ export function LandingHeader() {
             Sign In
           </Link>
           <Link 
-            href="/login"
+            href="/app"
             className="px-5 py-2.5 bg-zinc-900 text-white text-sm font-medium rounded-full hover:bg-zinc-800 transition-colors shadow-lg shadow-zinc-900/10"
           >
             Get Started
