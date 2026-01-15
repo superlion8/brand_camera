@@ -1120,8 +1120,8 @@ function CameraPageContent() {
   const handleDownload = (url: string, generationId?: string, imageIndex?: number) =>
     downloadImage(url, { generationId, imageIndex })
   
-  // 登录状态检查中或未登录时显示加载
-  if (authLoading || !user) {
+  // 登录状态检查中显示加载（未登录时 useEffect 会重定向）
+  if (authLoading) {
     return (
       <div className="h-full w-full bg-black flex items-center justify-center">
         <div className="text-center">
