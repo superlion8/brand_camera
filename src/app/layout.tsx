@@ -5,7 +5,7 @@ import { AuthProvider } from '@/components/providers/AuthProvider'
 import { Analytics } from '@vercel/analytics/next'
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://brandcamera.ai'),
+  metadataBase: new URL('https://brandcam.agency'),
   title: {
     default: 'Brand Camera - AI-Powered Product Photography',
     template: '%s | Brand Camera',
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     type: 'website',
     siteName: 'Brand Camera',
     locale: 'en_US',
-    url: 'https://brandcamera.ai',
+    url: 'https://brandcam.agency',
     // OG image is dynamically generated via opengraph-image.tsx
   },
   twitter: {

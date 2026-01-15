@@ -1,5 +1,5 @@
 # Brand Camera - robots.txt
-# https://brandcamera.ai
+# https://brandcam.agency
 
 User-agent: *
 Allow: /
@@ -49,4 +49,4 @@ Disallow: /api/
 Disallow: /_next/
 
 # Sitemap location
-Sitemap: https://brandcamera.ai/sitemap.xml
+Sitemap: https://brandcam.agency/sitemap.xml

@@ -9,8 +9,8 @@ interface OrganizationJsonLdProps {
 
 export function OrganizationJsonLd({
   name = 'Brand Camera',
-  url = 'https://brandcamera.ai',
-  logo = 'https://brandcamera.ai/logo.png',
+  url = 'https://brandcam.agency',
+  logo = 'https://brandcam.agency/logo.png',
   description = 'AI-powered product photography platform for e-commerce brands',
 }: OrganizationJsonLdProps) {
   const jsonLd = {
@@ -43,7 +43,7 @@ interface WebApplicationJsonLdProps {
 
 export function WebApplicationJsonLd({
   name = 'Brand Camera',
-  url = 'https://brandcamera.ai',
+  url = 'https://brandcam.agency',
   description = 'Transform your product photos with AI. Create stunning model photos, lifestyle shots, and professional product images in seconds.',
   applicationCategory = 'PhotographyApplication',
   operatingSystem = 'Web',
@@ -88,7 +88,7 @@ interface SoftwareApplicationJsonLdProps {
 export function SoftwareApplicationJsonLd({
   name = 'Brand Camera',
   description = 'AI-powered product photography platform',
-  url = 'https://brandcamera.ai',
+  url = 'https://brandcam.agency',
 }: SoftwareApplicationJsonLdProps) {
   const jsonLd = {
     '@context': 'https://schema.org',

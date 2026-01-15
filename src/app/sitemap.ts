@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 
 // Base URL for the site
-const BASE_URL = 'https://brandcamera.ai'
+const BASE_URL = 'https://brandcam.agency'
 
 /**
  * 公开页面配置 - SEO Sitemap

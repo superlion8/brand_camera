@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     type: 'website',
     siteName: 'Brand Camera',
     locale: 'en_US',
-    url: 'https://brandcamera.ai',
+    url: 'https://brandcam.agency',
   },
   twitter: {
     card: 'summary_large_image',
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     description: 'Transform your product photos with AI. Create stunning images in seconds.',
   },
   alternates: {
-    canonical: 'https://brandcamera.ai',
+    canonical: 'https://brandcam.agency',
   },
   robots: {
     index: true,
