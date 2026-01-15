@@ -1,6 +1,6 @@
 {
-  "name": "品牌相机",
-  "short_name": "Brand Camera",
+  "name": "BrandCam",
+  "short_name": "BrandCam",
   "description": "为品牌主理人打造的AI产品摄影工具",
   "start_url": "/",
   "display": "standalone",
