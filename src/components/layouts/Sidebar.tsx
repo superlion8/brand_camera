@@ -124,7 +124,7 @@ export function Sidebar({ className }: { className?: string }) {
       {/* Logo */}
       <div className="h-16 flex items-center gap-3 px-5 border-b border-zinc-100">
         <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden">
-          <Image src="/logo.png" alt="Brand Camera" width={48} height={48} className="object-contain" />
+          <Image src="/logo.png" alt="BrandCam" width={48} height={48} className="object-contain" />
         </div>
         <div>
           <span className="text-base font-bold text-zinc-900 tracking-tight">
@@ -211,7 +211,7 @@ export function Sidebar({ className }: { className?: string }) {
       {/* Footer */}
       <div className="p-4 border-t border-zinc-100">
         <div className="text-xs text-zinc-400 text-center">
-          © 2024 Brand Camera
+          © 2025 BrandCam
         </div>
       </div>
     </aside>

@@ -9,12 +9,12 @@ export default function AboutPage() {
 
   const content = {
     en: {
-      title: 'About Brand Camera',
+      title: 'About BrandCam',
       subtitle: 'Transforming product photography with AI',
       mission: 'Our Mission',
-      missionText: 'We believe every brand deserves stunning product photography, regardless of budget or resources. Brand Camera uses cutting-edge AI to democratize professional photography, making it accessible to businesses of all sizes.',
+      missionText: 'We believe every brand deserves stunning product photography, regardless of budget or resources. BrandCam uses cutting-edge AI to democratize professional photography, making it accessible to businesses of all sizes.',
       story: 'Our Story',
-      storyText: 'Founded in 2024, Brand Camera started with a simple observation: small e-commerce brands struggle to compete with larger players when it comes to product imagery. Professional photoshoots are expensive, time-consuming, and often out of reach. We set out to change that.',
+      storyText: 'Founded in 2024, BrandCam started with a simple observation: small e-commerce brands struggle to compete with larger players when it comes to product imagery. Professional photoshoots are expensive, time-consuming, and often out of reach. We set out to change that.',
       values: 'Our Values',
       valuesList: [
         { icon: Zap, title: 'Innovation', text: 'We push the boundaries of what AI can do for visual content creation.' },
@@ -25,12 +25,12 @@ export default function AboutPage() {
       cta: 'Start Creating',
     },
     zh: {
-      title: '关于 Brand Camera',
+      title: '关于 BrandCam',
       subtitle: '用 AI 革新产品摄影',
       mission: '我们的使命',
-      missionText: '我们相信每个品牌都值得拥有出色的产品摄影，无论预算或资源如何。Brand Camera 使用尖端 AI 技术让专业摄影平民化，让各种规模的企业都能使用。',
+      missionText: '我们相信每个品牌都值得拥有出色的产品摄影，无论预算或资源如何。BrandCam 使用尖端 AI 技术让专业摄影平民化，让各种规模的企业都能使用。',
       story: '我们的故事',
-      storyText: 'Brand Camera 成立于 2024 年，起源于一个简单的观察：小型电商品牌在产品图片方面很难与大型企业竞争。专业拍摄昂贵、耗时，往往难以企及。我们决心改变这一现状。',
+      storyText: 'BrandCam 成立于 2024 年，起源于一个简单的观察：小型电商品牌在产品图片方面很难与大型企业竞争。专业拍摄昂贵、耗时，往往难以企及。我们决心改变这一现状。',
       values: '我们的价值观',
       valuesList: [
         { icon: Zap, title: '创新', text: '我们不断突破 AI 在视觉内容创作方面的极限。' },
@@ -41,12 +41,12 @@ export default function AboutPage() {
       cta: '开始创作',
     },
     ko: {
-      title: 'Brand Camera 소개',
+      title: 'BrandCam 소개',
       subtitle: 'AI로 제품 사진을 혁신합니다',
       mission: '우리의 미션',
-      missionText: '우리는 예산이나 자원에 관계없이 모든 브랜드가 멋진 제품 사진을 가질 자격이 있다고 믿습니다. Brand Camera는 최첨단 AI를 사용하여 전문 사진을 대중화하고 모든 규모의 비즈니스가 이용할 수 있도록 합니다.',
+      missionText: '우리는 예산이나 자원에 관계없이 모든 브랜드가 멋진 제품 사진을 가질 자격이 있다고 믿습니다. BrandCam은 최첨단 AI를 사용하여 전문 사진을 대중화하고 모든 규모의 비즈니스가 이용할 수 있도록 합니다.',
       story: '우리의 이야기',
-      storyText: '2024년에 설립된 Brand Camera는 간단한 관찰에서 시작되었습니다: 소규모 이커머스 브랜드는 제품 이미지에서 대기업과 경쟁하기 어렵습니다. 전문 촬영은 비용이 많이 들고 시간이 오래 걸리며 종종 접근하기 어렵습니다. 우리는 이를 바꾸기로 했습니다.',
+      storyText: '2024년에 설립된 BrandCam은 간단한 관찰에서 시작되었습니다: 소규모 이커머스 브랜드는 제품 이미지에서 대기업과 경쟁하기 어렵습니다. 전문 촬영은 비용이 많이 들고 시간이 오래 걸리며 종종 접근하기 어렵습니다. 우리는 이를 바꾸기로 했습니다.',
       values: '우리의 가치',
       valuesList: [
         { icon: Zap, title: '혁신', text: 'AI가 비주얼 콘텐츠 제작에서 할 수 있는 일의 한계를 넓힙니다.' },

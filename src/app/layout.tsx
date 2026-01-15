@@ -9,34 +9,34 @@ import { Analytics } from '@vercel/analytics/next'
 export const metadata: Metadata = {
   metadataBase: new URL('https://brandcam.agency'),
   title: {
-    default: 'Brand Camera - AI-Powered Product Photography',
-    template: '%s | Brand Camera',
+    default: 'BrandCam - AI-Powered Product Photography',
+    template: '%s | BrandCam',
   },
   description: 'Transform your product photos with AI. Create stunning model photos, lifestyle shots, and professional product images in seconds. No photographers, no studios, no waiting.',
   keywords: ['AI photography', 'product photography', 'e-commerce', 'model photos', 'brand style', 'AI image generation'],
   manifest: '/manifest.json',
-  authors: [{ name: 'Brand Camera' }],
-  creator: 'Brand Camera',
-  publisher: 'Brand Camera',
+  authors: [{ name: 'BrandCam' }],
+  creator: 'BrandCam',
+  publisher: 'BrandCam',
   openGraph: {
-    title: 'Brand Camera - AI-Powered Product Photography',
+    title: 'BrandCam - AI-Powered Product Photography',
     description: 'Transform your product photos with AI. Create stunning model photos, lifestyle shots, and professional product images in seconds.',
     type: 'website',
-    siteName: 'Brand Camera',
+    siteName: 'BrandCam',
     locale: 'en_US',
     url: 'https://brandcam.agency',
     // OG image is dynamically generated via opengraph-image.tsx
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Brand Camera - AI-Powered Product Photography',
+    title: 'BrandCam - AI-Powered Product Photography',
     description: 'Transform your product photos with AI. Create stunning images in seconds.',
     // Twitter image uses the same dynamically generated OG image
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Brand Camera',
+    title: 'BrandCam',
   },
   verification: {
     // Add verification tokens when available

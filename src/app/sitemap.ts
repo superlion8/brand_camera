@@ -37,6 +37,8 @@ const PUBLIC_PAGES: Array<{
   // 信息页面
   { path: '/about', changeFrequency: 'monthly', priority: 0.7 },
   { path: '/faq', changeFrequency: 'monthly', priority: 0.75 },
+  { path: '/privacy', changeFrequency: 'yearly', priority: 0.5 },
+  { path: '/terms', changeFrequency: 'yearly', priority: 0.5 },
   // 
   // 📌 新增公开页面请在此添加：
   // { path: '/blog', changeFrequency: 'daily', priority: 0.8 },

@@ -234,12 +234,12 @@ function LoginContent() {
           <Link href="/" className="flex items-center gap-2.5">
             <Image
               src="/logo.png"
-              alt="Brand Camera"
+              alt="BrandCam"
               width={36}
               height={36}
               className="rounded-xl"
             />
-            <span className="text-xl font-bold tracking-tight text-zinc-900">Brand Camera</span>
+            <span className="text-xl font-bold tracking-tight text-zinc-900">BrandCam</span>
           </Link>
         </nav>
       </header>
@@ -576,7 +576,7 @@ function LoginContent() {
 
       {/* Footer */}
       <footer className="relative z-10 py-6 text-center">
-        <p className="text-sm text-zinc-400">© 2026 Brand Camera. All rights reserved.</p>
+        <p className="text-sm text-zinc-400">© 2025 BrandCam. All rights reserved.</p>
       </footer>
     </div>
   )

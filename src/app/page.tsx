@@ -4,7 +4,7 @@ import { LandingPageJsonLd } from '@/components/seo/JsonLd'
 
 // Enhanced SEO metadata for landing page
 export const metadata: Metadata = {
-  title: 'Brand Camera - AI-Powered Product Photography | Transform Your E-commerce Images',
+  title: 'BrandCam - AI-Powered Product Photography | Transform Your E-commerce Images',
   description: 'Transform your product photos with AI. Create stunning model photos, lifestyle shots, and professional product images in seconds. No photographers, no studios, no waiting. Start free today.',
   keywords: [
     'AI photography',
@@ -19,18 +19,19 @@ export const metadata: Metadata = {
     'fashion photography',
     'AI fashion model',
     'e-commerce images',
+    'BrandCam',
   ],
   openGraph: {
-    title: 'Brand Camera - AI-Powered Product Photography',
+    title: 'BrandCam - AI-Powered Product Photography',
     description: 'Transform your product photos with AI. Create stunning model photos, lifestyle shots, and professional product images in seconds.',
     type: 'website',
-    siteName: 'Brand Camera',
+    siteName: 'BrandCam',
     locale: 'en_US',
     url: 'https://brandcam.agency',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Brand Camera - AI-Powered Product Photography',
+    title: 'BrandCam - AI-Powered Product Photography',
     description: 'Transform your product photos with AI. Create stunning images in seconds.',
   },
   alternates: {

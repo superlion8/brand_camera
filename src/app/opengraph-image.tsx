@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og'
 
 // Image metadata
-export const alt = 'Brand Camera - AI Product Photography'
+export const alt = 'BrandCam - AI Product Photography'
 export const size = {
   width: 1200,
   height: 630,
@@ -86,7 +86,7 @@ export default async function OGImage() {
               lineHeight: 1.1,
             }}
           >
-            Brand Camera
+            BrandCam
           </h1>
 
           {/* Subtitle */}

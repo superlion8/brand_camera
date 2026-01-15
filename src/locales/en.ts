@@ -3,7 +3,7 @@ import { Translations } from './zh'
 export const en: Translations = {
   // Common
   common: {
-    appName: "Brand Camera",
+    appName: "BrandCam",
     appTagline: "AI Photo Studio",
     slogan: "AI Studio for Brands",
     search: "Search...",
@@ -96,7 +96,7 @@ export const en: Translations = {
   // Home Page
   home: {
     description: "Generate professional product and model photos with one click",
-    welcome: "Welcome to Brand Camera",
+    welcome: "Welcome to BrandCam",
     welcomeDesc: "Choose a feature below to start creating",
     quickLinks: "Quick Links",
     shootModel: "Model Photo",
@@ -540,7 +540,7 @@ export const en: Translations = {
   
   // Login Page
   login: {
-    title: "Brand Camera",
+    title: "BrandCam",
     subtitle: "AI Studio for Brands",
     loginToContinue: "Login to Continue",
     selectMethod: "Select login method",

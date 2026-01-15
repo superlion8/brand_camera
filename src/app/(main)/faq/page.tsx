@@ -21,14 +21,14 @@ interface FAQItem {
 const faqs: FAQItem[] = [
   {
     question: {
-      en: 'What is Brand Camera?',
-      zh: '什么是 Brand Camera？',
-      ko: 'Brand Camera란 무엇인가요?',
+      en: 'What is BrandCam?',
+      zh: '什么是 BrandCam？',
+      ko: 'BrandCam이란 무엇인가요?',
     },
     answer: {
-      en: 'Brand Camera is an AI-powered product photography platform that helps e-commerce brands create professional model photos, lifestyle shots, and product images in seconds. No photographers, studios, or expensive equipment needed.',
-      zh: 'Brand Camera 是一个 AI 驱动的产品摄影平台，帮助电商品牌在几秒钟内创建专业的模特照片、场景图和产品图片。无需摄影师、工作室或昂贵的设备。',
-      ko: 'Brand Camera는 AI 기반 제품 사진 플랫폼으로, 이커머스 브랜드가 몇 초 만에 전문적인 모델 사진, 라이프스타일 샷, 제품 이미지를 만들 수 있도록 도와줍니다. 사진작가, 스튜디오, 고가의 장비가 필요 없습니다.',
+      en: 'BrandCam is an AI-powered product photography platform that helps e-commerce brands create professional model photos, lifestyle shots, and product images in seconds. No photographers, studios, or expensive equipment needed.',
+      zh: 'BrandCam 是一个 AI 驱动的产品摄影平台，帮助电商品牌在几秒钟内创建专业的模特照片、场景图和产品图片。无需摄影师、工作室或昂贵的设备。',
+      ko: 'BrandCam은 AI 기반 제품 사진 플랫폼으로, 이커머스 브랜드가 몇 초 만에 전문적인 모델 사진, 라이프스타일 샷, 제품 이미지를 만들 수 있도록 도와줍니다. 사진작가, 스튜디오, 고가의 장비가 필요 없습니다.',
     },
   },
   {
@@ -50,9 +50,9 @@ const faqs: FAQItem[] = [
       ko: '어떤 종류의 제품이 가장 잘 작동하나요?',
     },
     answer: {
-      en: 'Brand Camera works great with fashion items (clothing, accessories, jewelry), beauty products, electronics, home goods, and more. Any product that benefits from lifestyle or model photography can be enhanced with our AI.',
-      zh: 'Brand Camera 非常适合时尚单品（服装、配饰、珠宝）、美妆产品、电子产品、家居用品等。任何需要场景图或模特图的产品都可以通过我们的 AI 得到提升。',
-      ko: 'Brand Camera는 패션 아이템(의류, 액세서리, 주얼리), 뷰티 제품, 전자제품, 홈 용품 등에 매우 적합합니다. 라이프스타일이나 모델 사진이 필요한 모든 제품을 AI로 향상시킬 수 있습니다.',
+      en: 'BrandCam works great with fashion items (clothing, accessories, jewelry), beauty products, electronics, home goods, and more. Any product that benefits from lifestyle or model photography can be enhanced with our AI.',
+      zh: 'BrandCam 非常适合时尚单品（服装、配饰、珠宝）、美妆产品、电子产品、家居用品等。任何需要场景图或模特图的产品都可以通过我们的 AI 得到提升。',
+      ko: 'BrandCam은 패션 아이템(의류, 액세서리, 주얼리), 뷰티 제품, 전자제품, 홈 용품 등에 매우 적합합니다. 라이프스타일이나 모델 사진이 필요한 모든 제품을 AI로 향상시킬 수 있습니다.',
     },
   },
   {
@@ -74,9 +74,9 @@ const faqs: FAQItem[] = [
       ko: '이미지를 상업적으로 사용할 수 있나요?',
     },
     answer: {
-      en: 'Yes! All images generated with Brand Camera are yours to use commercially. Use them on your website, social media, marketplaces like Amazon or Shopify, advertising, and more.',
-      zh: '当然可以！使用 Brand Camera 生成的所有图片都可以用于商业用途。您可以在网站、社交媒体、亚马逊或 Shopify 等平台、广告等任何地方使用。',
-      ko: '네! Brand Camera로 생성된 모든 이미지는 상업적으로 사용할 수 있습니다. 웹사이트, 소셜 미디어, Amazon이나 Shopify 같은 마켓플레이스, 광고 등에서 자유롭게 사용하세요.',
+      en: 'Yes! All images generated with BrandCam are yours to use commercially. Use them on your website, social media, marketplaces like Amazon or Shopify, advertising, and more.',
+      zh: '当然可以！使用 BrandCam 生成的所有图片都可以用于商业用途。您可以在网站、社交媒体、亚马逊或 Shopify 等平台、广告等任何地方使用。',
+      ko: '네! BrandCam으로 생성된 모든 이미지는 상업적으로 사용할 수 있습니다. 웹사이트, 소셜 미디어, Amazon이나 Shopify 같은 마켓플레이스, 광고 등에서 자유롭게 사용하세요.',
     },
   },
   {
@@ -164,9 +164,9 @@ export default function FAQPage() {
   }
 
   const subtitles = {
-    en: 'Everything you need to know about Brand Camera',
-    zh: '关于 Brand Camera 您需要了解的一切',
-    ko: 'Brand Camera에 대해 알아야 할 모든 것',
+    en: 'Everything you need to know about BrandCam',
+    zh: '关于 BrandCam 您需要了解的一切',
+    ko: 'BrandCam에 대해 알아야 할 모든 것',
   }
 
   const contactTitles = {

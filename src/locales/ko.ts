@@ -95,7 +95,7 @@ export const ko: Translations = {
   // Home Page
   home: {
     description: "원클릭으로 전문적인 상품 및 모델 사진 생성",
-    welcome: "Brand Camera에 오신 것을 환영합니다",
+    welcome: "BrandCam에 오신 것을 환영합니다",
     welcomeDesc: "아래 기능을 선택하여 창작을 시작하세요",
     quickLinks: "바로가기",
     shootModel: "모델 촬영",

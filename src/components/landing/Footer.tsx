@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import Image from 'next/image'
 
 export function Footer() {
@@ -9,21 +10,21 @@ export function Footer() {
         <div className="flex items-center gap-2">
           <Image
             src="/logo.png"
-            alt="Brand Camera"
+            alt="BrandCam"
             width={32}
             height={32}
             className="rounded-lg"
           />
-          <span className="font-semibold text-zinc-900">Brand Camera</span>
+          <span className="font-semibold text-zinc-900">BrandCam</span>
         </div>
         
         <div className="flex items-center gap-8 text-sm text-zinc-500">
-          <a href="#" className="hover:text-zinc-900 transition-colors">Privacy</a>
-          <a href="#" className="hover:text-zinc-900 transition-colors">Terms</a>
-          <a href="#" className="hover:text-zinc-900 transition-colors">Contact</a>
+          <Link href="/privacy" className="hover:text-zinc-900 transition-colors">Privacy</Link>
+          <Link href="/terms" className="hover:text-zinc-900 transition-colors">Terms</Link>
+          <a href="mailto:support@honoululuai.com" className="hover:text-zinc-900 transition-colors">Contact</a>
         </div>
         
-        <p className="text-sm text-zinc-400">© 2025 Brand Camera. All rights reserved.</p>
+        <p className="text-sm text-zinc-400">© 2025 BrandCam. All rights reserved.</p>
       </div>
     </footer>
   )

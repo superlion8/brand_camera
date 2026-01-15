@@ -253,8 +253,8 @@ export function LoginModal({ open, onClose, onSuccess }: LoginModalProps) {
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-zinc-100">
             <div className="flex items-center gap-2">
-              <Image src="/logo.png" alt="Brand Camera" width={28} height={28} className="rounded-lg" />
-              <span className="font-semibold text-zinc-900">Brand Camera</span>
+              <Image src="/logo.png" alt="BrandCam" width={28} height={28} className="rounded-lg" />
+              <span className="font-semibold text-zinc-900">BrandCam</span>
             </div>
             <button
               onClick={onClose}

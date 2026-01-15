@@ -94,7 +94,7 @@ export const zh = {
   // Home Page
   home: {
     description: "一键生成专业的商品图和模特展示图",
-    welcome: "欢迎使用 Brand Camera",
+    welcome: "欢迎使用 BrandCam",
     welcomeDesc: "选择下方功能开始创作",
     quickLinks: "快捷入口",
     shootModel: "拍模特",

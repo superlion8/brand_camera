@@ -8,7 +8,7 @@ interface OrganizationJsonLdProps {
 }
 
 export function OrganizationJsonLd({
-  name = 'Brand Camera',
+  name = 'BrandCam',
   url = 'https://brandcam.agency',
   logo = 'https://brandcam.agency/logo.png',
   description = 'AI-powered product photography platform for e-commerce brands',
@@ -42,7 +42,7 @@ interface WebApplicationJsonLdProps {
 }
 
 export function WebApplicationJsonLd({
-  name = 'Brand Camera',
+  name = 'BrandCam',
   url = 'https://brandcam.agency',
   description = 'Transform your product photos with AI. Create stunning model photos, lifestyle shots, and professional product images in seconds.',
   applicationCategory = 'PhotographyApplication',
@@ -86,7 +86,7 @@ interface SoftwareApplicationJsonLdProps {
 }
 
 export function SoftwareApplicationJsonLd({
-  name = 'Brand Camera',
+  name = 'BrandCam',
   description = 'AI-powered product photography platform',
   url = 'https://brandcam.agency',
 }: SoftwareApplicationJsonLdProps) {
@@ -136,8 +136,8 @@ export function LandingPageJsonLd() {
 export function FAQPageJsonLd() {
   const faqs = [
     {
-      question: 'What is Brand Camera?',
-      answer: 'Brand Camera is an AI-powered product photography platform that helps e-commerce brands create professional model photos, lifestyle shots, and product images in seconds. No photographers, studios, or expensive equipment needed.',
+      question: 'What is BrandCam?',
+      answer: 'BrandCam is an AI-powered product photography platform that helps e-commerce brands create professional model photos, lifestyle shots, and product images in seconds. No photographers, studios, or expensive equipment needed.',
     },
     {
       question: 'How does AI model photography work?',
@@ -145,7 +145,7 @@ export function FAQPageJsonLd() {
     },
     {
       question: 'What types of products work best?',
-      answer: 'Brand Camera works great with fashion items (clothing, accessories, jewelry), beauty products, electronics, home goods, and more. Any product that benefits from lifestyle or model photography can be enhanced with our AI.',
+      answer: 'BrandCam works great with fashion items (clothing, accessories, jewelry), beauty products, electronics, home goods, and more. Any product that benefits from lifestyle or model photography can be enhanced with our AI.',
     },
     {
       question: 'How much does it cost?',
@@ -153,7 +153,7 @@ export function FAQPageJsonLd() {
     },
     {
       question: 'Can I use the images commercially?',
-      answer: 'Yes! All images generated with Brand Camera are yours to use commercially. Use them on your website, social media, marketplaces like Amazon or Shopify, advertising, and more.',
+      answer: 'Yes! All images generated with BrandCam are yours to use commercially. Use them on your website, social media, marketplaces like Amazon or Shopify, advertising, and more.',
     },
     {
       question: 'How long does it take to generate an image?',

@@ -10,7 +10,7 @@ export function LandingHeader() {
         <Link href="/" className="flex items-center gap-2 md:gap-2.5 shrink-0">
           <Image
             src="/logo.png"
-            alt="Brand Camera"
+            alt="BrandCam"
             width={32}
             height={32}
             className="rounded-xl md:w-9 md:h-9"
