@@ -6,7 +6,9 @@ import { useAuth } from '@/components/providers/AuthProvider'
 import { LandingHeader } from './LandingHeader'
 import { HeroSection } from './HeroSection'
 import { FeaturesSection } from './FeaturesSection'
+import { HowItWorksSection } from './HowItWorksSection'
 import { ShowcaseSection } from './ShowcaseSection'
+import { TestimonialsSection } from './TestimonialsSection'
 import { PricingSection } from './PricingSection'
 import { CTASection } from './CTASection'
 import { Footer } from './Footer'
@@ -41,7 +43,9 @@ export function LandingClient() {
       <LandingHeader />
       <HeroSection />
       <FeaturesSection />
+      <HowItWorksSection />
       <ShowcaseSection />
+      <TestimonialsSection />
       <PricingSection />
       <CTASection />
       <Footer />
