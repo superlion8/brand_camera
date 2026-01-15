@@ -6,6 +6,8 @@ import { Check, Zap, Crown, Rocket, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useTranslation } from '@/stores/languageStore'
+import { useLoginGuard } from '@/hooks/useLoginGuard'
+import { LoginModal } from '@/components/shared/LoginModal'
 
 // 订阅套餐
 const subscriptionPlans = [
@@ -71,12 +73,11 @@ export default function PricingPage() {
   const router = useRouter()
   const { user } = useAuth()
   const { t, language } = useTranslation()
-  
+  const { requireLogin, showLoginModal, handleLoginSuccess, handleCloseModal } = useLoginGuard()
+
   const handleSubscribe = async (priceId: string) => {
-    if (!user) {
-      router.push('/login?redirect=/pricing')
-      return
-    }
+    // Check login first - show modal if not logged in
+    if (!requireLogin()) return
     
     setLoadingPriceId(priceId)
     
@@ -286,6 +287,13 @@ export default function PricingPage() {
           </p>
         </div>
       </div>
+
+      {/* Login Modal for unauthenticated users */}
+      <LoginModal
+        open={showLoginModal}
+        onClose={handleCloseModal}
+        onSuccess={handleLoginSuccess}
+      />
     </div>
   )
 }

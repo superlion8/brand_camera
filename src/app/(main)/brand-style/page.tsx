@@ -35,12 +35,8 @@ export default function BrandStylePage() {
   const [productImage, setProductImage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // 未登录时重定向到登录页
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.replace('/login?redirect=/brand-style')
-    }
-  }, [user, authLoading, router])
+  // Auth check removed - pages are now publicly accessible
+  // Login is required only when performing actions (via useLoginGuard)
 
   // 显示加载状态（等待 auth 和 isMobile 都确定后再渲染，避免闪烁）
   if (authLoading || !user || screenLoading) {

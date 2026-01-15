@@ -33,6 +33,8 @@ import { useQuotaReservation } from "@/hooks/useQuotaReservation"
 import { BottomNav } from "@/components/shared/BottomNav"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useLanguageStore } from "@/stores/languageStore"
+import { useLoginGuard } from "@/hooks/useLoginGuard"
+import { LoginModal } from "@/components/shared/LoginModal"
 import { triggerFlyToGallery } from "@/components/shared/FlyToGallery"
 import { useIsDesktop } from "@/hooks/useIsMobile"
 import { ScreenLoadingGuard } from "@/components/ui/ScreenLoadingGuard"
@@ -83,13 +85,10 @@ function SocialPageContent() {
   const searchParams = useSearchParams()
   const { user, isLoading: authLoading } = useAuth()
   const t = useLanguageStore(state => state.t)
-  
-  // 未登录时重定向到登录页
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.replace('/login')
-    }
-  }, [user, authLoading, router])
+  const { requireLogin, showLoginModal, handleLoginSuccess, handleCloseModal } = useLoginGuard()
+
+  // Auth check removed - pages are now publicly accessible
+  // Login is required only when performing actions (via useLoginGuard)
   
   const webcamRef = useRef<Webcam>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -444,10 +443,13 @@ function SocialPageContent() {
   const handleShootIt = async () => {
     if (!capturedImage) return
 
+    // Check login first
+    if (!requireLogin()) return
+
     // Clear previous results first (for Regenerate to show skeleton)
     setGeneratedImages([])
     setGeneratedModelTypes([])
-    
+
     // Check quota before starting generation
     const hasQuota = await checkQuota(SOCIAL_NUM_IMAGES)
     if (!hasQuota) {
@@ -1419,6 +1421,13 @@ function SocialPageContent() {
         sceneType="studio"
         themeColor="pink"
         allowUpload={false}
+      />
+
+      {/* Login Modal for unauthenticated users */}
+      <LoginModal
+        open={showLoginModal}
+        onClose={handleCloseModal}
+        onSuccess={handleLoginSuccess}
       />
     </div>
   )

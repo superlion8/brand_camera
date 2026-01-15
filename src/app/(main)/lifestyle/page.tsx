@@ -223,12 +223,8 @@ function LifestylePageContent() {
     }
   }, [mode, currentTaskId, tasks, generatedImages, router])
 
-  // Auth check
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.replace('/login')
-    }
-  }, [user, authLoading, router])
+  // Auth check removed - pages are now publicly accessible
+  // Login is required only when performing actions (via useLoginGuard)
 
   // Camera permission check - skip on PC Web
   useEffect(() => {

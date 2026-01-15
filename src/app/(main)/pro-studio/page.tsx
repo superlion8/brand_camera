@@ -158,12 +158,8 @@ function ProStudioPageContent() {
   const { userProducts, userModels, userBackgrounds, addUserAsset } = useAssetStore()
   const { debugMode } = useSettingsStore()
   
-  // 未登录时重定向到登录页
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.replace('/login')
-    }
-  }, [user, authLoading, router])
+  // Auth check removed - pages are now publicly accessible
+  // Login is required only when performing actions (via useLoginGuard)
   
   // 从 URL 参数读取 mode（从 outfit 页面跳转过来时）
   useEffect(() => {
