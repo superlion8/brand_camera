@@ -90,6 +90,20 @@ export function PhotoDetailDialog({
   if (!open || !imageUrl) return null
 
   const displayTimestamp = timestamp || new Date().toLocaleString()
+  
+  // Quick action label translations
+  const actionLabelMap: Record<string, string> = {
+    'try-on': t.gallery?.goTryOn || 'Try On',
+    'edit': t.gallery?.goEdit || 'Edit',
+    'group-shoot': t.gallery?.goGroupShoot || 'Group Shoot',
+    'material': t.gallery?.modifyMaterial || 'Material & Fit',
+  }
+  
+  // Apply translations to quick actions
+  const translatedQuickActions = quickActions.map(action => ({
+    ...action,
+    label: actionLabelMap[action.id] || action.label,
+  }))
 
   // Desktop: Two-column layout
   // Mobile: Single column with bottom sheet style
@@ -191,13 +205,13 @@ export function PhotoDetailDialog({
                   {/* Scrollable Content */}
                   <div className="flex-1 overflow-y-auto px-6 py-5">
                     {/* Quick Actions */}
-                    {quickActions.length > 0 && (
+                    {translatedQuickActions.length > 0 && (
                       <div className="mb-6">
                         <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">
                           {t.gallery?.quickActions || 'Quick Actions'}
                         </h3>
                         <div className="grid grid-cols-4 gap-3">
-                          {quickActions.map((action) => (
+                          {translatedQuickActions.map((action) => (
                             <button
                               key={action.id}
                               disabled={action.disabled || action.loading}
@@ -324,9 +338,9 @@ export function PhotoDetailDialog({
                     </div>
                     
                     {/* Quick Actions - Mobile: 2x2 grid */}
-                    {quickActions.length > 0 && (
+                    {translatedQuickActions.length > 0 && (
                       <div className="grid grid-cols-2 gap-3 mb-4">
-                        {quickActions.slice(0, 4).map((action) => (
+                        {translatedQuickActions.slice(0, 4).map((action) => (
                           <button
                             key={action.id}
                             disabled={action.disabled || action.loading}
