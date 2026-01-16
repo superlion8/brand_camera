@@ -23,6 +23,7 @@ export function LandingHeader() {
           <a href="#features" className="text-sm text-zinc-500 hover:text-zinc-900 transition-colors">Features</a>
           <a href="#showcase" className="text-sm text-zinc-500 hover:text-zinc-900 transition-colors">Showcase</a>
           <a href="#pricing" className="text-sm text-zinc-500 hover:text-zinc-900 transition-colors">Pricing</a>
+          <Link href="/blog" className="text-sm text-zinc-500 hover:text-zinc-900 transition-colors">Blog</Link>
         </div>
         
         <div className="flex items-center gap-2 md:gap-3">

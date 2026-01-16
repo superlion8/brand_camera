@@ -274,6 +274,85 @@ export function FeaturePageBreadcrumb({
   )
 }
 
+// Blog List structured data
+export function BlogListJsonLd() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Blog',
+    name: 'BrandCam Blog',
+    description: 'AI product photography tips, tutorials, and industry insights for e-commerce brands',
+    url: 'https://brandcam.agency/blog',
+    publisher: {
+      '@type': 'Organization',
+      name: 'BrandCam',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://brandcam.agency/logo.png',
+      },
+    },
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+  )
+}
+
+// Blog Post structured data
+export function BlogPostJsonLd({
+  title,
+  description,
+  url,
+  datePublished,
+  dateModified,
+  author,
+  image,
+}: {
+  title: string
+  description: string
+  url: string
+  datePublished: string
+  dateModified?: string
+  author: string
+  image?: string
+}) {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: title,
+    description,
+    url,
+    datePublished,
+    dateModified: dateModified || datePublished,
+    author: {
+      '@type': 'Person',
+      name: author,
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'BrandCam',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://brandcam.agency/logo.png',
+      },
+    },
+    image: image || 'https://brandcam.agency/og-image.png',
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': url,
+    },
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+  )
+}
+
 // FAQ Page structured data - enables rich snippets in Google
 export function FAQPageJsonLd() {
   const faqs = [
