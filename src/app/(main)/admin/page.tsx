@@ -6,7 +6,8 @@ import Image from "next/image"
 import { 
   Home, Users, BarChart3, FileText, Calendar, Filter, 
   ChevronDown, ChevronRight, Heart, Loader2, RefreshCw,
-  ImageIcon, Sparkles, Lightbulb, Wand2, CalendarDays, Download, X, ZoomIn, Camera
+  ImageIcon, Sparkles, Lightbulb, Wand2, CalendarDays, Download, X, ZoomIn, Camera,
+  Coins, Settings
 } from "lucide-react"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { motion, AnimatePresence } from "framer-motion"
@@ -246,13 +247,22 @@ export default function AdminDashboard() {
               <span className="font-semibold text-lg text-zinc-900">管理员看板</span>
             </div>
           </div>
-          <button
-            onClick={handleRefresh}
-            className="w-10 h-10 rounded-full hover:bg-zinc-100 flex items-center justify-center"
-            disabled={isLoading}
-          >
-            <RefreshCw className={`w-5 h-5 text-zinc-600 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => router.push("/admin/quotas")}
+              className="w-10 h-10 rounded-full hover:bg-zinc-100 flex items-center justify-center"
+              title="额度管理"
+            >
+              <Coins className="w-5 h-5 text-zinc-600" />
+            </button>
+            <button
+              onClick={handleRefresh}
+              className="w-10 h-10 rounded-full hover:bg-zinc-100 flex items-center justify-center"
+              disabled={isLoading}
+            >
+              <RefreshCw className={`w-5 h-5 text-zinc-600 ${isLoading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
         
         {/* Tabs */}
