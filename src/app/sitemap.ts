@@ -1,4 +1,5 @@
 import { MetadataRoute } from 'next'
+import { getAllBlogSlugs, getBlogPost } from '@/lib/mdx'
 
 // Base URL for the site
 const BASE_URL = 'https://brandcam.agency'
@@ -23,6 +24,8 @@ const PUBLIC_PAGES: Array<{
   { path: '/login', changeFrequency: 'monthly', priority: 0.8 },
   // 定价页
   { path: '/pricing', changeFrequency: 'weekly', priority: 0.9 },
+  // 博客 - SEO 重要页面
+  { path: '/blog', changeFrequency: 'daily', priority: 0.85 },
   // 功能页面 - 公开可预览，操作时登录
   { path: '/product-shot', changeFrequency: 'weekly', priority: 0.85 },
   { path: '/pro-studio', changeFrequency: 'weekly', priority: 0.85 },
@@ -40,21 +43,38 @@ const PUBLIC_PAGES: Array<{
   { path: '/privacy', changeFrequency: 'yearly', priority: 0.5 },
   { path: '/terms', changeFrequency: 'yearly', priority: 0.5 },
   // 
-  // 📌 新增公开页面请在此添加：
-  // { path: '/blog', changeFrequency: 'daily', priority: 0.8 },
+  // 📌 新增公开页面请在此添加
   //
 ]
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date()
   
-  return PUBLIC_PAGES.map(page => ({
+  // Static pages
+  const staticPages = PUBLIC_PAGES.map(page => ({
     url: `${BASE_URL}${page.path}`,
     lastModified: now,
     changeFrequency: page.changeFrequency,
     priority: page.priority,
   }))
+
+  // Blog posts - dynamically generated from MDX files
+  const blogSlugs = getAllBlogSlugs()
+  const blogPages = blogSlugs.map(slug => {
+    const post = getBlogPost(slug, 'en')
+    return {
+      url: `${BASE_URL}/blog/${slug}`,
+      lastModified: post ? new Date(post.publishedAt) : now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    }
+  })
+
+  return [...staticPages, ...blogPages]
 }
 
 // 导出公开页面路径供 SEO 检查脚本使用
-export const PUBLIC_PAGE_PATHS = PUBLIC_PAGES.map(p => p.path || '/')
+export const PUBLIC_PAGE_PATHS = [
+  ...PUBLIC_PAGES.map(p => p.path || '/'),
+  ...getAllBlogSlugs().map(slug => `/blog/${slug}`),
+]

@@ -19,6 +19,8 @@ export function Footer() {
         </div>
         
         <div className="flex items-center gap-8 text-sm text-zinc-500">
+          <Link href="/blog" className="hover:text-zinc-900 transition-colors">Blog</Link>
+          <Link href="/faq" className="hover:text-zinc-900 transition-colors">FAQ</Link>
           <Link href="/privacy" className="hover:text-zinc-900 transition-colors">Privacy</Link>
           <Link href="/terms" className="hover:text-zinc-900 transition-colors">Terms</Link>
           <a href="mailto:support@honoululuai.com" className="hover:text-zinc-900 transition-colors">Contact</a>
